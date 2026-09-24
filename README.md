@@ -17,6 +17,30 @@ cose che sono scelte deliberate, o ritentare strade già rivelatesi
 senza uscita. Ambiente di test: **Samsung Galaxy S25 Ultra, tastiera
 Samsung** (rilevante: vedi sotto).
 
+### Dove vive il progetto (dal 24/09/2026)
+
+**La copia di riferimento è il repository GitHub
+`AbernathyXVII/MyNotesApp`**, non più la cartella
+`Downloads\NotionLocal` sul PC dell'utente. Quella cartella non è
+collegata a GitHub e da quel giorno può essere più vecchia del
+repository: per riprendere il lavoro sul PC **si clona il repository**
+(vedi "Come aprirla") e si lavora lì.
+
+Il progetto ora si sviluppa in **due modi alternati**:
+
+- **Claude Code sul PC**, col telefono collegato via adb: si compila,
+  si installa, si legge `logcat`, si prova tutto sul dispositivo. È il
+  modo in cui è nato tutto quello che c'è in "Cronologia".
+- **Sessioni cloud** (claude.ai/code), quando il limite settimanale di
+  Code sul PC è esaurito. Girano su un server remoto che **non vede né
+  il PC né il telefono**: si può scrivere e compilare il codice, non
+  installarlo né provarlo. Ogni modifica fatta lì è segnata **"(da
+  verificare sul telefono)"** e il **"Diario delle sessioni cloud"**
+  più in basso elenca, sessione per sessione, le richieste dell'utente
+  parola per parola, cosa è stato fatto e cosa va provato. **Chi
+  riprende sul PC dopo una sessione cloud parte da lì**: prima si
+  provano sul telefono le voci ancora da verificare, poi si va avanti.
+
 ### Decisioni di design deliberate (non sono bug)
 
 **I "blocchi di testo scorrevole" sono uniti in un campo condiviso.**
@@ -283,12 +307,28 @@ misurato firmando la release con la chiave di debug.
 verificata sul dispositivo, etichettando ogni voce come
 `[Nuova funzionalità]` o `[Bug fix]`.
 
+Ribadita ed estesa dall'utente il 24/09/2026: **va scritta filo per
+filo e per segno QUALSIASI cosa** — ogni modifica, ogni aggiunta, ogni
+cosa tolta, ogni bug trovato (anche se non ancora corretto), e anche i
+cambiamenti che non toccano l'app (configurazione, repository, questo
+stesso README). Per questi ultimi si usano due etichette in più:
+`[Rimosso]` per ciò che viene tolto dall'app e `[Progetto]` per ciò che
+sta attorno al codice. Nelle sessioni cloud si trascrivono anche **le
+richieste dell'utente** (vedi "Diario delle sessioni cloud"). Lo scopo
+dichiarato: tornando su Claude Code non si deve ricominciare niente da
+capo.
+
 ---
 
 ## Come aprirla
 
 1. Installa **Android Studio**: https://developer.android.com/studio
-2. `File → Open` e seleziona questa cartella (`NotionLocal/`)
+2. Prendi il progetto da GitHub: `File → New → Project from Version
+   Control`, URL `https://github.com/AbernathyXVII/MyNotesApp`, e
+   scegli una cartella **nuova** (non la vecchia
+   `Downloads\NotionLocal`, che non è collegata al repository). Se il
+   progetto è già stato clonato, basta aprirne la cartella con
+   `File → Open` e aggiornarla con `Git → Pull`
 3. Se richiesto, seleziona una JDK 21 per Gradle (non la più recente
    disponibile — Gradle 8.7 supporta fino alla 21). Va rifatto ad ogni
    estrazione fresca del progetto: l'impostazione vive in `.idea/`
@@ -436,7 +476,10 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   condiviso, quindi selezionare fra una casella e l'altra è selezionare
   del testo come in qualsiasi altro punto. Resta il limite dentro un
   *toggle*, dove le caselle figlie sono ancora righe a sé
-- **Colore del testo** non disponibile da nessuna parte
+- ~~**Colore del testo** non disponibile da nessuna parte.~~
+  **Superato**: c'è il pennello accanto ad Aa (vedi "Colore del testo
+  e colore dietro al testo" in Cronologia). Resta vero per i campi
+  della voce qui sotto
 - **Titolo pagina, celle delle tabelle semplici e celle dei database**
   sono testo completamente piatto, senza formattazione né colore:
   portarceli richiede di costruire per ciascuno l'infrastruttura già
@@ -456,7 +499,7 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   sparisce anche dalle schede della bacheca e dell'elenco. Qui un
   database ha una vista sola per volta, quindi tenerne una copia per
   ognuna vorrebbe dire salvare impostazioni che nessuno ha mai scelto
-- **Database: ordinamento solo su una proprietà per volta**, e senza ricerca né filtri. Notion permette di concatenare più ordinamenti; qui il secondo criterio a parità di valore è fisso
+- **Database: ordinamento solo su una proprietà per volta**. Notion permette di concatenare più ordinamenti; qui il secondo criterio a parità di valore è fisso
 - **Database: l'ordinamento non tocca calendario e linea del tempo**, dove le pagine stanno già in ordine di data — che è l'ordine che serve lì
 - **Database: la ricerca non esiste.** L'icona di Notion che sta lì
   accanto alla vista è stata deliberatamente omessa finché non
@@ -517,7 +560,9 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
 - **Database: aprendo una riga come pagina non si vedono le sue
   proprietà.** In Notion stanno in cima alla pagina e si modificano da
   lì; qui i valori vivono solo nella tabella
-- **Copertina: non si può spostare né ritagliare.** Notion permette di scegliere quale parte dell'immagine si vede; qui viene centrata e tagliata a quell'altezza e basta
+- ~~**Copertina: non si può spostare né ritagliare.**~~ **Superato**:
+  "Reposition" la sposta e la ingrandisce (vedi "Copertina —
+  inquadratura" in Cronologia)
 - **Immagini: non c'è una raccolta da cui scegliere**, come le copertine pronte di Notion. Si mette la propria
 - **Immagini da collegamento: fino a 20 MB.** Un collegamento può puntare a qualunque cosa, e senza tetto una pagina da mezzo giga riempirebbe il telefono mentre l'utente aspetta
 - **Export/backup** (Markdown+CSV, PDF) progettato ma non implementato.
@@ -531,6 +576,106 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   pronta per la sincronizzazione (identificatore stabile, momento
   dell'ultima modifica). Costo quasi nullo ora, evita una migrazione
   dolorosa se l'obiettivo diventa reale
+
+## Diario delle sessioni cloud
+
+Una voce per sessione cloud, la più recente in cima. Per ognuna: le
+richieste dell'utente trascritte parola per parola, cosa è stato fatto
+e cosa resta da provare sul telefono. Le modifiche all'app finiscono
+**anche** in "Cronologia degli aggiornamenti", come sempre; qui c'è il
+filo della conversazione che le ha prodotte.
+
+### Sessione cloud del 24/09/2026 — trasloco su GitHub
+
+**Contesto.** Limite settimanale di Claude Code esaurito sul PC;
+l'utente ha a disposizione una sessione cloud e vuole continuare lì lo
+sviluppo, per poi riprendere sul PC col telefono collegato. Il server
+cloud non raggiunge né il PC né il telefono, e non ha un emulatore
+(manca la virtualizzazione hardware): scrivere e compilare sì,
+installare e provare no. Il repository GitHub era vuoto (solo un
+README di una riga).
+
+**Richieste dell'utente, parola per parola:**
+
+1. «Ciao»
+2. «Saresti in grado di continuare qui il lavoro che stavamo facendo
+   sulla mia app notE? Ho ricevuto 100 di crediti su una sessione in
+   cloud.»
+3. «Sia in chat normale che su Code, utilizzavi una cartella che hai
+   creato te (nella mia cartella Downloads sul mio PC con Windows 11)
+   alla quale, tramite il collegamento di Android Studio e il Web
+   Debugging sul mio S25 Ultra, avevi accesso modificando il codice ed
+   operando direttamente sul telefono. Facevi tutte le prove,
+   controllavi il log, ed eri in grado di accorgerti di tutti i bugfix
+   del momento. Come posso fare?»
+4. «Ok, quindi io posso dirti di fare le modifiche al codice che ti
+   dico, di aggiungere qualsiasi tipologia di feature alla mia app di
+   note, ma non puoi installare l'APK e controllare i bug. Giusto?»
+5. «Dimmi una cosa: se io ti metto la cartella sulla repo di Github
+   collegata a questa sessione, implementi tutte le feature che ti
+   dico, poi io quando il limite settimanale in Code mi si resetta,
+   posso prendere quella cartella e riusarla in Code in modo che poi
+   posso vedere tutti i bugfix da fare sempre tramite Code?»
+6. «Aspetta però, io sono inesperto con Github: come posso caricare la
+   cartella nella repo? Posso metterla così com'è oppure devo metterla
+   in uno zip?»
+7. «Mi dice " Yowza, that's a big file. Try again with a file smaller
+   than 25MB. ", ma il progetto pesa 600MB»
+8. «Non posso caricarti direttamente qui lo zip?»
+9. «Facciamo così, ti mando gli screenshot di tutto quanto e mi guidi
+   tu su cosa cancellare» (con gli screenshot delle proprietà di
+   `.gradle`, `.idea`, `app` e `gradle`)
+10. «1.78MB Non ci credo. Quanta robaccia inutile c'era? Dimmi se leggi
+    lo zip nella repo»
+11. «Una cosa, mi raccomando: rispetta quello che in Code facevi ossia
+    filo e per segno ogni modifica, bug (se riesci a trovarli),
+    aggiunta, cose tolte, QUALSIASI COSA, la scrivi sul ReadMe
+    (ovviamente anche con i prompt che ti dico qui in cloud). In modo
+    che poi, quando ritornerò su Claude Code, potrò avere il progetto
+    completo al quale hai lavorato senza ricominciare tutto da capo.
+    Chiaro?»
+
+**Cosa è stato fatto:**
+
+- **[Progetto]** Il progetto è arrivato su GitHub come archivio
+  `NotionLocal - Copy.7z` caricato dal sito (ramo `main`). Il caricamento
+  dal sito accetta file fino a 25 MB e la cartella ne pesava circa 400:
+  erano quasi tutti file rigenerabili — `app\build` (circa 365 MB di
+  compilazioni) e `.gradle` (33 MB di cache). Tolti quelli, più `.idea`
+  e `local.properties`, restano **65 file, circa 2 MB**, di cui circa
+  24.000 righe di Kotlin
+- **[Progetto]** L'archivio è stato estratto e il progetto messo nella
+  **radice del repository**, così Android Studio apre direttamente la
+  cartella clonata. L'archivio è stato tolto (resta nella storia del
+  ramo `main`)
+- **[Progetto]** Aggiunto `.gitignore`: `build/`, `.gradle/`,
+  `.kotlin/`, `.idea/`, `*.iml`, `local.properties`, APK/AAB e **chiavi
+  di firma** (`*.jks`, `*.keystore`), che non devono mai finire su
+  GitHub
+- **[Progetto]** Aggiunto `.gitattributes` (`* text=auto`): sei file
+  (`README.md`, `AppDatabase.kt`, `ColorPickerSheet.kt`,
+  `DatabaseViewScreen.kt`, `PageEditorScreen.kt`,
+  `PageEditorViewModel.kt`) avevano gli a-capo di Windows e tutti gli
+  altri quelli di Linux. Nel repository ora sono tutti uniformi; su
+  Windows Git li rimette alla maniera di Windows quando clona. Il
+  contenuto dei file non è cambiato
+- **[Progetto]** Il lavoro delle sessioni cloud va sul ramo
+  `claude/funny-ramanujan-uuwahs` e arriva su `main` con una pull
+  request che l'utente unisce dal sito
+- **[Progetto]** README: aggiunte le sezioni "Dove vive il progetto" e
+  questo diario, estesa la "Regola di lavoro concordata" (etichette
+  `[Rimosso]` e `[Progetto]`, richieste dell'utente trascritte), e il
+  passo "prendi il progetto da GitHub" in "Come aprirla"
+- **[Progetto]** README: corrette quattro affermazioni rimaste indietro
+  rispetto al codice e alla Cronologia stessa — lo schema è alla
+  versione **24** e non 21 (`AppDatabase`, `version = 24`, ultima
+  migrazione 23→24); il colore del testo **c'è** (il pennello); i
+  filtri dei database **ci sono**; la copertina **si inquadra**
+  ("Reposition"). Le tre voci dei Limiti noti sono barrate o corrette,
+  non cancellate
+
+**Da verificare sul telefono:** niente. In questa sessione, fin qui,
+il codice dell'app non è stato toccato.
 
 ## Cronologia degli aggiornamenti
 
@@ -2724,7 +2869,7 @@ app/src/main/java/com/gabriele/notionlocal/
 
 ## Nota tecnica
 
-Lo schema è alla **versione 21**, e da qui in avanti **ogni cambio di
+Lo schema è alla **versione 24**, e da qui in avanti **ogni cambio di
 schema vuole una migrazione vera** in `AppDatabase`. Fino alla 5 c'era
 `fallbackToDestructiveMigration()`, che ad ogni cambio ricreava il
 database da zero perdendo tutto: accettabile finché sul telefono
