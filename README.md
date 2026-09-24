@@ -504,6 +504,12 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   proprietà compare "Hide", e in "Property visibility" (impostazioni
   della vista) ci sono le due liste *Shown in table* e *Hidden in
   table* da cui rimetterle a posto, una per volta o tutte insieme
+- **Colonne che si spostano dal menu dell'intestazione**: tenendola
+  premuta, sotto "Edit property" ci sono **"Move to left"** e **"Move
+  to right"**. La prima colonna dopo Name ha "Move to left" grigia —
+  Name resta sempre la prima — e l'ultima ha grigia "Move to right"
+  *(documentata il 24/09/2026: era nel codice ma non qui; da
+  verificare sul telefono, vedi Cronologia)*
 - **Titolo del database nascondibile** quando sta dentro una pagina,
   dalle impostazioni della vista. A schermo intero resta sempre visibile
 - **Ricerca full-text** tra titoli e contenuto dei blocchi
@@ -561,7 +567,8 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
 - **Database: "Property visibility" non riordina e non cerca.** Su
   Notion le due liste hanno le maniglie per trascinare le colonne e un
   campo di ricerca in cima; qui l'ordine si cambia dalla finestra della
-  proprietà (Move left / Move right) e la ricerca non c'è, perché con
+  proprietà (Move left / Move right) o tenendo premuta l'intestazione
+  della colonna (Move to left / Move to right), e la ricerca non c'è, perché con
   una manciata di proprietà sarebbe un campo di testo da riempire per
   scorrere una lista che si vede già tutta
 - **Database: la visibilità è una sola per tutto il database**, non una
@@ -747,6 +754,18 @@ README di una riga).
     dell'utente `dl.google.com` e `maven.google.com` rispondevano
     **già in questa stessa sessione**, nonostante l'avviso della
     finestra ("apply to new sessions")
+20. «Stavo chiedendo a Code una feature. Ti ri-incollo qui il prompt:
+    Dammi la possibilità di spostare le colonne dei database tenendoci
+    premuto sopra e sotto a Edit property ci metterai Move to left e
+    Move to right. Di base, la seconda colonna, qualsiasi essa sia, avrà
+    la voce Move to left grigia, perché non può essere spostata a
+    sinistra di quella principale, ossia Name (la colonna dove si
+    trovano le pagine)» — **la funzione era già nel codice arrivato dal
+    PC**, esattamente come descritta (`PropertyHeaderCell`), ma il
+    README non ne parlava: con ogni probabilità Code l'aveva scritta e
+    il limite è arrivato prima dell'aggiornamento del README e della
+    prova sul telefono. Documentata in Cronologia ("Colonne — spostarle
+    tenendo premuta l'intestazione") e aggiunta alle verifiche qui sotto
 
 **Cosa è stato fatto:**
 
@@ -823,8 +842,9 @@ README di una riga).
   Settings → Theme offre Dark / Light / System (`AppSettings.themeMode`,
   e la voce "Theme" in Cronologia). Barrata con la nota "Superato"
 
-**Da verificare sul telefono** (tutto è della vista Gallery; prima di
-installare, **copia del database**: questa build cambia lo schema):
+**Da verificare sul telefono** (dall'1 al 14 la vista Gallery, il 15
+lo spostamento delle colonne; prima di installare, **copia del
+database**: questa build cambia lo schema):
 
 1. **Compila?** È la prima cosa: in cloud non si è potuto provare.
 2. **La migrazione 24→25** è avvenuta davvero: `user_version` = 25, e
@@ -861,6 +881,13 @@ installare, **copia del database**: questa build cambia lo schema):
 13. **Tema chiaro**: schede e riquadri dell'anteprima leggibili.
 14. Chiedere all'utente se gli vanno bene le scelte segnate in
     Cronologia (anteprima di partenza, misure delle schede).
+15. **Colonne, menu dell'intestazione** (non è della Gallery: era già
+    nel codice, richiesta 20): tenendo premuta l'intestazione compaiono
+    Edit property, Move to left, Move to right, (Center), Hide; la
+    prima colonna dopo Name ha "Move to left" grigia, l'ultima "Move to
+    right" grigia; con "Lock view" grigie tutte e due; spostando, le
+    celle seguono la loro colonna; con una colonna nascosta in mezzo si
+    salta quella; con la tabella raggruppata funziona da ogni gruppo.
 
 ## Cronologia degli aggiornamenti
 
@@ -868,6 +895,33 @@ Le voci nate nelle sessioni cloud stanno qui in cima, la più recente
 per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
+
+**Colonne — spostarle tenendo premuta l'intestazione** *(trovata già
+scritta nel codice arrivato dal PC il 24/09/2026, ma mancava in questo
+README: documentata nella sessione cloud dello stesso giorno. **Da
+verificare sul telefono**: non risulta che sia mai stata provata)*
+- **[Nuova funzionalità]** Tenendo premuta l'intestazione di una
+  colonna della tabella, il menu ha nell'ordine: **Edit property**,
+  **Move to left**, **Move to right**, *Center / Align left* (solo per
+  le colonne a caselle) e **Hide**. È la richiesta dell'utente, che
+  nella sessione cloud l'ha ripetuta parola per parola (Diario,
+  richiesta 20) perché l'aveva appena chiesta a Code sul PC
+- **[Nuova funzionalità]** **"Move to left" è grigia sulla prima
+  colonna dopo Name**, qualunque essa sia: Name è il titolo delle
+  pagine, non una proprietà, e resta sempre la prima. **"Move to
+  right" è grigia sull'ultima**, e con **"Lock view"** lo sono tutte e
+  due. Grigie e non nascoste: una voce che sparisce e ricompare farebbe
+  cambiare posto alle altre sotto il dito (`PropertyHeaderCell`,
+  `canMoveLeft = !viewLocked && index > 0`)
+- **[Nuova funzionalità]** Si conta **fra le colonne che si vedono**
+  (`DatabaseTableState.neighbourForMove`): scambiarsi con una colonna
+  nascosta in mezzo non sposterebbe niente di visibile. Lo spostamento
+  rinumera tutte le colonne in un salvataggio solo
+  (`DatabaseViewModel.moveColumn` → `DatabaseRepository.updateColumns`,
+  una transazione), così la tabella si ridisegna una volta. Con la
+  tabella raggruppata l'intestazione si ripete sopra ogni gruppo, con
+  lo stesso menu. Le regole sono le stesse di Move left / Move right
+  nella finestra della proprietà
 
 **Database — vista Gallery** *(sessione cloud del 24/09/2026: scritta
 ma **NON compilata** — in cloud non si scaricavano le librerie Android,
