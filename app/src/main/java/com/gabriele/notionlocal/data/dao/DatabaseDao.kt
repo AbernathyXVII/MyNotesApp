@@ -41,6 +41,13 @@ data class RowPreviewBlock(
     val orderIndex: Int
 )
 
+/**
+ * Un pezzo di testo che sta dentro la pagina di una riga — un blocco, la
+ * cella di una tabella, il nome di una sottopagina — per la ricerca dentro
+ * un database: vedi `DatabaseRepository.searchIndex`.
+ */
+data class RowPageText(val rowId: String, val text: String)
+
 @Dao
 interface DatabaseDao {
 
@@ -216,6 +223,40 @@ interface DatabaseDao {
     /** Le righe il cui nome contiene la parola cercata: anche quelle mai aperte come pagina. */
     @Query("SELECT * FROM database_rows WHERE title LIKE '%' || :query || '%'")
     suspend fun searchRows(query: String): List<DatabaseRowEntity>
+
+    // --- Ricerca dentro un database (la lente accanto a Sort) ---
+
+    /** Il testo dei blocchi delle pagine delle righe di un database, come JSON. */
+    @Query(
+        """
+        SELECT database_rows.id AS rowId, blocks.textJson AS text FROM database_rows
+        INNER JOIN blocks ON blocks.pageId = database_rows.linkedPageId
+        WHERE database_rows.pageId = :databasePageId
+        """
+    )
+    suspend fun getRowPageBlockTexts(databasePageId: String): List<RowPageText>
+
+    /** Le celle delle tabelle dentro le pagine delle righe di un database. */
+    @Query(
+        """
+        SELECT database_rows.id AS rowId, table_cells.text AS text FROM database_rows
+        INNER JOIN blocks ON blocks.pageId = database_rows.linkedPageId
+        INNER JOIN table_cells ON table_cells.blockId = blocks.id
+        WHERE database_rows.pageId = :databasePageId
+        """
+    )
+    suspend fun getRowPageTableTexts(databasePageId: String): List<RowPageText>
+
+    /** I nomi delle sottopagine richiamate dentro le pagine delle righe: si leggono nella pagina come righe sue. */
+    @Query(
+        """
+        SELECT database_rows.id AS rowId, pages.title AS text FROM database_rows
+        INNER JOIN blocks ON blocks.pageId = database_rows.linkedPageId
+        INNER JOIN pages ON pages.id = blocks.linkedPageId
+        WHERE database_rows.pageId = :databasePageId AND pages.trashedAt IS NULL
+        """
+    )
+    suspend fun getRowPageLinkTitles(databasePageId: String): List<RowPageText>
 
     /** Le righe che aprono una certa pagina: di solito una, a volte nessuna. */
     @Query("SELECT * FROM database_rows WHERE linkedPageId = :pageId")

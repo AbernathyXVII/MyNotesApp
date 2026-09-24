@@ -150,6 +150,34 @@ class DatabaseRepository(private val db: AppDatabase) {
             }.filterValues { it.isNotEmpty() }
         }
 
+    /**
+     * **Quello che c'è scritto dentro le pagine delle righe** di un
+     * database, riga per riga, per la ricerca della lente accanto a Sort:
+     * il testo dei blocchi (anche dentro i toggle chiusi, anche coperto
+     * da uno spoiler — è testo dell'utente, e trovarlo non lo scopre:
+     * si illumina la riga, non la parola), le celle delle tabelle e i
+     * nomi delle sottopagine richiamate lì dentro.
+     *
+     * Si legge **una volta**, quando la ricerca si apre (e quando si
+     * torna sulla schermata con la ricerca aperta): da lì in poi ogni
+     * lettera scritta cerca in memoria, senza toccare il database. Le
+     * righe di un database semplice non hanno pagine, e qui non danno
+     * niente.
+     */
+    suspend fun searchIndex(databasePageId: String): Map<String, String> {
+        val pieces = dao.getRowPageBlockTexts(databasePageId).map { piece ->
+            val text = runCatching {
+                json.decodeFromString<List<RichTextSpan>>(piece.text)
+            }.getOrNull()?.joinToString("") { it.text }.orEmpty()
+            piece.rowId to text
+        } + dao.getRowPageTableTexts(databasePageId).map { it.rowId to it.text } +
+            dao.getRowPageLinkTitles(databasePageId).map { it.rowId to it.text }
+        return pieces
+            .filter { it.second.isNotBlank() }
+            .groupBy({ it.first }, { it.second })
+            .mapValues { (_, texts) -> texts.joinToString("\n") }
+    }
+
     suspend fun addRow(row: DatabaseRowEntity) = dao.insertRow(row)
 
     suspend fun updateRow(row: DatabaseRowEntity) = dao.updateRow(row)

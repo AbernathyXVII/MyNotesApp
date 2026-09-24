@@ -497,6 +497,11 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   diventano mai pagine**: niente OPEN, niente icone o copertine di riga;
   toccando una riga si apre la sua scheda, col nome da scrivere e tutte
   le proprietà. Una cosa che Notion non ha
+- **Ricerca dentro un database** *(sessione cloud del 24/09/2026, da
+  verificare sul telefono)*: la lente accanto a Sort apre lì una barra;
+  scrivendo restano le righe che hanno la parola nel nome, in una
+  proprietà o dentro la loro pagina, con il nome illuminato di giallo se
+  è lì, o tutta la riga se la parola è dentro. In tutte e sei le viste
 - **Database dentro le pagine**: creandone uno dal menu "+" compare
   nella pagina e si modifica lì; l'icona con le frecce lo apre a
   schermo intero, e dalle impostazioni lo si elimina
@@ -840,6 +845,16 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
 - **"Turn into simple database" non si annulla**: le pagine delle righe
   se ne vanno per sempre, come chiesto (richiesta 31). Per questo, se
   hanno del contenuto, prima c'è una conferma col loro numero
+- **Ricerca dentro un database**: le **date e le caselle** non si
+  cercano, e nemmeno le date automatiche di creazione e modifica (il
+  valore salvato non è quello che si legge). Nelle proprietà e nelle
+  pagine si illumina la riga intera, non la parola: dentro la cella o
+  la pagina la parola non è segnata. Il testo delle pagine si legge
+  quando si apre la ricerca o si torna sulla schermata: se la pagina di
+  una riga cambia mentre la ricerca è aperta su un'altra schermata (la
+  stessa pagina aperta due volte), lo si vede al ritorno. Le sottopagine
+  delle pagine delle righe contano solo per il nome, non per quello che
+  hanno dentro
 - **Export/backup** (Markdown+CSV, PDF) progettato ma non implementato.
   Decisione già presa con l'utente: **Markdown+CSV come formato
   principale** (il PDF non conserva la struttura, quindi è inadatto al
@@ -1124,6 +1139,14 @@ README di una riga).
     Sia del Duplicate che del Move» — no, fatto: vedi Cronologia
     "Annulla e Ripristina anche per Move to, Duplicate e Move to trash"
     (anche Move to trash, che usa lo stesso meccanismo)
+35. «Metti vicino all'icona Sort un'icona Search sui database, per
+    cercare titoli delle pagine o qualsiasi cosa all'interno delle
+    pagine. Come fa Notion, appena tocco l'icona della lente
+    d'ingrandimento, mi appare lì subito una barra dove scrivo la parola
+    e si illuminano o i titoli delle pagine o le pagine dove si trova
+    quello che ho scritto» — fatto: vedi Cronologia "Ricerca dentro un
+    database". Come su Notion, mentre si cerca le righe senza la parola
+    si nascondono (scelta da confermare con l'utente)
 
 **Cosa è stato fatto:**
 
@@ -1231,7 +1254,8 @@ lo spostamento delle colonne, il 16 il conteggio del testo, il 17 e il
 database semplice, il 22 il menu del blocco, il 23 le due correzioni
 trovate scrivendolo, il 24 il nuovo Move to, il 25 Annulla dopo una
 pagina spostata o cancellata, il 26 Annulla e Ripristina di Move to,
-Duplicate e Move to trash; prima di installare, **copia
+Duplicate e Move to trash, il 27 la ricerca dentro un database; prima di
+installare, **copia
 del database**: questa build cambia lo schema quattro volte — 24→25→26→27→28):
 
 1. **Compila anche sul PC?** In cloud sì (`assembleDebug` riuscito),
@@ -1484,6 +1508,35 @@ del database**: questa build cambia lo schema quattro volte — 24→25→26→2
       risultato di due tocchi lenti.
     - Svuotare il Cestino dopo un Duplicate annullato, poi Ripristina:
       non succede niente (la copia non c'è più) e l'app non si chiude.
+27. **Ricerca dentro un database** (richiesta 35), sia a schermo intero
+    sia dentro una pagina.
+    - Nella riga degli strumenti la **lente** sta subito dopo Sort (anche
+      con Lock view). Toccandola la riga lascia il posto alla barra, con
+      il cursore già dentro e la tastiera aperta; la X la chiude, la
+      parola si cancella e tornano tutte le righe e la riga degli
+      strumenti.
+    - Scrivendo, a ogni lettera: restano le righe con la parola **nel
+      nome** (lettere illuminate di giallo, maiuscole e minuscole non
+      contano, accenti compresi: "PERCHÉ" trova "perché"), **in una
+      proprietà** di testo, numero, selezione, selezione multipla,
+      URL, email, telefono, o **dentro la pagina** della riga — anche in
+      un toggle chiuso, in una tabella, nel nome di una sottopagina; in
+      questi due casi è **tutta la riga** a essere illuminata, di un
+      giallo più leggero. Date e caselle non si cercano.
+    - Provare **tutte e sei le viste**: tabella (anche raggruppata),
+      bacheca, elenco, galleria, calendario (anche "senza data"), linea
+      del tempo (nomi a sinistra e barre).
+    - Nessuna riga trovata: sotto la barra "Nessun risultato".
+    - Aprire una pagina trovata, **scriverci una parola nuova**, tornare
+      indietro: la ricerca è ancora lì, la tastiera **non** si apre da
+      sola, e cercando la parola nuova la pagina si trova.
+    - Con la ricerca aperta, "Nuova pagina" (o un tocco su un giorno del
+      calendario, o "+" in una colonna della bacheca): la riga nuova
+      **si vede**, anche se è vuota.
+    - Database semplice: si cercano nome e proprietà (le righe non hanno
+      pagine).
+    - Una galleria o una bacheca con molte righe: scrivere nella barra
+      non deve rallentare la tastiera.
     - Scrivere una lettera in una pagina, poi aprire una sua sottopagina
       dalla barra laterale (non dal collegamento) e spostarla altrove coi
       tre puntini; tornare alla prima pagina passando da un'altra, e
@@ -1497,6 +1550,57 @@ Le voci nate nelle sessioni cloud stanno qui in cima, la più recente
 per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
+
+**Ricerca dentro un database — la lente accanto a Sort** *(sessione
+cloud del 24/09/2026, richiesta 35: compilato, 42 test passati — 10
+nuovi —, nessuna migrazione, **non provato sul telefono**)*
+- **[Nuova funzionalità]** Nella riga degli strumenti di ogni database,
+  **subito dopo Sort**, la **lente**. Toccandola, lì dov'era la riga
+  compare **la barra della ricerca**, col cursore già dentro: si scrive
+  subito, come su Notion. La **X** la chiude, cancella la parola e
+  rimette la riga degli strumenti (`DatabaseSearchBar`). Si può cercare
+  anche con "Lock view": cercare non cambia com'è fatto il database
+- **[Nuova funzionalità]** **Cosa si cerca**, a ogni lettera, senza
+  distinguere maiuscole e minuscole: il **nome** delle righe; il valore
+  delle **proprietà** che si leggono come sono scritte — testo, numero,
+  selezione, selezione multipla (valore per valore), URL, email,
+  telefono; e **tutto quello che c'è dentro la pagina** della riga — il
+  testo dei blocchi (anche nei toggle chiusi), le celle delle tabelle, i
+  nomi delle sottopagine. Date, caselle e date automatiche no: il loro
+  valore salvato ("2026-09-24", "true") non è quello che si legge, e
+  "true" troverebbe ogni casella spuntata
+- **[Nuova funzionalità]** **Cosa si illumina**, come chiesto: se la
+  parola è **nel nome**, si illuminano di giallo **le sue lettere**;
+  se è **dentro** (una proprietà, la pagina), si illumina di un giallo
+  più leggero **tutta la riga** — o la scheda, o la barra. Giallo e non
+  l'azzurro dell'app, che vuol dire "selezionato". In **tutte e sei le
+  viste**: tabella, bacheca, elenco, galleria, calendario, linea del tempo
+  (`highlightedTitle`, `Modifier.foundInside`, `LocalRowSearch`)
+- **[Nuova funzionalità]** **Le righe senza la parola si nascondono**
+  mentre si cerca, come su Notion; senza nessuna riga trovata, sotto la
+  barra c'è "Nessun risultato". La ricerca è un filtro in più sopra a
+  quello delle impostazioni, e sta nel ViewModel del database
+  (`searchRows`, dentro lo stesso calcolo del filtro e dell'ordinamento):
+  per questo vale in ogni vista senza che nessuna debba saperlo, e
+  aprendo una pagina trovata e tornando indietro la ricerca è ancora lì
+  (senza riaprire la tastiera)
+- **[Nuova funzionalità]** **Una riga creata mentre si cerca resta
+  visibile** fino alla chiusura della ricerca: è vuota, non ha la
+  parola, e sparendo subito avrebbe fatto sembrare rotto "Nuova pagina"
+- **[Progetto]** **Veloce anche con tanto testo**: il testo delle pagine
+  delle righe si legge dal database **una volta**, all'apertura della
+  ricerca e al ritorno sulla schermata (tre query:
+  `DatabaseDao.getRowPageBlockTexts`, `getRowPageTableTexts`,
+  `getRowPageLinkTitles`; `DatabaseRepository.searchIndex`); ogni lettera
+  scritta poi cerca in memoria. Il nome e le proprietà invece sono quelli
+  vivi della tabella
+- **[Progetto]** Test: `DatabaseSearchTest` (9 prove su `searchRows`:
+  nome, proprietà, selezione multipla, pagina, date e caselle escluse,
+  spazi, accenti, riga nuova) e una prova in più in
+  `PageRepositoryTest` sull'indice, su un database vero (testo diviso in
+  più pezzi con grassetto e spoiler, tabella, sottopagina, riga mai
+  aperta). Testi nuovi nelle otto lingue (`DbStrings.searchInDatabase`,
+  `closeSearch`)
 
 **Annulla e Ripristina anche per Move to, Duplicate e Move to trash**
 *(sessione cloud del 24/09/2026, richiesta 34: compilato, 32 test passati
@@ -4350,8 +4454,11 @@ app/src/test/java/com/gabriele/notionlocal/
 └── data/           # Test automatici senza telefono (dal 24/09/2026:
     │               # TextStatsTest, il conteggio del testo)
     └── repository/ # PageRepositoryTest: spostare, duplicare, buttare,
-                    # Annulla e Ripristina, su un database vero
-                    # (Robolectric + Room in memoria)
+                    # Annulla e Ripristina, l'indice della ricerca nei
+                    # database, su un database vero (Robolectric + Room)
+app/src/test/java/com/gabriele/notionlocal/viewmodel/
+                    # DatabaseSearchTest: quali righe tiene la ricerca
+                    # dentro un database e quali illumina
 
 app/src/main/res/font/            # I 10 font occidentali delle pagine (sosia liberi)
 app/src/main/res/values/font_certs.xml   # Certificati per scaricare i font da Google

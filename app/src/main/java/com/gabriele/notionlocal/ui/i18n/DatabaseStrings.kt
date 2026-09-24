@@ -203,6 +203,9 @@ object DbStrings {
     val changeLayout get() = t("Change layout", "Cambia vista", "Ansicht ändern", "Changer de vue", "Cambiar vista", "更改视图", "보기 변경", "ビューを変更")
     val filter get() = t("Filter", "Filtro", "Filter", "Filtre", "Filtro", "筛选", "필터", "フィルター")
     val sort get() = t("Sort", "Ordina", "Sortieren", "Trier", "Ordenar", "排序", "정렬", "並べ替え")
+    // La ricerca dentro il database (la lente accanto a Sort).
+    val searchInDatabase get() = t("Search this database", "Cerca in questo database", "Diese Datenbank durchsuchen", "Rechercher dans cette base de données", "Buscar en esta base de datos", "在此数据库中搜索", "이 데이터베이스에서 검색", "このデータベースを検索")
+    val closeSearch get() = t("Close search", "Chiudi la ricerca", "Suche schließen", "Fermer la recherche", "Cerrar búsqueda", "关闭搜索", "검색 닫기", "検索を閉じる")
     val openFullPage get() = t("Open as full page", "Apri a pagina intera", "Als ganze Seite öffnen", "Ouvrir en pleine page", "Abrir a página completa", "以整页打开", "전체 페이지로 열기", "フルページで開く")
     val databaseSettings get() = t("Database settings", "Impostazioni del database", "Datenbankeinstellungen", "Paramètres de la base de données", "Ajustes de la base de datos", "数据库设置", "데이터베이스 설정", "データベースの設定")
     val removeSort get() = t("Remove sort", "Rimuovi ordinamento", "Sortierung entfernen", "Supprimer le tri", "Quitar orden", "移除排序", "정렬 제거", "並べ替えを解除")

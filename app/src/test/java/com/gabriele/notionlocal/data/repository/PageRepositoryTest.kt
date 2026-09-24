@@ -353,6 +353,39 @@ class PageRepositoryTest {
         assertEquals(listOf(a.id, b.id), top.subList(top.indexOf(toggle.id) + 1, top.indexOf(toggle.id) + 3))
     }
 
+    // --- Ricerca dentro un database ---
+
+    @Test
+    fun searchIndexHasTheTextInsideEachRowPage() = runBlocking<Unit> {
+        val rowPage = PageEntity(title = "Row page", isRowPage = true)
+        val (database, row, _) = databaseWithRow(rowPage)
+        repo.saveBlock(
+            BlockEntity(
+                pageId = rowPage.id,
+                textJson = """[{"text":"Farina e "},{"text":"zucchero","bold":true},{"text":" segreto","spoiler":true}]""",
+                orderIndex = 0
+            )
+        )
+        val table = BlockEntity(pageId = rowPage.id, type = BlockType.TABLE, orderIndex = 1)
+        repo.saveBlock(table)
+        repo.setTableCellText(table.id, 1, 1, "Budget 2026")
+        val sub = PageEntity(title = "Ricette della nonna")
+        repo.createPage(sub)
+        link(rowPage.id, sub.id, 2)
+        // Una riga mai aperta: nessuna pagina, nessun testo.
+        db.databaseDao().insertRow(DatabaseRowEntity(pageId = database.id, title = "Never opened"))
+
+        val index = DatabaseRepository(db).searchIndex(database.id)
+
+        assertEquals(setOf(row.id), index.keys)
+        val text = index.getValue(row.id)
+        assertTrue(text.contains("Farina e zucchero segreto"))
+        assertTrue(text.contains("Budget 2026"))
+        assertTrue(text.contains("Ricette della nonna"))
+        // I nomi dei campi del JSON non sono testo dell'utente.
+        assertFalse(text.contains("bold"))
+    }
+
     @Test
     fun turnIntoSimpleDatabaseDeletesTheRowPagesButKeepsTheRows() = runBlocking<Unit> {
         val rowPage = PageEntity(title = "Row page", isRowPage = true)

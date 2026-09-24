@@ -73,10 +73,20 @@ private data class SortValue(val number: Double?, val text: String) {
  * rapida (rowId, columnId) -> valore per popolare le celle senza dover
  * cercare ogni volta nella lista.
  */
+/**
+ * La ricerca in corso dentro un database (la lente accanto a Sort), per
+ * chi disegna le righe: la parola cercata, per illuminarla nei nomi, e le
+ * righe trovate **per quello che hanno dentro** — nelle proprietà o nella
+ * pagina — e non nel nome, che si illuminano per intero.
+ */
+data class RowSearch(val query: String, val foundInside: Set<String>)
+
 data class DatabaseTableState(
     val columns: List<DatabaseColumnEntity> = emptyList(),
     val rows: List<DatabaseRowEntity> = emptyList(),
-    val cellValues: Map<Pair<String, String>, String> = emptyMap()
+    val cellValues: Map<Pair<String, String>, String> = emptyMap(),
+    /** Null quando non si sta cercando niente. */
+    val search: RowSearch? = null
 ) {
     /**
      * Le colonne da disegnare. `columns` resta l'elenco completo, perché
@@ -103,6 +113,59 @@ data class DatabaseTableState(
         val position = lane.indexOfFirst { it.id == columnId }
         return lane.getOrNull(position + delta)
     }
+}
+
+/** Le proprietà in cui cerca la lente: quelle il cui valore salvato è il testo che si legge. */
+private val SEARCHABLE_COLUMN_TYPES = setOf(
+    ColumnType.TEXT,
+    ColumnType.NUMBER,
+    ColumnType.SELECT,
+    ColumnType.MULTI_SELECT,
+    ColumnType.URL,
+    ColumnType.EMAIL,
+    ColumnType.PHONE
+)
+
+/**
+ * **La ricerca**: restano le righe in cui la parola c'è — nel nome,
+ * nel valore di una proprietà scritta (testo, numero, selezione,
+ * collegamento, email, telefono), o dentro la loro pagina. Come su
+ * Notion, le altre spariscono finché si cerca. Maiuscole e minuscole
+ * non contano.
+ *
+ * Date, caselle e date automatiche non si cercano: il loro valore
+ * salvato ("2026-09-24", "true") non è quello che si legge sullo
+ * schermo, e "true" troverebbe ogni casella spuntata.
+ */
+internal fun searchRows(
+    rows: List<DatabaseRowEntity>,
+    columns: List<DatabaseColumnEntity>,
+    cellValues: Map<Pair<String, String>, String>,
+    query: String,
+    index: Map<String, String>,
+    /**
+     * Le righe create mentre si cerca: restano, anche se la parola non ce
+     * l'hanno. Una riga nuova è vuota, e sparendo subito sembrerebbe che
+     * "Nuova pagina" non abbia fatto niente.
+     */
+    addedWhileSearching: Set<String> = emptySet()
+): Pair<List<DatabaseRowEntity>, RowSearch?> {
+    val wanted = query.trim()
+    if (wanted.isEmpty()) return rows to null
+    val searchable = columns.filter { it.type in SEARCHABLE_COLUMN_TYPES }
+    val foundInside = mutableSetOf<String>()
+    val kept = rows.filter { row ->
+        if (row.id in addedWhileSearching) return@filter true
+        if (row.title.contains(wanted, ignoreCase = true)) return@filter true
+        val inProperty = searchable.any { column ->
+            cellValues[row.id to column.id].orEmpty()
+                .replace(MULTI_VALUE_SEPARATOR, " ")
+                .contains(wanted, ignoreCase = true)
+        }
+        val inPage = index[row.id]?.contains(wanted, ignoreCase = true) == true
+        (inProperty || inPage).also { found -> if (found) foundInside += row.id }
+    }
+    return kept to RowSearch(wanted, foundInside)
 }
 
 class DatabaseViewModel(
@@ -135,6 +198,29 @@ class DatabaseViewModel(
     /** Riga → prime righe di testo della sua pagina: l'anteprima "Page content" della galleria. */
     private val _rowPreviews = MutableStateFlow<Map<String, List<RowPreviewLine>>>(emptyMap())
     val rowPreviews: StateFlow<Map<String, List<RowPreviewLine>>> = _rowPreviews
+
+    // --- La ricerca dentro il database (la lente accanto a Sort) ---
+    //
+    // Sta qui e non nella schermata: aprendo una pagina trovata e
+    // tornando indietro la ricerca deve essere ancora lì, com'era, come
+    // su Notion. Il ViewModel del database resta vivo mentre si è dentro
+    // la pagina di una riga; la schermata no.
+
+    private val _searchOpen = MutableStateFlow(false)
+    val searchOpen: StateFlow<Boolean> = _searchOpen
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery
+
+    /** Riga → testo della sua pagina: vedi `DatabaseRepository.searchIndex`. */
+    private val _searchIndex = MutableStateFlow<Map<String, String>>(emptyMap())
+
+    /** Le righe create mentre si cerca: vedi `searchRows`. */
+    private val _addedWhileSearching = MutableStateFlow<Set<String>>(emptySet())
+
+    private fun keepVisibleWhileSearching(rowId: String) {
+        if (_searchQuery.value.isNotBlank()) _addedWhileSearching.value = _addedWhileSearching.value + rowId
+    }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     fun load(pageId: String) {
@@ -199,22 +285,57 @@ class DatabaseViewModel(
                 // La pagina entra nel calcolo perché è lì che sta
                 // l'ordinamento: senza, cambiarlo non farebbe
                 // ricalcolare niente e la tabella resterebbe com'era.
-                _page
-            ) { columns, rows, cells, page ->
+                _page,
+                combine(_searchQuery, _searchIndex, _addedWhileSearching) { query, index, added ->
+                    Triple(query, index, added)
+                }
+            ) { columns, rows, cells, page, (query, index, added) ->
                 val cellValues = cells.associate { (it.rowId to it.columnId) to it.value }
                 // Prima si filtra e poi si ordina: ordinare righe che
                 // stanno per sparire è lavoro buttato, e il risultato
-                // sarebbe lo stesso.
-                val kept = filterRows(rows, columns, cellValues, page)
+                // sarebbe lo stesso. La ricerca è un filtro in più, sopra
+                // a quello scelto nelle impostazioni.
+                val filtered = filterRows(rows, columns, cellValues, page)
+                val (kept, search) = searchRows(filtered, columns, cellValues, query, index, added)
                 DatabaseTableState(
                     columns = columns,
                     rows = sortRows(kept, columns, cellValues, page),
-                    cellValues = cellValues
+                    cellValues = cellValues,
+                    search = search
                 )
             }.collect { state ->
                 _tableState.value = state
             }
         }
+    }
+
+    /** Apre la barra della ricerca e legge il testo delle pagine delle righe. */
+    fun openSearch() {
+        _searchOpen.value = true
+        refreshSearchIndex()
+    }
+
+    /** Chiude la barra: la parola si cancella e tornano tutte le righe. */
+    fun closeSearch() {
+        _searchOpen.value = false
+        _searchQuery.value = ""
+        _searchIndex.value = emptyMap()
+        _addedWhileSearching.value = emptySet()
+    }
+
+    fun setSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
+    /**
+     * Rilegge il testo delle pagine delle righe. Si fa aprendo la ricerca
+     * e tornando sulla schermata con la ricerca aperta: dentro una pagina
+     * trovata si può aver scritto, e la ricerca deve saperlo.
+     */
+    fun refreshSearchIndex() {
+        val pageId = currentPageId ?: return
+        if (!_searchOpen.value) return
+        viewModelScope.launch { _searchIndex.value = repository.searchIndex(pageId) }
     }
 
     /**
@@ -719,6 +840,7 @@ class DatabaseViewModel(
         viewModelScope.launch {
             repository.addColumn(column)
             val row = DatabaseRowEntity(pageId = pageId, orderIndex = nextRowIndex())
+            keepVisibleWhileSearching(row.id)
             repository.addRow(row)
             repository.setCellValue(row.id, column.id, dateMillis.toString())
         }
@@ -732,6 +854,7 @@ class DatabaseViewModel(
         val pageId = currentPageId ?: return
         viewModelScope.launch {
             val row = DatabaseRowEntity(pageId = pageId, orderIndex = nextRowIndex())
+            keepVisibleWhileSearching(row.id)
             repository.addRow(row)
             repository.setCellValue(row.id, columnId, dateMillis.toString())
         }
@@ -968,9 +1091,9 @@ class DatabaseViewModel(
     fun addRow(title: String = "") {
         val pageId = currentPageId ?: return
         viewModelScope.launch {
-            repository.addRow(
-                DatabaseRowEntity(pageId = pageId, title = title, orderIndex = nextRowIndex())
-            )
+            val row = DatabaseRowEntity(pageId = pageId, title = title, orderIndex = nextRowIndex())
+            keepVisibleWhileSearching(row.id)
+            repository.addRow(row)
         }
     }
 
@@ -983,6 +1106,7 @@ class DatabaseViewModel(
         val pageId = currentPageId ?: return
         viewModelScope.launch {
             val row = DatabaseRowEntity(pageId = pageId, orderIndex = nextRowIndex())
+            keepVisibleWhileSearching(row.id)
             repository.addRow(row)
             if (value.isNotEmpty()) {
                 repository.setCellValue(row.id, columnId, value)

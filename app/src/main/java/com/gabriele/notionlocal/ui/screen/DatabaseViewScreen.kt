@@ -1,5 +1,10 @@
 package com.gabriele.notionlocal.ui.screen
 
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.RectangleShape
+import com.gabriele.notionlocal.viewmodel.RowSearch
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.TransformedText
@@ -651,10 +656,20 @@ fun DatabaseContent(
         { row -> viewModel.openRow(row) { onOpenRowPage(it) } }
     }
 
+    // La ricerca (la lente accanto a Sort): vive nel ViewModel, così
+    // aprendo una pagina trovata e tornando indietro è ancora lì. Tornando,
+    // si rilegge il testo delle pagine, che nel frattempo può essere
+    // cambiato.
+    val searchOpen by viewModel.searchOpen.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    var focusSearchField by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { viewModel.refreshSearchIndex() }
+
     CompositionLocalProvider(
         LocalDatabaseLocked provides (page?.isLocked == true || page?.trashedAt != null),
         LocalRowIcons provides rowIcons,
-        LocalSimpleDatabase provides simple
+        LocalSimpleDatabase provides simple,
+        LocalRowSearch provides state.search
     ) {
     Column(
         modifier = modifier
@@ -748,10 +763,31 @@ fun DatabaseContent(
 
         val layout = page?.databaseLayout ?: DatabaseLayout.TABLE
 
-        ViewToolbar(
+        // **Toccata la lente, la barra della ricerca prende il posto di
+        // questa riga**, lì dov'era, come su Notion: si scrive subito, e
+        // la X la chiude e rimette la riga degli strumenti.
+        if (searchOpen) {
+            DatabaseSearchBar(
+                query = searchQuery,
+                noResults = searchQuery.isNotBlank() && state.rows.isEmpty(),
+                requestFocus = focusSearchField,
+                onFocusRequested = { focusSearchField = false },
+                onQueryChange = viewModel::setSearchQuery,
+                onClose = {
+                    focusManager.clearFocus()
+                    viewModel.closeSearch()
+                }
+            )
+        } else ViewToolbar(
             layout = layout,
             sortActive = page?.sortColumnId != null,
             filterActive = viewModel.filterColumn() != null,
+            // Cercare non cambia niente di come è fatto il database: c'è
+            // anche con "Lock view".
+            onOpenSearch = {
+                focusSearchField = true
+                viewModel.openSearch()
+            },
             onOpenBlockMenu = onOpenBlockMenu?.let { open ->
                 {
                     focusManager.clearFocus()
@@ -1391,7 +1427,7 @@ private fun TableBodyRow(
     onSetOptionColor: (String, String, String) -> Unit,
     onDeleteOption: (String, String) -> Unit
 ) {
-    Row {
+    Row(modifier = Modifier.foundInside(row.id)) {
         NameCell(
             row = row,
             onTitleChange = { onTitleChange(row, it) },
@@ -1728,6 +1764,7 @@ private fun BoardCard(
         modifier = Modifier
             .fillMaxWidth()
             .background(DarkSurface, RoundedCornerShape(8.dp))
+            .foundInside(row.id, RoundedCornerShape(8.dp))
             .pointerInput(row.id) {
                 detectTapGestures(onTap = { onOpen() }, onLongPress = { onLongPress() })
             }
@@ -1736,7 +1773,7 @@ private fun BoardCard(
         Row(verticalAlignment = Alignment.CenterVertically) {
             RowIconBadge(row.id, ROW_ICON_SIZE)
             Text(
-                text = row.title.ifBlank { Strings.untitled },
+                text = highlightedTitle(row.title),
                 style = MaterialTheme.typography.bodyMedium,
                 color = if (row.title.isBlank()) {
                     MaterialTheme.colorScheme.onSurfaceVariant
@@ -2076,6 +2113,7 @@ private fun CalendarLayout(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .foundInside(row.id)
                         .pointerInput(row.id) {
                             detectTapGestures(
                                 onTap = { onOpenRow(row) },
@@ -2087,7 +2125,7 @@ private fun CalendarLayout(
                 ) {
                     RowIconBadge(row.id, ROW_ICON_SIZE)
                     Text(
-                        text = row.title.ifBlank { Strings.untitled },
+                        text = highlightedTitle(row.title),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onBackground,
                         maxLines = 1
@@ -2507,6 +2545,7 @@ private fun CalendarBar(
                     bottomEnd = if (segment.continuesAfter) flat else round
                 )
             )
+            .foundInside(segment.row.id, RoundedCornerShape(round))
             .pointerInput(segment.row.id) {
                 detectTapGestures(onTap = { onOpen() }, onLongPress = { onLongPress() })
             }
@@ -2516,7 +2555,7 @@ private fun CalendarBar(
         Row(verticalAlignment = Alignment.CenterVertically) {
             RowIconBadge(segment.row.id, BAR_ICON_SIZE)
             Text(
-                text = segment.row.title.ifBlank { Strings.untitled },
+                text = highlightedTitle(segment.row.title),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onBackground,
                 maxLines = 1
@@ -2641,6 +2680,7 @@ private fun ListLayout(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .foundInside(row.id)
                     .pointerInput(row.id) {
                         detectTapGestures(
                             onTap = { onOpenRow(row) },
@@ -2652,7 +2692,7 @@ private fun ListLayout(
             ) {
                 RowIconBadge(row.id, ROW_ICON_SIZE)
                 Text(
-                    text = row.title.ifBlank { Strings.untitled },
+                    text = highlightedTitle(row.title),
                     style = MaterialTheme.typography.bodyLarge,
                     color = if (row.title.isBlank()) {
                         MaterialTheme.colorScheme.onSurfaceVariant
@@ -2812,6 +2852,7 @@ private fun GalleryCard(
         modifier = modifier
             .clip(RoundedCornerShape(8.dp))
             .background(DarkSurface)
+            .foundInside(row.id)
             .pointerInput(row.id) {
                 detectTapGestures(onTap = { onOpen() }, onLongPress = { onLongPress() })
             }
@@ -2851,7 +2892,7 @@ private fun GalleryCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 RowIconBadge(row.id, ROW_ICON_SIZE)
                 Text(
-                    text = row.title.ifBlank { Strings.untitled },
+                    text = highlightedTitle(row.title),
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
                     color = if (row.title.isBlank()) {
@@ -3004,6 +3045,149 @@ private fun listCellLabel(column: DatabaseColumnEntity, value: String): String =
 }
 
 /**
+ * La barra della ricerca dentro un database: la lente, il campo in cui
+ * scrivere, la X per chiuderla. Sta al posto della riga degli strumenti,
+ * alla stessa altezza, così la tabella sotto non salta.
+ *
+ * Il campo prende il cursore e la tastiera **solo quando la si apre**
+ * (`requestFocus`): tornando da una pagina trovata la ricerca c'è ancora,
+ * ma la tastiera non salta su da sola.
+ */
+@Composable
+private fun DatabaseSearchBar(
+    query: String,
+    noResults: Boolean,
+    requestFocus: Boolean,
+    onFocusRequested: () -> Unit,
+    onQueryChange: (String) -> Unit,
+    onClose: () -> Unit
+) {
+    val focusRequester = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
+    LaunchedEffect(requestFocus) {
+        if (requestFocus) {
+            focusRequester.requestFocus()
+            onFocusRequested()
+        }
+    }
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .background(
+                        MaterialTheme.colorScheme.surfaceVariant,
+                        RoundedCornerShape(percent = 50)
+                    )
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Filled.Search,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.size(8.dp))
+                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                    if (query.isEmpty()) {
+                        Text(
+                            DbStrings.searchInDatabase,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1
+                        )
+                    }
+                    BasicTextField(
+                        value = query,
+                        onValueChange = { onQueryChange(it.replace("\n", "")) },
+                        singleLine = true,
+                        // "Cerca" sulla tastiera la chiude e basta: la
+                        // ricerca si fa già mentre si scrive.
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(
+                            color = MaterialTheme.colorScheme.onBackground
+                        ),
+                        cursorBrush = SolidColor(MaterialTheme.colorScheme.onBackground),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .focusRequester(focusRequester)
+                    )
+                }
+            }
+            ToolbarIconButton(
+                icon = Icons.Filled.Close,
+                contentDescription = DbStrings.closeSearch,
+                onClick = onClose
+            )
+        }
+        if (noResults) {
+            Text(
+                text = Strings.noResults,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 14.dp, top = 8.dp)
+            )
+        }
+    }
+}
+
+/**
+ * La ricerca in corso, per chi disegna le righe in fondo alle sette viste:
+ * vedi `RowSearch` e `LocalRowIcons`, che passa di qui per la stessa
+ * ragione. Null quando non si cerca.
+ */
+private val LocalRowSearch = compositionLocalOf<RowSearch?> { null }
+
+/**
+ * Il giallo della ricerca. **Pieno** sulle lettere trovate nel nome di una
+ * riga; **leggero** su tutta la riga quando la parola non è nel nome ma
+ * dentro — in una proprietà o nella pagina. È quello che l'utente ha
+ * chiesto: "si illuminano o i titoli delle pagine o le pagine dove si
+ * trova quello che ho scritto". Giallo e non l'azzurro dell'app, perché
+ * l'azzurro vuol dire "selezionato" e "attivo", e una riga trovata non è
+ * né l'una né l'altra cosa.
+ */
+private val SearchHighlight = Color(0xFFFFD54F).copy(alpha = 0.55f)
+private val SearchHighlightRow = Color(0xFFFFD54F).copy(alpha = 0.16f)
+
+/**
+ * Il nome di una riga come si scrive in una vista: "Untitled" se è vuoto,
+ * e con **le lettere cercate illuminate** mentre si cerca.
+ */
+@Composable
+private fun highlightedTitle(title: String): AnnotatedString {
+    val shown = title.ifBlank { Strings.untitled }
+    val query = LocalRowSearch.current?.query
+    if (query.isNullOrEmpty() || title.isBlank()) return AnnotatedString(shown)
+    return buildAnnotatedString {
+        append(shown)
+        var from = 0
+        while (from < shown.length) {
+            val at = shown.indexOf(query, from, ignoreCase = true)
+            if (at < 0) break
+            addStyle(SpanStyle(background = SearchHighlight), at, at + query.length)
+            from = at + query.length
+        }
+    }
+}
+
+/**
+ * Illumina tutta la riga (o la scheda) quando la ricerca l'ha trovata per
+ * quello che ha dentro e non per il nome. `shape` è la forma del
+ * riquadro, perché il giallo segua gli angoli arrotondati delle schede.
+ */
+@Composable
+private fun Modifier.foundInside(rowId: String, shape: Shape = RectangleShape): Modifier {
+    val search = LocalRowSearch.current ?: return this
+    return if (rowId in search.foundInside) this.background(SearchHighlightRow, shape) else this
+}
+
+/**
  * Quanto sono grandi le icone della barra della vista: 20dp invece dei
  * 24 di serie, dentro un bottone da 40 invece che da 48. Sono numeri
  * unici apposta — le icone lì sopra devono restare tutte della stessa
@@ -3045,6 +3229,8 @@ private fun ViewToolbar(
     layout: DatabaseLayout,
     sortActive: Boolean,
     filterActive: Boolean,
+    /** La lente, subito dopo l'ordinamento: apre la barra della ricerca. */
+    onOpenSearch: () -> Unit,
     /**
      * I sei puntini del menu del blocco, prima della vista: solo per un
      * database dentro una pagina. Stanno qui e non accanto al nome perché
@@ -3152,6 +3338,13 @@ private fun ViewToolbar(
                     sortActive -> MaterialTheme.colorScheme.primary
                     else -> MaterialTheme.colorScheme.onSurfaceVariant
                 }
+            )
+            // La ricerca, accanto all'ordinamento come l'ha chiesta
+            // l'utente (e come sta su Notion).
+            ToolbarIconButton(
+                icon = Icons.Filled.Search,
+                contentDescription = Strings.search,
+                onClick = onOpenSearch
             )
             // Aprire a schermo intero è una cosa che si fa spesso e di
             // fretta — la tabella dentro la pagina sta stretta — quindi
@@ -4039,7 +4232,7 @@ private fun NameCell(
                         contentAlignment = Alignment.CenterStart
                     ) {
                         Text(
-                            text = localTitle.ifBlank { Strings.untitled },
+                            text = highlightedTitle(localTitle),
                             style = MaterialTheme.typography.bodyMedium,
                             color = if (localTitle.isBlank()) {
                                 MaterialTheme.colorScheme.onSurfaceVariant
@@ -6963,6 +7156,7 @@ private fun TimelineLayout(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(TIMELINE_ROW_HEIGHT)
+                            .foundInside(bar.row.id)
                             .pointerInput(bar.row.id) {
                                 detectTapGestures(
                                     onTap = { onOpenRow(bar.row) },
@@ -6975,7 +7169,7 @@ private fun TimelineLayout(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             RowIconBadge(bar.row.id, BAR_ICON_SIZE)
                             Text(
-                                text = bar.row.title.ifBlank { Strings.untitled },
+                                text = highlightedTitle(bar.row.title),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onBackground,
                                 maxLines = 1
@@ -7414,6 +7608,7 @@ private fun TimelineBarRow(
                 .height(TIMELINE_ROW_HEIGHT - 10.dp)
                 .padding(horizontal = 1.dp)
                 .background(DarkSurfaceVariant, RoundedCornerShape(4.dp))
+                .foundInside(bar.row.id, RoundedCornerShape(4.dp))
                 .pointerInput(bar.row.id) {
                     detectTapGestures(
                         onTap = { onOpenRow(bar.row) },
@@ -7426,7 +7621,7 @@ private fun TimelineBarRow(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 RowIconBadge(bar.row.id, BAR_ICON_SIZE)
                 Text(
-                    text = bar.row.title.ifBlank { Strings.untitled },
+                    text = highlightedTitle(bar.row.title),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onBackground,
                     maxLines = 1
@@ -7457,6 +7652,7 @@ private fun TimelineUndatedRows(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .foundInside(row.id)
                 .pointerInput(row.id) {
                     detectTapGestures(
                         onTap = { onOpenRow(row) },
@@ -7468,7 +7664,7 @@ private fun TimelineUndatedRows(
         ) {
             RowIconBadge(row.id, ROW_ICON_SIZE)
             Text(
-                text = row.title.ifBlank { Strings.untitled },
+                text = highlightedTitle(row.title),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground,
                 maxLines = 1
