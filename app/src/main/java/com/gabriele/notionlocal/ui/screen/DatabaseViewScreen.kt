@@ -1072,12 +1072,6 @@ fun DatabaseContent(
     propertyTarget?.let { target ->
         PropertySheet(
             target = target,
-            // Le stesse regole del menu dell'intestazione: si conta fra le
-            // colonne che si vedono, e con "Lock view" non si sposta niente.
-            canMoveLeft = target is PropertyTarget.Existing && !viewLocked &&
-                state.neighbourForMove(target.column.id, -1) != null,
-            canMoveRight = target is PropertyTarget.Existing && !viewLocked &&
-                state.neighbourForMove(target.column.id, 1) != null,
             onDismiss = { propertyTarget = null },
             onSave = { name, type, optionsJson ->
                 when (target) {
@@ -1085,10 +1079,6 @@ fun DatabaseContent(
                     is PropertyTarget.Existing ->
                         viewModel.updateColumn(target.column.id, name, type, optionsJson)
                 }
-                propertyTarget = null
-            },
-            onMove = { delta ->
-                if (target is PropertyTarget.Existing) viewModel.moveColumn(target.column.id, delta)
                 propertyTarget = null
             },
             onDelete = {
@@ -6269,11 +6259,8 @@ private fun SettingsRow(
 @Composable
 private fun PropertySheet(
     target: PropertyTarget,
-    canMoveLeft: Boolean,
-    canMoveRight: Boolean,
     onDismiss: () -> Unit,
     onSave: (String, ColumnType, String) -> Unit,
-    onMove: (Int) -> Unit,
     onDelete: () -> Unit
 ) {
     val existing = (target as? PropertyTarget.Existing)?.column
@@ -6387,15 +6374,14 @@ private fun PropertySheet(
                     }
                 }
 
+            // Qui non si sposta la colonna: "Move to left" e "Move to
+            // right" stanno in cima al menu che si apre tenendo premuta
+            // l'intestazione, e averle in due posti voleva dire due
+            // versioni della stessa cosa (in questa finestra, per di
+            // più, comparivano e sparivano a seconda della colonna).
             if (existing != null) {
                 Spacer(modifier = Modifier.size(20.dp))
                 HorizontalDivider()
-                if (canMoveLeft) {
-                    SheetAction(Icons.Filled.KeyboardArrowLeft, DbStrings.moveLeft) { onMove(-1) }
-                }
-                if (canMoveRight) {
-                    SheetAction(Icons.Filled.KeyboardArrowRight, DbStrings.moveRight) { onMove(1) }
-                }
                 SheetAction(Icons.Filled.Delete, DbStrings.deleteProperty, isDestructive = true) {
                     onDelete()
                 }

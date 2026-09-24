@@ -445,7 +445,8 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   titolo modificabile, tabella scorrevole, `+ Add property` in coda
   alle colonne, `OPEN` per aprire una riga come pagina vera,
   `+ New page` in fondo. Toccando un'intestazione si apre la finestra
-  della proprietà (nome, tipo con ricerca, sposta, elimina). Undici
+  della proprietà (nome, tipo con ricerca, elimina; dal 24/09/2026 non
+  più "sposta", che sta nel menu dell'intestazione tenuta premuta). Undici
   tipi: Text, Number, Select, Multi-select, Date, Checkbox, URL,
   Email, Phone, Created time, Last edited time
 - **Sei viste per i database** — Table, List, Board, **Calendar**,
@@ -566,11 +567,19 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   (gestione file, embedding media)
 - **Database: "Property visibility" non riordina e non cerca.** Su
   Notion le due liste hanno le maniglie per trascinare le colonne e un
-  campo di ricerca in cima; qui l'ordine si cambia dalla finestra della
-  proprietà (Move left / Move right) o tenendo premuta l'intestazione
-  della colonna (Move to left / Move to right), e la ricerca non c'è, perché con
+  campo di ricerca in cima; qui l'ordine si cambia solo tenendo
+  premuta l'intestazione della colonna (Move to left / Move to right),
+  e la ricerca non c'è, perché con
   una manciata di proprietà sarebbe un campo di testo da riempire per
   scorrere una lista che si vede già tutta
+- **Database: una colonna nascosta non si sposta** *(dal 24/09/2026)*.
+  Spostare si fa tenendo premuta l'intestazione, e una colonna nascosta
+  un'intestazione non ce l'ha; il suo "Move left / Move right" dentro la
+  finestra della proprietà, che era l'altro modo, è stato tolto su
+  richiesta dell'utente. Per spostarla la si rimostra (Property
+  visibility), la si sposta e la si nasconde di nuovo. Lo stesso vale
+  per le viste senza intestazioni (bacheca, elenco, galleria...): lì
+  l'ordine delle proprietà sulle schede si cambia dalla tabella
 - **Database: la visibilità è una sola per tutto il database**, non una
   per vista come su Notion: nascondendo una colonna nella tabella
   sparisce anche dalle schede della bacheca e dell'elenco. Qui un
@@ -788,6 +797,11 @@ README di una riga).
     parola "intestazione" in mezzo era un refuso nella proposta,
     copiato nella risposta). Fatto: le due voci ora sono in cima al
     menu dell'intestazione, vedi Cronologia
+23. «Ed ovviamente rimuovi la voce Move to right che sta dentro Edit
+    property» — nella finestra di Edit property comparivano "Move left"
+    e "Move right" una alla volta secondo la colonna; tolte tutte e
+    due (Cronologia, voce `[Rimosso]`), con la conseguenza che una
+    colonna nascosta non si sposta più senza rimostrarla
 
 **Cosa è stato fatto:**
 
@@ -911,6 +925,9 @@ database**: questa build cambia lo schema):
     right" grigia; con "Lock view" grigie tutte e due; spostando, le
     celle seguono la loro colonna; con una colonna nascosta in mezzo si
     salta quella; con la tabella raggruppata funziona da ogni gruppo.
+    La finestra di **Edit property** (toccando l'intestazione) **non**
+    ha più "Move left" / "Move right": sotto il tipo c'è solo "Delete
+    property" (richiesta 23).
 
 ## Cronologia degli aggiornamenti
 
@@ -937,6 +954,18 @@ verificare sul telefono**: non risulta che sia mai stata provata)*
   sopra. Spostare è la cosa per cui si tiene premuta un'intestazione —
   per modificarla basta toccarla — e in cima si trova senza leggere il
   menu. Cambiato solo l'ordine delle voci in `PropertyHeaderCell`
+- **[Rimosso]** *(sessione cloud del 24/09/2026, richiesta 23)* **"Move
+  left" e "Move right" dalla finestra della proprietà** (quella di Edit
+  property, `PropertySheet`): lì resta solo "Delete property". Erano un
+  doppione del menu dell'intestazione, e per di più comparivano una
+  alla volta a seconda della colonna — sulla prima dopo Name c'era solo
+  "Move right", ed è quella che l'utente ha chiesto di togliere; tolte
+  tutte e due, perché "Move left" è la stessa cosa sulle altre colonne.
+  Tolti anche i parametri `canMoveLeft`, `canMoveRight` e `onMove` di
+  `PropertySheet`. **Conseguenza**: una colonna nascosta non si può più
+  spostare senza rimostrarla (vedi Limiti noti). Il ramo di
+  `DatabaseTableState.neighbourForMove` che muoveva le colonne nascoste
+  fra tutte resta nel codice ma oggi nessuno lo raggiunge
 - **[Nuova funzionalità]** **"Move to left" è grigia sulla prima
   colonna dopo Name**, qualunque essa sia: Name è il titolo delle
   pagine, non una proprietà, e resta sempre la prima. **"Move to
