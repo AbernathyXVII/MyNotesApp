@@ -505,8 +505,8 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   della vista) ci sono le due liste *Shown in table* e *Hidden in
   table* da cui rimetterle a posto, una per volta o tutte insieme
 - **Colonne che si spostano dal menu dell'intestazione**: tenendola
-  premuta, sotto "Edit property" ci sono **"Move to left"** e **"Move
-  to right"**. La prima colonna dopo Name ha "Move to left" grigia —
+  premuta, **in cima al menu**, sopra "Edit property", ci sono **"Move
+  to left"** e **"Move to right"**. La prima colonna dopo Name ha "Move to left" grigia —
   Name resta sempre la prima — e l'ultima ha grigia "Move to right"
   *(documentata il 24/09/2026: era nel codice ma non qui; da
   verificare sul telefono, vedi Cronologia)*
@@ -783,6 +783,11 @@ README di una riga).
     all'utente se le due voci vanno **sopra** Edit property (come dice
     adesso) o **sotto** (come diceva la richiesta 20, ed è come sono
     nel codice)
+22. «B) Spostarle sopra: Move to left, Move to intestazione right, Edit
+    property, (Center), Hide.» — scelta B fra le due proposte (la
+    parola "intestazione" in mezzo era un refuso nella proposta,
+    copiato nella risposta). Fatto: le due voci ora sono in cima al
+    menu dell'intestazione, vedi Cronologia
 
 **Cosa è stato fatto:**
 
@@ -899,8 +904,9 @@ database**: questa build cambia lo schema):
 14. Chiedere all'utente se gli vanno bene le scelte segnate in
     Cronologia (anteprima di partenza, misure delle schede).
 15. **Colonne, menu dell'intestazione** (non è della Gallery: era già
-    nel codice, richiesta 20): tenendo premuta l'intestazione compaiono
-    Edit property, Move to left, Move to right, (Center), Hide; la
+    nel codice, richieste 20-22): tenendo premuta l'intestazione
+    compaiono **nell'ordine** Move to left, Move to right, Edit
+    property, (Center), Hide; la
     prima colonna dopo Name ha "Move to left" grigia, l'ultima "Move to
     right" grigia; con "Lock view" grigie tutte e due; spostando, le
     celle seguono la loro colonna; con una colonna nascosta in mezzo si
@@ -918,11 +924,19 @@ scritta nel codice arrivato dal PC il 24/09/2026, ma mancava in questo
 README: documentata nella sessione cloud dello stesso giorno. **Da
 verificare sul telefono**: non risulta che sia mai stata provata)*
 - **[Nuova funzionalità]** Tenendo premuta l'intestazione di una
-  colonna della tabella, il menu ha nell'ordine: **Edit property**,
-  **Move to left**, **Move to right**, *Center / Align left* (solo per
+  colonna della tabella, il menu ha nell'ordine: **Move to left**,
+  **Move to right**, **Edit property**, *Center / Align left* (solo per
   le colonne a caselle) e **Hide**. È la richiesta dell'utente, che
   nella sessione cloud l'ha ripetuta parola per parola (Diario,
   richiesta 20) perché l'aveva appena chiesta a Code sul PC
+- **[Nuova funzionalità]** *(sessione cloud del 24/09/2026, richiesta
+  22)* **Le due voci per spostare sono passate in cima al menu**, sopra
+  Edit property. Nel codice arrivato dal PC stavano sotto, come diceva
+  la prima richiesta; l'utente, non avendole mai viste sul telefono
+  (l'app installata era più vecchia del codice), ha chiesto di metterle
+  sopra. Spostare è la cosa per cui si tiene premuta un'intestazione —
+  per modificarla basta toccarla — e in cima si trova senza leggere il
+  menu. Cambiato solo l'ordine delle voci in `PropertyHeaderCell`
 - **[Nuova funzionalità]** **"Move to left" è grigia sulla prima
   colonna dopo Name**, qualunque essa sia: Name è il titolo delle
   pagine, non una proprietà, e resta sempre la prima. **"Move to

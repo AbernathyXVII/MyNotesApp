@@ -3723,8 +3723,9 @@ private fun NameHeaderCell() {
 
 /**
  * L'intestazione di una colonna. Toccarla apre la finestra della
- * proprietà, come su Notion; **tenendola premuta** compare il menu con
- * "Move to left" e "Move to right", e "Hide" per togliere di mezzo la
+ * proprietà, come su Notion; **tenendola premuta** compare il menu con,
+ * nell'ordine, "Move to left", "Move to right", "Edit property",
+ * "Center" (solo per le caselle) e "Hide" per togliere di mezzo la
  * colonna senza cancellarla.
  *
  * Gli spostamenti che non si possono fare restano **grigi** invece di
@@ -3785,16 +3786,11 @@ private fun PropertyHeaderCell(
             onDismissRequest = { menuOpen = false },
             modifier = Modifier.background(DarkSheet)
         ) {
-            DropdownMenuItem(
-                text = { Text(DbStrings.editProperty) },
-                leadingIcon = {
-                    Icon(Icons.Filled.Tune, contentDescription = null)
-                },
-                onClick = {
-                    menuOpen = false
-                    onEdit()
-                }
-            )
+            // Gli spostamenti stanno **in cima**, sopra Edit property:
+            // l'ha chiesto l'utente, perché spostare è la cosa per cui si
+            // tiene premuta un'intestazione (per modificarla basta
+            // toccarla). In cima e sempre nello stesso posto, grigie
+            // quando non si può, si trovano senza leggere il menu.
             DropdownMenuItem(
                 text = { Text(DbStrings.moveLeft) },
                 leadingIcon = {
@@ -3815,6 +3811,16 @@ private fun PropertyHeaderCell(
                 onClick = {
                     menuOpen = false
                     onMove(1)
+                }
+            )
+            DropdownMenuItem(
+                text = { Text(DbStrings.editProperty) },
+                leadingIcon = {
+                    Icon(Icons.Filled.Tune, contentDescription = null)
+                },
+                onClick = {
+                    menuOpen = false
+                    onEdit()
                 }
             )
             // Solo per le caselle da spuntare: è l'unico contenuto di
