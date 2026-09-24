@@ -38,8 +38,22 @@ data class RichTextSpan(
      * riquadro "Hex" — e perché nel JSON del testo si legge a occhio.
      */
     val color: String? = null,
-    val background: String? = null
+    val background: String? = null,
+    /**
+     * **Pedice** (H₂O) e **apice** (x²): più piccolo, sotto o sopra la
+     * riga. Si escludono a vicenda — vedi `withSubscript` e
+     * `withSuperscript` — come in Word. Aggiunti il 24/09/2026; come
+     * `spoiler`, il testo salvato prima non ha la chiave e vale `false`.
+     */
+    val subscript: Boolean = false,
+    val superscript: Boolean = false
 )
+
+/** Accende o spegne il pedice; accenderlo spegne l'apice, perché un pezzo di testo non può stare sotto e sopra insieme. */
+fun RichTextSpan.withSubscript(on: Boolean): RichTextSpan = copy(subscript = on, superscript = superscript && !on)
+
+/** Accende o spegne l'apice; accenderlo spegne il pedice. */
+fun RichTextSpan.withSuperscript(on: Boolean): RichTextSpan = copy(superscript = on, subscript = subscript && !on)
 
 /** Il testo semplice risultante da una lista di span, concatenati in ordine. */
 fun List<RichTextSpan>.plainText(): String = joinToString("") { it.text }

@@ -208,6 +208,11 @@ import com.gabriele.notionlocal.data.entity.plainText
 import com.gabriele.notionlocal.data.entity.setColorInRange
 import com.gabriele.notionlocal.data.entity.setFormatInRange
 import com.gabriele.notionlocal.data.entity.toggleFormatInRange
+import com.gabriele.notionlocal.data.entity.withSubscript
+import com.gabriele.notionlocal.data.entity.withSuperscript
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.em
 import com.gabriele.notionlocal.ui.theme.DarkBackground
 import com.gabriele.notionlocal.ui.theme.FavoriteStar
 import com.gabriele.notionlocal.ui.theme.FloatingButtonBackground
@@ -1672,6 +1677,18 @@ fun PageEditorScreen(
                             focusedBlock?.let { viewModel.requestFormat(it.id, FormatType.STRIKETHROUGH) }
                         }) {
                             Text("S", color = NotionWhite, textDecoration = TextDecoration.LineThrough, fontSize = 18.sp)
+                        }
+                        // Pedice e apice, dopo S come in Word: sullo
+                        // stesso testo, toccare l'altro li scambia.
+                        BarButton(onClick = {
+                            focusedBlock?.let { viewModel.requestFormat(it.id, FormatType.SUBSCRIPT) }
+                        }) {
+                            ScriptGlyph(superscript = false, description = EditorStrings.subscript)
+                        }
+                        BarButton(onClick = {
+                            focusedBlock?.let { viewModel.requestFormat(it.id, FormatType.SUPERSCRIPT) }
+                        }) {
+                            ScriptGlyph(superscript = true, description = EditorStrings.superscript)
                         }
                         // Spoiler: copre il testo selezionato. L'occhio
                         // sbarrato è il segno che usano sia Discord sia
@@ -3370,6 +3387,7 @@ private class MergedRunVisualTransformation(
                         // velo deve vincere su tutto, altrimenti si
                         // leggerebbe il testo colorato attraverso.
                         colorStyleOf(span)?.let { builder.addStyle(it, s, e) }
+                        scriptStyleOf(span)?.let { builder.addStyle(it, s, e) }
                         if (span.spoiler) {
                             // Posizioni nel testo vero, che è quello in
                             // cui vive il cursore: il prefisso (• o
@@ -3434,6 +3452,56 @@ private fun colorStyleOf(span: RichTextSpan): SpanStyle? {
         color = text ?: Color.Unspecified,
         background = behind ?: Color.Unspecified
     )
+}
+
+/**
+ * Pedice e apice: il testo a sette decimi, spostato sotto o sopra la riga
+ * di quanto è alto, come in Word. In `em`, cioè relativo al corpo della
+ * pagina (barra Aa): con un corpo più grande crescono anche loro.
+ *
+ * Solo aspetto: le lettere restano dove sono nel testo, quindi cursore,
+ * selezione e ricerca non se ne accorgono.
+ */
+internal fun scriptStyleOf(span: RichTextSpan): SpanStyle? = when {
+    span.subscript -> SpanStyle(fontSize = SCRIPT_SIZE, baselineShift = SUBSCRIPT_SHIFT)
+    span.superscript -> SpanStyle(fontSize = SCRIPT_SIZE, baselineShift = BaselineShift.Superscript)
+    else -> null
+}
+
+private val SCRIPT_SIZE = 0.7.em
+
+// Il pedice scende meno di quanto l'apice sale: con lo spostamento
+// standard (metà della sua altezza) il "2" di H₂O finiva sotto le gambe
+// di g e p, staccato dalla parola — visto nel disegno di prova.
+private val SUBSCRIPT_SHIFT = BaselineShift(-0.3f)
+
+/**
+ * Il disegno dei pulsanti pedice e apice nella barra Aa: una x con un 2
+ * piccolo in basso a destra (pedice) o in alto a destra (apice), come in
+ * Word e OneNote. Scritto e non un'icona, come B, I, U e S accanto.
+ *
+ * La x sta al centro, al posto di B e U, e il 2 si appoggia all'angolo:
+ * scritti in una riga sola, il 2 in alto spingeva giù la x e i due
+ * pulsanti non erano allineati fra loro né con gli altri.
+ */
+@Composable
+internal fun ScriptGlyph(superscript: Boolean, description: String) {
+    Box(
+        modifier = Modifier
+            .size(width = 24.dp, height = 26.dp)
+            .semantics { contentDescription = description }
+    ) {
+        Text("x", color = NotionWhite, fontSize = 18.sp, modifier = Modifier.align(Alignment.Center))
+        Text(
+            "2",
+            color = NotionWhite,
+            fontSize = 11.sp,
+            // Senza, il 2 si porta dietro l'altezza di riga del testo
+            // normale (24) e resta a metà in tutti e due i pulsanti.
+            lineHeight = 11.sp,
+            modifier = Modifier.align(if (superscript) Alignment.TopEnd else Alignment.BottomEnd)
+        )
+    }
 }
 
 private fun spoilerStyle(revealed: Boolean): SpanStyle =
@@ -4437,6 +4505,8 @@ private fun BlockRow(
                 FormatType.UNDERLINE -> toggleFormatInRange(editState.spans, from, to, { it.underline }) { s, v -> s.copy(underline = v) }
                 FormatType.STRIKETHROUGH -> toggleFormatInRange(editState.spans, from, to, { it.strikethrough }) { s, v -> s.copy(strikethrough = v) }
                 FormatType.SPOILER -> toggleFormatInRange(editState.spans, from, to, { it.spoiler }) { s, v -> s.copy(spoiler = v) }
+                FormatType.SUBSCRIPT -> toggleFormatInRange(editState.spans, from, to, { it.subscript }) { s, v -> s.withSubscript(v) }
+                FormatType.SUPERSCRIPT -> toggleFormatInRange(editState.spans, from, to, { it.superscript }) { s, v -> s.withSuperscript(v) }
             }
             editState = editState.copy(spans = newSpans)
             viewModel.updateBlockSpans(block, newSpans)
@@ -4946,6 +5016,7 @@ private class RichTextVisualTransformation(
                 )
             }
             colorStyleOf(span)?.let { builder.addStyle(it, start, pos) }
+            scriptStyleOf(span)?.let { builder.addStyle(it, start, pos) }
             if (span.spoiler) {
                 // Dentro, non sui bordi: vedi il gemello nel campo unito.
                 val revealed = caret != null && caret.first < pos && caret.last > start

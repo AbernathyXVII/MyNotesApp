@@ -18,6 +18,8 @@ import com.gabriele.notionlocal.data.entity.setColorInRange
 import com.gabriele.notionlocal.data.entity.setFormatInRange
 import com.gabriele.notionlocal.data.entity.splitLines
 import com.gabriele.notionlocal.data.entity.toggleFormatInRange
+import com.gabriele.notionlocal.data.entity.withSubscript
+import com.gabriele.notionlocal.data.entity.withSuperscript
 import com.gabriele.notionlocal.data.TextStats
 import com.gabriele.notionlocal.data.repository.PageRepository
 import com.gabriele.notionlocal.ui.theme.DEFAULT_PAGE_FONT_SIZE
@@ -39,7 +41,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 /** I tipi di formattazione inline selezionabili dalla barra "Aa". */
-enum class FormatType { BOLD, ITALIC, UNDERLINE, STRIKETHROUGH, SPOILER }
+enum class FormatType { BOLD, ITALIC, UNDERLINE, STRIKETHROUGH, SPOILER, SUBSCRIPT, SUPERSCRIPT }
 
 /**
  * Gestisce il contenuto di una singola pagina di testo: titolo, icona,
@@ -1707,6 +1709,8 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
                 FormatType.UNDERLINE -> toggleFormatInRange(spans, overlapStart, overlapEnd, { it.underline }) { s, v -> s.copy(underline = v) }
                 FormatType.STRIKETHROUGH -> toggleFormatInRange(spans, overlapStart, overlapEnd, { it.strikethrough }) { s, v -> s.copy(strikethrough = v) }
                 FormatType.SPOILER -> toggleFormatInRange(spans, overlapStart, overlapEnd, { it.spoiler }) { s, v -> s.copy(spoiler = v) }
+                FormatType.SUBSCRIPT -> toggleFormatInRange(spans, overlapStart, overlapEnd, { it.subscript }) { s, v -> s.withSubscript(v) }
+                FormatType.SUPERSCRIPT -> toggleFormatInRange(spans, overlapStart, overlapEnd, { it.superscript }) { s, v -> s.withSuperscript(v) }
             }
             updates.add(block.copy(textJson = json.encodeToString(newSpans)))
         }

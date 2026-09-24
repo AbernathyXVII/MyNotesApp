@@ -488,7 +488,8 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   numerati il livello di rientro decide anche la numerazione: `1.`,
   `1.1`, `1.1.1`
 - **Formattazione inline ("Aa")**: grassetto, corsivo, sottolineato,
-  barrato — funziona sia nel testo unito (la selezione, anche se
+  barrato, spoiler e *(sessione cloud del 24/09/2026, da verificare sul
+  telefono)* pedice e apice — funziona sia nel testo unito (la selezione, anche se
   attraversa più blocchi, viene tradotta per ciascuno) sia nelle isole
 - **Undo/Redo** per testo e struttura dei blocchi (non celle di
   tabelle/database), con la digitazione continua raggruppata in un
@@ -1289,6 +1290,15 @@ README di una riga).
     diversa), permettere l'installazione da quella app, installare.
     L'utente ha accettato di perdere le note di prova. Vedi "⛔ Il
     confine" per cosa cambia sul PC
+39. «Facciamo una cosa, ora ti chiedo solo un'ultima cosa leggera
+    (spero): Possibilità di inserire testo super e subscripted (metti
+    l'icona con una x e il 2 piccolo in basso a destra per l'opzione
+    subscript e l'icona di una x con un 2 piccolo in alto a destra per il
+    superscript in Aa)» — con una foto della barra di formattazione di
+    OneNote: B, I, U, barrato, poi il pulsante "x₂" con la freccetta che
+    apre Subscript e Superscript. Fatto: vedi Cronologia "Pedice e apice
+    nella barra Aa". Qui sono due pulsanti affiancati invece di uno col
+    menu, come chiesto (un'icona per ciascuno)
 
 **Cosa è stato fatto:**
 
@@ -1397,7 +1407,8 @@ database semplice, il 22 il menu del blocco, il 23 le due correzioni
 trovate scrivendolo, il 24 il nuovo Move to, il 25 Annulla dopo una
 pagina spostata o cancellata, il 26 Annulla e Ripristina di Move to,
 Duplicate e Move to trash, il 27 la ricerca dentro un database, il 28
-le viste collegate, il 29 i widget della barra laterale; prima di
+le viste collegate, il 29 i widget della barra laterale, il 30 pedice e
+apice; prima di
 installare, **copia del database**: questa build cambia lo schema cinque
 volte — 24→25→26→27→28→29):
 
@@ -1789,6 +1800,22 @@ volte — 24→25→26→27→28→29):
       lancette comprese.
     - Aperta la barra, lo scorrimento deve restare fluido anche con
       orologi e pomodoro che si aggiornano ogni secondo.
+30. **Pedice e apice** (richiesta 39). Nessuna migrazione: il testo già
+    scritto deve aprirsi identico (grassetti, colori, spoiler compresi).
+    - Aa: dopo S ci sono **x₂** e **x²**, con la x all'altezza di B, U,
+      S. Selezionare il "2" di "H2O" → x₂: il 2 diventa piccolo e
+      scende. Il "2" di "mc2" → x²: piccolo e in alto. Toccarlo di nuovo
+      lo toglie; sullo stesso testo, l'altro pulsante li **scambia**.
+    - Scrivendo subito dopo un pedice si continua in pedice (come per il
+      grassetto); per tornare normale si seleziona e si ritocca.
+    - Selezione che attraversa più righe del testo unito, in una casella
+      da spuntare, in un toggle: funziona uguale.
+    - Con un pedice in grassetto e colorato restano tutte e tre le cose.
+    - **Cursore e selezione** a cavallo di un pedice: nessuno sfasamento
+      (il cursore si mette davvero dove si tocca); la riga non si
+      allarga né si sovrappone a quella sopra o sotto.
+    - Corpo della pagina grande (Aa → dimensione): pedice e apice
+      crescono insieme al resto. Annulla dopo un pedice lo toglie.
 
 ## Cronologia degli aggiornamenti
 
@@ -1796,6 +1823,39 @@ Le voci nate nelle sessioni cloud stanno qui in cima, la più recente
 per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
+
+**Pedice e apice nella barra Aa** *(sessione cloud del 24/09/2026,
+richiesta 39: compilato, 70 test passati — 7 nuovi —, nessuna
+migrazione, **non provato sul telefono**)*
+- **[Nuova funzionalità]** Nella barra **Aa**, subito dopo S, due
+  pulsanti: **x₂ pedice** (una x col 2 piccolo in basso a destra) e
+  **x² apice** (il 2 in alto a destra), come chiesto. Come B, I, U, S
+  agiscono sul testo selezionato, anche a cavallo di più righe, e un
+  secondo tocco toglie. **Si escludono**: dare l'apice a un pedice lo
+  trasforma, come in Word (`withSubscript`, `withSuperscript`)
+- **[Nuova funzionalità]** Il testo in pedice o apice è **a sette decimi
+  del corpo** della pagina (cresce con lui) e sta sotto o sopra la riga;
+  le altre formattazioni — grassetto, colore, spoiler — restano. È solo
+  aspetto: le lettere sono dove erano, quindi cursore, selezione,
+  ricerca e conteggio del testo non cambiano (`scriptStyleOf`, usato sia
+  dal testo unito sia dalle isole)
+- **[Progetto]** Nel testo salvato sono due chiavi nuove,
+  `subscript` e `superscript`, scritte solo quando sono accese: il testo
+  di prima si legge com'era e, senza pedici, si salva identico. Niente
+  migrazione (è JSON dentro una colonna che c'era già)
+- **[Bug fix]** *(trovati col disegno di prova, prima del telefono)*
+  Nei pulsanti, il 2 dell'apice spingeva giù la x, che non stava più
+  all'altezza di B, U, S; poi, messo il 2 in un angolo, restava a metà
+  in tutti e due i pulsanti perché si portava dietro l'altezza di riga
+  del testo normale. E nel testo il pedice, con lo spostamento standard,
+  scendeva sotto le gambe di g e p: ora scende meno dell'apice
+- **[Progetto]** Test: `RichTextScriptTest` (6: solo sulla selezione, uno
+  sostituisce l'altro, secondo tocco toglie, le altre formattazioni
+  restano, si continua a scrivere in apice, il testo salvato prima si
+  legge e si risalva uguale) e `ScriptRenderTest` (i pulsanti e un testo
+  con H₂O e mc², in `app/build/widget-screenshots/scripts.png`). Testi
+  nuovi nelle otto lingue (`EditorStrings.subscript`, `superscript`, che
+  chi usa il lettore di schermo sente sui due pulsanti)
 
 **Widget nella barra laterale — fusi orari, avanzamento, contatore,
 pomodoro** *(sessione cloud del 24/09/2026, richiesta 37: compilato, 63
@@ -4879,12 +4939,15 @@ app/src/test/java/com/gabriele/notionlocal/viewmodel/
                     # DatabaseSearchTest: quali righe tiene la ricerca
                     # dentro un database e quali illumina;
                     # LinkedViewModelTest: una vista collegata vera
+app/src/test/java/com/gabriele/notionlocal/data/entity/
+                    # RichTextScriptTest: pedice e apice nel testo salvato
 app/src/test/java/com/gabriele/notionlocal/data/widgets/
                     # WidgetsTest: le barre dell'avanzamento, l'ordine
                     # ovest-est, il pomodoro che avanza, il salvataggio
 app/src/test/java/com/gabriele/notionlocal/ui/
                     # WidgetsRenderTest: disegna i widget e salva
-                    # l'immagine in app/build/widget-screenshots/
+                    # l'immagine in app/build/widget-screenshots/;
+                    # ScriptRenderTest: i pulsanti pedice e apice
 app/src/test/java/com/gabriele/notionlocal/data/MigrationTest.kt
                     # la migrazione 28→29 aperta da Room come fa l'app
 app/src/test/resources/schema/v28.sql

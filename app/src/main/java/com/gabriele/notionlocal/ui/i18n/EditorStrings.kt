@@ -104,6 +104,8 @@ object EditorStrings {
     // --- La barra sopra la tastiera ---
 
     val spoiler get() = t("Spoiler", "Spoiler", "Spoiler", "Spoiler", "Spoiler", "剧透", "스포일러", "ネタバレ")
+    val subscript get() = t("Subscript", "Pedice", "Tiefgestellt", "Indice", "Subíndice", "下标", "아래 첨자", "下付き文字")
+    val superscript get() = t("Superscript", "Apice", "Hochgestellt", "Exposant", "Superíndice", "上标", "위 첨자", "上付き文字")
     val outdent get() = t("Outdent", "Riduci rientro", "Einzug verkleinern", "Diminuer le retrait", "Reducir sangría", "减少缩进", "내어쓰기", "インデントを減らす")
     val indent get() = t("Indent", "Aumenta rientro", "Einzug vergrößern", "Augmenter le retrait", "Aumentar sangría", "增加缩进", "들여쓰기", "インデントを増やす")
     val moveUp get() = t("Move up", "Sposta su", "Nach oben", "Monter", "Subir", "上移", "위로 이동", "上へ移動")
