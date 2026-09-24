@@ -766,6 +766,23 @@ README di una riga).
     il limite è arrivato prima dell'aggiornamento del README e della
     prova sul telefono. Documentata in Cronologia ("Colonne — spostarle
     tenendo premuta l'intestazione") e aggiunta alle verifiche qui sotto
+21. «Ah ok, perdonami, non mi ricordavo di averlo già chiesto, e quando
+    tengo premuto vedo solo Edit property e Hide. La feature di spostare
+    la colonna stava dentro Edit property, ecco perché non la vedevo.
+    Vorrei che Move to left e Move to right fossero presenti sopra Edit
+    property appena apre la finestra quando tengo premuto. Mi confermi
+    che è così ora nel codice?» — **Scoperta importante: l'app
+    installata sul telefono è più vecchia del codice arrivato dal PC.**
+    Sul telefono il menu dell'intestazione ha solo Edit property e
+    Hide, mentre nel codice ha anche Move to left e Move to right:
+    Code le ha scritte ma non le ha mai installate. Quindi **nel codice
+    importato possono esserci altre modifiche mai provate**, oltre a
+    questa: tornando sul PC, dopo la copia del database, conviene
+    confrontare l'app con la Cronologia e non dare per scontato che
+    tutto quello che c'è scritto sia stato visto funzionare. Chiesto
+    all'utente se le due voci vanno **sopra** Edit property (come dice
+    adesso) o **sotto** (come diceva la richiesta 20, ed è come sono
+    nel codice)
 
 **Cosa è stato fatto:**
 
