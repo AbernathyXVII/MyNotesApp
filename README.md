@@ -35,9 +35,46 @@ Il progetto ora si sviluppa in **due modi alternati**:
   Code sul PC è esaurito. Girano su un server remoto che **non vede né
   il PC né il telefono**: si può scrivere il codice, non installarlo né
   provarlo. Compilarlo si può **solo se l'ambiente cloud lascia passare
-  `dl.google.com`** (SDK e librerie AndroidX arrivano da lì); il
-  24/09/2026 era bloccato, quindi quel giorno il codice è stato solo
-  riletto. Ogni modifica fatta lì è segnata **"(da
+  `dl.google.com`** (SDK e librerie AndroidX arrivano da lì): il
+  24/09/2026 all'inizio era bloccato, poi l'utente l'ha aggiunto ai
+  domini consentiti e da lì si è compilato. Come si fa: "Compilare in
+  una sessione cloud", qui sotto.
+
+### Compilare in una sessione cloud
+
+Il server cloud riparte da zero a ogni sessione: SDK e Gradle vanno
+rimessi ogni volta (circa cinque minuti). Serve che l'ambiente lasci
+passare `dl.google.com` e `maven.google.com` (menu della sessione →
+"Edit cloud environment" → Network access). Poi:
+
+```
+# SDK: cmdline-tools dall'indirizzo che dà
+# https://dl.google.com/android/repository/repository2-3.xml
+# (voce "cmdline-tools;latest", controllare lo sha1), scompattati in
+# /opt/android-sdk/cmdline-tools/latest, quindi:
+yes | sdkmanager --sdk_root=/opt/android-sdk --licenses
+sdkmanager --sdk_root=/opt/android-sdk "platforms;android-35" "build-tools;34.0.0" "platform-tools"
+
+# Gradle: la versione del progetto (gradle/wrapper/gradle-wrapper.properties,
+# oggi 8.7) da https://services.gradle.org/distributions/, con lo sha256.
+# Il progetto non ha gradlew: si usa quello scaricato.
+ANDROID_HOME=/opt/android-sdk gradle --no-daemon --max-workers=2 \
+  -Dorg.gradle.internal.repository.max.retries=8 \
+  -Dorg.gradle.internal.repository.initial.backoff=3000 assembleDebug
+```
+
+**Trappola di Maven Central**: dal server cloud `repo.maven.apache.org`
+risponde spesso **429 (troppe richieste)**. Si aggira con uno script
+in `~/.gradle/init.d/` (fuori dal progetto, non va nel repository) che
+sostituisce quell'indirizzo con `https://repo1.maven.org/maven2/`, lo
+stesso Maven Central; e con i parametri qui sopra (meno download in
+parallelo, più tentativi con attesa). Anche così la prima compilazione
+può richiedere più giri: ogni giro tiene in cache quello che ha già
+scaricato.
+
+**L'APK che esce da lì non va installato sopra l'app del telefono**:
+è firmato con una chiave di debug nata sul server, diversa da quella
+del PC, e Android costringerebbe a disinstallare l'app — note comprese. Ogni modifica fatta lì è segnata **"(da
   verificare sul telefono)"** e il **"Diario delle sessioni cloud"**
   più in basso elenca, sessione per sessione, le richieste dell'utente
   parola per parola, cosa è stato fatto e cosa va provato. **Chi
@@ -56,9 +93,9 @@ GitHub così com'era:
   progetto notE (NotionLocal) dall'archivio caricato"), identico
   all'archivio salvo gli a-capo.
 
-**Tutto quello che viene dopo `4a35c64` è lavoro cloud: scritto, al
-massimo compilato (e il 24/09/2026 nemmeno quello), MAI installato né
-provato sul telefono.** Va
+**Tutto quello che viene dopo `4a35c64` è lavoro cloud: scritto e
+compilato (per la sessione del 24/09/2026: vedi Diario), MAI installato
+né provato sul telefono.** Va
 trattato come una bozza finché non passa la procedura qui sotto. Per
 vedere in un colpo solo tutte le modifiche al codice fatte in cloud:
 `git diff 4a35c64 HEAD -- app/` (se quel commit non si trova più,
@@ -880,6 +917,31 @@ README di una riga).
   fosse così: nuova sessione cloud, che riparte dal ramo
   `claude/funny-ramanujan-uuwahs` (o da `main`, se nel frattempo la
   pull request è stata unita) e da questo README
+- **[Progetto]** **Poi, sbloccato `dl.google.com` (richieste 14-19),
+  l'app si è compilata.** Installati in cloud SDK (piattaforma 35,
+  build-tools 34.0.0, controllati gli sha1/sha256 pubblicati) e
+  Gradle 8.7; aggirato il 429 di Maven Central (vedi "Compilare in una
+  sessione cloud"). Risultati:
+  - **il codice arrivato dal PC** (`4a35c64`, in una copia a parte)
+    compila: `assembleDebug` riuscito. Serviva a sapere che l'ambiente
+    funziona prima di giudicare le modifiche;
+  - **il codice con le modifiche di questa sessione** (Gallery,
+    spostamento colonne) compila: `assembleDebug` riuscito, e Room ha
+    controllato durante la compilazione le due query nuove
+    (`observeRowCovers`, `observeRowPreviewBlocks`) contro lo schema;
+  - rispetto al codice di partenza c'è **un solo avviso nuovo** del
+    compilatore: `Icons.Filled.Notes` è deprecata (usata per la voce
+    "Page content"). Il resto dell'app la usa già in altri quattro
+    punti, quindi è rimasta per coerenza;
+  - **la migrazione 24→25 è stata simulata** su SQLite: creato un
+    database con lo schema della versione 24 (preso dal codice generato
+    da Room per `4a35c64`), con dentro una pagina, applicate le due
+    `ALTER TABLE` della migrazione e confrontate tutte e sette le
+    tabelle con lo schema che Room si aspetta per la 25: **identiche**
+    (nome, tipo, obbligatorietà, valore predefinito, chiave), e la
+    pagina era ancora lì con i due campi nuovi vuoti. Non sostituisce
+    la prova sul telefono, ma toglie di mezzo il rischio peggiore:
+    un'app che rifiuta di partire
 - **[Nuova funzionalità]** La **vista Gallery**: dettagli in
   Cronologia, "Database — vista Gallery". Schema del database alla
   versione **25** (migrazione 24→25)
@@ -892,7 +954,9 @@ README di una riga).
 lo spostamento delle colonne; prima di installare, **copia del
 database**: questa build cambia lo schema):
 
-1. **Compila?** È la prima cosa: in cloud non si è potuto provare.
+1. **Compila anche sul PC?** In cloud sì (`assembleDebug` riuscito),
+   ma con Gradle 8.7 da riga di comando: va confermato in Android
+   Studio.
 2. **La migrazione 24→25** è avvenuta davvero: `user_version` = 25, e
    `galleryCardPreview` e `galleryCardSize` in fondo al `CREATE TABLE`
    di `pages` (vedi "Nota tecnica"). Tutte le note ancora al loro posto.
@@ -993,9 +1057,10 @@ verificare sul telefono**: non risulta che sia mai stata provata)*
   lo stesso menu. Le regole sono le stesse di Move left / Move right
   nella finestra della proprietà
 
-**Database — vista Gallery** *(sessione cloud del 24/09/2026: scritta
-ma **NON compilata** — in cloud non si scaricavano le librerie Android,
-vedi Diario — **e NON provata sul telefono**)*
+**Database — vista Gallery** *(sessione cloud del 24/09/2026:
+**compilata** in cloud — `assembleDebug` riuscito, query controllate da
+Room, migrazione simulata su SQLite, vedi Diario — **ma NON provata sul
+telefono**)*
 - **[Nuova funzionalità]** **Gallery**, la sesta vista: le pagine del
   database come **schede in griglia**. In alto l'anteprima, sotto il
   nome (con l'icona della pagina, se c'è) e le proprietà che si vedono
@@ -3265,7 +3330,8 @@ app/src/main/java/com/gabriele/notionlocal/
 ## Nota tecnica
 
 Lo schema è alla **versione 25** (la 25 viene dalla sessione cloud del
-24/09/2026, vedi Diario: migrazione **mai provata su un telefono**), e
+24/09/2026, vedi Diario: migrazione simulata su SQLite in cloud ma
+**mai provata su un telefono**), e
 da qui in avanti **ogni cambio di
 schema vuole una migrazione vera** in `AppDatabase`. Fino alla 5 c'era
 `fallbackToDestructiveMigration()`, che ad ogni cambio ricreava il
