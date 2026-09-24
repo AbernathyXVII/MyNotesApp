@@ -467,7 +467,11 @@ class DatabaseViewModel(
     ) {
         val current = _page.value ?: return
         viewModelScope.launch {
-            pageRepository.duplicatePage(current.id, target, titleSuffix) { imageStore.copy(it) }?.let(onDone)
+            pageRepository.duplicatePage(current.id, target, titleSuffix) { imageStore.copy(it) }?.let { copyId ->
+                // L'Annulla va alla prossima pagina che si apre: vedi `PendingPageUndo`.
+                PendingPageUndo.offer(pageRepository.describeCopy(copyId))
+                onDone(copyId)
+            }
         }
     }
 
@@ -486,7 +490,10 @@ class DatabaseViewModel(
     fun movePageTo(destination: PageRepository.PageTreeNode, onDone: () -> Unit) {
         val current = _page.value ?: return
         viewModelScope.launch {
-            if (pageRepository.movePageTo(current.id, destination)) onDone()
+            pageRepository.movePageTo(current.id, destination)?.let { change ->
+                PendingPageUndo.offer(change)
+                onDone()
+            }
         }
     }
 
@@ -560,7 +567,7 @@ class DatabaseViewModel(
     fun moveToTrash(onDone: () -> Unit) {
         val current = _page.value ?: return
         viewModelScope.launch {
-            pageRepository.moveToTrash(current.id)
+            pageRepository.moveToTrash(current.id)?.let { PendingPageUndo.offer(it) }
             onDone()
         }
     }

@@ -64,13 +64,21 @@ ANDROID_HOME=/opt/android-sdk gradle --no-daemon --max-workers=2 \
 ```
 
 **Trappola di Maven Central**: dal server cloud `repo.maven.apache.org`
-risponde spesso **429 (troppe richieste)**. Si aggira con uno script
-in `~/.gradle/init.d/` (fuori dal progetto, non va nel repository) che
-sostituisce quell'indirizzo con `https://repo1.maven.org/maven2/`, lo
-stesso Maven Central; e con i parametri qui sopra (meno download in
-parallelo, più tentativi con attesa). Anche così la prima compilazione
-può richiedere più giri: ogni giro tiene in cache quello che ha già
-scaricato.
+risponde spesso **429 (troppe richieste)**, e dal 24/09/2026
+pomeriggio anche `repo1.maven.org`. Si aggira con uno script in
+`~/.gradle/init.d/` (fuori dal progetto, non va nel repository) che
+sostituisce quegli indirizzi con il **mirror di Maven Central su Google
+Cloud Storage**, `https://maven-central.storage-download.googleapis.com/maven2/`
+(stessi file, e non ha mai risposto 429), e che passa lo stesso
+indirizzo ai test (`systemProperty 'robolectric.dependency.repo.url'`
+per ogni task `Test`: Robolectric scarica da sé il suo Android); e con i
+parametri qui sopra (meno download in parallelo, più tentativi con
+attesa). Ogni giro tiene in cache quello che ha già scaricato.
+
+**I test** (`testDebugUnitTest`) girano anche lì, compresi quelli del
+repository su un database vero (Robolectric, `PageRepositoryTest`): sono
+l'unico modo di provare in cloud le operazioni che toccano i dati. La
+prima volta Robolectric scarica circa 150 MB.
 
 **L'APK che esce da lì non va installato sopra l'app del telefono**:
 è firmato con una chiave di debug nata sul server, diversa da quella
@@ -806,19 +814,29 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   collegamento, non per la pagina. **"Edit icon" cambia l'immagine
   dell'icona**, come ovunque nell'app: l'emoji di una pagina non si
   sceglie ancora da nessuna parte
-- **Annulla dopo un "Duplicate" di una pagina** (o di un toggle con
+- ~~**Annulla dopo un "Duplicate" di una pagina** (o di un toggle con
   dentro una sottopagina) toglie il collegamento alla copia, ma la copia
   resta: la si ritrova dalla ricerca. Annulla segue i blocchi della
-  pagina, non le pagine
+  pagina, non le pagine~~ **Superato per le pagine** (richiesta 34):
+  Annulla manda la copia nel Cestino. Resta vero per il **Duplicate di
+  un toggle** dal menu del blocco che ha dentro una sottopagina: Annulla
+  toglie la copia del toggle, e la copia della sottopagina resta, da
+  ritrovare con la ricerca
 - **Move to fuori da un database perde le proprietà della riga**: la
   pagina esce dal database, come su Notion, e i valori delle colonne
   restano con la riga, che si toglie. Lo dice la riga di spiegazione
   quando si sposta la pagina di una riga. Nome e contenuto restano
-- **Annulla non riporta indietro un "Move to" né un "Move to trash"**:
-  le pagine non sono nelle sue foto. Dopo uno spostamento in un'altra
-  pagina, Annulla lascia la pagina dove è stata messa e non ne rimette il
-  collegamento dov'era. (Spostata in fondo alla stessa pagina, invece,
-  Annulla la rimette al posto di prima: lì è solo un blocco che si muove)
+- ~~**Annulla non riporta indietro un "Move to" né un "Move to
+  trash"**~~ **Superato** (richiesta 34): li riporta indietro, e anche
+  "Duplicate". Quando si fanno dai tre puntini, l'Annulla va alla
+  **prossima pagina che si apre** (si torna indietro, o si entra nella
+  copia): se da lì si va da un'altra parte senza annullare, lo si trova
+  nella prima pagina che si apre dopo — è "Annulla l'ultima cosa fatta".
+  Dal database a schermo intero non si annulla niente lì (non ha la
+  barra): lo si fa dalla pagina in cui si torna
+- **Annulla non vive oltre la pagina aperta**: chiusa l'app, o lasciata
+  la pagina abbastanza a lungo perché Android la dimentichi, la sua
+  cronologia se ne va, come prima
 - **"Turn into simple database" non si annulla**: le pagine delle righe
   se ne vanno per sempre, come chiesto (richiesta 31). Per questo, se
   hanno del contenuto, prima c'è una conferma col loro numero
@@ -1102,6 +1120,10 @@ README di una riga).
     Cronologia "Move to — l'albero con la ricerca". Per la pagina
     principale proposta la voce grigia (messa così); il messaggio resta
     l'alternativa, la scelta è dell'utente
+34. «Tu dici l'undo? È un problema così grande che non riesci a farlo?
+    Sia del Duplicate che del Move» — no, fatto: vedi Cronologia
+    "Annulla e Ripristina anche per Move to, Duplicate e Move to trash"
+    (anche Move to trash, che usa lo stesso meccanismo)
 
 **Cosa è stato fatto:**
 
@@ -1208,7 +1230,8 @@ lo spostamento delle colonne, il 16 il conteggio del testo, il 17 e il
 18 font e dimensione, il 19 i titoli tolti, il 20 il menu "+", il 21 il
 database semplice, il 22 il menu del blocco, il 23 le due correzioni
 trovate scrivendolo, il 24 il nuovo Move to, il 25 Annulla dopo una
-pagina spostata o cancellata; prima di installare, **copia
+pagina spostata o cancellata, il 26 Annulla e Ripristina di Move to,
+Duplicate e Move to trash; prima di installare, **copia
 del database**: questa build cambia lo schema quattro volte — 24→25→26→27→28):
 
 1. **Compila anche sul PC?** In cloud sì (`assembleDebug` riuscito),
@@ -1362,9 +1385,8 @@ del database**: questa build cambia lo schema quattro volte — 24→25→26→2
       (provare con una pagina collegata due volte), "dentro una pagina"
       dice dove è finita; in entrambi i casi si resta qui. Move to → il
       collegamento sparisce da qui e compare in fondo alla pagina
-      scelta; poi **Annulla non lo fa tornare**. Move to trash →
-      conferma, poi la pagina è nel Cestino; anche qui Annulla non fa
-      tornare il collegamento.
+      scelta. Move to trash → conferma, poi la pagina è nel Cestino.
+      (Annulla dopo queste tre: voce 26.)
     - **Database dentro la pagina**: i sei puntini all'inizio della sua
       riga degli strumenti, prima del riquadro della vista, anche col
       nome nascosto e con Lock view. Il menu ha in cima Turn into page
@@ -1424,17 +1446,50 @@ del database**: questa build cambia lo schema quattro volte — 24→25→26→2
       la pagina scelta e non più sotto il database; riaprendola, niente
       proprietà in cima.
     - La barra laterale, riaperta, mostra tutto al posto giusto.
-25. **Annulla dopo pagine spostate o cancellate** (correzione trovata
-    scrivendo il 24):
-    - Scrivere una lettera in una pagina, poi spostare altrove (o buttare
-      nel cestino) una sua sottopagina dal menu del blocco, poi Annulla:
-      la lettera sparisce ma il collegamento **non** ricompare.
-    - Dai tre puntini della sottopagina (aperta), Move to verso un'altra
-      pagina; tornati indietro, Annulla: il collegamento non ricompare.
+25. **Annulla dopo pagine cancellate o spostate altrove** (correzione
+    trovata scrivendo il 24, **confermata dai test**: vedi Cronologia):
     - **Il caso che faceva chiudere l'app**: in una pagina con un
       database dentro, eliminarlo dalle sue impostazioni (Delete), poi
       Annulla. L'app **non** deve chiudersi; il database non torna (è
       cancellato per davvero), il resto della pagina sì.
+26. **Annulla e Ripristina di Move to, Duplicate e Move to trash**
+    (richiesta 34). Annulla e Ripristina sono le frecce della barra, che
+    si vede col cursore in una riga.
+    - **Dal menu del blocco** (dito tenuto su un collegamento), in una
+      pagina con del testo sopra e sotto il collegamento: Move to →
+      Annulla → il collegamento torna **nello stesso punto**, e non c'è
+      più nella pagina di destinazione; Ripristina → di nuovo in fondo
+      alla destinazione. Duplicate → Annulla → la copia sparisce da qui
+      ed è nel Cestino; Ripristina → torna sotto l'originale e non è più
+      nel Cestino. Move to trash → Annulla → fuori dal Cestino e di
+      nuovo al suo posto.
+    - Un collegamento **dentro un toggle**, spostato e poi annullato:
+      torna dentro il toggle, allo stesso posto.
+    - **Dai tre puntini di una pagina**: Move to → si torna indietro; lì
+      Annulla la rimette dov'era. Move to trash → idem. Duplicate → si
+      entra nella copia; lì Annulla manda la copia nel Cestino e **torna
+      indietro da solo**.
+    - **Dai tre puntini di un database a schermo intero**: Move to →
+      tornati alla pagina, Annulla lo rimette dov'era, **aperto dentro
+      la pagina** se lo era prima.
+    - **La pagina di una riga** spostata fuori dal database e poi
+      annullata: la riga ricompare nel database **con i valori delle
+      sue proprietà**, e la pagina ha di nuovo le proprietà in cima.
+    - **Duplicate della pagina di una riga** (accanto all'originale) →
+      Annulla: la riga nuova sparisce dal database; Ripristina: torna,
+      coi suoi valori.
+    - Alternare più volte Annulla e Ripristina, mescolando lettere
+      scritte e pagine spostate: tutto torna nell'ordine giusto, e l'app
+      non si chiude. Toccare Annulla due volte velocissimo: stesso
+      risultato di due tocchi lenti.
+    - Svuotare il Cestino dopo un Duplicate annullato, poi Ripristina:
+      non succede niente (la copia non c'è più) e l'app non si chiude.
+    - Scrivere una lettera in una pagina, poi aprire una sua sottopagina
+      dalla barra laterale (non dal collegamento) e spostarla altrove coi
+      tre puntini; tornare alla prima pagina passando da un'altra, e
+      premere Annulla finché si può: la lettera sparisce, e il
+      collegamento alla sottopagina **non** ricompare lì (la sottopagina
+      sta dove è stata messa, una sola volta).
 
 ## Cronologia degli aggiornamenti
 
@@ -1442,6 +1497,69 @@ Le voci nate nelle sessioni cloud stanno qui in cima, la più recente
 per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
+
+**Annulla e Ripristina anche per Move to, Duplicate e Move to trash**
+*(sessione cloud del 24/09/2026, richiesta 34: compilato, 32 test passati
+— 16 nuovi, sul database vero —, nessuna migrazione, **non provato sul
+telefono**)*
+- **[Nuova funzionalità]** **Annulla disfa anche "Move to", "Duplicate"
+  e "Move to trash", e Ripristina li rifà.** Prima Annulla conosceva solo
+  le foto dei blocchi della pagina aperta, e queste tre toccano altre
+  pagine:
+  - **Move to** → la pagina torna **esattamente dov'era**: stessa pagina,
+    stesso punto fra le righe, dentro lo stesso toggle. Un database
+    torna **aperto dentro la pagina**, se lo era. La pagina di una riga
+    torna nella sua riga **con i valori delle proprietà**, che lo
+    spostamento aveva tolto
+  - **Duplicate** → la copia va **nel Cestino**, come su Notion quando si
+    toglie una pagina: se nel frattempo ci si è scritto dentro, niente è
+    perso. Se la copia era una riga nuova di un database, la riga si
+    toglie. Ripristina la tira fuori dal Cestino e la rimette dov'era
+  - **Move to trash** → la pagina esce dal Cestino e torna al suo posto
+    (fatto anche questo: stesso meccanismo, e la voce stava nello stesso
+    elenco di Limiti noti)
+- **[Nuova funzionalità]** **Dove si annulla.** Dal menu del blocco, nella
+  pagina stessa. Dai tre puntini la schermata se ne va — si torna
+  indietro, o si entra nella copia — e l'Annulla passa alla **prossima
+  pagina che compare** (`PendingPageUndo`, preso in
+  `adoptPendingPageChange` quando la pagina si apre o ci si torna):
+  tornati indietro dopo un Move to, lì Annulla rimette la pagina dov'era;
+  dentro la copia dopo un Duplicate, Annulla la manda nel Cestino e
+  **torna indietro da solo** (restare davanti a una pagina nel Cestino
+  non avrebbe senso)
+- **[Progetto]** Com'è fatto. La cronologia della pagina ha **due tipi di
+  passo**: le foto dei blocchi, come prima (`BlocksStep`), e i
+  cambiamenti alle pagine (`PageStep`), che si portano dietro quello che
+  serve a tornare indietro — i collegamenti com'erano, la riga e le sue
+  celle (`PageRepository.PageChange`: `Moved`, `Duplicated`, `Trashed`;
+  `undoPageChange`, `redoPageChange`). I collegamenti tornano al loro
+  posto facendo scalare di uno quelli che seguono; se il toggle in cui
+  stavano non c'è più vanno in fondo alla pagina, e se la pagina non si
+  potesse rimettere da nessuna parte va in fondo al menu principale
+  invece di restare irraggiungibile (`putLinksBack`). Annulla e
+  Ripristina ora si eseguono **uno alla volta** (`historyLock`): un passo
+  di pagina lavora sul database per un attimo, e due tocchi veloci non
+  devono sovrapporsi. Se la pagina nel frattempo è stata cancellata per
+  sempre (Cestino svuotato), il passo si salta
+- **[Progetto]** **Test su un database vero, senza telefono.** Aggiunti
+  Robolectric 4.13 e `androidx.test:core-ktx` **solo per i test**
+  (l'APK non cambia) e `PageRepositoryTest`: 16 prove che girano su Room
+  e SQLite veri, in memoria, con le chiavi esterne accese come nell'app —
+  spostare (in fondo; nella stessa pagina; un database arriva come
+  collegamento; dentro una propria sottopagina rifiutato; la pagina di
+  una riga esce e con Annulla torna con le sue proprietà; dentro una riga
+  mai aperta), duplicare e buttare con Annulla e Ripristina (anche la
+  pagina di una riga, e una pagina cancellata per sempre nel frattempo),
+  le foto di Annulla (tabelle, collegamento a un database cancellato, a
+  una pagina spostata), "Duplicate" di un toggle con sottopagina, il
+  toggle che lascia uscire le sue righe, "Turn into simple database"
+- **[Progetto]** **Controprova sui due difetti "trovati leggendo il
+  codice"**: tolta per un momento ciascuna correzione, il suo test
+  fallisce. Senza `withoutStaleLinks` Annulla dopo aver eliminato un
+  database finisce in `SQLiteConstraintException: FOREIGN KEY constraint
+  failed (code 787)` — è la chiusura dell'app; senza rimettere le celle,
+  la tabella resta vuota. Non erano ipotesi. Le correzioni sono al loro
+  posto, e i test passano
 
 **Move to — l'albero con la ricerca** *(sessione cloud del 24/09/2026,
 richiesta 33: compilato, test passati, nessuna migrazione, **non
@@ -1486,7 +1604,8 @@ provato sul telefono**)*
   database, come su Notion: la riga si toglie con le sue proprietà, e la
   pagina diventa una pagina come le altre (`isRowPage` spento,
   `PageDao.setRowPage`). La riga di spiegazione lo dice prima di scegliere
-- **[Bug fix]** *(trovato scrivendo questo)* **Annulla dopo aver
+- **[Bug fix]** *(trovato scrivendo questo; **confermato dai test** della
+  richiesta 34)* **Annulla dopo aver
   eliminato un database dentro la pagina faceva chiudere l'app.**
   L'eliminazione (`deleteDatabaseBlock`) scatta una foto per Annulla e
   poi cancella il database; Annulla rimetteva il blocco, che puntava a
@@ -1592,7 +1711,8 @@ sempre alla 28 —, **non provato sul telefono**)*
     (`ensureRowPage`), e compaiono subito nella barra laterale
   - Le due voci ci sono sempre: quella che il database è già si vede
     grigia con la spunta
-- **[Bug fix]** *(trovato leggendo il codice per il Duplicate)* **Annulla
+- **[Bug fix]** *(trovato leggendo il codice per il Duplicate;
+  **confermato dai test** della richiesta 34)* **Annulla
   e Ripristina svuotavano tutte le tabelle della pagina.** Rimettono la
   pagina com'era riscrivendo tutti i blocchi da capo
   (`replaceAllBlocks`: cancella e reinserisce), e le celle delle tabelle
@@ -4228,7 +4348,10 @@ app/src/main/java/com/gabriele/notionlocal/
 
 app/src/test/java/com/gabriele/notionlocal/
 └── data/           # Test automatici senza telefono (dal 24/09/2026:
-                    # TextStatsTest, il conteggio del testo)
+    │               # TextStatsTest, il conteggio del testo)
+    └── repository/ # PageRepositoryTest: spostare, duplicare, buttare,
+                    # Annulla e Ripristina, su un database vero
+                    # (Robolectric + Room in memoria)
 
 app/src/main/res/font/            # I 10 font occidentali delle pagine (sosia liberi)
 app/src/main/res/values/font_certs.xml   # Certificati per scaricare i font da Google

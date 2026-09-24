@@ -6,6 +6,8 @@ import com.gabriele.notionlocal.data.TextStats
 import com.gabriele.notionlocal.data.textStatsOf
 import com.gabriele.notionlocal.data.entity.BlockEntity
 import com.gabriele.notionlocal.data.entity.BlockType
+import com.gabriele.notionlocal.data.entity.DatabaseCellEntity
+import com.gabriele.notionlocal.data.entity.DatabaseRowEntity
 import com.gabriele.notionlocal.data.entity.PageEditEntity
 import com.gabriele.notionlocal.data.entity.PageEntity
 import com.gabriele.notionlocal.data.entity.PageFont
@@ -165,11 +167,14 @@ class PageRepository(private val db: AppDatabase) {
      * Da lì la si ritrova nel Cestino della barra laterale, che la
      * ripristina o la cancella per davvero.
      */
-    suspend fun moveToTrash(pageId: String) {
-        if (pageId == PageEntity.ROOT_PAGE_ID) return
-        db.withTransaction {
+    suspend fun moveToTrash(pageId: String): PageChange.Trashed? {
+        if (pageId == PageEntity.ROOT_PAGE_ID) return null
+        return db.withTransaction {
+            val links = blockDao.getBlocksLinkingTo(pageId)
             pageDao.setTrashedAt(pageId, System.currentTimeMillis())
-            blockDao.getBlocksLinkingTo(pageId).forEach { blockDao.delete(it) }
+            links.forEach { blockDao.delete(it) }
+            // Restituito per Annulla: dove stavano i collegamenti tolti.
+            PageChange.Trashed(pageId, links)
         }
     }
 
@@ -580,32 +585,205 @@ class PageRepository(private val db: AppDatabase) {
      *   diventa una pagina come le altre, con nome e contenuto. Prima
      *   restava anche nel database, cioè in due posti insieme.
      */
-    suspend fun movePageTo(pageId: String, destination: PageTreeNode): Boolean {
-        if (pageId == PageEntity.ROOT_PAGE_ID) return false
-        val page = pageDao.getById(pageId) ?: return false
-        val databaseDao = db.databaseDao()
+    suspend fun movePageTo(pageId: String, destination: PageTreeNode): PageChange.Moved? {
+        if (pageId == PageEntity.ROOT_PAGE_ID) return null
         val inside = pagesInside(pageId)
         val destinationPageId = when {
             destination.pageId != null -> destination.pageId
             destination.rowId != null -> {
-                val row = databaseDao.getRowById(destination.rowId) ?: return false
-                if (row.pageId in inside) return false
-                ensureRowPage(destination.rowId) ?: return false
+                val row = db.databaseDao().getRowById(destination.rowId) ?: return null
+                if (row.pageId in inside) return null
+                ensureRowPage(destination.rowId) ?: return null
             }
-            else -> return false
+            else -> return null
         }
-        if (destinationPageId in inside) return false
-        val target = pageDao.getById(destinationPageId) ?: return false
-        if (target.isDatabase || target.trashedAt != null) return false
-        db.withTransaction {
-            blockDao.getBlocksLinkingTo(pageId).forEach { blockDao.delete(it) }
+        return moveInto(pageId, destinationPageId, inside)
+    }
+
+    /**
+     * Lo spostamento vero e proprio, con la destinazione già decisa.
+     * Restituisce, per Annulla, tutto quello che serve a rimettere la
+     * pagina dov'era: i collegamenti tolti, e la riga con i valori delle
+     * sue proprietà se era la pagina di una riga.
+     */
+    private suspend fun moveInto(pageId: String, destinationPageId: String, inside: Set<String>): PageChange.Moved? {
+        if (destinationPageId in inside) return null
+        val page = pageDao.getById(pageId) ?: return null
+        val target = pageDao.getById(destinationPageId) ?: return null
+        if (target.isDatabase || target.trashedAt != null) return null
+        val databaseDao = db.databaseDao()
+        return db.withTransaction {
+            val links = blockDao.getBlocksLinkingTo(pageId)
+            links.forEach { blockDao.delete(it) }
+            val rows = if (page.isRowPage) databaseDao.getRowsLinkingTo(pageId) else emptyList()
+            val cells = rows.flatMap { databaseDao.getCellsForRowOnce(it.id) }
             if (page.isRowPage) {
-                databaseDao.getRowsLinkingTo(pageId).forEach { databaseDao.deleteRow(it) }
+                rows.forEach { databaseDao.deleteRow(it) }
                 pageDao.setRowPage(pageId, false)
             }
-            appendLink(destinationPageId, pageId, isDatabase = false)
+            val newLinkId = appendLink(destinationPageId, pageId, isDatabase = false)
+            PageChange.Moved(pageId, destinationPageId, links, rows, cells, newLinkId)
         }
-        return true
+    }
+
+    // --- Annulla e Ripristina per quello che si fa alle pagine ---
+
+    /**
+     * Un cambiamento fatto **alle pagine** — non ai blocchi di quella
+     * aperta — che Annulla sa disfare e Ripristina rifare: "Move to",
+     * "Duplicate" e "Move to trash", dal menu dei tre puntini o dal menu
+     * del blocco.
+     *
+     * Le foto di Annulla sono i blocchi di una pagina sola, e questi
+     * cambiamenti toccano altre pagine (quella che si sposta, quella in
+     * cui arriva, la copia); per questo hanno un passo a parte, che si
+     * porta dietro quello che serve a tornare indietro. Chiesto
+     * dall'utente il 24/09/2026.
+     */
+    sealed interface PageChange {
+        /** Spostata: i collegamenti e le righe che aveva prima, e il collegamento nuovo. */
+        data class Moved(
+            val pageId: String,
+            val destinationPageId: String,
+            val oldLinks: List<BlockEntity>,
+            val oldRows: List<DatabaseRowEntity>,
+            val oldCells: List<DatabaseCellEntity>,
+            val newLinkId: String
+        ) : PageChange
+
+        /** Duplicata: la copia, e il posto in cui sta — un collegamento, o una riga nuova del database. */
+        data class Duplicated(
+            val copyId: String,
+            val links: List<BlockEntity>,
+            val rows: List<DatabaseRowEntity>,
+            val cells: List<DatabaseCellEntity>
+        ) : PageChange
+
+        /** Buttata nel cestino: i collegamenti che la mostravano. */
+        data class Trashed(val pageId: String, val oldLinks: List<BlockEntity>) : PageChange
+    }
+
+    /** Dove sta la copia appena fatta da "Duplicate", per poterla disfare. */
+    suspend fun describeCopy(copyId: String): PageChange.Duplicated {
+        val databaseDao = db.databaseDao()
+        val rows = databaseDao.getRowsLinkingTo(copyId)
+        return PageChange.Duplicated(
+            copyId = copyId,
+            links = blockDao.getBlocksLinkingTo(copyId),
+            rows = rows,
+            cells = rows.flatMap { databaseDao.getCellsForRowOnce(it.id) }
+        )
+    }
+
+    /**
+     * Annulla un cambiamento. Restituisce quello che serve a Ripristina
+     * (lo stesso cambiamento, aggiornato a com'è adesso), o null se non
+     * c'è più niente da annullare — la pagina nel frattempo è stata
+     * cancellata per sempre.
+     *
+     * - **Spostata** → torna dov'era: al posto del suo collegamento di
+     *   prima (dentro il toggle, se era lì), o nella sua riga, con le
+     *   proprietà che aveva.
+     * - **Duplicata** → la copia va **nel cestino**, come su Notion quando
+     *   si toglie una pagina: se nel frattempo ci si è scritto dentro,
+     *   niente è perso. Se era una riga nuova del database, la riga si
+     *   toglie (e la copia nel cestino diventa una pagina normale, che
+     *   ripristinata dal cestino va in fondo al menu principale).
+     * - **Buttata** → esce dal cestino e torna al suo posto.
+     */
+    suspend fun undoPageChange(change: PageChange): PageChange? = db.withTransaction {
+        val databaseDao = db.databaseDao()
+        when (change) {
+            is PageChange.Moved -> {
+                pageDao.getById(change.pageId) ?: return@withTransaction null
+                blockDao.getBlocksLinkingTo(change.pageId).forEach { blockDao.delete(it) }
+                change.oldRows.forEach { row ->
+                    if (pageDao.getById(row.pageId) != null) databaseDao.insertRow(row)
+                }
+                change.oldCells.forEach { cell ->
+                    if (databaseDao.getRowById(cell.rowId) != null) databaseDao.insertCell(cell)
+                }
+                val backInRow = databaseDao.getRowsLinkingTo(change.pageId).isNotEmpty()
+                if (backInRow) pageDao.setRowPage(change.pageId, true)
+                putLinksBack(change.pageId, change.oldLinks, fallbackToMainMenu = !backInRow)
+                change
+            }
+            is PageChange.Duplicated -> {
+                pageDao.getById(change.copyId) ?: return@withTransaction null
+                val now = describeCopy(change.copyId)
+                now.rows.forEach { databaseDao.deleteRow(it) }
+                if (now.rows.isNotEmpty()) pageDao.setRowPage(change.copyId, false)
+                now.links.forEach { blockDao.delete(it) }
+                pageDao.setTrashedAt(change.copyId, System.currentTimeMillis())
+                now
+            }
+            is PageChange.Trashed -> {
+                val page = pageDao.getById(change.pageId) ?: return@withTransaction null
+                pageDao.setTrashedAt(change.pageId, null)
+                val inRow = page.isRowPage && databaseDao.getRowsLinkingTo(change.pageId).isNotEmpty()
+                putLinksBack(change.pageId, change.oldLinks, fallbackToMainMenu = !inRow)
+                change
+            }
+        }
+    }
+
+    /** Ripristina un cambiamento annullato. Come `undoPageChange`: null se non si può più. */
+    suspend fun redoPageChange(change: PageChange): PageChange? = when (change) {
+        is PageChange.Moved -> {
+            pageDao.getById(change.pageId)?.let {
+                moveInto(change.pageId, change.destinationPageId, pagesInside(change.pageId))
+            }
+        }
+        is PageChange.Duplicated -> db.withTransaction {
+            pageDao.getById(change.copyId) ?: return@withTransaction null
+            val databaseDao = db.databaseDao()
+            pageDao.setTrashedAt(change.copyId, null)
+            change.rows.forEach { row ->
+                if (pageDao.getById(row.pageId) != null) databaseDao.insertRow(row)
+            }
+            change.cells.forEach { cell ->
+                if (databaseDao.getRowById(cell.rowId) != null) databaseDao.insertCell(cell)
+            }
+            val inRow = databaseDao.getRowsLinkingTo(change.copyId).isNotEmpty()
+            if (inRow) pageDao.setRowPage(change.copyId, true)
+            putLinksBack(change.copyId, change.links, fallbackToMainMenu = !inRow)
+            change
+        }
+        is PageChange.Trashed -> moveToTrash(change.pageId)
+    }
+
+    /**
+     * Rimette i collegamenti a una pagina dov'erano: stessa pagina, stesso
+     * toggle, stesso posto fra i fratelli (quelli da lì in giù scalano di
+     * uno, così nessuno si ritrova col suo stesso numero d'ordine). Se il
+     * toggle non c'è più si mette in fondo alla pagina; se non c'è più
+     * nemmeno la pagina si salta. Se alla fine la pagina non è richiamata
+     * da nessuna parte, e `fallbackToMainMenu`, va in fondo al menu
+     * principale — come quando la si ripristina dal cestino — invece di
+     * restare irraggiungibile.
+     */
+    private suspend fun putLinksBack(pageId: String, links: List<BlockEntity>, fallbackToMainMenu: Boolean) {
+        var placed = false
+        for (link in links) {
+            if (pageDao.getById(link.pageId) == null) continue
+            if (blockDao.getById(link.id) != null) {
+                placed = true
+                continue
+            }
+            val parentExists = link.parentBlockId?.let { blockDao.getById(it) != null } ?: true
+            val block = if (parentExists) {
+                link
+            } else {
+                link.copy(parentBlockId = null, orderIndex = (blockDao.lastOrderIndex(link.pageId) ?: -1) + 1)
+            }
+            blockDao.shiftOrderIndexes(block.pageId, block.parentBlockId, block.orderIndex, 1)
+            blockDao.insert(block)
+            placed = true
+        }
+        if (!placed && fallbackToMainMenu && blockDao.getBlocksLinkingTo(pageId).isEmpty()) {
+            val page = pageDao.getById(pageId) ?: return
+            appendLink(PageEntity.ROOT_PAGE_ID, pageId, page.isDatabase)
+        }
     }
 
     /** Dove mettere la copia fatta da "Duplicate". */
@@ -926,15 +1104,15 @@ class PageRepository(private val db: AppDatabase) {
     }
 
     /** Un collegamento a una pagina in fondo a un'altra, fuori da ogni toggle. */
-    private suspend fun appendLink(pageId: String, linkedPageId: String, isDatabase: Boolean) {
-        blockDao.insert(
-            BlockEntity(
-                pageId = pageId,
-                type = if (isDatabase) BlockType.DATABASE_LINK else BlockType.PAGE_LINK,
-                linkedPageId = linkedPageId,
-                orderIndex = (blockDao.lastOrderIndex(pageId) ?: -1) + 1
-            )
+    private suspend fun appendLink(pageId: String, linkedPageId: String, isDatabase: Boolean): String {
+        val link = BlockEntity(
+            pageId = pageId,
+            type = if (isDatabase) BlockType.DATABASE_LINK else BlockType.PAGE_LINK,
+            linkedPageId = linkedPageId,
+            orderIndex = (blockDao.lastOrderIndex(pageId) ?: -1) + 1
         )
+        blockDao.insert(link)
+        return link.id
     }
 
     /**

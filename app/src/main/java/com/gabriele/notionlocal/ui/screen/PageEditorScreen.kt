@@ -889,7 +889,22 @@ fun PageEditorScreen(
     onOpenSidebar: () -> Unit = {},
     viewModel: PageEditorViewModel = viewModel(factory = factory)
 ) {
-    LaunchedEffect(pageId) { viewModel.load(pageId) }
+    LaunchedEffect(pageId) {
+        viewModel.load(pageId)
+        // Gira anche tornando su questa pagina dall'indietro: se la
+        // schermata di prima ha lasciato un Annulla (un "Move to" dai tre
+        // puntini, per esempio), da qui in poi è di questa pagina.
+        viewModel.adoptPendingPageChange()
+    }
+    // Annullata la "Duplicate" stando dentro la copia: la copia è nel
+    // cestino, e si torna indietro.
+    val leavePage by viewModel.leavePage.collectAsStateWithLifecycle()
+    LaunchedEffect(leavePage) {
+        if (leavePage) {
+            viewModel.consumeLeavePage()
+            onBack()
+        }
+    }
 
     val page by viewModel.page.collectAsStateWithLifecycle()
     val blocks by viewModel.blocks.collectAsStateWithLifecycle()

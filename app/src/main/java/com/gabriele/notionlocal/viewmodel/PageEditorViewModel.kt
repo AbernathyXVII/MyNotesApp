@@ -402,9 +402,27 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
     // un colpo solo, come in un editor vero. Copre i blocchi (testo,
     // tipo, struttura); non copre il contenuto delle celle di tabelle o
     // database, che vivono in tabelle del database separate.
-    private val undoStack = ArrayDeque<List<BlockEntity>>()
-    private val redoStack = ArrayDeque<List<BlockEntity>>()
+    //
+    // **Due tipi di passo.** Oltre alle foto dei blocchi ci sono i
+    // cambiamenti fatti alle pagine — "Move to", "Duplicate", "Move to
+    // trash" — che toccano altre pagine e non si disfano rimettendo i
+    // blocchi di questa: ognuno si porta dietro quello che serve a
+    // tornare indietro (`PageRepository.PageChange`). Il passo di pagina
+    // è modificabile perché Ripristina lo rifà con id nuovi (il
+    // collegamento creato di nuovo), e l'Annulla successivo deve
+    // conoscerli.
+    private sealed interface UndoStep
+    private class BlocksStep(val blocks: List<BlockEntity>) : UndoStep
+    private class PageStep(var change: PageRepository.PageChange) : UndoStep
+
+    private val undoStack = ArrayDeque<UndoStep>()
+    private val redoStack = ArrayDeque<UndoStep>()
     private var lastTextEditSnapshotBlockId: String? = null
+
+    // Annulla e Ripristina si fanno **uno alla volta**, nell'ordine in cui
+    // sono stati toccati: un passo di pagina lavora sul database per un
+    // attimo, e due tocchi veloci non devono sovrapporsi.
+    private val historyLock = Mutex()
 
     private val _canUndo = MutableStateFlow(false)
     val canUndo: StateFlow<Boolean> = _canUndo
@@ -417,10 +435,45 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
     }
 
     private fun pushUndoSnapshot() {
-        undoStack.addLast(_blocks.value)
+        pushStep(BlocksStep(_blocks.value))
+    }
+
+    private fun pushStep(step: UndoStep) {
+        undoStack.addLast(step)
         if (undoStack.size > MAX_UNDO_STEPS) undoStack.removeFirst()
         redoStack.clear()
         updateUndoRedoAvailability()
+    }
+
+    /**
+     * Mette in cronologia un cambiamento fatto alle pagine. Chiude la
+     * sessione di scrittura come ogni modifica di struttura: la prossima
+     * lettera scritta sarà un passo a sé.
+     */
+    private fun pushPageChange(change: PageRepository.PageChange) {
+        closeEditSession()
+        lastTextEditSnapshotBlockId = null
+        pushStep(PageStep(change))
+    }
+
+    /**
+     * **Il passo lasciato dai tre puntini.** "Move to", "Duplicate" e
+     * "Move to trash" dal menu dei tre puntini lasciano la pagina su cui
+     * si fanno — si torna indietro, o si entra nella copia — e il loro
+     * Annulla deve stare nella pagina che si vede dopo. Quella lo prende
+     * qui, appena compare (vedi `PendingPageUndo`).
+     */
+    fun adoptPendingPageChange() {
+        PendingPageUndo.take()?.let { pushPageChange(it) }
+    }
+
+    // Chiesto dopo aver annullato la "Duplicate" della pagina aperta
+    // stando dentro la copia: la copia è andata nel cestino, e restarci
+    // davanti non ha senso. La schermata torna indietro.
+    private val _leavePage = MutableStateFlow(false)
+    val leavePage: StateFlow<Boolean> = _leavePage
+    fun consumeLeavePage() {
+        _leavePage.value = false
     }
 
     /** Da chiamare prima di una modifica di testo/formattazione (updateBlockText, updateBlockSpans). */
@@ -520,24 +573,68 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
 
     fun undo() {
         val previous = undoStack.removeLastOrNull() ?: return
-        redoStack.addLast(_blocks.value)
         // Annullare vuol dire tornare alla foto di prima: una riga nuova
         // ancora in sospeso non deve restare appiccicata sopra.
         pendingInserts.clear()
         lastTextEditSnapshotBlockId = null
-        updateUndoRedoAvailability()
         _externalChangeTick.value += 1
-        viewModelScope.launch { applySnapshot(previous) }
+        when (previous) {
+            is BlocksStep -> {
+                redoStack.addLast(BlocksStep(_blocks.value))
+                updateUndoRedoAvailability()
+                viewModelScope.launch { historyLock.withLock { applySnapshot(previous.blocks) } }
+            }
+            is PageStep -> {
+                redoStack.addLast(previous)
+                updateUndoRedoAvailability()
+                viewModelScope.launch {
+                    historyLock.withLock {
+                        val undone = repository.undoPageChange(previous.change)
+                        if (undone == null) {
+                            // La pagina non c'è più (cancellata per sempre
+                            // nel frattempo): niente da rifare.
+                            redoStack.remove(previous)
+                            updateUndoRedoAvailability()
+                        } else {
+                            previous.change = undone
+                            // Annullata la copia dentro cui si sta: fuori.
+                            if (undone is PageRepository.PageChange.Duplicated && undone.copyId == currentPageId) {
+                                _leavePage.value = true
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     fun redo() {
         val next = redoStack.removeLastOrNull() ?: return
-        undoStack.addLast(_blocks.value)
         pendingInserts.clear()
         lastTextEditSnapshotBlockId = null
-        updateUndoRedoAvailability()
         _externalChangeTick.value += 1
-        viewModelScope.launch { applySnapshot(next) }
+        when (next) {
+            is BlocksStep -> {
+                undoStack.addLast(BlocksStep(_blocks.value))
+                updateUndoRedoAvailability()
+                viewModelScope.launch { historyLock.withLock { applySnapshot(next.blocks) } }
+            }
+            is PageStep -> {
+                undoStack.addLast(next)
+                updateUndoRedoAvailability()
+                viewModelScope.launch {
+                    historyLock.withLock {
+                        val redone = repository.redoPageChange(next.change)
+                        if (redone == null) {
+                            undoStack.remove(next)
+                            updateUndoRedoAvailability()
+                        } else {
+                            next.change = redone
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private suspend fun applySnapshot(snapshot: List<BlockEntity>) {
@@ -629,7 +726,11 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
     ) {
         val current = _page.value ?: return
         viewModelScope.launch {
-            repository.duplicatePage(current.id, target, titleSuffix) { imageStore.copy(it) }?.let(onDone)
+            repository.duplicatePage(current.id, target, titleSuffix) { imageStore.copy(it) }?.let { copyId ->
+                // Si entra nella copia: il suo Annulla lo prende lei.
+                PendingPageUndo.offer(repository.describeCopy(copyId))
+                onDone(copyId)
+            }
         }
     }
 
@@ -643,7 +744,11 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
     fun movePageTo(destination: PageRepository.PageTreeNode, onDone: () -> Unit) {
         val current = _page.value ?: return
         viewModelScope.launch {
-            if (repository.movePageTo(current.id, destination)) onDone()
+            repository.movePageTo(current.id, destination)?.let { change ->
+                // Si torna indietro: l'Annulla lo prende la pagina che si vede dopo.
+                PendingPageUndo.offer(change)
+                onDone()
+            }
         }
     }
 
@@ -657,7 +762,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         val current = _page.value ?: return
         closeEditSession()
         viewModelScope.launch {
-            repository.moveToTrash(current.id)
+            repository.moveToTrash(current.id)?.let { PendingPageUndo.offer(it) }
             onDone()
         }
     }
@@ -2343,16 +2448,24 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
 
     /**
      * "Move to" dal menu del blocco: il collegamento sparisce da qui e ne
-     * nasce uno in fondo alla pagina scelta. Annulla non lo fa tornare:
-     * vedi `PageRepository.withoutStaleLinks`.
+     * nasce uno in fondo alla pagina scelta. Annulla, da questa pagina, la
+     * rimette al suo posto (`PageRepository.undoPageChange`).
      */
     fun moveLinkedPageTo(pageId: String, destination: PageRepository.PageTreeNode) {
-        viewModelScope.launch { repository.movePageTo(pageId, destination) }
+        viewModelScope.launch {
+            historyLock.withLock {
+                repository.movePageTo(pageId, destination)?.let { pushPageChange(it) }
+            }
+        }
     }
 
-    /** "Move to trash" dal menu del blocco. Annulla non fa tornare il collegamento, come sopra. */
+    /** "Move to trash" dal menu del blocco. Annulla la tira fuori dal cestino e la rimette qui. */
     fun moveLinkedPageToTrash(pageId: String) {
-        viewModelScope.launch { repository.moveToTrash(pageId) }
+        viewModelScope.launch {
+            historyLock.withLock {
+                repository.moveToTrash(pageId)?.let { pushPageChange(it) }
+            }
+        }
     }
 
     /**
@@ -2369,13 +2482,19 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         onDone: (String) -> Unit
     ) {
         viewModelScope.launch {
-            repository.duplicatePage(
-                pageId,
-                target,
-                titleSuffix,
-                copyImage = { imageStore.copy(it) },
-                besideLinkBlockId = besideBlockId
-            )?.let(onDone)
+            historyLock.withLock {
+                repository.duplicatePage(
+                    pageId,
+                    target,
+                    titleSuffix,
+                    copyImage = { imageStore.copy(it) },
+                    besideLinkBlockId = besideBlockId
+                )?.let { copyId ->
+                    // Annulla, da qui, manda la copia nel cestino.
+                    pushPageChange(repository.describeCopy(copyId))
+                    onDone(copyId)
+                }
+            }
         }
     }
 

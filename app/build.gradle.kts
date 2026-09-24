@@ -110,6 +110,13 @@ dependencies {
 
     // Test
     testImplementation("junit:junit:4.13.2")
+    // Test del repository su un database vero, senza telefono: Robolectric
+    // fa girare Android (e quindi SQLite e Room) sulla JVM. Aggiunti il
+    // 24/09/2026 per provare in cloud le operazioni che toccano i dati
+    // (spostare, duplicare, annullare), che lì non si possono provare
+    // sul telefono. Solo per i test: nell'app non entrano.
+    testImplementation("org.robolectric:robolectric:4.13")
+    testImplementation("androidx.test:core-ktx:1.6.1")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
