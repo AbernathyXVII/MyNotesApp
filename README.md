@@ -802,6 +802,16 @@ README di una riga).
     e "Move right" una alla volta secondo la colonna; tolte tutte e
     due (Cronologia, voce `[Rimosso]`), con la conseguenza che una
     colonna nascosta non si sposta più senza rimostrarla
+24. «Dammi la possibilità di usare il Sort anche sulla colonna Name,
+    quella principale dei database» — **c'era già**: "Name" è la prima
+    voce della finestra del Sort (`SortSheet`, `SORT_BY_NAME`). Alla
+    domanda se intendesse un menu tenendo premuta l'intestazione Name
+    o una voce mancante nella finestra, l'utente ha risposto: «Errore
+    mio, tenendo premuto su Name non usciva niente. Non ho visto
+    nell'icona Sort. Perdonami». **Nessuna modifica al codice.** Resta
+    vero che tenere premuta l'intestazione "Name" non fa niente
+    (`NameHeaderCell` non ha gesti): se un giorno servisse, lì
+    potrebbero stare "Sort ascending / Sort descending"
 
 **Cosa è stato fatto:**
 
