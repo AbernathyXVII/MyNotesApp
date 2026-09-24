@@ -33,8 +33,11 @@ Il progetto ora si sviluppa in **due modi alternati**:
   modo in cui è nato tutto quello che c'è in "Cronologia".
 - **Sessioni cloud** (claude.ai/code), quando il limite settimanale di
   Code sul PC è esaurito. Girano su un server remoto che **non vede né
-  il PC né il telefono**: si può scrivere e compilare il codice, non
-  installarlo né provarlo. Ogni modifica fatta lì è segnata **"(da
+  il PC né il telefono**: si può scrivere il codice, non installarlo né
+  provarlo. Compilarlo si può **solo se l'ambiente cloud lascia passare
+  `dl.google.com`** (SDK e librerie AndroidX arrivano da lì); il
+  24/09/2026 era bloccato, quindi quel giorno il codice è stato solo
+  riletto. Ogni modifica fatta lì è segnata **"(da
   verificare sul telefono)"** e il **"Diario delle sessioni cloud"**
   più in basso elenca, sessione per sessione, le richieste dell'utente
   parola per parola, cosa è stato fatto e cosa va provato. **Chi
@@ -54,7 +57,8 @@ GitHub così com'era:
   all'archivio salvo gli a-capo.
 
 **Tutto quello che viene dopo `4a35c64` è lavoro cloud: scritto, al
-massimo compilato, MAI installato né provato sul telefono.** Va
+massimo compilato (e il 24/09/2026 nemmeno quello), MAI installato né
+provato sul telefono.** Va
 trattato come una bozza finché non passa la procedura qui sotto. Per
 vedere in un colpo solo tutte le modifiche al codice fatte in cloud:
 `git diff 4a35c64 HEAD -- app/` (se quel commit non si trova più,
@@ -444,9 +448,17 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   della proprietà (nome, tipo con ricerca, sposta, elimina). Undici
   tipi: Text, Number, Select, Multi-select, Date, Checkbox, URL,
   Email, Phone, Created time, Last edited time
-- **Cinque viste per i database** — Table, List, Board, **Calendar** e
-  **Timeline**, una per volta, scelte da Settings → Layout e ricordate
-  per ogni database
+- **Sei viste per i database** — Table, List, Board, **Calendar**,
+  **Timeline** e **Gallery**, una per volta, scelte da Settings → Layout
+  e ricordate per ogni database
+- **Gallery** *(sessione cloud del 24/09/2026, da verificare sul
+  telefono)*: le pagine come schede in griglia, con in alto la
+  **copertina** della pagina (con l'inquadratura scelta in
+  "Reposition") oppure **l'inizio del suo testo**, scritto come nella
+  pagina. Sotto, nome e proprietà. Dalle impostazioni della vista si
+  sceglie **Card preview** (None / Page cover / Page content) e **Card
+  size** (Small / Medium / Large: tre, due o una scheda per riga su un
+  telefono in verticale). Si crea anche dal menu "/" con "Gallery view"
 - **Data con ora facoltativa**: l'interruttore "Include time" nella
   finestra della data aggiunge l'orario all'inizio e alla fine. Spento,
   la data vale il giorno intero
@@ -500,9 +512,13 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   nuova), in fondo al menu principale o dentro una pagina qualsiasi,
   comprese quelle delle righe di tutti i database. Si copia tutto,
   sottopagine e immagini comprese
-- **Tema scuro fisso in tutta l'app**, coi grigi di Notion: `#191919`
+- ~~**Tema scuro fisso in tutta l'app**, coi grigi di Notion: `#191919`
   per le pagine, `#202020` per le finestre dal basso, `#252525` per i
-  riquadri delle opzioni. Niente tema chiaro e niente colori dinamici
+  riquadri delle opzioni. Niente tema chiaro e niente colori dinamici~~
+  **Superato** (corretto il 24/09/2026): in Settings → Theme c'è
+  **Dark / Light / System** (vedi la voce "Theme" in Cronologia). I
+  grigi di Notion qui sopra restano quelli del tema scuro, che è ancora
+  quello di partenza; niente colori dinamici
 
 ## Limiti noti
 
@@ -559,11 +575,33 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   accanto alla vista è stata deliberatamente omessa finché non
   funziona, perché un'icona che non fa niente è peggio di un'icona
   assente. I filtri invece ci sono, su una proprietà per volta
-- **Database: mancano le viste Gallery e Chart.** Ci sono Table,
-  Board, List, Calendar e Timeline; le altre si aggiungono una alla
-  volta e compaiono nel selettore solo quando disegnano davvero
-  qualcosa. Gallery aspettava le copertine delle pagine, che ora ci
-  sono: è la prossima
+- **Database: manca la vista Chart.** Ci sono Table, Board, List,
+  Calendar, Timeline e (dal 24/09/2026) Gallery; Chart si aggiungerà
+  quando disegnerà davvero qualcosa, come le altre
+- **Gallery: le schede si costruiscono tutte insieme**, immagini
+  comprese, come nelle altre viste: non è una griglia "pigra", perché
+  il database dentro una pagina sta in una lista che scorre già e una
+  griglia che scorre per conto suo lì dentro non si può mettere. Con
+  qualche decina di pagine non si nota; con centinaia di copertine
+  l'apertura rallenta e la memoria cresce. Ogni immagine comunque si
+  legge già rimpicciolita alla misura della scheda
+- **Gallery: delle impostazioni di Notion ci sono solo Card preview e
+  Card size.** Mancano "Fit image" (mostrare l'immagine intera invece
+  di riempire il riquadro — qui vale sempre l'inquadratura scelta nella
+  pagina), "Show page icon", "Wrap all properties", "Open pages in", il
+  raggruppamento e l'anteprima da una proprietà "Files & media", che
+  l'app non ha. Le schede non si trascinano per riordinarle
+- **Gallery: le proprietà sulle schede sono testo semplice**, una per
+  riga e tagliata se lunga, come sulle schede della bacheca: i tag non
+  sono colorati. "Created time" e "Last edited time" non compaiono,
+  come nella bacheca
+- **Gallery: l'anteprima "Page content" mostra solo il testo**
+  (paragrafi, titoli, elenchi, caselle, toggle chiusi con la freccia):
+  niente tabelle, divisori, collegamenti a pagine o database, né il
+  contenuto dentro i toggle. Il testo è senza formattazione (niente
+  grassetto, corsivo o colori); **gli spoiler restano coperti**, ogni
+  lettera diventa un quadratino `▒`. Una pagina senza copertina, con
+  "Page cover", mostra il riquadro vuoto
 - **Timeline: manca l'ingrandimento "5 anni"** che Notion ha. Escluso
   apposta: a quella scala un mese è largo due millimetri e non si
   distingue più niente
@@ -639,7 +677,7 @@ e cosa resta da provare sul telefono. Le modifiche all'app finiscono
 **anche** in "Cronologia degli aggiornamenti", come sempre; qui c'è il
 filo della conversazione che le ha prodotte.
 
-### Sessione cloud del 24/09/2026 — trasloco su GitHub
+### Sessione cloud del 24/09/2026 — trasloco su GitHub e vista Gallery
 
 **Contesto.** Limite settimanale di Claude Code esaurito sul PC;
 l'utente ha a disposizione una sessione cloud e vuole continuare lì lo
@@ -693,6 +731,8 @@ README di una riga).
     perfezione per essere funzionabile sul telefono installandolo
     direttamente tramite l'APK collegato tutto tramite Android Studio e
     il Web Debugging del telefono?»
+13. «Vista in Gallery» (scelta fra le due cose in sospeso proposte:
+    la vista Gallery e l'export in Markdown + CSV)
 
 **Cosa è stato fatto:**
 
@@ -739,10 +779,154 @@ README di una riga).
   prova di ogni voce da verificare con `logcat` aperto, esito scritto
   qui. Richiesta dell'utente al punto 12
 
-**Da verificare sul telefono:** niente. In questa sessione, fin qui,
-il codice dell'app non è stato toccato.
+- **[Progetto]** **In questa sessione l'app non si è potuta
+  compilare.** Le impostazioni di rete dell'ambiente cloud bloccano
+  `dl.google.com`, da cui arrivano sia l'SDK Android sia **tutte** le
+  librerie AndroidX (`maven.google.com` rimanda lì; bloccate anche le
+  copie di JetBrains e Aliyun). Raggiungibili solo Maven Central e il
+  portale dei plugin Gradle. Tentativo fatto: compilare il solo Kotlin
+  dell'app in un progetto a parte, con `android-all` di Robolectric
+  (da Maven Central) al posto di `android.jar` — fattibile perché il
+  codice non usa né `R` né `BuildConfig` — ma senza AndroidX non si
+  arriva a niente. Il progetto di prova è rimasto fuori dal repository.
+  **Il codice della Gallery è stato quindi solo riletto a mano**, riga
+  per riga (tipi, import, rami dei `when`, ambiti di Compose, query
+  SQL). All'utente è stato proposto di aggiungere `dl.google.com` ai
+  domini consentiti (menu dell'ambiente cloud → Edit → Network access)
+- **[Nuova funzionalità]** La **vista Gallery**: dettagli in
+  Cronologia, "Database — vista Gallery". Schema del database alla
+  versione **25** (migrazione 24→25)
+- **[Progetto]** README: un'altra affermazione superata corretta — "Tema
+  scuro fisso, niente tema chiaro" in "Cosa fa l'app oggi", mentre
+  Settings → Theme offre Dark / Light / System (`AppSettings.themeMode`,
+  e la voce "Theme" in Cronologia). Barrata con la nota "Superato"
+
+**Da verificare sul telefono** (tutto è della vista Gallery; prima di
+installare, **copia del database**: questa build cambia lo schema):
+
+1. **Compila?** È la prima cosa: in cloud non si è potuto provare.
+2. **La migrazione 24→25** è avvenuta davvero: `user_version` = 25, e
+   `galleryCardPreview` e `galleryCardSize` in fondo al `CREATE TABLE`
+   di `pages` (vedi "Nota tecnica"). Tutte le note ancora al loro posto.
+3. Settings → Layout mostra **sei riquadri** su due file, l'ultimo
+   "Gallery"; sceglierlo chiude la finestra e mostra le schede.
+4. Menu "/" → **"Gallery view"** non è più grigia e crea un database già
+   in galleria.
+5. **Tocco** su una scheda → si apre la pagina; **tocco prolungato** →
+   le azioni della riga.
+6. **Page cover**: una pagina con copertina la mostra nella scheda, con
+   la stessa inquadratura di "Reposition"; **nessun angolo vuoto** con
+   Small, Medium e Large, anche con copertine spostate o ingrandite
+   molto. Una pagina senza copertina lascia il riquadro vuoto.
+   Cambiando la copertina dentro la pagina e tornando indietro, la
+   scheda è già aggiornata.
+7. **Page content**: titoli, elenchi puntati e numerati (anche
+   rientrati e partiti da un numero scelto) scritti come nella pagina;
+   caselle ☐/☑; toggle con ▸; **spoiler coperti da ▒**; niente righe
+   vuote in testa. Scrivendo nella pagina e tornando indietro, la
+   scheda è aggiornata.
+8. **Card size** sull'S25 Ultra in verticale: 3 / 2 / 1 schede per riga;
+   girando il telefono, di più. Schede della stessa riga **alte
+   uguali**; l'ultima riga non allarga le schede.
+9. La galleria **dentro una pagina** (non solo a schermo intero):
+   nessun crash, la pagina scorre normalmente.
+10. **Lock view** spegne "Card preview" e "Card size".
+11. **Filtro e ordinamento** valgono anche nella galleria.
+12. **Fluidità**: una galleria con molte copertine (misurare con
+    `dumpsys gfxinfo`, vedi "Misurare la fluidità"); e scrivere in
+    un'altra pagina **mentre un database in galleria è rimasto indietro
+    nella navigazione** non deve rallentare la tastiera.
+13. **Tema chiaro**: schede e riquadri dell'anteprima leggibili.
+14. Chiedere all'utente se gli vanno bene le scelte segnate in
+    Cronologia (anteprima di partenza, misure delle schede).
 
 ## Cronologia degli aggiornamenti
+
+Le voci nate nelle sessioni cloud stanno qui in cima, la più recente
+per prima, e portano scritto che **vanno ancora verificate sul
+telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
+gg/mm/aaaa)" accanto al titolo.
+
+**Database — vista Gallery** *(sessione cloud del 24/09/2026: scritta
+ma **NON compilata** — in cloud non si scaricavano le librerie Android,
+vedi Diario — **e NON provata sul telefono**)*
+- **[Nuova funzionalità]** **Gallery**, la sesta vista: le pagine del
+  database come **schede in griglia**. In alto l'anteprima, sotto il
+  nome (con l'icona della pagina, se c'è) e le proprietà che si vedono
+  e hanno un valore, una per riga come sulle schede della bacheca. Un
+  tocco apre la pagina, il tocco prolungato le azioni della riga, come
+  nelle altre viste. Filtro e ordinamento valgono anche qui. Si sceglie
+  da Settings → Layout (sesto riquadro, icona a griglia) o si crea dal
+  menu "/" con **"Gallery view"**, che finora c'era ma era spenta
+- **[Nuova funzionalità]** **Card preview**, nelle impostazioni della
+  vista, con le voci di Notion che qui si possono fare: **None**,
+  **Page cover**, **Page content**. Salvata per ogni database
+  (`PageEntity.galleryCardPreview`, **migrazione 24→25**). Finché non
+  si sceglie vale **Page cover** (`GALLERY_DEFAULT_PREVIEW`): la
+  galleria aspettava le copertine proprio perché è la vista che si
+  riconosce dalle immagini. La quarta voce di Notion, l'anteprima da una
+  proprietà "Files & media", manca perché quel tipo di proprietà non
+  esiste nell'app
+- **[Nuova funzionalità]** **Card size**: **Small / Medium / Large**,
+  salvata per ogni database (`PageEntity.galleryCardSize`, stessa
+  migrazione), media finché non si sceglie. Le schede non hanno una
+  larghezza fissa ma **una minima** (100, 150 e 280 punti): in una riga
+  ne entrano quante ci stanno e si allargano insieme a riempirla. Su un
+  telefono in verticale sono tre, due o una per riga; girandolo ne
+  entrano di più invece di diventare enormi (`galleryColumnsFor`)
+- **[Nuova funzionalità]** Con **Page cover** la scheda mostra la
+  copertina della pagina **con l'inquadratura scelta in
+  "Reposition"**. La scheda ha un'altra forma della striscia della
+  pagina, e la stessa inquadratura avrebbe potuto portare l'immagine
+  oltre il bordo e scoprire un angolo vuoto: `CoverImage` (ora
+  `internal`, per usarla da qui) ha un parametro nuovo, `clampOffset`,
+  che ferma lo spostamento dove l'immagine smette di coprire. Nella
+  pagina resta spento e lì non cambia niente
+- **[Nuova funzionalità]** Con **Page content** la scheda mostra
+  **l'inizio del testo della pagina**, in piccolo (8, 10 o 12 punti
+  secondo la dimensione della scheda), scritto come nella pagina: i
+  titoli più grandi e in grassetto, gli elenchi con **lo stesso segno
+  della pagina** (`bulletMarkerFor` e `numberedMarkerFor`, ora
+  `internal`), numerati contando come `numberedListOrdinal` — un
+  contatore per livello, `numberStartsAt` rispettato — le caselle con
+  ☐ e ☑ (quelle spuntate grigie e barrate), i toggle con ▸. Si leggono
+  al massimo 12 blocchi di primo livello per pagina
+  (`GALLERY_PREVIEW_MAX_LINES`), saltando quelli senza testo (tabelle,
+  divisori, collegamenti) e le righe vuote in testa e in coda; quello
+  che non ci sta lo taglia il bordo della scheda
+- **[Nuova funzionalità]** **Gli spoiler restano coperti
+  nell'anteprima**: ogni lettera coperta diventa `▒`, gli spazi
+  restano. Senza, un testo nascosto nella pagina si sarebbe letto in
+  chiaro nella scheda — che è proprio il colpo d'occhio da cui lo
+  spoiler protegge
+- **[Nuova funzionalità]** Le schede di una stessa riga sono **alte
+  uguali** (`IntrinsicSize.Max`), e l'ultima riga, se non è piena,
+  tiene le schede larghe come le altre. L'anteprima occupa il suo posto
+  anche quando è vuota (pagina senza copertina o senza testo), così le
+  schede restano allineate
+- **[Nuova funzionalità]** "Card preview" e "Card size" compaiono nelle
+  impostazioni **solo con la galleria**, subito sotto Filter come le
+  voci delle altre viste, e **"Lock view" le spegne**. Scelta una voce
+  la finestra resta aperta e il segno ✓ si sposta, come per "Date
+  property" e "Group by": la galleria dietro cambia subito
+- **[Nuova funzionalità]** Testi nuovi nelle otto lingue dell'app
+  (`DbStrings.layoutName`, `galleryPreviewName`, `gallerySizeName`,
+  `cardPreview`, `cardSize`). In italiano la dimensione è al femminile
+  perché si parla della *scheda*
+- **[Progetto]** Copertine e testo delle pagine si leggono **solo
+  mentre la galleria li mostra** (`DatabaseViewModel.load`,
+  `flatMapLatest` sulla pagina). Il testo soprattutto: la query guarda
+  la tabella dei blocchi, che cambia a ogni tasto battuto in
+  **qualunque** pagina, e il ViewModel di un database resta vivo anche
+  quando è rimasto indietro nella pila di navigazione. Seguirla sempre
+  avrebbe voluto dire rifare la query a ogni lettera scritta altrove.
+  Due query nuove in `DatabaseDao`: `observeRowCovers` e
+  `observeRowPreviewBlocks`; il taglio ai primi blocchi lo fa
+  `DatabaseRepository.observeRowContentPreviews`, perché in SQL
+  richiederebbe funzioni che su Android arrivano solo dalla versione 11
+- **Scelte da far confermare all'utente**: la copertina come anteprima
+  di partenza, le larghezze minime delle schede e il rapporto 1,6 : 1
+  della parte alta (`GALLERY_PREVIEW_RATIO`)
 
 **[Nuova funzionalità] Ripensato il modello di editing del testo** — il
 cambiamento più grande dello sviluppo. Vedi "Decisioni di design
@@ -2934,7 +3118,9 @@ app/src/main/java/com/gabriele/notionlocal/
 
 ## Nota tecnica
 
-Lo schema è alla **versione 24**, e da qui in avanti **ogni cambio di
+Lo schema è alla **versione 25** (la 25 viene dalla sessione cloud del
+24/09/2026, vedi Diario: migrazione **mai provata su un telefono**), e
+da qui in avanti **ogni cambio di
 schema vuole una migrazione vera** in `AppDatabase`. Fino alla 5 c'era
 `fallbackToDestructiveMigration()`, che ad ogni cambio ricreava il
 database da zero perdendo tutto: accettabile finché sul telefono

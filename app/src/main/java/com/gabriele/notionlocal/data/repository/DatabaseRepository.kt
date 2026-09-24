@@ -2,11 +2,64 @@ package com.gabriele.notionlocal.data.repository
 
 import androidx.room.withTransaction
 import com.gabriele.notionlocal.data.AppDatabase
+import com.gabriele.notionlocal.data.dao.RowCover
+import com.gabriele.notionlocal.data.entity.BlockType
 import com.gabriele.notionlocal.data.entity.DatabaseCellEntity
 import com.gabriele.notionlocal.data.entity.DatabaseColumnEntity
 import com.gabriele.notionlocal.data.entity.DatabaseRowEntity
+import com.gabriele.notionlocal.data.entity.RichTextSpan
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
+
+/**
+ * Una riga di testo dell'anteprima di una scheda della galleria: il tipo
+ * del blocco serve a disegnarla come nella pagina (un titolo più
+ * marcato, un pallino davanti a un elemento di elenco, la casella).
+ *
+ * `ordinal` è il numero di un elemento di elenco numerato, contato come
+ * lo conta la pagina (`PageEditorViewModel.numberedListOrdinal`); zero
+ * per tutti gli altri tipi.
+ */
+data class RowPreviewLine(
+    val type: BlockType,
+    val text: String,
+    val isChecked: Boolean,
+    val indentLevel: Int,
+    val ordinal: Int
+)
+
+/** Lo stesso tetto ai rientri dell'editor: oltre, i numeri si contano come all'ultimo livello. */
+private const val PREVIEW_MAX_INDENT = 10
+
+/**
+ * Il testo di un blocco come va mostrato nell'anteprima: semplice, ma
+ * **con i pezzi coperti ancora coperti**. Uno spoiler nella pagina è un
+ * testo che l'utente ha scelto di non far leggere a colpo d'occhio, e
+ * l'anteprima di una scheda è proprio un colpo d'occhio: ogni lettera
+ * coperta diventa un quadratino, gli spazi restano, così si vede quanto
+ * è lungo senza leggerlo.
+ */
+private fun List<RichTextSpan>.previewText(): String = joinToString("") { span ->
+    if (span.spoiler) {
+        span.text.map { if (it.isWhitespace()) it else '▒' }.joinToString("")
+    } else {
+        span.text
+    }
+}
+
+/** I blocchi che hanno un testo da mostrare nell'anteprima. */
+private val PREVIEW_TYPES = setOf(
+    BlockType.PARAGRAPH,
+    BlockType.HEADING_1,
+    BlockType.HEADING_2,
+    BlockType.HEADING_3,
+    BlockType.BULLET_LIST_ITEM,
+    BlockType.NUMBERED_LIST_ITEM,
+    BlockType.CHECKBOX,
+    BlockType.TOGGLE
+)
 
 /**
  * Punto unico di accesso ai dati delle pagine-database (tabelle con
@@ -15,6 +68,8 @@ import kotlinx.coroutines.flow.map
 class DatabaseRepository(private val db: AppDatabase) {
 
     private val dao = db.databaseDao()
+
+    private val json = Json { ignoreUnknownKeys = true }
 
     fun getColumns(pageId: String): Flow<List<DatabaseColumnEntity>> =
         dao.getColumnsForPage(pageId)
@@ -37,6 +92,66 @@ class DatabaseRepository(private val db: AppDatabase) {
     /** Riga → immagine dell'icona della sua pagina, per le righe che ne hanno una. */
     fun observeRowIcons(pageId: String): Flow<Map<String, String>> =
         dao.observeRowIcons(pageId).map { icons -> icons.associate { it.rowId to it.iconImage } }
+
+    /** Riga → copertina della sua pagina, con l'inquadratura, per le righe che ne hanno una. */
+    fun observeRowCovers(pageId: String): Flow<Map<String, RowCover>> =
+        dao.observeRowCovers(pageId).map { covers -> covers.associateBy { it.rowId } }
+
+    /**
+     * Riga → le prime righe di testo della sua pagina, per l'anteprima
+     * delle schede della galleria.
+     *
+     * Si prendono i blocchi che hanno del testo — paragrafi, titoli,
+     * elenchi, caselle, toggle — e si saltano quelli che non ne hanno
+     * (divisori, tabelle, collegamenti a pagine), fino a
+     * `maxLinesPerRow`. Le righe vuote in testa si saltano anche loro:
+     * una pagina che comincia con due a-capo avrebbe un'anteprima che
+     * sembra vuota. Quelle in mezzo invece restano, perché separano i
+     * paragrafi come nella pagina.
+     *
+     * Decodifica il testo solo dei blocchi che servono: gli altri si
+     * scartano prima, e una pagina lunga non costa più di una corta.
+     */
+    fun observeRowContentPreviews(
+        pageId: String,
+        maxLinesPerRow: Int
+    ): Flow<Map<String, List<RowPreviewLine>>> =
+        dao.observeRowPreviewBlocks(pageId).map { blocks ->
+            blocks.groupBy { it.rowId }.mapValues { (_, rowBlocks) ->
+                val lines = mutableListOf<RowPreviewLine>()
+                // I numeri degli elenchi si contano come nella pagina: un
+                // contatore per livello, e i blocchi di altro tipo in
+                // mezzo non interrompono il conteggio. Si conta anche
+                // sulle righe che poi l'anteprima salta, altrimenti il
+                // primo numero mostrato ripartirebbe da uno.
+                val counters = mutableListOf<Int>()
+                for (block in rowBlocks) {
+                    if (lines.size >= maxLinesPerRow) break
+                    if (block.type !in PREVIEW_TYPES) continue
+                    val level = block.indentLevel.coerceIn(0, PREVIEW_MAX_INDENT)
+                    val ordinal = if (block.type == BlockType.NUMBERED_LIST_ITEM) {
+                        while (counters.size < level) counters.add(1)
+                        if (counters.size > level) {
+                            while (counters.size > level + 1) counters.removeAt(counters.size - 1)
+                            counters[level] = block.numberStartsAt ?: (counters[level] + 1)
+                        } else {
+                            counters.add(block.numberStartsAt ?: 1)
+                        }
+                        counters[level]
+                    } else {
+                        0
+                    }
+                    val text = runCatching {
+                        json.decodeFromString<List<RichTextSpan>>(block.textJson)
+                    }.getOrNull()?.previewText().orEmpty()
+                    if (lines.isEmpty() && text.isBlank()) continue
+                    lines += RowPreviewLine(block.type, text, block.isChecked, level, ordinal)
+                }
+                // Le righe vuote in fondo non dicono niente e rubano
+                // posto a una scheda che ha già poco spazio.
+                lines.dropLastWhile { it.text.isBlank() }
+            }.filterValues { it.isNotEmpty() }
+        }
 
     suspend fun addRow(row: DatabaseRowEntity) = dao.insertRow(row)
 

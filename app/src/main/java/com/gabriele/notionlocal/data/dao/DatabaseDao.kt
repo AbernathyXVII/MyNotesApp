@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import com.gabriele.notionlocal.data.entity.BlockType
 import com.gabriele.notionlocal.data.entity.DatabaseCellEntity
 import com.gabriele.notionlocal.data.entity.DatabaseColumnEntity
 import com.gabriele.notionlocal.data.entity.DatabaseRowEntity
@@ -13,6 +14,32 @@ import kotlinx.coroutines.flow.Flow
 
 /** L'immagine-icona della pagina di una riga: vedi `DatabaseDao.observeRowIcons`. */
 data class RowIcon(val rowId: String, val iconImage: String)
+
+/**
+ * La copertina della pagina di una riga, con la sua inquadratura: vedi
+ * `DatabaseDao.observeRowCovers`.
+ */
+data class RowCover(
+    val rowId: String,
+    val coverImage: String,
+    val coverScale: Float,
+    val coverOffsetX: Float,
+    val coverOffsetY: Float
+)
+
+/**
+ * Un blocco in cima alla pagina di una riga, per l'anteprima del testo
+ * nella galleria: vedi `DatabaseDao.observeRowPreviewBlocks`.
+ */
+data class RowPreviewBlock(
+    val rowId: String,
+    val type: BlockType,
+    val textJson: String,
+    val isChecked: Boolean,
+    val indentLevel: Int,
+    val numberStartsAt: Int?,
+    val orderIndex: Int
+)
 
 @Dao
 interface DatabaseDao {
@@ -140,6 +167,42 @@ interface DatabaseDao {
             "WHERE database_rows.pageId = :pageId AND pages.iconImage IS NOT NULL"
     )
     fun observeRowIcons(pageId: String): Flow<List<RowIcon>>
+
+    /**
+     * Le copertine delle pagine delle righe, per la galleria. Come le
+     * icone: seguite su tutte e due le tabelle, così una copertina
+     * cambiata o inquadrata dentro la pagina si vede subito anche nelle
+     * schede.
+     */
+    @Query(
+        "SELECT database_rows.id AS rowId, pages.coverImage AS coverImage, " +
+            "pages.coverScale AS coverScale, pages.coverOffsetX AS coverOffsetX, " +
+            "pages.coverOffsetY AS coverOffsetY " +
+            "FROM database_rows JOIN pages ON pages.id = database_rows.linkedPageId " +
+            "WHERE database_rows.pageId = :pageId AND pages.coverImage IS NOT NULL"
+    )
+    fun observeRowCovers(pageId: String): Flow<List<RowCover>>
+
+    /**
+     * I blocchi **di primo livello** delle pagine delle righe, nell'ordine
+     * in cui stanno nella pagina: da qui la galleria prende le prime righe
+     * di testo da mostrare nelle schede. Quelli dentro un toggle restano
+     * fuori — sono nascosti anche nella pagina finché il toggle è chiuso.
+     *
+     * Torna tutti i blocchi e non solo i primi: "i primi N di ogni pagina"
+     * in SQLite vorrebbe le funzioni finestra, che arrivano solo con
+     * Android 11, sotto il minimo che l'app sostiene. Il taglio lo fa il
+     * repository.
+     */
+    @Query(
+        "SELECT database_rows.id AS rowId, blocks.type AS type, blocks.textJson AS textJson, " +
+            "blocks.isChecked AS isChecked, blocks.indentLevel AS indentLevel, " +
+            "blocks.numberStartsAt AS numberStartsAt, blocks.orderIndex AS orderIndex " +
+            "FROM database_rows JOIN blocks ON blocks.pageId = database_rows.linkedPageId " +
+            "WHERE database_rows.pageId = :pageId AND blocks.parentBlockId IS NULL " +
+            "ORDER BY database_rows.id, blocks.orderIndex"
+    )
+    fun observeRowPreviewBlocks(pageId: String): Flow<List<RowPreviewBlock>>
 
     /** Le righe il cui nome contiene la parola cercata: anche quelle mai aperte come pagina. */
     @Query("SELECT * FROM database_rows WHERE title LIKE '%' || :query || '%'")

@@ -3,6 +3,8 @@ package com.gabriele.notionlocal.ui.i18n
 import com.gabriele.notionlocal.data.entity.CalendarMode
 import com.gabriele.notionlocal.data.entity.ColumnType
 import com.gabriele.notionlocal.data.entity.DatabaseLayout
+import com.gabriele.notionlocal.data.entity.GalleryCardPreview
+import com.gabriele.notionlocal.data.entity.GalleryCardSize
 import com.gabriele.notionlocal.data.entity.RecurrenceFreq
 import com.gabriele.notionlocal.data.entity.TimelineZoom
 import com.gabriele.notionlocal.data.settings.AppLanguage
@@ -68,6 +70,21 @@ object DbStrings {
         DatabaseLayout.CALENDAR -> t("Calendar", "Calendario", "Kalender", "Calendrier", "Calendario", "日历", "캘린더", "カレンダー")
         DatabaseLayout.TIMELINE -> t("Timeline", "Linea temporale", "Zeitleiste", "Chronologie", "Cronograma", "时间线", "타임라인", "タイムライン")
         DatabaseLayout.LIST -> t("List", "Elenco", "Liste", "Liste", "Lista", "列表", "목록", "リスト")
+        DatabaseLayout.GALLERY -> t("Gallery", "Galleria", "Galerie", "Galerie", "Galería", "画廊", "갤러리", "ギャラリー")
+    }
+
+    fun galleryPreviewName(preview: GalleryCardPreview): String = when (preview) {
+        GalleryCardPreview.NONE -> none
+        GalleryCardPreview.PAGE_COVER -> t("Page cover", "Copertina della pagina", "Titelbild der Seite", "Couverture de la page", "Portada de la página", "页面封面", "페이지 커버", "ページカバー")
+        GalleryCardPreview.PAGE_CONTENT -> t("Page content", "Contenuto della pagina", "Seiteninhalt", "Contenu de la page", "Contenido de la página", "页面内容", "페이지 콘텐츠", "ページコンテンツ")
+    }
+
+    // Al femminile dove la lingua lo chiede: si parla di "scheda",
+    // "carte", "tarjeta".
+    fun gallerySizeName(size: GalleryCardSize): String = when (size) {
+        GalleryCardSize.SMALL -> t("Small", "Piccola", "Klein", "Petite", "Pequeña", "小", "작게", "小")
+        GalleryCardSize.MEDIUM -> t("Medium", "Media", "Mittel", "Moyenne", "Mediana", "中", "중간", "中")
+        GalleryCardSize.LARGE -> t("Large", "Grande", "Groß", "Grande", "Grande", "大", "크게", "大")
     }
 
     fun calendarModeName(mode: CalendarMode): String = when (mode) {
@@ -350,6 +367,8 @@ object DbStrings {
     fun nHidden(n: Int) = t("$n hidden", "$n nascoste", "$n ausgeblendet", "$n masquées", "$n ocultas", "已隐藏 $n 个", "${n}개 숨김", "${n}件非表示")
     val change get() = t("Change", "Cambia", "Ändern", "Changer", "Cambiar", "更改", "변경", "変更")
     val showTitle get() = t("Show title", "Mostra il titolo", "Titel anzeigen", "Afficher le titre", "Mostrar título", "显示标题", "제목 표시", "タイトルを表示")
+    val cardPreview get() = t("Card preview", "Anteprima della scheda", "Kartenvorschau", "Aperçu de la carte", "Vista previa de la tarjeta", "卡片预览", "카드 미리보기", "カードプレビュー")
+    val cardSize get() = t("Card size", "Dimensione della scheda", "Kartengröße", "Taille de la carte", "Tamaño de la tarjeta", "卡片大小", "카드 크기", "カードサイズ")
     val calendarNeedsDate get() = t(
         "A calendar places rows by a Date property, and this database doesn't have one yet.",
         "Un calendario colloca le righe in base a una proprietà Data, e questo database non ne ha ancora una.",

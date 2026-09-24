@@ -1909,15 +1909,25 @@ private const val MAX_COVER_DETAIL = 2
  *
  * **Il file non viene mai toccato**: la risoluzione resta quella
  * originale, quello che cambia è soltanto cosa se ne guarda.
+ *
+ * `clampOffset` serve a chi mostra la stessa inquadratura in un
+ * riquadro di **forma diversa** dalla striscia della pagina — le schede
+ * della galleria. Lo spostamento è salvato in frazioni della striscia,
+ * e in un riquadro più alto o più stretto la stessa frazione può
+ * portare l'immagine oltre il bordo e scoprire un angolo vuoto: acceso,
+ * lo spostamento si ferma dove l'immagine smette di coprire. Nella
+ * pagina resta spento, perché lì il limite lo mette già il dito mentre
+ * la si sposta, e la striscia è quella su cui l'inquadratura è nata.
  */
 @Composable
-private fun CoverImage(
+internal fun CoverImage(
     fileName: String,
     store: PageImageStore,
     scale: Float,
     offsetFraction: Offset,
     onImageSize: (IntSize) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    clampOffset: Boolean = false
 ) {
     var box by remember { mutableStateOf(IntSize.Zero) }
     var bitmap by remember(fileName) { mutableStateOf<ImageBitmap?>(null) }
@@ -1946,6 +1956,11 @@ private fun CoverImage(
             val fit = coverFitFactor(box, image.width, image.height) * scale
             val drawnWidth = image.width * fit
             val drawnHeight = image.height * fit
+            val limit = if (clampOffset) {
+                coverPanLimit(box, image.width, image.height, scale)
+            } else {
+                null
+            }
             Image(
                 bitmap = image,
                 contentDescription = EditorStrings.cover,
@@ -1956,10 +1971,13 @@ private fun CoverImage(
                         with(density) { drawnHeight.toDp() }
                     )
                     .offset {
-                        IntOffset(
-                            (offsetFraction.x * box.width).roundToInt(),
-                            (offsetFraction.y * box.height).roundToInt()
-                        )
+                        var x = offsetFraction.x * box.width
+                        var y = offsetFraction.y * box.height
+                        if (limit != null) {
+                            x = x.coerceIn(-limit.x, limit.x)
+                            y = y.coerceIn(-limit.y, limit.y)
+                        }
+                        IntOffset(x.roundToInt(), y.roundToInt())
                     }
             )
         }
@@ -2368,7 +2386,12 @@ private val SLASH_ENTRIES: List<SlashEntry> = listOf(
         SlashAction.Database(DatabaseLayout.BOARD),
         Icons.Filled.ViewColumn
     ),
-    SlashEntry("Gallery view", SlashCategory.DATABASE, SlashAction.NotYet, Icons.Filled.GridView),
+    SlashEntry(
+        "Gallery view",
+        SlashCategory.DATABASE,
+        SlashAction.Database(DatabaseLayout.GALLERY),
+        Icons.Filled.GridView
+    ),
     SlashEntry(
         "List view",
         SlashCategory.DATABASE,
@@ -2551,8 +2574,12 @@ private val NUMBERED_STYLES: List<(Int) -> String> = listOf(
     { n -> ordinalWord(n) + "." }
 )
 
-/** Il numero scritto come lo vuole il livello in cui si trova. */
-private fun numberedMarkerFor(indent: Int, ordinal: Int): String {
+/**
+ * Il numero scritto come lo vuole il livello in cui si trova. `internal`
+ * perché lo usa anche l'anteprima delle schede della galleria: un elenco
+ * deve leggersi uguale nella pagina e nella scheda.
+ */
+internal fun numberedMarkerFor(indent: Int, ordinal: Int): String {
     val i = ((indent % NUMBERED_STYLES.size) + NUMBERED_STYLES.size) % NUMBERED_STYLES.size
     return NUMBERED_STYLES[i](ordinal.coerceAtLeast(1))
 }
@@ -2620,8 +2647,11 @@ private fun ordinalWord(n: Int): String = ORDINAL_WORDS.getOrNull(n - 1) ?: n.to
 private fun bulletIndexFor(indent: Int): Int =
     ((indent % BULLET_MARKERS.size) + BULLET_MARKERS.size) % BULLET_MARKERS.size
 
-/** Il segno da mettere davanti a un elenco puntato rientrato di `indent` livelli. */
-private fun bulletMarkerFor(indent: Int): String = BULLET_MARKERS[bulletIndexFor(indent)]
+/**
+ * Il segno da mettere davanti a un elenco puntato rientrato di `indent`
+ * livelli. `internal` per la stessa ragione di `numberedMarkerFor`.
+ */
+internal fun bulletMarkerFor(indent: Int): String = BULLET_MARKERS[bulletIndexFor(indent)]
 
 /** Con che corpo va scritto quel segno. */
 private fun bulletMarkerSizeFor(indent: Int): TextUnit = BULLET_MARKER_SIZES[bulletIndexFor(indent)]

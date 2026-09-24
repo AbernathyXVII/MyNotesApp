@@ -81,6 +81,23 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.ui.platform.LocalContext
 import com.gabriele.notionlocal.data.PageImageStore
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.ViewAgenda
+import androidx.compose.material.icons.filled.ViewComfy
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
+import com.gabriele.notionlocal.data.dao.RowCover
+import com.gabriele.notionlocal.data.entity.BlockType
+import com.gabriele.notionlocal.data.entity.GALLERY_DEFAULT_PREVIEW
+import com.gabriele.notionlocal.data.entity.GALLERY_DEFAULT_SIZE
+import com.gabriele.notionlocal.data.entity.GalleryCardPreview
+import com.gabriele.notionlocal.data.entity.GalleryCardSize
+import com.gabriele.notionlocal.data.repository.RowPreviewLine
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
@@ -563,6 +580,10 @@ fun DatabaseContent(
     val state by viewModel.tableState.collectAsStateWithLifecycle()
     val page by viewModel.page.collectAsStateWithLifecycle()
     val rowIcons by viewModel.rowIcons.collectAsStateWithLifecycle()
+    // Copertine e testo delle pagine delle righe: arrivano solo quando la
+    // vista è la galleria (vedi `DatabaseViewModel.load`).
+    val rowCovers by viewModel.rowCovers.collectAsStateWithLifecycle()
+    val rowPreviews by viewModel.rowPreviews.collectAsStateWithLifecycle()
     // La riga di cui si sta scegliendo l'icona, dalla finestra delle azioni.
     var iconForRow by remember { mutableStateOf<DatabaseRowEntity?>(null) }
 
@@ -856,6 +877,19 @@ fun DatabaseContent(
                         rowActionsFor = row
                     }
                 )
+
+                DatabaseLayout.GALLERY -> GalleryLayout(
+                    state = state,
+                    preview = page?.galleryCardPreview ?: GALLERY_DEFAULT_PREVIEW,
+                    size = page?.galleryCardSize ?: GALLERY_DEFAULT_SIZE,
+                    covers = rowCovers,
+                    contentPreviews = rowPreviews,
+                    onOpenRow = { row -> viewModel.openRow(row) { onOpenRowPage(it) } },
+                    onRowLongPress = { row ->
+                        focusManager.clearFocus()
+                        rowActionsFor = row
+                    }
+                )
             }
 
             // Se la vista non ha la proprietà su cui si regge, non
@@ -959,6 +993,10 @@ fun DatabaseContent(
             },
             onSetGroupColumn = { viewModel.setBoardGroupColumn(it.id) },
             onSetDateColumn = { viewModel.setCalendarDateColumn(it.id) },
+            galleryPreview = page?.galleryCardPreview ?: GALLERY_DEFAULT_PREVIEW,
+            gallerySize = page?.galleryCardSize ?: GALLERY_DEFAULT_SIZE,
+            onSetGalleryPreview = { viewModel.setGalleryCardPreview(it) },
+            onSetGallerySize = { viewModel.setGalleryCardSize(it) },
             onEditProperty = { column ->
                 showSettings = false
                 propertyTarget = PropertyTarget.Existing(column)
@@ -2601,6 +2639,283 @@ private fun ListLayout(
                 }
             }
             HorizontalDivider()
+        }
+    }
+}
+
+/**
+ * Le misure della galleria.
+ *
+ * Le schede non hanno una larghezza fissa ma **una larghezza minima**
+ * per ogni dimensione: in una riga ne entrano quante ci stanno, e si
+ * allargano insieme a riempirla. Su un telefono in verticale sono tre
+ * piccole, due medie o una grande per riga; girandolo, o su uno schermo
+ * più largo, ne entrano di più invece di diventare enormi.
+ */
+private val GALLERY_MIN_CARD_SMALL = 100.dp
+private val GALLERY_MIN_CARD_MEDIUM = 150.dp
+private val GALLERY_MIN_CARD_LARGE = 280.dp
+private val GALLERY_GAP = 10.dp
+
+/**
+ * Larghezza su altezza della parte alta di una scheda. È più bassa della
+ * striscia di una copertina di pagina in proporzione, ma non troppo:
+ * dentro deve ancora capirsi cos'è l'immagine, e l'anteprima del testo
+ * deve avere posto per qualche riga.
+ */
+private const val GALLERY_PREVIEW_RATIO = 1.6f
+
+/** Quante schede stanno in una riga larga `width`, con la dimensione scelta. */
+private fun galleryColumnsFor(width: Dp, size: GalleryCardSize): Int {
+    val minCard = when (size) {
+        GalleryCardSize.SMALL -> GALLERY_MIN_CARD_SMALL
+        GalleryCardSize.MEDIUM -> GALLERY_MIN_CARD_MEDIUM
+        GalleryCardSize.LARGE -> GALLERY_MIN_CARD_LARGE
+    }
+    // Fra n schede ci sono n - 1 spazi: aggiungerne uno alla larghezza
+    // disponibile rende il conto giusto con una divisione sola.
+    return ((width + GALLERY_GAP) / (minCard + GALLERY_GAP)).toInt().coerceAtLeast(1)
+}
+
+/**
+ * La visualizzazione a galleria: una griglia di schede, una per pagina,
+ * con in alto la copertina della pagina o l'inizio del suo testo e sotto
+ * il nome e le proprietà. Come la bacheca e l'elenco, si tocca una
+ * scheda per aprire la pagina e la si tiene premuta per le azioni.
+ *
+ * **Non è una griglia pigra** (`LazyVerticalGrid`), come non lo sono le
+ * altre viste: il database dentro una pagina sta in una lista che già
+ * scorre, e una griglia che scorre per conto suo lì dentro non si può
+ * mettere. Il prezzo è che tutte le schede si costruiscono insieme,
+ * immagini comprese — vedi "Limiti noti" nel README.
+ *
+ * Le schede di una stessa riga sono **alte uguali**: una con tre
+ * proprietà accanto a una senza lascerebbe un gradino a metà della
+ * griglia, e la riga dopo sembrerebbe cominciare storta.
+ */
+@Composable
+private fun GalleryLayout(
+    state: DatabaseTableState,
+    preview: GalleryCardPreview,
+    size: GalleryCardSize,
+    covers: Map<String, RowCover>,
+    contentPreviews: Map<String, List<RowPreviewLine>>,
+    onOpenRow: (DatabaseRowEntity) -> Unit,
+    onRowLongPress: (DatabaseRowEntity) -> Unit
+) {
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+    ) {
+        val columns = galleryColumnsFor(maxWidth, size)
+        Column(verticalArrangement = Arrangement.spacedBy(GALLERY_GAP)) {
+            state.rows.chunked(columns).forEach { cardsInRow ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(IntrinsicSize.Max),
+                    horizontalArrangement = Arrangement.spacedBy(GALLERY_GAP)
+                ) {
+                    cardsInRow.forEach { row ->
+                        GalleryCard(
+                            row = row,
+                            state = state,
+                            preview = preview,
+                            size = size,
+                            cover = covers[row.id],
+                            contentLines = contentPreviews[row.id],
+                            onOpen = { onOpenRow(row) },
+                            onLongPress = { onRowLongPress(row) },
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                        )
+                    }
+                    // L'ultima riga, se non è piena, tiene le schede
+                    // larghe come le altre invece di allargarle a
+                    // riempire lo spazio: una scheda grande il doppio in
+                    // fondo sembrerebbe più importante delle altre.
+                    repeat(columns - cardsInRow.size) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Una scheda della galleria: l'anteprima in alto, poi nome e proprietà.
+ *
+ * L'anteprima occupa il suo posto **anche quando è vuota** — una pagina
+ * senza copertina, o senza testo — così le schede restano allineate e
+ * si vede dove comparirebbe. Con "None" invece non c'è proprio.
+ */
+@Composable
+private fun GalleryCard(
+    row: DatabaseRowEntity,
+    state: DatabaseTableState,
+    preview: GalleryCardPreview,
+    size: GalleryCardSize,
+    cover: RowCover?,
+    contentLines: List<RowPreviewLine>?,
+    onOpen: () -> Unit,
+    onLongPress: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val store = remember(context) { PageImageStore(context) }
+
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(DarkSurface)
+            .pointerInput(row.id) {
+                detectTapGestures(onTap = { onOpen() }, onLongPress = { onLongPress() })
+            }
+    ) {
+        if (preview != GalleryCardPreview.NONE) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(GALLERY_PREVIEW_RATIO)
+                    .background(DarkSurfaceVariant)
+            ) {
+                if (preview == GalleryCardPreview.PAGE_COVER && cover != null) {
+                    // La stessa inquadratura scelta nella pagina con
+                    // "Reposition", tenuta dentro i bordi: la scheda ha
+                    // un'altra forma della striscia della pagina.
+                    CoverImage(
+                        fileName = cover.coverImage,
+                        store = store,
+                        scale = cover.coverScale,
+                        offsetFraction = Offset(cover.coverOffsetX, cover.coverOffsetY),
+                        onImageSize = {},
+                        clampOffset = true,
+                        modifier = Modifier.matchParentSize()
+                    )
+                }
+                if (preview == GalleryCardPreview.PAGE_CONTENT && !contentLines.isNullOrEmpty()) {
+                    GalleryContentPreview(
+                        lines = contentLines,
+                        size = size,
+                        modifier = Modifier.matchParentSize()
+                    )
+                }
+            }
+        }
+
+        Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                RowIconBadge(row.id, ROW_ICON_SIZE)
+                Text(
+                    text = row.title.ifBlank { Strings.untitled },
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = if (row.title.isBlank()) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.onBackground
+                    },
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            // Le proprietà come sulle schede della bacheca: solo quelle
+            // che si vedono e che hanno un valore, una per riga.
+            state.visibleColumns.forEach { column ->
+                val value = state.cellValues[row.id to column.id].orEmpty()
+                val label = listCellLabel(column, value)
+                if (label.isNotBlank()) {
+                    Spacer(modifier = Modifier.size(4.dp))
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * L'inizio del testo della pagina, in piccolo, dentro la parte alta
+ * della scheda: "Page content" di Notion.
+ *
+ * Ogni riga si scrive come nella pagina — i titoli più marcati, gli
+ * elenchi col loro segno (lo stesso della pagina, che cambia a ogni
+ * rientro), le caselle spuntate o no, i toggle con la freccia — perché
+ * l'anteprima serve a riconoscere la pagina, e una pagina si riconosce
+ * anche dalla sua forma. Quello che non ci sta viene tagliato dal bordo
+ * della scheda, non riassunto.
+ */
+@Composable
+private fun GalleryContentPreview(
+    lines: List<RowPreviewLine>,
+    size: GalleryCardSize,
+    modifier: Modifier = Modifier
+) {
+    // Il corpo del testo segue la scheda: in quella piccola ci stanno
+    // tre dita di larghezza, e un testo normale mostrerebbe due parole.
+    val bodySize = when (size) {
+        GalleryCardSize.SMALL -> 8.sp
+        GalleryCardSize.MEDIUM -> 10.sp
+        GalleryCardSize.LARGE -> 12.sp
+    }
+    val indentStep = when (size) {
+        GalleryCardSize.SMALL -> 6.dp
+        GalleryCardSize.MEDIUM -> 8.dp
+        GalleryCardSize.LARGE -> 12.dp
+    }
+    Column(
+        modifier = modifier
+            .clipToBounds()
+            .padding(horizontal = 10.dp, vertical = 8.dp)
+    ) {
+        lines.forEach { line ->
+            val (fontSize, weight) = when (line.type) {
+                BlockType.HEADING_1 -> bodySize * 1.5f to FontWeight.Bold
+                BlockType.HEADING_2 -> bodySize * 1.3f to FontWeight.Bold
+                BlockType.HEADING_3 -> bodySize * 1.15f to FontWeight.SemiBold
+                else -> bodySize to FontWeight.Normal
+            }
+            val marker = when (line.type) {
+                BlockType.BULLET_LIST_ITEM -> bulletMarkerFor(line.indentLevel) + " "
+                BlockType.NUMBERED_LIST_ITEM -> numberedMarkerFor(line.indentLevel, line.ordinal) + " "
+                BlockType.CHECKBOX -> if (line.isChecked) "☑ " else "☐ "
+                BlockType.TOGGLE -> "▸ "
+                else -> ""
+            }
+            // Il rientro vale solo per il testo scorrevole, come nella
+            // pagina: i toggle e le caselle non hanno livelli.
+            val indent = when (line.type) {
+                BlockType.CHECKBOX, BlockType.TOGGLE -> 0
+                else -> line.indentLevel
+            }
+            Text(
+                text = marker + line.text,
+                fontSize = fontSize,
+                lineHeight = fontSize * 1.3f,
+                fontWeight = weight,
+                color = if (line.type == BlockType.CHECKBOX && line.isChecked) {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                } else {
+                    MaterialTheme.colorScheme.onBackground
+                },
+                textDecoration = if (line.type == BlockType.CHECKBOX && line.isChecked) {
+                    TextDecoration.LineThrough
+                } else {
+                    null
+                },
+                maxLines = 2,
+                overflow = TextOverflow.Clip,
+                modifier = Modifier.padding(start = indentStep * indent.coerceAtMost(4))
+            )
         }
     }
 }
@@ -5059,7 +5374,11 @@ private enum class SettingsPage {
     TABLE_GROUP,
     /** Quali colonne si vedono nella tabella e quali no. */
     PROPERTY_VISIBILITY,
-    DATE_PROPERTY
+    DATE_PROPERTY,
+    /** Cosa mostra la parte alta delle schede della galleria. */
+    CARD_PREVIEW,
+    /** Quanto sono grandi le schede della galleria. */
+    CARD_SIZE
 }
 
 /** Le schermate dentro la finestra delle azioni di una riga. */
@@ -5250,6 +5569,11 @@ private fun SettingsSheet(
     onSetLayout: (DatabaseLayout) -> Unit,
     onSetGroupColumn: (DatabaseColumnEntity) -> Unit,
     onSetDateColumn: (DatabaseColumnEntity) -> Unit,
+    /** Anteprima e dimensione delle schede: contano solo per la galleria. */
+    galleryPreview: GalleryCardPreview = GALLERY_DEFAULT_PREVIEW,
+    gallerySize: GalleryCardSize = GALLERY_DEFAULT_SIZE,
+    onSetGalleryPreview: (GalleryCardPreview) -> Unit = {},
+    onSetGallerySize: (GalleryCardSize) -> Unit = {},
     onEditProperty: (DatabaseColumnEntity) -> Unit,
     onAddProperty: () -> Unit,
     /** Null quando il database è a schermo intero: lì il titolo c'è sempre. */
@@ -5302,6 +5626,8 @@ private fun SettingsSheet(
                         SettingsPage.TABLE_GROUP -> DbStrings.group
                         SettingsPage.PROPERTY_VISIBILITY -> DbStrings.propertyVisibility
                         SettingsPage.DATE_PROPERTY -> DbStrings.dateProperty
+                        SettingsPage.CARD_PREVIEW -> DbStrings.cardPreview
+                        SettingsPage.CARD_SIZE -> DbStrings.cardSize
                     },
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
@@ -5378,6 +5704,27 @@ private fun SettingsSheet(
                             enabled = !viewLocked,
                                 value = dateColumn?.name?.let(DbStrings::columnName) ?: DbStrings.none,
                                 onClick = { page = SettingsPage.DATE_PROPERTY }
+                            )
+                        }
+                        // Le due voci della galleria, dove le mette Notion:
+                        // subito sotto la vista. Sono impaginazione, quindi
+                        // "Lock view" le spegne come le altre.
+                        if (layout == DatabaseLayout.GALLERY) {
+                            HorizontalDivider()
+                            SettingsRow(
+                                icon = galleryPreview.icon(),
+                                label = DbStrings.cardPreview,
+                                enabled = !viewLocked,
+                                value = DbStrings.galleryPreviewName(galleryPreview),
+                                onClick = { page = SettingsPage.CARD_PREVIEW }
+                            )
+                            HorizontalDivider()
+                            SettingsRow(
+                                icon = gallerySize.icon(),
+                                label = DbStrings.cardSize,
+                                enabled = !viewLocked,
+                                value = DbStrings.gallerySizeName(gallerySize),
+                                onClick = { page = SettingsPage.CARD_SIZE }
                             )
                         }
                         HorizontalDivider()
@@ -5502,6 +5849,38 @@ private fun SettingsSheet(
                                     onClick = { onSetDateColumn(column) }
                                 )
                             }
+                        }
+                    }
+                }
+
+                // Scelta una voce la finestra resta aperta sulla stessa
+                // schermata, come per la proprietà data e "Group by": il
+                // segno di spunta si sposta, e la galleria dietro cambia
+                // subito, così si vede l'effetto prima di tornare indietro.
+                SettingsPage.CARD_PREVIEW -> {
+                    SheetGroup {
+                        GalleryCardPreview.entries.forEachIndexed { index, option ->
+                            if (index > 0) HorizontalDivider()
+                            SettingsRow(
+                                icon = option.icon(),
+                                label = DbStrings.galleryPreviewName(option),
+                                value = if (option == galleryPreview) "✓" else null,
+                                onClick = { onSetGalleryPreview(option) }
+                            )
+                        }
+                    }
+                }
+
+                SettingsPage.CARD_SIZE -> {
+                    SheetGroup {
+                        GalleryCardSize.entries.forEachIndexed { index, option ->
+                            if (index > 0) HorizontalDivider()
+                            SettingsRow(
+                                icon = option.icon(),
+                                label = DbStrings.gallerySizeName(option),
+                                value = if (option == gallerySize) "✓" else null,
+                                onClick = { onSetGallerySize(option) }
+                            )
                         }
                     }
                 }
@@ -6098,6 +6477,20 @@ private fun DatabaseLayout.icon(): ImageVector = when (this) {
     DatabaseLayout.CALENDAR -> Icons.Filled.CalendarToday
     DatabaseLayout.TIMELINE -> Icons.Filled.ViewTimeline
     DatabaseLayout.LIST -> Icons.Filled.FormatListBulleted
+    // La stessa icona della voce "Gallery view" nel menu "/".
+    DatabaseLayout.GALLERY -> Icons.Filled.GridView
+}
+
+private fun GalleryCardPreview.icon(): ImageVector = when (this) {
+    GalleryCardPreview.NONE -> Icons.Filled.Block
+    GalleryCardPreview.PAGE_COVER -> Icons.Filled.Image
+    GalleryCardPreview.PAGE_CONTENT -> Icons.Filled.Notes
+}
+
+private fun GalleryCardSize.icon(): ImageVector = when (this) {
+    GalleryCardSize.SMALL -> Icons.Filled.ViewComfy
+    GalleryCardSize.MEDIUM -> Icons.Filled.GridView
+    GalleryCardSize.LARGE -> Icons.Filled.ViewAgenda
 }
 
 /** Il nome del tipo nella lingua dell'app. Per il nome che si salva vedi `DbStrings.englishTypeName`. */

@@ -8,18 +8,56 @@ import java.util.UUID
 
 /**
  * Come una pagina-database mostra le sue righe. Ricalca i "layout" di
- * Notion. Qui ci sono solo quelli costruiti davvero: gli altri
- * (bacheca, linea del tempo, calendario, galleria, grafico) si
- * aggiungono uno alla volta, perché ognuno è una schermata a sé e
- * offrirne una che non disegna niente sarebbe peggio che non offrirla.
+ * Notion. Qui ci sono solo quelli costruiti davvero: gli altri (oggi
+ * manca solo il grafico) si aggiungono uno alla volta, perché ognuno è
+ * una schermata a sé e offrirne una che non disegna niente sarebbe
+ * peggio che non offrirla.
+ *
+ * Si salva **per nome**, quindi l'ordine qui si può cambiare senza
+ * toccare i database già salvati. È anche l'ordine dei riquadri nel
+ * selettore della vista.
  */
 enum class DatabaseLayout {
     TABLE,
     BOARD,
     CALENDAR,
     TIMELINE,
-    LIST
+    LIST,
+    GALLERY
 }
+
+/**
+ * Cosa mostra la parte alta di una scheda della galleria: niente, la
+ * copertina della pagina, o l'inizio del suo testo. Sono le tre voci di
+ * "Card preview" su Notion che si possono fare qui — la quarta, una
+ * proprietà "Files & media", richiede un tipo di proprietà che l'app
+ * non ha.
+ */
+enum class GalleryCardPreview {
+    NONE,
+    PAGE_COVER,
+    PAGE_CONTENT
+}
+
+/** Quanto sono grandi le schede della galleria, come "Card size" su Notion. */
+enum class GalleryCardSize {
+    SMALL,
+    MEDIUM,
+    LARGE
+}
+
+/**
+ * Cosa mostra una galleria finché non si sceglie altro: **la
+ * copertina**. È la ragione per cui la galleria è arrivata dopo le
+ * copertine delle pagine — una griglia di schede che si riconoscono a
+ * colpo d'occhio dall'immagine è la cosa che la distingue dall'elenco.
+ * Chi ha pagine senza copertina passa a "Page content" dalle
+ * impostazioni della vista.
+ */
+val GALLERY_DEFAULT_PREVIEW = GalleryCardPreview.PAGE_COVER
+
+/** Schede medie finché non si sceglie altro: due per riga su un telefono. */
+val GALLERY_DEFAULT_SIZE = GalleryCardSize.MEDIUM
 
 /**
  * Quanto tempo mostra il calendario in una schermata: un anno, un mese
@@ -144,6 +182,12 @@ data class PageEntity(
     // Quanto tempo sta in una schermata della linea del tempo. null
     // vale "giorno", che è come si apriva prima.
     var timelineZoom: TimelineZoom? = null,
+    // Cosa mostra la parte alta delle schede della galleria, e quanto
+    // sono grandi. null vale "copertina" e "media": vedi
+    // `GALLERY_DEFAULT_PREVIEW` e `GALLERY_DEFAULT_SIZE` qui sopra, dove
+    // è spiegato il perché della scelta.
+    var galleryCardPreview: GalleryCardPreview? = null,
+    var galleryCardSize: GalleryCardSize? = null,
     // In base a quale proprietà sono ordinate le righe, e in che verso.
     // null = nell'ordine in cui sono state create, che è come stavano
     // prima che l'ordinamento esistesse. Il valore speciale

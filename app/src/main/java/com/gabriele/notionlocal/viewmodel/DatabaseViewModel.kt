@@ -3,11 +3,15 @@ package com.gabriele.notionlocal.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gabriele.notionlocal.data.PageImageStore
+import com.gabriele.notionlocal.data.dao.RowCover
 import com.gabriele.notionlocal.data.entity.CalendarMode
 import com.gabriele.notionlocal.data.entity.ColumnType
 import com.gabriele.notionlocal.data.entity.DatabaseLayout
 import com.gabriele.notionlocal.data.entity.DatabaseColumnEntity
 import com.gabriele.notionlocal.data.entity.DatabaseRowEntity
+import com.gabriele.notionlocal.data.entity.GALLERY_DEFAULT_PREVIEW
+import com.gabriele.notionlocal.data.entity.GalleryCardPreview
+import com.gabriele.notionlocal.data.entity.GalleryCardSize
 import com.gabriele.notionlocal.data.entity.PageEntity
 import com.gabriele.notionlocal.data.entity.MULTI_VALUE_SEPARATOR
 import com.gabriele.notionlocal.data.entity.SORT_BY_NAME
@@ -17,10 +21,15 @@ import com.gabriele.notionlocal.data.entity.TAG_COLORS
 import com.gabriele.notionlocal.data.entity.TimelineZoom
 import com.gabriele.notionlocal.data.repository.DatabaseRepository
 import com.gabriele.notionlocal.data.repository.PageRepository
+import com.gabriele.notionlocal.data.repository.RowPreviewLine
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -29,6 +38,25 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
+
+/**
+ * Quante righe di testo di una pagina si leggono per l'anteprima di una
+ * scheda della galleria. Più di quante ne stiano nella scheda più alta:
+ * quelle in eccesso le taglia la scheda, mentre leggerne di meno la
+ * lascerebbe mezza vuota su una pagina che ha testo da mostrare.
+ */
+private const val GALLERY_PREVIEW_MAX_LINES = 12
+
+/**
+ * Quale anteprima mostra la galleria di questo database, o null se la
+ * vista scelta non è la galleria — e allora non ne serve nessuna.
+ */
+private fun PageEntity.galleryPreviewShown(): GalleryCardPreview? =
+    if (databaseLayout == DatabaseLayout.GALLERY) {
+        galleryCardPreview ?: GALLERY_DEFAULT_PREVIEW
+    } else {
+        null
+    }
 
 /**
  * Il valore di una cella ridotto a quello che serve per ordinarla: un
@@ -98,12 +126,55 @@ class DatabaseViewModel(
     private val _rowIcons = MutableStateFlow<Map<String, String>>(emptyMap())
     val rowIcons: StateFlow<Map<String, String>> = _rowIcons
 
+    /** Riga → copertina della sua pagina: le schede della galleria. */
+    private val _rowCovers = MutableStateFlow<Map<String, RowCover>>(emptyMap())
+    val rowCovers: StateFlow<Map<String, RowCover>> = _rowCovers
+
+    /** Riga → prime righe di testo della sua pagina: l'anteprima "Page content" della galleria. */
+    private val _rowPreviews = MutableStateFlow<Map<String, List<RowPreviewLine>>>(emptyMap())
+    val rowPreviews: StateFlow<Map<String, List<RowPreviewLine>>> = _rowPreviews
+
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun load(pageId: String) {
         if (currentPageId == pageId) return
         currentPageId = pageId
 
         viewModelScope.launch {
             repository.observeRowIcons(pageId).collect { _rowIcons.value = it }
+        }
+
+        // Copertine e testo delle pagine si seguono **solo mentre la
+        // galleria li mostra**. Il testo soprattutto: la query guarda la
+        // tabella dei blocchi, che cambia ad ogni tasto battuto in
+        // qualunque pagina, e questo ViewModel resta vivo anche quando
+        // il database è rimasto indietro nella pila di navigazione.
+        // Seguirlo sempre vorrebbe dire rifare la query ad ogni lettera
+        // scritta altrove, per una vista che magari non è nemmeno quella
+        // scelta.
+        viewModelScope.launch {
+            _page.map { it?.galleryPreviewShown() }
+                .distinctUntilChanged()
+                .flatMapLatest { shown ->
+                    if (shown == GalleryCardPreview.PAGE_COVER) {
+                        repository.observeRowCovers(pageId)
+                    } else {
+                        flowOf(emptyMap<String, RowCover>())
+                    }
+                }
+                .collect { _rowCovers.value = it }
+        }
+        viewModelScope.launch {
+            _page.map { it?.galleryPreviewShown() }
+                .distinctUntilChanged()
+                .flatMapLatest { shown ->
+                    if (shown == GalleryCardPreview.PAGE_CONTENT) {
+                        repository.observeRowContentPreviews(pageId, GALLERY_PREVIEW_MAX_LINES)
+                    } else {
+                        flowOf(emptyMap<String, List<RowPreviewLine>>())
+                    }
+                }
+                .distinctUntilChanged()
+                .collect { _rowPreviews.value = it }
         }
 
         // Seguita nel tempo, non letta una volta sola. Lo stesso
@@ -661,6 +732,22 @@ class DatabaseViewModel(
     fun setLayout(layout: DatabaseLayout) {
         val current = _page.value ?: return
         val updated = current.copy(databaseLayout = layout)
+        _page.value = updated
+        viewModelScope.launch { pageRepository.updatePage(updated) }
+    }
+
+    /** Cosa mostrano le schede della galleria: niente, la copertina o il testo. */
+    fun setGalleryCardPreview(preview: GalleryCardPreview) {
+        val current = _page.value ?: return
+        val updated = current.copy(galleryCardPreview = preview)
+        _page.value = updated
+        viewModelScope.launch { pageRepository.updatePage(updated) }
+    }
+
+    /** Quanto sono grandi le schede della galleria. */
+    fun setGalleryCardSize(size: GalleryCardSize) {
+        val current = _page.value ?: return
+        val updated = current.copy(galleryCardSize = size)
         _page.value = updated
         viewModelScope.launch { pageRepository.updatePage(updated) }
     }

@@ -43,7 +43,7 @@ import com.gabriele.notionlocal.data.entity.TableCellEntity
         TableCellEntity::class,
         PageEditEntity::class
     ],
-    version = 24,
+    version = 25,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -331,6 +331,20 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Aggiunge `galleryCardPreview` e `galleryCardSize` alle pagine:
+         * cosa mostrano le schede della vista a galleria e quanto sono
+         * grandi. Ammettono null, che vale "copertina" e "media" — la
+         * galleria prima non esisteva, quindi non c'è una scelta
+         * precedente da rispettare.
+         */
+        private val MIGRATION_24_25 = object : Migration(24, 25) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE pages ADD COLUMN galleryCardPreview TEXT")
+                db.execSQL("ALTER TABLE pages ADD COLUMN galleryCardSize TEXT")
+            }
+        }
+
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -357,7 +371,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_20_21,
                         MIGRATION_21_22,
                         MIGRATION_22_23,
-                        MIGRATION_23_24
+                        MIGRATION_23_24,
+                        MIGRATION_24_25
                     )
                     .build()
                 INSTANCE = instance
