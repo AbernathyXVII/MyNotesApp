@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Immagine completamente trasparente, usata come icona della schermata
+  di avvio. Da Android 12 quella schermata è obbligatoria e non si può
+  disattivare: l'unico modo per non vederla è darle uno sfondo uguale a
+  quello dell'app e un'icona invisibile, così l'app sembra aprirsi
+  direttamente sul contenuto.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@android:color/transparent" />
+</shape>

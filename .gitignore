@@ -1,0 +1,22 @@
+# Generati da Gradle e Android Studio: si ricreano da soli
+build/
+.gradle/
+.kotlin/
+.idea/
+*.iml
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+
+# App compilate
+*.apk
+*.aab
+
+# Chiavi di firma: non vanno mai su GitHub
+*.jks
+*.keystore
+
+# Sistema operativo
+.DS_Store
+Thumbs.db

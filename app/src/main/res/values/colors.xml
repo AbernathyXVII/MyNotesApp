@@ -1,0 +1,8 @@
+<resources>
+    <!--
+      Lo stesso grigio di DarkBackground in Color.kt. Serve una copia
+      qui perché la schermata di avvio la disegna Android prima che
+      esista del codice Kotlin: se cambia uno, va cambiato anche l'altro.
+    -->
+    <color name="page_background">#191919</color>
+</resources>
