@@ -739,6 +739,10 @@ README di una riga).
 16. «Come dici te non c'è. Qual è?» (con gli screenshot dei due menu)
 17. «Cosa faccio?» (con lo screenshot della finestra "Edit cloud
     environment")
+18. «Mi dice "Couldn't parse "dl.google.com". Use KEY=value format"»
+    — il dominio era finito nel riquadro "Environment variables", che
+    vuole righe `CHIAVE=valore`; i domini vanno nel campo che compare
+    sotto "Network access" scegliendo un livello personalizzato
 
 **Cosa è stato fatto:**
 
