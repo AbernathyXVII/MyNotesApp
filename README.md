@@ -118,6 +118,16 @@ vedere in un colpo solo tutte le modifiche al codice fatte in cloud:
 per esempio dopo un "Squash and merge", si confronta col contenuto
 dell'archivio in `83f7b61`).
 
+**Dal 24/09/2026 (richiesta 38) sul telefono può esserci l'APK fatto in
+cloud** (commit `0557c35`), installato dall'utente dopo aver
+disinstallato notE, con le sole note di prova. È firmato con una chiave
+di debug nata sul server cloud (e ogni sessione cloud ne crea una nuova):
+**la prossima installazione da Android Studio sul PC chiederà di nuovo
+di disinstallare**, e le note sul telefono andranno perse — prima si
+copia il database (vedi "Nota tecnica") se dentro c'è qualcosa che
+serve. Da lì in poi la chiave torna quella del PC e le installazioni
+successive dal PC tengono le note.
+
 ### Ripresa sul PC dopo il cloud — procedura obbligatoria
 
 Richiesta esplicita dell'utente: il lavoro cloud **va ricontrollato
@@ -1270,6 +1280,15 @@ README di una riga).
     può andare sotto zero; le barre partono verdi come nella foto.
     "Quarter" e "Life" della foto non erano nella richiesta e non ci
     sono: si fanno con "Aggiungi una data"
+38. «Ok, ho quasi finito i crediti gratis. Grazie mille dell'ottimo
+    lavoro che hai fatto. Ora mi dici come posso installare l'APK di
+    questa build sul telefono? Stai tranquillo per i dati, non ho ancora
+    scritto nulla di importante, solo testo o database di prova» — dato
+    all'utente l'APK compilato in cloud (commit `0557c35`, build di
+    debug) con i passi per installarlo: disinstallare prima notE (firma
+    diversa), permettere l'installazione da quella app, installare.
+    L'utente ha accettato di perdere le note di prova. Vedi "⛔ Il
+    confine" per cosa cambia sul PC
 
 **Cosa è stato fatto:**
 
