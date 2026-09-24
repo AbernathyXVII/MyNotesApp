@@ -43,7 +43,7 @@ import com.gabriele.notionlocal.data.entity.TableCellEntity
         TableCellEntity::class,
         PageEditEntity::class
     ],
-    version = 26,
+    version = 27,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -358,6 +358,31 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * **Toglie i titoli (Heading 1, 2 e 3)**, su richiesta dell'utente:
+         * ora il corpo del testo si sceglie per pagina dalla barra Aa, e
+         * titoli a misura fissa non avevano più senso. Quelli già scritti
+         * diventano **paragrafi normali**, senza grassetto — scelta
+         * dell'utente fra le tre proposte (grassetto, normale, lasciarli).
+         * Il testo non si tocca: cambia solo il tipo del blocco, e
+         * formattazione e colori messi a mano restano.
+         *
+         * Non cambia la forma di nessuna tabella, solo dei valori: Room
+         * salva i tipi per nome, e dall'enum `BlockType` i tre nomi sono
+         * stati tolti. **Questa migrazione deve girare prima di qualunque
+         * lettura**, altrimenti un blocco con un nome che l'enum non
+         * conosce più farebbe chiudere l'app — ed è quello che Room
+         * garantisce, facendo le migrazioni all'apertura del database.
+         */
+        private val MIGRATION_26_27 = object : Migration(26, 27) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "UPDATE blocks SET type = 'PARAGRAPH' " +
+                        "WHERE type IN ('HEADING_1', 'HEADING_2', 'HEADING_3')"
+                )
+            }
+        }
+
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -386,7 +411,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_22_23,
                         MIGRATION_23_24,
                         MIGRATION_24_25,
-                        MIGRATION_25_26
+                        MIGRATION_25_26,
+                        MIGRATION_26_27
                     )
                     .build()
                 INSTANCE = instance

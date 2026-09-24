@@ -2837,8 +2837,7 @@ private fun GalleryCard(
  * L'inizio del testo della pagina, in piccolo, dentro la parte alta
  * della scheda: "Page content" di Notion.
  *
- * Ogni riga si scrive come nella pagina — i titoli più marcati, gli
- * elenchi col loro segno (lo stesso della pagina, che cambia a ogni
+ * Ogni riga si scrive come nella pagina — gli elenchi col loro segno (lo stesso della pagina, che cambia a ogni
  * rientro), le caselle spuntate o no, i toggle con la freccia — perché
  * l'anteprima serve a riconoscere la pagina, e una pagina si riconosce
  * anche dalla sua forma. Quello che non ci sta viene tagliato dal bordo
@@ -2868,12 +2867,6 @@ private fun GalleryContentPreview(
             .padding(horizontal = 10.dp, vertical = 8.dp)
     ) {
         lines.forEach { line ->
-            val (fontSize, weight) = when (line.type) {
-                BlockType.HEADING_1 -> bodySize * 1.5f to FontWeight.Bold
-                BlockType.HEADING_2 -> bodySize * 1.3f to FontWeight.Bold
-                BlockType.HEADING_3 -> bodySize * 1.15f to FontWeight.SemiBold
-                else -> bodySize to FontWeight.Normal
-            }
             val marker = when (line.type) {
                 BlockType.BULLET_LIST_ITEM -> bulletMarkerFor(line.indentLevel) + " "
                 BlockType.NUMBERED_LIST_ITEM -> numberedMarkerFor(line.indentLevel, line.ordinal) + " "
@@ -2889,9 +2882,8 @@ private fun GalleryContentPreview(
             }
             Text(
                 text = marker + line.text,
-                fontSize = fontSize,
-                lineHeight = fontSize * 1.3f,
-                fontWeight = weight,
+                fontSize = bodySize,
+                lineHeight = bodySize * 1.3f,
                 color = if (line.type == BlockType.CHECKBOX && line.isChecked) {
                     MaterialTheme.colorScheme.onSurfaceVariant
                 } else {

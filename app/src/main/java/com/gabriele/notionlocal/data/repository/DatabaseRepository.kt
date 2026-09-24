@@ -52,9 +52,6 @@ private fun List<RichTextSpan>.previewText(): String = joinToString("") { span -
 /** I blocchi che hanno un testo da mostrare nell'anteprima. */
 private val PREVIEW_TYPES = setOf(
     BlockType.PARAGRAPH,
-    BlockType.HEADING_1,
-    BlockType.HEADING_2,
-    BlockType.HEADING_3,
     BlockType.BULLET_LIST_ITEM,
     BlockType.NUMBERED_LIST_ITEM,
     BlockType.CHECKBOX,

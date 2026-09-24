@@ -1519,9 +1519,6 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
      */
     fun isFlowingTextType(type: BlockType): Boolean =
         type == BlockType.PARAGRAPH ||
-            type == BlockType.HEADING_1 ||
-            type == BlockType.HEADING_2 ||
-            type == BlockType.HEADING_3 ||
             type == BlockType.BULLET_LIST_ITEM ||
             type == BlockType.NUMBERED_LIST_ITEM ||
             type == BlockType.CHECKBOX

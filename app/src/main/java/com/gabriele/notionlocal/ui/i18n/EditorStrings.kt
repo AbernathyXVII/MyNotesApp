@@ -17,6 +17,7 @@ object EditorStrings {
     val defaultFont get() = t("Default", "Predefinito", "Standard", "Par défaut", "Predeterminado", "默认", "기본", "デフォルト")
     val font get() = t("Font", "Carattere", "Schriftart", "Police", "Fuente", "字体", "글꼴", "フォント")
     val fontSize get() = t("Font size", "Dimensione del carattere", "Schriftgröße", "Taille de police", "Tamaño de fuente", "字号", "글꼴 크기", "フォントサイズ")
+    fun fontSizeRange(min: Int, max: Int) = t("From $min to $max", "Da $min a $max", "Von $min bis $max", "De $min à $max", "De $min a $max", "$min 到 $max", "$min~$max", "$min～$max")
 
     /**
      * Il nome di un tipo di blocco nella lingua dell'app, partendo da quello
@@ -26,9 +27,6 @@ object EditorStrings {
      */
     fun blockType(english: String): String = when (english) {
         "Text" -> t("Text", "Testo", "Text", "Texte", "Texto", "文本", "텍스트", "テキスト")
-        "Heading 1" -> t("Heading 1", "Titolo 1", "Überschrift 1", "Titre 1", "Encabezado 1", "标题 1", "제목 1", "見出し1")
-        "Heading 2" -> t("Heading 2", "Titolo 2", "Überschrift 2", "Titre 2", "Encabezado 2", "标题 2", "제목 2", "見出し2")
-        "Heading 3" -> t("Heading 3", "Titolo 3", "Überschrift 3", "Titre 3", "Encabezado 3", "标题 3", "제목 3", "見出し3")
         "Bulleted list" -> t("Bulleted list", "Elenco puntato", "Aufzählung", "Liste à puces", "Lista con viñetas", "项目符号列表", "글머리 기호 목록", "箇条書きリスト")
         "Numbered list" -> t("Numbered list", "Elenco numerato", "Nummerierte Liste", "Liste numérotée", "Lista numerada", "编号列表", "번호 매기기 목록", "番号付きリスト")
         "To-do list" -> t("To-do list", "Elenco di cose da fare", "To-do-Liste", "Liste de tâches", "Lista de tareas", "待办清单", "할 일 목록", "ToDoリスト")

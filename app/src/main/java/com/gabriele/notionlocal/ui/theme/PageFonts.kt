@@ -183,10 +183,12 @@ fun PageFont.fontFamily(): FontFamily = families.getOrPut(this) {
  * il campo unito, le isole, le celle delle tabelle, i toggle — in fondo
  * a catene di composable che non hanno altro motivo per saperlo.
  *
- * **Il corpo scala tutto in proporzione**, non solo il testo normale: i
- * titoli H1-H3, l'altezza delle righe, i segni degli elenchi. A 16, il
- * corpo di sempre, ogni misura resta esattamente quella di prima; a 32
- * tutto è grande il doppio, e un titolo resta un titolo.
+ * **Il corpo scala tutto in proporzione**, non solo le lettere:
+ * l'altezza delle righe e i segni degli elenchi crescono insieme al
+ * testo. A 16, il corpo di sempre, ogni misura resta esattamente quella
+ * di prima; a 32 tutto è grande il doppio. (Fino al 24/09/2026 c'erano
+ * anche i titoli H1-H3, che scalavano allo stesso modo: tolti su
+ * richiesta dell'utente, vedi `BlockType`.)
  */
 @Immutable
 data class PageTypography(

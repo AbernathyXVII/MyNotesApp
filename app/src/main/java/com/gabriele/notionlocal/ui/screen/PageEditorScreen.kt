@@ -21,11 +21,11 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import com.gabriele.notionlocal.data.PageImageStore
 import com.gabriele.notionlocal.data.TextStats
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.runtime.snapshotFlow
-import kotlinx.coroutines.flow.first
 import androidx.compose.ui.text.font.FontFamily
 import com.gabriele.notionlocal.data.entity.PageFont
 import com.gabriele.notionlocal.ui.theme.PageFontGroup
@@ -116,7 +116,6 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Notes
-import androidx.compose.material.icons.filled.Title
 import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Videocam
@@ -228,7 +227,7 @@ import com.gabriele.notionlocal.viewmodel.ViewModelFactory
  * renderizzate come prima tramite BlockRow.
  */
 private val FLOWING_TYPES = setOf(
-    BlockType.PARAGRAPH, BlockType.HEADING_1, BlockType.HEADING_2, BlockType.HEADING_3,
+    BlockType.PARAGRAPH,
     BlockType.BULLET_LIST_ITEM, BlockType.NUMBERED_LIST_ITEM,
     // **Anche le caselle da spuntare.** Finché erano isole, ognuna era
     // un campo di testo a sé: andare a capo spostava il fuoco da un
@@ -544,74 +543,107 @@ private fun FontMenuItem(
 }
 
 /**
- * Il corpo del testo della pagina, dalla barra Aa: **un elenco con tutti
- * i numeri da 5 a 72**, che si apre già fermo su quello in uso.
+ * Il corpo del testo della pagina nella barra Aa: il numero in uso, e
+ * toccandolo si apre `FontSizeDialog`, dove lo si scrive.
  *
- * Un elenco e non una casella in cui scrivere il numero, di proposito:
- * una seconda casella di testo, mentre si sta scrivendo nella pagina,
- * vuol dire spostare il fuoco da un campo all'altro e cambiare tastiera,
- * ed è proprio il tipo di passaggio che con la tastiera Samsung dà
- * problemi (vedi "Peculiarità dell'ambiente di test" nel README). Con
- * l'elenco si sceglie qualunque numero senza che la tastiera si muova.
+ * La finestra **non sta qui dentro** ma in fondo alla schermata, accesa
+ * da `onClick`: mentre si scrive il numero la tastiera passa alla sua
+ * casella, nessuna riga della pagina ha più il cursore, e la barra —
+ * che esiste solo quando una riga ce l'ha — se ne va. Una finestra nata
+ * dentro la barra se ne andrebbe con lei, a metà numero.
  */
 @Composable
 private fun FontSizeChip(
     current: Int,
-    onPick: (Int) -> Unit
+    onClick: () -> Unit
 ) {
-    var open by remember { mutableStateOf(false) }
-    val scroll = rememberScrollState()
-    val density = LocalDensity.current
-    // Aperto, l'elenco si porta sul numero in uso, con un paio di righe
-    // sopra perché si veda che si può salire. Aspetta di sapere quanto è
-    // lungo: prima della prima misura non c'è niente da scorrere.
-    LaunchedEffect(open) {
-        if (!open) return@LaunchedEffect
-        val itemPx = with(density) { FONT_SIZE_ITEM_HEIGHT.toPx() }
-        val target = ((current - MIN_PAGE_FONT_SIZE - 2).coerceAtLeast(0) * itemPx).toInt()
-        val max = snapshotFlow { scroll.maxValue }.first { it > 0 }
-        scroll.scrollTo(target.coerceAtMost(max))
-    }
-    Box {
-        BarValueChip(
-            text = current.toString(),
-            contentDescription = EditorStrings.fontSize,
-            onClick = { open = true }
-        )
-        DropdownMenu(
-            expanded = open,
-            onDismissRequest = { open = false },
-            scrollState = scroll,
-            properties = BarMenuProperties,
-            modifier = Modifier.background(DarkSheet)
-        ) {
-            for (size in MIN_PAGE_FONT_SIZE..MAX_PAGE_FONT_SIZE) {
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            text = size.toString(),
-                            color = NotionWhite,
-                            fontWeight = if (size == current) FontWeight.Bold else FontWeight.Normal
-                        )
-                    },
-                    trailingIcon = if (size == current) {
-                        { Icon(Icons.Filled.Check, contentDescription = null, tint = NotionWhite) }
-                    } else {
-                        null
-                    },
-                    onClick = {
-                        open = false
-                        onPick(size)
-                    },
-                    modifier = Modifier.height(FONT_SIZE_ITEM_HEIGHT)
-                )
-            }
-        }
-    }
+    BarValueChip(
+        text = current.toString(),
+        contentDescription = EditorStrings.fontSize,
+        onClick = onClick
+    )
 }
 
-/** L'altezza di una riga dell'elenco dei corpi: fissata, per sapere dove scorrere. */
-private val FONT_SIZE_ITEM_HEIGHT = 44.dp
+/**
+ * La finestrella dove si **scrive a mano** il corpo del testo, da 5 a 72,
+ * come ha chiesto l'utente dopo aver visto la prima versione (un elenco
+ * da cui sceglierlo).
+ *
+ * Si apre col numero in uso già selezionato, così scrivendo lo si
+ * sostituisce senza doverlo cancellare, e con la tastiera dei numeri.
+ * Accetta solo cifre, al massimo due; "OK" (o il tasto Fatto della
+ * tastiera) si accende solo se il numero sta fra 5 e 72, e sotto la
+ * casella c'è scritto quali sono i limiti — diventa rosso se si esce.
+ *
+ * Chiusa la finestra il cursore non torna da solo nella pagina: si
+ * tocca il punto dove si vuole riprendere a scrivere. Rimetterlo da qui
+ * vorrebbe dire spostare il fuoco a comando mentre la tastiera cambia
+ * da numeri a lettere, il passaggio che con la tastiera Samsung dà più
+ * problemi (vedi "Peculiarità dell'ambiente di test" nel README).
+ */
+@Composable
+private fun FontSizeDialog(
+    current: Int,
+    onDismiss: () -> Unit,
+    onConfirm: (Int) -> Unit
+) {
+    val start = current.toString()
+    var field by remember { mutableStateOf(TextFieldValue(start, TextRange(0, start.length))) }
+    val value = field.text.toIntOrNull()
+    val valid = value != null && value in MIN_PAGE_FONT_SIZE..MAX_PAGE_FONT_SIZE
+    val focus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { focus.requestFocus() }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = DarkSheet,
+        title = { Text(EditorStrings.fontSize, color = NotionWhite) },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = field,
+                    onValueChange = { typed ->
+                        val digits = typed.text.filter { it.isDigit() }.take(2)
+                        field = if (digits == typed.text) {
+                            typed
+                        } else {
+                            TextFieldValue(digits, TextRange(digits.length))
+                        }
+                    },
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.titleLarge.copy(color = NotionWhite),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(onDone = {
+                        if (valid) onConfirm(value!!)
+                    }),
+                    isError = field.text.isNotEmpty() && !valid,
+                    modifier = Modifier
+                        .width(96.dp)
+                        .focusRequester(focus)
+                )
+                Spacer(modifier = Modifier.size(8.dp))
+                Text(
+                    text = EditorStrings.fontSizeRange(MIN_PAGE_FONT_SIZE, MAX_PAGE_FONT_SIZE),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (field.text.isEmpty() || valid) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.error
+                    }
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(enabled = valid, onClick = { onConfirm(value!!) }) { Text(Strings.done) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(Strings.cancel) }
+        }
+    )
+}
 
 /**
  * Diagnostica temporanea per i difetti delle caselle da spuntare che
@@ -872,6 +904,9 @@ fun PageEditorScreen(
     // lì invece che dal rosso, perché colorare due pezzi dello stesso
     // colore è la cosa che si fa più spesso.
     var showColorPicker by remember { mutableStateOf(false) }
+    // La finestra dove si scrive il corpo del testo: sta qui e non nella
+    // barra per la ragione spiegata in `FontSizeChip`.
+    var showFontSizeDialog by remember { mutableStateOf(false) }
     var colorForBlockId by remember { mutableStateOf<String?>(null) }
     var colorOnBackground by remember { mutableStateOf(false) }
     var lastPickedHex by remember { mutableStateOf<String?>(null) }
@@ -1552,7 +1587,7 @@ fun PageEditorScreen(
                             )
                             FontSizeChip(
                                 current = page?.pageFontSize ?: DEFAULT_PAGE_FONT_SIZE,
-                                onPick = { viewModel.setPageFontSize(it) }
+                                onClick = { showFontSizeDialog = true }
                             )
                         }
                         BarButton(onClick = {
@@ -1810,6 +1845,17 @@ fun PageEditorScreen(
                 null
             },
             onDismiss = { editingImage = null }
+        )
+    }
+
+    if (showFontSizeDialog) {
+        FontSizeDialog(
+            current = page?.pageFontSize ?: DEFAULT_PAGE_FONT_SIZE,
+            onDismiss = { showFontSizeDialog = false },
+            onConfirm = { size ->
+                showFontSizeDialog = false
+                viewModel.setPageFontSize(size)
+            }
         )
     }
 
@@ -2335,9 +2381,6 @@ private fun BlockTypeMenu(
 
     val entries = listOf(
         Entry(BlockType.PARAGRAPH, "Text", letterIcon("T")),
-        Entry(BlockType.HEADING_1, "Heading 1", letterIcon("H1")),
-        Entry(BlockType.HEADING_2, "Heading 2", letterIcon("H2")),
-        Entry(BlockType.HEADING_3, "Heading 3", letterIcon("H3")),
         Entry(BlockType.BULLET_LIST_ITEM, "Bulleted list", vectorIcon(Icons.Filled.FormatListBulleted)),
         Entry(BlockType.NUMBERED_LIST_ITEM, "Numbered list", vectorIcon(Icons.Filled.FormatListNumbered)),
         Entry(BlockType.CHECKBOX, "To-do list", vectorIcon(Icons.Filled.CheckBox)),
@@ -2601,9 +2644,6 @@ private data class SlashEntry(
  */
 private val SLASH_ENTRIES: List<SlashEntry> = listOf(
     SlashEntry("Text", SlashCategory.BASIC, SlashAction.Type(BlockType.PARAGRAPH), Icons.Filled.Notes),
-    SlashEntry("Heading 1", SlashCategory.BASIC, SlashAction.Type(BlockType.HEADING_1), Icons.Filled.Title),
-    SlashEntry("Heading 2", SlashCategory.BASIC, SlashAction.Type(BlockType.HEADING_2), Icons.Filled.Title),
-    SlashEntry("Heading 3", SlashCategory.BASIC, SlashAction.Type(BlockType.HEADING_3), Icons.Filled.Title),
     SlashEntry(
         "Bulleted list",
         SlashCategory.BASIC,
@@ -3128,9 +3168,6 @@ private class MergedRunVisualTransformation(
             prefixLengths.add(prefix.text.length)
 
             when (block?.type) {
-                BlockType.HEADING_1 -> builder.addStyle(SpanStyle(fontSize = 28.sp * scale, fontWeight = FontWeight.Bold), lineStart, builder.length)
-                BlockType.HEADING_2 -> builder.addStyle(SpanStyle(fontSize = 22.sp * scale, fontWeight = FontWeight.Bold), lineStart, builder.length)
-                BlockType.HEADING_3 -> builder.addStyle(SpanStyle(fontSize = 18.sp * scale, fontWeight = FontWeight.Bold), lineStart, builder.length)
                 // Una casella spuntata ha il testo sbarrato e smorto,
                 // come su Notion. Il quadratino invece lo disegna
                 // `RunCheckboxOverlay` sopra al testo di riempimento.
@@ -4262,12 +4299,7 @@ private fun BlockRow(
 
     // Font e corpo della pagina (barra Aa), come nel testo condiviso.
     val pageTypography = LocalPageTypography.current
-    val textStyle = when (block.type) {
-        BlockType.HEADING_1 -> MaterialTheme.typography.titleLarge
-        BlockType.HEADING_2 -> MaterialTheme.typography.titleMedium
-        BlockType.HEADING_3 -> MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp)
-        else -> MaterialTheme.typography.bodyLarge
-    }.let(pageTypography::apply).let { base ->
+    val textStyle = pageTypography.apply(MaterialTheme.typography.bodyLarge).let { base ->
         if (block.type == BlockType.CHECKBOX && block.isChecked) {
             base.copy(textDecoration = TextDecoration.LineThrough)
         } else base
@@ -4344,7 +4376,7 @@ private fun BlockRow(
                 Spacer(modifier = Modifier.size(8.dp))
             }
 
-            else -> { /* PARAGRAPH, HEADING_* have no prefix */ }
+            else -> { /* PARAGRAPH has no prefix */ }
         }
 
         BasicTextField(

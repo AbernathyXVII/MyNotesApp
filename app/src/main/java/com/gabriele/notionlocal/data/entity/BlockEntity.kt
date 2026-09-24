@@ -13,9 +13,12 @@ import java.util.UUID
  */
 enum class BlockType {
     PARAGRAPH,
-    HEADING_1,
-    HEADING_2,
-    HEADING_3,
+    // HEADING_1, HEADING_2 e HEADING_3 c'erano fino al 24/09/2026: tolti
+    // su richiesta dell'utente, che ora sceglie il corpo del testo per
+    // pagina dalla barra Aa e coi titoli a misura fissa non ci faceva
+    // più niente. La migrazione 26→27 ha trasformato quelli già scritti
+    // in paragrafi. **Non rimetterli senza una migrazione**: un blocco
+    // salvato con un tipo che l'enum non conosce fa chiudere l'app.
     BULLET_LIST_ITEM,
     NUMBERED_LIST_ITEM,
     CHECKBOX,
@@ -32,7 +35,7 @@ enum class BlockType {
  * (grassetto/corsivo) serializzata come JSON semplice — vedi
  * RichText.kt per la struttura.
  *
- * I blocchi "di testo scorrevole" (PARAGRAPH, HEADING_1-3,
+ * I blocchi "di testo scorrevole" (PARAGRAPH,
  * BULLET_LIST_ITEM, NUMBERED_LIST_ITEM) restano righe separate qui nel
  * database, ma a livello di editor vengono uniti in un unico campo di
  * testo continuo per ogni sequenza consecutiva — è così che selezione

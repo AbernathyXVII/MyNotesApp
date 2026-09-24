@@ -440,8 +440,8 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
 - **Un'unica pagina radice** ("My Space", titolo modificabile) fa da
   Home — non esiste una schermata Home separata: si comporta come
   qualsiasi altra pagina, con lo stesso editor
-- **Testo scorrevole unificato**: paragrafi, titoli H1-H3, elenchi
-  puntati e numerati consecutivi vivono in un unico campo di testo
+- **Testo scorrevole unificato**: paragrafi, elenchi puntati e
+  numerati e caselle consecutivi vivono in un unico campo di testo
   condiviso — selezione e backspace-tra-blocchi funzionano in modo
   nativo, come in un editor di testo normale
 - **Isole separate**: checkbox, toggle annidabili, tabelle semplici
@@ -455,8 +455,7 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
 - **Scrivere `1.` a inizio blocco** crea un elenco numerato; scrivendo
   un altro numero (`5.`, e anche `0.`) l'elenco parte da lì e prosegue
   normalmente. Solo se il numero è l'unica cosa scritta nel blocco
-- **Invio** crea un nuovo blocco ereditando il tipo se è un elenco (i
-  titoli invece no: dopo un titolo si torna a paragrafo);
+- **Invio** crea un nuovo blocco ereditando il tipo se è un elenco;
   **incollare testo multi-riga** separa correttamente in più blocchi
 - **Rientro (Tab)** per il testo scorrevole è un livello visivo sul
   paragrafo; per le isole (toggle) è nidificazione vera. Sugli elenchi
@@ -556,8 +555,11 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   la voce del font (col nome in uso) e quella della dimensione (col
   numero in uso), come su OneNote. Sedici font in tre gruppi —
   occidentali, cinesi, giapponesi — che sono **sosia liberi** dei font
-  commerciali chiesti; dimensione da 5 a 72, di partenza 16. Valgono
-  per tutta la pagina
+  commerciali chiesti; dimensione da 5 a 72, di partenza 16, **scritta
+  a mano** in una finestrella. Valgono per tutta la pagina
+- **Niente titoli (Heading)** dal 24/09/2026: tolti dall'app su
+  richiesta dell'utente, ora che la dimensione del testo si sceglie per
+  pagina. Quelli che c'erano sono diventati testo normale
 - **Conteggio del testo** *(sessione cloud del 24/09/2026, da verificare
   sul telefono)*: in fondo al menu dei tre puntini di una pagina c'è
   **"X words"**; toccandola si apre lì sotto l'elenco come nella
@@ -613,7 +615,7 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   sono testo completamente piatto, senza formattazione né colore:
   portarceli richiede di costruire per ciascuno l'infrastruttura già
   fatta per i blocchi
-- Nel menu "+", **Heading 4, Callout, Quote, Link to page (come voce
+- Nel menu "+", **Callout, Quote, Link to page (come voce
   separata da "Page"), Image, Video, Audio, Code, File, Web bookmark**
   non sono stati costruiti — alcuni richiedono capacità nuove
   (gestione file, embedding media)
@@ -974,6 +976,17 @@ README di una riga).
     far confermare: la dimensione scelta da un elenco 5-72 invece che
     scritta, "Predefinito" in cima all'elenco dei font, Inter per
     Helvetica
+28. «1. Fammi la selezione del carattere con una piccola casella dove
+    scrivo io il numero manualmente con la tastiera. 2. Ti ringrazio.
+    Ovviamente lasciala nella lista. Giusto, sono un cretino. Ora che ci
+    penso, se ti chiedo di modificare la grandezza del font, tutti gli
+    Heading (e i Toggle Heading che ti stavo per chiedere) non hanno
+    senso. Perdonami. Ti chiedo di rimuovere a questo punto tutti gli
+    Heading, sia in + che in / , a prescindere dall'intera app» — alla
+    domanda su cosa fare dei titoli già scritti («Testo in grassetto»,
+    «Testo normale», «Lasciarli come sono») ha risposto: **«Testo
+    normale»**. Fatto tutto: vedi Cronologia "Pagine — la dimensione si
+    scrive a mano, e via i titoli (Heading)"
 
 **Cosa è stato fatto:**
 
@@ -1077,8 +1090,8 @@ README di una riga).
 
 **Da verificare sul telefono** (dall'1 al 14 la vista Gallery, il 15
 lo spostamento delle colonne, il 16 il conteggio del testo, il 17 e il
-18 font e dimensione; prima di installare, **copia del database**:
-questa build cambia lo schema, due volte — 24→25→26):
+18 font e dimensione, il 19 i titoli tolti; prima di installare, **copia
+del database**: questa build cambia lo schema tre volte — 24→25→26→27):
 
 1. **Compila anche sul PC?** In cloud sì (`assembleDebug` riuscito),
    ma con Gradle 8.7 da riga di comando: va confermato in Android
@@ -1150,14 +1163,26 @@ questa build cambia lo schema, due volte — 24→25→26):
     testo passa dal font di sistema a quello scelto dopo qualche
     istante; poi funziona anche in modalità aereo. Tornare a
     "Predefinito" rimette tutto com'era.
-18. **Dimensione**: la voce dice "16"; l'elenco va da 5 a 72 e si apre
-    fermo sul numero in uso; a 32 tutto (titoli H1-H3, segni degli
-    elenchi, righe) è grande il doppio; a 5 e a 72 niente si sovrappone
+18. **Dimensione** (richieste 27-28): la voce dice "16"; toccandola si
+    apre la finestrella con la casella, il numero già selezionato e la
+    **tastiera dei numeri**; accetta solo cifre, "Fatto" si accende solo
+    fra 5 e 72 e sotto la casella "Da 5 a 72" diventa rosso fuori dai
+    limiti; il tasto Fatto della tastiera conferma. Dopo, si tocca la
+    pagina per riprendere a scrivere. A 32 tutto (segni degli elenchi,
+    righe) è grande il doppio; a 5 e a 72 niente si sovrappone
     né si taglia; le caselle si spuntano ancora bene col dito;
     selezione, backspace fra righe, Invio e numerazione degli elenchi
     funzionano come a 16 (è il campo unito: vedi "Strade già tentate").
     Scegliere 16 riporta la pagina come prima. La scelta resta dopo
     aver chiuso e riaperto l'app, ed è diversa per ogni pagina.
+19. **Titoli tolti** (richiesta 28): nel menu "+" e nel menu "/" non c'è
+    più nessun Heading. **Nelle pagine che avevano dei titoli** (è il
+    motivo principale della copia del database): dopo l'installazione
+    sono righe di testo normale, col loro testo, e restano uniti al testo
+    intorno nel campo condiviso (selezione e backspace li attraversano).
+    Aprire tutte le pagine che si ricorda avessero titoli e verificare che
+    l'app non si chiuda: se si chiudesse, la migrazione 26→27 non è
+    passata (leggere `logcat`).
 
 ## Cronologia degli aggiornamenti
 
@@ -1165,6 +1190,50 @@ Le voci nate nelle sessioni cloud stanno qui in cima, la più recente
 per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
+
+**Pagine — la dimensione si scrive a mano, e via i titoli (Heading)**
+*(sessione cloud del 24/09/2026, richiesta 28: compilato, test passati,
+migrazione 26→27 provata su un database di prova, **non provato sul
+telefono**)*
+- **[Nuova funzionalità]** **La dimensione del testo si scrive a
+  mano**: toccando il numero nella barra Aa si apre una finestrella
+  (`FontSizeDialog`) con una piccola casella, il numero in uso già
+  selezionato (scrivendo lo si sostituisce) e **la tastiera dei
+  numeri**. Accetta solo cifre, al massimo due; "Fatto" — e il tasto
+  Fatto della tastiera — funziona solo fra 5 e 72, e sotto la casella
+  "Da 5 a 72" diventa rosso se si esce. Sostituisce l'elenco di numeri
+  della prima versione, come chiesto dall'utente
+- **La finestra e non una casella dentro la barra**, di proposito:
+  mentre si scrive il numero la tastiera passa alla casella, nessuna
+  riga della pagina ha più il cursore, e la barra Aa — che esiste solo
+  quando una riga ce l'ha — se ne va. Una casella nella barra sparirebbe
+  a metà numero; per lo stesso motivo la finestra è accesa da uno stato
+  della schermata (`showFontSizeDialog`), come quella del pennello, e
+  non nasce dentro la barra. Chiusa la finestra, **il cursore non torna
+  da solo** nella pagina: si tocca dove si vuole riprendere. Rimetterlo
+  a comando vorrebbe dire spostare il fuoco mentre la tastiera passa da
+  numeri a lettere, il passaggio che con la tastiera Samsung dà più
+  problemi
+- **[Rimosso]** **I titoli — Heading 1, 2 e 3 — dall'app intera**, su
+  richiesta dell'utente: con la dimensione scelta per pagina, dei titoli
+  a misura fissa non se ne faceva più niente (e i "Toggle Heading" che
+  stava per chiedere non servono più). Tolti dal menu "+" e dal menu
+  "/", dal tipo di blocco (`BlockType`: i tre valori non esistono più),
+  dal campo unito (`FLOWING_TYPES`, `isFlowingTextType`), dalla sua
+  trasformazione visiva, dalle isole, dall'anteprima della Gallery e
+  dai testi tradotti. Nessuna scorciatoia di scrittura li creava
+- **[Rimosso]** **Quelli già scritti sono diventati testo normale**
+  (**migrazione 26→27**: `UPDATE blocks SET type = 'PARAGRAPH'`). Fra le
+  tre possibilità proposte — testo in grassetto, testo normale,
+  lasciarli come sono — l'utente ha scelto il testo normale. Il testo
+  non si perde, e la formattazione messa a mano (grassetto, colori)
+  resta. Provata su un database di prova: tre titoli con grassetto e
+  colore diventano paragrafi identici, gli altri blocchi non si toccano,
+  e nessun tipo rimasto nel database è sconosciuto all'app — che è
+  quello che conta, perché un nome di tipo che l'enum non conosce più fa
+  chiudere l'app alla lettura. Lo schema delle tabelle non cambia
+- **"Predefinito"** in cima all'elenco dei font resta, confermato
+  dall'utente
 
 **Pagine — font e dimensione del testo (barra Aa)** *(sessione cloud
 del 24/09/2026, richiesta 27: compilato, migrazione 25→26 simulata,
@@ -1217,7 +1286,8 @@ del 24/09/2026, richiesta 27: compilato, migrazione 25→26 simulata,
   è passato da 17,8 a 23,9 MB
 - **[Nuova funzionalità]** **Il corpo scala tutto in proporzione**, non
   solo il testo normale (`PageTypography`, `ui/theme/PageFonts.kt`): i
-  titoli H1-H3 (28/22/18 a corpo 16), l'altezza delle righe del campo
+  titoli H1-H3 (28/22/18 a corpo 16; tolti poco dopo, richiesta 28),
+  l'altezza delle righe del campo
   unito (24, o 27 con le caselle), i segni degli elenchi. A 16 ogni
   misura resta esattamente quella di prima. Le misure passano da un
   `CompositionLocal` (`LocalPageTypography`) e arrivano al campo unito
@@ -1232,12 +1302,10 @@ del 24/09/2026, richiesta 27: compilato, migrazione 25→26 simulata,
   (`PopupProperties(focusable = false)`): un menu che prende il fuoco
   chiude la tastiera, con lei se ne va la barra — ci è appoggiata sopra
   — e con la barra la voce da cui il menu è partito. Così si sceglie e
-  si continua a scrivere. La dimensione si sceglie da **un elenco con
-  tutti i numeri da 5 a 72**, che si apre fermo su quello in uso,
-  invece che scrivendola in una casella: una seconda casella di testo
-  mentre si scrive nella pagina è proprio il passaggio di fuoco che con
-  la tastiera Samsung dà problemi. **Da far confermare all'utente**, che
-  aveva scritto "inserendo un numero a piacimento"
+  si continua a scrivere. ~~La dimensione si sceglie da un elenco con
+  tutti i numeri da 5 a 72~~ — **superato dalla richiesta 28**: la
+  dimensione si scrive a mano in una finestrella, vedi la voce qui
+  sotto
 - **[Nuova funzionalità]** Nell'elenco dei font i nomi occidentali sono
   scritti **ognuno col suo font**, come nei menu di Word; quelli cinesi
   e giapponesi no, per non scaricarli tutti solo aprendo il menu
@@ -3654,9 +3722,10 @@ corpo a tutto il testo.
 
 ## Nota tecnica
 
-Lo schema è alla **versione 26** (la 25 e la 26 vengono dalla sessione
-cloud del 24/09/2026, vedi Diario: migrazioni simulate su SQLite in
-cloud ma **mai provate su un telefono**), e
+Lo schema è alla **versione 27** (la 25, la 26 e la 27 vengono dalla
+sessione cloud del 24/09/2026, vedi Diario: migrazioni simulate su
+SQLite in cloud ma **mai provate su un telefono**; la 27 non cambia la
+forma delle tabelle, trasforma i titoli in paragrafi), e
 da qui in avanti **ogni cambio di
 schema vuole una migrazione vera** in `AppDatabase`. Fino alla 5 c'era
 `fallbackToDestructiveMigration()`, che ad ogni cambio ricreava il
