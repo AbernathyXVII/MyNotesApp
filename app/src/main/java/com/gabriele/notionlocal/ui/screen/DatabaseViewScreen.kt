@@ -3056,10 +3056,10 @@ private fun LocalDateTime.toEpochMillis(): Long =
  * di un giorno in tutti i fusi a occidente di Greenwich, quindi la
  * conversione si fa sempre passando da qui.
  */
-private fun LocalDate.toPickerMillis(): Long =
+internal fun LocalDate.toPickerMillis(): Long =
     atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
 
-private fun Long.pickerMillisToLocalDate(): LocalDate =
+internal fun Long.pickerMillisToLocalDate(): LocalDate =
     Instant.ofEpochMilli(this).atZone(ZoneOffset.UTC).toLocalDate()
 
 /** "12 Jan 2026", "12 Jan 2026, 09:30" oppure con la freccia e la fine. */
@@ -5538,7 +5538,7 @@ private fun RecurrenceChoiceRow(selected: Boolean, label: String, onSelect: () -
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DayPickerDialog(
+internal fun DayPickerDialog(
     initial: LocalDate,
     onPick: (LocalDate) -> Unit,
     onDismiss: () -> Unit

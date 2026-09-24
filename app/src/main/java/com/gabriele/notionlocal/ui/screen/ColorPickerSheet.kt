@@ -79,7 +79,13 @@ fun ColorPickerSheet(
     background: Boolean,
     onDismiss: () -> Unit,
     onSwitchTarget: (background: Boolean) -> Unit,
-    onPick: (String?) -> Unit
+    onPick: (String?) -> Unit,
+    /**
+     * I due riquadri "Testo" e "Sfondo" in cima. Spenti per chi colora
+     * una cosa sola, come le barre dell'avanzamento nei widget: lì
+     * scegliere "dietro al testo" non vorrebbe dire niente.
+     */
+    showTargetSwitch: Boolean = true
 ) {
     // **Lo stato si crea una volta sola, all'apertura.**
     //
@@ -121,7 +127,7 @@ fun ColorPickerSheet(
             // due finestre separate. Cambiare bersaglio senza chiudere
             // è la cosa che si fa di continuo — si sceglie un colore,
             // si guarda, si prova a metterlo dietro invece che davanti.
-            Row(modifier = Modifier.fillMaxWidth()) {
+            if (showTargetSwitch) Row(modifier = Modifier.fillMaxWidth()) {
                 TargetChip(
                     label = EditorStrings.colorText,
                     selected = !background,

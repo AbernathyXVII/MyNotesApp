@@ -1,5 +1,6 @@
 package com.gabriele.notionlocal
 
+import com.gabriele.notionlocal.data.widgets.WidgetStore
 import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Bundle
@@ -23,6 +24,9 @@ class MainActivity : ComponentActivity() {
         // Le impostazioni prima di tutto: tema, lingua e formati le
         // leggono già i primi pixel disegnati.
         AppSettings.init(applicationContext)
+        // Dopo le impostazioni: il pomodoro, suonando, guarda se le
+        // notifiche sono messe a tacere.
+        WidgetStore.init(applicationContext)
         // Il tema "System" deve sapere com'è il telefono. Quando il
         // telefono cambia modalità l'attività viene ricreata e si passa di
         // nuovo di qui, quindi basta leggerlo ora.

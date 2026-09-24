@@ -6,6 +6,12 @@ plugins {
 }
 
 android {
+    // Robolectric legge il manifest unito, che contiene l'attività vuota
+    // su cui i test disegnano le schermate (ui-test-manifest).
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+    }
+
     namespace = "com.gabriele.notionlocal"
     compileSdk = 35
 
@@ -117,6 +123,11 @@ dependencies {
     // sul telefono. Solo per i test: nell'app non entrano.
     testImplementation("org.robolectric:robolectric:4.13")
     testImplementation("androidx.test:core-ktx:1.6.1")
+    // Per disegnare le schermate in un test e guardarle come immagine
+    // (i widget della barra laterale, 24/09/2026): in cloud il telefono
+    // non c'è, e questo è l'unico modo di vederle.
+    testImplementation(composeBom)
+    testImplementation("androidx.compose.ui:ui-test-junit4")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")

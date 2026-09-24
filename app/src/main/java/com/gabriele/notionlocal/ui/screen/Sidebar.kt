@@ -88,7 +88,9 @@ internal fun SidebarContent(
     children: Map<String, List<PageTreeNode>>,
     expanded: Set<String>,
     currentPageId: String?,
-    actions: SidebarActions
+    actions: SidebarActions,
+    /** La barra è aperta: solo allora gli orologi dei widget si aggiornano ogni secondo. */
+    widgetsActive: Boolean = true
 ) {
     Column(
         modifier = Modifier
@@ -99,9 +101,10 @@ internal fun SidebarContent(
             .verticalScroll(rememberScrollState())
             .padding(bottom = 16.dp)
     ) {
-        // 1. Widget: per ora solo il titolo e il suo spazio.
-        SidebarSectionTitle(Strings.widgets)
-        Spacer(modifier = Modifier.height(WIDGETS_SPACE))
+        // 1. Widget: fusi orari, avanzamento, contatore, pomodoro, con la
+        // freccetta per nasconderli tutti. Vedi `WidgetsSection`.
+        WidgetsSection(active = widgetsActive)
+        Spacer(modifier = Modifier.height(6.dp))
 
         // 2. Il Quaderno: una fascia di un altro colore, staccata dal resto.
         Row(
@@ -170,7 +173,6 @@ internal fun SidebarContent(
     }
 }
 
-private val WIDGETS_SPACE = 72.dp
 private val ITEM_ICON = 22.dp
 internal val TREE_START = 12.dp
 internal val TREE_INDENT = 16.dp

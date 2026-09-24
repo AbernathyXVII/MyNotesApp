@@ -191,7 +191,11 @@ fun AppNavHost(factory: ViewModelFactory) {
                     children = treeChildren,
                     expanded = treeExpanded,
                     currentPageId = currentPageId,
-                    actions = actions
+                    actions = actions,
+                    // Aperta o mentre si apre: da chiusa la barra resta
+                    // disegnata dietro alla pagina, e gli orologi non
+                    // devono ridisegnarsi ogni secondo per nessuno.
+                    widgetsActive = drawerState.isOpen || drawerState.targetValue == DrawerValue.Open
                 )
             }
         }

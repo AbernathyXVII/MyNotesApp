@@ -80,6 +80,14 @@ repository su un database vero (Robolectric, `PageRepositoryTest`): sono
 l'unico modo di provare in cloud le operazioni che toccano i dati. La
 prima volta Robolectric scarica circa 150 MB.
 
+**Guardare una schermata senza telefono** *(dal 24/09/2026)*:
+`WidgetsRenderTest` disegna i widget della barra laterale con
+Robolectric e salva le immagini in `app/build/widget-screenshots/`, che
+poi si aprono e si guardano. Lo stesso schema (`@GraphicsMode(NATIVE)`,
+la finestra disegnata a mano su una bitmap, perché `captureToImage` lì
+non finisce mai) serve per qualsiasi altro pezzo di interfaccia. Ha già
+scovato un errore di impaginazione prima del telefono.
+
 **L'APK che esce da lì non va installato sopra l'app del telefono**:
 è firmato con una chiave di debug nata sul server, diversa da quella
 del PC, e Android costringerebbe a disinstallare l'app — note comprese. Ogni modifica fatta lì è segnata **"(da
@@ -508,6 +516,12 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   proprietà, pagine e quello che c'è scritto dentro sono gli stessi — con
   filtro, ordinamento, raggruppamento, vista e proprietà nascoste suoi.
   Il titolo "↗ Nome" porta al database principale
+- **Widget in cima alla barra laterale** *(sessione cloud del
+  24/09/2026, da verificare sul telefono)*: fusi orari (orologi
+  analogici o digitali, e un elenco sempre da ovest a est), avanzamento
+  di anno, mese, settimana, giorno e date proprie, contatore, pomodoro
+  con sessione e pausa. Una freccetta nasconde tutta la sezione, e la
+  scelta resta
 - **Database dentro le pagine**: creandone uno dal menu "+" compare
   nella pagina e si modifica lì; l'icona con le frecce lo apre a
   schermo intero, e dalle impostazioni lo si elimina
@@ -657,10 +671,11 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   fatta per i blocchi
 - Nei menu "+" e "/" (dal 24/09/2026 hanno le stesse voci), **Callout,
   Quote, Link to page (come voce separata da "Page"), Image, Video,
-  Audio, Code, File, Web bookmark, Database - Full page e Linked view of
-  data source** ci sono ma sono grigie: non sono state
+  Audio, Code, File, Web bookmark e Database - Full page** ci sono ma
+  sono grigie: non sono state
   costruite — alcune richiedono capacità nuove (gestione file,
-  embedding media)
+  embedding media). ~~Anche Linked view of data source.~~ **Superato**
+  (24/09/2026, richiesta 36): la vista collegata c'è
 - **Database: "Property visibility" non riordina e non cerca.** Su
   Notion le due liste hanno le maniglie per trascinare le colonne e un
   campo di ricerca in cima; qui l'ordine si cambia solo tenendo
@@ -692,10 +707,11 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   ognuna vorrebbe dire salvare impostazioni che nessuno ha mai scelto
 - **Database: ordinamento solo su una proprietà per volta**. Notion permette di concatenare più ordinamenti; qui il secondo criterio a parità di valore è fisso
 - **Database: l'ordinamento non tocca calendario e linea del tempo**, dove le pagine stanno già in ordine di data — che è l'ordine che serve lì
-- **Database: la ricerca non esiste.** L'icona di Notion che sta lì
+- ~~**Database: la ricerca non esiste.** L'icona di Notion che sta lì
   accanto alla vista è stata deliberatamente omessa finché non
   funziona, perché un'icona che non fa niente è peggio di un'icona
-  assente. I filtri invece ci sono, su una proprietà per volta
+  assente.~~ **Superato** (24/09/2026, richiesta 35): la lente accanto a
+  Sort c'è. I filtri ci sono, su una proprietà per volta
 - **Database: manca la vista Chart.** Ci sono Table, Board, List,
   Calendar, Timeline e (dal 24/09/2026) Gallery; Chart si aggiungerà
   quando disegnerà davvero qualcosa, come le altre
@@ -869,6 +885,23 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   per vista (una proprietà, uno o più valori), come nei database. Una
   vista non ha un nome suo: mostra sempre quello del database. Non si
   può fare una vista di una vista (si collega il database vero)
+- **Widget: il pomodoro non suona ad app chiusa.** Conta giusto lo
+  stesso (riaprendo è al punto giusto), ma per suonare con l'app chiusa
+  servirebbe un allarme di sistema, col suo permesso ("Sveglie e
+  promemoria") e una notifica. Con l'app in secondo piano suona finché
+  Android non la chiude
+- **Widget: i nomi delle città sono quelli inglesi del sistema** ("Rome",
+  "Beijing", "Kolkata"), gli stessi in tutte le lingue: tradurli
+  vorrebbe un elenco di centinaia di città in otto lingue. Anche la sigla
+  del fuso è quella inglese ("CEST", "PDT"), l'unica che esiste per
+  tutti
+- **Widget: niente "Quarter" e "Life" della foto** fra le barre fisse:
+  non erano nella richiesta; si fanno con "Aggiungi una data" (per
+  "Life", da una data di nascita a una di arrivo)
+- **Widget: niente Annulla.** Un widget tolto (dopo la conferma) o un
+  contatore azzerato non tornano indietro
+- **Widget: si spostano coi tre puntini**, Sposta su e Sposta giù, non
+  trascinandoli
 - **Export/backup** (Markdown+CSV, PDF) progettato ma non implementato.
   Decisione già presa con l'utente: **Markdown+CSV come formato
   principale** (il PDF non conserva la struttura, quindi è inadatto al
@@ -1188,6 +1221,55 @@ README di una riga).
     sources") e la voce "Linked view of data source" nel menu "/".
     Fatto: vedi Cronologia "Viste collegate — lo stesso database in
     un'altra pagina"
+37. «Quando apro la sidebar, nella parte più in alto c'è già la sezione
+    dei widget all'interno di essa che ti ho fatto mettere qualche giorno
+    fa.
+    1) Innanzitutto, mettimi un'iconcina piccola per nascondere l'intero
+    spazio dove si trovano i widget, come se fosse un semplice toggle che
+    nasconde o riapre l'intera finestra dei widget. Questa scelta rimarrà
+    anche se chiudo l'app o la sidebar.
+    2) Tra i widget principali che desidero, ci saranno quelli dei fusi
+    orari, per esempio un orologio digitale o analogico con i vari fusi
+    orari come vedi nella prima foto.
+    3) Potrò poi decidere io tenendo premuto su di esso se vedere
+    l'orologio analogico o digitale di quale fuso orario preferisco.
+    4) Sotto gli orologi, concedimi anche di creare una lista con i nomi
+    dei fusi orari come vedi nella seconda foto (ricordati, SEMPRE
+    ordinati dal GMT più a sinistra al GMT quello più a destra del
+    mondo).
+    5) Tra i widget, fammi anche creare una Life Progress Bar (come vedi
+    nella terza foto) con delle barre orizzontali (con il colore che
+    posso cambiare io manualmente tenendoci premuto sopra) che
+    rappresentano il completamento di quanto manca a quella data, ossia
+    quanto manca alla fine dell'anno, del mese, della settimana, del
+    giorno, e di altre date aggiuntive che potrò manualmente creare io
+    (le prime quattro sono ovviamente di default)
+    6) Fammi anche creare un counter button (come vedi nella quarta
+    foto), con tre pulsantini: un + per aumentare di uno il numero del
+    counter, un - per abbassarlo di uno, e una freccetta roteante per
+    resettare a 0 il counter
+    7) Fammi anche creare una schermata rettangolare stondata per un
+    pomodoro timer (quinta foto) con un timer che posso manualmente
+    inserire io toccandoci sopra, il nome della sessione, un triangolino
+    pieno verso destra pieno classico da pulsante Play, un pulsantino
+    Reset, ed un'icona di un ingranaggio con un'opzione per modificare
+    quanto dura la sessione di studio e con un'altra per modificare
+    quanto dura quella di riposo.» — con cinque foto: (1) una griglia di
+    orologi analogici (Los Angeles, New York, Cairo, Beijing, Seoul,
+    Canberra) con dentro l'ora digitale e "Sun Sep 20 • PDT"; (2) un
+    elenco "Honolulu Time 1:57am ☾ … New Zealand 11:57pm", da ovest a
+    est; (3) barre verdi con la cornice, "Year: 73%", "Month: 80%",
+    "Week: 52%", "Day: 62%", "Quarter: 93%", "Life: Not set"; (4) un
+    contatore "− 0 +" con "reset" sotto; (5) un pomodoro "25 + 5":
+    "25:00", "Session", play e reset, Break Length 5 e Session Length 25
+    con le frecce. Fatto: vedi Cronologia "Widget nella barra laterale".
+    Scelte fatte senza chiedere, da confermare con l'utente: i widget si
+    aggiungono da "+ Aggiungi widget" e la sezione parte vuota; orologi
+    ed elenco stanno nello stesso widget "Fusi orari"; ore in 24 ore; il
+    pomodoro passa da solo da sessione a pausa e viceversa; il contatore
+    può andare sotto zero; le barre partono verdi come nella foto.
+    "Quarter" e "Life" della foto non erano nella richiesta e non ci
+    sono: si fanno con "Aggiungi una data"
 
 **Cosa è stato fatto:**
 
@@ -1296,8 +1378,9 @@ database semplice, il 22 il menu del blocco, il 23 le due correzioni
 trovate scrivendolo, il 24 il nuovo Move to, il 25 Annulla dopo una
 pagina spostata o cancellata, il 26 Annulla e Ripristina di Move to,
 Duplicate e Move to trash, il 27 la ricerca dentro un database, il 28
-le viste collegate; prima di installare, **copia
-del database**: questa build cambia lo schema cinque volte — 24→25→26→27→28→29):
+le viste collegate, il 29 i widget della barra laterale; prima di
+installare, **copia del database**: questa build cambia lo schema cinque
+volte — 24→25→26→27→28→29):
 
 1. **Compila anche sul PC?** In cloud sì (`assembleDebug` riuscito),
    ma con Gradle 8.7 da riga di comando: va confermato in Android
@@ -1627,6 +1710,66 @@ del database**: questa build cambia lo schema cinque volte — 24→25→26→27
       premere Annulla finché si può: la lettera sparisce, e il
       collegamento alla sottopagina **non** ricompare lì (la sottopagina
       sta dove è stata messa, una sola volta).
+29. **Widget della barra laterale** (richiesta 37). Non toccano il
+    database delle note: stanno in un file di preferenze a parte
+    (`widgets`), quindi un errore qui non arriva alle note.
+    - Aprire la barra: in cima "Widget" con **la freccetta su** a destra
+      e sotto "+ Aggiungi widget". Toccando la freccetta resta solo la
+      riga "Widget" con la freccetta giù; **chiudere la barra, chiudere
+      l'app** (anche dalle recenti) e riaprirla: è ancora chiusa. Di
+      nuovo la freccetta: tornano tutti, com'erano.
+    - "+ Aggiungi widget" → Fusi orari, Avanzamento, Contatore, Pomodoro:
+      ognuno arriva in fondo, in un riquadro arrotondato col suo nome e i
+      tre puntini (Sposta su / Sposta giù / Rimuovi, con la conferma; sul
+      contatore anche Rinomina). Spostarli e toglierli; chiudere e
+      riaprire l'app: ordine e contenuto restano.
+    - **Fusi orari**: nasce con un orologio analogico sul fuso dell'app.
+      Le lancette si muovono ogni secondo (anche i secondi); dentro al
+      quadrante l'ora "16:05:09" e sotto il giorno nella lingua dell'app
+      con la sigla del fuso ("gio 24 set • CEST"). **Tenuto premuto**:
+      Analogico / Digitale (con la spunta su quello attuale), Cambia fuso
+      orario, Rimuovi. "Aggiungi orologio": due orologi per riga.
+    - La scelta del fuso: tutti i fusi del mondo **da ovest a est**
+      (Pacific/Midway o Pago Pago in cima, Kiritimati in fondo), ognuno
+      con "America · GMT-7" sotto; cercare "tokyo", "asia", "GMT+9",
+      "5:30" (Kolkata).
+    - **Elenco** ("Aggiungi all'elenco"): aggiungere a caso, per esempio
+      Tokyo, Honolulu, Rome, New York, Kolkata — si mettono **sempre** da
+      ovest a est (Honolulu, New York, Rome, Kolkata, Tokyo), con l'ora e
+      il sole (dalle 6 alle 17:59) o la luna. Tenuta premuta, una riga si
+      toglie.
+    - **Avanzamento**: Anno, Mese, Settimana, Giorno con la percentuale,
+      in verde, barre tutte lunghe uguali. Controllare i numeri a mano:
+      la settimana comincia il lunedì; il giorno a mezzogiorno fa 50%.
+      **Tenuta premuta** una barra: Colore → la tavolozza dei colori
+      (senza il selettore "testo / sfondo"); cambia barra e percentuale.
+      "Aggiungi una data": nome, Da, A (con il calendario); con A prima di
+      Da, "Fatto" è spento. Una data da ieri a domani ≈ 50%. Tenuta
+      premuta: Colore, Modifica, Elimina (le quattro fisse non si
+      eliminano).
+    - **Contatore**: + e − di uno (anche sotto zero), la freccetta che
+      gira azzera. Rinominato dai tre puntini, il nome sta sopra al
+      numero. Il numero resta chiudendo l'app.
+    - **Pomodoro**: "25:00", "Sessione", e tre pulsanti tondi: ▶, la
+      freccetta, l'ingranaggio. ▶ → corre e diventa ⏸. **Chiudere la
+      barra e tornare dopo un minuto**: il tempo è andato avanti giusto.
+      Toccando il tempo si scrive a mano (minuti e secondi, tastiera dei
+      numeri), anche mentre corre. Toccando "Sessione" si rinomina.
+      L'ingranaggio: Durata della sessione e Durata della pausa, con − e
+      +; mettere 1 e 1 per provare in fretta.
+    - **Fine della fase**: con sessione a 1 minuto, avviare e aspettare
+      **con la barra chiusa**, in una pagina: allo zero **suona** il
+      suono delle notifiche scelto nelle impostazioni (o quello del
+      telefono) e comincia da sola la pausa, in verde. Con le notifiche
+      messe a tacere nelle impostazioni dell'app non suona.
+    - Avviare, **chiudere l'app** e riaprirla dopo qualche minuto: il
+      timer è al punto giusto (anche passato alla fase dopo), senza
+      suonare per quello che è finito mentre era chiusa. La freccetta lo
+      rimette a 25:00 fermo, sulla sessione.
+    - Tema chiaro (Settings → Theme → Light): i widget si leggono,
+      lancette comprese.
+    - Aperta la barra, lo scorrimento deve restare fluido anche con
+      orologi e pomodoro che si aggiornano ogni secondo.
 
 ## Cronologia degli aggiornamenti
 
@@ -1634,6 +1777,108 @@ Le voci nate nelle sessioni cloud stanno qui in cima, la più recente
 per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
+
+**Widget nella barra laterale — fusi orari, avanzamento, contatore,
+pomodoro** *(sessione cloud del 24/09/2026, richiesta 37: compilato, 63
+test passati — 12 nuovi —, nessuna migrazione, **non provato sul
+telefono**)*
+- **[Nuova funzionalità]** **La sezione "Widget" in cima alla barra
+  laterale non è più uno spazio vuoto** (`WIDGETS_SPACE`, tolto): i widget
+  si aggiungono da **"+ Aggiungi widget"** in fondo alla sezione, arrivano
+  in fondo, ognuno nel suo riquadro arrotondato col nome e i **tre
+  puntini** (Sposta su, Sposta giù, Rimuovi con la conferma; sul
+  contatore anche Rinomina). Di ognuno se ne possono mettere quanti se ne
+  vuole (`SidebarWidgets.kt`, `WidgetsSection`)
+- **[Nuova funzionalità]** **L'interruttore**: una freccetta accanto al
+  titolo "Widget", su per chiudere e giù per riaprire, **nasconde tutta
+  la sezione** e lascia solo il titolo. La scelta **resta** chiudendo la
+  barra e l'app, come chiesto
+- **[Nuova funzionalità]** **Fusi orari**: **orologi** due per riga, col
+  nome della città sopra; l'analogico come nella foto dell'utente —
+  tacche, lancette di ore, minuti e secondi, e dentro l'ora scritta
+  ("16:05:09") col giorno nella lingua dell'app e la sigla del fuso
+  ("gio 24 set • CEST"); il digitale con l'ora grande. **Tenendo premuto
+  un orologio**: Analogico / Digitale, Cambia fuso orario, Rimuovi. Il
+  primo orologio nasce sul fuso dell'app (Settings)
+- **[Nuova funzionalità]** **L'elenco dei fusi**, sotto gli orologi:
+  città, ora, sole o luna (giorno dalle 6 alle 18). **Sempre da ovest a
+  est**, come chiesto: si ordina a ogni secondo sulla distanza da
+  Greenwich **di adesso**, perché l'ora legale sposta i fusi (New York e
+  Londra non sono sempre a cinque ore); a parità, per nome
+  (`sortedWestToEast`). Tenendo premuta una riga, la si toglie
+- **[Nuova funzionalità]** **La scelta del fuso**: tutti i fusi con un
+  nome di città (fuori i doppioni vecchi come "US/Pacific" o
+  "Etc/GMT+5"), anche loro da ovest a est, con "Regione · GMT+5:30"
+  sotto, e la ricerca per città, regione o "GMT+2" (`ZonePickerSheet`)
+- **[Nuova funzionalità]** **Avanzamento** (la "Life Progress Bar"):
+  **Anno, Mese, Settimana, Giorno** già dentro, e **"Aggiungi una data"**
+  per le proprie — nome, Da, A, con il calendario dei database; A prima
+  di Da non si accetta. Barra con la cornice, pieno quanto è passato,
+  "Anno: 73%" accanto nello stesso colore; **tenendo premuta una barra**
+  si cambia **il colore** (la tavolozza del testo, senza il selettore
+  testo/sfondo, che qui non vuol dire niente: `ColorPickerSheet` ha ora
+  `showTargetSwitch`) e, per le date proprie, Modifica ed Elimina. Le
+  barre partono **verdi** come nella foto. La settimana comincia il
+  lunedì; una data si conta dalla mezzanotte del primo giorno alla
+  mezzanotte dell'ultimo, e da lì è al 100%; tutto nel fuso dell'app
+  (`fractionAt`)
+- **[Nuova funzionalità]** **Contatore**: − e + quadrati ai lati del
+  numero, sotto la freccetta che gira per azzerare, come nella foto. Un
+  nome facoltativo sopra al numero (Rinomina, dai tre puntini)
+- **[Nuova funzionalità]** **Pomodoro**: il riquadro arrotondato col
+  **tempo grande** ("25:00"; toccandolo lo si scrive a mano, minuti e
+  secondi), sotto **il nome della sessione** (toccandolo lo si cambia; in
+  pausa c'è scritto "Pausa") e tre pulsanti tondi: **▶** (che diventa ⏸),
+  **da capo** (fermo, sulla sessione, alla durata piena), e
+  **l'ingranaggio** con **Durata della sessione** e **Durata della
+  pausa**, − e + da 1 a 180 minuti. Il colore dice la fase: arancio la
+  sessione, verde la pausa. Finita una fase **suona** e comincia l'altra
+  da sola, come i timer "25 + 5" della foto
+- **[Progetto]** Com'è fatto il pomodoro: **si conta sull'orologio, non a
+  colpi di secondo**. Quando corre si salva *quando* finirà la fase
+  (`endsAt`), e il tempo che manca si ricava da lì; così resta giusto con
+  la barra chiusa, con l'app in secondo piano o chiusa e riaperta.
+  Un'attesa di `WidgetStore`, che vive quanto l'app e non quanto la
+  barra, dorme fino alla fine della fase e allora fa avanzare e suonare.
+  Riaprendo l'app dopo ore, le fasi passate si recuperano tutte, contando
+  dal momento esatto in cui ognuna è finita, e **senza suonare** per il
+  passato (`advancedTo`). Il suono è quello scelto per le notifiche nelle
+  impostazioni (o quello del telefono), e tace se le notifiche sono messe
+  a tacere
+- **[Progetto]** Dove stanno: **nelle preferenze del telefono**, in un
+  file a parte (`widgets`), in JSON, e non nel database delle note: sono
+  attrezzi, non contenuto — nel database finirebbero dentro ogni backup e
+  ogni copia di pagina. Quindi **nessuna migrazione**, e un widget rotto
+  non può toccare le note. `WidgetStore` è osservabile come
+  `AppSettings`: la barra si ridisegna da sola a ogni modifica. Orologi e
+  barre si aggiornano ogni secondo **solo a barra aperta** (chiusa, resta
+  disegnata dietro alla pagina, e ridisegnarla per niente consumerebbe
+  batteria)
+- **[Progetto]** **Il disegno dei widget si guarda anche in cloud**:
+  `WidgetsRenderTest` disegna la sezione (tutti e quattro i widget, e la
+  sezione chiusa) con Robolectric e la salva come immagine in
+  `app/build/widget-screenshots/`. Servono, solo per i test, la libreria
+  `ui-test-junit4` di Compose e `unitTests.isIncludeAndroidResources`
+  in `app/build.gradle.kts`. `captureToImage` di Compose sotto
+  Robolectric non finisce mai: si disegna a mano la finestra su una
+  bitmap
+- **[Bug fix]** *(trovato con quel disegno, prima di arrivare al
+  telefono)* **Il contenuto di ogni widget era disegnato tutto nello
+  stesso punto**, righe una sopra l'altra: stava in un `Box` invece che
+  in una `Column`. E **le barre dell'avanzamento erano lunghe ognuna a
+  modo suo**, perché l'etichetta accanto ("Anno", "Settimana") si
+  allargava e si stringeva; ora ha una larghezza fissa
+- **[Progetto]** Test: `WidgetsTest` (11: anno, mese, settimana dal
+  lunedì, giorno, date proprie, ovest-est anche con l'ora legale, nomi e
+  "GMT+5:30", il pomodoro che avanza, recupera più fasi, resta fermo in
+  pausa, e il salvataggio in JSON andata e ritorno) e `WidgetsRenderTest`
+  (1). Testi nuovi nelle otto lingue (`WidgetStrings`).
+  `DayPickerDialog` e i suoi due aiuti in `DatabaseViewScreen.kt` sono
+  ora `internal`, per usarli anche qui
+- **[Progetto]** README: corrette due affermazioni rimaste indietro nei
+  Limiti noti — "la ricerca nei database non esiste" (c'è dalla
+  richiesta 35) e "Linked view of data source" fra le voci grigie dei
+  menu "+" e "/" (costruita alla richiesta 36). Barrate, non cancellate
 
 **Viste collegate — lo stesso database in un'altra pagina** *(sessione
 cloud del 24/09/2026, richiesta 36: compilato, 51 test passati — 9
@@ -2743,7 +2988,7 @@ deliberate" sopra per il contesto completo.
   trascinando dal bordo** perché da lì parte il gesto indietro del
   telefono. È un filo più scura delle pagine (`SidebarBackground`)
 - **L'ordine delle voci è quello chiesto**: Widgets (titolo e spazio, da
-  riempire), Notebook grigio in una fascia di un altro colore
+  riempire — riempito il 24/09/2026, vedi "Widget nella barra laterale"), Notebook grigio in una fascia di un altro colore
   (`NotebookBand`), Main menu con la casetta e sotto un divisore, Favorite
   pages, l'albero delle pagine, Search, Startup window, Backup e
   Notifications grigie, Trash, Import/Export/Connections grigie, Settings.
@@ -4615,6 +4860,12 @@ app/src/test/java/com/gabriele/notionlocal/viewmodel/
                     # DatabaseSearchTest: quali righe tiene la ricerca
                     # dentro un database e quali illumina;
                     # LinkedViewModelTest: una vista collegata vera
+app/src/test/java/com/gabriele/notionlocal/data/widgets/
+                    # WidgetsTest: le barre dell'avanzamento, l'ordine
+                    # ovest-est, il pomodoro che avanza, il salvataggio
+app/src/test/java/com/gabriele/notionlocal/ui/
+                    # WidgetsRenderTest: disegna i widget e salva
+                    # l'immagine in app/build/widget-screenshots/
 app/src/test/java/com/gabriele/notionlocal/data/MigrationTest.kt
                     # la migrazione 28→29 aperta da Room come fa l'app
 app/src/test/resources/schema/v28.sql
@@ -4628,6 +4879,11 @@ app/src/main/assets/font_licenses/OFL.txt # Licenza e copyright dei font inclusi
 `ui/theme/PageFonts.kt` è il catalogo dei font delle pagine: nomi,
 sosia, gruppi, da dove arrivano, e `PageTypography`, che porta font e
 corpo a tutto il testo.
+
+`data/widgets/` sono i widget della barra laterale: `Widgets.kt` com'è
+fatto ognuno e i calcoli (barre, ordine dei fusi, pomodoro), senza
+Android; `WidgetStore.kt` dove si salvano e l'attesa che fa suonare il
+pomodoro. `ui/screen/SidebarWidgets.kt` è come si vedono.
 
 `ui/screen/BlockActionsSheet.kt` è il menu di un blocco (i sei puntini):
 le voci per una riga di testo, per una pagina e per un database, e tutte
