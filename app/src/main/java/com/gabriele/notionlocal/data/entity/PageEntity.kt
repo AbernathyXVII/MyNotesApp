@@ -172,6 +172,14 @@ data class PageEntity(
     var coverOffsetX: Float = 0f,
     var coverOffsetY: Float = 0f,
     var isDatabase: Boolean = false,
+    // **Database semplice** (solo con isDatabase = true): un database vero
+    // — viste, filtri, ordinamento, raggruppamento, proprietà — in cui
+    // però **le righe sono solo testo e non diventano mai pagine**. È la
+    // cosa che l'utente ha sempre voluto e che Notion non ha: nessun OPEN,
+    // nessuna icona o copertina di riga, e toccando una riga si apre la
+    // sua scheda (nome e proprietà) invece di una pagina. Si sceglie
+    // quando lo si crea ("Simple database" nei menu "/" e "+").
+    var isSimpleDatabase: Boolean = false,
     var isRowPage: Boolean = false,
     // Solo per le pagine con isDatabase = true: come vengono mostrate le
     // righe (tabella, elenco, bacheca...). Ammette null perché i

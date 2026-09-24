@@ -620,9 +620,26 @@ fun DatabaseContent(
     // finestra: togliamo il fuoco prima di aprirla.
     val focusManager = LocalFocusManager.current
 
+    // **Database semplice**: le righe sono solo testo. Toccarne una, in
+    // qualunque vista, apre la sua **scheda** — nome e proprietà — invece
+    // di una pagina, che per queste righe non esiste e non nasce mai.
+    // Negli altri database il tocco apre la pagina della riga, come
+    // sempre. Una funzione sola per le sei viste, così nessuna può
+    // restare indietro.
+    val simple = page?.isSimpleDatabase == true
+    val openRow: (DatabaseRowEntity) -> Unit = if (simple) {
+        { row ->
+            focusManager.clearFocus()
+            rowActionsFor = row
+        }
+    } else {
+        { row -> viewModel.openRow(row) { onOpenRowPage(it) } }
+    }
+
     CompositionLocalProvider(
         LocalDatabaseLocked provides (page?.isLocked == true || page?.trashedAt != null),
-        LocalRowIcons provides rowIcons
+        LocalRowIcons provides rowIcons,
+        LocalSimpleDatabase provides simple
     ) {
     Column(
         modifier = modifier
@@ -782,7 +799,7 @@ fun DatabaseContent(
                         propertyTarget = PropertyTarget.New()
                     },
                     onTitleChange = { row, title -> viewModel.updateRowTitle(row, title) },
-                    onOpenRow = { row -> viewModel.openRow(row) { onOpenRowPage(it) } },
+                    onOpenRow = openRow,
                     onRowLongPress = { row ->
                         focusManager.clearFocus()
                         rowActionsFor = row
@@ -816,7 +833,7 @@ fun DatabaseContent(
                     state = state,
                     groupColumn = viewModel.boardGroupColumn(),
                     newRowTick = newRowTick,
-                    onOpenRow = { row -> viewModel.openRow(row) { onOpenRowPage(it) } },
+                    onOpenRow = openRow,
                     onRowLongPress = { row ->
                         focusManager.clearFocus()
                         rowActionsFor = row
@@ -838,7 +855,7 @@ fun DatabaseContent(
                     mode = page?.calendarMode ?: CalendarMode.MONTH,
                     newRowTick = newRowTick,
                     onSetMode = { viewModel.setCalendarMode(it) },
-                    onOpenRow = { row -> viewModel.openRow(row) { onOpenRowPage(it) } },
+                    onOpenRow = openRow,
                     onRowLongPress = { row ->
                         focusManager.clearFocus()
                         rowActionsFor = row
@@ -858,7 +875,7 @@ fun DatabaseContent(
                     zoom = page?.timelineZoom ?: TimelineZoom.DAY,
                     newRowTick = newRowTick,
                     onSetZoom = { viewModel.setTimelineZoom(it) },
-                    onOpenRow = { row -> viewModel.openRow(row) { onOpenRowPage(it) } },
+                    onOpenRow = openRow,
                     onRowLongPress = { row ->
                         focusManager.clearFocus()
                         rowActionsFor = row
@@ -871,7 +888,7 @@ fun DatabaseContent(
 
                 DatabaseLayout.LIST -> ListLayout(
                     state = state,
-                    onOpenRow = { row -> viewModel.openRow(row) { onOpenRowPage(it) } },
+                    onOpenRow = openRow,
                     onRowLongPress = { row ->
                         focusManager.clearFocus()
                         rowActionsFor = row
@@ -880,11 +897,18 @@ fun DatabaseContent(
 
                 DatabaseLayout.GALLERY -> GalleryLayout(
                     state = state,
-                    preview = page?.galleryCardPreview ?: GALLERY_DEFAULT_PREVIEW,
+                    // Copertina e testo sono della pagina della riga: in
+                    // un database semplice le pagine non ci sono, e le
+                    // schede hanno solo nome e proprietà.
+                    preview = if (simple) {
+                        GalleryCardPreview.NONE
+                    } else {
+                        page?.galleryCardPreview ?: GALLERY_DEFAULT_PREVIEW
+                    },
                     size = page?.galleryCardSize ?: GALLERY_DEFAULT_SIZE,
                     covers = rowCovers,
                     contentPreviews = rowPreviews,
-                    onOpenRow = { row -> viewModel.openRow(row) { onOpenRowPage(it) } },
+                    onOpenRow = openRow,
                     onRowLongPress = { row ->
                         focusManager.clearFocus()
                         rowActionsFor = row
@@ -935,7 +959,7 @@ fun DatabaseContent(
             ) {
                 Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.size(8.dp))
-                Text(DbStrings.newPage)
+                Text(if (simple) DbStrings.newRow else DbStrings.newPage)
             }
             }
         }
@@ -995,6 +1019,7 @@ fun DatabaseContent(
             onSetDateColumn = { viewModel.setCalendarDateColumn(it.id) },
             galleryPreview = page?.galleryCardPreview ?: GALLERY_DEFAULT_PREVIEW,
             gallerySize = page?.galleryCardSize ?: GALLERY_DEFAULT_SIZE,
+            simple = simple,
             onSetGalleryPreview = { viewModel.setGalleryCardPreview(it) },
             onSetGallerySize = { viewModel.setGalleryCardSize(it) },
             onEditProperty = { column ->
@@ -1109,6 +1134,8 @@ fun DatabaseContent(
             onDeleteOption = { columnId, label -> viewModel.deleteSelectOption(columnId, label) },
             hasIcon = rowIcons[live.id] != null,
             iconEditable = page?.isLocked != true && page?.trashedAt == null,
+            simple = simple,
+            onTitleChange = { title -> viewModel.updateRowTitle(live, title) },
             onEditIcon = {
                 rowActionsFor = null
                 iconForRow = live
@@ -1280,7 +1307,10 @@ private fun TableLayout(
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.size(8.dp))
-                    Text(DbStrings.newPage, style = MaterialTheme.typography.labelLarge)
+                    Text(
+                        if (LocalSimpleDatabase.current) DbStrings.newRow else DbStrings.newPage,
+                        style = MaterialTheme.typography.labelLarge
+                    )
                 }
             }
             Spacer(modifier = Modifier.size(12.dp))
@@ -3986,20 +4016,25 @@ private fun NameCell(
                 }
             }
         }
-        Text(
-            text = DbStrings.open,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier
-                .padding(end = 8.dp)
-                .border(
-                    1.dp,
-                    MaterialTheme.colorScheme.outline,
-                    RoundedCornerShape(6.dp)
-                )
-                .clickable { onOpen() }
-                .padding(horizontal = 8.dp, vertical = 4.dp)
-        )
+        // Niente OPEN in un database semplice: la riga non ha una pagina
+        // da aprire. Il nome si scrive qui, toccandolo, e il resto dalla
+        // scheda che si apre tenendolo premuto.
+        if (!LocalSimpleDatabase.current) {
+            Text(
+                text = DbStrings.open,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .padding(end = 8.dp)
+                    .border(
+                        1.dp,
+                        MaterialTheme.colorScheme.outline,
+                        RoundedCornerShape(6.dp)
+                    )
+                    .clickable { onOpen() }
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            )
+        }
     }
 }
 
@@ -5323,6 +5358,16 @@ private fun TimePickerDialog(
 private val LocalDatabaseLocked = staticCompositionLocalOf { false }
 
 /**
+ * Se il database aperto è **semplice** (`PageEntity.isSimpleDatabase`):
+ * le sue righe sono solo testo e non diventano mai pagine. Passa da qui
+ * per la stessa ragione di `LocalDatabaseLocked` — lo guardano la cella
+ * del nome (niente OPEN) e i pulsanti per aggiungere ("Nuova riga" invece
+ * di "Nuova pagina"), in fondo a catene che non hanno altro motivo di
+ * saperlo.
+ */
+private val LocalSimpleDatabase = staticCompositionLocalOf { false }
+
+/**
  * Le icone delle pagine delle righe del database aperto: riga → file
  * dell'immagine. Passa da qui per la stessa ragione di `LocalDatabaseLocked`:
  * il titolo di una riga si disegna in sette viste diverse, in fondo a
@@ -5399,6 +5444,14 @@ private fun RowActionsSheet(
     hasIcon: Boolean,
     /** Spenta con la pagina bloccata o nel cestino: l'icona fa parte del contenuto. */
     iconEditable: Boolean,
+    /**
+     * Database semplice: la finestra diventa **la scheda della riga** —
+     * il nome da scrivere in cima e subito sotto tutte le proprietà, senza
+     * la voce dell'icona (una riga senza pagina non ha dove metterla).
+     * È quello che si apre toccando una riga, in qualunque vista.
+     */
+    simple: Boolean = false,
+    onTitleChange: (String) -> Unit = {},
     onEditIcon: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -5423,7 +5476,11 @@ private fun RowActionsSheet(
                     }
                 }
                 Text(
-                    text = if (page == RowActionsPage.ROOT) DbStrings.actions else DbStrings.editProperty,
+                    text = when {
+                        page != RowActionsPage.ROOT -> DbStrings.editProperty
+                        simple -> DbStrings.row
+                        else -> DbStrings.actions
+                    },
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -5431,7 +5488,41 @@ private fun RowActionsSheet(
             Spacer(modifier = Modifier.size(12.dp))
 
             when (page) {
-                RowActionsPage.ROOT -> {
+                RowActionsPage.ROOT -> if (simple) {
+                    SimpleRowNameField(
+                        row = row,
+                        editable = iconEditable,
+                        onTitleChange = onTitleChange
+                    )
+                    Spacer(modifier = Modifier.size(12.dp))
+                    RowPropertiesList(
+                        row = row,
+                        columns = columns,
+                        cellValues = cellValues,
+                        onSetCellValue = onSetCellValue,
+                        onAddOption = onAddOption,
+                        onRenameOption = onRenameOption,
+                        onSetOptionColor = onSetOptionColor,
+                        onDeleteOption = onDeleteOption
+                    )
+                    Spacer(modifier = Modifier.size(16.dp))
+                    SheetGroup {
+                        SheetAction(Icons.Filled.Delete, Strings.delete, isDestructive = true) {
+                            onDelete()
+                        }
+                    }
+                    Spacer(modifier = Modifier.size(20.dp))
+                    Text(
+                        text = DbStrings.created(Formats.dateTime(row.createdAt)),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = DbStrings.lastEdited(Formats.dateTime(row.updatedAt ?: row.createdAt)),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
                     SheetGroup {
                         // Come l'"Edit icon" delle azioni di una riga su
                         // Notion: l'icona della pagina senza doverla aprire.
@@ -5468,57 +5559,125 @@ private fun RowActionsSheet(
                     )
                 }
 
-                RowActionsPage.PROPERTIES -> {
-                    if (columns.isEmpty()) {
-                        Text(
-                            DbStrings.noPropertiesYet,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(vertical = 12.dp)
-                        )
-                    }
-                    columns.forEach { column ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                column.type.icon(),
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.size(12.dp))
-                            Text(
-                                text = DbStrings.columnName(column.name),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.width(110.dp),
-                                maxLines = 1
-                            )
-                            Spacer(modifier = Modifier.size(12.dp))
-                            Box(modifier = Modifier.weight(1f)) {
-                                CellContent(
-                                    row = row,
-                                    column = column,
-                                    value = cellValues[row.id to column.id] ?: "",
-                                    onValueChange = { onSetCellValue(column, it) },
-                                    onAddOption = { onAddOption(column, it) },
-                                    onRenameOption = onRenameOption,
-                                    onSetOptionColor = onSetOptionColor,
-                                    onDeleteOption = onDeleteOption
-                                )
-                            }
-                        }
-                    }
-                }
+                RowActionsPage.PROPERTIES -> RowPropertiesList(
+                    row = row,
+                    columns = columns,
+                    cellValues = cellValues,
+                    onSetCellValue = onSetCellValue,
+                    onAddOption = onAddOption,
+                    onRenameOption = onRenameOption,
+                    onSetOptionColor = onSetOptionColor,
+                    onDeleteOption = onDeleteOption
+                )
             }
 
             Spacer(modifier = Modifier.size(24.dp))
         }
     }
+}
+
+/**
+ * Le proprietà di una riga, una per riga, ciascuna modificabile sul posto
+ * come nella sua cella. Serve in due posti: "Edit property" delle azioni
+ * di una riga, e la scheda di una riga di un database semplice.
+ */
+@Composable
+private fun RowPropertiesList(
+    row: DatabaseRowEntity,
+    columns: List<DatabaseColumnEntity>,
+    cellValues: Map<Pair<String, String>, String>,
+    onSetCellValue: (DatabaseColumnEntity, String) -> Unit,
+    onAddOption: (DatabaseColumnEntity, String) -> Unit,
+    onRenameOption: (String, String, String) -> Unit,
+    onSetOptionColor: (String, String, String) -> Unit,
+    onDeleteOption: (String, String) -> Unit
+) {
+    Column {
+    if (columns.isEmpty()) {
+        Text(
+            DbStrings.noPropertiesYet,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(vertical = 12.dp)
+        )
+    }
+    columns.forEach { column ->
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                column.type.icon(),
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.size(12.dp))
+            Text(
+                text = DbStrings.columnName(column.name),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.width(110.dp),
+                maxLines = 1
+            )
+            Spacer(modifier = Modifier.size(12.dp))
+            Box(modifier = Modifier.weight(1f)) {
+                CellContent(
+                    row = row,
+                    column = column,
+                    value = cellValues[row.id to column.id] ?: "",
+                    onValueChange = { onSetCellValue(column, it) },
+                    onAddOption = { onAddOption(column, it) },
+                    onRenameOption = onRenameOption,
+                    onSetOptionColor = onSetOptionColor,
+                    onDeleteOption = onDeleteOption
+                )
+            }
+        }
+    }
+    }
+}
+
+/**
+ * Il nome di una riga di un database semplice, in cima alla sua scheda.
+ *
+ * Nelle altre viste il nome non si scrive sul posto — in un database
+ * normale si apre la pagina e lo si scrive lì — e una riga senza pagina
+ * ha bisogno di un altro posto: questo. Mentre si scrive comanda il testo
+ * locale, non quello che torna dal database, per la stessa ragione del
+ * titolo del database: il giro di ritorno arriva dopo il tasto
+ * successivo, e riscrivendo il campo si mangerebbe il carattere.
+ */
+@Composable
+private fun SimpleRowNameField(
+    row: DatabaseRowEntity,
+    editable: Boolean,
+    onTitleChange: (String) -> Unit
+) {
+    var name by remember(row.id) { mutableStateOf(row.title) }
+    val focusManager = LocalFocusManager.current
+    OutlinedTextField(
+        value = name,
+        onValueChange = { typed ->
+            // Niente a capo nel nome, come nella cella della tabella:
+            // l'Invio chiude, e un a capo incollato si toglie qui.
+            val singleLine = typed.replace("\n", "")
+            name = singleLine
+            onTitleChange(singleLine)
+        },
+        label = { Text(DbStrings.name) },
+        placeholder = { Text(Strings.untitled) },
+        singleLine = true,
+        readOnly = !editable,
+        keyboardOptions = KeyboardOptions(
+            capitalization = KeyboardCapitalization.Sentences,
+            imeAction = ImeAction.Done
+        ),
+        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+        modifier = Modifier.fillMaxWidth()
+    )
 }
 
 /**
@@ -5562,6 +5721,12 @@ private fun SettingsSheet(
     gallerySize: GalleryCardSize = GALLERY_DEFAULT_SIZE,
     onSetGalleryPreview: (GalleryCardPreview) -> Unit = {},
     onSetGallerySize: (GalleryCardSize) -> Unit = {},
+    /**
+     * Database semplice: niente "Card preview" nella galleria (copertina
+     * e testo sono delle pagine delle righe, che qui non esistono), e in
+     * fondo una riga che dice che cos'è.
+     */
+    simple: Boolean = false,
     onEditProperty: (DatabaseColumnEntity) -> Unit,
     onAddProperty: () -> Unit,
     /** Null quando il database è a schermo intero: lì il titolo c'è sempre. */
@@ -5698,14 +5863,16 @@ private fun SettingsSheet(
                         // subito sotto la vista. Sono impaginazione, quindi
                         // "Lock view" le spegne come le altre.
                         if (layout == DatabaseLayout.GALLERY) {
-                            HorizontalDivider()
-                            SettingsRow(
-                                icon = galleryPreview.icon(),
-                                label = DbStrings.cardPreview,
-                                enabled = !viewLocked,
-                                value = DbStrings.galleryPreviewName(galleryPreview),
-                                onClick = { page = SettingsPage.CARD_PREVIEW }
-                            )
+                            if (!simple) {
+                                HorizontalDivider()
+                                SettingsRow(
+                                    icon = galleryPreview.icon(),
+                                    label = DbStrings.cardPreview,
+                                    enabled = !viewLocked,
+                                    value = DbStrings.galleryPreviewName(galleryPreview),
+                                    onClick = { page = SettingsPage.CARD_PREVIEW }
+                                )
+                            }
                             HorizontalDivider()
                             SettingsRow(
                                 icon = gallerySize.icon(),
@@ -5779,6 +5946,18 @@ private fun SettingsSheet(
                                 onCheckedChange = onSetShowTitle
                             )
                         }
+                    }
+
+                    // Un database semplice si riconosce solo da quello
+                    // che non fa: una riga qui lo dice, così chi tocca
+                    // una riga e non vede aprirsi una pagina sa perché.
+                    if (simple) {
+                        Spacer(modifier = Modifier.size(10.dp))
+                        Text(
+                            text = DbStrings.simpleDatabaseNote,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
 
                     // Cancellare è una cosa che si fa al database

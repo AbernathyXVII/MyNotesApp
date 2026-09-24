@@ -297,6 +297,9 @@ class PageRepository(private val db: AppDatabase) {
      */
     suspend fun treeChildren(pageId: String): List<PageTreeNode> {
         val page = pageDao.getById(pageId) ?: return emptyList()
+        // Le righe di un database semplice non sono pagine: nell'albero
+        // il database è una foglia, e le righe si guardano aprendolo.
+        if (page.isSimpleDatabase) return emptyList()
         if (page.isDatabase) {
             return db.databaseDao().getRowsForPageOnce(pageId).mapNotNull { row ->
                 val linked = row.linkedPageId?.let { pageDao.getById(it) }
@@ -333,6 +336,12 @@ class PageRepository(private val db: AppDatabase) {
         val databaseDao = db.databaseDao()
         val row = databaseDao.getRowById(rowId) ?: return null
         row.linkedPageId?.let { return it }
+        // **Le righe di un database semplice non diventano mai pagine**
+        // (`PageEntity.isSimpleDatabase`). Le schermate non lo chiedono
+        // già da sé, ma questo è l'unico punto da cui una pagina di riga
+        // nasce: il divieto sta qui, così nessuna strada nuova — un
+        // menu, una ricerca, un "Duplicate" — può aggirarlo per sbaglio.
+        if (pageDao.getById(row.pageId)?.isSimpleDatabase == true) return null
         val page = PageEntity(title = row.title.ifBlank { "Untitled" }, isRowPage = true)
         pageDao.insert(page)
         databaseDao.updateRow(row.copy(linkedPageId = page.id))
@@ -346,7 +355,9 @@ class PageRepository(private val db: AppDatabase) {
         emoji = page.icon,
         iconImage = page.iconImage,
         isDatabase = page.isDatabase,
-        hasChildren = if (page.isDatabase) {
+        hasChildren = if (page.isSimpleDatabase) {
+            false
+        } else if (page.isDatabase) {
             db.databaseDao().countRows(page.id) > 0
         } else {
             blockDao.countLinksInPage(page.id) > 0
@@ -439,6 +450,25 @@ class PageRepository(private val db: AppDatabase) {
             }
             for (row in db.databaseDao().searchRows(needle)) {
                 val database = pageDao.getById(row.pageId)?.takeIf { allowed(it) } ?: continue
+                // Una riga di un database semplice non ha una pagina da
+                // aprire: il risultato porta **al database**, e sotto il
+                // nome della riga dice in quale. `rowId` resta, perché
+                // due righe dello stesso database sono due risultati.
+                if (database.isSimpleDatabase) {
+                    hits["row:${row.id}"] = SearchHit(
+                        pageId = database.id,
+                        rowId = row.id,
+                        isDatabase = true,
+                        title = row.title,
+                        emoji = database.icon,
+                        iconImage = database.iconImage,
+                        snippet = database.title,
+                        matchStart = 0,
+                        matchLength = 0,
+                        inTrash = database.trashedAt != null
+                    )
+                    continue
+                }
                 val linked = row.linkedPageId?.let { pageDao.getById(it) }
                 if (linked != null) {
                     // Il nome della riga è il titolo della sua pagina: se
@@ -802,6 +832,9 @@ class PageRepository(private val db: AppDatabase) {
         for (row in databaseDao.searchRows(needle)) {
             if (row.linkedPageId != null) continue
             val database = pageDao.getById(row.pageId)?.takeIf { it.trashedAt == null } ?: continue
+            // Copiare "dentro" una riga vuol dire dentro la sua pagina, e
+            // una riga di un database semplice una pagina non ce l'ha.
+            if (database.isSimpleDatabase) continue
             hits += DestinationHit(
                 PageTreeNode(
                     pageId = null,

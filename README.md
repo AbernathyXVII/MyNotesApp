@@ -474,6 +474,13 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
 - **Indenta/disindenta, sposta su/giù, Undo/Redo, menu "+", Aa** dalla
   barra sopra la tastiera (scorrevole orizzontalmente)
 - **Tocco ovunque sotto il titolo** per iniziare/continuare a scrivere
+- **Database semplice** *(sessione cloud del 24/09/2026, da verificare
+  sul telefono)*: "Simple database" nei menu "/" e "+" crea un database
+  con tutto quello che hanno gli altri — viste, filtri, ordinamento,
+  raggruppamento, proprietà — ma **le cui righe sono solo testo e non
+  diventano mai pagine**: niente OPEN, niente icone o copertine di riga;
+  toccando una riga si apre la sua scheda, col nome da scrivere e tutte
+  le proprietà. Una cosa che Notion non ha
 - **Database dentro le pagine**: creandone uno dal menu "+" compare
   nella pagina e si modifica lì; l'icona con le frecce lo apre a
   schermo intero, e dalle impostazioni lo si elimina
@@ -617,8 +624,8 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   fatta per i blocchi
 - Nei menu "+" e "/" (dal 24/09/2026 hanno le stesse voci), **Callout,
   Quote, Link to page (come voce separata da "Page"), Image, Video,
-  Audio, Code, File, Web bookmark, Database - Full page, Simple database
-  e Linked view of data source** ci sono ma sono grigie: non sono state
+  Audio, Code, File, Web bookmark, Database - Full page e Linked view of
+  data source** ci sono ma sono grigie: non sono state
   costruite — alcune richiedono capacità nuove (gestione file,
   embedding media)
 - **Database: "Property visibility" non riordina e non cerca.** Su
@@ -628,6 +635,15 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   e la ricerca non c'è, perché con
   una manciata di proprietà sarebbe un campo di testo da riempire per
   scorrere una lista che si vede già tutta
+- **Database semplice: si sceglie quando lo si crea**, e non si può
+  trasformare un database normale in semplice o viceversa. Un database
+  normale ha righe che magari sono già pagine piene di testo, e farle
+  diventare "solo testo" vorrebbe dire decidere cosa farne
+- **Database semplice: dalla ricerca si arriva al database, non alla
+  riga.** Il risultato dice il nome della riga e in quale database sta,
+  e aprendolo si apre il database intero: la riga va cercata lì. Nella
+  barra laterale il database semplice non ha figli, perché le sue righe
+  non sono pagine
 - **Database: una colonna nascosta non si sposta** *(dal 24/09/2026)*.
   Spostare si fa tenendo premuta l'intestazione, e una colonna nascosta
   un'intestazione non ce l'ha; il suo "Move left / Move right" dentro la
@@ -1000,6 +1016,17 @@ README di una riga).
     sinistra di +, la seconda di / sarà la prima a destra di +,
     eccetera» — fatto: il "+" legge lo stesso catalogo del "/", vedi
     Cronologia "Menu '+' — le stesse voci del menu '/'"
+30. «Una cosa che Notion (e forse a dire la verità nessun altro) non ha
+    mai avuto e che ho sempre desiderato che avesse: i database
+    semplici. Non intendo le tabelle semplici solo con righe e colonne
+    tipo Excel, ma proprio un classico database con tutte quante le
+    opzioni che consentono di modificare vista e impostazioni di un
+    database classico, quindi con filtri, sort, grouping, eccetera ma
+    senza tutto ciò che riguarda le impostazioni delle pagine (che ad
+    ora penso che non ce ne siano), per far sì che le voci principali
+    siano solo testo e non siano pagine. Detto questo, attiva la voce
+    Simple database in / e +» — fatto: vedi Cronologia "Database
+    semplice — le righe sono solo testo"
 
 **Cosa è stato fatto:**
 
@@ -1103,9 +1130,9 @@ README di una riga).
 
 **Da verificare sul telefono** (dall'1 al 14 la vista Gallery, il 15
 lo spostamento delle colonne, il 16 il conteggio del testo, il 17 e il
-18 font e dimensione, il 19 i titoli tolti, il 20 il menu "+"; prima di
-installare, **copia
-del database**: questa build cambia lo schema tre volte — 24→25→26→27):
+18 font e dimensione, il 19 i titoli tolti, il 20 il menu "+", il 21 il
+database semplice; prima di installare, **copia
+del database**: questa build cambia lo schema quattro volte — 24→25→26→27→28):
 
 1. **Compila anche sul PC?** In cloud sì (`assembleDebug` riuscito),
    ma con Gradle 8.7 da riga di comando: va confermato in Android
@@ -1205,6 +1232,18 @@ del database**: questa build cambia lo schema tre volte — 24→25→26→27):
     Text, elenchi, To-do, Toggle, Page (entra nella pagina nuova), Table,
     Divider, e ogni vista di database (deve nascere con la vista scelta,
     non sempre come tabella). Il "/" deve comportarsi come prima.
+21. **Database semplice** (richiesta 30): da "/" e da "+" nasce una
+    tabella senza OPEN; il nome si scrive toccandolo; tenendolo premuto
+    si apre la scheda (nome, proprietà, Delete, niente Icon). In tutte le
+    altre viste un tocco apre la scheda e **mai** una pagina. Filtro,
+    ordinamento, raggruppamento, nascondere e spostare colonne, Lock
+    view funzionano come negli altri database. Galleria senza "Card
+    preview". "Nuova riga" al posto di "Nuova pagina". Nella barra
+    laterale il database non ha la freccetta dei figli; cercando il nome
+    di una riga il risultato apre il database (e cercare due righe dello
+    stesso database non fa chiudere l'app). "Duplicate" non propone le
+    sue righe come destinazione. I database già esistenti sono rimasti
+    normali, con OPEN.
 
 ## Cronologia degli aggiornamenti
 
@@ -1212,6 +1251,50 @@ Le voci nate nelle sessioni cloud stanno qui in cima, la più recente
 per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
+
+**Database semplice — le righe sono solo testo** *(sessione cloud del
+24/09/2026, richiesta 30: compilato, test passati, migrazione 27→28
+simulata, **non provato sul telefono**)*
+- **[Nuova funzionalità]** **"Simple database"** nei menu "/" e "+"
+  (finora grigia) crea un **database semplice**: un database vero, con
+  tutte le viste e le impostazioni degli altri — filtri, ordinamento,
+  raggruppamento, proprietà, Lock view — ma in cui **le righe sono solo
+  testo e non diventano mai pagine**. L'utente lo voleva da sempre, e
+  nessuna app lo ha. Nasce come tabella, come "Database - Inline"; la
+  vista si cambia dalle impostazioni. Salvato in
+  `PageEntity.isSimpleDatabase` (**migrazione 27→28**, 0 per tutti i
+  database che c'erano: restano normali)
+- **[Nuova funzionalità]** **Toccando una riga si apre la sua scheda**
+  invece di una pagina, in tutte e sei le viste (tabella dal tocco
+  prolungato, bacheca, elenco, galleria, calendario, linea del tempo):
+  in cima **il nome da scrivere**, subito sotto **tutte le proprietà**
+  modificabili sul posto, poi Delete e le date di creazione e modifica
+  (`RowActionsSheet` con `simple = true`, `SimpleRowNameField`). Nella
+  tabella il nome si scrive toccandolo, come sempre
+- **[Nuova funzionalità]** Tolto tutto quello che nei database normali
+  riguarda le pagine delle righe: **niente OPEN** nella cella del nome,
+  **niente voce "Icon"** nella scheda, **niente "Card preview"** nella
+  galleria (copertina e testo sono della pagina della riga: le schede
+  hanno nome e proprietà), e i pulsanti dicono **"Nuova riga"** invece di
+  "Nuova pagina". In fondo alle impostazioni una riga dice che il
+  database è semplice e che cosa vuol dire
+- **[Nuova funzionalità]** **Nessuna strada porta a una pagina di
+  riga**: il divieto sta in `PageRepository.ensureRowPage`, l'unico punto
+  da cui una pagina di riga nasce, che per un database semplice rifiuta.
+  E in più: nella **barra laterale** il database semplice non ha figli
+  (`treeChildren`, `nodeFor`); nella **ricerca** una riga trovata porta
+  **al database** e dice in quale sta; il **Duplicate** non offre le sue
+  righe come posto in cui copiare
+- **[Bug fix]** *(trovato scrivendo questo)* La lista dei risultati della
+  ricerca usava come chiave l'identificativo della pagina: un risultato
+  di riga che porta al database, e due righe dello stesso database,
+  avrebbero avuto la stessa chiave, cosa che una `LazyColumn` non
+  perdona — l'app si chiude. Ora la chiave è prima la riga, poi la
+  pagina (`SearchScreen`)
+- **[Progetto]** `RowPropertiesList` è stata estratta dalla finestra
+  delle azioni di una riga, per usarla sia in "Edit property" sia nella
+  scheda della riga semplice. Testi nuovi nelle otto lingue
+  (`DbStrings.newRow`, `row`, `simpleDatabaseNote`)
 
 **Menu "+" — le stesse voci del menu "/", nello stesso ordine**
 *(sessione cloud del 24/09/2026, richiesta 29: compilato, test passati,
@@ -1240,10 +1323,11 @@ gg/mm/aaaa)" accanto al titolo.
   | Board view | Gallery view |
   | List view | Calendar view |
   | Timeline view | Database - Inline |
-  | *Database - Full page* | *Simple database* |
+  | *Database - Full page* | Simple database |
   | *Linked view of data source* | |
 
-  (in corsivo le grigie). Senza i titoli delle famiglie che ha il "/"
+  (in corsivo le grigie; "Simple database" era grigia fino alla
+  richiesta 30). Senza i titoli delle famiglie che ha il "/"
   (Basic blocks, Media, Database): su due colonne riga per riga
   spezzerebbero l'ordine chiesto, lasciando buchi a fine famiglia. Il
   menu scorre, perché le righe sono più di quante ne stiano sopra la
@@ -3789,10 +3873,11 @@ corpo a tutto il testo.
 
 ## Nota tecnica
 
-Lo schema è alla **versione 27** (la 25, la 26 e la 27 vengono dalla
+Lo schema è alla **versione 28** (dalla 25 alla 28 vengono dalla
 sessione cloud del 24/09/2026, vedi Diario: migrazioni simulate su
 SQLite in cloud ma **mai provate su un telefono**; la 27 non cambia la
-forma delle tabelle, trasforma i titoli in paragrafi), e
+forma delle tabelle, trasforma i titoli in paragrafi; la 28 aggiunge il
+database semplice), e
 da qui in avanti **ogni cambio di
 schema vuole una migrazione vera** in `AppDatabase`. Fino alla 5 c'era
 `fallbackToDestructiveMigration()`, che ad ogni cambio ricreava il

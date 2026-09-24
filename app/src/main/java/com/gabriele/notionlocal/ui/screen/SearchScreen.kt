@@ -137,7 +137,13 @@ fun SearchScreen(
                 query.isBlank() -> CenteredHint(Strings.searchPrompt)
                 results.isEmpty() -> CenteredHint(Strings.noResults)
                 else -> LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(results, key = { it.pageId ?: "row:${it.rowId}" }) { hit ->
+                    // Prima la riga, poi la pagina: il risultato di una
+                    // riga di un database semplice ha anche la pagina (il
+                    // database, dove porta), e due righe dello stesso
+                    // database — o il database stesso trovato per nome —
+                    // avrebbero avuto la stessa chiave, cosa che una
+                    // `LazyColumn` non perdona: l'app si chiude.
+                    items(results, key = { it.rowId?.let { id -> "row:$id" } ?: it.pageId.orEmpty() }) { hit ->
                         SearchResultRow(hit = hit, onClick = { onOpenHit(hit) })
                     }
                 }

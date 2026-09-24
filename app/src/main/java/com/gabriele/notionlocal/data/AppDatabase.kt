@@ -43,7 +43,7 @@ import com.gabriele.notionlocal.data.entity.TableCellEntity
         TableCellEntity::class,
         PageEditEntity::class
     ],
-    version = 27,
+    version = 28,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -383,6 +383,20 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Aggiunge `isSimpleDatabase` alle pagine: il database le cui righe
+         * sono solo testo e non diventano mai pagine. Non ammette null e
+         * parte da 0 — database normale — perché è quello che erano tutti
+         * i database creati finora.
+         */
+        private val MIGRATION_27_28 = object : Migration(27, 28) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE pages ADD COLUMN isSimpleDatabase INTEGER NOT NULL DEFAULT 0"
+                )
+            }
+        }
+
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -412,7 +426,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_23_24,
                         MIGRATION_24_25,
                         MIGRATION_25_26,
-                        MIGRATION_26_27
+                        MIGRATION_26_27,
+                        MIGRATION_27_28
                     )
                     .build()
                 INSTANCE = instance

@@ -2167,11 +2167,16 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
     }
 
     /** Come convertToPageLink, ma crea una pagina di tipo database. */
-    fun convertToDatabaseLink(block: BlockEntity, onReady: (String) -> Unit) {
+    /**
+     * `simple` crea un **database semplice**, le cui righe non diventano
+     * mai pagine (vedi `PageEntity.isSimpleDatabase`). Vale solo per un
+     * database che nasce qui: uno che c'era già resta com'era.
+     */
+    fun convertToDatabaseLink(block: BlockEntity, simple: Boolean = false, onReady: (String) -> Unit) {
         snapshotForStructuralChange()
         viewModelScope.launch {
             val targetPageId = block.linkedPageId ?: run {
-                val newPage = PageEntity(title = "Untitled", isDatabase = true)
+                val newPage = PageEntity(title = "Untitled", isDatabase = true, isSimpleDatabase = simple)
                 repository.createPage(newPage)
                 newPage.id
             }

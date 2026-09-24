@@ -1120,7 +1120,7 @@ fun PageEditorScreen(
                     // view" dà un calendario e non una
                     // tabella da cambiare a mano.
                     is SlashAction.Database ->
-                        viewModel.convertToDatabaseLink(block) { databaseId ->
+                        viewModel.convertToDatabaseLink(block, simple = action.simple) { databaseId ->
                             action.layout?.let {
                                 viewModel.setDatabaseLayout(databaseId, it)
                             }
@@ -2596,7 +2596,8 @@ private sealed class SlashAction {
     data class Type(val type: BlockType) : SlashAction()
     object PageLink : SlashAction()
     object Divider : SlashAction()
-    data class Database(val layout: DatabaseLayout?) : SlashAction()
+    /** `simple`: un database semplice, le cui righe non diventano pagine. */
+    data class Database(val layout: DatabaseLayout?, val simple: Boolean = false) : SlashAction()
     /** Elencata ma non ancora costruita: si vede spenta. */
     object NotYet : SlashAction()
 }
@@ -2698,7 +2699,15 @@ private val SLASH_ENTRIES: List<SlashEntry> = listOf(
         Icons.Filled.TableChart
     ),
     SlashEntry("Database - Full page", SlashCategory.DATABASE, SlashAction.NotYet, Icons.Filled.OpenInFull),
-    SlashEntry("Simple database", SlashCategory.DATABASE, SlashAction.NotYet, Icons.Filled.GridOn),
+    // Il database le cui righe sono solo testo: vedi
+    // `PageEntity.isSimpleDatabase`. Nasce come tabella, come "Database -
+    // Inline", e la vista si cambia poi dalle impostazioni.
+    SlashEntry(
+        "Simple database",
+        SlashCategory.DATABASE,
+        SlashAction.Database(null, simple = true),
+        Icons.Filled.GridOn
+    ),
     SlashEntry("Linked view of data source", SlashCategory.DATABASE, SlashAction.NotYet, Icons.Filled.Link)
 )
 

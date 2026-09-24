@@ -128,6 +128,19 @@ object DbStrings {
     val name get() = t("Name", "Nome", "Name", "Nom", "Nombre", "名称", "이름", "名前")
     val none get() = t("None", "Nessuno", "Keine", "Aucun", "Ninguno", "无", "없음", "なし")
     val newPage get() = t("New page", "Nuova pagina", "Neue Seite", "Nouvelle page", "Nueva página", "新建页面", "새 페이지", "新規ページ")
+    // Database semplice: le righe non sono pagine, e i pulsanti lo dicono.
+    val newRow get() = t("New row", "Nuova riga", "Neue Zeile", "Nouvelle ligne", "Nueva fila", "新建行", "새 행", "新規行")
+    val row get() = t("Row", "Riga", "Zeile", "Ligne", "Fila", "行", "행", "行")
+    val simpleDatabaseNote get() = t(
+        "Simple database: rows are just text, they don't open as pages.",
+        "Database semplice: le righe sono solo testo, non si aprono come pagine.",
+        "Einfache Datenbank: Zeilen sind nur Text und öffnen sich nicht als Seiten.",
+        "Base de données simple : les lignes sont du texte, elles ne s'ouvrent pas comme des pages.",
+        "Base de datos simple: las filas son solo texto, no se abren como páginas.",
+        "简单数据库：各行只是文本，不会作为页面打开。",
+        "단순 데이터베이스: 행은 텍스트일 뿐이며 페이지로 열리지 않습니다.",
+        "シンプルデータベース：行はテキストのみで、ページとしては開きません。"
+    )
     val newShort get() = t("New", "Nuova", "Neu", "Nouvelle", "Nueva", "新建", "새로 만들기", "新規")
     val open get() = t("OPEN", "APRI", "ÖFFNEN", "OUVRIR", "ABRIR", "打开", "열기", "開く")
     val deletePageTitle get() = t("Delete this page?", "Eliminare questa pagina?", "Diese Seite löschen?", "Supprimer cette page ?", "¿Eliminar esta página?", "删除此页面？", "이 페이지를 삭제할까요?", "このページを削除しますか？")

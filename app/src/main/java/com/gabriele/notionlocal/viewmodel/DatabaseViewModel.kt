@@ -52,7 +52,9 @@ private const val GALLERY_PREVIEW_MAX_LINES = 12
  * vista scelta non è la galleria — e allora non ne serve nessuna.
  */
 private fun PageEntity.galleryPreviewShown(): GalleryCardPreview? =
-    if (databaseLayout == DatabaseLayout.GALLERY) {
+    // Un database semplice non ha pagine di riga, quindi niente copertine
+    // né testo da leggere: nessuna query.
+    if (databaseLayout == DatabaseLayout.GALLERY && !isSimpleDatabase) {
         galleryCardPreview ?: GALLERY_DEFAULT_PREVIEW
     } else {
         null
