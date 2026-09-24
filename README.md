@@ -118,6 +118,16 @@ vedere in un colpo solo tutte le modifiche al codice fatte in cloud:
 per esempio dopo un "Squash and merge", si confronta col contenuto
 dell'archivio in `83f7b61`).
 
+**Aggiornamento del 24/09/2026 sera — ripresa sul PC.** Il lavoro cloud
+è stato **provato sul telefono** con la build del PC: le migrazioni
+24→29 su un database vero, e le voci "Da verificare" in buona parte
+(esito voce per voce nel Diario, sopra l'elenco; i tre bug trovati e
+corretti in Cronologia, "Ripresa sul PC del 24/09/2026"). Sul telefono
+ora c'è la build **firmata con la chiave di debug del PC** (non più
+quella del cloud: notE non era installata), con note di prova: le
+prossime installazioni dal PC la aggiornano senza chiedere di
+disinstallare. Restano da provare le voci segnate 🟡 e ⏸️.
+
 **Dal 24/09/2026 (richiesta 38) sul telefono può esserci l'APK fatto in
 cloud** (commit `0557c35`), installato dall'utente dopo aver
 disinstallato notE, con le sole note di prova. È firmato con una chiave
@@ -302,6 +312,25 @@ ancora in viaggio. Ora `MergedTextRunField` tiene traccia di
 `pendingText` per distinguere "database indietro" da "contenuto
 cambiato davvero da fuori" (Annulla/Ripristina, segnalato da
 `externalChangeTick`).
+
+**Impostare `pendingText` quando non è partito nessun salvataggio.**
+`onValueChange` scatta anche quando si sposta solo il cursore o si
+seleziona. Se lì si mette `pendingText`, dal database non torna mai
+niente che lo azzeri, e da quel momento il campo ignora ogni
+cambiamento fatto **da fuori** (menu del blocco: Duplicate, Turn into):
+mostra le righe vecchie, e alla prima lettera `updateRun` confronta
+righe e blocchi che non combaciano e **cancella o sposta blocchi**
+(trovato sul telefono il 24/09/2026: sparita la copia appena
+duplicata). `pendingText` si mette **solo se il testo è cambiato**. Chi
+aggiunge un'azione che cambia i blocchi di un gruppo da fuori deve
+chiedersi che cosa vedrà il campo quando arriva il nuovo stato.
+
+**Rimettere una foto dei blocchi nell'ordine di `orderIndex`.**
+`orderIndex` riparte da 0 dentro ogni toggle, quindi in una lista
+ordinata solo per lui un figlio può venire prima del suo genitore; se
+la si reinserisce così, la chiave esterna verso il genitore la rifiuta
+e l'app si chiude (Annulla, fino al 24/09/2026). Per reinserire blocchi
+si usa `inDocumentOrder`: genitori prima, figli subito dopo.
 
 **Salvare i blocchi uno alla volta quando la modifica ne tocca
 tanti.** Room avvisa chi osserva la tabella **ad ogni scrittura**:
@@ -493,8 +522,8 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   numerati il livello di rientro decide anche la numerazione: `1.`,
   `1.1`, `1.1.1`
 - **Formattazione inline ("Aa")**: grassetto, corsivo, sottolineato,
-  barrato, spoiler e *(sessione cloud del 24/09/2026, da verificare sul
-  telefono)* pedice e apice — funziona sia nel testo unito (la selezione, anche se
+  barrato, spoiler e *(sessione cloud del 24/09/2026, provato sul
+  telefono il 24/09/2026)* pedice e apice — funziona sia nel testo unito (la selezione, anche se
   attraversa più blocchi, viene tradotta per ciascuno) sia nelle isole
 - **Undo/Redo** per testo e struttura dei blocchi (non celle di
   tabelle/database), con la digitazione continua raggruppata in un
@@ -505,8 +534,8 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   togliere il numero, passare al pallino — come su OneNote
 - **Indenta/disindenta, sposta su/giù, Undo/Redo, menu "+", Aa** dalla
   barra sopra la tastiera (scorrevole orizzontalmente)
-- **Il menu del blocco** *(sessione cloud del 24/09/2026, da verificare
-  sul telefono)*: i **sei puntini** all'inizio della barra aprono il menu
+- **Il menu del blocco** *(sessione cloud del 24/09/2026, provato in
+  parte sul telefono il 24/09/2026)*: i **sei puntini** all'inizio della barra aprono il menu
   della riga in cui sta il cursore — Turn into (le voci del "/"), Color
   su tutta la riga, Duplicate. **Tenendo premuto il collegamento a una
   pagina** si apre quello della pagina: Color, Edit icon, preferiti,
@@ -514,26 +543,26 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   nella sua barra, o collegamento tenuto premuto) in cima anche Turn into
   page, Turn into simple / complex database, Lock database, Open as page
 - **Tocco ovunque sotto il titolo** per iniziare/continuare a scrivere
-- **Database semplice** *(sessione cloud del 24/09/2026, da verificare
-  sul telefono)*: "Simple database" nei menu "/" e "+" crea un database
+- **Database semplice** *(sessione cloud del 24/09/2026, provato in
+  parte sul telefono il 24/09/2026)*: "Simple database" nei menu "/" e "+" crea un database
   con tutto quello che hanno gli altri — viste, filtri, ordinamento,
   raggruppamento, proprietà — ma **le cui righe sono solo testo e non
   diventano mai pagine**: niente OPEN, niente icone o copertine di riga;
   toccando una riga si apre la sua scheda, col nome da scrivere e tutte
   le proprietà. Una cosa che Notion non ha
-- **Ricerca dentro un database** *(sessione cloud del 24/09/2026, da
-  verificare sul telefono)*: la lente accanto a Sort apre lì una barra;
+- **Ricerca dentro un database** *(sessione cloud del 24/09/2026,
+  provata in parte sul telefono il 24/09/2026)*: la lente accanto a Sort apre lì una barra;
   scrivendo restano le righe che hanno la parola nel nome, in una
   proprietà o dentro la loro pagina, con il nome illuminato di giallo se
   è lì, o tutta la riga se la parola è dentro. In tutte e sei le viste
-- **Viste collegate** *(sessione cloud del 24/09/2026, da verificare sul
-  telefono)*: "Linked view of data source" nei menu "/" e "+" mette in
+- **Viste collegate** *(sessione cloud del 24/09/2026, provate in parte
+  sul telefono il 24/09/2026)*: "Linked view of data source" nei menu "/" e "+" mette in
   una pagina **lo stesso database** che sta in un'altra — righe,
   proprietà, pagine e quello che c'è scritto dentro sono gli stessi — con
   filtro, ordinamento, raggruppamento, vista e proprietà nascoste suoi.
   Il titolo "↗ Nome" porta al database principale
 - **Widget in cima alla barra laterale** *(sessione cloud del
-  24/09/2026, da verificare sul telefono)*: fusi orari (orologi
+  24/09/2026, provati in parte sul telefono il 24/09/2026)*: fusi orari (orologi
   analogici o digitali, e un elenco sempre da ovest a est), avanzamento
   di anno, mese, settimana, giorno e date proprie, contatore, pomodoro
   con sessione e pausa. Una freccetta nasconde tutta la sezione, e la
@@ -552,8 +581,8 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
 - **Sei viste per i database** — Table, List, Board, **Calendar**,
   **Timeline** e **Gallery**, una per volta, scelte da Settings → Layout
   e ricordate per ogni database
-- **Gallery** *(sessione cloud del 24/09/2026, da verificare sul
-  telefono)*: le pagine come schede in griglia, con in alto la
+- **Gallery** *(sessione cloud del 24/09/2026, provata in parte sul
+  telefono il 24/09/2026: mancano le copertine)*: le pagine come schede in griglia, con in alto la
   **copertina** della pagina (con l'inquadratura scelta in
   "Reposition") oppure **l'inizio del suo testo**, scritto come nella
   pagina. Sotto, nome e proprietà. Dalle impostazioni della vista si
@@ -609,13 +638,13 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   premuta, **in cima al menu**, sopra "Edit property", ci sono **"Move
   to left"** e **"Move to right"**. La prima colonna dopo Name ha "Move to left" grigia —
   Name resta sempre la prima — e l'ultima ha grigia "Move to right"
-  *(documentata il 24/09/2026: era nel codice ma non qui; da
-  verificare sul telefono, vedi Cronologia)*
+  *(documentata il 24/09/2026: era nel codice ma non qui; provata sul
+  telefono il 24/09/2026, vedi Cronologia)*
 - **Titolo del database nascondibile** quando sta dentro una pagina,
   dalle impostazioni della vista. A schermo intero resta sempre visibile
 - **Ricerca full-text** tra titoli e contenuto dei blocchi
 - **Font e dimensione del testo per ogni pagina** *(sessione cloud del
-  24/09/2026, da verificare sul telefono)*: nella barra Aa, prima di B,
+  24/09/2026, provati sul telefono il 24/09/2026)*: nella barra Aa, prima di B,
   la voce del font (col nome in uso) e quella della dimensione (col
   numero in uso), come su OneNote. Sedici font in tre gruppi —
   occidentali, cinesi, giapponesi — che sono **sosia liberi** dei font
@@ -624,16 +653,16 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
 - **Niente titoli (Heading)** dal 24/09/2026: tolti dall'app su
   richiesta dell'utente, ora che la dimensione del testo si sceglie per
   pagina. Quelli che c'erano sono diventati testo normale
-- **Conteggio del testo** *(sessione cloud del 24/09/2026, da verificare
-  sul telefono)*: in fondo al menu dei tre puntini di una pagina c'è
+- **Conteggio del testo** *(sessione cloud del 24/09/2026, provato sul
+  telefono il 24/09/2026)*: in fondo al menu dei tre puntini di una pagina c'è
   **"X words"**; toccandola si apre lì sotto l'elenco come nella
   finestra "Word Count" di Word — parole, lettere, numeri, lettere e
   numeri insieme, caratteri (tutti i segni, simboli compresi) senza e
   con spazi, righe (blocchi con del testo), caratteri
   giapponesi, cinesi e lettere coreane. Conta solo il testo scritto
   nella pagina: niente database, niente titolo
-- **Move to** *(sessione cloud del 24/09/2026, da verificare sul
-  telefono)* dai tre puntini di una pagina o di un database, e dal menu
+- **Move to** *(sessione cloud del 24/09/2026, provato in parte sul
+  telefono il 24/09/2026)* dai tre puntini di una pagina o di un database, e dal menu
   del blocco: l'albero della barra laterale con la ricerca in cima, da
   cui si sceglie qualsiasi pagina, comprese quelle dei database; la
   pagina finisce **in fondo**. Un database arriva sempre come
@@ -1427,6 +1456,65 @@ apice; prima di
 installare, **copia del database**: questa build cambia lo schema cinque
 volte — 24→25→26→27→28→29):
 
+**Esito della prova sul telefono del 24/09/2026** (✅ provato e
+funziona, 🟡 provato in parte: dopo i due punti quello che manca, ⏸️ non
+ancora provato; i tre bug trovati sono in Cronologia, "Ripresa sul PC
+del 24/09/2026"):
+- 1 🟡 compila sul PC da riga di comando; Android Studio non aperto
+- 2 ✅ migrazione 24→25 (e tutte fino alla 29) su un database vero
+- 3 ✅ — 4 ✅ — 5 ✅
+- 6 ⏸️ copertine: serve una foto dell'utente o un link (pagina senza
+  copertina → riquadro vuoto ✅)
+- 7 🟡 testo, elenco numerato, casella, toggle ✅; mancano spoiler ed
+  elenchi rientrati o partiti da un numero scelto
+- 8 🟡 Small 3, Medium 2, Large 1, altezze uguali, ultima riga non
+  allargata ✅; manca la rotazione
+- 9 ✅ — 10 ✅
+- 11 🟡 ordinamento ✅; filtro non provato
+- 12 ⏸️ servono molte schede con copertina
+- 13 ✅
+- 14 ⏸️ da chiedere all'utente
+- 15 🟡 ordine delle voci, grigie agli estremi, spostamento, Edit
+  property senza Move ✅; mancano colonna nascosta in mezzo, tabella
+  raggruppata, Lock view
+- 16 ✅ (valori controllati a mano); giapponese, cinese e coreano solo
+  dai test automatici
+- 17 🟡 ✅ salvo caselle, tabelle, collegamenti, grassetto/corsivo
+  simulati, modalità aereo
+- 18 ✅ dopo la correzione della voce vuota; mancano caselle col dito,
+  elenchi a corpo grande, riapertura dell'app
+- 19 ✅ — 20 🟡 provata solo To-do dal "+" su una riga di testo
+- 21 🟡 creazione, riga senza OPEN, nome, scheda senza Icon ✅; mancano
+  altre viste, filtri, barra laterale, ricerca generale, Duplicate
+- 22 🟡 barra, menu della riga, Turn into → Page, Duplicate (con la
+  correzione), menu del collegamento e del database, Turn into simple /
+  complex database con la conferma giusta ✅; mancano Color, Edit icon,
+  preferiti, Rename, Move to trash, Lock database, Turn into database
+- 23 🟡 toggle cambiato dal "+" ✅; la tabella con Annulla solo dal test
+- 24 🟡 dal menu del blocco ✅, pagina principale grigia ✅; mancano i tre
+  puntini, i database, le righe spostate fuori
+- 25 ✅
+- 26 🟡 Move to dal menu del blocco con Annulla e Ripristina ✅ (anche
+  Annulla di un Duplicate di riga di testo, voce 22); mancano Duplicate e
+  Move to trash di pagine, i tre puntini, le righe dei database, il
+  cestino svuotato
+- 27 🟡 lente, parola nel nome e dentro la pagina, "No results", X ✅;
+  mancano accenti, proprietà, le altre viste, database semplice
+- 28 🟡 creazione identica, vista indipendente, riga nuova nel database
+  vero, titolo che apre l'originale, Delete solo della vista ✅; mancano
+  filtro per Select, menu del blocco sulla vista, cestino dell'originale
+- 29 🟡 sezione con la freccetta, "+ Add widget" coi quattro widget,
+  orologio analogico sul fuso dell'app coi secondi che avanzano,
+  percentuali di Avanzamento giuste (controllate a mano), contatore (+,
+  −, azzera, il numero resta), pomodoro (▶ corre e diventa ⏸, la
+  freccetta lo rimette a 25:00), sezione nascosta che resta tale dopo
+  aver chiuso l'app ✅. Sotto l'orologio si legge "GMT+02:00" e non la
+  sigla "CEST" che la voce si aspettava (da guardare). Mancano: menu
+  degli orologi, scelta del fuso, elenco, date proprie e colori,
+  rinomina, pomodoro a fine fase (suono) e ad app chiusa, tema chiaro
+- 30 🟡 pedice, apice, scambio, riga che non si allarga ✅;
+  mancano gli altri punti
+
 1. **Compila anche sul PC?** In cloud sì (`assembleDebug` riuscito),
    ma con Gradle 8.7 da riga di comando: va confermato in Android
    Studio.
@@ -1839,7 +1927,94 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
-**Pedice e apice nella barra Aa** *(sessione cloud del 24/09/2026,
+**Ripresa sul PC del 24/09/2026 — il lavoro cloud provato sul
+telefono** *(Claude Code sul PC, S25 Ultra in debug wireless, build
+firmata con la chiave di debug del PC; esito voce per voce in "Diario
+delle sessioni cloud" → "Da verificare sul telefono")*
+- **[Progetto]** Clonato il ramo `claude/funny-ramanujan-uuwahs` (la
+  pull request #1 non era ancora unita) in `C:\Users\Utente\MyNotesApp`.
+  Sul PC mancava Git: installato Git for Windows 2.55 con `winget`. Il
+  progetto non ha `gradlew`: compilato col Gradle 8.7 già in cache
+  (`%USERPROFILE%\.gradle\wrapper\dists\gradle-8.7-bin`) e la JDK 21
+  (`%USERPROFILE%\.jdks\jdk-21.0.12.1+1`), con un `local.properties`
+  (ignorato da Git) che dice dov'è l'SDK. `assembleDebug` riuscito, solo
+  avvisi; `testDebugUnitTest` 70 su 70. **Android Studio non è stato
+  aperto**: la sincronizzazione lì resta da vedere
+- **[Progetto]** **Le migrazioni 24→29 provate su un telefono vero.**
+  notE non era installata (nessun database da salvare), quindi: build di
+  `4a35c64` (schema 24) installata con la chiave del PC, note di prova
+  scritte a mano (H1, H2, H3, paragrafo, elenco, toggle con una riga
+  dentro, database con una riga e del testo nella sua pagina), database
+  copiato, poi build nuova installata **sopra** (`adb install -r`, nessuna
+  disinstallazione chiesta). Esito: `user_version` 29; le sette colonne
+  nuove in fondo al `CREATE TABLE` di `pages`, senza apici inversi (la
+  tabella non è stata rifatta); i tre titoli diventati `PARAGRAPH` col
+  testo intatto; tutto il resto identico; `integrity_check` e
+  `foreign_key_check` puliti; nessun errore in `logcat`
+- **[Bug fix]** **Barra Aa: la voce della dimensione era vuota** — solo
+  la freccetta, niente "16" (lavoro cloud). `BarValueChip` accorcia il
+  testo coi puntini con `weight(1f, fill = false)`, che vuole una
+  larghezza massima: la barra scorre in orizzontale, e senza limite
+  Compose dava al testo zero pixel. La voce del font l'aveva
+  (`FONT_CHIP_MAX_WIDTH`), quella della dimensione no: ora ha
+  `SIZE_CHIP_MAX_WIDTH` (64 dp). Verificato: "16", e 32, 72, 5
+- **[Bug fix]** **Annulla faceva chiudere l'app** in qualunque pagina con
+  un toggle non vuoto che non fosse il primo blocco
+  (`SQLiteConstraintException: FOREIGN KEY constraint failed` in
+  `replaceAllBlocks`). **C'era già prima del cloud.** La foto di Annulla
+  arriva ordinata solo per `orderIndex`, che per i figli riparte da 0: il
+  figlio veniva reinserito prima del suo toggle, e la chiave esterna verso
+  il genitore lo rifiutava. I dati non si perdevano (tutto in una
+  transazione), ma l'app si chiudeva. Ora si reinserisce con
+  `inDocumentOrder`, genitori prima dei figli. Test nuovo
+  `PageRepositoryTest.undoSnapshotPutsBackAToggleWhoseChildComesFirstInOrderIndex`:
+  senza la correzione fallisce con lo stesso errore del telefono (787),
+  con la correzione passa. Verificato sul telefono
+- **[Bug fix]** **Dopo "Duplicate" dal menu del blocco il testo restava
+  indietro, e la lettera successiva cancellava la copia.** Il campo
+  unito mostrava le righe di prima (una sola copia) coi segni degli
+  elenchi scalati di una riga; scrivendo una lettera, `updateRun`
+  confrontava sette righe con otto blocchi e **cancellava il blocco della
+  copia** (visto nel database). Causa: in `MergedTextRunField` il ramo
+  normale di `onValueChange` impostava `pendingText` anche quando si
+  spostava solo il cursore o si selezionava; senza nessun salvataggio in
+  viaggio `pendingText` non si azzerava più, e il campo scambiava per
+  "database indietro" ogni cambiamento arrivato da fuori. Prima del cloud
+  gli unici erano Annulla e Ripristina, che lo azzerano; il menu del
+  blocco è nuovo. Ora `pendingText` si imposta solo se il testo è
+  cambiato davvero. Verificato: stessa sequenza, due righe subito, segni
+  giusti, la lettera va nel blocco giusto e la copia resta
+- **[Bug]** *(non corretto, c'era già in `4a35c64`)* **La riga fantasma**:
+  trasformando dal menu "/" l'**ultima** riga di un gruppo di testo in
+  un'isola (toggle, database, pagina, tabella), nel campo resta una riga
+  in più col testo che aveva (vuota se era vuota). `applySlashEntry`
+  imposta `pendingText` legittimamente (ha appena tolto "/comando"), poi
+  la riga esce dal gruppo; Room consegna solo lo stato finale, diverso da
+  `pendingText`, e il campo lo scambia per "database indietro". Non perde
+  niente: scrivendoci nasce un blocco nuovo, e riaprendo la pagina
+  sparisce. Da correggere con calma: è il punto più delicato dell'app
+- **[Bug]** *(non corretto, c'era già)* Creando un database o una pagina
+  dal menu "/", il testo del comando ("/table", "/gallery") **resta
+  salvato** nel blocco del collegamento: `convertToDatabaseLink(block)`
+  salva la copia del blocco presa prima che il comando fosse tolto. Non
+  si vede (il collegamento mostra il nome della pagina)
+- **[Bug]** *(non corretto, lavoro cloud, solo aspetto)* Sotto
+  l'orologio del widget "Fusi orari" si legge "Thu 24 Sep • GMT+02:00"
+  invece della sigla "CEST" che la voce prometteva: su questo telefono il
+  nome breve del fuso, con la lingua dell'app in inglese, esce come
+  scostamento
+- **[Progetto]** Come si è provato: `adb` e `uiautomator dump` per
+  toccare gli elementi per nome, uno screenshot fra un passo e l'altro, e
+  il database riletto dal PC dopo ogni operazione che scrive (`.db` e
+  `-wal`, senza `-shm`). Due trappole viste: il **debug wireless si
+  spegne da solo** ogni 10-15 minuti (meglio il cavo); e **uno
+  scorrimento fatto con la tastiera aperta parte sulla tastiera
+  Samsung** e scrive caratteri — un "⁵" finito in un paragrafo di prova,
+  tolto a mano. Il tasto Indietro con la tastiera già chiusa esce
+  dall'app
+
+**Pedice e apice nella barra Aa** *(verificato in parte sul telefono
+il 24/09/2026: voce 30)* *(sessione cloud del 24/09/2026,
 richiesta 39: compilato, 70 test passati — 7 nuovi —, nessuna
 migrazione, **non provato sul telefono**)*
 - **[Nuova funzionalità]** Nella barra **Aa**, subito dopo S, due
@@ -1873,7 +2048,8 @@ migrazione, **non provato sul telefono**)*
   chi usa il lettore di schermo sente sui due pulsanti)
 
 **Widget nella barra laterale — fusi orari, avanzamento, contatore,
-pomodoro** *(sessione cloud del 24/09/2026, richiesta 37: compilato, 63
+pomodoro** *(verificato in parte sul telefono il 24/09/2026: voce 29)*
+*(sessione cloud del 24/09/2026, richiesta 37: compilato, 63
 test passati — 12 nuovi —, nessuna migrazione, **non provato sul
 telefono**)*
 - **[Nuova funzionalità]** **La sezione "Widget" in cima alla barra
@@ -1974,7 +2150,8 @@ telefono**)*
   richiesta 35) e "Linked view of data source" fra le voci grigie dei
   menu "+" e "/" (costruita alla richiesta 36). Barrate, non cancellate
 
-**Viste collegate — lo stesso database in un'altra pagina** *(sessione
+**Viste collegate — lo stesso database in un'altra pagina**
+*(verificato in parte sul telefono il 24/09/2026: voce 28)* *(sessione
 cloud del 24/09/2026, richiesta 36: compilato, 51 test passati — 9
 nuovi, compresa la migrazione 28→29 aperta da Room —, **schema alla
 versione 29**, **non provato sul telefono**)*
@@ -2045,7 +2222,8 @@ versione 29**, **non provato sul telefono**)*
   `linkedSourceMissing`, `noDatabasesToLink`, `removeLinkedViewTitle`,
   `removeLinkedViewText`)
 
-**Ricerca dentro un database — la lente accanto a Sort** *(sessione
+**Ricerca dentro un database — la lente accanto a Sort**
+*(verificato in parte sul telefono il 24/09/2026: voce 27)* *(sessione
 cloud del 24/09/2026, richiesta 35: compilato, 42 test passati — 10
 nuovi —, nessuna migrazione, **non provato sul telefono**)*
 - **[Nuova funzionalità]** Nella riga degli strumenti di ogni database,
@@ -2097,6 +2275,7 @@ nuovi —, nessuna migrazione, **non provato sul telefono**)*
   `closeSearch`)
 
 **Annulla e Ripristina anche per Move to, Duplicate e Move to trash**
+*(verificato in parte sul telefono il 24/09/2026: voci 25 e 26)*
 *(sessione cloud del 24/09/2026, richiesta 34: compilato, 32 test passati
 — 16 nuovi, sul database vero —, nessuna migrazione, **non provato sul
 telefono**)*
@@ -2159,7 +2338,8 @@ telefono**)*
   la tabella resta vuota. Non erano ipotesi. Le correzioni sono al loro
   posto, e i test passano
 
-**Move to — l'albero con la ricerca** *(sessione cloud del 24/09/2026,
+**Move to — l'albero con la ricerca** *(verificato in parte sul
+telefono il 24/09/2026: voce 24)* *(sessione cloud del 24/09/2026,
 richiesta 33: compilato, test passati, nessuna migrazione, **non
 provato sul telefono**)*
 - **[Nuova funzionalità]** **"Move to" apre l'albero della barra
@@ -2225,7 +2405,9 @@ provato sul telefono**)*
   triangolino. Testi nuovi nelle otto lingue (`Strings.moveHint`,
   `moveDatabaseHint`, `moveRowPageHint`, `movedInto`)
 
-**Il menu del blocco — i sei puntini** *(sessione cloud del 24/09/2026,
+**Il menu del blocco — i sei puntini** *(verificato in parte sul
+telefono il 24/09/2026: voci 22 e 23; Duplicate aveva un bug, corretto —
+vedi "Ripresa sul PC")* *(sessione cloud del 24/09/2026,
 richieste 31-32: compilato, test passati, nessuna migrazione — schema
 sempre alla 28 —, **non provato sul telefono**)*
 - **[Nuova funzionalità]** Nella barra sopra la tastiera, **prima del
@@ -2354,7 +2536,8 @@ sempre alla 28 —, **non provato sul telefono**)*
   `turnIntoSimpleDatabase`, `turnIntoComplexDatabase`, `lockDatabase`,
   `openAsPage`, `simpleDatabaseLossTitle`, `simpleDatabaseLossText`)
 
-**Database semplice — le righe sono solo testo** *(sessione cloud del
+**Database semplice — le righe sono solo testo** *(verificato in parte
+sul telefono il 24/09/2026: voci 21 e 22)* *(sessione cloud del
 24/09/2026, richiesta 30: compilato, test passati, migrazione 27→28
 simulata, **non provato sul telefono**)*
 - **[Nuova funzionalità]** **"Simple database"** nei menu "/" e "+"
@@ -2399,6 +2582,7 @@ simulata, **non provato sul telefono**)*
   (`DbStrings.newRow`, `row`, `simpleDatabaseNote`)
 
 **Menu "+" — le stesse voci del menu "/", nello stesso ordine**
+*(verificato in parte sul telefono il 24/09/2026: voce 20)*
 *(sessione cloud del 24/09/2026, richiesta 29: compilato, test passati,
 **non provato sul telefono**)*
 - **[Nuova funzionalità]** Il menu "+" della barra **legge lo stesso
@@ -2445,7 +2629,8 @@ simulata, **non provato sul telefono**)*
   nel "/"
 
 **Pagine — la dimensione si scrive a mano, e via i titoli (Heading)**
-*(sessione cloud del 24/09/2026, richiesta 28: compilato, test passati,
+*(verificato sul telefono il 24/09/2026: voci 18 e 19, e la migrazione
+26→27 su titoli veri)* *(sessione cloud del 24/09/2026, richiesta 28: compilato, test passati,
 migrazione 26→27 provata su un database di prova, **non provato sul
 telefono**)*
 - **[Nuova funzionalità]** **La dimensione del testo si scrive a
@@ -2488,7 +2673,9 @@ telefono**)*
 - **"Predefinito"** in cima all'elenco dei font resta, confermato
   dall'utente
 
-**Pagine — font e dimensione del testo (barra Aa)** *(sessione cloud
+**Pagine — font e dimensione del testo (barra Aa)** *(verificato sul
+telefono il 24/09/2026: voci 17 e 18; la voce della dimensione era
+vuota, corretto — vedi "Ripresa sul PC")* *(sessione cloud
 del 24/09/2026, richiesta 27: compilato, migrazione 25→26 simulata,
 **non provato sul telefono**)*
 - **[Nuova funzionalità]** Nella barra Aa, **prima di B**, due voci
@@ -2571,7 +2758,8 @@ del 24/09/2026, richiesta 27: compilato, migrazione 25→26 simulata,
   Testi nuovi nelle otto lingue (`EditorStrings.defaultFont`, `font`,
   `fontSize`). Primo uso di `R` nel codice (`R.font`, `R.array`)
 
-**Pagine — il conteggio del testo ("X words")** *(sessione cloud del
+**Pagine — il conteggio del testo ("X words")** *(verificato sul
+telefono il 24/09/2026: voce 16)* *(sessione cloud del
 24/09/2026, richiesta 25: compilato e con i test automatici passati,
 **non provato sul telefono**)*
 - **[Nuova funzionalità]** In fondo al menu dei tre puntini di una
@@ -2644,7 +2832,8 @@ del 24/09/2026, richiesta 27: compilato, migrazione 25→26 simulata,
   mescolate, spazi speciali, emoji, a-capo, testo vuoto. Girano senza
   telefono: `gradle testDebugUnitTest`
 
-**Colonne — spostarle tenendo premuta l'intestazione** *(trovata già
+**Colonne — spostarle tenendo premuta l'intestazione** *(verificato in
+parte sul telefono il 24/09/2026: voce 15)* *(trovata già
 scritta nel codice arrivato dal PC il 24/09/2026, ma mancava in questo
 README: documentata nella sessione cloud dello stesso giorno. **Da
 verificare sul telefono**: non risulta che sia mai stata provata)*
@@ -2691,7 +2880,9 @@ verificare sul telefono**: non risulta che sia mai stata provata)*
   lo stesso menu. Le regole sono le stesse di Move left / Move right
   nella finestra della proprietà
 
-**Database — vista Gallery** *(sessione cloud del 24/09/2026:
+**Database — vista Gallery** *(verificato in parte sul telefono il
+24/09/2026: voci 3-14; mancano copertine, rotazione, fluidità)*
+*(sessione cloud del 24/09/2026:
 **compilata** in cloud — `assembleDebug` riuscito, query controllate da
 Room, migrazione simulata su SQLite, vedi Diario — **ma NON provata sul
 telefono**)*
@@ -5010,7 +5201,9 @@ le finestre che apre. Chi lo usa passa solo l'id del blocco.
 
 Lo schema è alla **versione 29** (dalla 25 alla 29 vengono dalla
 sessione cloud del 24/09/2026, vedi Diario: migrazioni simulate su
-SQLite in cloud ma **mai provate su un telefono**; la 27 non cambia la
+SQLite in cloud e **provate su un telefono vero la sera stessa**, da
+un database alla versione 24 con note di prova, vedi Cronologia
+"Ripresa sul PC del 24/09/2026"; la 27 non cambia la
 forma delle tabelle, trasforma i titoli in paragrafi; la 28 aggiunge il
 database semplice; la 29 le viste collegate, `sourceDatabaseId` e
 `viewHiddenColumnIds` in `pages` — questa è anche **provata da un test
