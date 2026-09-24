@@ -419,6 +419,9 @@ private fun BarButton(
 /** Quanto può essere larga la voce del font nella barra: "Times New Roman" si accorcia coi puntini. */
 private val FONT_CHIP_MAX_WIDTH = 132.dp
 
+/** Quanto può essere larga la voce del corpo del testo: due cifre e la freccetta. */
+private val SIZE_CHIP_MAX_WIDTH = 64.dp
+
 /**
  * Una voce della barra Aa che mostra un valore e apre un elenco: il font
  * e il corpo della pagina, **prima di B come su OneNote**. Il valore si
@@ -442,6 +445,12 @@ private fun BarValueChip(
             .padding(start = 8.dp, end = 2.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // Il `weight` fa accorciare il testo coi puntini lasciando posto
+        // alla freccetta, ma **vuole una larghezza massima** nel
+        // `modifier` di chi chiama: la barra scorre in orizzontale, quindi
+        // senza limite la riga è larga "all'infinito" e Compose dà al
+        // testo zero pixel. Era il numero invisibile della voce del corpo
+        // (vedi `SIZE_CHIP_MAX_WIDTH`).
         Text(
             text = text,
             color = NotionWhite,
@@ -570,7 +579,8 @@ private fun FontSizeChip(
     BarValueChip(
         text = current.toString(),
         contentDescription = EditorStrings.fontSize,
-        onClick = onClick
+        onClick = onClick,
+        modifier = Modifier.widthIn(max = SIZE_CHIP_MAX_WIDTH)
     )
 }
 
@@ -4007,7 +4017,19 @@ private fun MergedTextRunField(
                             TextRange(newValue.selection.start + 1, caretRaw + 1)
                         )
                     }
-                    pendingText = normalizedText
+                    // **"In sospeso" solo se il testo è cambiato davvero.**
+                    // Questo ramo scatta anche quando si sposta soltanto il
+                    // cursore o si seleziona: lì non parte nessun
+                    // salvataggio (`updateRun` esce subito), quindi dal
+                    // database non torna niente che azzeri `pendingText`, e
+                    // il campo restava convinto per sempre di avere una
+                    // modifica in viaggio. Da quel momento ignorava ogni
+                    // cambiamento arrivato da fuori: dopo "Duplicate" dal
+                    // menu del blocco mostrava ancora le righe di prima coi
+                    // segni degli elenchi scalati di una, e la lettera
+                    // successiva faceva sparire la copia dal database.
+                    // Trovato sul telefono il 24/09/2026.
+                    if (normalizedText != oldText) pendingText = normalizedText
                     // L'indice riga si calcola sul testo appena digitato,
                     // non sulle lunghezze salvate nel database tramite
                     // runBlocks — altrimenti, mentre si scrive

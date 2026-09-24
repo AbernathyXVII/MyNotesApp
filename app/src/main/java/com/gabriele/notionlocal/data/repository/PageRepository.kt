@@ -1716,6 +1716,14 @@ class PageRepository(private val db: AppDatabase) {
      * solo per le tabelle che ci sono ancora nella foto; il loro testo
      * resta quello di adesso, perché Annulla non lo segue (vedi
      * `PageEditorViewModel`, "Annulla / Ripristina").
+     *
+     * **Si reinseriscono i genitori prima dei figli** (`inDocumentOrder`).
+     * La foto arriva ordinata solo per `orderIndex`, che per i figli di un
+     * toggle riparte da 0: "Riga dentro il toggle" (0) veniva prima del suo
+     * toggle (9), la chiave esterna verso il genitore non ancora rimesso la
+     * rifiutava e l'app si chiudeva — con qualunque Annulla, in qualunque
+     * pagina con un toggle non vuoto che non fosse il primo blocco. C'era
+     * già prima delle sessioni cloud; trovato sul telefono il 24/09/2026.
      */
     suspend fun replaceAllBlocks(pageId: String, snapshot: List<BlockEntity>) {
         db.withTransaction {
@@ -1723,7 +1731,7 @@ class PageRepository(private val db: AppDatabase) {
             val keptIds = blocks.map { it.id }.toSet()
             val cells = tableCellDao.getCellsForPageOnce(pageId).filter { it.blockId in keptIds }
             blockDao.deleteAllForPage(pageId)
-            blockDao.insertAll(blocks)
+            blockDao.insertAll(inDocumentOrder(blocks))
             cells.forEach { tableCellDao.insertCell(it) }
         }
     }

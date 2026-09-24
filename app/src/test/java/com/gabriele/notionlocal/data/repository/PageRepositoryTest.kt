@@ -308,6 +308,23 @@ class PageRepositoryTest {
     }
 
     @Test
+    fun undoSnapshotPutsBackAToggleWhoseChildComesFirstInOrderIndex() = runBlocking<Unit> {
+        val toggle = BlockEntity(pageId = parent.id, type = BlockType.TOGGLE, orderIndex = 3)
+        repo.saveBlock(toggle)
+        val inside = paragraph(parent.id, 0, "inside", parentBlockId = toggle.id)
+        // Come la foto di Annulla: ordinata solo per `orderIndex`, quindi il
+        // figlio (0) prima del suo toggle (3).
+        val snapshot = blocksOf(parent.id)
+        assertTrue(snapshot.indexOfFirst { it.id == inside.id } < snapshot.indexOfFirst { it.id == toggle.id })
+
+        // Prima questa riga chiudeva l'app: chiave esterna verso il genitore.
+        repo.replaceAllBlocks(parent.id, snapshot)
+
+        assertEquals(snapshot.map { it.id }.toSet(), blocksOf(parent.id).map { it.id }.toSet())
+        assertEquals(toggle.id, db.blockDao().getById(inside.id)?.parentBlockId)
+    }
+
+    @Test
     fun undoSnapshotDoesNotBringBackALinkToAPageMovedElsewhere() = runBlocking<Unit> {
         val snapshot = blocksOf(parent.id)
         repo.movePageTo(child.id, node(destination.id))
