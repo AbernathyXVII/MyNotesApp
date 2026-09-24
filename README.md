@@ -554,8 +554,9 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
 - **Conteggio del testo** *(sessione cloud del 24/09/2026, da verificare
   sul telefono)*: in fondo al menu dei tre puntini di una pagina c'è
   **"X words"**; toccandola si apre lì sotto l'elenco come nella
-  finestra "Word Count" di Word — parole, lettere, numeri, caratteri
-  senza e con spazi, righe (blocchi con del testo), caratteri
+  finestra "Word Count" di Word — parole, lettere, numeri, lettere e
+  numeri insieme, caratteri (tutti i segni, simboli compresi) senza e
+  con spazi, righe (blocchi con del testo), caratteri
   giapponesi, cinesi e lettere coreane. Conta solo il testo scritto
   nella pagina: niente database, niente titolo
 - **Duplicate** dal menu dei tre puntini, con la scelta di dove mettere
@@ -899,6 +900,18 @@ README di una riga).
     scelte da far confermare: l'elenco che si apre sotto la voce invece
     di una finestra, i caratteri contati come in Word (punteggiatura
     compresa), il titolo della pagina escluso
+26. «1. Allora metti due voci distinte: lettere e numeri (insieme)
+    totali, e caratteri totali (lettere, numeri e tutti gli altri
+    simboli, parentesi, punti, virgole, asterischi, eccetera; 2. No no,
+    titoli e intestazioni dei databse no» — 1: aggiunta la voce
+    **"Lettere e numeri"** (solo lettere e cifre) accanto ai caratteri,
+    che contano già ogni segno; restano le due voci dei caratteri senza
+    e con spazi della richiesta 25. 2: confermato quello che c'era — il
+    titolo della pagina e tutto quello che riguarda i database (titoli,
+    intestazioni delle colonne, righe, celle) **non** si contano. I
+    titoli H1/H2/H3 scritti nel corpo della pagina invece contano,
+    perché sono testo dell'utente: detto all'utente, in attesa di
+    conferma
 
 **Cosa è stato fatto:**
 
@@ -1052,8 +1065,9 @@ installare, **copia del database**: questa build cambia lo schema):
     La finestra di **Edit property** (toccando l'intestazione) **non**
     ha più "Move left" / "Move right": sotto il tipo c'è solo "Delete
     property" (richiesta 23).
-16. **Conteggio del testo** (richiesta 25): in fondo al menu dei tre
-    puntini di una pagina c'è "X words"; toccandola si apre l'elenco,
+16. **Conteggio del testo** (richieste 25-26): in fondo al menu dei tre
+    puntini di una pagina c'è "X words"; toccandola si apre l'elenco
+    di dieci voci (con "Lettere e numeri" subito dopo "Numeri"),
     ritoccandola si chiude; il menu scorre. Confrontare i numeri con
     Word incollandoci lo stesso testo (parole e caratteri dovrebbero
     coincidere; le righe no, perché qui sono blocchi). Provare una
@@ -1080,11 +1094,20 @@ gg/mm/aaaa)" accanto al titolo.
   copre proprio il menu da cui si arriva, e per richiuderla serve un
   tocco in più. Da far confermare all'utente
 - **[Nuova funzionalità]** Le voci, nell'ordine chiesto: **Words,
-  Letters, Numbers, Characters (no spaces), Characters (with spaces),
-  Lines, Japanese characters, Chinese characters, Korean characters**
-  (in italiano: Parole, Lettere, Numeri, Caratteri senza e con spazi,
-  Righe, Caratteri giapponesi, Caratteri cinesi, Lettere coreane — la
-  parola dell'utente). Tutte e nove sempre, anche a zero, come in Word
+  Letters, Numbers, Letters and numbers, Characters (no spaces),
+  Characters (with spaces), Lines, Japanese characters, Chinese
+  characters, Korean characters** (in italiano: Parole, Lettere,
+  Numeri, Lettere e numeri, Caratteri senza e con spazi, Righe,
+  Caratteri giapponesi, Caratteri cinesi, Lettere coreane — la parola
+  dell'utente). Tutte e dieci sempre, anche a zero, come in Word
+- **[Nuova funzionalità]** *(richiesta 26)* **"Lettere e numeri"** è
+  una voce a sé, voluta dall'utente dopo aver visto come si contano i
+  caratteri: la somma di lettere e cifre e **nient'altro**
+  (`TextStats.lettersAndDigits`), mentre **i caratteri contano tutto**
+  — lettere, numeri e ogni altro segno: parentesi, punti, virgole,
+  asterischi... Così "hin(...) = 3x!" fa 5 lettere e numeri e 12
+  caratteri senza spazi. Le due voci sui caratteri (senza e con spazi)
+  restano come nella richiesta originale
 - **[Nuova funzionalità]** **Le regole sono quelle della finestra
   "Word Count" di Word**, che l'utente ha mostrato come modello
   (`data/TextStats.kt`, `textStatsOf`):
@@ -1126,10 +1149,11 @@ gg/mm/aaaa)" accanto al titolo.
   conteggio le voci sono più di quante stiano su uno schermo basso
 - **[Progetto]** **Primi test automatici del progetto**:
   `app/src/test/java/com/gabriele/notionlocal/data/TextStatsTest.kt`,
-  quindici casi — italiano con accenti, liste di vocaboli con "[]" e
-  "=", cifre, giapponese con e senza kana, katakana col trattino lungo,
-  cinese, coreano, lingue mescolate, spazi speciali, emoji, a-capo,
-  testo vuoto. Girano senza telefono: `gradle testDebugUnitTest`
+  sedici casi — italiano con accenti, liste di vocaboli con "[]" e
+  "=", cifre, lettere e numeri separati dai simboli, giapponese con e
+  senza kana, katakana col trattino lungo, cinese, coreano, lingue
+  mescolate, spazi speciali, emoji, a-capo, testo vuoto. Girano senza
+  telefono: `gradle testDebugUnitTest`
 
 **Colonne — spostarle tenendo premuta l'intestazione** *(trovata già
 scritta nel codice arrivato dal PC il 24/09/2026, ma mancava in questo

@@ -44,6 +44,19 @@ class TextStatsTest {
     }
 
     @Test
+    fun lettersAndNumbersLeaveOutSymbolsThatCharactersCount() {
+        // "hin(...) = 3x!": lettere h i n x, numero 3; parentesi, punti,
+        // "=" e "!" sono caratteri ma non lettere né numeri.
+        val s = textStatsOf("hin(...) = 3x!")
+        assertEquals(4, s.letters)
+        assertEquals(1, s.digits)
+        assertEquals(5, s.lettersAndDigits)
+        assertEquals(12, s.charactersNoSpaces)
+        assertEquals(14, s.charactersWithSpaces)
+        assertEquals(3, s.words)
+    }
+
+    @Test
     fun accentedLettersAreLetters() {
         val s = textStatsOf("perché è così")
         assertEquals(3, s.words)

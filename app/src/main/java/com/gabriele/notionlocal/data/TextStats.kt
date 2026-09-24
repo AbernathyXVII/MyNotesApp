@@ -37,6 +37,13 @@ data class TextStats(
     /** Hangul: sillabe e lettere singole. */
     val korean: Int = 0
 ) {
+    /**
+     * Lettere e numeri insieme, senza nient'altro: una voce a sé chiesta
+     * dall'utente, distinta dai caratteri, che contano anche punti,
+     * virgole, parentesi e ogni altro simbolo.
+     */
+    val lettersAndDigits: Int get() = letters + digits
+
     operator fun plus(other: TextStats) = TextStats(
         words = words + other.words,
         letters = letters + other.letters,

@@ -264,6 +264,7 @@ fun PageOptionsSheet(
                             StatRow(Strings.statWords, textStats.words)
                             StatRow(Strings.statLetters, textStats.letters)
                             StatRow(Strings.statNumbers, textStats.digits)
+                            StatRow(Strings.statLettersAndNumbers, textStats.lettersAndDigits)
                             StatRow(Strings.statCharactersNoSpaces, textStats.charactersNoSpaces)
                             StatRow(Strings.statCharactersWithSpaces, textStats.charactersWithSpaces)
                             StatRow(Strings.statLines, textStats.lines)

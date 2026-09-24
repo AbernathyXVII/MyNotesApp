@@ -77,6 +77,7 @@ object Strings {
     val statWords get() = t("Words", "Parole", "Wörter", "Mots", "Palabras", "词数", "단어", "単語数")
     val statLetters get() = t("Letters", "Lettere", "Buchstaben", "Lettres", "Letras", "字母", "알파벳", "アルファベット")
     val statNumbers get() = t("Numbers", "Numeri", "Ziffern", "Chiffres", "Números", "数字", "숫자", "数字")
+    val statLettersAndNumbers get() = t("Letters and numbers", "Lettere e numeri", "Buchstaben und Ziffern", "Lettres et chiffres", "Letras y números", "字母和数字", "알파벳과 숫자", "アルファベットと数字")
     val statCharactersNoSpaces get() = t("Characters (no spaces)", "Caratteri (senza spazi)", "Zeichen (ohne Leerzeichen)", "Caractères (sans espaces)", "Caracteres (sin espacios)", "字符数（不计空格）", "문자 수(공백 제외)", "文字数（スペースを含めない）")
     val statCharactersWithSpaces get() = t("Characters (with spaces)", "Caratteri (con spazi)", "Zeichen (mit Leerzeichen)", "Caractères (avec espaces)", "Caracteres (con espacios)", "字符数（计空格）", "문자 수(공백 포함)", "文字数（スペースを含める）")
     val statLines get() = t("Lines", "Righe", "Zeilen", "Lignes", "Líneas", "行数", "줄", "行数")
