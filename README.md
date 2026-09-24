@@ -615,10 +615,12 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   sono testo completamente piatto, senza formattazione né colore:
   portarceli richiede di costruire per ciascuno l'infrastruttura già
   fatta per i blocchi
-- Nel menu "+", **Callout, Quote, Link to page (come voce
-  separata da "Page"), Image, Video, Audio, Code, File, Web bookmark**
-  non sono stati costruiti — alcuni richiedono capacità nuove
-  (gestione file, embedding media)
+- Nei menu "+" e "/" (dal 24/09/2026 hanno le stesse voci), **Callout,
+  Quote, Link to page (come voce separata da "Page"), Image, Video,
+  Audio, Code, File, Web bookmark, Database - Full page, Simple database
+  e Linked view of data source** ci sono ma sono grigie: non sono state
+  costruite — alcune richiedono capacità nuove (gestione file,
+  embedding media)
 - **Database: "Property visibility" non riordina e non cerca.** Su
   Notion le due liste hanno le maniglie per trascinare le colonne e un
   campo di ricerca in cima; qui l'ordine si cambia solo tenendo
@@ -987,6 +989,17 @@ README di una riga).
     «Testo normale», «Lasciarli come sono») ha risposto: **«Testo
     normale»**. Fatto tutto: vedi Cronologia "Pagine — la dimensione si
     scrive a mano, e via i titoli (Heading)"
+29. «Quando tocco l'icona del + sulla toolbar, mi appaiono le feature che
+    ti ho chiesto di implementare qualche tempo fa. Ma più recentemente
+    ti ho chiesto di usare le stesse più altre nuove se scrivo / e poi
+    subito il nome della feature. Prima di tutto, aggiungimi in + quelle
+    che ci sono nuove scrivendo / (quelle non implementate, scrivimele
+    comunque ma grigie), e cerca di sincronizzare la lista delle feature
+    da fare tra + e /, e rispetta anche l'ordine. In + fai due colonne di
+    feature invece che una con / , quindi la prima di / sarà la prima a
+    sinistra di +, la seconda di / sarà la prima a destra di +,
+    eccetera» — fatto: il "+" legge lo stesso catalogo del "/", vedi
+    Cronologia "Menu '+' — le stesse voci del menu '/'"
 
 **Cosa è stato fatto:**
 
@@ -1090,7 +1103,8 @@ README di una riga).
 
 **Da verificare sul telefono** (dall'1 al 14 la vista Gallery, il 15
 lo spostamento delle colonne, il 16 il conteggio del testo, il 17 e il
-18 font e dimensione, il 19 i titoli tolti; prima di installare, **copia
+18 font e dimensione, il 19 i titoli tolti, il 20 il menu "+"; prima di
+installare, **copia
 del database**: questa build cambia lo schema tre volte — 24→25→26→27):
 
 1. **Compila anche sul PC?** In cloud sì (`assembleDebug` riuscito),
@@ -1183,6 +1197,14 @@ del database**: questa build cambia lo schema tre volte — 24→25→26→27):
     Aprire tutte le pagine che si ricorda avessero titoli e verificare che
     l'app non si chiuda: se si chiudesse, la migrazione 26→27 non è
     passata (leggere `logcat`).
+20. **Menu "+"** (richiesta 29): stesse voci del "/" nello stesso ordine,
+    su due colonne riga per riga (tabella in Cronologia), le non
+    costruite grigie e non toccabili; il menu scorre e la tastiera resta
+    aperta. Provare ogni voce attiva **dal "+"** su una riga di testo e
+    su un'isola (il titolo di un toggle, una casella dentro un toggle):
+    Text, elenchi, To-do, Toggle, Page (entra nella pagina nuova), Table,
+    Divider, e ogni vista di database (deve nascere con la vista scelta,
+    non sempre come tabella). Il "/" deve comportarsi come prima.
 
 ## Cronologia degli aggiornamenti
 
@@ -1190,6 +1212,51 @@ Le voci nate nelle sessioni cloud stanno qui in cima, la più recente
 per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
+
+**Menu "+" — le stesse voci del menu "/", nello stesso ordine**
+*(sessione cloud del 24/09/2026, richiesta 29: compilato, test passati,
+**non provato sul telefono**)*
+- **[Nuova funzionalità]** Il menu "+" della barra **legge lo stesso
+  catalogo del menu "/"** (`SLASH_ENTRIES`): stesse voci, stesse
+  icone, **stesso ordine**, comprese le voci non ancora costruite, che
+  ci sono e sono grigie. Prima il "+" aveva un elenco suo, fermo alle
+  nove voci dei primi tempi, mentre il "/" cresceva. Ora una voce
+  aggiunta al catalogo compare in tutti e due
+- **[Nuova funzionalità]** **Due colonne riempite riga per riga**, come
+  chiesto: la prima voce del "/" è la prima a sinistra, la seconda la
+  prima a destra, e così via. Oggi (27 voci, l'ultima riga ne ha una):
+
+  | sinistra | destra |
+  |---|---|
+  | Text | Bulleted list |
+  | Numbered list | To-do list |
+  | Toggle list | Page |
+  | *Callout* | *Quote* |
+  | Table | Divider |
+  | *Link to page* | *Image* |
+  | *Video* | *Audio* |
+  | *Code* | *File* |
+  | *Web bookmark* | Table view |
+  | Board view | Gallery view |
+  | List view | Calendar view |
+  | Timeline view | Database - Inline |
+  | *Database - Full page* | *Simple database* |
+  | *Linked view of data source* | |
+
+  (in corsivo le grigie). Senza i titoli delle famiglie che ha il "/"
+  (Basic blocks, Media, Database): su due colonne riga per riga
+  spezzerebbero l'ordine chiesto, lasciando buchi a fine famiglia. Il
+  menu scorre, perché le righe sono più di quante ne stiano sopra la
+  tastiera. Le icone sono quelle del "/" (prima il "+" aveva le sue,
+  con le lettere "T", "H1"...)
+- **[Progetto]** **Una sola funzione applica la voce scelta**, da tutti
+  e due i menu (`applyInsertAction` in `PageEditorScreen`): erano due
+  copie quasi uguali e si stavano già separando — il "+" creava un
+  database sempre come tabella, mentre dal "/" "Calendar view" dava un
+  calendario. Ora dal "+" ci sono anche tutte le viste di database
+  (Table, Board, Gallery, List, Calendar, Timeline view), che prima
+  aveva solo il "/". Il comportamento di ogni voce è quello che aveva
+  nel "/"
 
 **Pagine — la dimensione si scrive a mano, e via i titoli (Heading)**
 *(sessione cloud del 24/09/2026, richiesta 28: compilato, test passati,

@@ -1079,6 +1079,56 @@ fun PageEditorScreen(
             val listState = rememberLazyListState()
             val focusPark = remember { FocusRequester() }
 
+            // **Cosa fa una voce del catalogo**, scelta dal menu "/" o dal
+            // menu "+": una funzione sola per tutti e due. Erano due copie
+            // quasi uguali, una per menu, e si stavano già allontanando
+            // (il "+" non sapeva mettere la vista giusta a un database
+            // nuovo); con una sola, la stessa voce fa la stessa cosa da
+            // dovunque la si scelga. Vedi `SLASH_ENTRIES`.
+            val applyInsertAction: (BlockEntity, SlashAction) -> Unit = { block, action ->
+                when (action) {
+                    is SlashAction.Type -> {
+                        // Diventando toggle la riga esce
+                        // dal testo condiviso: se era
+                        // l'unica, quel campo muore col
+                        // cursore dentro, che è il modo
+                        // in cui l'app si chiudeva. Il
+                        // fuoco si posa prima sul campo
+                        // invisibile, e da lì passa al
+                        // titolo del toggle.
+                        if (action.type == BlockType.TOGGLE) focusPark.requestFocus()
+                        viewModel.updateBlockType(block, action.type)
+                    }
+                    SlashAction.PageLink ->
+                        viewModel.convertToPageLink(block) { onNavigateToPage(it) }
+                    SlashAction.Divider -> {
+                        // Come per il toggle: se la riga
+                        // era la prima del suo gruppo di
+                        // testo, la casella in cui si sta
+                        // scrivendo sparisce. Senza il
+                        // posteggio il fuoco restava a
+                        // nessuno, la tastiera cominciava
+                        // a chiudersi e tornava, e la
+                        // pagina scorreva via fino al
+                        // database (visto nel video).
+                        focusPark.requestFocus()
+                        viewModel.convertToDividerAndFocusNext(block)
+                    }
+                    // Il database nasce dentro la
+                    // pagina; la vista gliela mettiamo
+                    // appena esiste, così "Calendar
+                    // view" dà un calendario e non una
+                    // tabella da cambiare a mano.
+                    is SlashAction.Database ->
+                        viewModel.convertToDatabaseLink(block) { databaseId ->
+                            action.layout?.let {
+                                viewModel.setDatabaseLayout(databaseId, it)
+                            }
+                        }
+                    SlashAction.NotYet -> Unit
+                }
+            }
+
             // **Una riga che non si vede non esiste.** `LazyColumn`
             // costruisce solo le righe dentro lo schermo: il blocco
             // nato premendo Invio in fondo alla parte visibile
@@ -1451,49 +1501,7 @@ fun PageEditorScreen(
                             focusRequestBlockId = focusRequestBlockId,
                             formatRequest = formatRequest,
                             onFocusChanged = onFocusChangedCallback,
-                            onSlashAction = { block, action ->
-                                when (action) {
-                                    is SlashAction.Type -> {
-                                        // Diventando toggle la riga esce
-                                        // dal testo condiviso: se era
-                                        // l'unica, quel campo muore col
-                                        // cursore dentro, che è il modo
-                                        // in cui l'app si chiudeva. Il
-                                        // fuoco si posa prima sul campo
-                                        // invisibile, e da lì passa al
-                                        // titolo del toggle.
-                                        if (action.type == BlockType.TOGGLE) focusPark.requestFocus()
-                                        viewModel.updateBlockType(block, action.type)
-                                    }
-                                    SlashAction.PageLink ->
-                                        viewModel.convertToPageLink(block) { onNavigateToPage(it) }
-                                    SlashAction.Divider -> {
-                                        // Come per il toggle: se la riga
-                                        // era la prima del suo gruppo di
-                                        // testo, la casella in cui si sta
-                                        // scrivendo sparisce. Senza il
-                                        // posteggio il fuoco restava a
-                                        // nessuno, la tastiera cominciava
-                                        // a chiudersi e tornava, e la
-                                        // pagina scorreva via fino al
-                                        // database (visto nel video).
-                                        focusPark.requestFocus()
-                                        viewModel.convertToDividerAndFocusNext(block)
-                                    }
-                                    // Il database nasce dentro la
-                                    // pagina; la vista gliela mettiamo
-                                    // appena esiste, così "Calendar
-                                    // view" dà un calendario e non una
-                                    // tabella da cambiare a mano.
-                                    is SlashAction.Database ->
-                                        viewModel.convertToDatabaseLink(block) { databaseId ->
-                                            action.layout?.let {
-                                                viewModel.setDatabaseLayout(databaseId, it)
-                                            }
-                                        }
-                                    SlashAction.NotYet -> Unit
-                                }
-                            }
+                            onSlashAction = applyInsertAction
                         )
                         is RenderItem.Island -> BlockRow(
                             block = item.block,
@@ -1649,30 +1657,12 @@ fun PageEditorScreen(
                             BlockTypeMenu(
                                 expanded = showTypeMenu,
                                 onDismiss = { showTypeMenu = false },
-                                onSelect = { type ->
+                                onSelect = { entry ->
                                     showTypeMenu = false
                                     val block = focusedBlock ?: return@BlockTypeMenu
-                                    when (type) {
-                                        BlockType.PAGE_LINK ->
-                                            viewModel.convertToPageLink(block) { onNavigateToPage(it) }
-                                        // Il database appare dentro la
-                                        // pagina, non ci si entra: è il
-                                        // senso di averlo come blocco.
-                                        BlockType.DATABASE_LINK ->
-                                            viewModel.convertToDatabaseLink(block) {}
-                                        BlockType.DIVIDER -> {
-                                            // Vedi il gemello nel menu "/".
-                                            focusPark.requestFocus()
-                                            viewModel.convertToDividerAndFocusNext(block)
-                                        }
-                                        else -> {
-                                            // Vedi il gemello nel menu "/":
-                                            // il campo condiviso può morire
-                                            // col cursore dentro.
-                                            if (type == BlockType.TOGGLE) focusPark.requestFocus()
-                                            viewModel.updateBlockType(block, type)
-                                        }
-                                    }
+                                    // La stessa funzione del menu "/":
+                                    // vedi `applyInsertAction`.
+                                    applyInsertAction(block, entry.action)
                                 }
                             )
                         }
@@ -2359,45 +2349,28 @@ internal fun PageImage(
 }
 
 /**
- * Menu "+" per scegliere/cambiare il tipo di blocco: griglia a due
- * colonne con icona e etichetta per ciascuna opzione, come il "+" di
- * Notion — non una lista verticale di voci di testo.
+ * Il menu "+" della barra: **lo stesso catalogo del menu "/"**
+ * (`SLASH_ENTRIES`), con le stesse voci, le stesse icone e **lo stesso
+ * ordine**, su due colonne riempite riga per riga — la prima voce del
+ * "/" è la prima a sinistra, la seconda la prima a destra, la terza la
+ * seconda a sinistra, e così via. Le voci non ancora costruite ci sono
+ * e sono grigie, come nel "/".
+ *
+ * Chiesto dall'utente il 24/09/2026: il "+" era rimasto alle nove voci
+ * dei primi tempi mentre il "/" cresceva, e i due menu non dicevano più
+ * le stesse cose. Leggendo lo stesso elenco non possono più separarsi,
+ * e aggiungere una voce al catalogo la mette in tutti e due.
+ *
+ * A differenza del "/" non ci sono i titoli delle famiglie (Basic blocks,
+ * Media, Database): con due colonne riga per riga spezzerebbero l'ordine
+ * che l'utente ha chiesto, lasciando buchi a destra a fine famiglia.
  */
 @Composable
 private fun BlockTypeMenu(
     expanded: Boolean,
     onDismiss: () -> Unit,
-    onSelect: (BlockType) -> Unit
+    onSelect: (SlashEntry) -> Unit
 ) {
-    data class Entry(val type: BlockType, val label: String, val icon: @Composable () -> Unit)
-
-    fun letterIcon(text: String): @Composable () -> Unit = {
-        Text(text, color = NotionWhite, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge)
-    }
-
-    fun vectorIcon(icon: ImageVector): @Composable () -> Unit = {
-        Icon(icon, contentDescription = null, tint = NotionWhite, modifier = Modifier.size(22.dp))
-    }
-
-    val entries = listOf(
-        Entry(BlockType.PARAGRAPH, "Text", letterIcon("T")),
-        Entry(BlockType.BULLET_LIST_ITEM, "Bulleted list", vectorIcon(Icons.Filled.FormatListBulleted)),
-        Entry(BlockType.NUMBERED_LIST_ITEM, "Numbered list", vectorIcon(Icons.Filled.FormatListNumbered)),
-        Entry(BlockType.CHECKBOX, "To-do list", vectorIcon(Icons.Filled.CheckBox)),
-        Entry(BlockType.TOGGLE, "Toggle list", vectorIcon(Icons.Filled.ArrowRight)),
-        Entry(BlockType.TABLE, "Table", vectorIcon(Icons.Filled.TableChart)),
-        Entry(BlockType.PAGE_LINK, "Page", vectorIcon(Icons.Filled.Description)),
-        Entry(BlockType.DATABASE_LINK, "Database", vectorIcon(Icons.Filled.List)),
-        Entry(BlockType.DIVIDER, "Divider", {
-            Box(
-                modifier = Modifier
-                    .width(18.dp)
-                    .height(2.dp)
-                    .background(NotionWhite)
-            )
-        })
-    )
-
     DropdownMenu(
         expanded = expanded,
         onDismissRequest = onDismiss,
@@ -2415,32 +2388,38 @@ private fun BlockTypeMenu(
         // chiudere la tastiera, e qui la tastiera deve restare dov'è.
         properties = PopupProperties(focusable = false, dismissOnClickOutside = false)
     ) {
+        // Le voci sono più di quante ne stiano sopra la tastiera: il
+        // menu scorre (lo fa `DropdownMenu` da sé).
         Column(
             modifier = Modifier
                 .width(300.dp)
                 .background(DarkBackground)
                 .padding(8.dp)
         ) {
-            entries.chunked(2).forEach { rowEntries ->
+            SLASH_ENTRIES.chunked(2).forEach { rowEntries ->
                 Row(modifier = Modifier.fillMaxWidth()) {
                     rowEntries.forEach { entry ->
+                        val tint = if (entry.enabled) NotionWhite else NotionWhite.copy(alpha = 0.3f)
                         Row(
                             modifier = Modifier
                                 .weight(1f)
-                                .clickable { onSelect(entry.type) }
+                                .clickable(enabled = entry.enabled) { onSelect(entry) }
                                 .padding(vertical = 12.dp, horizontal = 6.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Box(modifier = Modifier.size(24.dp), contentAlignment = Alignment.Center) {
-                                entry.icon()
-                            }
+                            Icon(
+                                entry.icon,
+                                contentDescription = null,
+                                tint = tint,
+                                modifier = Modifier.size(22.dp)
+                            )
                             Spacer(modifier = Modifier.size(10.dp))
                             // Tradotti, certi nomi sono lunghi ("Elenco
                             // di cose da fare"): vanno a capo invece di
                             // spingere fuori la colonna accanto.
                             Text(
                                 EditorStrings.blockType(entry.label),
-                                color = NotionWhite,
+                                color = tint,
                                 style = MaterialTheme.typography.bodyLarge,
                                 maxLines = 2,
                                 overflow = TextOverflow.Ellipsis
@@ -2633,7 +2612,11 @@ private data class SlashEntry(
 
 /**
  * Tutte le voci del menu "/", comprese **quelle che ancora non
- * esistono**.
+ * esistono**. **È anche il catalogo del menu "+"** (`BlockTypeMenu`),
+ * nello stesso ordine: una voce aggiunta, tolta o spostata qui cambia
+ * tutti e due i menu, che è proprio lo scopo — prima avevano due elenchi
+ * e si erano separati. Cosa fa ogni voce lo decide `applyInsertAction`,
+ * anche quello unico per i due menu.
  *
  * Elencarle spente è una scelta: dice cosa c'è e cosa manca senza
  * costringere a cercarlo, e quando una verrà costruita basterà
