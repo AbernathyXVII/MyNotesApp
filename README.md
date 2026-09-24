@@ -743,6 +743,10 @@ README di una riga).
     — il dominio era finito nel riquadro "Environment variables", che
     vuole righe `CHIAVE=valore`; i domini vanno nel campo che compare
     sotto "Network access" scegliendo un livello personalizzato
+19. «Funziona ora? Hai accesso a questi domini?» — sì: dopo la modifica
+    dell'utente `dl.google.com` e `maven.google.com` rispondevano
+    **già in questa stessa sessione**, nonostante l'avviso della
+    finestra ("apply to new sessions")
 
 **Cosa è stato fatto:**
 
@@ -806,10 +810,11 @@ README di una riga).
   del titolo della sessione, la freccetta accanto al nome della
   sessione → **"Edit cloud environment"** → **Network access** (era su
   "Trusted", che non comprende `dl.google.com`). La finestra avverte
-  che **le modifiche valgono per le sessioni nuove**: per compilare
-  serve quindi aprire una nuova sessione cloud, che deve ripartire dal
-  ramo `claude/funny-ramanujan-uuwahs` (o da `main`, se nel frattempo
-  la pull request è stata unita) e da questo README
+  che le modifiche valgono per le sessioni nuove, ma **in pratica hanno
+  funzionato subito anche in questa** (richiesta 19). Se in futuro non
+  fosse così: nuova sessione cloud, che riparte dal ramo
+  `claude/funny-ramanujan-uuwahs` (o da `main`, se nel frattempo la
+  pull request è stata unita) e da questo README
 - **[Nuova funzionalità]** La **vista Gallery**: dettagli in
   Cronologia, "Database — vista Gallery". Schema del database alla
   versione **25** (migrazione 24→25)
