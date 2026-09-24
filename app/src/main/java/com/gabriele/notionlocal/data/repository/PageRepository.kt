@@ -8,6 +8,7 @@ import com.gabriele.notionlocal.data.entity.BlockEntity
 import com.gabriele.notionlocal.data.entity.BlockType
 import com.gabriele.notionlocal.data.entity.PageEditEntity
 import com.gabriele.notionlocal.data.entity.PageEntity
+import com.gabriele.notionlocal.data.entity.PageFont
 import com.gabriele.notionlocal.data.entity.RichTextSpan
 import com.gabriele.notionlocal.data.entity.TableCellEntity
 import com.gabriele.notionlocal.data.entity.plainText
@@ -138,6 +139,14 @@ class PageRepository(private val db: AppDatabase) {
     /** Blocca o sblocca il **contenuto** di una pagina. */
     suspend fun setLocked(pageId: String, locked: Boolean) =
         pageDao.setLocked(pageId, locked)
+
+    /** Il font del testo di una pagina (null = quello di sistema). */
+    suspend fun setPageFont(pageId: String, font: PageFont?) =
+        pageDao.setPageFont(pageId, font)
+
+    /** Il corpo del testo di una pagina (null = quello di partenza). */
+    suspend fun setPageFontSize(pageId: String, size: Int?) =
+        pageDao.setPageFontSize(pageId, size)
 
     /** Blocca o sblocca **l'impaginazione** di un database (vista, ordine, filtro, colonne). */
     suspend fun setViewLocked(pageId: String, locked: Boolean) =

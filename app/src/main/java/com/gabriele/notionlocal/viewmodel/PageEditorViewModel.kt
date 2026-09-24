@@ -8,6 +8,7 @@ import com.gabriele.notionlocal.data.entity.BlockType
 import com.gabriele.notionlocal.data.entity.DatabaseLayout
 import com.gabriele.notionlocal.data.entity.PageEditEntity
 import com.gabriele.notionlocal.data.entity.PageEntity
+import com.gabriele.notionlocal.data.entity.PageFont
 import com.gabriele.notionlocal.data.entity.RichTextSpan
 import com.gabriele.notionlocal.data.entity.TableCellEntity
 import com.gabriele.notionlocal.data.entity.applyTextEdit
@@ -19,6 +20,9 @@ import com.gabriele.notionlocal.data.entity.splitLines
 import com.gabriele.notionlocal.data.entity.toggleFormatInRange
 import com.gabriele.notionlocal.data.TextStats
 import com.gabriele.notionlocal.data.repository.PageRepository
+import com.gabriele.notionlocal.ui.theme.DEFAULT_PAGE_FONT_SIZE
+import com.gabriele.notionlocal.ui.theme.MAX_PAGE_FONT_SIZE
+import com.gabriele.notionlocal.ui.theme.MIN_PAGE_FONT_SIZE
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -670,6 +674,33 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
             repository.deletePermanently(current.id).forEach { imageStore.delete(it) }
             onDone()
         }
+    }
+
+    /**
+     * Il font del testo della pagina, dalla barra Aa (null = quello di
+     * sistema). Scrive solo quella colonna, come `toggleLocked`; il valore
+     * in mano alla UI cambia subito, così il testo si ridisegna senza
+     * aspettare il giro dal database.
+     */
+    fun setPageFont(font: PageFont?) {
+        val current = _page.value ?: return
+        if (current.pageFont == font) return
+        _page.value = current.copy(pageFont = font)
+        viewModelScope.launch { repository.setPageFont(current.id, font) }
+    }
+
+    /**
+     * Il corpo del testo della pagina, da 5 a 72. Il 16 di partenza si
+     * salva come null, cioè "come prima": una pagina rimessa a 16 torna
+     * uguale a una che non l'ha mai cambiato.
+     */
+    fun setPageFontSize(size: Int) {
+        val current = _page.value ?: return
+        val clamped = size.coerceIn(MIN_PAGE_FONT_SIZE, MAX_PAGE_FONT_SIZE)
+        val stored = clamped.takeIf { it != DEFAULT_PAGE_FONT_SIZE }
+        if (current.pageFontSize == stored) return
+        _page.value = current.copy(pageFontSize = stored)
+        viewModelScope.launch { repository.setPageFontSize(current.id, stored) }
     }
 
     /**

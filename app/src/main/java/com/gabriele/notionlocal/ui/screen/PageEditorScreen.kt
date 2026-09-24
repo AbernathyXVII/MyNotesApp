@@ -21,6 +21,23 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import com.gabriele.notionlocal.data.PageImageStore
 import com.gabriele.notionlocal.data.TextStats
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.flow.first
+import androidx.compose.ui.text.font.FontFamily
+import com.gabriele.notionlocal.data.entity.PageFont
+import com.gabriele.notionlocal.ui.theme.PageFontGroup
+import com.gabriele.notionlocal.ui.theme.label
+import com.gabriele.notionlocal.ui.theme.lookalike
+import com.gabriele.notionlocal.ui.theme.group
+import com.gabriele.notionlocal.ui.theme.fontFamily
+import com.gabriele.notionlocal.ui.theme.LocalPageTypography
+import com.gabriele.notionlocal.ui.theme.PageTypography
+import com.gabriele.notionlocal.ui.theme.DEFAULT_PAGE_FONT_SIZE
+import com.gabriele.notionlocal.ui.theme.MIN_PAGE_FONT_SIZE
+import com.gabriele.notionlocal.ui.theme.MAX_PAGE_FONT_SIZE
 import com.gabriele.notionlocal.ui.theme.DarkSheet
 import com.gabriele.notionlocal.ui.theme.DarkSurface
 import androidx.activity.compose.BackHandler
@@ -389,6 +406,212 @@ private fun BarButton(
         content()
     }
 }
+
+/** Quanto può essere larga la voce del font nella barra: "Times New Roman" si accorcia coi puntini. */
+private val FONT_CHIP_MAX_WIDTH = 132.dp
+
+/**
+ * Una voce della barra Aa che mostra un valore e apre un elenco: il font
+ * e il corpo della pagina, **prima di B come su OneNote**. Il valore si
+ * legge sempre — il nome del font in uso, il numero del corpo — e la
+ * freccetta dice che si tocca per cambiarlo.
+ */
+@Composable
+private fun BarValueChip(
+    text: String,
+    contentDescription: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .padding(horizontal = 2.dp)
+            .height(BAR_BUTTON_SIZE - 8.dp)
+            .clip(RoundedCornerShape(6.dp))
+            .border(1.dp, NotionWhite.copy(alpha = 0.25f), RoundedCornerShape(6.dp))
+            .clickable(onClickLabel = contentDescription, onClick = onClick)
+            .padding(start = 8.dp, end = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = text,
+            color = NotionWhite,
+            fontSize = 14.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f, fill = false)
+        )
+        Icon(
+            Icons.Filled.ArrowDropDown,
+            contentDescription = null,
+            tint = NotionWhite,
+            modifier = Modifier.size(20.dp)
+        )
+    }
+}
+
+/**
+ * **Il menu non prende il fuoco** (`focusable = false`), e non è un
+ * dettaglio: un menu che lo prende chiude la tastiera, con la tastiera
+ * se ne va la barra (è appoggiata sopra) e con la barra la voce da cui
+ * il menu è partito. Così invece si sceglie e si continua a scrivere
+ * dove si era, col cursore al suo posto.
+ */
+private val BarMenuProperties = PopupProperties(focusable = false)
+
+/**
+ * Il font della pagina, dalla barra Aa. Nella barra c'è solo il nome
+ * chiesto dall'utente ("Calibri"); qui nell'elenco c'è anche, fra
+ * parentesi, il font libero che lo disegna davvero ("Calibri (Carlito)"),
+ * come ha chiesto l'utente. In cima "Predefinito", per tornare al font
+ * di sistema; poi i tre gruppi separati da un divisore: occidentali,
+ * cinesi, giapponesi.
+ *
+ * I nomi occidentali sono scritti ognuno **col suo font**, come nei menu
+ * di Word: sono dentro l'app e si vedono subito. Quelli cinesi e
+ * giapponesi no — farli vedere vorrebbe dire scaricarli tutti e sei,
+ * decine di megabyte, solo per aprire il menu.
+ */
+@Composable
+private fun FontPickerChip(
+    current: PageFont?,
+    onPick: (PageFont?) -> Unit
+) {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        BarValueChip(
+            text = current?.label ?: EditorStrings.defaultFont,
+            contentDescription = EditorStrings.font,
+            onClick = { open = true },
+            modifier = Modifier.widthIn(max = FONT_CHIP_MAX_WIDTH)
+        )
+        DropdownMenu(
+            expanded = open,
+            onDismissRequest = { open = false },
+            properties = BarMenuProperties,
+            modifier = Modifier.background(DarkSheet)
+        ) {
+            FontMenuItem(
+                label = EditorStrings.defaultFont,
+                selected = current == null,
+                fontFamily = null,
+                onClick = {
+                    open = false
+                    onPick(null)
+                }
+            )
+            PageFontGroup.entries.forEach { group ->
+                HorizontalDivider()
+                PageFont.entries.filter { it.group == group }.forEach { font ->
+                    FontMenuItem(
+                        label = "${font.label} (${font.lookalike})",
+                        selected = current == font,
+                        fontFamily = if (group == PageFontGroup.LATIN) font.fontFamily() else null,
+                        onClick = {
+                            open = false
+                            onPick(font)
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FontMenuItem(
+    label: String,
+    selected: Boolean,
+    fontFamily: FontFamily?,
+    onClick: () -> Unit
+) {
+    DropdownMenuItem(
+        text = {
+            Text(
+                text = label,
+                color = NotionWhite,
+                fontFamily = fontFamily,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
+            )
+        },
+        trailingIcon = if (selected) {
+            { Icon(Icons.Filled.Check, contentDescription = null, tint = NotionWhite) }
+        } else {
+            null
+        },
+        onClick = onClick
+    )
+}
+
+/**
+ * Il corpo del testo della pagina, dalla barra Aa: **un elenco con tutti
+ * i numeri da 5 a 72**, che si apre già fermo su quello in uso.
+ *
+ * Un elenco e non una casella in cui scrivere il numero, di proposito:
+ * una seconda casella di testo, mentre si sta scrivendo nella pagina,
+ * vuol dire spostare il fuoco da un campo all'altro e cambiare tastiera,
+ * ed è proprio il tipo di passaggio che con la tastiera Samsung dà
+ * problemi (vedi "Peculiarità dell'ambiente di test" nel README). Con
+ * l'elenco si sceglie qualunque numero senza che la tastiera si muova.
+ */
+@Composable
+private fun FontSizeChip(
+    current: Int,
+    onPick: (Int) -> Unit
+) {
+    var open by remember { mutableStateOf(false) }
+    val scroll = rememberScrollState()
+    val density = LocalDensity.current
+    // Aperto, l'elenco si porta sul numero in uso, con un paio di righe
+    // sopra perché si veda che si può salire. Aspetta di sapere quanto è
+    // lungo: prima della prima misura non c'è niente da scorrere.
+    LaunchedEffect(open) {
+        if (!open) return@LaunchedEffect
+        val itemPx = with(density) { FONT_SIZE_ITEM_HEIGHT.toPx() }
+        val target = ((current - MIN_PAGE_FONT_SIZE - 2).coerceAtLeast(0) * itemPx).toInt()
+        val max = snapshotFlow { scroll.maxValue }.first { it > 0 }
+        scroll.scrollTo(target.coerceAtMost(max))
+    }
+    Box {
+        BarValueChip(
+            text = current.toString(),
+            contentDescription = EditorStrings.fontSize,
+            onClick = { open = true }
+        )
+        DropdownMenu(
+            expanded = open,
+            onDismissRequest = { open = false },
+            scrollState = scroll,
+            properties = BarMenuProperties,
+            modifier = Modifier.background(DarkSheet)
+        ) {
+            for (size in MIN_PAGE_FONT_SIZE..MAX_PAGE_FONT_SIZE) {
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = size.toString(),
+                            color = NotionWhite,
+                            fontWeight = if (size == current) FontWeight.Bold else FontWeight.Normal
+                        )
+                    },
+                    trailingIcon = if (size == current) {
+                        { Icon(Icons.Filled.Check, contentDescription = null, tint = NotionWhite) }
+                    } else {
+                        null
+                    },
+                    onClick = {
+                        open = false
+                        onPick(size)
+                    },
+                    modifier = Modifier.height(FONT_SIZE_ITEM_HEIGHT)
+                )
+            }
+        }
+    }
+}
+
+/** L'altezza di una riga dell'elenco dei corpi: fissata, per sapere dove scorrere. */
+private val FONT_SIZE_ITEM_HEIGHT = 44.dp
 
 /**
  * Diagnostica temporanea per i difetti delle caselle da spuntare che
@@ -927,7 +1150,13 @@ fun PageEditorScreen(
             Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
             CompositionLocalProvider(
                 LocalFocusPark provides focusPark,
-                LocalPageLocked provides readOnlyPage
+                LocalPageLocked provides readOnlyPage,
+                // Il font e il corpo scelti dalla barra Aa, per tutto il
+                // testo della pagina: vedi `PageTypography`.
+                LocalPageTypography provides PageTypography(
+                    fontFamily = page?.pageFont?.fontFamily(),
+                    size = page?.pageFontSize ?: DEFAULT_PAGE_FONT_SIZE
+                )
             ) {
             LazyColumn(
                 state = listState,
@@ -1150,8 +1379,11 @@ fun PageEditorScreen(
                         imeAction = ImeAction.Done
                     ),
                     keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                    textStyle = MaterialTheme.typography.titleLarge.copy(
-                        color = NotionWhite
+                    // Il titolo prende il font della pagina ma non il
+                    // corpo: ha già una misura sua, e a 72 non ci
+                    // starebbe più nello schermo.
+                    textStyle = LocalPageTypography.current.fontOnly(
+                        MaterialTheme.typography.titleLarge.copy(color = NotionWhite)
                     ),
                     cursorBrush = SolidColor(NotionWhite),
                     modifier = Modifier
@@ -1307,6 +1539,21 @@ fun PageEditorScreen(
                     if (showFormatBar && aaAvailable) {
                         BarButton(onClick = { showFormatBar = false }) {
                             Icon(Icons.Filled.ArrowBack, contentDescription = Strings.back, tint = NotionWhite, modifier = Modifier.size(BAR_ICON_SIZE))
+                        }
+                        // Font e corpo del testo, prima di B come su
+                        // OneNote. Valgono per **tutta la pagina**, non
+                        // per il testo selezionato: vedi `PageTypography`.
+                        // Con la pagina bloccata non si toccano, come il
+                        // resto del contenuto.
+                        if (!readOnlyPage) {
+                            FontPickerChip(
+                                current = page?.pageFont,
+                                onPick = { viewModel.setPageFont(it) }
+                            )
+                            FontSizeChip(
+                                current = page?.pageFontSize ?: DEFAULT_PAGE_FONT_SIZE,
+                                onPick = { viewModel.setPageFontSize(it) }
+                            )
                         }
                         BarButton(onClick = {
                             focusedBlock?.let { viewModel.requestFormat(it.id, FormatType.BOLD) }
@@ -2821,6 +3068,15 @@ private class MergedRunVisualTransformation(
     private val allBlocks: List<BlockEntity>,
     private val viewModel: PageEditorViewModel,
     /**
+     * Quanto il corpo scelto dalla barra Aa è più grande (o più piccolo)
+     * del 16 di partenza: moltiplica le misure scritte qui dentro — i
+     * titoli e i segni degli elenchi — che altrimenti resterebbero fisse
+     * mentre il resto del testo cresce. Tocca solo `fontSize` negli
+     * stili: nessun carattere in più o in meno, quindi la traduzione
+     * delle posizioni non cambia.
+     */
+    private val scale: Float,
+    /**
      * Dove sta il cursore, in posizioni del testo senza l'a-capo
      * nascosto, oppure `null` se il campo non ha il fuoco. Serve solo
      * agli spoiler: quello che il cursore tocca si scopre. Col campo
@@ -2860,7 +3116,7 @@ private class MergedRunVisualTransformation(
                 val symbolStart = lineStart + prefix.indent.length
                 builder.addStyle(
                     SpanStyle(
-                        fontSize = BULLET_MARKER_SIZES[bulletAt],
+                        fontSize = BULLET_MARKER_SIZES[bulletAt] * scale,
                         baselineShift = BULLET_MARKER_DROP
                     ),
                     symbolStart,
@@ -2872,9 +3128,9 @@ private class MergedRunVisualTransformation(
             prefixLengths.add(prefix.text.length)
 
             when (block?.type) {
-                BlockType.HEADING_1 -> builder.addStyle(SpanStyle(fontSize = 28.sp, fontWeight = FontWeight.Bold), lineStart, builder.length)
-                BlockType.HEADING_2 -> builder.addStyle(SpanStyle(fontSize = 22.sp, fontWeight = FontWeight.Bold), lineStart, builder.length)
-                BlockType.HEADING_3 -> builder.addStyle(SpanStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold), lineStart, builder.length)
+                BlockType.HEADING_1 -> builder.addStyle(SpanStyle(fontSize = 28.sp * scale, fontWeight = FontWeight.Bold), lineStart, builder.length)
+                BlockType.HEADING_2 -> builder.addStyle(SpanStyle(fontSize = 22.sp * scale, fontWeight = FontWeight.Bold), lineStart, builder.length)
+                BlockType.HEADING_3 -> builder.addStyle(SpanStyle(fontSize = 18.sp * scale, fontWeight = FontWeight.Bold), lineStart, builder.length)
                 // Una casella spuntata ha il testo sbarrato e smorto,
                 // come su Notion. Il quadratino invece lo disegna
                 // `RunCheckboxOverlay` sopra al testo di riempimento.
@@ -3554,7 +3810,13 @@ private fun MergedTextRunField(
         // è facile spuntare quella sbagliata. Vale per tutto il campo,
         // non riga per riga — vedi `CHECKBOX_LINE_HEIGHT` per il
         // perché.
-        textStyle = MaterialTheme.typography.bodyLarge.copy(
+        // Font e corpo della pagina (barra Aa) applicati al campo intero:
+        // `apply` porta in proporzione anche l'altezza di riga qui sotto,
+        // così a 16 tutto resta com'era e a ogni altro corpo le righe
+        // crescono insieme al testo. È lo stesso posto — il `textStyle`
+        // dell'intero campo — dove il README dice che le misure si
+        // possono toccare senza rischi.
+        textStyle = LocalPageTypography.current.apply(MaterialTheme.typography.bodyLarge.copy(
             color = NotionWhite,
             // **L'altezza della riga è sempre fissata.**
             //
@@ -3582,7 +3844,7 @@ private fun MergedTextRunField(
                 alignment = LineHeightStyle.Alignment.Center,
                 trim = LineHeightStyle.Trim.None
             )
-        ),
+        )),
         cursorBrush = SolidColor(NotionWhite),
         // Pagina bloccata: si legge e si seleziona, non si scrive.
         // `readOnly` e non `enabled = false` di proposito — disabilitato
@@ -3598,6 +3860,7 @@ private fun MergedTextRunField(
             runBlocks,
             allBlocks,
             viewModel,
+            scale = LocalPageTypography.current.scale,
             // Il cursore serve solo a scoprire gli spoiler che tocca, e
             // senza fuoco non c'è nessun cursore da guardare.
             caret = if (fieldFocused) {
@@ -3997,12 +4260,14 @@ private fun BlockRow(
         }
     }
 
+    // Font e corpo della pagina (barra Aa), come nel testo condiviso.
+    val pageTypography = LocalPageTypography.current
     val textStyle = when (block.type) {
         BlockType.HEADING_1 -> MaterialTheme.typography.titleLarge
         BlockType.HEADING_2 -> MaterialTheme.typography.titleMedium
         BlockType.HEADING_3 -> MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp)
         else -> MaterialTheme.typography.bodyLarge
-    }.let { base ->
+    }.let(pageTypography::apply).let { base ->
         if (block.type == BlockType.CHECKBOX && block.isChecked) {
             base.copy(textDecoration = TextDecoration.LineThrough)
         } else base
@@ -4040,7 +4305,7 @@ private fun BlockRow(
                 Text(
                     bulletMarkerFor(block.indentLevel),
                     style = textStyle.copy(
-                        fontSize = bulletMarkerSizeFor(block.indentLevel),
+                        fontSize = pageTypography.scaled(bulletMarkerSizeFor(block.indentLevel)),
                         baselineShift = BULLET_MARKER_DROP
                     ),
                     modifier = Modifier.padding(end = 8.dp, top = 2.dp)
@@ -4375,7 +4640,7 @@ private fun BlockRow(
         // con l'Invio, dal titolo o dall'ultima riga, come su Notion.
         Text(
             text = EditorStrings.emptyToggle,
-            style = MaterialTheme.typography.bodyLarge,
+            style = LocalPageTypography.current.apply(MaterialTheme.typography.bodyLarge),
             color = NotionGray400,
             modifier = Modifier
                 .fillMaxWidth()
@@ -4601,10 +4866,13 @@ private fun PageLinkBlockContent(
             }
         }
         Spacer(modifier = Modifier.size(8.dp))
+        // Il nome della pagina collegata si scrive col font e il corpo di
+        // questa pagina: è una riga del suo testo, e con un corpo grande
+        // resterebbe l'unica piccola.
         Text(
             text = linkedPage?.title?.ifBlank { Strings.untitled } ?: Strings.untitled,
             color = NotionWhite,
-            style = MaterialTheme.typography.bodyLarge,
+            style = LocalPageTypography.current.apply(MaterialTheme.typography.bodyLarge),
             modifier = Modifier.weight(1f)
         )
         IconButton(onClick = { viewModel.deleteBlock(block) }, modifier = Modifier.size(28.dp)) {
@@ -4701,8 +4969,9 @@ private fun TableBlockContent(
                                 localCellText = newText
                                 viewModel.setTableCell(block.id, r, c, newText)
                             },
-                            textStyle = MaterialTheme.typography.bodyLarge.copy(
-                                color = NotionWhite
+                            // Font e corpo della pagina, come il resto del testo.
+                            textStyle = LocalPageTypography.current.apply(
+                                MaterialTheme.typography.bodyLarge.copy(color = NotionWhite)
                             ),
                             cursorBrush = SolidColor(NotionWhite),
                             modifier = Modifier

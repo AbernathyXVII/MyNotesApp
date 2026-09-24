@@ -11,6 +11,13 @@ object EditorStrings {
     private fun t(en: String, it: String, de: String, fr: String, es: String, zh: String, ko: String, ja: String) =
         Strings.t(en, it, de, fr, es, zh, ko, ja)
 
+    // --- Font e corpo della pagina, nella barra Aa ---
+
+    /** La voce del font quando la pagina non ne ha scelto uno: quello di sistema. */
+    val defaultFont get() = t("Default", "Predefinito", "Standard", "Par défaut", "Predeterminado", "默认", "기본", "デフォルト")
+    val font get() = t("Font", "Carattere", "Schriftart", "Police", "Fuente", "字体", "글꼴", "フォント")
+    val fontSize get() = t("Font size", "Dimensione del carattere", "Schriftgröße", "Taille de police", "Tamaño de fuente", "字号", "글꼴 크기", "フォントサイズ")
+
     /**
      * Il nome di un tipo di blocco nella lingua dell'app, partendo da quello
      * inglese. I cataloghi dei menu restano scritti in inglese — è il nome

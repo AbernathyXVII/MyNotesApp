@@ -75,6 +75,11 @@ dependencies {
     implementation("androidx.compose.material3:material3:1.2.1")
     implementation("androidx.compose.material:material-icons-extended:1.6.8")
 
+    // I font cinesi e giapponesi delle pagine, scaricati da Google Play
+    // Services la prima volta che servono (pesano 10-20 MB l'uno: dentro
+    // l'app la farebbero crescere di oltre cento). Vedi `PageFonts.kt`.
+    implementation("androidx.compose.ui:ui-text-google-fonts")
+
     // Navigation tra le schermate
     implementation("androidx.navigation:navigation-compose:2.7.7")
 

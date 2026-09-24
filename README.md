@@ -551,6 +551,13 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
 - **Titolo del database nascondibile** quando sta dentro una pagina,
   dalle impostazioni della vista. A schermo intero resta sempre visibile
 - **Ricerca full-text** tra titoli e contenuto dei blocchi
+- **Font e dimensione del testo per ogni pagina** *(sessione cloud del
+  24/09/2026, da verificare sul telefono)*: nella barra Aa, prima di B,
+  la voce del font (col nome in uso) e quella della dimensione (col
+  numero in uso), come su OneNote. Sedici font in tre gruppi —
+  occidentali, cinesi, giapponesi — che sono **sosia liberi** dei font
+  commerciali chiesti; dimensione da 5 a 72, di partenza 16. Valgono
+  per tutta la pagina
 - **Conteggio del testo** *(sessione cloud del 24/09/2026, da verificare
   sul telefono)*: in fondo al menu dei tre puntini di una pagina c'è
   **"X words"**; toccandola si apre lì sotto l'elenco come nella
@@ -718,6 +725,32 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   inquadratura" in Cronologia)
 - **Immagini: non c'è una raccolta da cui scegliere**, come le copertine pronte di Notion. Si mette la propria
 - **Immagini da collegamento: fino a 20 MB.** Un collegamento può puntare a qualunque cosa, e senza tetto una pagina da mezzo giga riempirebbe il telefono mentre l'utente aspetta
+- **Font: nessuno è quello vero.** Helvetica, Arial, Calibri, Cambria,
+  Consolas, Georgia, Verdana, Times New Roman, Futura, Garamond e MS
+  YaHei sono commerciali: il telefono non li ha e l'app non li può
+  distribuire. Li disegnano dei sosia liberi (tabella in Cronologia,
+  "Pagine — font e dimensione del testo"); cinque hanno le stesse
+  identiche misure dell'originale, gli altri somigliano. **Verdana** non
+  ha un sosia fedele (Noto Sans è il più vicino), **Helvetica** usa
+  Inter per non essere identico ad Arial, **Kaiti** è un kaishu a
+  pennello (Ma Shan Zheng). Il **Lishu** non c'è: un Lishu libero non
+  esiste, ed è stato tolto su scelta dell'utente
+- **Font cinesi e giapponesi: la prima volta serve internet** e Google
+  Play Services. Pesano 10-20 MB l'uno e si scaricano da Google quando
+  una pagina li usa per la prima volta; poi restano sul telefono. Finché
+  non arrivano — o se la prima volta si è offline — il testo si vede col
+  font di sistema e cambia da solo quando il font c'è. Nel menu di
+  scelta i loro nomi non sono scritti col loro font, per non scaricarli
+  tutti solo aprendo il menu
+- **Font e dimensione valgono per tutta la pagina**, non per un pezzo
+  di testo selezionato: è quello che ha chiesto l'utente ("selezionando
+  automaticamente tutto quanto"). Il **titolo della pagina** prende il
+  font ma non la dimensione (a 72 non ci starebbe nello schermo); i
+  **database dentro la pagina** restano come sono; i **quadratini delle
+  caselle** e le frecce dei toggle restano della loro misura
+- **La dimensione è in sp**, l'unità di Android, non in punti
+  tipografici come Word e OneNote: il 16 di partenza dell'app non
+  corrisponde all'11 di OneNote
 - **Conteggio del testo: le parole si contano come in Word**, cioè
   qualunque cosa fra due spazi: anche "=" o "[]" da soli sono una
   parola. Scelto per dare **gli stessi numeri di Word** sugli stessi
@@ -912,6 +945,35 @@ README di una riga).
     titoli H1/H2/H3 scritti nel corpo della pagina invece contano,
     perché sono testo dell'utente: detto all'utente, in attesa di
     conferma
+27. «Mettimi la possibilità di modificare il font (metti Helvetica,
+    Garamond, Arial, Verdana, Georgia, Calibri, Futura, Times New Roman,
+    Cambria e Consolas. Qui ci metti un divider e ci metti Songti,
+    Kaiti, MS Yahei e Lishu. Anche qui metti un divider e ci metti
+    Mincho, Gothic e Kaisei) e la grandezza dei caratteri in ogni pagina
+    (selezionando automaticamente tutto quanto e inserendo un numero a
+    piacimento da 5 a 72. Quello fisso e standard è già quello che hai
+    messo tu, anzi dimmelo per favore, sono curioso). Mettimi la
+    selezione del font e la grandezza del font in Aa prima di B con due
+    voci, quella del font con il nome del font in uso in quel momento
+    (con la possibilità di toccarci sopra e di modificarlo) e quella
+    della grandezza del font con il numero della grandezza in uso in
+    quel momento (con la possibilità di toccarci sopra e di modificarlo)
+    come fa Onenote nella foto che ti mando» — con lo screenshot delle
+    due caselle di OneNote "Calibri" e "11". Risposto: il corpo di
+    partenza è **16** (sp), i titoli 28, 22 e 18. Spiegato che i font
+    chiesti sono commerciali, con la tabella dei sosia liberi, e fatte
+    tre domande. Risposte dell'utente, parola per parola:
+    - nomi nel menu: «Il nome del sosia mettilo tra parentesi solo
+      quando si apre la finestra di selezione manuale del font. In Aa
+      metti solo il nome originale»;
+    - da dove arrivano i font: «Misto (Recommended)» — occidentali
+      dentro l'app, cinesi e giapponesi scaricati la prima volta;
+    - Lishu, che non ha un sosia libero: «Toglierlo».
+
+    Fatto: vedi Cronologia "Pagine — font e dimensione del testo". Da
+    far confermare: la dimensione scelta da un elenco 5-72 invece che
+    scritta, "Predefinito" in cima all'elenco dei font, Inter per
+    Helvetica
 
 **Cosa è stato fatto:**
 
@@ -1014,8 +1076,9 @@ README di una riga).
   e la voce "Theme" in Cronologia). Barrata con la nota "Superato"
 
 **Da verificare sul telefono** (dall'1 al 14 la vista Gallery, il 15
-lo spostamento delle colonne, il 16 il conteggio del testo; prima di
-installare, **copia del database**: questa build cambia lo schema):
+lo spostamento delle colonne, il 16 il conteggio del testo, il 17 e il
+18 font e dimensione; prima di installare, **copia del database**:
+questa build cambia lo schema, due volte — 24→25→26):
 
 1. **Compila anche sul PC?** In cloud sì (`assembleDebug` riuscito),
    ma con Gradle 8.7 da riga di comando: va confermato in Android
@@ -1074,6 +1137,27 @@ installare, **copia del database**: questa build cambia lo schema):
     pagina con un toggle chiuso, una tabella, un database dentro (che
     **non** deve contare), testo giapponese, cinese e coreano. Su un
     database a schermo intero la voce **non** c'è.
+17. **Font** (richiesta 27): nella barra Aa, prima di B, la voce del
+    font dice "Predefinito" su una pagina mai toccata; l'elenco ha
+    Predefinito, poi i dieci occidentali (scritti ognuno col suo font,
+    col sosia fra parentesi), un divisore, i tre cinesi, un divisore, i
+    tre giapponesi; **la tastiera resta aperta** e dopo la scelta si
+    continua a scrivere dove si era. Il testo cambia font ovunque:
+    paragrafi, titoli, elenchi, caselle, toggle (anche aperti), tabelle,
+    collegamenti a pagine; il titolo della pagina cambia font ma non
+    misura. Grassetto e corsivo si vedono (Consolas e Kaiti li simulano).
+    **Un font cinese o giapponese**: la prima volta, con internet, il
+    testo passa dal font di sistema a quello scelto dopo qualche
+    istante; poi funziona anche in modalità aereo. Tornare a
+    "Predefinito" rimette tutto com'era.
+18. **Dimensione**: la voce dice "16"; l'elenco va da 5 a 72 e si apre
+    fermo sul numero in uso; a 32 tutto (titoli H1-H3, segni degli
+    elenchi, righe) è grande il doppio; a 5 e a 72 niente si sovrappone
+    né si taglia; le caselle si spuntano ancora bene col dito;
+    selezione, backspace fra righe, Invio e numerazione degli elenchi
+    funzionano come a 16 (è il campo unito: vedi "Strade già tentate").
+    Scegliere 16 riporta la pagina come prima. La scelta resta dopo
+    aver chiuso e riaperto l'app, ed è diversa per ogni pagina.
 
 ## Cronologia degli aggiornamenti
 
@@ -1081,6 +1165,90 @@ Le voci nate nelle sessioni cloud stanno qui in cima, la più recente
 per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
+
+**Pagine — font e dimensione del testo (barra Aa)** *(sessione cloud
+del 24/09/2026, richiesta 27: compilato, migrazione 25→26 simulata,
+**non provato sul telefono**)*
+- **[Nuova funzionalità]** Nella barra Aa, **prima di B**, due voci
+  come su OneNote: **il font**, col nome di quello in uso ("Calibri", o
+  "Predefinito" se la pagina non ne ha scelto uno), e **la dimensione**,
+  col numero in uso ("16"). Toccandole si apre l'elenco per cambiarle.
+  Valgono per **tutta la pagina**, come chiesto ("selezionando
+  automaticamente tutto quanto"), e sono salvate per pagina
+  (`PageEntity.pageFont` e `pageFontSize`, **migrazione 25→26**; null
+  vale "come prima", e il 16 si salva come null). Con la pagina bloccata
+  le due voci non ci sono
+- **[Nuova funzionalità]** **I font, e chi li disegna davvero.** Quelli
+  chiesti sono commerciali e non si possono mettere nell'app: al loro
+  posto ci sono sosia con licenza libera (SIL Open Font License), scelti
+  e approvati con l'utente. **Nella barra si legge il nome originale;
+  nell'elenco il nome originale col sosia fra parentesi** — scelta
+  dell'utente. L'elenco, nell'ordine chiesto, con un divisore fra i
+  gruppi e "Predefinito" in cima per tornare al font di sistema:
+
+  | Nome | Sosia | Da dove arriva |
+  |---|---|---|
+  | Helvetica | Inter | dentro l'app |
+  | Garamond | EB Garamond | dentro l'app |
+  | Arial | Arimo (stesse misure) | dentro l'app |
+  | Verdana | Noto Sans (il più vicino) | dentro l'app |
+  | Georgia | Gelasio (stesse misure) | dentro l'app |
+  | Calibri | Carlito (stesse misure) | dentro l'app |
+  | Futura | Jost | dentro l'app |
+  | Times New Roman | Tinos (stesse misure) | dentro l'app |
+  | Cambria | Caladea (stesse misure) | dentro l'app |
+  | Consolas | Inconsolata (niente corsivo vero) | dentro l'app |
+  | Songti | Noto Serif SC | scaricato |
+  | Kaiti | Ma Shan Zheng (niente grassetto vero) | scaricato |
+  | MS YaHei | Noto Sans SC | scaricato |
+  | Mincho | Noto Serif JP | scaricato |
+  | Gothic | Noto Sans JP | scaricato |
+  | Kaisei | Kaisei Opti (è proprio lui, già libero) | scaricato |
+
+  **Lishu tolto**: un Lishu libero non esiste, e l'utente ha scelto di
+  toglierlo invece di sostituirlo con un'altra calligrafia
+- **[Nuova funzionalità]** **Da dove arrivano**, scelta dell'utente
+  ("Misto"): i dieci occidentali stanno **dentro l'app** — 38 file TTF
+  in `app/src/main/res/font` (normale, grassetto, corsivo, grassetto
+  corsivo), circa 12 MB, scaricati da Google Fonts il 24/09/2026 — e
+  funzionano sempre, anche offline. I sei cinesi e giapponesi pesano
+  10-20 MB l'uno e **si scaricano da Google Play Services** la prima
+  volta che una pagina li usa, poi restano sul telefono. L'APK di debug
+  è passato da 17,8 a 23,9 MB
+- **[Nuova funzionalità]** **Il corpo scala tutto in proporzione**, non
+  solo il testo normale (`PageTypography`, `ui/theme/PageFonts.kt`): i
+  titoli H1-H3 (28/22/18 a corpo 16), l'altezza delle righe del campo
+  unito (24, o 27 con le caselle), i segni degli elenchi. A 16 ogni
+  misura resta esattamente quella di prima. Le misure passano da un
+  `CompositionLocal` (`LocalPageTypography`) e arrivano al campo unito
+  (dal suo `textStyle`, l'unico posto dove il README dice che le misure
+  si toccano senza rischi), alla sua trasformazione visiva (solo
+  `fontSize` negli stili, nessun carattere in più: la traduzione delle
+  posizioni non cambia), alle isole, ai toggle, alle celle delle tabelle
+  e ai collegamenti a pagine. Il titolo della pagina prende **solo il
+  font**. Restano fissi i quadratini delle caselle e le frecce dei
+  toggle, e i database dentro la pagina
+- **[Nuova funzionalità]** **Gli elenchi non chiudono la tastiera**
+  (`PopupProperties(focusable = false)`): un menu che prende il fuoco
+  chiude la tastiera, con lei se ne va la barra — ci è appoggiata sopra
+  — e con la barra la voce da cui il menu è partito. Così si sceglie e
+  si continua a scrivere. La dimensione si sceglie da **un elenco con
+  tutti i numeri da 5 a 72**, che si apre fermo su quello in uso,
+  invece che scrivendola in una casella: una seconda casella di testo
+  mentre si scrive nella pagina è proprio il passaggio di fuoco che con
+  la tastiera Samsung dà problemi. **Da far confermare all'utente**, che
+  aveva scritto "inserendo un numero a piacimento"
+- **[Nuova funzionalità]** Nell'elenco dei font i nomi occidentali sono
+  scritti **ognuno col suo font**, come nei menu di Word; quelli cinesi
+  e giapponesi no, per non scaricarli tutti solo aprendo il menu
+- **[Progetto]** Nuova dipendenza `androidx.compose.ui:ui-text-google-fonts`
+  (versione dal BOM di Compose). I certificati del fornitore dei font
+  sono in `res/values/font_certs.xml`, copiati dall'esempio ufficiale
+  Android "DownloadableFonts" (licenza Apache 2.0). Gli avvisi di
+  copyright e il testo della licenza dei dieci font inclusi sono in
+  `app/src/main/assets/font_licenses/OFL.txt`, come chiede la licenza.
+  Testi nuovi nelle otto lingue (`EditorStrings.defaultFont`, `font`,
+  `fontSize`). Primo uso di `R` nel codice (`R.font`, `R.array`)
 
 **Pagine — il conteggio del testo ("X words")** *(sessione cloud del
 24/09/2026, richiesta 25: compilato e con i test automatici passati,
@@ -3454,7 +3622,15 @@ app/src/main/java/com/gabriele/notionlocal/
 app/src/test/java/com/gabriele/notionlocal/
 └── data/           # Test automatici senza telefono (dal 24/09/2026:
                     # TextStatsTest, il conteggio del testo)
+
+app/src/main/res/font/            # I 10 font occidentali delle pagine (sosia liberi)
+app/src/main/res/values/font_certs.xml   # Certificati per scaricare i font da Google
+app/src/main/assets/font_licenses/OFL.txt # Licenza e copyright dei font inclusi
 ```
+
+`ui/theme/PageFonts.kt` è il catalogo dei font delle pagine: nomi,
+sosia, gruppi, da dove arrivano, e `PageTypography`, che porta font e
+corpo a tutto il testo.
 
 **File chiave da capire per primi**:
 - `PageEditorViewModel.updateRun` — il cuore della logica di modifica
@@ -3478,9 +3654,9 @@ app/src/test/java/com/gabriele/notionlocal/
 
 ## Nota tecnica
 
-Lo schema è alla **versione 25** (la 25 viene dalla sessione cloud del
-24/09/2026, vedi Diario: migrazione simulata su SQLite in cloud ma
-**mai provata su un telefono**), e
+Lo schema è alla **versione 26** (la 25 e la 26 vengono dalla sessione
+cloud del 24/09/2026, vedi Diario: migrazioni simulate su SQLite in
+cloud ma **mai provate su un telefono**), e
 da qui in avanti **ogni cambio di
 schema vuole una migrazione vera** in `AppDatabase`. Fino alla 5 c'era
 `fallbackToDestructiveMigration()`, che ad ogni cambio ricreava il

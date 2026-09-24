@@ -43,7 +43,7 @@ import com.gabriele.notionlocal.data.entity.TableCellEntity
         TableCellEntity::class,
         PageEditEntity::class
     ],
-    version = 25,
+    version = 26,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -345,6 +345,19 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Aggiunge `pageFont` e `pageFontSize` alle pagine: il font e il
+         * corpo del testo scelti dalla barra Aa. Ammettono null, che vale
+         * "come prima" — il font di sistema e il corpo 16 — cioè
+         * esattamente come si vedevano tutte le pagine finora.
+         */
+        private val MIGRATION_25_26 = object : Migration(25, 26) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE pages ADD COLUMN pageFont TEXT")
+                db.execSQL("ALTER TABLE pages ADD COLUMN pageFontSize INTEGER")
+            }
+        }
+
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -372,7 +385,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_21_22,
                         MIGRATION_22_23,
                         MIGRATION_23_24,
-                        MIGRATION_24_25
+                        MIGRATION_24_25,
+                        MIGRATION_25_26
                     )
                     .build()
                 INSTANCE = instance

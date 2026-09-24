@@ -60,6 +60,31 @@ val GALLERY_DEFAULT_PREVIEW = GalleryCardPreview.PAGE_COVER
 val GALLERY_DEFAULT_SIZE = GalleryCardSize.MEDIUM
 
 /**
+ * Il font del testo di una pagina, fra quelli chiesti dall'utente. Si
+ * salva per nome, come le altre scelte. Nomi, sosia liberi e da dove
+ * arrivano stanno in `ui/theme/PageFonts.kt`; l'ordine qui è quello del
+ * menu: prima gli occidentali, poi i cinesi, poi i giapponesi.
+ */
+enum class PageFont {
+    HELVETICA,
+    GARAMOND,
+    ARIAL,
+    VERDANA,
+    GEORGIA,
+    CALIBRI,
+    FUTURA,
+    TIMES_NEW_ROMAN,
+    CAMBRIA,
+    CONSOLAS,
+    SONGTI,
+    KAITI,
+    MS_YAHEI,
+    MINCHO,
+    GOTHIC,
+    KAISEI
+}
+
+/**
  * Quanto tempo mostra il calendario in una schermata: un anno, un mese
  * o una settimana. Sostituisce il vecchio `calendarWeekView`, che
  * essendo un sì/no non poteva reggere una terza scelta.
@@ -188,6 +213,11 @@ data class PageEntity(
     // è spiegato il perché della scelta.
     var galleryCardPreview: GalleryCardPreview? = null,
     var galleryCardSize: GalleryCardSize? = null,
+    // Il font e il corpo del testo della pagina, scelti dalla barra Aa.
+    // Valgono per **tutta la pagina**, non per un pezzo di testo. null
+    // vale "come prima": il font di sistema e il corpo 16.
+    var pageFont: PageFont? = null,
+    var pageFontSize: Int? = null,
     // In base a quale proprietà sono ordinate le righe, e in che verso.
     // null = nell'ordine in cui sono state create, che è come stavano
     // prima che l'ordinamento esistesse. Il valore speciale
