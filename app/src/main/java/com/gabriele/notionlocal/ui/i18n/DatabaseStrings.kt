@@ -203,6 +203,42 @@ object DbStrings {
     val changeLayout get() = t("Change layout", "Cambia vista", "Ansicht ändern", "Changer de vue", "Cambiar vista", "更改视图", "보기 변경", "ビューを変更")
     val filter get() = t("Filter", "Filtro", "Filter", "Filtre", "Filtro", "筛选", "필터", "フィルター")
     val sort get() = t("Sort", "Ordina", "Sortieren", "Trier", "Ordenar", "排序", "정렬", "並べ替え")
+    // Le viste collegate ("Linked view of data source").
+    val openSourceDatabase get() = t("Open the source database", "Apri il database di origine", "Quelldatenbank öffnen", "Ouvrir la base de données source", "Abrir la base de datos de origen", "打开源数据库", "원본 데이터베이스 열기", "元のデータベースを開く")
+    val linkedSourceMissing get() = t(
+        "The database shown here was deleted or is in the trash.",
+        "Il database mostrato qui è stato cancellato o è nel cestino.",
+        "Die hier gezeigte Datenbank wurde gelöscht oder liegt im Papierkorb.",
+        "La base de données affichée ici a été supprimée ou est dans la corbeille.",
+        "La base de datos que se mostraba aquí se eliminó o está en la papelera.",
+        "此处显示的数据库已被删除或在回收站中。",
+        "여기에 표시되던 데이터베이스가 삭제되었거나 휴지통에 있습니다.",
+        "ここに表示していたデータベースは削除されたか、ゴミ箱にあります。"
+    )
+    val linkedViewTitle get() = t("Linked view of data source", "Vista collegata di un database", "Verknüpfte Ansicht einer Datenquelle", "Vue liée d'une source de données", "Vista vinculada de una fuente de datos", "数据源的关联视图", "데이터 소스의 연결된 보기", "データソースのリンクビュー")
+    val linkedViewHint get() = t(
+        "Choose the database to show here. It stays the same database: pages, properties and everything written inside are in sync. Filters, sorting, grouping and hidden properties are this view's own.",
+        "Scegli il database da mostrare qui. Resta lo stesso database: pagine, proprietà e tutto quello che c'è scritto sono sincronizzati. Filtri, ordinamento, raggruppamento e proprietà nascoste sono solo di questa vista.",
+        "Wähle die Datenbank, die hier angezeigt wird. Es bleibt dieselbe Datenbank: Seiten, Eigenschaften und Inhalte sind synchron. Filter, Sortierung, Gruppierung und ausgeblendete Eigenschaften gehören nur zu dieser Ansicht.",
+        "Choisissez la base de données à afficher ici. C'est la même base : pages, propriétés et contenu restent synchronisés. Filtres, tri, regroupement et propriétés masquées sont propres à cette vue.",
+        "Elige la base de datos que se mostrará aquí. Sigue siendo la misma: páginas, propiedades y contenido están sincronizados. Filtros, orden, agrupación y propiedades ocultas son solo de esta vista.",
+        "选择要在此显示的数据库。它仍是同一个数据库：页面、属性和内容都保持同步。筛选、排序、分组和隐藏的属性只属于此视图。",
+        "여기에 표시할 데이터베이스를 선택하세요. 같은 데이터베이스이므로 페이지, 속성, 내용이 모두 동기화됩니다. 필터, 정렬, 그룹, 숨긴 속성은 이 보기에만 적용됩니다.",
+        "ここに表示するデータベースを選んでください。同じデータベースなので、ページ、プロパティ、内容はすべて同期されます。フィルター、並べ替え、グループ化、非表示のプロパティはこのビューだけのものです。"
+    )
+    val noDatabasesToLink get() = t("There are no databases yet.", "Non ci sono ancora database.", "Es gibt noch keine Datenbanken.", "Il n'y a pas encore de base de données.", "Todavía no hay bases de datos.", "还没有数据库。", "아직 데이터베이스가 없습니다.", "まだデータベースがありません。")
+    val removeLinkedViewTitle get() = t("Remove this linked view?", "Togliere questa vista collegata?", "Diese verknüpfte Ansicht entfernen?", "Retirer cette vue liée ?", "¿Quitar esta vista vinculada?", "移除此关联视图？", "이 연결된 보기를 제거할까요?", "このリンクビューを削除しますか？")
+    val removeLinkedViewText get() = t(
+        "Only this view goes away: the database and its pages stay where they are.",
+        "Se ne va solo questa vista: il database e le sue pagine restano dove sono.",
+        "Nur diese Ansicht verschwindet: Die Datenbank und ihre Seiten bleiben, wo sie sind.",
+        "Seule cette vue disparaît : la base de données et ses pages restent où elles sont.",
+        "Solo desaparece esta vista: la base de datos y sus páginas se quedan donde están.",
+        "只会移除此视图：数据库及其页面保留在原处。",
+        "이 보기만 사라집니다. 데이터베이스와 페이지는 그대로 남습니다.",
+        "このビューだけが消えます。データベースとそのページはそのまま残ります。"
+    )
+
     // La ricerca dentro il database (la lente accanto a Sort).
     val searchInDatabase get() = t("Search this database", "Cerca in questo database", "Diese Datenbank durchsuchen", "Rechercher dans cette base de données", "Buscar en esta base de datos", "在此数据库中搜索", "이 데이터베이스에서 검색", "このデータベースを検索")
     val closeSearch get() = t("Close search", "Chiudi la ricerca", "Suche schließen", "Fermer la recherche", "Cerrar búsqueda", "关闭搜索", "검색 닫기", "検索を閉じる")

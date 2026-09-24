@@ -2,6 +2,7 @@ package com.gabriele.notionlocal.ui.screen
 
 import androidx.compose.ui.text.style.TextOverflow
 import com.gabriele.notionlocal.data.settings.AppSettings
+import com.gabriele.notionlocal.ui.i18n.DbStrings
 import com.gabriele.notionlocal.ui.i18n.EditorStrings
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
@@ -934,6 +935,19 @@ fun PageEditorScreen(
     // `BlockActionsHost`, che si occupa di tutto il resto.
     var blockMenuFor by remember { mutableStateOf<String?>(null) }
 
+    // "Linked view of data source": su quale riga si sta scegliendo il
+    // database da mostrare, e l'elenco fra cui sceglierlo.
+    var linkedViewRequest by remember { mutableStateOf<LinkedViewRequest?>(null) }
+    var linkableDatabases by remember { mutableStateOf<List<PageRepository.LinkableDatabase>?>(null) }
+    val askLinkedViewSource: (BlockEntity, Boolean) -> Unit = { block, keepText ->
+        // La tastiera se ne va sotto la finestra comunque, e la riga che
+        // diventa vista non deve morire col cursore dentro.
+        focusManager.clearFocus()
+        linkableDatabases = null
+        linkedViewRequest = LinkedViewRequest(block, keepText)
+        viewModel.loadLinkableDatabases { linkableDatabases = it }
+    }
+
     // Il menu dei tre puntini e le due cose che può aprire.
     var showPageOptions by remember { mutableStateOf(false) }
     // "Move to": dove la pagina non può andare, letto quando si tocca la
@@ -1164,6 +1178,7 @@ fun PageEditorScreen(
                                 viewModel.setDatabaseLayout(databaseId, it)
                             }
                         }
+                    SlashAction.LinkedView -> askLinkedViewSource(block, false)
                     SlashAction.NotYet -> Unit
                 }
             }
@@ -1940,8 +1955,20 @@ fun PageEditorScreen(
                 viewModel.convertToDatabaseLink(block, simple = action.simple, title = text) { databaseId ->
                     action.layout?.let { viewModel.setDatabaseLayout(databaseId, it) }
                 }
+            SlashAction.LinkedView -> askLinkedViewSource(block, true)
             SlashAction.NotYet -> Unit
         }
+    }
+
+    linkedViewRequest?.let { request ->
+        LinkedSourcePickerSheet(
+            databases = linkableDatabases,
+            onDismiss = { linkedViewRequest = null },
+            onPick = { source ->
+                linkedViewRequest = null
+                viewModel.convertToLinkedView(request.block, source.id, request.keepText)
+            }
+        )
     }
 
     blockMenuFor?.let { id ->
@@ -2057,6 +2084,9 @@ fun PageEditorScreen(
         }
     }
 }
+
+/** La riga che diventerà una vista collegata, in attesa che si scelga il database. */
+private data class LinkedViewRequest(val block: BlockEntity, val keepText: Boolean)
 
 /** Quale delle due immagini di una pagina si sta cambiando. */
 internal enum class PageImageTarget { ICON, COVER }
@@ -2698,6 +2728,11 @@ internal sealed class SlashAction {
     object Divider : SlashAction()
     /** `simple`: un database semplice, le cui righe non diventano pagine. */
     data class Database(val layout: DatabaseLayout?, val simple: Boolean = false) : SlashAction()
+    /**
+     * Una **vista collegata** di un database che c'è già: prima si sceglie
+     * quale, da un elenco (vedi `LinkedSourcePickerSheet`).
+     */
+    object LinkedView : SlashAction()
     /** Elencata ma non ancora costruita: si vede spenta. */
     object NotYet : SlashAction()
 }
@@ -2808,7 +2843,9 @@ internal val SLASH_ENTRIES: List<SlashEntry> = listOf(
         SlashAction.Database(null, simple = true),
         Icons.Filled.GridOn
     ),
-    SlashEntry("Linked view of data source", SlashCategory.DATABASE, SlashAction.NotYet, Icons.Filled.Link)
+    // Lo stesso database mostrato in un'altra pagina, con filtri e
+    // raggruppamenti suoi: vedi `PageEntity.sourceDatabaseId`.
+    SlashEntry("Linked view of data source", SlashCategory.DATABASE, SlashAction.LinkedView, Icons.Filled.Link)
 )
 
 /**
@@ -4211,6 +4248,12 @@ private fun BlockRow(
     val databasePageId = block.linkedPageId
     if (block.type == BlockType.DATABASE_LINK && databasePageId != null) {
         var confirmDatabaseDeletion by remember(block.id) { mutableStateOf(false) }
+        // Se è una vista collegata: "Delete" toglie solo la vista, e lo
+        // deve dire, invece di minacciare di cancellare tutte le righe.
+        val shownPage by remember(databasePageId) {
+            viewModel.observePageInfo(databasePageId)
+        }.collectAsStateWithLifecycle(initialValue = null)
+        val isLinkedView = shownPage?.sourceDatabaseId != null
 
         DatabaseContent(
             pageId = databasePageId,
@@ -4219,6 +4262,9 @@ private fun BlockRow(
             onOpenRowPage = onNavigateToPage,
             onOpenFullPage = { onNavigateToDatabase(databasePageId) },
             onDelete = { confirmDatabaseDeletion = true },
+            // Il titolo "↗ Nome" di una vista collegata porta al database
+            // principale, a schermo intero.
+            onOpenSource = onNavigateToDatabase,
             // I sei puntini nella riga degli strumenti: il menu del
             // blocco, con in cima le voci del database.
             onOpenBlockMenu = onOpenBlockMenu?.let { open -> { open(block.id) } },
@@ -4239,8 +4285,11 @@ private fun BlockRow(
         if (confirmDatabaseDeletion) {
             AlertDialog(
                 onDismissRequest = { confirmDatabaseDeletion = false },
-                title = { Text(EditorStrings.deleteDatabaseTitle) },
-                text = { Text(EditorStrings.deleteDatabaseText) },
+                title = { Text(if (isLinkedView) DbStrings.removeLinkedViewTitle else EditorStrings.deleteDatabaseTitle) },
+                // Togliere una vista collegata cancella solo la vista: le
+                // righe, le colonne e le celle stanno nel database di
+                // origine, che non si tocca (vedi `deleteDatabaseBlock`).
+                text = { Text(if (isLinkedView) DbStrings.removeLinkedViewText else EditorStrings.deleteDatabaseText) },
                 confirmButton = {
                     TextButton(onClick = {
                         viewModel.deleteDatabaseBlock(block)

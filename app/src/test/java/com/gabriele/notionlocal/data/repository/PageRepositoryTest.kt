@@ -386,6 +386,88 @@ class PageRepositoryTest {
         assertFalse(text.contains("bold"))
     }
 
+    // --- Viste collegate ---
+
+    @Test
+    fun aLinkedViewStartsIdenticalToItsDatabaseButOwnsNoData() = runBlocking<Unit> {
+        val rowPage = PageEntity(title = "Zelda", isRowPage = true)
+        val (database, _, _) = databaseWithRow(rowPage)
+        val status = db.databaseDao().getColumnsForPageOnce(database.id).single()
+        db.databaseDao().insertColumn(DatabaseColumnEntity(pageId = database.id, name = "Secret", hidden = true))
+        val secret = db.databaseDao().getColumnsForPageOnce(database.id).single { it.name == "Secret" }
+        db.pageDao().update(
+            db.pageDao().getById(database.id)!!.copy(
+                tableGroupColumnId = status.id,
+                filterColumnId = status.id,
+                filterValue = "Done",
+                sortDescending = true
+            )
+        )
+
+        val viewId = repo.createLinkedView(database.id)!!
+        val view = db.pageDao().getById(viewId)!!
+
+        assertEquals(database.id, view.sourceDatabaseId)
+        assertTrue(view.isDatabase)
+        assertEquals(status.id, view.tableGroupColumnId)
+        assertEquals(status.id, view.filterColumnId)
+        assertEquals("Done", view.filterValue)
+        assertTrue(view.sortDescending)
+        assertEquals(secret.id, view.viewHiddenColumnIds)
+        assertEquals("Database", view.title)
+        // Nessun dato suo: righe e colonne restano quelle dell'origine.
+        assertTrue(db.databaseDao().getRowsForPageOnce(viewId).isEmpty())
+        assertTrue(db.databaseDao().getColumnsForPageOnce(viewId).isEmpty())
+
+        // Una vista di una vista mostra il database vero.
+        val viewOfView = repo.createLinkedView(viewId)!!
+        assertEquals(database.id, db.pageDao().getById(viewOfView)!!.sourceDatabaseId)
+    }
+
+    @Test
+    fun linkedViewsStayOutOfTheTreeTheSearchAndTheSourcePicker() = runBlocking<Unit> {
+        val database = PageEntity(title = "Giochi", isDatabase = true)
+        repo.createPage(database)
+        link(parent.id, database.id, 3, BlockType.DATABASE_LINK)
+        val viewId = repo.createLinkedView(database.id)!!
+        link(destination.id, viewId, 0, BlockType.DATABASE_LINK)
+
+        assertTrue(repo.treeChildren(destination.id).isEmpty())
+        // Il triangolino nella barra laterale: una pagina con solo una vista non ne ha.
+        assertEquals(0, db.blockDao().countLinksInPage(destination.id))
+        assertEquals(listOf(database.id), repo.treeChildren(parent.id).mapNotNull { it.pageId }.filter { it == database.id || it == viewId })
+        assertEquals(listOf(database.id), repo.search("Giochi", inContent = false, inTrash = false).mapNotNull { it.pageId })
+        assertEquals(listOf(database.id), repo.linkableDatabases().map { it.page.id })
+        assertEquals("Parent", repo.linkableDatabases().single().place)
+    }
+
+    @Test
+    fun removingALinkedViewLeavesTheDatabaseAndItsRows() = runBlocking<Unit> {
+        val rowPage = PageEntity(title = "Zelda", isRowPage = true)
+        val (database, row, _) = databaseWithRow(rowPage)
+        val viewId = repo.createLinkedView(database.id)!!
+        // Come `deleteDatabaseBlock` su una vista collegata.
+        repo.deletePage(db.pageDao().getById(viewId)!!)
+
+        assertNull(db.pageDao().getById(viewId))
+        assertEquals(row.id, db.databaseDao().getRowsForPageOnce(database.id).single().id)
+        assertEquals(rowPage.id, db.databaseDao().getRowById(row.id)!!.linkedPageId)
+    }
+
+    @Test
+    fun viewHiddenColumnsAreStoredOnTheViewOnly() = runBlocking<Unit> {
+        val (database, _, _) = databaseWithRow(PageEntity(title = "Zelda", isRowPage = true))
+        val column = db.databaseDao().getColumnsForPageOnce(database.id).single()
+        val viewId = repo.createLinkedView(database.id)!!
+
+        repo.setViewHiddenColumns(viewId, setOf(column.id))
+
+        assertEquals(column.id, db.pageDao().getById(viewId)!!.viewHiddenColumnIds)
+        assertFalse(db.databaseDao().getColumnsForPageOnce(database.id).single().hidden)
+        repo.setViewHiddenColumns(viewId, emptySet())
+        assertNull(db.pageDao().getById(viewId)!!.viewHiddenColumnIds)
+    }
+
     @Test
     fun turnIntoSimpleDatabaseDeletesTheRowPagesButKeepsTheRows() = runBlocking<Unit> {
         val rowPage = PageEntity(title = "Row page", isRowPage = true)

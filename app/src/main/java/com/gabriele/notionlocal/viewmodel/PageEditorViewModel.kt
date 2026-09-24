@@ -2498,6 +2498,43 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         }
     }
 
+    // --- Viste collegate ("Linked view of data source") ---
+
+    /** I database fra cui scegliere quello da mostrare in una vista collegata. */
+    fun loadLinkableDatabases(onReady: (List<PageRepository.LinkableDatabase>) -> Unit) {
+        viewModelScope.launch { onReady(repository.linkableDatabases()) }
+    }
+
+    /**
+     * La riga diventa una **vista collegata** del database `sourceId`: lo
+     * stesso database, con impostazioni di vista sue (vedi
+     * `PageRepository.createLinkedView`).
+     *
+     * `keepText`, da "Turn into" nel menu del blocco: se la riga ha del
+     * testo, il testo resta dov'è e la vista nasce subito sotto — una
+     * vista non ha un nome suo in cui metterlo (mostra quello del
+     * database). Dai menu "/" e "+" la riga stessa diventa la vista, come
+     * per gli altri database.
+     */
+    fun convertToLinkedView(block: BlockEntity, sourceId: String, keepText: Boolean) {
+        val current = _blocks.value.find { it.id == block.id } ?: block
+        val below = keepText && plainTextOf(current).isNotBlank()
+        val liftChildren = !below && hasChildren(block.id)
+        snapshotForStructuralChange()
+        viewModelScope.launch {
+            structuralEdits.withLock {
+                val viewId = repository.createLinkedView(sourceId) ?: return@withLock
+                if (below) {
+                    repository.insertLinkBelow(block.id, viewId, BlockType.DATABASE_LINK)
+                } else {
+                    // Vedi `updateBlockType`: i figli di un toggle escono prima.
+                    if (liftChildren) repository.unnestChildren(block.id)
+                    repository.setBlockTypeAndLink(block.id, BlockType.DATABASE_LINK, viewId)
+                }
+            }
+        }
+    }
+
     /** "Turn into database" dal menu di un collegamento a un database: torna dentro la pagina. */
     fun turnLinkIntoDatabase(block: BlockEntity) {
         snapshotForStructuralChange()

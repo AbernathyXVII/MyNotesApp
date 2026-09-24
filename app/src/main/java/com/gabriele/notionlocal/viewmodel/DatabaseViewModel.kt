@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -51,10 +52,11 @@ private const val GALLERY_PREVIEW_MAX_LINES = 12
  * Quale anteprima mostra la galleria di questo database, o null se la
  * vista scelta non è la galleria — e allora non ne serve nessuna.
  */
-private fun PageEntity.galleryPreviewShown(): GalleryCardPreview? =
+private fun PageEntity.galleryPreviewShown(simple: Boolean = isSimpleDatabase): GalleryCardPreview? =
     // Un database semplice non ha pagine di riga, quindi niente copertine
-    // né testo da leggere: nessuna query.
-    if (databaseLayout == DatabaseLayout.GALLERY && !isSimpleDatabase) {
+    // né testo da leggere: nessuna query. `simple` è quello del database
+    // che ha i dati: per una vista collegata, quello di origine.
+    if (databaseLayout == DatabaseLayout.GALLERY && !simple) {
         galleryCardPreview ?: GALLERY_DEFAULT_PREVIEW
     } else {
         null
@@ -168,6 +170,10 @@ internal fun searchRows(
     return kept to RowSearch(wanted, foundInside)
 }
 
+/** Le proprietà nascoste di una vista collegata (vedi `PageEntity.viewHiddenColumnIds`). */
+internal fun PageEntity.viewHiddenColumns(): Set<String> =
+    viewHiddenColumnIds.orEmpty().split(",").filter { it.isNotBlank() }.toSet()
+
 class DatabaseViewModel(
     private val repository: DatabaseRepository,
     private val pageRepository: PageRepository
@@ -186,6 +192,37 @@ class DatabaseViewModel(
     // raggiunge.
     private val _page = MutableStateFlow<PageEntity?>(null)
     val page: StateFlow<PageEntity?> = _page
+
+    // **Vista collegata** (`PageEntity.sourceDatabaseId`): `_page` è la
+    // vista, con le sue impostazioni; righe, colonne e celle stanno nel
+    // database di origine, che si segue qui. Per un database vero le due
+    // cose coincidono.
+    private class SourceRead(val page: PageEntity?)
+    private val _source = MutableStateFlow<SourceRead?>(null)
+
+    /** La pagina che ha i dati: l'origine per una vista collegata, la pagina stessa per un database. */
+    private val _dataPage = MutableStateFlow<PageEntity?>(null)
+    val dataPage: StateFlow<PageEntity?> = _dataPage
+
+    /** Una vista collegata il cui database non c'è più, o è nel cestino. */
+    private val _sourceMissing = MutableStateFlow(false)
+    val sourceMissing: StateFlow<Boolean> = _sourceMissing
+
+    /** L'id del database che ha i dati: vedi `dataPage`. */
+    private val dataPageId: String?
+        get() = _page.value?.let { it.sourceDatabaseId ?: it.id }
+
+    /**
+     * Le colonne **come sono nel database**. Quelle dello stato, per una
+     * vista collegata, hanno `hidden` preso dalla vista: salvare una di
+     * quelle scriverebbe il "nascosto" della vista dentro l'origine, dove
+     * lo vedrebbero tutti. Chi modifica una colonna parte da qui.
+     */
+    private var rawColumns: List<DatabaseColumnEntity> = emptyList()
+
+    /** Il numero d'ordine più alto fra **tutte** le righe, anche quelle che il filtro o la ricerca nascondono. */
+    private var lastRowOrderIndex: Int = -1
+    private fun rawColumn(id: String): DatabaseColumnEntity? = rawColumns.find { it.id == id }
 
     /** Riga → immagine dell'icona della sua pagina, per le righe che ne hanno una. */
     private val _rowIcons = MutableStateFlow<Map<String, String>>(emptyMap())
@@ -222,48 +259,36 @@ class DatabaseViewModel(
         if (_searchQuery.value.isNotBlank()) _addedWhileSearching.value = _addedWhileSearching.value + rowId
     }
 
+    /**
+     * **Una riga nuova nasce già col valore del filtro**, come su Notion:
+     * creata nella vista "solo PS5", è un gioco PS5. Senza, sparirebbe
+     * nell'istante in cui nasce — il filtro non la fa passare — e
+     * sembrerebbe che "Nuova pagina" non abbia fatto niente. Vale per le
+     * selezioni (singola e multipla: basta il primo valore scelto) e per
+     * le caselle filtrate solo sulle spuntate; per date e numeri non c'è
+     * un valore solo da scegliere. `skipColumnId`: la proprietà a cui la
+     * riga ha già avuto un valore (il gruppo della bacheca, il giorno del
+     * calendario), che non va riscritta.
+     */
+    private suspend fun fillFilterValue(rowId: String, skipColumnId: String? = null) {
+        val page = _page.value ?: return
+        val columnId = page.filterColumnId ?: return
+        if (columnId == skipColumnId) return
+        val wanted = page.filterValue.orEmpty().split(MULTI_VALUE_SEPARATOR).filter { it.isNotBlank() }
+        if (wanted.isEmpty()) return
+        val column = rawColumn(columnId) ?: return
+        val value = when (column.type) {
+            ColumnType.SELECT, ColumnType.MULTI_SELECT -> wanted.first()
+            ColumnType.CHECKBOX -> if (wanted == listOf("true")) "true" else return
+            else -> return
+        }
+        repository.setCellValue(rowId, columnId, value)
+    }
+
     @OptIn(ExperimentalCoroutinesApi::class)
     fun load(pageId: String) {
         if (currentPageId == pageId) return
         currentPageId = pageId
-
-        viewModelScope.launch {
-            repository.observeRowIcons(pageId).collect { _rowIcons.value = it }
-        }
-
-        // Copertine e testo delle pagine si seguono **solo mentre la
-        // galleria li mostra**. Il testo soprattutto: la query guarda la
-        // tabella dei blocchi, che cambia ad ogni tasto battuto in
-        // qualunque pagina, e questo ViewModel resta vivo anche quando
-        // il database è rimasto indietro nella pila di navigazione.
-        // Seguirlo sempre vorrebbe dire rifare la query ad ogni lettera
-        // scritta altrove, per una vista che magari non è nemmeno quella
-        // scelta.
-        viewModelScope.launch {
-            _page.map { it?.galleryPreviewShown() }
-                .distinctUntilChanged()
-                .flatMapLatest { shown ->
-                    if (shown == GalleryCardPreview.PAGE_COVER) {
-                        repository.observeRowCovers(pageId)
-                    } else {
-                        flowOf(emptyMap<String, RowCover>())
-                    }
-                }
-                .collect { _rowCovers.value = it }
-        }
-        viewModelScope.launch {
-            _page.map { it?.galleryPreviewShown() }
-                .distinctUntilChanged()
-                .flatMapLatest { shown ->
-                    if (shown == GalleryCardPreview.PAGE_CONTENT) {
-                        repository.observeRowContentPreviews(pageId, GALLERY_PREVIEW_MAX_LINES)
-                    } else {
-                        flowOf(emptyMap<String, List<RowPreviewLine>>())
-                    }
-                }
-                .distinctUntilChanged()
-                .collect { _rowPreviews.value = it }
-        }
 
         // Seguita nel tempo, non letta una volta sola. Lo stesso
         // database può stare aperto due volte insieme — dentro una
@@ -277,11 +302,85 @@ class DatabaseViewModel(
                 .collect { fromDb -> if (fromDb != null) _page.value = fromDb }
         }
 
+        // L'origine di una vista collegata, seguita anche lei: rinominata o
+        // bloccata dall'altra parte, qui si vede subito.
+        viewModelScope.launch {
+            _page.map { it?.sourceDatabaseId }
+                .distinctUntilChanged()
+                .flatMapLatest { sourceId ->
+                    if (sourceId == null) flowOf(null) else pageRepository.observePage(sourceId).map { SourceRead(it) }
+                }
+                .collect { _source.value = it }
+        }
+        viewModelScope.launch {
+            combine(_page, _source) { page, source ->
+                if (page?.sourceDatabaseId == null) page else source?.page
+            }.collect { _dataPage.value = it }
+        }
+        viewModelScope.launch {
+            combine(_page, _source) { page, source ->
+                page?.sourceDatabaseId != null && source != null &&
+                    (source.page == null || source.page.trashedAt != null)
+            }.collect { _sourceMissing.value = it }
+        }
+
+        // L'id del database che ha i dati. Aspetta che la pagina sia letta:
+        // prima non si sa se è una vista collegata.
+        val dataIds = _page
+            .map { it?.let { page -> page.sourceDatabaseId ?: page.id } }
+            .filterNotNull()
+            .distinctUntilChanged()
+
+        viewModelScope.launch {
+            dataIds.flatMapLatest { repository.observeRowIcons(it) }.collect { _rowIcons.value = it }
+        }
+
+        // Copertine e testo delle pagine si seguono **solo mentre la
+        // galleria li mostra**. Il testo soprattutto: la query guarda la
+        // tabella dei blocchi, che cambia ad ogni tasto battuto in
+        // qualunque pagina, e questo ViewModel resta vivo anche quando
+        // il database è rimasto indietro nella pila di navigazione.
+        // Seguirlo sempre vorrebbe dire rifare la query ad ogni lettera
+        // scritta altrove, per una vista che magari non è nemmeno quella
+        // scelta.
+        val previewShown = combine(_page, _dataPage) { page, data ->
+            page?.galleryPreviewShown(simple = data?.isSimpleDatabase == true)
+        }.distinctUntilChanged()
+        viewModelScope.launch {
+            combine(dataIds, previewShown) { id, shown -> id to shown }
+                .distinctUntilChanged()
+                .flatMapLatest { (id, shown) ->
+                    if (shown == GalleryCardPreview.PAGE_COVER) {
+                        repository.observeRowCovers(id)
+                    } else {
+                        flowOf(emptyMap<String, RowCover>())
+                    }
+                }
+                .collect { _rowCovers.value = it }
+        }
+        viewModelScope.launch {
+            combine(dataIds, previewShown) { id, shown -> id to shown }
+                .distinctUntilChanged()
+                .flatMapLatest { (id, shown) ->
+                    if (shown == GalleryCardPreview.PAGE_CONTENT) {
+                        repository.observeRowContentPreviews(id, GALLERY_PREVIEW_MAX_LINES)
+                    } else {
+                        flowOf(emptyMap<String, List<RowPreviewLine>>())
+                    }
+                }
+                .distinctUntilChanged()
+                .collect { _rowPreviews.value = it }
+        }
+
         viewModelScope.launch {
             combine(
-                repository.getColumns(pageId),
-                repository.getRows(pageId),
-                repository.getAllCells(pageId),
+                dataIds.flatMapLatest { id ->
+                    combine(
+                        repository.getColumns(id),
+                        repository.getRows(id),
+                        repository.getAllCells(id)
+                    ) { columns, rows, cells -> Triple(columns, rows, cells) }
+                },
                 // La pagina entra nel calcolo perché è lì che sta
                 // l'ordinamento: senza, cambiarlo non farebbe
                 // ricalcolare niente e la tabella resterebbe com'era.
@@ -289,7 +388,17 @@ class DatabaseViewModel(
                 combine(_searchQuery, _searchIndex, _addedWhileSearching) { query, index, added ->
                     Triple(query, index, added)
                 }
-            ) { columns, rows, cells, page, (query, index, added) ->
+            ) { (sourceColumns, rows, cells), page, (query, index, added) ->
+                rawColumns = sourceColumns
+                lastRowOrderIndex = rows.maxOfOrNull { it.orderIndex } ?: -1
+                // In una vista collegata si vede quello che nasconde la
+                // vista, non quello che nasconde l'origine.
+                val columns = if (page?.sourceDatabaseId != null) {
+                    val hidden = page.viewHiddenColumns()
+                    sourceColumns.map { it.copy(hidden = it.id in hidden) }
+                } else {
+                    sourceColumns
+                }
                 val cellValues = cells.associate { (it.rowId to it.columnId) to it.value }
                 // Prima si filtra e poi si ordina: ordinare righe che
                 // stanno per sparire è lavoro buttato, e il risultato
@@ -333,7 +442,7 @@ class DatabaseViewModel(
      * trovata si può aver scritto, e la ricerca deve saperlo.
      */
     fun refreshSearchIndex() {
-        val pageId = currentPageId ?: return
+        val pageId = dataPageId ?: return
         if (!_searchOpen.value) return
         viewModelScope.launch { _searchIndex.value = repository.searchIndex(pageId) }
     }
@@ -634,6 +743,14 @@ class DatabaseViewModel(
      * pagine (`PageEditorViewModel.setIconImage`).
      */
     fun setIconImage(fileName: String?): String? {
+        // In una vista collegata l'icona è quella del database di origine:
+        // è quella che la vista mostra, e cambiarla vuol dire cambiarla là.
+        if (_page.value?.sourceDatabaseId != null) {
+            val source = _dataPage.value ?: return null
+            val previous = source.iconImage
+            viewModelScope.launch { pageRepository.setIconImage(source.id, fileName) }
+            return previous?.takeIf { it != fileName }
+        }
         val current = _page.value ?: return null
         val previous = current.iconImage
         val updated = current.copy(iconImage = fileName)
@@ -822,7 +939,7 @@ class DatabaseViewModel(
      * l'impalcatura che serve a noi, non una decisione da chiedergli.
      */
     fun addRowOnDateCreatingColumn(dateMillis: Long) {
-        val pageId = currentPageId ?: return
+        val pageId = dataPageId ?: return
         val existing = calendarDateColumn()
         if (existing != null) {
             addRowOnDate(existing.id, dateMillis)
@@ -851,12 +968,13 @@ class DatabaseViewModel(
     }
 
     fun addRowOnDate(columnId: String, dateMillis: Long) {
-        val pageId = currentPageId ?: return
+        val pageId = dataPageId ?: return
         viewModelScope.launch {
             val row = DatabaseRowEntity(pageId = pageId, orderIndex = nextRowIndex())
             keepVisibleWhileSearching(row.id)
             repository.addRow(row)
             repository.setCellValue(row.id, columnId, dateMillis.toString())
+            fillFilterValue(row.id, skipColumnId = columnId)
         }
     }
 
@@ -898,7 +1016,7 @@ class DatabaseViewModel(
     }
 
     fun addColumn(name: String, type: ColumnType, optionsJson: String = "[]") {
-        val pageId = currentPageId ?: return
+        val pageId = dataPageId ?: return
         // Uno più del massimo, non il numero di colonne: dopo aver
         // eliminato una colonna in mezzo, contarle darebbe un indice già
         // occupato, e due colonne con lo stesso indice non si possono
@@ -931,21 +1049,39 @@ class DatabaseViewModel(
      * ora è l'unico modo per vedere quelle che servono senza trascinare.
      */
     fun setColumnHidden(columnId: String, hidden: Boolean) {
-        val column = _tableState.value.columns.find { it.id == columnId } ?: return
+        val page = _page.value
+        if (page?.sourceDatabaseId != null) {
+            // Vista collegata: nascosta **qui**, non nel database.
+            val now = page.viewHiddenColumns()
+            setViewHidden(if (hidden) now + columnId else now - columnId)
+            return
+        }
+        val column = rawColumn(columnId) ?: return
         if (column.hidden == hidden) return
         viewModelScope.launch { repository.updateColumn(column.copy(hidden = hidden)) }
     }
 
+    /** Le proprietà nascoste di una vista collegata: la vista si ridisegna subito. */
+    private fun setViewHidden(ids: Set<String>) {
+        val page = _page.value ?: return
+        _page.value = page.copy(viewHiddenColumnIds = ids.joinToString(",").ifEmpty { null })
+        viewModelScope.launch { pageRepository.setViewHiddenColumns(page.id, ids) }
+    }
+
     /** Mette il contenuto della colonna al centro, o lo rimanda a sinistra. */
     fun setColumnCentered(columnId: String, centered: Boolean) {
-        val column = _tableState.value.columns.find { it.id == columnId } ?: return
+        val column = rawColumn(columnId) ?: return
         if (column.centerContent == centered) return
         viewModelScope.launch { repository.updateColumn(column.copy(centerContent = centered)) }
     }
 
     /** Nasconde o rimostra tutte le colonne in un colpo solo. */
     fun setAllColumnsHidden(hidden: Boolean) {
-        val columns = _tableState.value.columns.filter { it.hidden != hidden }
+        if (_page.value?.sourceDatabaseId != null) {
+            setViewHidden(if (hidden) rawColumns.map { it.id }.toSet() else emptySet())
+            return
+        }
+        val columns = rawColumns.filter { it.hidden != hidden }
         if (columns.isEmpty()) return
         viewModelScope.launch {
             columns.forEach { repository.updateColumn(it.copy(hidden = hidden)) }
@@ -963,7 +1099,7 @@ class DatabaseViewModel(
      * meglio che perderle per un tipo sbagliato scelto per errore.
      */
     fun updateColumn(columnId: String, name: String, type: ColumnType, optionsJson: String) {
-        val column = _tableState.value.columns.find { it.id == columnId } ?: return
+        val column = rawColumn(columnId) ?: return
         viewModelScope.launch {
             repository.updateColumn(
                 column.copy(name = name, type = type, optionsJson = optionsJson)
@@ -980,7 +1116,7 @@ class DatabaseViewModel(
      * cella mostra solo un trattino senza spiegare perché.
      */
     fun addSelectOption(columnId: String, label: String) {
-        val column = _tableState.value.columns.find { it.id == columnId } ?: return
+        val column = rawColumn(columnId) ?: return
         val trimmed = label.trim()
         if (trimmed.isEmpty()) return
 
@@ -1034,7 +1170,7 @@ class DatabaseViewModel(
         columnId: String,
         transform: (List<SelectOption>) -> List<SelectOption>
     ) {
-        val column = _tableState.value.columns.find { it.id == columnId } ?: return
+        val column = rawColumn(columnId) ?: return
         val current = try {
             json.decodeFromString<List<SelectOption>>(column.optionsJson)
         } catch (e: Exception) {
@@ -1082,18 +1218,21 @@ class DatabaseViewModel(
         val reordered = state.columns.filterNot { it.id == columnId }.toMutableList()
         val at = reordered.indexOfFirst { it.id == neighbour.id }
         reordered.add(if (delta < 0) at else at + 1, column)
+        // Dalle colonne vere: quelle dello stato, in una vista collegata,
+        // hanno il "nascosto" della vista (vedi `rawColumns`).
         val changed = reordered.mapIndexedNotNull { index, c ->
-            if (c.orderIndex != index) c.copy(orderIndex = index) else null
+            if (c.orderIndex != index) rawColumn(c.id)?.copy(orderIndex = index) else null
         }
         viewModelScope.launch { repository.updateColumns(changed) }
     }
 
     fun addRow(title: String = "") {
-        val pageId = currentPageId ?: return
+        val pageId = dataPageId ?: return
         viewModelScope.launch {
             val row = DatabaseRowEntity(pageId = pageId, title = title, orderIndex = nextRowIndex())
             keepVisibleWhileSearching(row.id)
             repository.addRow(row)
+            fillFilterValue(row.id)
         }
     }
 
@@ -1103,7 +1242,7 @@ class DatabaseViewModel(
      * compaia fra quelle senza valore e vada spostata a mano.
      */
     fun addRowInGroup(columnId: String, value: String) {
-        val pageId = currentPageId ?: return
+        val pageId = dataPageId ?: return
         viewModelScope.launch {
             val row = DatabaseRowEntity(pageId = pageId, orderIndex = nextRowIndex())
             keepVisibleWhileSearching(row.id)
@@ -1111,14 +1250,19 @@ class DatabaseViewModel(
             if (value.isNotEmpty()) {
                 repository.setCellValue(row.id, columnId, value)
             }
+            fillFilterValue(row.id, skipColumnId = columnId)
         }
     }
 
     // Uno più del massimo, non il numero di righe: dopo un'eliminazione
     // contarle darebbe un indice già occupato (stesso motivo spiegato
     // in addColumn).
-    private fun nextRowIndex(): Int =
-        (_tableState.value.rows.maxOfOrNull { it.orderIndex } ?: -1) + 1
+    // **Fra tutte le righe, non solo quelle che si vedono.** Prima si
+    // contava su quelle dello stato, che sono già filtrate: con un filtro
+    // (o, dal 24/09/2026, una vista collegata filtrata, o una ricerca) la
+    // riga nuova poteva prendere il numero di una nascosta, e due righe
+    // con lo stesso numero non hanno un ordine sicuro fra loro.
+    private fun nextRowIndex(): Int = lastRowOrderIndex + 1
 
     fun updateRowTitle(row: DatabaseRowEntity, newTitle: String) {
         viewModelScope.launch { repository.setRowTitle(row.id, newTitle) }

@@ -180,6 +180,22 @@ data class PageEntity(
     // sua scheda (nome e proprietà) invece di una pagina. Si sceglie
     // quando lo si crea ("Simple database" nei menu "/" e "+").
     var isSimpleDatabase: Boolean = false,
+    // **Vista collegata** ("Linked view of data source", dal 24/09/2026):
+    // l'id del database di cui questa pagina è una vista. Una vista
+    // collegata non ha righe, colonne né celle sue — mostra quelle del
+    // database di origine, e scriverci vuol dire scrivere lì — ma ha
+    // **le sue impostazioni di vista**: layout, filtro, ordinamento,
+    // raggruppamento, galleria, calendario, linea del tempo, e quali
+    // proprietà si vedono (`viewHiddenColumnIds`). Così la stessa lista
+    // di giochi si mostra intera in una pagina e solo coi giochi PS5 in
+    // un'altra. Null per tutte le altre pagine e per i database veri.
+    var sourceDatabaseId: String? = null,
+    // Solo per una vista collegata: le proprietà nascoste **in questa
+    // vista**, id separati da virgole. Nei database veri il "nascosto"
+    // sta sulla colonna (`DatabaseColumnEntity.hidden`), ma le colonne di
+    // una vista collegata sono quelle dell'origine: nasconderne una qui
+    // la nasconderebbe anche là.
+    var viewHiddenColumnIds: String? = null,
     var isRowPage: Boolean = false,
     // Solo per le pagine con isDatabase = true: come vengono mostrate le
     // righe (tabella, elenco, bacheca...). Ammette null perché i

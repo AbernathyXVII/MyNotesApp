@@ -57,6 +57,15 @@ interface BlockDao {
     @Query("UPDATE blocks SET numberStartsAt = :startsAt, numberResetHere = 0 WHERE id = :blockId")
     suspend fun setNumberStart(blockId: String, startsAt: Int?)
 
+    /**
+     * Tipo e pagina richiamata insieme, senza riscrivere il testo: serve a
+     * far diventare una riga il collegamento a una vista collegata. Salvare
+     * il blocco intero dalla copia della schermata riscriverebbe anche il
+     * comando "/..." appena tolto (vedi `turnIntoDividerWithLineBelow`).
+     */
+    @Query("UPDATE blocks SET type = :type, linkedPageId = :linkedPageId WHERE id = :blockId")
+    suspend fun setTypeAndLink(blockId: String, type: BlockType, linkedPageId: String)
+
     /** Come setNumberStart: cambia il tipo senza riscrivere il testo della riga. */
     @Query("UPDATE blocks SET type = :type WHERE id = :blockId")
     suspend fun setType(blockId: String, type: BlockType)
@@ -129,8 +138,16 @@ interface BlockDao {
     @Query("SELECT * FROM blocks WHERE textJson LIKE '%' || :query || '%'")
     suspend fun searchBlocks(query: String): List<BlockEntity>
 
-    /** Se una pagina contiene almeno un collegamento a un'altra: decide se nell'albero ha il triangolino. */
-    @Query("SELECT COUNT(*) FROM blocks WHERE pageId = :pageId AND linkedPageId IS NOT NULL")
+    /**
+     * Se una pagina contiene almeno un collegamento a un'altra: decide se
+     * nell'albero ha il triangolino. Le viste collegate non contano: non
+     * stanno nell'albero (vedi `PageRepository.treeChildren`), e una pagina
+     * che ha solo quelle avrebbe avuto un triangolino che apre il vuoto.
+     */
+    @Query(
+        "SELECT COUNT(*) FROM blocks WHERE pageId = :pageId AND linkedPageId IS NOT NULL " +
+            "AND linkedPageId NOT IN (SELECT id FROM pages WHERE sourceDatabaseId IS NOT NULL)"
+    )
     suspend fun countLinksInPage(pageId: String): Int
 
     @Query("DELETE FROM blocks WHERE pageId = :pageId")

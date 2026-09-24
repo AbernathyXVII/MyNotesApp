@@ -1,5 +1,7 @@
 package com.gabriele.notionlocal.ui.screen
 
+import androidx.compose.material.icons.filled.LinkOff
+import androidx.compose.material.icons.filled.NorthEast
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.graphics.Shape
@@ -450,6 +452,7 @@ fun DatabaseViewScreen(
             embedded = false,
             onOpenRowPage = onOpenRowPage,
             onOpenFullPage = null,
+            onOpenSource = onOpenDatabase,
             modifier = Modifier
                 .padding(padding)
                 .onFocusChanged { anythingFocused = it.hasFocus }
@@ -589,6 +592,11 @@ fun DatabaseContent(
      * allora i sei puntini non ci sono.
      */
     onOpenBlockMenu: (() -> Unit)? = null,
+    /**
+     * Solo per una vista collegata: il suo titolo "↗ nome" porta al
+     * database di origine, a schermo intero. Riceve l'id dell'origine.
+     */
+    onOpenSource: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     // Un ViewModel per database: la chiave li tiene distinti quando in
@@ -598,6 +606,11 @@ fun DatabaseContent(
     LaunchedEffect(pageId) { viewModel.load(pageId) }
 
     val state by viewModel.tableState.collectAsStateWithLifecycle()
+    // **Vista collegata**: `page` è la vista (impostazioni), `dataPage` il
+    // database di origine (nome, icona, blocco, database semplice). Per un
+    // database vero sono la stessa pagina.
+    val dataPage by viewModel.dataPage.collectAsStateWithLifecycle()
+    val sourceMissing by viewModel.sourceMissing.collectAsStateWithLifecycle()
     val page by viewModel.page.collectAsStateWithLifecycle()
     val rowIcons by viewModel.rowIcons.collectAsStateWithLifecycle()
     // Copertine e testo delle pagine delle righe: arrivano solo quando la
@@ -646,7 +659,11 @@ fun DatabaseContent(
     // Negli altri database il tocco apre la pagina della riga, come
     // sempre. Una funzione sola per le sei viste, così nessuna può
     // restare indietro.
-    val simple = page?.isSimpleDatabase == true
+    val simple = dataPage?.isSimpleDatabase == true
+    // Bloccato il database (o solo questa vista, se è collegata): righe e
+    // celle si leggono ma non si scrivono.
+    val contentLocked = page?.isLocked == true || dataPage?.isLocked == true || page?.trashedAt != null
+    val linkedSourceId = page?.sourceDatabaseId
     val openRow: (DatabaseRowEntity) -> Unit = if (simple) {
         { row ->
             focusManager.clearFocus()
@@ -665,8 +682,23 @@ fun DatabaseContent(
     var focusSearchField by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) { viewModel.refreshSearchIndex() }
 
+    // Una vista collegata il cui database è stato cancellato o buttato:
+    // niente da mostrare, e una riga che lo dice.
+    if (sourceMissing) {
+        LinkedSourceMissing(
+            onOpenBlockMenu = onOpenBlockMenu?.let { open ->
+                {
+                    focusManager.clearFocus()
+                    open()
+                }
+            },
+            modifier = modifier
+        )
+        return
+    }
+
     CompositionLocalProvider(
-        LocalDatabaseLocked provides (page?.isLocked == true || page?.trashedAt != null),
+        LocalDatabaseLocked provides contentLocked,
         LocalRowIcons provides rowIcons,
         LocalSimpleDatabase provides simple,
         LocalRowSearch provides state.search
@@ -705,7 +737,7 @@ fun DatabaseContent(
             // metterne una la prima volta c'è la voce "Icon" nelle
             // impostazioni. Più piccola dentro una pagina, dove anche
             // il nome lo è.
-            val databaseIcon = page?.iconImage
+            val databaseIcon = dataPage?.iconImage
             if (databaseIcon != null) {
                 PageImage(
                     fileName = databaseIcon,
@@ -716,10 +748,21 @@ fun DatabaseContent(
                         .size(if (embedded) 26.dp else 40.dp)
                         .clip(RoundedCornerShape(6.dp))
                         .let { base ->
-                            if (page?.isLocked == true) base else base.clickable { editingIcon = true }
+                            if (contentLocked) base else base.clickable { editingIcon = true }
                         }
                 )
             }
+            if (linkedSourceId != null) {
+                // **Vista collegata: "↗ Nome del database"**, come su
+                // Notion. Il nome è quello vivo dell'origine e non si
+                // scrive da qui; toccandolo si va al database principale.
+                LinkedViewTitle(
+                    title = dataPage?.title.orEmpty(),
+                    embedded = embedded,
+                    onClick = onOpenSource?.let { open -> { open(linkedSourceId) } },
+                    modifier = Modifier.weight(1f)
+                )
+            } else
             // Il titolo sta nel contenuto e non nella barra in alto,
             // come su Notion; incorporato è più contenuto, perché lì
             // il titolo della pagina è un altro.
@@ -977,7 +1020,7 @@ fun DatabaseContent(
             // mostra nulla: un pulsante che crea pagine invisibili è
             // peggio di nessun pulsante. Il messaggio sopra dice cosa
             // manca e offre di crearlo.
-            val canShowNewRows = page?.isLocked != true && when (layout) {
+            val canShowNewRows = !contentLocked && when (layout) {
                 // Il calendario non ha bisogno di una proprietà data
                 // già pronta: se manca, la crea la pagina stessa
                 // appena la si mette su un giorno.
@@ -1026,7 +1069,7 @@ fun DatabaseContent(
     if (editingIcon) {
         PageImageSheet(
             target = PageImageTarget.ICON,
-            hasImage = page?.iconImage != null,
+            hasImage = dataPage?.iconImage != null,
             store = imageStore,
             onPicked = { viewModel.setIconImage(it) },
             // Un'icona è un quadratino: non c'è niente da inquadrare.
@@ -1037,8 +1080,8 @@ fun DatabaseContent(
 
     if (showSettings) {
         SettingsSheet(
-            hasIcon = page?.iconImage != null,
-            onEditIcon = if (page?.isLocked == true) {
+            hasIcon = dataPage?.iconImage != null,
+            onEditIcon = if (contentLocked) {
                 null
             } else {
                 {
@@ -1190,7 +1233,7 @@ fun DatabaseContent(
             },
             onDeleteOption = { columnId, label -> viewModel.deleteSelectOption(columnId, label) },
             hasIcon = rowIcons[live.id] != null,
-            iconEditable = page?.isLocked != true && page?.trashedAt == null,
+            iconEditable = !contentLocked,
             simple = simple,
             onTitleChange = { title -> viewModel.updateRowTitle(live, title) },
             onEditIcon = {
@@ -3042,6 +3085,77 @@ private fun listCellLabel(column: DatabaseColumnEntity, value: String): String =
         .filter { it.isNotBlank() }
         .joinToString(", ")
     else -> value
+}
+
+/**
+ * Il titolo di una vista collegata: la freccia "↗" e il nome del database
+ * di origine, come su Notion. Toccandolo si va a quel database; senza
+ * `onClick` (non dovrebbe succedere) è solo un'etichetta.
+ */
+@Composable
+private fun LinkedViewTitle(
+    title: String,
+    embedded: Boolean,
+    onClick: (() -> Unit)?,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .let { base -> if (onClick != null) base.clickable(onClick = onClick) else base }
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            Icons.Filled.NorthEast,
+            contentDescription = DbStrings.openSourceDatabase,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(if (embedded) 18.dp else 26.dp)
+        )
+        Spacer(modifier = Modifier.size(6.dp))
+        Text(
+            text = title.ifBlank { Strings.untitled },
+            style = if (embedded) MaterialTheme.typography.titleMedium else MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+/**
+ * Al posto della vista collegata, quando il suo database non c'è più
+ * (cancellato per sempre) o è nel cestino: niente righe da mostrare, e
+ * una riga che dice perché. I sei puntini restano, per togliere la vista.
+ */
+@Composable
+private fun LinkedSourceMissing(onOpenBlockMenu: (() -> Unit)?, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (onOpenBlockMenu != null) {
+            ToolbarIconButton(
+                icon = Icons.Filled.DragIndicator,
+                contentDescription = EditorStrings.blockOptions,
+                onClick = onOpenBlockMenu
+            )
+        }
+        Icon(
+            Icons.Filled.LinkOff,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(modifier = Modifier.size(10.dp))
+        Text(
+            text = DbStrings.linkedSourceMissing,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
 }
 
 /**

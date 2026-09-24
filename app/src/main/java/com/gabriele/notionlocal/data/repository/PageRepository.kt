@@ -330,7 +330,9 @@ class PageRepository(private val db: AppDatabase) {
             .filter { it.type == BlockType.PAGE_LINK || it.type == BlockType.DATABASE_LINK }
             .mapNotNull { it.linkedPageId }
             .distinct()
-            .mapNotNull { id -> pageDao.getById(id)?.takeIf { it.trashedAt == null } }
+            // Le viste collegate non sono pagine a sé: sono un altro modo di
+            // guardare un database che nell'albero c'è già, dove sta.
+            .mapNotNull { id -> pageDao.getById(id)?.takeIf { it.trashedAt == null && it.sourceDatabaseId == null } }
             .map { nodeFor(it) }
     }
 
@@ -433,7 +435,9 @@ class PageRepository(private val db: AppDatabase) {
             inTrash = page.trashedAt != null
         )
 
-        pageDao.searchByTitle(needle).filter { allowed(it) }.forEach { page ->
+        // Le viste collegate hanno il nome del loro database, e sarebbero
+        // state un doppione di quello, che la ricerca trova già.
+        pageDao.searchByTitle(needle).filter { allowed(it) && it.sourceDatabaseId == null }.forEach { page ->
             hits[page.id] = hitFor(page, null)
         }
 
@@ -1551,6 +1555,90 @@ class PageRepository(private val db: AppDatabase) {
             files
         }
     }
+
+    // --- Viste collegate ("Linked view of data source") ---
+
+    /** Un database che una vista collegata può mostrare, e dove sta, per riconoscerlo fra due omonimi. */
+    data class LinkableDatabase(val page: PageEntity, val place: String?)
+
+    /**
+     * I database fra cui scegliere quello da mostrare in una vista
+     * collegata, ognuno con la pagina in cui sta (o null se sta nel menu
+     * principale, o in nessun posto).
+     */
+    suspend fun linkableDatabases(): List<LinkableDatabase> =
+        pageDao.getLinkableDatabases().map { database ->
+            val container = blockDao.getBlocksLinkingTo(database.id)
+                .firstNotNullOfOrNull { link -> pageDao.getById(link.pageId)?.takeIf { it.trashedAt == null } }
+            LinkableDatabase(database, container?.takeIf { it.id != PageEntity.ROOT_PAGE_ID }?.title)
+        }
+
+    /**
+     * Crea una vista collegata del database `sourceId` e ne restituisce
+     * l'id, o null se il database non c'è più.
+     *
+     * **Nasce identica all'originale**, come chiesto: stesso layout,
+     * filtro, ordinamento, raggruppamento, galleria, calendario, e le
+     * stesse proprietà nascoste — poi si cambia quello che si vuole, qui
+     * soltanto. Il nome è quello del database (serve dove la vista si vede
+     * come pagina: preferiti, cestino); dentro la pagina si legge sempre
+     * quello vivo dell'origine.
+     */
+    suspend fun createLinkedView(sourceId: String): String? {
+        val source = pageDao.getById(sourceId)?.takeIf { it.isDatabase } ?: return null
+        // Una vista di una vista mostra il database vero.
+        val realSource = source.sourceDatabaseId?.let { pageDao.getById(it) } ?: source
+        val hidden = db.databaseDao().getColumnsForPageOnce(realSource.id).filter { it.hidden }.map { it.id }
+        val now = System.currentTimeMillis()
+        val view = realSource.copy(
+            id = UUID.randomUUID().toString(),
+            parentId = null,
+            icon = DEFAULT_PAGE_EMOJI,
+            iconImage = null,
+            coverImage = null,
+            isSimpleDatabase = false,
+            sourceDatabaseId = realSource.id,
+            viewHiddenColumnIds = hidden.joinToString(",").ifEmpty { null },
+            isRowPage = false,
+            isFavorite = false,
+            favoritedAt = null,
+            isLocked = false,
+            isViewLocked = false,
+            trashedAt = null,
+            createdAt = now,
+            updatedAt = now
+        )
+        pageDao.insert(view)
+        return view.id
+    }
+
+    /** Vedi `BlockDao.setTypeAndLink`. */
+    suspend fun setBlockTypeAndLink(blockId: String, type: BlockType, linkedPageId: String) =
+        blockDao.setTypeAndLink(blockId, type, linkedPageId)
+
+    /** Le proprietà nascoste di una vista collegata, solo sue. */
+    suspend fun setViewHiddenColumns(viewPageId: String, columnIds: Set<String>) =
+        pageDao.setViewHiddenColumns(viewPageId, columnIds.joinToString(",").ifEmpty { null })
+
+    /**
+     * Una riga nuova sotto un blocco, che richiama una pagina: serve a
+     * "Turn into → Linked view" su una riga che ha del testo, che così
+     * resta dov'è invece di sparire dentro la vista.
+     */
+    suspend fun insertLinkBelow(blockId: String, linkedPageId: String, type: BlockType): String? =
+        db.withTransaction {
+            val current = blockDao.getById(blockId) ?: return@withTransaction null
+            blockDao.shiftOrderIndexes(current.pageId, current.parentBlockId, current.orderIndex + 1, 1)
+            val link = BlockEntity(
+                pageId = current.pageId,
+                parentBlockId = current.parentBlockId,
+                type = type,
+                linkedPageId = linkedPageId,
+                orderIndex = current.orderIndex + 1
+            )
+            blockDao.insert(link)
+            link.id
+        }
 
     /**
      * "Turn into complex database": le righe tornano a essere pagine.

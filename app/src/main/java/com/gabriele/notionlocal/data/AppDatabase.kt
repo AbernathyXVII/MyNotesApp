@@ -43,7 +43,7 @@ import com.gabriele.notionlocal.data.entity.TableCellEntity
         TableCellEntity::class,
         PageEditEntity::class
     ],
-    version = 28,
+    version = 29,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -397,6 +397,18 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Le viste collegate ("Linked view of data source"): quale database
+         * mostrano, e quali proprietà nascondono solo loro. Due colonne
+         * vuote per tutte le pagine che c'erano: nessuna era una vista.
+         */
+        private val MIGRATION_28_29 = object : Migration(28, 29) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE pages ADD COLUMN sourceDatabaseId TEXT")
+                db.execSQL("ALTER TABLE pages ADD COLUMN viewHiddenColumnIds TEXT")
+            }
+        }
+
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -427,7 +439,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_24_25,
                         MIGRATION_25_26,
                         MIGRATION_26_27,
-                        MIGRATION_27_28
+                        MIGRATION_27_28,
+                        MIGRATION_28_29
                     )
                     .build()
                 INSTANCE = instance

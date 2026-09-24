@@ -502,6 +502,12 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   scrivendo restano le righe che hanno la parola nel nome, in una
   proprietà o dentro la loro pagina, con il nome illuminato di giallo se
   è lì, o tutta la riga se la parola è dentro. In tutte e sei le viste
+- **Viste collegate** *(sessione cloud del 24/09/2026, da verificare sul
+  telefono)*: "Linked view of data source" nei menu "/" e "+" mette in
+  una pagina **lo stesso database** che sta in un'altra — righe,
+  proprietà, pagine e quello che c'è scritto dentro sono gli stessi — con
+  filtro, ordinamento, raggruppamento, vista e proprietà nascoste suoi.
+  Il titolo "↗ Nome" porta al database principale
 - **Database dentro le pagine**: creandone uno dal menu "+" compare
   nella pagina e si modifica lì; l'icona con le frecce lo apre a
   schermo intero, e dalle impostazioni lo si elimina
@@ -855,6 +861,14 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   stessa pagina aperta due volte), lo si vede al ritorno. Le sottopagine
   delle pagine delle righe contano solo per il nome, non per quello che
   hanno dentro
+- **Viste collegate**: **l'ordine delle proprietà**, il loro nome, tipo
+  e opzioni e "Center" sono del database, quindi valgono anche per tutte
+  le sue viste (Notion l'ordine lo tiene per vista); per vista sono
+  layout, filtro, ordinamento, raggruppamento, galleria, calendario,
+  linea del tempo e quali proprietà si vedono. Il **filtro è uno solo**
+  per vista (una proprietà, uno o più valori), come nei database. Una
+  vista non ha un nome suo: mostra sempre quello del database. Non si
+  può fare una vista di una vista (si collega il database vero)
 - **Export/backup** (Markdown+CSV, PDF) progettato ma non implementato.
   Decisione già presa con l'utente: **Markdown+CSV come formato
   principale** (il PDF non conserva la struttura, quindi è inadatto al
@@ -1147,6 +1161,33 @@ README di una riga).
     quello che ho scritto» — fatto: vedi Cronologia "Ricerca dentro un
     database". Come su Notion, mentre si cerca le righe senza la parola
     si nascondono (scelta da confermare con l'utente)
+36. «Dammi la possibilità di sincronizzare un database in una pagina su
+    un'altra: per esempio, su una pagina A avrò un database X con tutti i
+    miei giochi, con le proprietà Select per scrivere le piattaforme,
+    una Date per la release date, e il resto. Poi creo una pagina B (non
+    all'interno del database X principale dei giochi, magari sempre
+    riguardante essi o anche dentro la pagina A) chiamata PS5, una
+    chiamata PC-Steam, ed un'altra chiamata Switch 2 (questi sono solo
+    esempi). In queste pagine io non dovrò riscrivere tutto il database
+    principale, ma dovrò semplicemente rimettere lo stesso database X in
+    ognuna di queste pagine (richiamandolo da dove si trova tramite
+    l'opzione Linked view of data source, che metterai anche nel + della
+    toolbar), ma con il Grouping delle Properties in base a quello che
+    voglio vedere, quindi nella pagina PS5 vedrò il database principale
+    solo con i giochi della PS5 (perché ho selezionato di vedere solo le
+    pagine con il Select PS5 (come vedi nelle foto). Fai sì poi che se
+    tocco il titolo del database (come nella foto 'Database principale')
+    mi reindirizza al database principale. Ovviamente, di base, con
+    Linked view of data source io vedrò lo stesso identico database X
+    (ovviamente con tutto sincronizzato, le proprietà, le pagine, quello
+    che c'è scritto dentro, eccetera), poi sarò io a modificare i filtri
+    necessari per rendere quel database X vedibile su alcuni Select che
+    io desidero» — con quattro foto di Notion: il database principale
+    raggruppato per piattaforma, la vista collegata "↗ Database
+    principale" in un'altra pagina, la scelta della fonte ("Existing data
+    sources") e la voce "Linked view of data source" nel menu "/".
+    Fatto: vedi Cronologia "Viste collegate — lo stesso database in
+    un'altra pagina"
 
 **Cosa è stato fatto:**
 
@@ -1254,9 +1295,9 @@ lo spostamento delle colonne, il 16 il conteggio del testo, il 17 e il
 database semplice, il 22 il menu del blocco, il 23 le due correzioni
 trovate scrivendolo, il 24 il nuovo Move to, il 25 Annulla dopo una
 pagina spostata o cancellata, il 26 Annulla e Ripristina di Move to,
-Duplicate e Move to trash, il 27 la ricerca dentro un database; prima di
-installare, **copia
-del database**: questa build cambia lo schema quattro volte — 24→25→26→27→28):
+Duplicate e Move to trash, il 27 la ricerca dentro un database, il 28
+le viste collegate; prima di installare, **copia
+del database**: questa build cambia lo schema cinque volte — 24→25→26→27→28→29):
 
 1. **Compila anche sul PC?** In cloud sì (`assembleDebug` riuscito),
    ma con Gradle 8.7 da riga di comando: va confermato in Android
@@ -1537,6 +1578,49 @@ del database**: questa build cambia lo schema quattro volte — 24→25→26→2
       pagine).
     - Una galleria o una bacheca con molte righe: scrivere nella barra
       non deve rallentare la tastiera.
+28. **Viste collegate** (richiesta 36). **Prima di tutto la migrazione
+    28→29**: dopo l'installazione l'app si apre, tutte le note e i
+    database ci sono (un test automatico l'ha già provata su un database
+    vero, ma non sul telefono).
+    - Il caso dell'utente: una pagina A col database "Giochi" (Select
+      "Piattaforma", una Date, altre proprietà, qualche gioco con testo
+      dentro). Una pagina "PS5": menu "/" → "Linked view of data source"
+      (non più grigia) → si apre l'elenco dei database con "In A" sotto
+      "Giochi", e un campo per cercare → toccato "Giochi", nella pagina
+      compare **lo stesso database, identico**: stessa vista, stessi
+      filtri, raggruppamento, ordinamento, proprietà nascoste. Lo stesso
+      dal "+" della barra, e da "Turn into" nel menu del blocco (con del
+      testo nella riga: il testo resta, la vista nasce sotto).
+    - Il titolo è **"↗ Giochi"** e non si scrive; toccandolo si apre il
+      database "Giochi" a schermo intero. L'icona, se c'è, è quella di
+      Giochi.
+    - Nella vista "PS5": filtro Piattaforma = PS5 → solo i giochi PS5.
+      In A il database mostra ancora tutto. Raggruppare, ordinare,
+      cambiare vista (bacheca, galleria…), nascondere una proprietà:
+      cambia **solo** nella pagina PS5.
+    - **Tutto sincronizzato**: scrivere il nome di un gioco, cambiare una
+      proprietà, aprire un gioco e scriverci dentro — da una parte o
+      dall'altra — si vede subito anche nell'altra. Aggiungere o
+      rinominare una proprietà vale per tutte e due (è una proprietà del
+      database).
+    - "Nuova pagina" nella vista PS5: il gioco nasce **nel database
+      Giochi**, già con Piattaforma = PS5, e si vede in tutte e due.
+    - Menu del blocco sulla vista (sei puntini nella sua barra): in cima
+      niente "Turn into page"; Turn into simple / complex database, Lock
+      database, Rename, Edit icon agiscono **su Giochi**; Duplicate, Move
+      to, Move to trash e i preferiti sulla vista soltanto.
+    - Impostazioni della vista → Delete: la finestra dice che se ne va
+      **solo la vista**; confermando, il database Giochi e i suoi giochi
+      restano dove sono.
+    - La vista **non** compare nella barra laterale né nella ricerca
+      generale (lì c'è Giochi, una volta sola), e una pagina che ha solo
+      viste non ha il triangolino.
+    - Buttare Giochi nel cestino: nella pagina PS5, al posto della vista,
+      "Il database mostrato qui è stato cancellato o è nel cestino", coi
+      sei puntini per toglierla. Ripristinando Giochi, la vista torna.
+    - Nel database principale, con un filtro qualsiasi: "Nuova pagina"
+      crea una riga che si vede (prende il valore del filtro, se è una
+      selezione).
     - Scrivere una lettera in una pagina, poi aprire una sua sottopagina
       dalla barra laterale (non dal collegamento) e spostarla altrove coi
       tre puntini; tornare alla prima pagina passando da un'altra, e
@@ -1550,6 +1634,77 @@ Le voci nate nelle sessioni cloud stanno qui in cima, la più recente
 per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
+
+**Viste collegate — lo stesso database in un'altra pagina** *(sessione
+cloud del 24/09/2026, richiesta 36: compilato, 51 test passati — 9
+nuovi, compresa la migrazione 28→29 aperta da Room —, **schema alla
+versione 29**, **non provato sul telefono**)*
+- **[Nuova funzionalità]** **"Linked view of data source"** nei menu "/"
+  e "+" (finora grigia) e in "Turn into": si sceglie un database da un
+  elenco con la ricerca in cima — tutti i database dell'app, ognuno con
+  sotto la pagina in cui sta, come "Existing data sources" di Notion
+  (`LinkedSourcePickerSheet`) — e nella pagina compare **lo stesso
+  database**: stesse righe, proprietà, pagine e quello che c'è scritto
+  dentro. Non è una copia: scrivere da una parte è scrivere dall'altra
+- **[Nuova funzionalità]** **La vista nasce identica** all'originale —
+  vista, filtro, ordinamento, raggruppamento, galleria, calendario,
+  proprietà nascoste — e da lì ha **impostazioni sue**: nella pagina
+  "PS5" si filtra Piattaforma = PS5 e nel database principale non cambia
+  niente. Anche **le proprietà nascoste** sono della vista
+  (`PageEntity.viewHiddenColumnIds`)
+- **[Nuova funzionalità]** **Il titolo è "↗ Nome del database"**, quello
+  vivo dell'origine, e **toccandolo si apre il database principale** a
+  schermo intero, come chiesto (`LinkedViewTitle`). Icona, nome, blocco
+  del contenuto e "database semplice" sono quelli dell'origine
+- **[Nuova funzionalità]** **Una riga nuova nasce col valore del filtro**,
+  come su Notion — nella vista PS5, "Nuova pagina" crea un gioco PS5 nel
+  database principale. Vale per ogni database filtrato, non solo per le
+  viste: prima una riga creata con un filtro attivo spariva appena nata.
+  Per le selezioni (il primo valore scelto) e per le caselle filtrate
+  sulle spuntate (`fillFilterValue`)
+- **[Nuova funzionalità]** Menu del blocco su una vista: le voci del
+  database (semplice / complesso, Lock database, Rename, Edit icon)
+  agiscono **sull'origine**, quelle della pagina (Duplicate, Move to,
+  Move to trash, preferiti) **sulla vista**; niente "Turn into page".
+  **Togliere la vista** (Delete nelle sue impostazioni) lo dice con una
+  finestra sua: se ne va solo la vista, il database resta
+- **[Nuova funzionalità]** Se il database di origine è cancellato o nel
+  cestino, al posto della vista una riga lo dice, coi sei puntini per
+  toglierla (`LinkedSourceMissing`); ripristinandolo, la vista torna
+- **[Nuova funzionalità]** Le viste **non compaiono nella barra laterale
+  né nella ricerca generale**: sono un altro modo di guardare un database
+  che lì c'è già, e lo avrebbero ripetuto. Una pagina con solo viste non
+  ha il triangolino dei figli (`BlockDao.countLinksInPage`)
+- **[Progetto]** Com'è fatta. Una vista collegata è una pagina-database
+  con `sourceDatabaseId` (l'origine) e **nessun dato suo**: il ViewModel
+  del database tiene separate **la pagina della vista** (`page`, le
+  impostazioni) e **quella dei dati** (`dataPage`, l'origine), e legge
+  righe, colonne, celle, icone, copertine e testo per la ricerca dalla
+  seconda. Per un database vero sono la stessa pagina, e non cambia
+  niente. **Migrazione 28→29**: due colonne `TEXT` in `pages`, vuote per
+  tutto quello che c'era
+- **[Progetto]** **Attenzione trovata scrivendolo**: nello stato della
+  vista le colonne hanno il "nascosto" della vista; ogni funzione che
+  salva una colonna partendo da lì — rinominarla, cambiarle le opzioni,
+  spostarla, centrarla — avrebbe scritto quel "nascosto" **dentro il
+  database di origine**, dove l'avrebbero visto tutti. Ora si parte
+  sempre dalle colonne vere (`rawColumns`); controprova fatta: tolta la
+  protezione, il test lo coglie
+- **[Bug fix]** *(trovato scrivendo questo)* **Una riga nuova in un
+  database filtrato poteva prendere il numero d'ordine di una riga
+  nascosta**: il numero si calcolava sulle righe visibili, già filtrate
+  (o, da oggi, cercate). Due righe con lo stesso numero non hanno un
+  ordine sicuro fra loro. Ora si conta su tutte (`lastRowOrderIndex`)
+- **[Progetto]** Test: `MigrationTest` (un file alla versione 28 con lo
+  schema di allora, aperto da `AppDatabase.getInstance` come fa l'app:
+  Room esegue la migrazione e controlla lo schema; controprova fatta —
+  senza la migrazione l'apertura fallisce), `LinkedViewModelTest` (4:
+  righe dell'origine col filtro della vista, proprietà nascosta solo lì,
+  riga nuova nell'origine col valore del filtro, origine nel cestino), e
+  4 prove nuove in `PageRepositoryTest`. Testi nuovi nelle otto lingue
+  (`DbStrings.linkedViewTitle`, `linkedViewHint`, `openSourceDatabase`,
+  `linkedSourceMissing`, `noDatabasesToLink`, `removeLinkedViewTitle`,
+  `removeLinkedViewText`)
 
 **Ricerca dentro un database — la lente accanto a Sort** *(sessione
 cloud del 24/09/2026, richiesta 35: compilato, 42 test passati — 10
@@ -4458,7 +4613,12 @@ app/src/test/java/com/gabriele/notionlocal/
                     # database, su un database vero (Robolectric + Room)
 app/src/test/java/com/gabriele/notionlocal/viewmodel/
                     # DatabaseSearchTest: quali righe tiene la ricerca
-                    # dentro un database e quali illumina
+                    # dentro un database e quali illumina;
+                    # LinkedViewModelTest: una vista collegata vera
+app/src/test/java/com/gabriele/notionlocal/data/MigrationTest.kt
+                    # la migrazione 28→29 aperta da Room come fa l'app
+app/src/test/resources/schema/v28.sql
+                    # lo schema della versione 28, per MigrationTest
 
 app/src/main/res/font/            # I 10 font occidentali delle pagine (sosia liberi)
 app/src/main/res/values/font_certs.xml   # Certificati per scaricare i font da Google
@@ -4495,11 +4655,15 @@ le finestre che apre. Chi lo usa passa solo l'id del blocco.
 
 ## Nota tecnica
 
-Lo schema è alla **versione 28** (dalla 25 alla 28 vengono dalla
+Lo schema è alla **versione 29** (dalla 25 alla 29 vengono dalla
 sessione cloud del 24/09/2026, vedi Diario: migrazioni simulate su
 SQLite in cloud ma **mai provate su un telefono**; la 27 non cambia la
 forma delle tabelle, trasforma i titoli in paragrafi; la 28 aggiunge il
-database semplice), e
+database semplice; la 29 le viste collegate, `sourceDatabaseId` e
+`viewHiddenColumnIds` in `pages` — questa è anche **provata da un test
+automatico con Room**, `MigrationTest`, che apre un database vero alla
+versione 28 come fa l'app e fa controllare a Room lo schema che ne
+esce), e
 da qui in avanti **ogni cambio di
 schema vuole una migrazione vera** in `AppDatabase`. Fino alla 5 c'era
 `fallbackToDestructiveMigration()`, che ad ogni cambio ricreava il

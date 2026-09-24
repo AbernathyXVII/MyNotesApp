@@ -152,6 +152,16 @@ internal fun BlockActionsHost(
         return
     }
 
+    // **Vista collegata**: le voci che riguardano il database — semplice o
+    // complesso, blocco, nome, icona — valgono per il database di origine,
+    // che è quello che la vista mostra; duplicare, spostare, buttare e i
+    // preferiti riguardano la vista, cioè questo blocco.
+    val sourceId = page?.sourceDatabaseId
+    val sourcePage by remember(sourceId) {
+        if (sourceId == null) flowOf(null) else viewModel.observePageInfo(sourceId)
+    }.collectAsStateWithLifecycle(initialValue = null)
+    val dataPage = if (sourceId != null) sourcePage else page
+
     var step by remember { mutableStateOf(BlockMenuStep.MENU) }
     var moveExclusions by remember { mutableStateOf<PageRepository.MoveExclusions?>(null) }
     var rowPagesToLose by remember { mutableIntStateOf(0) }
@@ -197,6 +207,7 @@ internal fun BlockActionsHost(
                     PageBlockMenu(
                         block = block,
                         page = page,
+                        data = dataPage ?: page,
                         onTurnIntoPage = {
                             onDismiss()
                             // Come dalle impostazioni del database: il
@@ -212,10 +223,11 @@ internal fun BlockActionsHost(
                             // Prima si guarda se c'è qualcosa da perdere: se
                             // nessuna pagina di riga ha contenuto non c'è
                             // niente da chiedere.
-                            viewModel.countRowPagesWithContent(page.id) { count ->
+                            val data = dataPage ?: page
+                            viewModel.countRowPagesWithContent(data.id) { count ->
                                 if (count == 0) {
                                     onDismiss()
-                                    viewModel.turnIntoSimpleDatabase(page.id, imageStore)
+                                    viewModel.turnIntoSimpleDatabase(data.id, imageStore)
                                 } else {
                                     rowPagesToLose = count
                                     step = BlockMenuStep.CONFIRM_SIMPLE
@@ -224,9 +236,12 @@ internal fun BlockActionsHost(
                         },
                         onTurnIntoComplex = {
                             onDismiss()
-                            viewModel.turnIntoComplexDatabase(page.id)
+                            viewModel.turnIntoComplexDatabase((dataPage ?: page).id)
                         },
-                        onToggleLock = { viewModel.setLockedFor(page.id, !page.isLocked) },
+                        onToggleLock = {
+                            val data = dataPage ?: page
+                            viewModel.setLockedFor(data.id, !data.isLocked)
+                        },
                         onOpenAsPage = {
                             onDismiss()
                             onNavigateToDatabase(page.id)
@@ -269,14 +284,15 @@ internal fun BlockActionsHost(
             )
         }
 
-        BlockMenuStep.EDIT_ICON -> if (page != null) {
+        BlockMenuStep.EDIT_ICON -> if (dataPage != null) {
+            // L'icona che la vista mostra è quella del database di origine.
             PageImageSheet(
                 target = PageImageTarget.ICON,
-                hasImage = page.iconImage != null,
+                hasImage = dataPage.iconImage != null,
                 store = imageStore,
                 onPicked = { fileName ->
-                    val previous = page.iconImage
-                    viewModel.setIconImageFor(page.id, fileName)
+                    val previous = dataPage.iconImage
+                    viewModel.setIconImageFor(dataPage.id, fileName)
                     previous?.takeIf { it != fileName }
                 },
                 onReposition = null,
@@ -284,13 +300,14 @@ internal fun BlockActionsHost(
             )
         }
 
-        BlockMenuStep.RENAME -> if (page != null) {
+        BlockMenuStep.RENAME -> if (dataPage != null) {
+            // Anche il nome: una vista collegata mostra quello del database.
             RenamePageDialog(
-                current = page.title,
+                current = dataPage.title,
                 onDismiss = onDismiss,
                 onConfirm = { title ->
                     onDismiss()
-                    viewModel.renamePage(page.id, title)
+                    viewModel.renamePage(dataPage.id, title)
                 }
             )
         }
@@ -363,7 +380,7 @@ internal fun BlockActionsHost(
                 confirmButton = {
                     TextButton(onClick = {
                         onDismiss()
-                        viewModel.turnIntoSimpleDatabase(page.id, imageStore)
+                        viewModel.turnIntoSimpleDatabase((dataPage ?: page).id, imageStore)
                     }) {
                         Text(EditorStrings.turnIntoSimpleDatabase, color = MaterialTheme.colorScheme.error)
                     }
@@ -447,6 +464,8 @@ private fun TextBlockMenu(
 private fun PageBlockMenu(
     block: BlockEntity,
     page: PageEntity,
+    /** Chi ha i dati: il database di origine per una vista collegata, altrimenti `page`. */
+    data: PageEntity,
     onTurnIntoPage: () -> Unit,
     onTurnIntoDatabase: () -> Unit,
     onTurnIntoSimple: () -> Unit,
@@ -461,7 +480,10 @@ private fun PageBlockMenu(
     onMoveTo: () -> Unit,
     onMoveToTrash: () -> Unit
 ) {
-    MenuTitle(page.title.ifBlank { Strings.untitled })
+    val linked = page.sourceDatabaseId != null
+    // Una vista collegata si presenta come "↗ Nome del database", come nel
+    // suo titolo dentro la pagina.
+    MenuTitle((if (linked) "↗ " else "") + data.title.ifBlank { Strings.untitled })
 
     if (page.isDatabase) {
         OptionsGroup {
@@ -469,21 +491,26 @@ private fun PageBlockMenu(
             // intero; già collegato come pagina, la voce al suo posto è il
             // contrario, rimetterlo dentro. Mostrare "Turn into page" su
             // qualcosa che è già una pagina sarebbe una voce che non fa
-            // niente.
+            // niente. Per una vista collegata dentro la pagina nessuna delle
+            // due: una vista è fatta per stare lì, e come pagina a sé c'è
+            // già "Open as page".
             if (block.type == BlockType.DATABASE_LINK) {
-                OptionRow(icon = Icons.Filled.Description, label = Strings.turnIntoPage, onClick = onTurnIntoPage)
+                if (!linked) {
+                    OptionRow(icon = Icons.Filled.Description, label = Strings.turnIntoPage, onClick = onTurnIntoPage)
+                    HorizontalDivider()
+                }
             } else {
                 OptionRow(icon = Icons.Filled.TableChart, label = Strings.turnIntoDatabase, onClick = onTurnIntoDatabase)
+                HorizontalDivider()
             }
-            HorizontalDivider()
             // Le due voci ci sono sempre, e quella che il database è già si
             // vede spenta con la spunta: dice com'è adesso senza bisogno di
             // un'altra riga.
             OptionRow(
                 icon = Icons.Filled.GridOn,
                 label = EditorStrings.turnIntoSimpleDatabase,
-                enabled = !page.isSimpleDatabase,
-                trailing = if (page.isSimpleDatabase) {
+                enabled = !data.isSimpleDatabase,
+                trailing = if (data.isSimpleDatabase) {
                     { CurrentMark() }
                 } else {
                     null
@@ -494,8 +521,8 @@ private fun PageBlockMenu(
             OptionRow(
                 icon = Icons.Filled.TableChart,
                 label = EditorStrings.turnIntoComplexDatabase,
-                enabled = page.isSimpleDatabase,
-                trailing = if (!page.isSimpleDatabase) {
+                enabled = data.isSimpleDatabase,
+                trailing = if (!data.isSimpleDatabase) {
                     { CurrentMark() }
                 } else {
                     null
@@ -504,9 +531,9 @@ private fun PageBlockMenu(
             )
             HorizontalDivider()
             OptionRow(
-                icon = if (page.isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
+                icon = if (data.isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
                 label = EditorStrings.lockDatabase,
-                trailing = { Switch(checked = page.isLocked, onCheckedChange = { onToggleLock() }) },
+                trailing = { Switch(checked = data.isLocked, onCheckedChange = { onToggleLock() }) },
                 onClick = onToggleLock
             )
             HorizontalDivider()

@@ -132,6 +132,21 @@ interface PageDao {
     suspend fun setSimpleDatabase(pageId: String, simple: Boolean)
 
     /**
+     * I database che una vista collegata può mostrare: quelli veri, non nel
+     * cestino. Le viste collegate no — una vista di una vista sarebbe solo
+     * un giro più lungo per arrivare allo stesso database.
+     */
+    @Query(
+        "SELECT * FROM pages WHERE isDatabase = 1 AND trashedAt IS NULL " +
+            "AND sourceDatabaseId IS NULL ORDER BY title COLLATE NOCASE ASC"
+    )
+    suspend fun getLinkableDatabases(): List<PageEntity>
+
+    /** Le proprietà nascoste di una vista collegata. Una colonna sola, come sopra. */
+    @Query("UPDATE pages SET viewHiddenColumnIds = :ids WHERE id = :pageId")
+    suspend fun setViewHiddenColumns(pageId: String, ids: String?)
+
+    /**
      * Se la pagina è quella di una riga di database. Si spegne quando la
      * pagina esce dal database con "Move to" e diventa una pagina come le
      * altre. Una colonna sola, come sopra.
