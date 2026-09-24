@@ -41,6 +41,60 @@ Il progetto ora si sviluppa in **due modi alternati**:
   riprende sul PC dopo una sessione cloud parte da lì**: prima si
   provano sul telefono le voci ancora da verificare, poi si va avanti.
 
+### ⛔ Il confine: da qui comincia il lavoro fatto in cloud
+
+**Ultimo stato provato sul telefono** = il codice come stava nella
+cartella `Downloads\NotionLocal` del PC il **24/09/2026**, caricato su
+GitHub così com'era:
+
+- archivio originale: commit `83f7b61` ("Add files via upload") sul
+  ramo `main` — non cambia più, è la prova di com'era;
+- stesso codice estratto nel repository: commit `4a35c64` ("Importa il
+  progetto notE (NotionLocal) dall'archivio caricato"), identico
+  all'archivio salvo gli a-capo.
+
+**Tutto quello che viene dopo `4a35c64` è lavoro cloud: scritto, al
+massimo compilato, MAI installato né provato sul telefono.** Va
+trattato come una bozza finché non passa la procedura qui sotto. Per
+vedere in un colpo solo tutte le modifiche al codice fatte in cloud:
+`git diff 4a35c64 HEAD -- app/` (se quel commit non si trova più,
+per esempio dopo un "Squash and merge", si confronta col contenuto
+dell'archivio in `83f7b61`).
+
+### Ripresa sul PC dopo il cloud — procedura obbligatoria
+
+Richiesta esplicita dell'utente: il lavoro cloud **va ricontrollato
+alla perfezione sul telefono** prima di costruirci sopra.
+
+1. **Clonare il repository** in una cartella nuova (vedi "Come
+   aprirla") e sincronizzare Gradle con la JDK 21.
+2. **Collegare il Galaxy S25 Ultra** col debug USB o il debug wireless
+   e controllare che `adb devices` lo veda.
+3. **Copiare il database dal telefono PRIMA di installare** (comandi
+   e trappole in "Nota tecnica": su Windows passa da `cmd /c`, servono
+   anche `-wal` e `-shm`). Obbligatorio se il lavoro cloud ha cambiato
+   lo schema; conviene sempre, perché lì dentro ci sono note vere.
+4. **Installare da Android Studio (▶ Run)**. La build firmata con la
+   chiave di debug del PC si installa sopra l'app esistente e **le note
+   restano**. Un APK compilato altrove (per esempio in cloud) ha una
+   firma diversa, Android costringe a disinstallare e **le note si
+   perdono**: non farlo.
+5. **Se lo schema è cambiato**, verificare che la migrazione sia
+   avvenuta davvero (`user_version` e colonna in fondo al
+   `CREATE TABLE`, vedi "Nota tecnica").
+6. **Provare una per una, sul telefono e con `logcat` aperto, tutte le
+   voci "Da verificare sul telefono"** del Diario delle sessioni cloud,
+   dalla più vecchia alla più recente. Rileggere anche il diff del
+   punto sopra con occhio critico: chi l'ha scritto non ha potuto
+   vederlo girare. Massima attenzione a `MergedTextRunField`,
+   `updateRun`, alla mappatura delle posizioni e alle migrazioni —
+   sono i punti dove un errore arriva ai dati (vedi "Strade già
+   tentate").
+7. **Aggiornare il README con l'esito**: accanto a ogni voce provata
+   "(verificato sul telefono il gg/mm/aaaa)", e ogni problema trovato
+   diventa un `[Bug fix]` in Cronologia.
+8. Solo a quel punto si riprende con lavoro nuovo.
+
 ### Decisioni di design deliberate (non sono bug)
 
 **I "blocchi di testo scorrevole" sono uniti in un campo condiviso.**
@@ -634,6 +688,11 @@ README di una riga).
     che poi, quando ritornerò su Claude Code, potrò avere il progetto
     completo al quale hai lavorato senza ricominciare tutto da capo.
     Chiaro?»
+12. «Mi confermi che hai delineato da qui l'inizio del lavoro in cloud
+    e che, una volta ripreso in Code, dovrà essere ricontrollato alla
+    perfezione per essere funzionabile sul telefono installandolo
+    direttamente tramite l'APK collegato tutto tramite Android Studio e
+    il Web Debugging del telefono?»
 
 **Cosa è stato fatto:**
 
@@ -673,6 +732,12 @@ README di una riga).
   filtri dei database **ci sono**; la copertina **si inquadra**
   ("Reposition"). Le tre voci dei Limiti noti sono barrate o corrette,
   non cancellate
+- **[Progetto]** README: aggiunti in "LEGGIMI PRIMA" **il confine**
+  fra codice provato sul telefono e lavoro cloud (commit `83f7b61` e
+  `4a35c64`) e la **procedura obbligatoria di ripresa sul PC**: copia
+  del database, installazione da Android Studio con la chiave del PC,
+  prova di ogni voce da verificare con `logcat` aperto, esito scritto
+  qui. Richiesta dell'utente al punto 12
 
 **Da verificare sul telefono:** niente. In questa sessione, fin qui,
 il codice dell'app non è stato toccato.
