@@ -17,6 +17,7 @@ import com.gabriele.notionlocal.data.entity.setColorInRange
 import com.gabriele.notionlocal.data.entity.setFormatInRange
 import com.gabriele.notionlocal.data.entity.splitLines
 import com.gabriele.notionlocal.data.entity.toggleFormatInRange
+import com.gabriele.notionlocal.data.TextStats
 import com.gabriele.notionlocal.data.repository.PageRepository
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -669,6 +670,16 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
             repository.deletePermanently(current.id).forEach { imageStore.delete(it) }
             onDone()
         }
+    }
+
+    /**
+     * Il conteggio del testo della pagina, per la voce "X words" del menu
+     * dei tre puntini. Letto dal database ogni volta che si apre il menu:
+     * il testo si salva a ogni tasto, quindi lì è già tutto.
+     */
+    fun loadTextStats(onReady: (TextStats) -> Unit) {
+        val pageId = currentPageId ?: return
+        viewModelScope.launch { onReady(repository.textStats(pageId)) }
     }
 
     /**

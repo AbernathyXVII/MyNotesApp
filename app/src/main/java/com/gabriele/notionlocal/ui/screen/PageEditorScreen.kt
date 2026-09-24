@@ -20,6 +20,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import com.gabriele.notionlocal.data.PageImageStore
+import com.gabriele.notionlocal.data.TextStats
 import com.gabriele.notionlocal.ui.theme.DarkSheet
 import com.gabriele.notionlocal.ui.theme.DarkSurface
 import androidx.activity.compose.BackHandler
@@ -1581,6 +1582,15 @@ fun PageEditorScreen(
 
     // --- Il menu dei tre puntini ---
     //
+    // Il conteggio del testo per la voce "X words": si rifà ogni volta
+    // che il menu si apre, e fino ad allora la voce non c'è — meglio che
+    // mostrare per un istante il numero della volta prima.
+    var textStats by remember { mutableStateOf<TextStats?>(null) }
+    LaunchedEffect(showPageOptions) {
+        textStats = null
+        if (showPageOptions) viewModel.loadTextStats { textStats = it }
+    }
+
     // Sta qui fuori dallo Scaffold e non dentro la barra in alto: una
     // finestra che sale dal basso non è figlia del pulsante che
     // l'apre, e messa lì dentro erediterebbe i margini della barra.
@@ -1588,6 +1598,7 @@ fun PageEditorScreen(
         if (showPageOptions) {
             PageOptionsSheet(
                 page = current,
+                textStats = textStats,
                 onDismiss = { showPageOptions = false },
                 onToggleFavorite = { viewModel.toggleFavorite() },
                 onSearch = {

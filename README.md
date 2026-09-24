@@ -551,6 +551,13 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
 - **Titolo del database nascondibile** quando sta dentro una pagina,
   dalle impostazioni della vista. A schermo intero resta sempre visibile
 - **Ricerca full-text** tra titoli e contenuto dei blocchi
+- **Conteggio del testo** *(sessione cloud del 24/09/2026, da verificare
+  sul telefono)*: in fondo al menu dei tre puntini di una pagina c'è
+  **"X words"**; toccandola si apre lì sotto l'elenco come nella
+  finestra "Word Count" di Word — parole, lettere, numeri, caratteri
+  senza e con spazi, righe (blocchi con del testo), caratteri
+  giapponesi, cinesi e lettere coreane. Conta solo il testo scritto
+  nella pagina: niente database, niente titolo
 - **Duplicate** dal menu dei tre puntini, con la scelta di dove mettere
   la copia: accanto all'originale (per una riga di database, una riga
   nuova), in fondo al menu principale o dentro una pagina qualsiasi,
@@ -710,6 +717,21 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   inquadratura" in Cronologia)
 - **Immagini: non c'è una raccolta da cui scegliere**, come le copertine pronte di Notion. Si mette la propria
 - **Immagini da collegamento: fino a 20 MB.** Un collegamento può puntare a qualunque cosa, e senza tetto una pagina da mezzo giga riempirebbe il telefono mentre l'utente aspetta
+- **Conteggio del testo: le parole si contano come in Word**, cioè
+  qualunque cosa fra due spazi: anche "=" o "[]" da soli sono una
+  parola. Scelto per dare **gli stessi numeri di Word** sugli stessi
+  appunti, che è il confronto che l'utente ha fatto vedere
+- **Conteggio del testo: una riga tutta in kanji, senza nemmeno un
+  hiragana o un katakana, finisce fra i caratteri cinesi.** Da un
+  ideogramma solo non si capisce la lingua, e si decide riga per riga:
+  basta un kana nella riga perché i suoi ideogrammi contino come
+  giapponesi (vedi `textStatsOf`)
+- **Conteggio del testo: il titolo della pagina non conta**, e nemmeno
+  i database dentro la pagina né i nomi delle pagine collegate. Il
+  testo dentro i toggle invece conta anche quando sono chiusi, e gli
+  spoiler contano come testo normale. Il conteggio si fa quando si apre
+  il menu: non si aggiorna mentre il menu resta aperto (che è anche
+  l'unico momento in cui non si può scrivere)
 - **Export/backup** (Markdown+CSV, PDF) progettato ma non implementato.
   Decisione già presa con l'utente: **Markdown+CSV come formato
   principale** (il PDF non conserva la struttura, quindi è inadatto al
@@ -849,6 +871,34 @@ README di una riga).
     vero che tenere premuta l'intestazione "Name" non fa niente
     (`NameHeaderCell` non ha gesti): se un giorno servisse, lì
     potrebbero stare "Sort ascending / Sort descending"
+25. (Proposto all'utente un APK di prova installabile accanto all'app
+    vera, per vedere le novità senza toccare le note.) «Quello alla
+    fine, per il momento non mi va di provare ogni volta. Ti ringrazio
+    per il pensiero. Nuova feature. Mettere in fondo alla pagina delle
+    impostazioni della pagina (quella che si apre con i tre pallini in
+    alto a destra) una voce chiamata "X words", con X che di base
+    rappresenta il numero totale delle parole presenti nella pagina
+    (come vedi nella foto la sezione cerchiata in rosso). Poi, toccando
+    quella voce, mi comparirà un'altra mini finestra (come vedi la
+    sezione cerchiata in verde sempre nella foto), o decidi tu come
+    pensi sia meglio farla vedere (se magari allungando quella voce
+    facendone apparire altre sotto, dimmi te poi vediamo se mi piace)
+    che farà vedere sempre quante parole come primissima voce, quante
+    lettere, quanti numeri, quanti caratteri totali (ossia lettere e
+    numeri insieme) senza spazi, quanti caratteri totali (ossia lettere
+    e numeri insieme) con gli spazi, quante linee (ossia in realtà
+    quanti blocchi), quanti caratteri giapponesi, quanti caratteri
+    cinesi e quante lettere coreane sono contenute in quella pagina.
+    Ovviamente queste parole sono quello che ho scritto io manualmente,
+    tranne tutto ciò che riguarda i database (quindi le voci dei
+    database e cose standard che io non scrivo)» — con lo screenshot di
+    un documento Word (appunti di tedesco) dove erano cerchiati il
+    contatore "2652 words" della barra in basso e la finestra "Word
+    Count". **APK di prova: non fatto**, su sua scelta. **Conteggio:
+    fatto**, vedi Cronologia "Pagine — il conteggio del testo"; tre
+    scelte da far confermare: l'elenco che si apre sotto la voce invece
+    di una finestra, i caratteri contati come in Word (punteggiatura
+    compresa), il titolo della pagina escluso
 
 **Cosa è stato fatto:**
 
@@ -951,8 +1001,8 @@ README di una riga).
   e la voce "Theme" in Cronologia). Barrata con la nota "Superato"
 
 **Da verificare sul telefono** (dall'1 al 14 la vista Gallery, il 15
-lo spostamento delle colonne; prima di installare, **copia del
-database**: questa build cambia lo schema):
+lo spostamento delle colonne, il 16 il conteggio del testo; prima di
+installare, **copia del database**: questa build cambia lo schema):
 
 1. **Compila anche sul PC?** In cloud sì (`assembleDebug` riuscito),
    ma con Gradle 8.7 da riga di comando: va confermato in Android
@@ -1002,6 +1052,14 @@ database**: questa build cambia lo schema):
     La finestra di **Edit property** (toccando l'intestazione) **non**
     ha più "Move left" / "Move right": sotto il tipo c'è solo "Delete
     property" (richiesta 23).
+16. **Conteggio del testo** (richiesta 25): in fondo al menu dei tre
+    puntini di una pagina c'è "X words"; toccandola si apre l'elenco,
+    ritoccandola si chiude; il menu scorre. Confrontare i numeri con
+    Word incollandoci lo stesso testo (parole e caratteri dovrebbero
+    coincidere; le righe no, perché qui sono blocchi). Provare una
+    pagina con un toggle chiuso, una tabella, un database dentro (che
+    **non** deve contare), testo giapponese, cinese e coreano. Su un
+    database a schermo intero la voce **non** c'è.
 
 ## Cronologia degli aggiornamenti
 
@@ -1009,6 +1067,69 @@ Le voci nate nelle sessioni cloud stanno qui in cima, la più recente
 per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
+
+**Pagine — il conteggio del testo ("X words")** *(sessione cloud del
+24/09/2026, richiesta 25: compilato e con i test automatici passati,
+**non provato sul telefono**)*
+- **[Nuova funzionalità]** In fondo al menu dei tre puntini di una
+  pagina, dopo "Updates", c'è **"X words"** (col numero nel formato
+  scelto nelle impostazioni: 2.652 o 2,652). **Toccandola si apre lì
+  sotto** l'elenco completo, e ritoccandola si richiude. L'utente
+  lasciava scegliere fra una finestra a parte e l'apertura sul posto:
+  scelta la seconda, perché una finestra sopra il menu, su un telefono,
+  copre proprio il menu da cui si arriva, e per richiuderla serve un
+  tocco in più. Da far confermare all'utente
+- **[Nuova funzionalità]** Le voci, nell'ordine chiesto: **Words,
+  Letters, Numbers, Characters (no spaces), Characters (with spaces),
+  Lines, Japanese characters, Chinese characters, Korean characters**
+  (in italiano: Parole, Lettere, Numeri, Caratteri senza e con spazi,
+  Righe, Caratteri giapponesi, Caratteri cinesi, Lettere coreane — la
+  parola dell'utente). Tutte e nove sempre, anche a zero, come in Word
+- **[Nuova funzionalità]** **Le regole sono quelle della finestra
+  "Word Count" di Word**, che l'utente ha mostrato come modello
+  (`data/TextStats.kt`, `textStatsOf`):
+  - una **parola** è quello che sta fra due spazi, anche "=" o "[]";
+    in cinese e giapponese **ogni carattere è una parola**, perché
+    quelle lingue non separano le parole con gli spazi; il coreano sì,
+    e si conta come l'italiano;
+  - le **lettere** sono quelle degli alfabeti (latino con gli accenti,
+    greco, cirillico...), senza cinese, giapponese e coreano, che hanno
+    le loro voci; i **numeri** sono le cifre, una per una ("2026" fa
+    4), perché l'utente li descriveva come una parte dei caratteri;
+  - i **caratteri** sono tutti i segni scritti, punteggiatura e simboli
+    compresi, come in Word. L'utente li aveva descritti come "lettere e
+    numeri insieme", ma così sarebbero stati solo la somma delle due
+    voci sopra: **scelta da far confermare**. Con gli spazi si contano
+    anche gli spazi (compresi quello "che non va a capo" e quello largo
+    delle lingue asiatiche), non gli a-capo;
+  - **righe** = blocchi con del testo, come ha chiesto l'utente ("in
+    realtà quanti blocchi"): i blocchi vuoti non contano, una tabella
+    conta una volta;
+  - **giapponese o cinese**: gli ideogrammi sono gli stessi, quindi si
+    guarda la riga — se ha almeno un hiragana o katakana, i suoi
+    ideogrammi sono giapponesi, altrimenti cinesi. Il trattino lungo
+    del katakana (ー) conta come giapponese;
+  - si conta per **punti di codice** e non per `Char`, così un'emoji o
+    un ideogramma raro è un carattere solo e non due
+- **[Nuova funzionalità]** **Cosa si conta** (`PageRepository.textStats`):
+  il testo di paragrafi, titoli, elenchi, caselle e toggle, **anche
+  quello dentro i toggle chiusi**, e le celle delle tabelle semplici
+  (solo quelle che si vedono: rimpicciolita una tabella, le celle
+  rimaste fuori non contano). **Non si contano**, come chiesto, i
+  database e tutto quello che l'utente non ha scritto lì: righe e celle
+  dei database, i nomi delle pagine collegate, e **il titolo della
+  pagina** — spesso messo dall'app ("Senza titolo", "Untitled"). Da far
+  confermare all'utente
+- **[Nuova funzionalità]** Per un **database** aperto a schermo intero
+  la voce non c'è: il suo contenuto sono righe, e le righe non si
+  contano. Il menu dei tre puntini ora **scorre**, perché aperto il
+  conteggio le voci sono più di quante stiano su uno schermo basso
+- **[Progetto]** **Primi test automatici del progetto**:
+  `app/src/test/java/com/gabriele/notionlocal/data/TextStatsTest.kt`,
+  quindici casi — italiano con accenti, liste di vocaboli con "[]" e
+  "=", cifre, giapponese con e senza kana, katakana col trattino lungo,
+  cinese, coreano, lingue mescolate, spazi speciali, emoji, a-capo,
+  testo vuoto. Girano senza telefono: `gradle testDebugUnitTest`
 
 **Colonne — spostarle tenendo premuta l'intestazione** *(trovata già
 scritta nel codice arrivato dal PC il 24/09/2026, ma mancava in questo
@@ -3305,6 +3426,10 @@ app/src/main/java/com/gabriele/notionlocal/
 │   └── navigation/ # Routes e NavHost
 ├── viewmodel/      # Un ViewModel per schermata + ViewModelFactory
 └── MainActivity.kt
+
+app/src/test/java/com/gabriele/notionlocal/
+└── data/           # Test automatici senza telefono (dal 24/09/2026:
+                    # TextStatsTest, il conteggio del testo)
 ```
 
 **File chiave da capire per primi**:

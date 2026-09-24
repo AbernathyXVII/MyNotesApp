@@ -10,7 +10,18 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.TextFields
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.gabriele.notionlocal.data.TextStats
+import com.gabriele.notionlocal.ui.format.Formats
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
@@ -82,7 +93,14 @@ fun PageOptionsSheet(
      * (dopo "Turn into page"): lo rimette dentro la pagina che lo
      * richiama. Null altrove, e allora la voce non c'è.
      */
-    onTurnIntoDatabase: (() -> Unit)? = null
+    onTurnIntoDatabase: (() -> Unit)? = null,
+    /**
+     * Quanto testo c'è nella pagina, per la voce "X words" in fondo.
+     * Null per i database — il loro contenuto sono righe, e le righe non
+     * si contano — e per il breve istante in cui il conteggio si sta
+     * facendo: la voce compare quando c'è il numero.
+     */
+    textStats: TextStats? = null
 ) {
     val isRoot = page.id == PageEntity.ROOT_PAGE_ID
 
@@ -91,9 +109,12 @@ fun PageOptionsSheet(
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = DarkSheet
     ) {
+        // Scorre: aperto il conteggio del testo, le voci sono più di
+        // quante ne stiano su uno schermo basso.
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp)
                 .navigationBarsPadding()
         ) {
@@ -207,8 +228,86 @@ fun PageOptionsSheet(
                 )
             }
 
+            // **Il conteggio del testo**, in fondo come l'ha chiesto
+            // l'utente e come sta su Notion. Chiuso dice solo le parole,
+            // che è quello che si cerca quasi sempre; toccandolo si apre
+            // **lì sotto** il resto, come la finestra "Word Count" di
+            // Word. Sotto e non in una finestra nuova: una finestra sopra
+            // un'altra finestra, su un telefono, copre proprio il menu da
+            // cui si arriva, e per richiuderla servirebbe un tocco in più.
+            if (textStats != null) {
+                var statsOpen by remember { mutableStateOf(false) }
+                Spacer(modifier = Modifier.size(12.dp))
+                OptionsGroup {
+                    OptionRow(
+                        icon = Icons.Filled.TextFields,
+                        label = Strings.wordCount(textStats.words),
+                        trailing = {
+                            Icon(
+                                imageVector = if (statsOpen) {
+                                    Icons.Filled.KeyboardArrowUp
+                                } else {
+                                    Icons.Filled.KeyboardArrowDown
+                                },
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        },
+                        onClick = { statsOpen = !statsOpen }
+                    )
+                    if (statsOpen) {
+                        HorizontalDivider()
+                        // Nell'ordine chiesto dall'utente: le parole per
+                        // prime, anche se si leggono già sulla voce sopra.
+                        Column(modifier = Modifier.padding(vertical = 6.dp)) {
+                            StatRow(Strings.statWords, textStats.words)
+                            StatRow(Strings.statLetters, textStats.letters)
+                            StatRow(Strings.statNumbers, textStats.digits)
+                            StatRow(Strings.statCharactersNoSpaces, textStats.charactersNoSpaces)
+                            StatRow(Strings.statCharactersWithSpaces, textStats.charactersWithSpaces)
+                            StatRow(Strings.statLines, textStats.lines)
+                            StatRow(Strings.statJapanese, textStats.japanese)
+                            StatRow(Strings.statChinese, textStats.chinese)
+                            StatRow(Strings.statKorean, textStats.korean)
+                        }
+                    }
+                }
+            }
+
             Spacer(modifier = Modifier.size(16.dp))
         }
+    }
+}
+
+/**
+ * Una riga del conteggio del testo: il nome a sinistra, il numero a
+ * destra, come nella finestra di Word. Rientrata fin sotto il testo della
+ * voce "X words", così si legge come il suo contenuto e non come altre
+ * voci del menu; il numero segue il formato scelto nelle impostazioni
+ * (1.000 o 1,000).
+ */
+@Composable
+private fun StatRow(label: String, value: Int) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 52.dp, end = 16.dp, top = 6.dp, bottom = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f)
+        )
+        Spacer(modifier = Modifier.size(12.dp))
+        Text(
+            text = Formats.number(value.toString()),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }
 

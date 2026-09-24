@@ -2,6 +2,8 @@ package com.gabriele.notionlocal.data.repository
 
 import androidx.room.withTransaction
 import com.gabriele.notionlocal.data.AppDatabase
+import com.gabriele.notionlocal.data.TextStats
+import com.gabriele.notionlocal.data.textStatsOf
 import com.gabriele.notionlocal.data.entity.BlockEntity
 import com.gabriele.notionlocal.data.entity.BlockType
 import com.gabriele.notionlocal.data.entity.PageEditEntity
@@ -57,6 +59,57 @@ class PageRepository(private val db: AppDatabase) {
         pageDao.getChildPages(parentId)
 
     suspend fun getPage(pageId: String): PageEntity? = pageDao.getById(pageId)
+
+    /**
+     * Quanto testo ha scritto l'utente in una pagina: la voce "X words"
+     * del menu dei tre puntini. Le regole del conteggio stanno in
+     * `TextStats`; qui si decide **che cosa** si conta.
+     *
+     * Si conta il testo dei blocchi — paragrafi, titoli, elenchi, caselle,
+     * toggle **e quello che c'è dentro ai toggle**, anche chiusi — e
+     * quello delle celle delle tabelle semplici. Resta fuori tutto quello
+     * che l'utente non ha scritto in questa pagina, come ha chiesto:
+     *  - **i database**, righe e celle comprese: sono un'altra cosa, anche
+     *    quando stanno dentro la pagina;
+     *  - i blocchi che rimandano a un'altra pagina o a un database: il
+     *    nome che mostrano è quello dell'altra pagina;
+     *  - **il titolo della pagina**: non è nel corpo del testo, e spesso
+     *    non l'ha scritto nessuno — le pagine nuove nascono con un nome
+     *    messo dall'app ("Senza titolo", "Untitled").
+     *
+     * Una "riga" è un blocco con del testo, come ha chiesto l'utente
+     * ("in realtà quanti blocchi"): i blocchi vuoti non contano, e una
+     * tabella conta una volta sola, qualunque sia il numero di celle.
+     * Delle tabelle si guardano solo le celle che si vedono: rimpicciolita
+     * una tabella, le celle rimaste fuori restano salvate ma non si
+     * leggono più.
+     */
+    suspend fun textStats(pageId: String): TextStats {
+        var total = TextStats()
+        for (block in blockDao.getBlocksForPageOnce(pageId)) {
+            when (block.type) {
+                BlockType.TABLE -> {
+                    val cells = tableCellDao.getCellsForBlockOnce(block.id).filter {
+                        it.rowIndex < block.tableRows &&
+                            it.colIndex < block.tableCols &&
+                            it.text.isNotBlank()
+                    }
+                    if (cells.isEmpty()) continue
+                    total += cells.fold(TextStats()) { sum, cell -> sum + textStatsOf(cell.text) }
+                        .copy(lines = 1)
+                }
+                BlockType.PAGE_LINK, BlockType.DATABASE_LINK, BlockType.DIVIDER -> Unit
+                else -> {
+                    val text = runCatching {
+                        json.decodeFromString<List<RichTextSpan>>(block.textJson)
+                    }.getOrNull()?.plainText().orEmpty()
+                    if (text.isBlank()) continue
+                    total += textStatsOf(text).copy(lines = 1)
+                }
+            }
+        }
+        return total
+    }
 
     /** La pagina seguita nel tempo: vedi `PageDao.observeById`. */
     fun observePage(pageId: String): Flow<PageEntity?> = pageDao.observeById(pageId)

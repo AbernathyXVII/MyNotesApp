@@ -2,6 +2,7 @@ package com.gabriele.notionlocal.ui.i18n
 
 import com.gabriele.notionlocal.data.settings.AppLanguage
 import com.gabriele.notionlocal.data.settings.AppSettings
+import com.gabriele.notionlocal.ui.format.Formats
 
 /**
  * Le voci dell'app nelle otto lingue delle impostazioni.
@@ -61,6 +62,29 @@ object Strings {
     val lockView get() = t("Lock view", "Blocca la vista", "Ansicht sperren", "Verrouiller la vue", "Bloquear vista", "锁定视图", "보기 잠금", "ビューをロック")
     val lockPage get() = t("Lock page", "Blocca la pagina", "Seite sperren", "Verrouiller la page", "Bloquear página", "锁定页面", "페이지 잠금", "ページをロック")
     val updates get() = t("Updates", "Modifiche", "Änderungen", "Modifications", "Cambios", "更新记录", "변경 내역", "更新履歴")
+
+    // --- Conteggio del testo, in fondo al menu dei tre puntini ---
+
+    /** "2.652 words": il numero col separatore delle migliaia scelto nelle impostazioni. */
+    fun wordCount(n: Int): String {
+        val number = Formats.number(n.toString())
+        return if (n == 1) {
+            t("1 word", "1 parola", "1 Wort", "1 mot", "1 palabra", "1 个词", "단어 1개", "1 語")
+        } else {
+            t("$number words", "$number parole", "$number Wörter", "$number mots", "$number palabras", "$number 个词", "단어 ${number}개", "$number 語")
+        }
+    }
+    val statWords get() = t("Words", "Parole", "Wörter", "Mots", "Palabras", "词数", "단어", "単語数")
+    val statLetters get() = t("Letters", "Lettere", "Buchstaben", "Lettres", "Letras", "字母", "알파벳", "アルファベット")
+    val statNumbers get() = t("Numbers", "Numeri", "Ziffern", "Chiffres", "Números", "数字", "숫자", "数字")
+    val statCharactersNoSpaces get() = t("Characters (no spaces)", "Caratteri (senza spazi)", "Zeichen (ohne Leerzeichen)", "Caractères (sans espaces)", "Caracteres (sin espacios)", "字符数（不计空格）", "문자 수(공백 제외)", "文字数（スペースを含めない）")
+    val statCharactersWithSpaces get() = t("Characters (with spaces)", "Caratteri (con spazi)", "Zeichen (mit Leerzeichen)", "Caractères (avec espaces)", "Caracteres (con espacios)", "字符数（计空格）", "문자 수(공백 포함)", "文字数（スペースを含める）")
+    val statLines get() = t("Lines", "Righe", "Zeilen", "Lignes", "Líneas", "行数", "줄", "行数")
+    val statJapanese get() = t("Japanese characters", "Caratteri giapponesi", "Japanische Zeichen", "Caractères japonais", "Caracteres japoneses", "日文字符", "일본어 문자", "日本語の文字")
+    val statChinese get() = t("Chinese characters", "Caratteri cinesi", "Chinesische Zeichen", "Caractères chinois", "Caracteres chinos", "中文字符", "중국어 문자", "中国語の文字")
+    // "Lettere coreane" è la parola dell'utente: l'hangul si scrive per
+    // sillabe, ma per chi lo studia ognuna è una lettera.
+    val statKorean get() = t("Korean characters", "Lettere coreane", "Koreanische Zeichen", "Caractères coréens", "Caracteres coreanos", "韩文字符", "한글 글자", "韓国語の文字")
     val noOtherPage get() = t(
         "There is no other page to move it into.",
         "Non c'è un'altra pagina in cui spostarla.",
