@@ -120,6 +120,18 @@ interface PageDao {
     suspend fun setIconImage(pageId: String, fileName: String?)
 
     /**
+     * Solo il titolo, da "Rename" nel menu di un blocco: la pagina
+     * rinominata può essere aperta anche altrove, e riscriverla intera
+     * rimetterebbe indietro quello che è cambiato lì.
+     */
+    @Query("UPDATE pages SET title = :title, updatedAt = :at WHERE id = :pageId")
+    suspend fun setTitle(pageId: String, title: String, at: Long)
+
+    /** Database semplice o no (`PageEntity.isSimpleDatabase`). Una colonna sola, come sopra. */
+    @Query("UPDATE pages SET isSimpleDatabase = :simple WHERE id = :pageId")
+    suspend fun setSimpleDatabase(pageId: String, simple: Boolean)
+
+    /**
      * Le pagine dentro cui se ne può spostare un'altra.
      *
      * Niente database: il loro contenuto sono righe, non blocchi, e un

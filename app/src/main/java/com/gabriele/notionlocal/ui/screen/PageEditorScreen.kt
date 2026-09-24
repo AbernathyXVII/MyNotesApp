@@ -81,6 +81,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.material.icons.filled.DragIndicator
+import kotlinx.coroutines.flow.flowOf
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -911,6 +914,10 @@ fun PageEditorScreen(
     var colorOnBackground by remember { mutableStateOf(false) }
     var lastPickedHex by remember { mutableStateOf<String?>(null) }
 
+    // Il menu del blocco (sei puntini): su quale blocco è aperto. Vedi
+    // `BlockActionsHost`, che si occupa di tutto il resto.
+    var blockMenuFor by remember { mutableStateOf<String?>(null) }
+
     // Il menu dei tre puntini e le due cose che può aprire.
     var showPageOptions by remember { mutableStateOf(false) }
     var moveDestinations by remember { mutableStateOf<List<PageEntity>?>(null) }
@@ -965,6 +972,20 @@ fun PageEditorScreen(
 
     val isRootPage = pageId == PageEntity.ROOT_PAGE_ID
     var confirmDeleteForever by remember { mutableStateOf(false) }
+
+    // Il menu del blocco aperto **senza la barra**: tenendo premuto un
+    // collegamento a una pagina, o dai sei puntini di un database dentro
+    // la pagina — righe in cui il cursore non entra. Su una pagina
+    // bloccata o nel cestino non c'è, come non c'è la barra: quasi tutte
+    // le sue voci cambiano la pagina.
+    val openBlockMenu: ((String) -> Unit)? = if (readOnlyPage) {
+        null
+    } else {
+        { id ->
+            focusManager.clearFocus()
+            blockMenuFor = id
+        }
+    }
 
     val onFocusChangedCallback: (String, Boolean) -> Unit = { id, focused ->
         if (focused) {
@@ -1513,7 +1534,8 @@ fun PageEditorScreen(
                             formatRequest = formatRequest,
                             onFocusChanged = onFocusChangedCallback,
                             onNavigateToPage = onNavigateToPage,
-                            onNavigateToDatabase = onNavigateToDatabase
+                            onNavigateToDatabase = onNavigateToDatabase,
+                            onOpenBlockMenu = openBlockMenu
                         )
                     }
                 }
@@ -1632,6 +1654,21 @@ fun PageEditorScreen(
                             )
                         }
                     } else {
+                        // **Il menu del blocco**, coi sei puntini di
+                        // Notion: per la riga in cui sta il cursore. Il
+                        // cursore si spegne prima di aprirlo — la
+                        // tastiera se ne andrebbe comunque sotto la
+                        // finestra, e una riga che "Turn into" fa
+                        // sparire non deve morire col fuoco dentro, che è
+                        // il modo in cui l'app si chiudeva.
+                        BarButton(onClick = {
+                            focusedBlock?.let { block ->
+                                focusManager.clearFocus()
+                                blockMenuFor = block.id
+                            }
+                        }) {
+                            Icon(Icons.Filled.DragIndicator, contentDescription = EditorStrings.blockOptions, tint = NotionWhite, modifier = Modifier.size(BAR_ICON_SIZE))
+                        }
                         BarButton(onClick = { focusedBlock?.let { viewModel.outdentBlock(it) } }) {
                             Icon(Icons.Filled.FormatIndentDecrease, contentDescription = EditorStrings.outdent, tint = NotionWhite, modifier = Modifier.size(BAR_ICON_SIZE))
                         }
@@ -1860,6 +1897,45 @@ fun PageEditorScreen(
                 lastPickedHex = hex ?: lastPickedHex
                 viewModel.applyCapturedColor(colorOnBackground, hex)
             }
+        )
+    }
+
+    // --- Il menu del blocco (sei puntini) ---
+    //
+    // "Turn into" fa quello che fa la stessa voce dei menu "/" e "+", con
+    // due differenze che vengono dal punto da cui si parte: la riga ha già
+    // del testo, e non lo si deve perdere — diventa il nome della pagina o
+    // del database, la prima cella della tabella, la riga sotto il
+    // divisore — e si resta qui invece di entrare nella pagina nuova, come
+    // su Notion.
+    val applyTurnInto: (BlockEntity, SlashEntry) -> Unit = { block, entry ->
+        val text = viewModel.plainTextOf(block)
+        when (val action = entry.action) {
+            is SlashAction.Type -> if (action.type == BlockType.TABLE) {
+                viewModel.convertToTableKeepingText(block)
+            } else {
+                viewModel.updateBlockType(block, action.type)
+            }
+            SlashAction.PageLink -> viewModel.convertToPageLink(block, title = text) {}
+            SlashAction.Divider -> viewModel.convertToDividerAndFocusNext(block, keepText = true)
+            is SlashAction.Database ->
+                viewModel.convertToDatabaseLink(block, simple = action.simple, title = text) { databaseId ->
+                    action.layout?.let { viewModel.setDatabaseLayout(databaseId, it) }
+                }
+            SlashAction.NotYet -> Unit
+        }
+    }
+
+    blockMenuFor?.let { id ->
+        BlockActionsHost(
+            blockId = id,
+            blocks = blocks,
+            viewModel = viewModel,
+            factory = factory,
+            imageStore = imageStore,
+            onTurnInto = applyTurnInto,
+            onNavigateToDatabase = onNavigateToDatabase,
+            onDismiss = { blockMenuFor = null }
         )
     }
 
@@ -2581,7 +2657,7 @@ private fun slashMatchRank(label: String, query: String): Int? = when {
 }
 
 /** Le tre famiglie del menu "/", nell'ordine in cui si vedono. */
-private enum class SlashCategory(val title: String) {
+internal enum class SlashCategory(val title: String) {
     BASIC("Basic blocks"),
     MEDIA("Media"),
     DATABASE("Database")
@@ -2592,7 +2668,7 @@ private enum class SlashCategory(val title: String) {
  * Le viste dei database creano un database dentro la pagina e gli
  * mettono subito la vista giusta, che è l'unica differenza fra loro.
  */
-private sealed class SlashAction {
+internal sealed class SlashAction {
     data class Type(val type: BlockType) : SlashAction()
     object PageLink : SlashAction()
     object Divider : SlashAction()
@@ -2602,7 +2678,7 @@ private sealed class SlashAction {
     object NotYet : SlashAction()
 }
 
-private data class SlashEntry(
+internal data class SlashEntry(
     val label: String,
     val category: SlashCategory,
     val action: SlashAction,
@@ -2626,7 +2702,7 @@ private data class SlashEntry(
  * database, per dire) vale la regola opposta, perché lì l'utente non
  * sta scegliendo da un catalogo ma cercando un comando.
  */
-private val SLASH_ENTRIES: List<SlashEntry> = listOf(
+internal val SLASH_ENTRIES: List<SlashEntry> = listOf(
     SlashEntry("Text", SlashCategory.BASIC, SlashAction.Type(BlockType.PARAGRAPH), Icons.Filled.Notes),
     SlashEntry(
         "Bulleted list",
@@ -4096,7 +4172,9 @@ private fun BlockRow(
     formatRequest: Pair<String, FormatType>?,
     onFocusChanged: (String, Boolean) -> Unit,
     onNavigateToPage: (String) -> Unit,
-    onNavigateToDatabase: (String) -> Unit
+    onNavigateToDatabase: (String) -> Unit,
+    /** Apre il menu del blocco (sei puntini) su un blocco. Null su una pagina bloccata. */
+    onOpenBlockMenu: ((String) -> Unit)? = null
 ) {
     if (block.type == BlockType.TABLE) {
         TableBlockContent(block = block, depth = depth, viewModel = viewModel)
@@ -4117,6 +4195,9 @@ private fun BlockRow(
             onOpenRowPage = onNavigateToPage,
             onOpenFullPage = { onNavigateToDatabase(databasePageId) },
             onDelete = { confirmDatabaseDeletion = true },
+            // I sei puntini nella riga degli strumenti: il menu del
+            // blocco, con in cima le voci del database.
+            onOpenBlockMenu = onOpenBlockMenu?.let { open -> { open(block.id) } },
             // "Turn into page": il blocco diventa un collegamento e il
             // database si apre subito a schermo intero, che è come lo si
             // vedrà da qui in poi. Per rimetterlo dentro la pagina c'è
@@ -4156,7 +4237,8 @@ private fun BlockRow(
             depth = depth,
             viewModel = viewModel,
             onNavigateToPage = onNavigateToPage,
-            onNavigateToDatabase = onNavigateToDatabase
+            onNavigateToDatabase = onNavigateToDatabase,
+            onLongPress = onOpenBlockMenu?.let { open -> { open(block.id) } }
         )
         return
     }
@@ -4648,7 +4730,8 @@ private fun BlockRow(
                         formatRequest = formatRequest,
                         onFocusChanged = onFocusChanged,
                         onNavigateToPage = onNavigateToPage,
-                        onNavigateToDatabase = onNavigateToDatabase
+                        onNavigateToDatabase = onNavigateToDatabase,
+                        onOpenBlockMenu = onOpenBlockMenu
                     )
                 }
             }
@@ -4815,20 +4898,45 @@ private object LeadOffsetMapping : OffsetMapping {
     override fun transformedToOriginal(offset: Int): Int = offset + RUN_LEAD.length
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun PageLinkBlockContent(
     block: BlockEntity,
     depth: Int,
     viewModel: PageEditorViewModel,
     onNavigateToPage: (String) -> Unit,
-    onNavigateToDatabase: (String) -> Unit
+    onNavigateToDatabase: (String) -> Unit,
+    /** Il dito tenuto sul collegamento: apre il menu del blocco. Null su una pagina bloccata. */
+    onLongPress: (() -> Unit)? = null
 ) {
     val linkedPageId = block.linkedPageId
-    var linkedPage by remember(linkedPageId) { mutableStateOf<PageEntity?>(null) }
+    // **Seguita nel tempo, non letta una volta sola.** Prima il nome e
+    // l'icona si leggevano all'apertura e restavano quelli: andava bene
+    // finché si potevano cambiare solo da dentro la pagina collegata, ma
+    // "Rename" ed "Edit icon" del menu del blocco li cambiano da qui, e
+    // la riga deve mostrarli subito.
+    val linkedPage by remember(linkedPageId) {
+        if (linkedPageId != null) viewModel.observePageInfo(linkedPageId) else flowOf(null)
+    }.collectAsStateWithLifecycle(initialValue = null)
 
-    LaunchedEffect(linkedPageId) {
-        if (linkedPageId != null) {
-            linkedPage = viewModel.getPageInfo(linkedPageId)
+    // Il colore dato dal menu del blocco ("Color"): sta in uno span vuoto
+    // del collegamento, vedi `PageEditorViewModel.colorWholeBlock`.
+    val linkSpan = viewModel.spansOf(block).firstOrNull()
+    val nameColor = hexToColor(linkSpan?.color) ?: NotionWhite
+    val nameBackground = hexToColor(linkSpan?.background)
+
+    val open: () -> Unit = {
+        linkedPageId?.let { id ->
+            // Un collegamento può puntare anche a un **database**: è
+            // quello che lascia "Turn into page". Aprirlo come pagina
+            // di testo mostrerebbe un foglio vuoto al posto delle
+            // righe, quindi conta cosa c'è dall'altra parte, non solo
+            // il tipo del blocco.
+            if (block.type == BlockType.DATABASE_LINK || linkedPage?.isDatabase == true) {
+                onNavigateToDatabase(id)
+            } else {
+                onNavigateToPage(id)
+            }
         }
     }
 
@@ -4836,19 +4944,11 @@ private fun PageLinkBlockContent(
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = PAGE_SIDE_PADDING + (depth * 20).dp, end = PAGE_SIDE_PADDING, top = 4.dp, bottom = 4.dp)
-            .clickable(enabled = linkedPageId != null) {
-                val id = linkedPageId ?: return@clickable
-                // Un collegamento può puntare anche a un **database**: è
-                // quello che lascia "Turn into page". Aprirlo come pagina
-                // di testo mostrerebbe un foglio vuoto al posto delle
-                // righe, quindi conta cosa c'è dall'altra parte, non solo
-                // il tipo del blocco.
-                if (block.type == BlockType.DATABASE_LINK || linkedPage?.isDatabase == true) {
-                    onNavigateToDatabase(id)
-                } else {
-                    onNavigateToPage(id)
-                }
-            },
+            .combinedClickable(
+                enabled = linkedPageId != null,
+                onClick = open,
+                onLongClick = onLongPress
+            ),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (block.type == BlockType.DATABASE_LINK) {
@@ -4893,12 +4993,21 @@ private fun PageLinkBlockContent(
         // Il nome della pagina collegata si scrive col font e il corpo di
         // questa pagina: è una riga del suo testo, e con un corpo grande
         // resterebbe l'unica piccola.
-        Text(
-            text = linkedPage?.title?.ifBlank { Strings.untitled } ?: Strings.untitled,
-            color = NotionWhite,
-            style = LocalPageTypography.current.apply(MaterialTheme.typography.bodyLarge),
-            modifier = Modifier.weight(1f)
-        )
+        Box(modifier = Modifier.weight(1f)) {
+            Text(
+                text = linkedPage?.title?.ifBlank { Strings.untitled } ?: Strings.untitled,
+                color = nameColor,
+                style = LocalPageTypography.current.apply(MaterialTheme.typography.bodyLarge),
+                modifier = if (nameBackground != null) {
+                    Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(nameBackground)
+                        .padding(horizontal = 4.dp)
+                } else {
+                    Modifier
+                }
+            )
+        }
         IconButton(onClick = { viewModel.deleteBlock(block) }, modifier = Modifier.size(28.dp)) {
             Icon(
                 Icons.Filled.Delete,

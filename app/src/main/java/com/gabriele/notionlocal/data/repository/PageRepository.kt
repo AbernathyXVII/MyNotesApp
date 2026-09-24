@@ -19,6 +19,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.util.UUID
 
@@ -575,6 +576,14 @@ class PageRepository(private val db: AppDatabase) {
         pageId: String,
         target: DuplicateTarget,
         titleSuffix: String,
+        /**
+         * Il collegamento accanto a cui mettere la copia, per
+         * `NextToOriginal`: quello su cui si è aperto il menu del blocco.
+         * Null dal menu dei tre puntini, dove si usa il primo che si trova
+         * — una pagina di solito ne ha uno solo, ma se ne ha due la copia
+         * deve nascere sotto quello toccato, non sotto l'altro.
+         */
+        besideLinkBlockId: String? = null,
         copyImage: suspend (String) -> String?
     ): String? {
         if (pageId == PageEntity.ROOT_PAGE_ID) return null
@@ -601,7 +610,10 @@ class PageRepository(private val db: AppDatabase) {
                 null
             }
             val sourceLink = if (destinationPageId == null && sourceRow == null) {
-                blockDao.getBlocksLinkingTo(pageId).firstOrNull()
+                besideLinkBlockId
+                    ?.let { blockDao.getById(it) }
+                    ?.takeIf { it.linkedPageId == pageId }
+                    ?: blockDao.getBlocksLinkingTo(pageId).firstOrNull()
             } else {
                 null
             }
@@ -653,6 +665,66 @@ class PageRepository(private val db: AppDatabase) {
             }
             copyId
         }
+    }
+
+    /**
+     * "Duplicate" dal menu di un blocco: una copia della riga subito sotto
+     * di lei, con lo stesso tipo, testo, colori, rientro e spunta.
+     *
+     * Un toggle si copia **coi suoi figli**, e una tabella con le sue
+     * celle, che stanno in una tabella a parte. Se dentro un toggle c'è il
+     * collegamento a una sottopagina o un database, anche quelli si
+     * copiano, come fa "Duplicate" di una pagina: due collegamenti alla
+     * stessa sottopagina non sarebbero una copia, scrivere in una
+     * cambierebbe anche l'altra.
+     *
+     * Restituisce l'id della copia, o null se il blocco non c'è più.
+     */
+    suspend fun duplicateBlock(blockId: String, copyImage: suspend (String) -> String?): String? {
+        val original = blockDao.getById(blockId) ?: return null
+        return db.withTransaction {
+            blockDao.shiftOrderIndexes(
+                original.pageId,
+                original.parentBlockId,
+                original.orderIndex + 1,
+                1
+            )
+            copyBlockTree(
+                block = original,
+                parentBlockId = original.parentBlockId,
+                orderIndex = original.orderIndex + 1,
+                copies = mutableMapOf(),
+                copyImage = copyImage
+            )
+        }
+    }
+
+    /** Un blocco e, sotto, i suoi figli: vedi `duplicateBlock`. Dentro una transazione. */
+    private suspend fun copyBlockTree(
+        block: BlockEntity,
+        parentBlockId: String?,
+        orderIndex: Int,
+        copies: MutableMap<String, String>,
+        copyImage: suspend (String) -> String?
+    ): String {
+        val copyId = UUID.randomUUID().toString()
+        blockDao.insert(
+            block.copy(
+                id = copyId,
+                parentBlockId = parentBlockId,
+                orderIndex = orderIndex,
+                linkedPageId = block.linkedPageId?.let { copyLinkedPage(it, copies, copyImage) }
+            )
+        )
+        if (block.type == BlockType.TABLE) {
+            tableCellDao.getCellsForBlockOnce(block.id).forEach { cell ->
+                tableCellDao.insertCell(cell.copy(id = UUID.randomUUID().toString(), blockId = copyId))
+            }
+        }
+        blockDao.getChildren(block.id).sortedBy { it.orderIndex }.forEach { child ->
+            copyBlockTree(child, copyId, child.orderIndex, copies, copyImage)
+        }
+        return copyId
     }
 
     /**
@@ -1014,7 +1086,16 @@ class PageRepository(private val db: AppDatabase) {
      * menu "/" aveva ancora dentro il comando appena tolto — il divisore
      * si teneva addosso il suo "/d", invisibile ma nel database.
      */
-    suspend fun turnIntoDividerWithLineBelow(blockId: String, newBlockId: String) =
+    suspend fun turnIntoDividerWithLineBelow(
+        blockId: String,
+        newBlockId: String,
+        /**
+         * Il testo che scende nella riga nuova, da "Turn into" nel menu del
+         * blocco: il divisore non lo mostra, e lì sarebbe sparito alla
+         * vista. Null dal menu "/", dove la riga è vuota.
+         */
+        carriedTextJson: String? = null
+    ) =
         db.withTransaction {
             val current = blockDao.getById(blockId) ?: return@withTransaction
             blockDao.setType(current.id, BlockType.DIVIDER)
@@ -1024,9 +1105,13 @@ class PageRepository(private val db: AppDatabase) {
                     id = newBlockId,
                     pageId = current.pageId,
                     parentBlockId = current.parentBlockId,
-                    orderIndex = current.orderIndex + 1
+                    orderIndex = current.orderIndex + 1,
+                    textJson = carriedTextJson ?: "[]"
                 )
             )
+            if (carriedTextJson != null) {
+                blockDao.setText(current.id, json.encodeToString(listOf(RichTextSpan(text = ""))))
+            }
         }
 
     /**
@@ -1092,6 +1177,18 @@ class PageRepository(private val db: AppDatabase) {
      * avrebbe righe col genitore sbagliato.
      */
     suspend fun unnestAndConvert(blockId: String, newType: BlockType) = db.withTransaction {
+        unnestChildren(blockId)
+        blockDao.setType(blockId, newType)
+    }
+
+    /**
+     * Solo la prima metà di `unnestAndConvert`: i figli escono, il tipo
+     * resta. Serve prima delle trasformazioni che non sono un semplice
+     * cambio di tipo — in pagina, in database, in tabella, in divisore —
+     * dove i figli di un toggle sarebbero rimasti appesi a un blocco che
+     * non li mostra, spariti alla vista.
+     */
+    suspend fun unnestChildren(blockId: String) = db.withTransaction {
         val block = blockDao.getById(blockId) ?: return@withTransaction
         val children = blockDao.getChildren(blockId)
         if (children.isNotEmpty()) {
@@ -1110,7 +1207,6 @@ class PageRepository(private val db: AppDatabase) {
                 )
             }
         }
-        blockDao.setType(blockId, newType)
     }
 
     suspend fun deleteBlock(block: BlockEntity) = blockDao.delete(block)
@@ -1143,6 +1239,82 @@ class PageRepository(private val db: AppDatabase) {
     suspend fun isShownAsPage(databasePageId: String): Boolean =
         blockDao.countLinks(databasePageId, BlockType.PAGE_LINK) > 0
 
+    /**
+     * "Turn into database" dal menu di un blocco: **quel** collegamento
+     * torna a mostrare il database dentro la pagina. A differenza della
+     * voce dei tre puntini (`turnPageLinksIntoDatabase`) gli altri
+     * collegamenti allo stesso database, se ce ne sono, restano come sono:
+     * si è scelto un blocco, non il database.
+     */
+    suspend fun turnPageLinkIntoDatabase(blockId: String) =
+        blockDao.setType(blockId, BlockType.DATABASE_LINK)
+
+    /**
+     * "Rename" dal menu di un blocco: cambia solo il titolo. Se la pagina
+     * è quella di una riga, cambia anche il nome della riga, come quando
+     * la si rinomina da dentro (vedi `updatePage`).
+     */
+    suspend fun renamePage(pageId: String, title: String) {
+        val now = System.currentTimeMillis()
+        db.withTransaction {
+            pageDao.setTitle(pageId, title, now)
+            db.databaseDao().setRowTitleByLinkedPage(pageId, title, now)
+        }
+    }
+
+    /**
+     * Quante pagine delle righe di un database hanno qualcosa dentro —
+     * del testo, un blocco che non sia una riga vuota, un'icona, una
+     * copertina. È quello che "Turn into simple database" butterebbe via
+     * per sempre: una pagina di riga mai scritta non conta, perde solo il
+     * nome, che resta alla riga.
+     */
+    suspend fun countRowPagesWithContent(databasePageId: String): Int =
+        db.databaseDao().getRowsForPageOnce(databasePageId)
+            .mapNotNull { it.linkedPageId }
+            .distinct()
+            .count { rowPageId ->
+                val page = pageDao.getById(rowPageId) ?: return@count false
+                page.iconImage != null || page.coverImage != null ||
+                    blockDao.getBlocksForPageOnce(rowPageId).any { block ->
+                        block.type != BlockType.PARAGRAPH || runCatching {
+                            json.decodeFromString<List<RichTextSpan>>(block.textJson)
+                        }.getOrNull()?.plainText().orEmpty().isNotBlank()
+                    }
+            }
+
+    /**
+     * "Turn into simple database": le righe tornano solo testo, e **le
+     * loro pagine si cancellano per sempre**, con quello che c'è dentro —
+     * non nel cestino: una pagina di riga nel cestino non avrebbe più una
+     * riga a cui tornare, perché le righe di un database semplice non ne
+     * hanno. Nome e proprietà delle righe restano.
+     *
+     * Restituisce i file immagine da togliere dalla cartella, come
+     * `deletePermanently`.
+     */
+    suspend fun turnIntoSimpleDatabase(databasePageId: String): List<String> {
+        val databaseDao = db.databaseDao()
+        return db.withTransaction {
+            val rowPages = databaseDao.getRowsForPageOnce(databasePageId)
+                .mapNotNull { it.linkedPageId }
+                .distinct()
+            val files = rowPages.flatMap { deletePermanently(it) }
+            databaseDao.unlinkRowPages(databasePageId)
+            pageDao.setSimpleDatabase(databasePageId, true)
+            files
+        }
+    }
+
+    /**
+     * "Turn into complex database": le righe tornano a essere pagine.
+     * Ognuna nasce la prima volta che la si apre, come in ogni altro
+     * database (`ensureRowPage`), e da subito compare nella barra laterale
+     * sotto il database.
+     */
+    suspend fun turnIntoComplexDatabase(databasePageId: String) =
+        pageDao.setSimpleDatabase(databasePageId, false)
+
     /** Apre o chiude un toggle, senza riscriverne il testo. */
     suspend fun setBlockExpanded(blockId: String, expanded: Boolean) =
         blockDao.setExpanded(blockId, expanded)
@@ -1155,9 +1327,28 @@ class PageRepository(private val db: AppDatabase) {
     suspend fun setIndentLevel(blockId: String, level: Int) =
         blockDao.setIndentLevel(blockId, level)
 
+    /**
+     * Rimette la pagina com'era in una foto dei suoi blocchi: è quello che
+     * fanno Annulla e Ripristina.
+     *
+     * **Le celle delle tabelle si salvano da parte e si rimettono.** I
+     * blocchi si cancellano tutti e si riscrivono, e le celle sono legate
+     * al loro blocco con `CASCADE`: cancellando la tabella il database
+     * portava via anche il suo testo. Un Annulla qualsiasi — anche di una
+     * lettera scritta tre righe più su — svuotava ogni tabella della
+     * pagina. Trovato il 24/09/2026 leggendo il codice. Le celle tornano
+     * solo per le tabelle che ci sono ancora nella foto; il loro testo
+     * resta quello di adesso, perché Annulla non lo segue (vedi
+     * `PageEditorViewModel`, "Annulla / Ripristina").
+     */
     suspend fun replaceAllBlocks(pageId: String, blocks: List<BlockEntity>) {
-        blockDao.deleteAllForPage(pageId)
-        blockDao.insertAll(blocks)
+        db.withTransaction {
+            val keptIds = blocks.map { it.id }.toSet()
+            val cells = tableCellDao.getCellsForPageOnce(pageId).filter { it.blockId in keptIds }
+            blockDao.deleteAllForPage(pageId)
+            blockDao.insertAll(blocks)
+            cells.forEach { tableCellDao.insertCell(it) }
+        }
     }
 
     // --- Celle delle tabelle semplici (blocchi TABLE) ---

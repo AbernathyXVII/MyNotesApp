@@ -106,6 +106,12 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         // che l'ultima battuta faccia il giro fino al database e torni
         // indietro. Vedi `PageRepository.recordEditAfterSettling`.
         private const val EDIT_SETTLE_MS = 400L
+
+        // Il testo di una riga vuota, come lo scrive il resto dell'app:
+        // uno span senza lettere. Serve a svuotare una riga il cui testo è
+        // andato altrove (nel nome di una pagina, nella prima cella di una
+        // tabella).
+        private const val EMPTY_TEXT_JSON = """[{"text":""}]"""
     }
 
     /**
@@ -817,8 +823,18 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
      */
     fun updateBlockType(block: BlockEntity, newType: BlockType) {
         snapshotForStructuralChange()
+        val liftChildren = newType != BlockType.TOGGLE && hasChildren(block.id)
         viewModelScope.launch {
-            repository.setBlockType(block.id, newType)
+            // **Un toggle che smette di esserlo lascia uscire i suoi figli.**
+            // Solo un toggle mostra le righe che ha dentro: cambiandogli
+            // tipo dal "+" (o da "Turn into") restavano appese a una riga
+            // che non le fa vedere, e sparivano. Escono subito sotto, come
+            // quando il toggle si toglie col backspace.
+            if (liftChildren) {
+                repository.unnestAndConvert(block.id, newType)
+            } else {
+                repository.setBlockType(block.id, newType)
+            }
             // **Un toggle nuovo nasce aperto.** Lo stato aperto/chiuso sta
             // nel blocco e ci resta anche quando il blocco cambia tipo:
             // una riga che era stata un toggle chiuso, rifatta toggle,
@@ -1256,15 +1272,24 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
      * convertito (specie se era l'ultimo della pagina) lascerebbe
      * l'utente senza nulla su cui continuare a scrivere.
      */
-    fun convertToDividerAndFocusNext(block: BlockEntity) {
+    /**
+     * `keepText`, da "Turn into" nel menu del blocco: la riga aveva del
+     * testo, e quel testo scende nella riga nuova sotto il divisore invece
+     * di restare nascosto dentro il divisore, che non lo mostra. Dal menu
+     * "/" la riga è vuota (il comando si è appena tolto) e non serve.
+     */
+    fun convertToDividerAndFocusNext(block: BlockEntity, keepText: Boolean = false) {
         snapshotForStructuralChange()
         val newBlockId = java.util.UUID.randomUUID().toString()
+        val carried = if (keepText && plainTextOf(block).isNotEmpty()) block.textJson else null
+        val liftChildren = hasChildren(block.id)
 
         viewModelScope.launch {
             // In coda alle altre modifiche di struttura, e senza riscrivere
             // il testo: vedi `turnIntoDividerWithLineBelow`.
             structuralEdits.withLock {
-                repository.turnIntoDividerWithLineBelow(block.id, newBlockId)
+                if (liftChildren) repository.unnestChildren(block.id)
+                repository.turnIntoDividerWithLineBelow(block.id, newBlockId, carried)
             }
             delay(IME_SETTLE_DELAY_MS)
             _focusRequestBlockId.value = newBlockId
@@ -2112,6 +2137,9 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         }
     }
 
+    /** Se un blocco ha righe dentro di sé: in pratica, un toggle non vuoto. */
+    private fun hasChildren(blockId: String): Boolean = _blocks.value.any { it.parentBlockId == blockId }
+
     /** Gli span (testo + formattazione) di un blocco, decodificati dal JSON salvato. */
     fun spansOf(block: BlockEntity): List<RichTextSpan> {
         return try {
@@ -2151,16 +2179,30 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
      * l'id della pagina per navigarci subito — scegliere "Page" dal
      * menu crea la sottopagina E ci entra, come in Notion.
      */
-    fun convertToPageLink(block: BlockEntity, onReady: (String) -> Unit) {
+    /**
+     * `title`, da "Turn into" nel menu del blocco: la riga aveva del testo,
+     * e quel testo diventa il nome della pagina nuova invece di restare
+     * nascosto dentro il collegamento, dove non lo vedrebbe più nessuno.
+     */
+    fun convertToPageLink(block: BlockEntity, title: String? = null, onReady: (String) -> Unit) {
         snapshotForStructuralChange()
+        val liftChildren = hasChildren(block.id)
         viewModelScope.launch {
+            // Vedi `updateBlockType`: i figli di un toggle escono prima.
+            if (liftChildren) repository.unnestChildren(block.id)
             val targetPageId = block.linkedPageId ?: run {
-                val newPage = PageEntity(title = "Untitled", isDatabase = false)
+                val newPage = PageEntity(title = title?.takeIf { it.isNotBlank() } ?: "Untitled", isDatabase = false)
                 repository.createPage(newPage)
                 newPage.id
             }
             if (block.type != BlockType.PAGE_LINK || block.linkedPageId != targetPageId) {
-                repository.saveBlock(block.copy(type = BlockType.PAGE_LINK, linkedPageId = targetPageId))
+                repository.saveBlock(
+                    block.copy(
+                        type = BlockType.PAGE_LINK,
+                        linkedPageId = targetPageId,
+                        textJson = if (title != null) EMPTY_TEXT_JSON else block.textJson
+                    )
+                )
             }
             onReady(targetPageId)
         }
@@ -2172,19 +2214,214 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
      * mai pagine (vedi `PageEntity.isSimpleDatabase`). Vale solo per un
      * database che nasce qui: uno che c'era già resta com'era.
      */
-    fun convertToDatabaseLink(block: BlockEntity, simple: Boolean = false, onReady: (String) -> Unit) {
+    fun convertToDatabaseLink(
+        block: BlockEntity,
+        simple: Boolean = false,
+        /** Come in `convertToPageLink`: il testo della riga diventa il nome del database. */
+        title: String? = null,
+        onReady: (String) -> Unit
+    ) {
         snapshotForStructuralChange()
+        val liftChildren = hasChildren(block.id)
         viewModelScope.launch {
+            if (liftChildren) repository.unnestChildren(block.id)
             val targetPageId = block.linkedPageId ?: run {
-                val newPage = PageEntity(title = "Untitled", isDatabase = true, isSimpleDatabase = simple)
+                val newPage = PageEntity(
+                    title = title?.takeIf { it.isNotBlank() } ?: "Untitled",
+                    isDatabase = true,
+                    isSimpleDatabase = simple
+                )
                 repository.createPage(newPage)
                 newPage.id
             }
             if (block.type != BlockType.DATABASE_LINK || block.linkedPageId != targetPageId) {
-                repository.saveBlock(block.copy(type = BlockType.DATABASE_LINK, linkedPageId = targetPageId))
+                repository.saveBlock(
+                    block.copy(
+                        type = BlockType.DATABASE_LINK,
+                        linkedPageId = targetPageId,
+                        textJson = if (title != null) EMPTY_TEXT_JSON else block.textJson
+                    )
+                )
             }
             onReady(targetPageId)
         }
+    }
+
+    // --- Il menu di un blocco (l'icona a sei puntini, o il dito tenuto su una pagina) ---
+
+    /**
+     * "Turn into Table" dal menu del blocco: il testo della riga va nella
+     * prima cella, invece di restare nascosto dentro la tabella che non lo
+     * mostra. Le celle sono testo semplice: grassetti e colori si perdono.
+     */
+    fun convertToTableKeepingText(block: BlockEntity) {
+        val text = plainTextOf(block)
+        val liftChildren = hasChildren(block.id)
+        snapshotForStructuralChange()
+        viewModelScope.launch {
+            structuralEdits.withLock {
+                if (liftChildren) repository.unnestChildren(block.id)
+                repository.setBlockType(block.id, BlockType.TABLE)
+                if (text.isNotEmpty()) {
+                    repository.setTableCellText(block.id, 0, 0, text)
+                    repository.setBlockText(block.id, EMPTY_TEXT_JSON)
+                }
+            }
+        }
+    }
+
+    /**
+     * "Color" dal menu di un blocco: il colore va su **tutta** la riga, non
+     * su una selezione come col pennello.
+     *
+     * Il collegamento a una pagina non ha testo suo — il nome è quello
+     * della pagina — e il colore si tiene in uno span vuoto: la riga lo
+     * legge da lì e lo dà al nome (vedi `PageLinkBlockContent`). È solo
+     * di quel collegamento: la stessa pagina richiamata altrove resta
+     * bianca, come su Notion.
+     */
+    fun colorWholeBlock(blockId: String, background: Boolean, hex: String?) {
+        val block = _blocks.value.find { it.id == blockId } ?: return
+        if (block.type == BlockType.PAGE_LINK) {
+            val current = spansOf(block).firstOrNull() ?: RichTextSpan(text = "")
+            val colored = if (background) {
+                current.copy(text = "", background = hex)
+            } else {
+                current.copy(text = "", color = hex)
+            }
+            snapshotForStructuralChange()
+            viewModelScope.launch { repository.setBlockText(block.id, json.encodeToString(listOf(colored))) }
+            return
+        }
+        applyColorToRun(listOf(block.id), 0, plainTextOf(block).length, background, hex)
+    }
+
+    /** "Duplicate" dal menu di un blocco: la copia nasce subito sotto. Vedi `PageRepository.duplicateBlock`. */
+    fun duplicateBlock(blockId: String, imageStore: PageImageStore) {
+        if (_blocks.value.none { it.id == blockId }) return
+        snapshotForStructuralChange()
+        viewModelScope.launch {
+            structuralEdits.withLock {
+                repository.duplicateBlock(blockId) { imageStore.copy(it) }
+            }
+        }
+    }
+
+    /**
+     * La pagina a cui punta un collegamento, **seguita nel tempo**: rinominata
+     * o cambiata d'icona dal menu del blocco, la riga del collegamento e il
+     * menu stesso la mostrano subito così, senza dover riaprire la pagina.
+     */
+    fun observePageInfo(pageId: String): Flow<PageEntity?> = repository.observePage(pageId)
+
+    // Le voci qui sotto agiscono sulla pagina **collegata**, non su quella
+    // aperta: le gemelle del menu dei tre puntini (`toggleFavorite`,
+    // `movePageTo`, `moveToTrash`...) lavorano sulla pagina aperta, e
+    // prendono il suo id da sole.
+
+    fun setFavoriteFor(pageId: String, favorite: Boolean) {
+        viewModelScope.launch { repository.setFavorite(pageId, favorite) }
+    }
+
+    fun renamePage(pageId: String, title: String) {
+        viewModelScope.launch { repository.renamePage(pageId, title) }
+    }
+
+    /** L'icona della pagina collegata. Il file vecchio lo cancella chi chiama, come per `setIconImage`. */
+    fun setIconImageFor(pageId: String, fileName: String?) {
+        viewModelScope.launch { repository.setIconImage(pageId, fileName) }
+    }
+
+    /** "Lock database" dal menu del blocco. */
+    fun setLockedFor(pageId: String, locked: Boolean) {
+        viewModelScope.launch { repository.setLocked(pageId, locked) }
+    }
+
+    fun loadMoveDestinationsFor(pageId: String, onReady: (List<PageEntity>) -> Unit) {
+        viewModelScope.launch { onReady(repository.moveDestinations(pageId)) }
+    }
+
+    /**
+     * "Move to" dal menu del blocco: il collegamento sparisce da qui e ne
+     * nasce uno nella pagina scelta. Vedi `forgetLinksTo` per Annulla.
+     */
+    fun moveLinkedPageTo(pageId: String, destinationPageId: String) {
+        forgetLinksTo(pageId)
+        viewModelScope.launch { repository.movePageTo(pageId, destinationPageId) }
+    }
+
+    /** "Move to trash" dal menu del blocco. Vedi `forgetLinksTo` per Annulla. */
+    fun moveLinkedPageToTrash(pageId: String) {
+        forgetLinksTo(pageId)
+        viewModelScope.launch { repository.moveToTrash(pageId) }
+    }
+
+    /**
+     * **Annulla non deve far tornare un collegamento a una pagina spostata
+     * o buttata.** Le foto di Annulla sono i blocchi di tutta la pagina, e
+     * ognuna scattata prima di "Move to" ha ancora dentro il collegamento:
+     * annullando una lettera scritta prima, il collegamento sarebbe
+     * ricomparso qui — puntando a una pagina che sta altrove, o nel
+     * cestino. Lo si toglie da tutte le foto, così il resto di Annulla
+     * continua a funzionare com'era.
+     */
+    private fun forgetLinksTo(pageId: String) {
+        fun List<BlockEntity>.withoutLinks() = filterNot {
+            it.linkedPageId == pageId &&
+                (it.type == BlockType.PAGE_LINK || it.type == BlockType.DATABASE_LINK)
+        }
+        val undo = undoStack.map { it.withoutLinks() }
+        val redo = redoStack.map { it.withoutLinks() }
+        undoStack.clear()
+        undoStack.addAll(undo)
+        redoStack.clear()
+        redoStack.addAll(redo)
+    }
+
+    /**
+     * "Duplicate" dal menu del blocco, per una pagina o un database: la
+     * copia, "accanto all'originale", nasce sotto **questo** collegamento.
+     * `onDone` riceve l'id della copia.
+     */
+    fun duplicateLinkedPage(
+        pageId: String,
+        besideBlockId: String,
+        target: PageRepository.DuplicateTarget,
+        titleSuffix: String,
+        imageStore: PageImageStore,
+        onDone: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            repository.duplicatePage(
+                pageId,
+                target,
+                titleSuffix,
+                copyImage = { imageStore.copy(it) },
+                besideLinkBlockId = besideBlockId
+            )?.let(onDone)
+        }
+    }
+
+    /** "Turn into database" dal menu di un collegamento a un database: torna dentro la pagina. */
+    fun turnLinkIntoDatabase(block: BlockEntity) {
+        snapshotForStructuralChange()
+        viewModelScope.launch { repository.turnPageLinkIntoDatabase(block.id) }
+    }
+
+    /** Quante pagine di riga con del contenuto "Turn into simple database" cancellerebbe. */
+    fun countRowPagesWithContent(databasePageId: String, onReady: (Int) -> Unit) {
+        viewModelScope.launch { onReady(repository.countRowPagesWithContent(databasePageId)) }
+    }
+
+    /** Vedi `PageRepository.turnIntoSimpleDatabase`: le pagine delle righe se ne vanno per sempre. */
+    fun turnIntoSimpleDatabase(databasePageId: String, imageStore: PageImageStore) {
+        viewModelScope.launch {
+            repository.turnIntoSimpleDatabase(databasePageId).forEach { imageStore.delete(it) }
+        }
+    }
+
+    fun turnIntoComplexDatabase(databasePageId: String) {
+        viewModelScope.launch { repository.turnIntoComplexDatabase(databasePageId) }
     }
 
     /**

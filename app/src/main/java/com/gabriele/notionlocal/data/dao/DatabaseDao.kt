@@ -152,6 +152,15 @@ interface DatabaseDao {
     @Query("SELECT * FROM database_rows WHERE pageId = :pageId ORDER BY orderIndex ASC")
     suspend fun getRowsForPageOnce(pageId: String): List<DatabaseRowEntity>
 
+    /**
+     * Stacca le righe di un database dalle loro pagine: serve a "Turn
+     * into simple database", dopo aver cancellato quelle pagine. Il
+     * collegamento si toglierebbe da solo (`SET_NULL`), ma detto qui non
+     * dipende da come è configurato il database.
+     */
+    @Query("UPDATE database_rows SET linkedPageId = NULL WHERE pageId = :pageId")
+    suspend fun unlinkRowPages(pageId: String)
+
     @Query("SELECT COUNT(*) FROM database_rows WHERE pageId = :pageId")
     suspend fun countRows(pageId: String): Int
 

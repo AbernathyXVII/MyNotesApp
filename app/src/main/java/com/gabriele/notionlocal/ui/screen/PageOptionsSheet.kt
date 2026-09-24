@@ -406,7 +406,7 @@ fun MoveToTrashDialog(
 }
 
 @Composable
-private fun OptionsGroup(content: @Composable () -> Unit) {
+internal fun OptionsGroup(content: @Composable () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -417,7 +417,7 @@ private fun OptionsGroup(content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun OptionRow(
+internal fun OptionRow(
     icon: ImageVector,
     label: String,
     onClick: () -> Unit,

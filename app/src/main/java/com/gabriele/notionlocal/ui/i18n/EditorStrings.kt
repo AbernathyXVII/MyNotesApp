@@ -19,6 +19,46 @@ object EditorStrings {
     val fontSize get() = t("Font size", "Dimensione del carattere", "Schriftgröße", "Taille de police", "Tamaño de fuente", "字号", "글꼴 크기", "フォントサイズ")
     fun fontSizeRange(min: Int, max: Int) = t("From $min to $max", "Da $min a $max", "Von $min bis $max", "De $min à $max", "De $min a $max", "$min 到 $max", "$min~$max", "$min～$max")
 
+    // --- Il menu di un blocco (sei puntini nella barra, o il dito tenuto su una pagina) ---
+
+    val blockOptions get() = t("Block options", "Opzioni del blocco", "Blockoptionen", "Options du bloc", "Opciones del bloque", "块选项", "블록 옵션", "ブロックのオプション")
+    val turnInto get() = t("Turn into", "Trasforma in", "Umwandeln in", "Transformer en", "Convertir en", "转换为", "전환", "変換")
+    val color get() = t("Color", "Colore", "Farbe", "Couleur", "Color", "颜色", "색상", "カラー")
+    val editIcon get() = t("Edit icon", "Modifica icona", "Symbol bearbeiten", "Modifier l'icône", "Editar icono", "编辑图标", "아이콘 편집", "アイコンを編集")
+    val addToFavorites get() = t("Add to favorites", "Aggiungi ai preferiti", "Zu Favoriten hinzufügen", "Ajouter aux favoris", "Añadir a favoritos", "添加到收藏", "즐겨찾기에 추가", "お気に入りに追加")
+    val removeFromFavorites get() = t("Remove from favorites", "Togli dai preferiti", "Aus Favoriten entfernen", "Retirer des favoris", "Quitar de favoritos", "从收藏中移除", "즐겨찾기에서 제거", "お気に入りから削除")
+    val rename get() = t("Rename", "Rinomina", "Umbenennen", "Renommer", "Cambiar nombre", "重命名", "이름 바꾸기", "名前を変更")
+    val turnIntoSimpleDatabase get() = t("Turn into simple database", "Trasforma in database semplice", "In einfache Datenbank umwandeln", "Convertir en base de données simple", "Convertir en base de datos simple", "转换为简单数据库", "단순 데이터베이스로 전환", "シンプルなデータベースに変換")
+    val turnIntoComplexDatabase get() = t("Turn into complex database", "Trasforma in database complesso", "In komplexe Datenbank umwandeln", "Convertir en base de données complexe", "Convertir en base de datos compleja", "转换为复杂数据库", "복합 데이터베이스로 전환", "複合データベースに変換")
+    val lockDatabase get() = t("Lock database", "Blocca il database", "Datenbank sperren", "Verrouiller la base de données", "Bloquear base de datos", "锁定数据库", "데이터베이스 잠금", "データベースをロック")
+    val openAsPage get() = t("Open as page", "Apri come pagina", "Als Seite öffnen", "Ouvrir en tant que page", "Abrir como página", "以页面打开", "페이지로 열기", "ページとして開く")
+    val simpleDatabaseLossTitle get() = t("Turn into simple database?", "Trasformare in database semplice?", "In einfache Datenbank umwandeln?", "Convertir en base de données simple ?", "¿Convertir en base de datos simple?", "转换为简单数据库？", "단순 데이터베이스로 전환할까요?", "シンプルなデータベースに変換しますか？")
+
+    /** Quante pagine di riga con del contenuto "Turn into simple database" cancellerebbe per sempre. */
+    fun simpleDatabaseLossText(n: Int) = if (n == 1) {
+        t(
+            "1 row page has content: it will be deleted forever, with everything inside it. Row names and properties stay.",
+            "1 pagina di riga ha del contenuto: verrà cancellata per sempre, con tutto quello che c'è dentro. I nomi delle righe e le proprietà restano.",
+            "1 Zeilenseite hat Inhalt: Sie wird endgültig gelöscht, mit allem, was darin ist. Zeilennamen und Eigenschaften bleiben erhalten.",
+            "1 page de ligne a du contenu : elle sera supprimée définitivement, avec tout ce qu'elle contient. Les noms des lignes et les propriétés restent.",
+            "1 página de fila tiene contenido: se eliminará para siempre, con todo lo que contiene. Los nombres de las filas y las propiedades se mantienen.",
+            "1 个行页面有内容：它将被永久删除，连同其中的所有内容。行名称和属性会保留。",
+            "행 페이지 1개에 내용이 있습니다. 안의 내용과 함께 영구적으로 삭제됩니다. 행 이름과 속성은 유지됩니다.",
+            "内容のある行ページが 1 件あります。中身ごと完全に削除されます。行の名前とプロパティは残ります。"
+        )
+    } else {
+        t(
+            "$n row pages have content: they will be deleted forever, with everything inside them. Row names and properties stay.",
+            "$n pagine di riga hanno del contenuto: verranno cancellate per sempre, con tutto quello che c'è dentro. I nomi delle righe e le proprietà restano.",
+            "$n Zeilenseiten haben Inhalt: Sie werden endgültig gelöscht, mit allem, was darin ist. Zeilennamen und Eigenschaften bleiben erhalten.",
+            "$n pages de ligne ont du contenu : elles seront supprimées définitivement, avec tout ce qu'elles contiennent. Les noms des lignes et les propriétés restent.",
+            "$n páginas de fila tienen contenido: se eliminarán para siempre, con todo lo que contienen. Los nombres de las filas y las propiedades se mantienen.",
+            "$n 个行页面有内容：它们将被永久删除，连同其中的所有内容。行名称和属性会保留。",
+            "행 페이지 ${n}개에 내용이 있습니다. 안의 내용과 함께 영구적으로 삭제됩니다. 행 이름과 속성은 유지됩니다.",
+            "内容のある行ページが $n 件あります。中身ごと完全に削除されます。行の名前とプロパティは残ります。"
+        )
+    }
+
     /**
      * Il nome di un tipo di blocco nella lingua dell'app, partendo da quello
      * inglese. I cataloghi dei menu restano scritti in inglese — è il nome

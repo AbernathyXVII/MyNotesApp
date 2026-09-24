@@ -26,4 +26,12 @@ interface TableCellDao {
 
     @Query("SELECT * FROM table_cells WHERE blockId = :blockId AND rowIndex = :row AND colIndex = :col LIMIT 1")
     suspend fun getCell(blockId: String, row: Int, col: Int): TableCellEntity?
+
+    /**
+     * Le celle di tutte le tabelle di una pagina: le rimette a posto
+     * Annulla, che riscrive i blocchi da capo e, cancellandoli, le
+     * porterebbe via con loro (vedi `PageRepository.replaceAllBlocks`).
+     */
+    @Query("SELECT * FROM table_cells WHERE blockId IN (SELECT id FROM blocks WHERE pageId = :pageId)")
+    suspend fun getCellsForPageOnce(pageId: String): List<TableCellEntity>
 }

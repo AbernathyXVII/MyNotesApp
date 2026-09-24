@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.material.icons.filled.DragIndicator
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -569,6 +570,12 @@ fun DatabaseContent(
     onDelete: (() -> Unit)? = null,
     /** Solo dentro una pagina: lo passa il blocco che mostra il database. */
     onTurnIntoPage: (() -> Unit)? = null,
+    /**
+     * Solo dentro una pagina, e non bloccata: apre il menu del blocco
+     * (sei puntini), con in cima le voci del database. Null altrove, e
+     * allora i sei puntini non ci sono.
+     */
+    onOpenBlockMenu: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     // Un ViewModel per database: la chiave li tiene distinti quando in
@@ -737,6 +744,12 @@ fun DatabaseContent(
             layout = layout,
             sortActive = page?.sortColumnId != null,
             filterActive = viewModel.filterColumn() != null,
+            onOpenBlockMenu = onOpenBlockMenu?.let { open ->
+                {
+                    focusManager.clearFocus()
+                    open()
+                }
+            },
             onOpenFullPage = onOpenFullPage,
             onOpenFilter = if (viewLocked) {
                 null
@@ -3024,6 +3037,12 @@ private fun ViewToolbar(
     layout: DatabaseLayout,
     sortActive: Boolean,
     filterActive: Boolean,
+    /**
+     * I sei puntini del menu del blocco, prima della vista: solo per un
+     * database dentro una pagina. Stanno qui e non accanto al nome perché
+     * il nome si può nascondere, e i sei puntini devono esserci sempre.
+     */
+    onOpenBlockMenu: (() -> Unit)?,
     /** Null quando il database è già a schermo intero: non c'è dove aprirlo. */
     onOpenFullPage: (() -> Unit)?,
     /**
@@ -3045,6 +3064,14 @@ private fun ViewToolbar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+        if (onOpenBlockMenu != null) {
+            ToolbarIconButton(
+                icon = Icons.Filled.DragIndicator,
+                contentDescription = EditorStrings.blockOptions,
+                onClick = onOpenBlockMenu
+            )
+        }
         Row(
             modifier = Modifier
                 .background(
@@ -3084,6 +3111,7 @@ private fun ViewToolbar(
                 modifier = Modifier.size(18.dp),
                 tint = chipTint
             )
+        }
         }
 
         Row(verticalAlignment = Alignment.CenterVertically) {

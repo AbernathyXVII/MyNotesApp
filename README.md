@@ -473,6 +473,14 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   togliere il numero, passare al pallino — come su OneNote
 - **Indenta/disindenta, sposta su/giù, Undo/Redo, menu "+", Aa** dalla
   barra sopra la tastiera (scorrevole orizzontalmente)
+- **Il menu del blocco** *(sessione cloud del 24/09/2026, da verificare
+  sul telefono)*: i **sei puntini** all'inizio della barra aprono il menu
+  della riga in cui sta il cursore — Turn into (le voci del "/"), Color
+  su tutta la riga, Duplicate. **Tenendo premuto il collegamento a una
+  pagina** si apre quello della pagina: Color, Edit icon, preferiti,
+  Rename, Duplicate, Move to, Move to trash. Per un database (sei puntini
+  nella sua barra, o collegamento tenuto premuto) in cima anche Turn into
+  page, Turn into simple / complex database, Lock database, Open as page
 - **Tocco ovunque sotto il titolo** per iniziare/continuare a scrivere
 - **Database semplice** *(sessione cloud del 24/09/2026, da verificare
   sul telefono)*: "Simple database" nei menu "/" e "+" crea un database
@@ -786,6 +794,19 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   spoiler contano come testo normale. Il conteggio si fa quando si apre
   il menu: non si aggiorna mentre il menu resta aperto (che è anche
   l'unico momento in cui non si può scrivere)
+- **Menu del blocco: "Turn into" di una pagina o di un database non è
+  costruito** (la voce c'è, grigia), e nemmeno "Color" di un database
+  dentro la pagina. Il colore di un collegamento vale solo per quel
+  collegamento, non per la pagina. **"Edit icon" cambia l'immagine
+  dell'icona**, come ovunque nell'app: l'emoji di una pagina non si
+  sceglie ancora da nessuna parte
+- **Annulla dopo un "Duplicate" di una pagina** (o di un toggle con
+  dentro una sottopagina) toglie il collegamento alla copia, ma la copia
+  resta: la si ritrova dalla ricerca. Annulla segue i blocchi della
+  pagina, non le pagine
+- **"Turn into simple database" non si annulla**: le pagine delle righe
+  se ne vanno per sempre, come chiesto (richiesta 31). Per questo, se
+  hanno del contenuto, prima c'è una conferma col loro numero
 - **Export/backup** (Markdown+CSV, PDF) progettato ma non implementato.
   Decisione già presa con l'utente: **Markdown+CSV come formato
   principale** (il PDF non conserva la struttura, quindi è inadatto al
@@ -1027,6 +1048,31 @@ README di una riga).
     siano solo testo e non siano pagine. Detto questo, attiva la voce
     Simple database in / e +» — fatto: vedi Cronologia "Database
     semplice — le righe sono solo testo"
+31. «1) Di base, mettimi nella toolbar un'icona (a sinistra dell'icona
+    Tabulazione a sinistra) con due colonne di puntini, tre verticali a
+    sinistra e tre verticali a destra (come vedi nella prima foto), per
+    far sì che io modifichi il blocco dove si trova il text cursor
+    2) Le opzioni saranno quelle che abbiamo implementato finora, ossia:
+    Turn into (con le opzioni che ci sono in / e +, sempre quello che
+    abbiamo implementato finora, il resto fallo grigio), Color, Edit
+    icon, Add to favorites, Rename, Duplicate, Move to, Move to trash.
+    3) Concedimi di modificare e di farmi apparire questa finestra con
+    le opzioni che ti ho scritto sopra tenendo premuto su una pagina in
+    un campo testo;
+    4) Se è un database, in alto aggiungimi Turn into page, Turn into
+    simple database (con la consapevolezza che se ci sono pagine con
+    del testo, lo perderò per sempre, quindi farò attenzione io), Turn
+    into complex database (per far sì che le semplici voci diventino
+    pagine effettive di un database classico), Lock database, Open as
+    page, e poi giù tutte le altre che ti ho scritto sopra.» — con due
+    foto di Notion: il menu di un database dentro una pagina e l'elenco
+    "Turn into". Fatto: vedi Cronologia "Il menu del blocco — i sei
+    puntini"
+32. «Una cosa, ovviamente Edit icon, Add to favorites, Move to e Move to
+    trash fammele solo per le pagine. Per i semplici campi di testo non
+    mi servono» — scritto mentre il lavoro sulla 31 era in corso. Fatto:
+    per una riga di testo il menu ha solo Turn into, Color e Duplicate
+    (anche Rename è rimasto alle pagine: vedi Cronologia)
 
 **Cosa è stato fatto:**
 
@@ -1131,7 +1177,8 @@ README di una riga).
 **Da verificare sul telefono** (dall'1 al 14 la vista Gallery, il 15
 lo spostamento delle colonne, il 16 il conteggio del testo, il 17 e il
 18 font e dimensione, il 19 i titoli tolti, il 20 il menu "+", il 21 il
-database semplice; prima di installare, **copia
+database semplice, il 22 il menu del blocco, il 23 le due correzioni
+trovate scrivendolo; prima di installare, **copia
 del database**: questa build cambia lo schema quattro volte — 24→25→26→27→28):
 
 1. **Compila anche sul PC?** In cloud sì (`assembleDebug` riuscito),
@@ -1244,6 +1291,81 @@ del database**: questa build cambia lo schema quattro volte — 24→25→26→2
     stesso database non fa chiudere l'app). "Duplicate" non propone le
     sue righe come destinazione. I database già esistenti sono rimasti
     normali, con OPEN.
+22. **Menu del blocco** (richieste 31-32).
+    - **La barra**: i sei puntini sono la prima icona, prima del
+      rientro a sinistra, e ci sono solo nella barra normale (non in
+      quella di Aa). Toccandoli con il cursore in un paragrafo, in un
+      elenco, in una casella, nel titolo di un toggle o in una riga
+      dentro un toggle: la tastiera si chiude e si apre il menu **di
+      quella riga** (il titolo del menu è il suo testo), con **solo**
+      Turn into, Color, Duplicate.
+    - **Turn into**: le voci sono quelle del "/" nello stesso ordine,
+      le grigie non si toccano, il tipo attuale ha la spunta (toccarlo
+      chiude e basta). Provare **con del testo nella riga**: ogni tipo
+      di testo tiene il testo; Page → collegamento a una pagina che si
+      chiama come il testo, **senza entrarci**; Table → il testo nella
+      prima cella; Divider → il testo nella riga sotto il divisore, col
+      cursore lì; ogni vista di database → database con quel nome e
+      quella vista; Simple database → database semplice. Da un toggle
+      **con righe dentro** verso qualunque altra cosa: le righe escono
+      sotto, nessuna sparisce.
+    - **Color**: si apre la finestra del pennello; il colore va su
+      tutta la riga (testo o sfondo, la scelta in alto), anche senza
+      aver selezionato niente; si vede subito, senza toccare la riga.
+      Annulla lo toglie.
+    - **Duplicate**: la copia compare subito sotto, uguale. Un toggle
+      aperto con righe dentro (e, se c'è, un collegamento a una
+      sottopagina dentro): la copia ha le sue righe, e la sottopagina
+      della copia è **un'altra pagina** (scrivendoci, l'originale non
+      cambia). Annulla toglie la copia.
+    - **Pagina (dito tenuto sul collegamento)**: il tocco normale apre
+      la pagina come prima; la pressione lunga apre il menu con Turn
+      into grigio, Color, Edit icon, Add to favorites, Rename,
+      Duplicate, Move to, Move to trash. Color colora il nome **di quel
+      collegamento** (la stessa pagina altrove resta bianca). Edit icon:
+      l'icona cambia nella riga **subito**. Add to favorites → la pagina
+      compare nei Preferiti, e riaprendo il menu la voce dice "Remove
+      from favorites". Rename: la finestrella ha il nome selezionato e
+      la tastiera; confermato, il nome cambia subito nella riga, nella
+      barra laterale e dentro la pagina. Duplicate → "accanto
+      all'originale" mette la copia **sotto questo collegamento**
+      (provare con una pagina collegata due volte), "dentro una pagina"
+      dice dove è finita; in entrambi i casi si resta qui. Move to → il
+      collegamento sparisce da qui e compare in fondo alla pagina
+      scelta; poi **Annulla non lo fa tornare**. Move to trash →
+      conferma, poi la pagina è nel Cestino; anche qui Annulla non fa
+      tornare il collegamento.
+    - **Database dentro la pagina**: i sei puntini all'inizio della sua
+      riga degli strumenti, prima del riquadro della vista, anche col
+      nome nascosto e con Lock view. Il menu ha in cima Turn into page
+      (il database si apre a schermo intero e nella pagina resta il
+      collegamento), Turn into simple database / Turn into complex
+      database (quella attuale grigia con la spunta), Lock database
+      (l'interruttore; bloccato, le righe non si modificano), Open as
+      page; sotto Turn into e Color grigi e le voci della pagina.
+      **Turn into simple database** su un database con pagine di riga
+      scritte: compare la conferma col numero giusto; confermando, OPEN
+      sparisce, i nomi e le proprietà delle righe restano, le pagine
+      delle righe non sono né nella barra laterale né nel Cestino né
+      nella ricerca, e l'app non si chiude. Su un database le cui righe
+      non sono mai state aperte, nessuna conferma. **Turn into complex
+      database**: torna OPEN, le righe si aprono come pagine (nuove,
+      vuote) e compaiono nella barra laterale.
+    - **Collegamento a un database** (dopo Turn into page), tenuto
+      premuto: stesso menu, con in cima **Turn into database**, che lo
+      rimette dentro la pagina.
+    - **Pagina bloccata** o nel Cestino: la pressione lunga sul
+      collegamento apre la pagina e basta, e il database dentro la
+      pagina non ha i sei puntini.
+23. **Le due correzioni trovate scrivendo il menu del blocco**:
+    - **Annulla con una tabella nella pagina**: scrivere qualcosa nelle
+      celle, poi scrivere una lettera in un paragrafo e premere Annulla
+      (e poi Ripristina). Le celle devono avere ancora il loro testo:
+      prima di questa correzione si svuotavano.
+    - **Toggle con righe dentro, cambiato dal "+"** in Text (o in un
+      elenco, in una casella): le righe che aveva dentro devono
+      comparire subito sotto, allo stesso livello, nell'ordine in cui
+      erano. Prima sparivano alla vista.
 
 ## Cronologia degli aggiornamenti
 
@@ -1251,6 +1373,130 @@ Le voci nate nelle sessioni cloud stanno qui in cima, la più recente
 per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
+
+**Il menu del blocco — i sei puntini** *(sessione cloud del 24/09/2026,
+richieste 31-32: compilato, test passati, nessuna migrazione — schema
+sempre alla 28 —, **non provato sul telefono**)*
+- **[Nuova funzionalità]** Nella barra sopra la tastiera, **prima del
+  rientro a sinistra**, un'icona coi **sei puntini** (due colonne da tre,
+  `Icons.Filled.DragIndicator`, la stessa di Notion): apre il **menu
+  della riga in cui sta il cursore**. Il cursore si spegne prima di
+  aprirlo: la tastiera sparirebbe comunque sotto la finestra, e una riga
+  che "Turn into" fa sparire non deve morire col fuoco dentro — il modo
+  in cui l'app si chiudeva (vedi più giù in Cronologia "La tastiera non
+  sparisce più", e la causa di fondo lì sotto). La finestra
+  (`BlockActionsHost`, file nuovo `BlockActionsSheet.kt`) sta a livello
+  di schermata, come il pennello e la dimensione del testo, perché la
+  barra sparisce con la tastiera
+- **[Nuova funzionalità]** **Per una riga di testo** (paragrafo, elenchi,
+  casella, toggle, righe dentro un toggle): **Turn into, Color,
+  Duplicate**. Edit icon, Add to favorites, Move to e Move to trash ci
+  sono solo per le pagine, come chiesto (richiesta 32). **Rename**
+  anche: una riga di testo non ha un nome da cambiare, il suo nome è il
+  testo stesso — scelta da confermare con l'utente
+  - **Turn into**: le **stesse voci dei menu "/" e "+"**, nello stesso
+    ordine (`SLASH_ENTRIES`), grigie quelle non costruite, con la
+    **spunta sul tipo attuale**. Rispetto al "/" due differenze, che
+    vengono dal punto da cui si parte: il testo della riga **non si
+    perde** — diventa il nome della pagina o del database, la prima
+    cella della tabella (senza grassetti e colori: le celle sono testo
+    semplice), la riga sotto il divisore — e **si resta nella pagina**
+    invece di entrare in quella nuova, come su Notion. Dal "/" la riga
+    è vuota e non serviva: lì non cambia niente
+    (`convertToPageLink`/`convertToDatabaseLink` con `title`,
+    `convertToDividerAndFocusNext` con `keepText`,
+    `convertToTableKeepingText`)
+  - **Color**: la finestra del pennello, ma il colore — del testo o
+    dietro al testo — va su **tutta la riga**, senza doverla selezionare
+    (`colorWholeBlock`). Parte dal colore che la riga ha già
+  - **Duplicate**: la copia nasce **subito sotto**, con tipo, testo,
+    colori, rientro e spunta. Un toggle si copia **coi suoi figli**, una
+    tabella **con le sue celle**, e le sottopagine o i database dentro
+    un toggle si copiano anche loro, come fa "Duplicate" di una pagina:
+    due collegamenti alla stessa sottopagina non sarebbero una copia
+    (`PageRepository.duplicateBlock`)
+- **[Nuova funzionalità]** **Tenendo premuto il collegamento a una
+  pagina** nel testo (dove il cursore non entra) si apre il menu **della
+  pagina**: Turn into (grigio: trasformare una pagina in altro non è
+  ancora costruito), **Color** (il colore del nome, solo in quel
+  collegamento, tenuto in uno span vuoto del blocco), **Edit icon** (la
+  stessa finestra Upload / Link / Remove), **Add to favorites** /
+  **Remove from favorites**, **Rename** (una finestrella col nome già
+  tutto selezionato; cambia solo il titolo, `PageDao.setTitle`, e il
+  nome della riga se è la pagina di una riga), **Duplicate** (la stessa
+  scelta del posto dei tre puntini; "accanto all'originale" vuol dire
+  **sotto il collegamento toccato**, anche se la pagina è collegata in
+  due punti), **Move to**, **Move to trash** (con la stessa conferma dei
+  tre puntini). Si resta sempre nella pagina: un avviso dice dove è
+  finita la copia quando non è qui. Il tocco normale apre la pagina come
+  prima (`combinedClickable`)
+- **[Nuova funzionalità]** **Per un database**, in cima: **Turn into
+  page**, **Turn into simple database**, **Turn into complex database**,
+  **Lock database** (interruttore), **Open as page**; sotto le voci
+  della pagina, con Turn into e Color grigi. Ci si arriva dai **sei
+  puntini** che ora stanno all'inizio della riga degli strumenti di un
+  database dentro la pagina — prima del riquadro della vista, perché
+  il nome si può nascondere e i puntini devono esserci sempre — o
+  tenendo premuto un collegamento a un database
+  - **Turn into page** fa quello che fa la voce delle impostazioni del
+    database: il blocco diventa un collegamento e il database si apre a
+    schermo intero. Se il database è **già** un collegamento, al suo
+    posto c'è **Turn into database**, che rimette dentro la pagina
+    **quel** collegamento (`turnPageLinkIntoDatabase`; la voce dei tre
+    puntini li rimette dentro tutti)
+  - **Turn into simple database**: le pagine delle righe si cancellano
+    **per sempre**, con quello che contengono — non nel cestino: in un
+    database semplice una pagina di riga non avrebbe più una riga a cui
+    tornare —; nomi e proprietà delle righe restano
+    (`turnIntoSimpleDatabase`). L'utente ha detto che ci sta attento
+    lui; comunque, **se almeno una pagina di riga ha qualcosa dentro**
+    (testo, un blocco che non sia una riga vuota, un'icona, una
+    copertina) una conferma dice **quante sono**. Se non c'è niente da
+    perdere si fa e basta (`countRowPagesWithContent`)
+  - **Turn into complex database**: le righe tornano pagine. Ognuna
+    nasce la prima volta che la si apre, come in ogni database
+    (`ensureRowPage`), e compaiono subito nella barra laterale
+  - Le due voci ci sono sempre: quella che il database è già si vede
+    grigia con la spunta
+- **[Bug fix]** *(trovato leggendo il codice per il Duplicate)* **Annulla
+  e Ripristina svuotavano tutte le tabelle della pagina.** Rimettono la
+  pagina com'era riscrivendo tutti i blocchi da capo
+  (`replaceAllBlocks`: cancella e reinserisce), e le celle delle tabelle
+  sono legate al loro blocco con `ON DELETE CASCADE`, con le chiavi
+  esterne accese (`PRAGMA foreign_keys = ON` nel codice generato da
+  Room): cancellando la tabella il database portava via il suo testo.
+  Bastava annullare una lettera scritta tre righe più su. Ora le celle
+  si mettono da parte e si rimettono, tutto in una transazione (e
+  `TableCellDao.getCellsForPageOnce`). Il testo delle celle resta quello
+  di adesso: Annulla non lo segue, come già scritto nel codice
+- **[Bug fix]** *(trovato scrivendo "Turn into")* **Un toggle con delle
+  righe dentro, cambiato in un altro tipo dal "+"**, lasciava le sue
+  righe appese a un blocco che non le mostra: **sparivano alla vista**
+  (nel database c'erano ancora). Ora escono subito sotto, allo stesso
+  livello e nello stesso ordine, come quando il toggle si toglie col
+  backspace — per ogni trasformazione: tipo, pagina, database, tabella,
+  divisore (`PageRepository.unnestChildren`, estratta da
+  `unnestAndConvert`)
+- **[Nuova funzionalità]** Il collegamento a una pagina **segue la
+  pagina nel tempo** (`observePageInfo` al posto di `getPageInfo`):
+  prima nome e icona si leggevano quando la riga compariva e restavano
+  quelli; con Rename ed Edit icon dal menu del blocco devono cambiare
+  subito
+- **[Progetto]** **Annulla non fa ricomparire il collegamento a una
+  pagina spostata o buttata** dal menu del blocco: le foto di Annulla
+  sono tutti i blocchi della pagina, e quelle scattate prima avevano
+  ancora il collegamento. Viene tolto da tutte (`forgetLinksTo`)
+- **[Progetto]** `SLASH_ENTRIES`, `SlashEntry`, `SlashAction`,
+  `SlashCategory` (in `PageEditorScreen.kt`) e `OptionsGroup`,
+  `OptionRow` (in `PageOptionsSheet.kt`) da privati a `internal`, per
+  usarli nel file nuovo. `PageRepository.duplicatePage` ha un parametro
+  in più, `besideLinkBlockId`, messo **prima** di `copyImage` perché le
+  chiamate che passano la copia delle immagini come ultima lambda
+  continuino a funzionare. Testi nuovi nelle otto lingue
+  (`EditorStrings.blockOptions`, `turnInto`, `color`, `editIcon`,
+  `addToFavorites`, `removeFromFavorites`, `rename`,
+  `turnIntoSimpleDatabase`, `turnIntoComplexDatabase`, `lockDatabase`,
+  `openAsPage`, `simpleDatabaseLossTitle`, `simpleDatabaseLossText`)
 
 **Database semplice — le righe sono solo testo** *(sessione cloud del
 24/09/2026, richiesta 30: compilato, test passati, migrazione 27→28
@@ -3850,6 +4096,10 @@ app/src/main/assets/font_licenses/OFL.txt # Licenza e copyright dei font inclusi
 `ui/theme/PageFonts.kt` è il catalogo dei font delle pagine: nomi,
 sosia, gruppi, da dove arrivano, e `PageTypography`, che porta font e
 corpo a tutto il testo.
+
+`ui/screen/BlockActionsSheet.kt` è il menu di un blocco (i sei puntini):
+le voci per una riga di testo, per una pagina e per un database, e tutte
+le finestre che apre. Chi lo usa passa solo l'id del blocco.
 
 **File chiave da capire per primi**:
 - `PageEditorViewModel.updateRun` — il cuore della logica di modifica
