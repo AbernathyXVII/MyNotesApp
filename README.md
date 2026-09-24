@@ -733,6 +733,12 @@ README di una riga).
     il Web Debugging del telefono?»
 13. «Vista in Gallery» (scelta fra le due cose in sospeso proposte:
     la vista Gallery e l'export in Markdown + CSV)
+14. «Com'è che sblocco il download dell'APK?»
+15. «Dove si trova quest'opzione?» (con lo screenshot della barra del
+    titolo della sessione)
+16. «Come dici te non c'è. Qual è?» (con gli screenshot dei due menu)
+17. «Cosa faccio?» (con lo screenshot della finestra "Edit cloud
+    environment")
 
 **Cosa è stato fatto:**
 
@@ -792,7 +798,14 @@ README di una riga).
   **Il codice della Gallery è stato quindi solo riletto a mano**, riga
   per riga (tipi, import, rami dei `when`, ambiti di Compose, query
   SQL). All'utente è stato proposto di aggiungere `dl.google.com` ai
-  domini consentiti (menu dell'ambiente cloud → Edit → Network access)
+  domini consentiti (richieste 14-17). **Dove si trova**: nella barra
+  del titolo della sessione, la freccetta accanto al nome della
+  sessione → **"Edit cloud environment"** → **Network access** (era su
+  "Trusted", che non comprende `dl.google.com`). La finestra avverte
+  che **le modifiche valgono per le sessioni nuove**: per compilare
+  serve quindi aprire una nuova sessione cloud, che deve ripartire dal
+  ramo `claude/funny-ramanujan-uuwahs` (o da `main`, se nel frattempo
+  la pull request è stata unita) e da questo README
 - **[Nuova funzionalità]** La **vista Gallery**: dettagli in
   Cronologia, "Database — vista Gallery". Schema del database alla
   versione **25** (migrazione 24→25)
