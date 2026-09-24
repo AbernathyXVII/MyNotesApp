@@ -67,6 +67,7 @@ import com.gabriele.notionlocal.data.PageImageStore
 import com.gabriele.notionlocal.data.entity.BlockEntity
 import com.gabriele.notionlocal.data.entity.BlockType
 import com.gabriele.notionlocal.data.entity.PageEntity
+import com.gabriele.notionlocal.data.repository.PageRepository
 import com.gabriele.notionlocal.ui.i18n.EditorStrings
 import com.gabriele.notionlocal.ui.i18n.Strings
 import com.gabriele.notionlocal.ui.theme.DarkSheet
@@ -152,7 +153,7 @@ internal fun BlockActionsHost(
     }
 
     var step by remember { mutableStateOf(BlockMenuStep.MENU) }
-    var moveDestinations by remember { mutableStateOf<List<PageEntity>>(emptyList()) }
+    var moveExclusions by remember { mutableStateOf<PageRepository.MoveExclusions?>(null) }
     var rowPagesToLose by remember { mutableIntStateOf(0) }
 
     when (step) {
@@ -239,8 +240,8 @@ internal fun BlockActionsHost(
                         onRename = { step = BlockMenuStep.RENAME },
                         onDuplicate = { step = BlockMenuStep.DUPLICATE },
                         onMoveTo = {
-                            viewModel.loadMoveDestinationsFor(page.id) {
-                                moveDestinations = it
+                            viewModel.loadMoveExclusionsFor(page.id) {
+                                moveExclusions = it
                                 step = BlockMenuStep.MOVE_TO
                             }
                         },
@@ -319,15 +320,24 @@ internal fun BlockActionsHost(
             )
         }
 
-        BlockMenuStep.MOVE_TO -> if (page != null) {
-            MoveToSheet(
-                destinations = moveDestinations,
-                onDismiss = onDismiss,
-                onPick = { destination ->
-                    onDismiss()
-                    viewModel.moveLinkedPageTo(page.id, destination.id)
-                }
-            )
+        BlockMenuStep.MOVE_TO -> {
+            val exclusions = moveExclusions
+            if (page != null && exclusions != null) {
+                // Lo stesso albero con la ricerca dei tre puntini: vedi
+                // `MovePagePicker`. Si resta qui; l'avviso dice dove è
+                // finita la pagina, che da qui sparisce.
+                MovePagePicker(
+                    page = page,
+                    exclusions = exclusions,
+                    factory = factory,
+                    onDismiss = onDismiss,
+                    onPick = { destination ->
+                        onDismiss()
+                        viewModel.moveLinkedPageTo(page.id, destination)
+                        Toast.makeText(context, Strings.movedInto(destination.placeName()), Toast.LENGTH_SHORT).show()
+                    }
+                )
+            }
         }
 
         BlockMenuStep.TRASH -> if (page != null) {

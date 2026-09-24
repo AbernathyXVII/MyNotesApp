@@ -86,15 +86,47 @@ object Strings {
     // "Lettere coreane" è la parola dell'utente: l'hangul si scrive per
     // sillabe, ma per chi lo studia ognuna è una lettera.
     val statKorean get() = t("Korean characters", "Lettere coreane", "Koreanische Zeichen", "Caractères coréens", "Caracteres coreanos", "韩文字符", "한글 글자", "韓国語の文字")
-    val noOtherPage get() = t(
-        "There is no other page to move it into.",
-        "Non c'è un'altra pagina in cui spostarla.",
-        "Es gibt keine andere Seite, in die sie verschoben werden kann.",
-        "Il n'y a aucune autre page où la déplacer.",
-        "No hay otra página a la que moverla.",
-        "没有其他可移入的页面。",
-        "옮길 수 있는 다른 페이지가 없습니다.",
-        "移動先のページが他にありません。"
+    // --- Spostare ("Move to") ---
+
+    val moveHint get() = t(
+        "Tap a page to move it to its end. Open a database to see its pages.",
+        "Tocca una pagina per spostarla in fondo. Apri un database per vederne le pagine.",
+        "Tippe auf eine Seite, um sie an deren Ende zu verschieben. Öffne eine Datenbank, um ihre Seiten zu sehen.",
+        "Touchez une page pour la déplacer à la fin. Ouvrez une base de données pour voir ses pages.",
+        "Toca una página para moverla al final. Abre una base de datos para ver sus páginas.",
+        "点按页面，会移到其末尾。展开数据库可查看其中的页面。",
+        "페이지를 누르면 그 끝으로 옮겨집니다. 데이터베이스를 펼치면 안의 페이지가 보입니다.",
+        "ページをタップすると、その末尾に移動します。データベースを開くと中のページが表示されます。"
+    )
+    val moveDatabaseHint get() = t(
+        "Tap a page: the database goes to its end as a page link. To show it open inside the page, use “Turn into database” afterwards.",
+        "Tocca una pagina: il database finirà in fondo come collegamento a pagina. Per vederlo aperto dentro la pagina, poi, “Trasforma in database”.",
+        "Tippe auf eine Seite: Die Datenbank kommt als Seitenlink an deren Ende. Um sie offen in der Seite zu zeigen, danach „In Datenbank umwandeln“.",
+        "Touchez une page : la base de données ira à la fin comme lien de page. Pour l'afficher ouverte dans la page, ensuite « Convertir en base de données ».",
+        "Toca una página: la base de datos irá al final como enlace de página. Para verla abierta dentro de la página, luego «Convertir en base de datos».",
+        "点按页面：数据库会以页面链接的形式放在其末尾。之后可用“转换为数据库”在页面中展开显示。",
+        "페이지를 누르세요. 데이터베이스는 그 끝에 페이지 링크로 놓입니다. 페이지 안에 펼쳐 보려면 나중에 \"데이터베이스로 전환\"을 사용하세요.",
+        "ページをタップ：データベースはページリンクとして末尾に置かれます。ページ内に開いて表示するには、あとで「データベースに変換」を使います。"
+    )
+    val moveRowPageHint get() = t(
+        "Tap a page to move it to its end. The page leaves its database: name and content stay, the row's properties don't.",
+        "Tocca una pagina per spostarla in fondo. La pagina esce dal suo database: nome e contenuto restano, le proprietà della riga no.",
+        "Tippe auf eine Seite, um sie an deren Ende zu verschieben. Die Seite verlässt ihre Datenbank: Name und Inhalt bleiben, die Eigenschaften der Zeile nicht.",
+        "Touchez une page pour la déplacer à la fin. La page quitte sa base de données : le nom et le contenu restent, les propriétés de la ligne non.",
+        "Toca una página para moverla al final. La página sale de su base de datos: el nombre y el contenido se mantienen, las propiedades de la fila no.",
+        "点按页面，会移到其末尾。页面将离开所在的数据库：名称和内容保留，行的属性不保留。",
+        "페이지를 누르면 그 끝으로 옮겨집니다. 페이지는 데이터베이스에서 빠져나옵니다. 이름과 내용은 남고 행의 속성은 남지 않습니다.",
+        "ページをタップすると、その末尾に移動します。ページはデータベースから外れます。名前と内容は残り、行のプロパティは残りません。"
+    )
+    fun movedInto(title: String) = t(
+        "Moved to “${title}”",
+        "Spostata in “${title}”",
+        "Nach „${title}“ verschoben",
+        "Déplacée dans « ${title} »",
+        "Movida a «${title}»",
+        "已移至“${title}”",
+        "\"${title}\"(으)로 옮겼습니다",
+        "「${title}」に移動しました"
     )
 
     // --- Duplicare ---

@@ -40,6 +40,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -174,6 +175,7 @@ private val ITEM_ICON = 22.dp
 internal val TREE_START = 12.dp
 internal val TREE_INDENT = 16.dp
 internal val TREE_ARROW = 24.dp
+private const val DISABLED_ROW_ALPHA = 0.35f
 
 /** Il grigio delle voci spente: lo stesso ovunque nella barra. */
 private val DisabledTint: Color get() = NotionGray400.copy(alpha = 0.55f)
@@ -253,28 +255,37 @@ internal fun TreeRow(
     isCurrent: Boolean,
     isExpanded: Boolean,
     onOpen: () -> Unit,
-    onToggle: () -> Unit
+    onToggle: () -> Unit,
+    /**
+     * Spenta: si vede, grigia, ma non si tocca e non si apre. Serve a
+     * "Move to", dove la pagina da spostare resta al suo posto nell'albero
+     * — ritrovarla aiuta a orientarsi — ma non può essere la destinazione,
+     * e nemmeno quello che ha dentro.
+     */
+    enabled: Boolean = true
 ) {
     val node = row.node
+    val canExpand = enabled && node.hasChildren
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 8.dp)
             .clip(RoundedCornerShape(6.dp))
             .background(if (isCurrent) DarkSurfaceVariant else Color.Transparent)
-            .clickable(onClick = onOpen)
+            .clickable(enabled = enabled, onClick = onOpen)
             .padding(start = TREE_START - 8.dp + TREE_INDENT * row.depth, end = 8.dp)
-            .height(36.dp),
+            .height(36.dp)
+            .alpha(if (enabled) 1f else DISABLED_ROW_ALPHA),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
                 .size(TREE_ARROW)
                 .clip(RoundedCornerShape(4.dp))
-                .clickable(enabled = node.hasChildren, onClick = onToggle),
+                .clickable(enabled = canExpand, onClick = onToggle),
             contentAlignment = Alignment.Center
         ) {
-            if (node.hasChildren) {
+            if (canExpand) {
                 Icon(
                     imageVector = if (isExpanded) Icons.Filled.ArrowDropDown else Icons.Filled.ArrowRight,
                     contentDescription = if (isExpanded) Strings.collapse else Strings.expand,

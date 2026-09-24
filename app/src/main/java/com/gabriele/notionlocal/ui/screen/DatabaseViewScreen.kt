@@ -82,6 +82,7 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.ui.platform.LocalContext
 import com.gabriele.notionlocal.data.PageImageStore
+import com.gabriele.notionlocal.data.repository.PageRepository
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.aspectRatio
@@ -360,7 +361,7 @@ fun DatabaseViewScreen(
     val menuPage by menuViewModel.page.collectAsStateWithLifecycle()
 
     var showPageOptions by remember { mutableStateOf(false) }
-    var moveDestinations by remember { mutableStateOf<List<PageEntity>?>(null) }
+    var moveExclusions by remember { mutableStateOf<PageRepository.MoveExclusions?>(null) }
     var confirmTrash by remember { mutableStateOf(false) }
     var showDuplicate by remember { mutableStateOf(false) }
 
@@ -466,7 +467,7 @@ fun DatabaseViewScreen(
                 },
                 onMoveTo = {
                     showPageOptions = false
-                    menuViewModel.loadMoveDestinations { moveDestinations = it }
+                    menuViewModel.loadMoveExclusions { moveExclusions = it }
                 },
                 onMoveToTrash = {
                     showPageOptions = false
@@ -491,13 +492,20 @@ fun DatabaseViewScreen(
             )
         }
 
-        moveDestinations?.let { destinations ->
-            MoveToSheet(
-                destinations = destinations,
-                onDismiss = { moveDestinations = null },
+        moveExclusions?.let { exclusions ->
+            MovePagePicker(
+                page = current,
+                exclusions = exclusions,
+                factory = factory,
+                onDismiss = { moveExclusions = null },
                 onPick = { destination ->
-                    moveDestinations = null
-                    menuViewModel.movePageTo(destination.id) { onBack() }
+                    moveExclusions = null
+                    // Arriva come collegamento a pagina (vedi
+                    // `PageRepository.movePageTo`): l'avviso dice dove.
+                    menuViewModel.movePageTo(destination) {
+                        Toast.makeText(trashContext, Strings.movedInto(destination.placeName()), Toast.LENGTH_SHORT).show()
+                        onBack()
+                    }
                 }
             )
         }

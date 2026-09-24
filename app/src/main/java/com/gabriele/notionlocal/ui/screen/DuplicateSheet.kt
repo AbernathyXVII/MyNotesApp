@@ -46,6 +46,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gabriele.notionlocal.data.entity.PageEntity
 import com.gabriele.notionlocal.data.repository.PageRepository.DestinationHit
 import com.gabriele.notionlocal.data.repository.PageRepository.DuplicateTarget
+import com.gabriele.notionlocal.data.repository.PageRepository.MoveExclusions
 import com.gabriele.notionlocal.data.repository.PageRepository.PageTreeNode
 import com.gabriele.notionlocal.ui.i18n.Strings
 import com.gabriele.notionlocal.ui.theme.DarkSheet
@@ -83,6 +84,9 @@ internal fun DuplicateFlow(
     } else {
         DestinationPickerSheet(
             factory = factory,
+            title = Strings.duplicateInto,
+            hint = Strings.duplicateIntoHint,
+            viewModelKey = "duplicate-destination",
             onDismiss = onDismiss,
             onPick = { node ->
                 val name = node.title.ifBlank { Strings.untitled }
@@ -194,22 +198,32 @@ private fun ChoiceRow(
 }
 
 /**
- * La pagina in cui mettere la copia: l'albero della barra laterale, o,
+ * La pagina in cui mettere qualcosa — la copia di "Duplicate", o la
+ * pagina spostata da "Move to": l'albero della barra laterale, o,
  * scrivendo, le pagine col titolo che corrisponde.
  *
  * Si sceglie qualsiasi pagina, comprese quelle delle righe di tutti i
  * database: i database si aprono come cartelle per mostrarle, ma non si
  * scelgono, perché dentro di loro un collegamento non avrebbe dove stare.
  * Una riga mai aperta si sceglie lo stesso: la sua pagina nasce adesso.
+ *
+ * `excluded`, per "Move to": la pagina da spostare e quello che ha
+ * dentro. Nell'albero si vedono grigie e non si aprono; cercando non
+ * compaiono.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DestinationPickerSheet(
+internal fun DestinationPickerSheet(
     factory: ViewModelFactory,
+    title: String,
+    hint: String,
+    /** Distingue il ViewModel di "Duplicate" da quello di "Move to": ognuno ricorda i suoi rami aperti. */
+    viewModelKey: String,
     onDismiss: () -> Unit,
-    onPick: (PageTreeNode) -> Unit
+    onPick: (PageTreeNode) -> Unit,
+    excluded: MoveExclusions? = null
 ) {
-    val picker: PagePickerViewModel = viewModel(factory = factory, key = "duplicate-destination")
+    val picker: PagePickerViewModel = viewModel(factory = factory, key = viewModelKey)
     LaunchedEffect(Unit) { picker.reset() }
     val root by picker.root.collectAsStateWithLifecycle()
     val children by picker.children.collectAsStateWithLifecycle()
@@ -230,13 +244,13 @@ private fun DestinationPickerSheet(
                 .imePadding()
         ) {
             Text(
-                text = Strings.duplicateInto,
+                text = title,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
             Text(
-                text = Strings.duplicateIntoHint,
+                text = hint,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 12.dp)
@@ -261,7 +275,8 @@ private fun DestinationPickerSheet(
                             isCurrent = false,
                             isExpanded = node.pageId in expanded,
                             onOpen = { if (node.isDatabase) picker.toggle(node) else onPick(node) },
-                            onToggle = { picker.toggle(node) }
+                            onToggle = { picker.toggle(node) },
+                            enabled = excluded?.contains(node) != true
                         )
                         val id = node.pageId
                         if (id != null && id in expanded && node.hasChildren && children[id]?.isEmpty() == true) {
@@ -277,7 +292,7 @@ private fun DestinationPickerSheet(
                             )
                         }
                     }
-                } else if (results.isEmpty()) {
+                } else if (results.none { excluded?.contains(it.node) != true }) {
                     item {
                         Text(
                             text = Strings.noResults,
@@ -287,7 +302,7 @@ private fun DestinationPickerSheet(
                         )
                     }
                 } else {
-                    items(results) { hit ->
+                    items(results.filter { excluded?.contains(it.node) != true }) { hit ->
                         HitRow(hit = hit, onClick = { onPick(hit.node) })
                     }
                 }
@@ -360,6 +375,10 @@ private fun SearchField(
         }
     }
 }
+
+/** Se una pagina dell'albero, o una riga mai aperta, è fra quelle in cui non si può spostare. */
+private fun MoveExclusions.contains(node: PageTreeNode): Boolean =
+    node.pageId?.let { it in pageIds } ?: node.rowId?.let { it in rowIds } ?: false
 
 /** Quanto sale la scelta della pagina: quasi tutto lo schermo, perché l'albero può essere lungo. */
 private const val PICKER_HEIGHT = 0.9f

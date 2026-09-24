@@ -20,6 +20,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import com.gabriele.notionlocal.data.PageImageStore
+import com.gabriele.notionlocal.data.repository.PageRepository
 import com.gabriele.notionlocal.data.TextStats
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.ui.text.input.KeyboardType
@@ -920,7 +921,9 @@ fun PageEditorScreen(
 
     // Il menu dei tre puntini e le due cose che può aprire.
     var showPageOptions by remember { mutableStateOf(false) }
-    var moveDestinations by remember { mutableStateOf<List<PageEntity>?>(null) }
+    // "Move to": dove la pagina non può andare, letto quando si tocca la
+    // voce; finché c'è, l'albero per scegliere è aperto.
+    var moveExclusions by remember { mutableStateOf<PageRepository.MoveExclusions?>(null) }
     var confirmTrash by remember { mutableStateOf(false) }
     var showDuplicate by remember { mutableStateOf(false) }
 
@@ -1970,7 +1973,7 @@ fun PageEditorScreen(
                 },
                 onMoveTo = {
                     showPageOptions = false
-                    viewModel.loadMoveDestinations { moveDestinations = it }
+                    viewModel.loadMoveExclusions { moveExclusions = it }
                 },
                 onMoveToTrash = {
                     showPageOptions = false
@@ -1985,17 +1988,23 @@ fun PageEditorScreen(
             )
         }
 
-        moveDestinations?.let { destinations ->
-            MoveToSheet(
-                destinations = destinations,
-                onDismiss = { moveDestinations = null },
+        moveExclusions?.let { exclusions ->
+            MovePagePicker(
+                page = current,
+                exclusions = exclusions,
+                factory = factory,
+                onDismiss = { moveExclusions = null },
                 onPick = { destination ->
-                    moveDestinations = null
+                    moveExclusions = null
                     // Spostata, questa pagina non sta più dov'era: si
                     // torna indietro, altrimenti si resterebbe su una
                     // schermata che "indietro" riporterebbe in un
-                    // posto in cui la pagina non c'è più.
-                    viewModel.movePageTo(destination.id) { onBack() }
+                    // posto in cui la pagina non c'è più. L'avviso dice
+                    // dov'è finita.
+                    viewModel.movePageTo(destination) {
+                        Toast.makeText(context, Strings.movedInto(destination.placeName()), Toast.LENGTH_SHORT).show()
+                        onBack()
+                    }
                 }
             )
         }

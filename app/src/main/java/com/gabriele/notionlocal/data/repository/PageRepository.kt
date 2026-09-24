@@ -514,26 +514,98 @@ class PageRepository(private val db: AppDatabase) {
     }
 
     /**
-     * Sposta una pagina dentro un'altra: sparisce il collegamento che
-     * la mostrava dov'era e ne nasce uno in fondo alla pagina scelta.
+     * Quello che "Move to" non può offrire come destinazione per una
+     * pagina: **lei stessa e tutto quello che contiene**, giù fino in
+     * fondo — le pagine richiamate dai suoi collegamenti, le pagine delle
+     * righe se è un database, e così via — più le righe mai aperte dei
+     * database là dentro, che si scelgono per id di riga e non di pagina.
      *
-     * Il tipo del collegamento nuovo lo decide la pagina spostata: un
-     * database si mostra sempre come database anche in casa d'altri.
+     * Spostare una pagina dentro una sua sottopagina farebbe un giro
+     * chiuso: la sottopagina sta dentro la pagina, la pagina dentro la
+     * sottopagina, e nessuna delle due si raggiunge più dal menu
+     * principale. Prima l'elenco di "Move to" non lo impediva.
      */
-    suspend fun movePageTo(pageId: String, destinationPageId: String) {
-        if (pageId == PageEntity.ROOT_PAGE_ID || pageId == destinationPageId) return
-        val page = pageDao.getById(pageId) ?: return
-        db.withTransaction {
-            val existing = blockDao.getBlocksLinkingTo(pageId)
-            // Se un collegamento sta già nella pagina di destinazione
-            // non se ne aggiunge un altro: la pagina è già lì, e due
-            // collegamenti uguali sarebbero solo un doppione da
-            // cancellare a mano.
-            val alreadyThere = existing.any { it.pageId == destinationPageId }
-            existing.filter { it.pageId != destinationPageId }.forEach { blockDao.delete(it) }
-            if (alreadyThere) return@withTransaction
-            appendLink(destinationPageId, pageId, page.isDatabase)
+    data class MoveExclusions(val pageIds: Set<String>, val rowIds: Set<String>)
+
+    suspend fun moveExclusions(pageId: String): MoveExclusions {
+        val pages = pagesInside(pageId)
+        val databaseDao = db.databaseDao()
+        val rows = pages
+            .mapNotNull { pageDao.getById(it)?.takeIf { page -> page.isDatabase } }
+            .flatMap { database -> databaseDao.getRowsForPageOnce(database.id).map { it.id } }
+            .toSet()
+        return MoveExclusions(pages, rows)
+    }
+
+    /** Una pagina e tutte quelle dentro di lei (vedi `moveExclusions`). La principale mai: non sta dentro niente. */
+    private suspend fun pagesInside(pageId: String): Set<String> {
+        val databaseDao = db.databaseDao()
+        val found = linkedSetOf(pageId)
+        val queue = ArrayDeque(listOf(pageId))
+        while (queue.isNotEmpty()) {
+            val current = queue.removeFirst()
+            val page = pageDao.getById(current) ?: continue
+            val children = buildList {
+                blockDao.getBlocksForPageOnce(current).mapNotNullTo(this) { it.linkedPageId }
+                if (page.isDatabase) {
+                    databaseDao.getRowsForPageOnce(current).mapNotNullTo(this) { it.linkedPageId }
+                }
+            }
+            for (child in children) {
+                if (child != PageEntity.ROOT_PAGE_ID && found.add(child)) queue += child
+            }
         }
+        return found
+    }
+
+    /**
+     * "Move to": la pagina lascia il posto in cui stava e finisce **in
+     * fondo** alla pagina scelta — anche se la si sceglie uguale a quella
+     * in cui sta già: "in fondo" è la regola, sempre. Restituisce false se
+     * lo spostamento non si può fare (vedi sotto) e niente è cambiato.
+     *
+     * - La destinazione è una pagina, o una **riga** di database: in quel
+     *   caso si finisce nella pagina della riga, che se non è mai stata
+     *   aperta nasce adesso. Dentro un database no: il suo contenuto sono
+     *   righe, non blocchi. Né dentro la pagina stessa o una sua
+     *   sottopagina (`moveExclusions`).
+     * - **Un database spostato arriva sempre come collegamento a
+     *   pagina**, anche se prima era mostrato dentro la pagina: chiesto
+     *   dall'utente il 24/09/2026 — se lo si vuole di nuovo aperto e
+     *   visibile lì, c'è "Turn into database" (tenendo premuto il
+     *   collegamento, o dai tre puntini del database). Prima si
+     *   ricreava sempre come database aperto.
+     * - **La pagina di una riga esce dal suo database**, come su Notion:
+     *   la riga si toglie, con i valori delle sue proprietà, e la pagina
+     *   diventa una pagina come le altre, con nome e contenuto. Prima
+     *   restava anche nel database, cioè in due posti insieme.
+     */
+    suspend fun movePageTo(pageId: String, destination: PageTreeNode): Boolean {
+        if (pageId == PageEntity.ROOT_PAGE_ID) return false
+        val page = pageDao.getById(pageId) ?: return false
+        val databaseDao = db.databaseDao()
+        val inside = pagesInside(pageId)
+        val destinationPageId = when {
+            destination.pageId != null -> destination.pageId
+            destination.rowId != null -> {
+                val row = databaseDao.getRowById(destination.rowId) ?: return false
+                if (row.pageId in inside) return false
+                ensureRowPage(destination.rowId) ?: return false
+            }
+            else -> return false
+        }
+        if (destinationPageId in inside) return false
+        val target = pageDao.getById(destinationPageId) ?: return false
+        if (target.isDatabase || target.trashedAt != null) return false
+        db.withTransaction {
+            blockDao.getBlocksLinkingTo(pageId).forEach { blockDao.delete(it) }
+            if (page.isRowPage) {
+                databaseDao.getRowsLinkingTo(pageId).forEach { databaseDao.deleteRow(it) }
+                pageDao.setRowPage(pageId, false)
+            }
+            appendLink(destinationPageId, pageId, isDatabase = false)
+        }
+        return true
     }
 
     /** Dove mettere la copia fatta da "Duplicate". */
@@ -922,10 +994,6 @@ class PageRepository(private val db: AppDatabase) {
         }
         return hits
     }
-
-    /** Le pagine dentro cui se ne può spostare un'altra: vedi `PageDao.getMoveDestinations`. */
-    suspend fun moveDestinations(exceptPageId: String): List<PageEntity> =
-        pageDao.getMoveDestinations().filterNot { it.id == exceptPageId }
 
     // --- Cronologia delle modifiche (la voce "Updates") ---
 
@@ -1328,6 +1396,48 @@ class PageRepository(private val db: AppDatabase) {
         blockDao.setIndentLevel(blockId, level)
 
     /**
+     * I collegamenti di una foto di Annulla che **non devono tornare**:
+     * quelli a una pagina che non c'è più, che è nel cestino, o che nel
+     * frattempo è stata spostata in un'altra pagina ("Move to").
+     *
+     * Le foto sono i blocchi di tutta la pagina, scattate prima; quello
+     * che è successo dopo alle pagine collegate non lo sanno. Rimettere il
+     * collegamento a una pagina spostata la faceva stare in due posti;
+     * rimetterlo a una pagina **cancellata** — un database eliminato dalle
+     * sue impostazioni, poi Annulla — era peggio: il blocco puntava a una
+     * pagina inesistente, il database lo rifiutava (chiave esterna) e
+     * l'app si chiudeva. Trovato il 24/09/2026 leggendo il codice.
+     */
+    private suspend fun withoutStaleLinks(pageId: String, blocks: List<BlockEntity>): List<BlockEntity> {
+        val stale = mutableSetOf<String>()
+        val checked = blocks.map { block ->
+            val linkedId = block.linkedPageId ?: return@map block
+            val linked = pageDao.getById(linkedId)
+            val isLink = block.type == BlockType.PAGE_LINK || block.type == BlockType.DATABASE_LINK
+            if (!isLink) {
+                // Un blocco che è stato un collegamento e poi è tornato
+                // testo può tenersi l'id della pagina: se quella non c'è
+                // più, l'id va tolto per la stessa chiave esterna.
+                return@map if (linked == null) block.copy(linkedPageId = null) else block
+            }
+            val movedAway = blockDao.getBlocksLinkingTo(linkedId).any { it.pageId != pageId }
+            if (linked == null || linked.trashedAt != null || movedAway) stale += block.id
+            block
+        }
+        if (stale.isEmpty()) return checked
+        // Un collegamento non ha figli, ma per sicurezza non si lascia
+        // nessun blocco appeso a uno tolto: la chiave esterna del
+        // genitore lo rifiuterebbe allo stesso modo.
+        var result = checked.filterNot { it.id in stale }
+        while (true) {
+            val ids = result.map { it.id }.toSet()
+            val orphaned = result.filter { it.parentBlockId != null && it.parentBlockId !in ids }
+            if (orphaned.isEmpty()) return result
+            result = result - orphaned.toSet()
+        }
+    }
+
+    /**
      * Rimette la pagina com'era in una foto dei suoi blocchi: è quello che
      * fanno Annulla e Ripristina.
      *
@@ -1341,8 +1451,9 @@ class PageRepository(private val db: AppDatabase) {
      * resta quello di adesso, perché Annulla non lo segue (vedi
      * `PageEditorViewModel`, "Annulla / Ripristina").
      */
-    suspend fun replaceAllBlocks(pageId: String, blocks: List<BlockEntity>) {
+    suspend fun replaceAllBlocks(pageId: String, snapshot: List<BlockEntity>) {
         db.withTransaction {
+            val blocks = withoutStaleLinks(pageId, snapshot)
             val keptIds = blocks.map { it.id }.toSet()
             val cells = tableCellDao.getCellsForPageOnce(pageId).filter { it.blockId in keptIds }
             blockDao.deleteAllForPage(pageId)

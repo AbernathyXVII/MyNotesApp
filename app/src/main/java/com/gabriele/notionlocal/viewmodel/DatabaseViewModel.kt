@@ -471,16 +471,22 @@ class DatabaseViewModel(
         }
     }
 
-    fun loadMoveDestinations(onReady: (List<PageEntity>) -> Unit) {
+    /** Dove questo database non si può spostare: lui stesso e le pagine delle sue righe, giù fino in fondo. */
+    fun loadMoveExclusions(onReady: (PageRepository.MoveExclusions) -> Unit) {
         val current = _page.value ?: return
-        viewModelScope.launch { onReady(pageRepository.moveDestinations(current.id)) }
+        viewModelScope.launch { onReady(pageRepository.moveExclusions(current.id)) }
     }
 
-    fun movePageTo(destinationPageId: String, onDone: () -> Unit) {
+    /**
+     * "Move to" dai tre puntini: il database arriva in fondo alla pagina
+     * scelta **come collegamento a pagina** (vedi
+     * `PageRepository.movePageTo`). `onDone` solo se lo spostamento c'è
+     * stato.
+     */
+    fun movePageTo(destination: PageRepository.PageTreeNode, onDone: () -> Unit) {
         val current = _page.value ?: return
         viewModelScope.launch {
-            pageRepository.movePageTo(current.id, destinationPageId)
-            onDone()
+            if (pageRepository.movePageTo(current.id, destination)) onDone()
         }
     }
 

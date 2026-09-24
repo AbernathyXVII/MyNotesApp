@@ -54,6 +54,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.gabriele.notionlocal.data.entity.PageEntity
+import com.gabriele.notionlocal.data.repository.PageRepository.MoveExclusions
+import com.gabriele.notionlocal.data.repository.PageRepository.PageTreeNode
+import com.gabriele.notionlocal.viewmodel.ViewModelFactory
 import com.gabriele.notionlocal.data.settings.AppSettings
 import com.gabriele.notionlocal.data.settings.TrashPolicy
 import com.gabriele.notionlocal.ui.i18n.Strings
@@ -70,10 +73,11 @@ import com.gabriele.notionlocal.ui.theme.FavoriteStar
  * che si vuole evitare in un menu di comandi.
  *
  * Ogni voce che non ha senso per la pagina aperta **non si vede**,
- * invece di vedersi spenta: sulla pagina principale non si può
- * spostare né buttare niente, e "Lock view" riguarda solo
- * l'impaginazione di un database. Le uniche spente sono Import ed
- * Export, e lì è diverso: si vedono apposta, per dire che arriveranno.
+ * invece di vedersi spenta: la pagina principale non si duplica né si
+ * butta, e "Lock view" riguarda solo l'impaginazione di un database.
+ * Le spente sono Import ed Export, che si vedono apposta per dire che
+ * arriveranno, e "Move to" sulla pagina principale, chiesta così
+ * dall'utente.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -145,8 +149,7 @@ fun PageOptionsSheet(
                 )
                 // Duplicare la pagina principale vorrebbe dire copiare
                 // l'archivio intero, sottopagine comprese, dentro sé
-                // stesso. Spostarla e buttarla, le voci qui sotto, non
-                // si può comunque.
+                // stesso. Buttarla non si può comunque.
                 if (!isRoot) {
                     HorizontalDivider()
                     OptionRow(
@@ -154,12 +157,20 @@ fun PageOptionsSheet(
                         label = Strings.duplicate,
                         onClick = onDuplicate
                     )
-                    HorizontalDivider()
-                    OptionRow(
-                        icon = Icons.Filled.DriveFileMove,
-                        label = Strings.moveTo,
-                        onClick = onMoveTo
-                    )
+                }
+                // Spostare sì, tranne la pagina principale, che non sta
+                // dentro niente. Lì la voce c'è ma è **grigia**, invece di
+                // sparire come le altre: l'utente ha chiesto di vederla,
+                // e grigia dice "non qui" senza bisogno di un messaggio
+                // (24/09/2026).
+                HorizontalDivider()
+                OptionRow(
+                    icon = Icons.Filled.DriveFileMove,
+                    label = Strings.moveTo,
+                    enabled = !isRoot,
+                    onClick = onMoveTo
+                )
+                if (!isRoot) {
                     if (onTurnIntoDatabase != null) {
                         HorizontalDivider()
                         OptionRow(
@@ -313,74 +324,46 @@ private fun StatRow(label: String, value: Int) {
 }
 
 /**
- * Dove mettere una pagina, scelto da un elenco.
+ * "Move to": dove mettere la pagina (o il database) che si sposta.
  *
- * L'elenco lo prepara il ViewModel: sono le pagine di testo non nel
- * cestino, meno quella che si sta spostando. Un database non compare
- * perché il suo contenuto sono righe, non blocchi, e un collegamento
- * lì dentro non avrebbe dove stare.
+ * È la stessa scelta di "Duplicate → Dentro una pagina" — l'albero della
+ * barra laterale con la ricerca in cima — perché l'utente la voleva così
+ * (24/09/2026): prima era un elenco piatto, in ordine alfabetico, delle
+ * sole pagine di testo, senza le pagine dei database e senza dire dove
+ * stesse ciascuna. Qui i database si aprono come cartelle e si sceglie
+ * una delle loro pagine; la pagina che si sposta e quello che ha dentro
+ * si vedono grigie (vedi `PageRepository.moveExclusions`).
+ *
+ * La riga di spiegazione cambia con quello che si sposta: un database
+ * arriva come collegamento a pagina, e la pagina di una riga esce dal suo
+ * database (vedi `PageRepository.movePageTo`).
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MoveToSheet(
-    destinations: List<PageEntity>,
+internal fun MovePagePicker(
+    page: PageEntity,
+    exclusions: MoveExclusions,
+    factory: ViewModelFactory,
     onDismiss: () -> Unit,
-    onPick: (PageEntity) -> Unit
+    onPick: (PageTreeNode) -> Unit
 ) {
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
-        containerColor = DarkSheet
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .navigationBarsPadding()
-        ) {
-            Text(
-                text = Strings.moveTo,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
-            if (destinations.isEmpty()) {
-                Text(
-                    text = Strings.noOtherPage,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 12.dp)
-                )
-            } else {
-                // Una colonna normale dentro una colonna che scorre
-                // già: una lista pigra qui dentro si troverebbe
-                // un'altezza senza limite e non saprebbe misurarsi. Le
-                // destinazioni sono poche per definizione — sono le
-                // pagine di testo dell'archivio — quindi non serve.
-                OptionsGroup {
-                    destinations.forEachIndexed { index, destination ->
-                        if (index > 0) HorizontalDivider()
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onPick(destination) }
-                                .padding(horizontal = 16.dp, vertical = 14.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(text = destination.icon)
-                            Spacer(modifier = Modifier.size(12.dp))
-                            Text(
-                                text = destination.title.ifBlank { Strings.untitled },
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                        }
-                    }
-                }
-            }
-            Spacer(modifier = Modifier.size(16.dp))
-        }
-    }
+    DestinationPickerSheet(
+        factory = factory,
+        title = Strings.moveTo,
+        hint = when {
+            page.isDatabase -> Strings.moveDatabaseHint
+            page.isRowPage -> Strings.moveRowPageHint
+            else -> Strings.moveHint
+        },
+        viewModelKey = "move-destination",
+        onDismiss = onDismiss,
+        onPick = onPick,
+        excluded = exclusions
+    )
 }
+
+/** Come chiamare nell'avviso il posto scelto: il nome della pagina, o "Menu principale". */
+internal fun PageTreeNode.placeName(): String =
+    if (pageId == PageEntity.ROOT_PAGE_ID) Strings.mainMenu else title.ifBlank { Strings.untitled }
 
 /** La conferma prima di buttare una pagina: è l'unica voce che toglie qualcosa di visibile. */
 @Composable

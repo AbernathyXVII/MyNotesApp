@@ -633,17 +633,17 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         }
     }
 
-    /** Le pagine dentro cui questa si può spostare. */
-    fun loadMoveDestinations(onReady: (List<PageEntity>) -> Unit) {
+    /** Dove questa pagina non si può spostare: vedi `PageRepository.moveExclusions`. */
+    fun loadMoveExclusions(onReady: (PageRepository.MoveExclusions) -> Unit) {
         val current = _page.value ?: return
-        viewModelScope.launch { onReady(repository.moveDestinations(current.id)) }
+        viewModelScope.launch { onReady(repository.moveExclusions(current.id)) }
     }
 
-    fun movePageTo(destinationPageId: String, onDone: () -> Unit) {
+    /** "Move to" dai tre puntini. `onDone` arriva solo se lo spostamento c'è stato. */
+    fun movePageTo(destination: PageRepository.PageTreeNode, onDone: () -> Unit) {
         val current = _page.value ?: return
         viewModelScope.launch {
-            repository.movePageTo(current.id, destinationPageId)
-            onDone()
+            if (repository.movePageTo(current.id, destination)) onDone()
         }
     }
 
@@ -2337,45 +2337,22 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         viewModelScope.launch { repository.setLocked(pageId, locked) }
     }
 
-    fun loadMoveDestinationsFor(pageId: String, onReady: (List<PageEntity>) -> Unit) {
-        viewModelScope.launch { onReady(repository.moveDestinations(pageId)) }
+    fun loadMoveExclusionsFor(pageId: String, onReady: (PageRepository.MoveExclusions) -> Unit) {
+        viewModelScope.launch { onReady(repository.moveExclusions(pageId)) }
     }
 
     /**
      * "Move to" dal menu del blocco: il collegamento sparisce da qui e ne
-     * nasce uno nella pagina scelta. Vedi `forgetLinksTo` per Annulla.
+     * nasce uno in fondo alla pagina scelta. Annulla non lo fa tornare:
+     * vedi `PageRepository.withoutStaleLinks`.
      */
-    fun moveLinkedPageTo(pageId: String, destinationPageId: String) {
-        forgetLinksTo(pageId)
-        viewModelScope.launch { repository.movePageTo(pageId, destinationPageId) }
+    fun moveLinkedPageTo(pageId: String, destination: PageRepository.PageTreeNode) {
+        viewModelScope.launch { repository.movePageTo(pageId, destination) }
     }
 
-    /** "Move to trash" dal menu del blocco. Vedi `forgetLinksTo` per Annulla. */
+    /** "Move to trash" dal menu del blocco. Annulla non fa tornare il collegamento, come sopra. */
     fun moveLinkedPageToTrash(pageId: String) {
-        forgetLinksTo(pageId)
         viewModelScope.launch { repository.moveToTrash(pageId) }
-    }
-
-    /**
-     * **Annulla non deve far tornare un collegamento a una pagina spostata
-     * o buttata.** Le foto di Annulla sono i blocchi di tutta la pagina, e
-     * ognuna scattata prima di "Move to" ha ancora dentro il collegamento:
-     * annullando una lettera scritta prima, il collegamento sarebbe
-     * ricomparso qui — puntando a una pagina che sta altrove, o nel
-     * cestino. Lo si toglie da tutte le foto, così il resto di Annulla
-     * continua a funzionare com'era.
-     */
-    private fun forgetLinksTo(pageId: String) {
-        fun List<BlockEntity>.withoutLinks() = filterNot {
-            it.linkedPageId == pageId &&
-                (it.type == BlockType.PAGE_LINK || it.type == BlockType.DATABASE_LINK)
-        }
-        val undo = undoStack.map { it.withoutLinks() }
-        val redo = redoStack.map { it.withoutLinks() }
-        undoStack.clear()
-        undoStack.addAll(undo)
-        redoStack.clear()
-        redoStack.addAll(redo)
     }
 
     /**

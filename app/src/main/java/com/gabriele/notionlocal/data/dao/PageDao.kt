@@ -132,19 +132,12 @@ interface PageDao {
     suspend fun setSimpleDatabase(pageId: String, simple: Boolean)
 
     /**
-     * Le pagine dentro cui se ne può spostare un'altra.
-     *
-     * Niente database: il loro contenuto sono righe, non blocchi, e un
-     * collegamento a pagina lì dentro non avrebbe dove stare. Niente
-     * pagine-riga per lo stesso motivo pratico — sono il dettaglio di
-     * una riga, non un contenitore — e niente pagine nel cestino, che
-     * sarebbe spostare una cosa in un posto che non si vede.
+     * Se la pagina è quella di una riga di database. Si spegne quando la
+     * pagina esce dal database con "Move to" e diventa una pagina come le
+     * altre. Una colonna sola, come sopra.
      */
-    @Query(
-        "SELECT * FROM pages WHERE isDatabase = 0 AND isRowPage = 0 " +
-            "AND trashedAt IS NULL ORDER BY title COLLATE NOCASE ASC"
-    )
-    suspend fun getMoveDestinations(): List<PageEntity>
+    @Query("UPDATE pages SET isRowPage = :rowPage WHERE id = :pageId")
+    suspend fun setRowPage(pageId: String, rowPage: Boolean)
 
     /**
      * Ricerca full-text sul titolo delle pagine. Per la ricerca dentro

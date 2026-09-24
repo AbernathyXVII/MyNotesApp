@@ -583,6 +583,12 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   con spazi, righe (blocchi con del testo), caratteri
   giapponesi, cinesi e lettere coreane. Conta solo il testo scritto
   nella pagina: niente database, niente titolo
+- **Move to** *(sessione cloud del 24/09/2026, da verificare sul
+  telefono)* dai tre puntini di una pagina o di un database, e dal menu
+  del blocco: l'albero della barra laterale con la ricerca in cima, da
+  cui si sceglie qualsiasi pagina, comprese quelle dei database; la
+  pagina finisce **in fondo**. Un database arriva sempre come
+  collegamento a pagina. Sulla pagina principale la voce è grigia
 - **Duplicate** dal menu dei tre puntini, con la scelta di dove mettere
   la copia: accanto all'originale (per una riga di database, una riga
   nuova), in fondo al menu principale o dentro una pagina qualsiasi,
@@ -804,6 +810,15 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   dentro una sottopagina) toglie il collegamento alla copia, ma la copia
   resta: la si ritrova dalla ricerca. Annulla segue i blocchi della
   pagina, non le pagine
+- **Move to fuori da un database perde le proprietà della riga**: la
+  pagina esce dal database, come su Notion, e i valori delle colonne
+  restano con la riga, che si toglie. Lo dice la riga di spiegazione
+  quando si sposta la pagina di una riga. Nome e contenuto restano
+- **Annulla non riporta indietro un "Move to" né un "Move to trash"**:
+  le pagine non sono nelle sue foto. Dopo uno spostamento in un'altra
+  pagina, Annulla lascia la pagina dove è stata messa e non ne rimette il
+  collegamento dov'era. (Spostata in fondo alla stessa pagina, invece,
+  Annulla la rimette al posto di prima: lì è solo un blocco che si muove)
 - **"Turn into simple database" non si annulla**: le pagine delle righe
   se ne vanno per sempre, come chiesto (richiesta 31). Per questo, se
   hanno del contenuto, prima c'è una conferma col loro numero
@@ -1073,6 +1088,20 @@ README di una riga).
     mi servono» — scritto mentre il lavoro sulla 31 era in corso. Fatto:
     per una riga di testo il menu ha solo Turn into, Color e Duplicate
     (anche Rename è rimasto alle pagine: vedi Cronologia)
+33. «Penso che già ci sia, ma dammi la possibilità di muovere la pagina
+    corrente (TRANNE QUELLA DEL MENU PRINCIPALE, o mi dici "The main
+    menu cannot be moved" oppure l'opzione solo nel menu principale me
+    la fai in grigio, dimmi te poi decido io) in altre pagine. Una volta
+    toccato su Move to, mi apparirà una barra di ricerca (simile alla
+    visualizzazione gerarchica della sidebar) che mi consentirà di
+    cercare la pagina o il database (selezionando la pagina di
+    quest'ultimo) dove andrò a mettere la pagina che voglio spostare. Di
+    default, sempre in fondo. Se voglio spostare un database, mettimelo
+    sempre di default come pagina, poi se lo voglio convertire in
+    database aperto e visualizzabile lo deciderò io» — fatto: vedi
+    Cronologia "Move to — l'albero con la ricerca". Per la pagina
+    principale proposta la voce grigia (messa così); il messaggio resta
+    l'alternativa, la scelta è dell'utente
 
 **Cosa è stato fatto:**
 
@@ -1178,7 +1207,8 @@ README di una riga).
 lo spostamento delle colonne, il 16 il conteggio del testo, il 17 e il
 18 font e dimensione, il 19 i titoli tolti, il 20 il menu "+", il 21 il
 database semplice, il 22 il menu del blocco, il 23 le due correzioni
-trovate scrivendolo; prima di installare, **copia
+trovate scrivendolo, il 24 il nuovo Move to, il 25 Annulla dopo una
+pagina spostata o cancellata; prima di installare, **copia
 del database**: questa build cambia lo schema quattro volte — 24→25→26→27→28):
 
 1. **Compila anche sul PC?** In cloud sì (`assembleDebug` riuscito),
@@ -1366,6 +1396,45 @@ del database**: questa build cambia lo schema quattro volte — 24→25→26→2
       elenco, in una casella): le righe che aveva dentro devono
       comparire subito sotto, allo stesso livello, nell'ordine in cui
       erano. Prima sparivano alla vista.
+24. **Move to** (richiesta 33), da tutte e tre le strade: tre puntini di
+    una pagina, tre puntini di un database a schermo intero, menu del
+    blocco (pressione lunga su un collegamento).
+    - Sulla **pagina principale** la voce c'è, grigia, e non si tocca.
+    - Toccandola si apre l'albero come quello della barra laterale, con
+      "Cerca una pagina" in cima e la riga di spiegazione (diversa per
+      una pagina, un database, la pagina di una riga). I database si
+      aprono come cartelle e non si scelgono; si sceglie una delle loro
+      pagine, anche di una riga **mai aperta** (la sua pagina nasce). I
+      database semplici non hanno pagine da scegliere.
+    - **La pagina che si sposta** si vede grigia al suo posto, non si
+      tocca e non si apre; cercando, lei e le sue sottopagine **non
+      compaiono**. Provare a cercare una sua sottopagina: non deve
+      esserci. Nemmeno le righe dei database che ha dentro.
+    - Scelta una pagina: la pagina spostata compare **in fondo** a
+      quella, e sparisce da dove stava; un avviso dice "Spostata in …".
+      Dai tre puntini si torna indietro, dal menu del blocco si resta.
+      Scegliendo la pagina in cui sta già: finisce in fondo (anche se
+      prima era dentro un toggle).
+    - **Un database** — anche uno che si vedeva aperto dentro la pagina —
+      arriva come **collegamento a pagina**; tenendolo premuto, "Turn
+      into database" lo riapre dentro la pagina.
+    - **La pagina di una riga** spostata fuori: la riga sparisce dal
+      database (con le sue proprietà, come dice la spiegazione), la
+      pagina tiene nome e contenuto, compare nella barra laterale sotto
+      la pagina scelta e non più sotto il database; riaprendola, niente
+      proprietà in cima.
+    - La barra laterale, riaperta, mostra tutto al posto giusto.
+25. **Annulla dopo pagine spostate o cancellate** (correzione trovata
+    scrivendo il 24):
+    - Scrivere una lettera in una pagina, poi spostare altrove (o buttare
+      nel cestino) una sua sottopagina dal menu del blocco, poi Annulla:
+      la lettera sparisce ma il collegamento **non** ricompare.
+    - Dai tre puntini della sottopagina (aperta), Move to verso un'altra
+      pagina; tornati indietro, Annulla: il collegamento non ricompare.
+    - **Il caso che faceva chiudere l'app**: in una pagina con un
+      database dentro, eliminarlo dalle sue impostazioni (Delete), poi
+      Annulla. L'app **non** deve chiudersi; il database non torna (è
+      cancellato per davvero), il resto della pagina sì.
 
 ## Cronologia degli aggiornamenti
 
@@ -1373,6 +1442,71 @@ Le voci nate nelle sessioni cloud stanno qui in cima, la più recente
 per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
+
+**Move to — l'albero con la ricerca** *(sessione cloud del 24/09/2026,
+richiesta 33: compilato, test passati, nessuna migrazione, **non
+provato sul telefono**)*
+- **[Nuova funzionalità]** **"Move to" apre l'albero della barra
+  laterale con la ricerca in cima** — lo stesso di "Duplicate → Dentro
+  una pagina" (`DestinationPickerSheet`, ora condiviso, e
+  `MovePagePicker`) — dai tre puntini di una pagina, dai tre puntini di
+  un database a schermo intero e dal menu del blocco. Prima era un
+  elenco piatto, in ordine alfabetico, delle sole pagine di testo
+- **[Nuova funzionalità]** Si può scegliere **anche la pagina di un
+  database**: i database si aprono come cartelle, e si sceglie una delle
+  loro righe — anche una mai aperta, la cui pagina nasce in quel
+  momento. Il database stesso no: il suo contenuto sono righe, non
+  blocchi. Prima le pagine delle righe erano escluse
+- **[Nuova funzionalità]** **Sempre in fondo** alla pagina scelta, come
+  chiesto: anche scegliendo la pagina in cui sta già (prima lì non
+  succedeva niente). Un avviso dice "Spostata in …"; dal menu del blocco
+  si resta nella pagina, dai tre puntini si torna indietro come prima
+- **[Nuova funzionalità]** **Un database spostato arriva sempre come
+  collegamento a pagina**, anche se prima era aperto dentro la pagina:
+  per riaprirlo lì c'è "Turn into database" (tenendo premuto il
+  collegamento, o dai tre puntini del database). Prima si ricreava
+  sempre aperto. La riga di spiegazione in cima all'albero lo dice
+- **[Nuova funzionalità]** **"Move to" sulla pagina principale c'è ma è
+  grigia** (prima non c'era proprio). L'utente ha lasciato la scelta fra
+  la voce grigia e un messaggio "The main menu cannot be moved": messa
+  la grigia, perché è già il modo in cui l'app dice "non qui" (Import ed
+  Export nello stesso menu) e non costa un tocco a vuoto. Cambiarla col
+  messaggio è una riga
+- **[Bug fix]** *(trovato scrivendo questo)* **Si poteva spostare una
+  pagina dentro una sua sottopagina**: il vecchio elenco offriva tutte
+  le pagine tranne quella stessa. Il risultato era un giro chiuso — la
+  pagina dentro la sottopagina, la sottopagina dentro la pagina — e
+  nessuna delle due si raggiungeva più dal menu principale. Ora la
+  pagina e tutto quello che ha dentro, giù fino in fondo, si vedono
+  grigie e non si aprono, e cercando non compaiono
+  (`PageRepository.moveExclusions`); il repository rifiuta comunque lo
+  spostamento se arriva da un'altra strada
+- **[Bug fix]** *(trovato scrivendo questo)* **La pagina di una riga
+  spostata restava anche nel database**, cioè in due posti. Ora esce dal
+  database, come su Notion: la riga si toglie con le sue proprietà, e la
+  pagina diventa una pagina come le altre (`isRowPage` spento,
+  `PageDao.setRowPage`). La riga di spiegazione lo dice prima di scegliere
+- **[Bug fix]** *(trovato scrivendo questo)* **Annulla dopo aver
+  eliminato un database dentro la pagina faceva chiudere l'app.**
+  L'eliminazione (`deleteDatabaseBlock`) scatta una foto per Annulla e
+  poi cancella il database; Annulla rimetteva il blocco, che puntava a
+  una pagina non più esistente, e il database lo rifiutava (chiave
+  esterna) — un errore dentro una coroutine senza nessuno che lo
+  raccolga. Ora, a ogni Annulla e Ripristina, i collegamenti della foto
+  a pagine **cancellate, nel cestino o spostate in un'altra pagina** non
+  tornano (`PageRepository.withoutStaleLinks`, dentro
+  `replaceAllBlocks`). Vale per tutte le strade — tre puntini della
+  sottopagina, menu del blocco, cestino — e sostituisce `forgetLinksTo`
+  della voce precedente, che copriva solo il menu del blocco
+- **[Rimosso]** La vecchia finestra di "Move to" (`MoveToSheet`), la
+  query delle sue destinazioni (`PageDao.getMoveDestinations`,
+  `PageRepository.moveDestinations`), le funzioni che la caricavano nei
+  due ViewModel e il testo "Non c'è un'altra pagina in cui spostarla"
+  (`Strings.noOtherPage`): con l'albero c'è sempre almeno il menu
+  principale
+- **[Progetto]** `TreeRow` ha lo stato spento (`enabled`), grigio e senza
+  triangolino. Testi nuovi nelle otto lingue (`Strings.moveHint`,
+  `moveDatabaseHint`, `moveRowPageHint`, `movedInto`)
 
 **Il menu del blocco — i sei puntini** *(sessione cloud del 24/09/2026,
 richieste 31-32: compilato, test passati, nessuna migrazione — schema
@@ -1485,7 +1619,11 @@ sempre alla 28 —, **non provato sul telefono**)*
 - **[Progetto]** **Annulla non fa ricomparire il collegamento a una
   pagina spostata o buttata** dal menu del blocco: le foto di Annulla
   sono tutti i blocchi della pagina, e quelle scattate prima avevano
-  ancora il collegamento. Viene tolto da tutte (`forgetLinksTo`)
+  ancora il collegamento. Viene tolto da tutte (`forgetLinksTo`).
+  *Superato* nella voce successiva ("Move to — l'albero con la
+  ricerca"): `forgetLinksTo` è stata tolta, e al suo posto un controllo
+  fatto a ogni Annulla vale per tutte le strade, non solo per il menu
+  del blocco (`withoutStaleLinks`)
 - **[Progetto]** `SLASH_ENTRIES`, `SlashEntry`, `SlashAction`,
   `SlashCategory` (in `PageEditorScreen.kt`) e `OptionsGroup`,
   `OptionRow` (in `PageOptionsSheet.kt`) da privati a `internal`, per
@@ -2743,7 +2881,8 @@ deliberate" sopra per il contesto completo.
 - **Import ed Export sono spente**, come chiesto: si vedono per dire
   che arriveranno. Le voci che invece **non hanno senso** su una certa
   pagina non ci sono affatto — sulla principale niente Favorite,
-  Duplicate, Move to o Move to trash, e "Lock view" solo sui database.
+  Duplicate, Move to o Move to trash, e "Lock view" solo sui database
+  (*dal 24/09/2026 Move to sulla principale c'è, grigia*: richiesta 33).
   Sono due cose diverse: spenta vuol dire "non ancora", assente vuol
   dire "non qui"
 - **Duplicate** copia blocchi e, per un database, colonne righe e
@@ -2759,7 +2898,10 @@ deliberate" sopra per il contesto completo.
   ma **i blocchi che la richiamano**, quindi spostare vuol dire togliere
   quel collegamento e crearne uno in fondo alla pagina scelta. Fra le
   destinazioni non compaiono i database (il loro contenuto sono righe,
-  non blocchi) né le pagine nel cestino
+  non blocchi) né le pagine nel cestino.
+  *Superato* (24/09/2026, richiesta 33): la scelta ora è l'albero con la
+  ricerca, comprese le pagine dei database; vedi "Move to — l'albero con
+  la ricerca" più in alto
 - **Move to trash** non cancella niente: segna `trashedAt` e toglie i
   collegamenti che la mostravano. Il contenuto resta tutto. **Non c'è
   ancora una schermata del cestino** — finché non c'è, una pagina
