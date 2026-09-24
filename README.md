@@ -449,7 +449,12 @@ capo.
    scegli una cartella **nuova** (non la vecchia
    `Downloads\NotionLocal`, che non è collegata al repository). Se il
    progetto è già stato clonato, basta aprirne la cartella con
-   `File → Open` e aggiornarla con `Git → Pull`
+   `File → Open` e aggiornarla con `Git → Pull`.
+   **Il ramo giusto**: il lavoro cloud sta su
+   `claude/funny-ramanujan-uuwahs` finché la sua pull request non è
+   unita in `main`. Se non lo è, dopo aver clonato si passa a quel ramo
+   (`git checkout claude/funny-ramanujan-uuwahs`, o in basso a destra in
+   Android Studio) — su `main` ci sarebbe il codice di prima del cloud
 3. Se richiesto, seleziona una JDK 21 per Gradle (non la più recente
    disponibile — Gradle 8.7 supporta fino alla 21). Va rifatto ad ogni
    estrazione fresca del progetto: l'impostazione vive in `.idea/`
@@ -1299,6 +1304,16 @@ README di una riga).
     apre Subscript e Superscript. Fatto: vedi Cronologia "Pedice e apice
     nella barra Aa". Qui sono due pulsanti affiancati invece di uno col
     menu, come chiesto (un'icona per ciascuno)
+40. «Ultimissa richiesta, poi ti saluto e ritornerò in Code lunedì: lì
+    cosa dovrò dare, lo zip oppure in downloads metterò la cartella
+    scaricata e aggiornata da Github oppure l'APK? Oppure cosa?» —
+    risposto: nessuno dei tre. Né lo zip né l'APK: su Code si **clona il
+    repository** con git (lo fa Code stesso), così ha il codice, la
+    storia per `git diff 4a35c64` e può ripubblicare; lo zip di GitHub
+    non ha la storia, l'APK non ha il codice. Prima conviene **unire la
+    pull request** del ramo `claude/funny-ramanujan-uuwahs` in `main`
+    dal sito; se non è unita, si clona quel ramo. Aggiunto il ramo al
+    passo 2 di "Come aprirla", che non lo diceva
 
 **Cosa è stato fatto:**
 
