@@ -172,6 +172,31 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
     private val pendingInserts = mutableListOf<PendingInsert>()
     private var lastLoadedBlocks: List<BlockEntity> = emptyList()
 
+    /**
+     * **La riga vuota di una pagina senza righe.** Si mostra per non
+     * lasciare una pagina bianca senza cursore (vedi `publishBlocks`), ma
+     * nel database non c'è finché non la si scrive.
+     *
+     * Ha **sempre lo stesso id** finché si resta sulla pagina. Prima ne
+     * nasceva una nuova, con un id nuovo, a ogni lettura del database, e il
+     * campo di testo — che si riconosce dall'id della sua prima riga — con
+     * lei. E va salvata **insieme** alla prima modifica, anche quando la
+     * modifica non la tocca (vedi `unsavedPlaceholderIn` in `updateRun`):
+     * con l'Invio su una pagina vuota si salvava la sola riga nuova, la riga
+     * vuota spariva, il campo rinasceva e il cursore restava a nessuno —
+     * tastiera aperta, barra sparita, e quello che si scriveva non andava da
+     * nessuna parte. Trovato sul telefono il 25/09/2026.
+     */
+    private var placeholder: BlockEntity? = null
+
+    private fun placeholderFor(pageId: String): BlockEntity =
+        placeholder?.takeIf { it.pageId == pageId }
+            ?: BlockEntity(pageId = pageId, orderIndex = 0).also { placeholder = it }
+
+    /** La riga vuota di cortesia, se è fra queste e nel database non c'è ancora. */
+    private fun unsavedPlaceholderIn(blocks: List<BlockEntity>): BlockEntity? =
+        placeholder?.takeIf { p -> blocks.any { it.id == p.id } && lastLoadedBlocks.none { it.id == p.id } }
+
     /** Mostra subito una riga nuova che il database deve ancora scrivere. */
     private fun showBeforeSaved(newBlockId: String, applyTo: (List<BlockEntity>) -> List<BlockEntity>) {
         pendingInserts += PendingInsert(newBlockId, applyTo)
@@ -192,7 +217,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         // così l'utente non vede una schermata completamente bianca
         // senza cursore.
         _blocks.value = shown.ifEmpty {
-            listOf(BlockEntity(pageId = currentPageId ?: return, orderIndex = 0))
+            listOf(placeholderFor(currentPageId ?: return))
         }
     }
 
@@ -766,6 +791,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
 
         blocksFlowJob?.cancel()
         pendingInserts.clear()
+        placeholder = null
         blocksFlowJob = viewModelScope.launch {
             repository.getBlocks(pageId).collect { loaded ->
                 lastLoadedBlocks = loaded
@@ -2087,6 +2113,21 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
      */
     fun startNumberedListAtLine(runBlockIds: List<String>, lineIndex: Int, startNumber: Int): Boolean {
         val block = resolveRun(runBlockIds)?.getOrNull(lineIndex) ?: return false
+        return startNumberedList(block, startNumber)
+    }
+
+    /**
+     * Lo stesso "5." per una riga che ha un campo suo: le righe dentro un
+     * toggle. Fino al 25/09/2026 lì non scattava — la regola c'era solo
+     * nel testo condiviso — e l'utente ha trovato che dentro un toggle
+     * "le Numbered list non vengono attivate".
+     */
+    fun startNumberedListInBlock(blockId: String, startNumber: Int): Boolean {
+        val block = _blocks.value.find { it.id == blockId } ?: return false
+        return startNumberedList(block, startNumber)
+    }
+
+    private fun startNumberedList(block: BlockEntity, startNumber: Int): Boolean {
         if (block.type != BlockType.PARAGRAPH) return false
         snapshotForStructuralChange()
         viewModelScope.launch {
@@ -2184,7 +2225,21 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         }
 
         var suffixCount = 0
-        val maxSuffix = minCount - prefixCount
+        // **E quando le righe calano, la riga del cursore è fra quelle
+        // riscritte.** Col backspace a inizio della seconda di quattro
+        // righe vuote, il confronto dal fondo le trovava tutte uguali e
+        // toglieva la **prima**: per il testo è lo stesso, ma il campo
+        // condiviso è legato al suo primo blocco (la chiave nell'elenco),
+        // e tolto quello rinasceva da capo — la tastiera spariva.
+        // Trovato dall'utente il 25/09/2026. Tenendo dentro la riga del
+        // cursore si riscrive quella e si toglie la successiva, che è
+        // quella davvero cancellata. Solo quando le righe calano:
+        // all'Invio a inizio riga il blocco che scende deve restare lui.
+        val maxSuffix = if (caretLine != null && newLines.size < oldTexts.size) {
+            minOf(minCount - prefixCount, (newLines.size - 1 - caretLine).coerceAtLeast(0))
+        } else {
+            minCount - prefixCount
+        }
         while (suffixCount < maxSuffix &&
             oldTexts[oldTexts.size - 1 - suffixCount] == newLines[newLines.size - 1 - suffixCount]
         ) suffixCount++
@@ -2258,6 +2313,13 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
             newMiddleSpans.getOrNull(index)?.takeIf { it.plainText() == line }
                 ?: listOf(RichTextSpan(text = line))
 
+        // La riga vuota di una pagina appena aperta va scritta anche se la
+        // modifica non la tocca (l'Invio aggiunge solo quella sotto): vedi
+        // `placeholder`. Nella stessa transazione, così non c'è un attimo
+        // in cui il database ha la riga nuova e non quella di prima.
+        val placeholderToSave = unsavedPlaceholderIn(runBlocks)
+            ?.takeIf { p -> oldMiddleBlocks.none { it.id == p.id } }
+
         // Una transazione sola per tutto il cambiamento, righe
         // riscritte e righe nuove insieme: vedi
         // `PageRepository.applyBlockChanges`. Scritte una alla volta
@@ -2283,7 +2345,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
                             extraLines.size
                         )
                     },
-                    saved = rewritten + extraLines.mapIndexed { i, line ->
+                    saved = listOfNotNull(placeholderToSave) + rewritten + extraLines.mapIndexed { i, line ->
                         BlockEntity(
                             pageId = pageId,
                             parentBlockId = parentBlockId,
@@ -2298,7 +2360,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
                 )
             } else {
                 repository.applyBlockChanges(
-                    saved = newMiddleLines.mapIndexed { i, line ->
+                    saved = listOfNotNull(placeholderToSave) + newMiddleLines.mapIndexed { i, line ->
                         oldMiddleBlocks[i].copy(
                             textJson = json.encodeToString(spansForLine(i, line))
                         )

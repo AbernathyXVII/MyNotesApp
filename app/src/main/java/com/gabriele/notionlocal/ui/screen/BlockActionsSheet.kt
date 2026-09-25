@@ -37,7 +37,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -167,7 +166,7 @@ internal fun BlockActionsHost(
     var rowPagesToLose by remember { mutableIntStateOf(0) }
 
     when (step) {
-        BlockMenuStep.MENU, BlockMenuStep.TURN_INTO -> ModalBottomSheet(
+        BlockMenuStep.MENU, BlockMenuStep.TURN_INTO -> NoteBottomSheet(
             onDismissRequest = onDismiss,
             sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
             containerColor = DarkSheet

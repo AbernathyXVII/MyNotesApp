@@ -3,12 +3,13 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <!--
-      L'unica cosa per cui l'app va in rete: scaricare **una volta**
-      l'immagine di un collegamento incollato dall'utente, per poi
-      tenerla sul telefono come tutto il resto. Nessun account, nessuna
-      sincronizzazione, nessuna chiamata che parta da sola.
+      **Nessun permesso di rete.** Fino al 25/09/2026 c'era, per una cosa
+      sola: scaricare l'immagine di un link incollato dall'utente. Tolto
+      il link (su sua richiesta, le immagini si caricano dal telefono), se
+      n'è andato anche il permesso: l'app non si collega a niente. I font
+      cinesi e giapponesi li scarica Google Play Services per conto suo,
+      col permesso suo.
     -->
-    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:allowBackup="true"

@@ -54,7 +54,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -606,7 +605,7 @@ private fun ZonePickerSheet(onDismiss: () -> Unit, onPick: (String) -> Unit) {
         val now = Instant.now()
         sortedWestToEast(selectableZoneIds(), now).map { id -> id to gmtLabel(ZoneId.of(id), now) }
     }
-    ModalBottomSheet(
+    NoteBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = DarkSheet

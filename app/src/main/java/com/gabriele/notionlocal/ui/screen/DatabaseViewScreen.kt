@@ -140,7 +140,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -3679,7 +3678,7 @@ private fun SortSheet(
     onClear: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    ModalBottomSheet(
+    NoteBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = DarkSheet
@@ -3838,7 +3837,7 @@ private fun FilterSheet(
     val chosen = columns.find { it.id == chosenId }
     val filterable = columns.filter { it.isFilterable() }
 
-    ModalBottomSheet(
+    NoteBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = DarkSheet
@@ -4935,7 +4934,7 @@ private fun TagPickerSheet(
     val matching = options.filter { it.label.contains(trimmed, ignoreCase = true) }
     val exactExists = options.any { it.label.equals(trimmed, ignoreCase = true) }
 
-    ModalBottomSheet(
+    NoteBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = DarkSheet
@@ -4955,7 +4954,7 @@ private fun TagPickerSheet(
                     editing = null
                 }
             )
-            return@ModalBottomSheet
+            return@NoteBottomSheet
         }
 
         Column(
@@ -5168,7 +5167,7 @@ private fun DateEditorSheet(
     val selectedStartDate = pickerState.selectedStartDateMillis?.pickerMillisToLocalDate()
         ?: LocalDate.now()
 
-    ModalBottomSheet(
+    NoteBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = DarkSheet
@@ -5956,7 +5955,7 @@ private fun RowActionsSheet(
 ) {
     var page by remember(row.id) { mutableStateOf(RowActionsPage.ROOT) }
 
-    ModalBottomSheet(
+    NoteBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = DarkSheet
@@ -6257,7 +6256,7 @@ private fun SettingsSheet(
 ) {
     var page by remember(initialPage) { mutableStateOf(initialPage) }
 
-    ModalBottomSheet(
+    NoteBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = DarkSheet
@@ -6955,7 +6954,7 @@ private fun PropertySheet(
     // quel caso non faceva niente, in silenzio.
     val effectiveName = name.ifBlank { DbStrings.englishTypeName(selectedType) }
 
-    ModalBottomSheet(
+    NoteBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = DarkSheet
@@ -7793,7 +7792,7 @@ private fun TimelineZoomSheet(
     onPick: (TimelineZoom) -> Unit,
     onDismiss: () -> Unit
 ) {
-    ModalBottomSheet(
+    NoteBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = DarkSheet

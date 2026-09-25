@@ -25,7 +25,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -109,7 +108,7 @@ private fun DuplicateSheet(
     onMainMenu: () -> Unit,
     onChoosePage: () -> Unit
 ) {
-    ModalBottomSheet(
+    NoteBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = DarkSheet
@@ -231,7 +230,7 @@ internal fun DestinationPickerSheet(
     val query by picker.query.collectAsStateWithLifecycle()
     val results by picker.results.collectAsStateWithLifecycle()
 
-    ModalBottomSheet(
+    NoteBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = DarkSheet

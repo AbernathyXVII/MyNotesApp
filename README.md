@@ -613,8 +613,10 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   l'anno mostra dodici mesi in miniatura con i giorni occupati cerchiati
 - **Icona e copertina per ogni pagina**, radice compresa: si toccano
   per cambiarle, e l'immagine arriva dalla **galleria del telefono**
-  ("Upload") o da un **collegamento** ("Link"). Il collegamento viene
-  scaricato una volta sola e il file resta sul telefono
+  ("Upload"), di cui l'app tiene una copia. Un PNG trasparente resta
+  trasparente. (Fino al 25/09/2026 anche da un link: tolto su
+  richiesta, e con lui il permesso di rete — l'app non si collega a
+  niente)
 - **La copertina si inquadra**: da "Reposition" la si sposta col dito
   in tutte le direzioni e la si ingrandisce pizzicando, fino a
   quattro volte. Il file non viene mai ritagliato né ridotto — nel
@@ -860,7 +862,18 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   "Reposition" la sposta e la ingrandisce (vedi "Copertina —
   inquadratura" in Cronologia)
 - **Immagini: non c'è una raccolta da cui scegliere**, come le copertine pronte di Notion. Si mette la propria
-- **Immagini da collegamento: fino a 20 MB.** Un collegamento può puntare a qualunque cosa, e senza tetto una pagina da mezzo giga riempirebbe il telefono mentre l'utente aspetta
+- **Un'immagine mandata con Telegram come "foto" perde la trasparenza.**
+  Telegram la comprime in JPEG, che la trasparenza non ce l'ha: l'icona
+  arriva con lo sfondo bianco già dentro, e l'app non può toglierlo senza
+  rovinare le icone che hanno parti bianche. Va mandata come **file**
+  (su Telegram per PC: togliere "Comprimi immagini"), o scaricata
+  direttamente sul telefono. Verificato il 25/09/2026 su un'icona di
+  Flaticon: il file ricevuto era `IMG_…jpg`, e mandato come file è
+  rimasto trasparente
+- **Nelle finestrelle che salgono dal basso la barrettina Copia / Incolla
+  è dell'app**, non del telefono (vedi Cronologia del 25/09/2026, "quattro
+  bug"): ha Cut, Copy, Paste e Select all con le scritte di Android, ma
+  non le voci in più che Samsung aggiunge altrove
 - **Font: nessuno è quello vero.** Helvetica, Arial, Calibri, Cambria,
   Consolas, Georgia, Verdana, Times New Roman, Futura, Garamond e SimSun
   (dal 25/09/2026 al posto di MS YaHei, che col suo sosia era identico
@@ -1954,6 +1967,120 @@ Le voci nate nelle sessioni cloud stanno qui in cima, la più recente
 per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
+
+**25/09/2026 — quattro bug, il link delle immagini tolto, la pagina vuota**
+*(Claude Code sul PC; tutto verificato sul telefono lo stesso giorno; 94
+test passati; commit solo in locale, **non** su GitHub finché l'utente non
+lo dice)*
+
+Richiesta dell'utente, parola per parola:
+> «BUGS:
+> 1) Se metto un'icona su una pagina tramite il link, incollo il link, e
+> poi però non posso fare più nulla. Non posso scaricare ed usare
+> quell'icona dal link, nulla. Di solito, c'è un pulsante tipo upload, che
+> consente di scaricare temporaneamente oppure direttamente sul telefono
+> per poi incollarla sullo spazio dell'icona dedicata alla pagina
+> 2) Se io ho più di due blocchi vuoti, partendo dall'alto, mi capita che
+> se io mi trovo al  secondo blocco dall'alto, e cancello, mi va al primo
+> blocco (come di consueto) ma non sono sicuro perché ma si bugga facendo
+> scomparire la tastiera
+> 3) Nella selezione del colore esadecimale delle barre del widget Life
+> progress bar, non escono le opzioni classiche del telefono quando
+> seleziono del testo e tengo premuto, quindi copia, incolla, select all e
+> il resto. Questo problema c'è anche in tutte le selezioni del colore in
+> generale? Fixalo per favore
+> 4) Vedi sotto il database aperto in Gallery? C'è un toggle. Quello che
+> c'è dentro è storto (come la freccetta del toggle) e dentro le Numbered
+> list non vengono attivate»
+
+Poi, dopo un'interruzione di corrente: «Sì, continua pure e sistema anche
+quel bug» (quello della pagina vuota, trovato da Claude durante le prove);
+e, visto il pulsante "Download": «Non voglio appesantirti troppo il
+lavoro, quindi togliamo la funziona link, useremo solo Upload
+direttamente dal telefono. Ma vorrei chiederti una cosa: è normale che se
+scarico un'icona .png 512x512 da Flaticon e la uploado, il .png si
+"annulla" e vedo lo sfondo bianco? È normale o puoi fare qualcosa in modo
+che lo sfondo del .png sia trasparente (proprio per rispettare quello che
+i .png fanno) ?»
+
+- **[Rimosso]** **Il link delle immagini** (icona e copertina). Prima c'era
+  una pastiglia "Link" accanto a "Upload", spenta finché il campo era
+  vuoto, che scaricava l'immagine: sembrava un'etichetta. Per qualche ora
+  è diventata un pulsante "Download" accanto al campo, col tasto Invio e i
+  motivi dell'errore spiegati (un sito che rifiuta, un link che non è
+  un'immagine, niente rete); provandolo sul telefono il download è
+  risultato lentissimo (oltre 20 secondi anche per una pagina minuscola,
+  0,1 s dal PC: probabilmente la rete del telefono), e l'utente ha chiesto
+  di togliere il link. Tolto tutto: il campo, il pulsante, lo scaricamento
+  (`PageImageStore.saveFromUrl`) e le sue scritte. La finestrella ha solo
+  **Upload** (e Reposition / Remove quando c'è un'immagine)
+- **[Rimosso]** **Il permesso di andare in rete** (`INTERNET` nel
+  manifest): serviva solo al link. I font cinesi e giapponesi li scarica
+  Google Play Services col permesso suo. Da ora l'app non si collega a
+  niente
+- **[Bug fix]** Scegliendo dalla galleria un file che non è un'immagine,
+  la copia fallita restava nella cartella dell'app: si cancellava un file
+  che aveva per nome il messaggio d'errore (`PageImageStore.saveFromGallery`)
+- **Il PNG con lo sfondo bianco non era un bug dell'app.** Il file scelto
+  era `Pictures/Telegram/IMG_20260925_143037_979.jpg`, un **JPEG**
+  512×512 di 10.716 byte — esattamente quello copiato dall'app: Telegram,
+  mandandolo come foto, l'aveva compresso in JPEG, che la trasparenza non
+  ce l'ha. Mandato come file è rimasto trasparente («Ok, funziona»). Vedi
+  "Limiti noti"
+- **[Bug fix]** **Backspace fra righe vuote: la tastiera spariva** (bug 2).
+  Con tante righe vuote, il backspace a inizio della seconda toglieva la
+  **prima** riga invece della seconda: per il testo è uguale, ma il campo
+  condiviso è legato al primo blocco del suo gruppo (la chiave nella
+  lista), e tolto quello rinasceva da capo senza cursore. Il confronto fra
+  prima e dopo, con righe tutte uguali, attribuiva la riga sparita alla
+  prima; ora, quando le righe calano, la riga del cursore è sempre fra
+  quelle riscritte, e si toglie la successiva (`updateRun`). Test nuovi in
+  `EmptyLinesBackspaceTest`. Verificato: quattro righe vuote, backspace
+  dalla seconda → tastiera aperta, "x" scritta sulla prima
+- **[Bug fix]** **Copia / Incolla / Select all nelle finestrelle che salgono
+  dal basso** (bug 3). Il `ModalBottomSheet` di Material 1.2 si apre in una
+  finestra aggiunta a mano, che non sa mostrare la barrettina del telefono:
+  la parola si selezionava e non compariva niente. Non solo nel colore
+  delle barre del Life progress bar: in **tutte** le finestrelle — il
+  selettore di colore, il link dell'immagine, la ricerca dei fusi, le
+  proprietà del database. Ora tutte passano da `NoteBottomSheet`
+  (`SheetTextToolbar.kt`), che dentro usa una barrettina disegnata
+  dall'app (`PopupTextToolbar`) con le voci e le scritte di Android.
+  Trovata anche una trappola: la prima versione teneva lo stato "aperta"
+  osservabile, il campo di testo lo leggeva mentre disegnava le maniglie e
+  la richiudeva — aperta e chiusa quattro volte in 30 ms, poi più niente
+  (visto nel registro). Verificato nel selettore di colore: Cut / Copy /
+  Select all su "#FF0000", Copy → compare Paste, Select all seleziona tutto
+- **[Bug fix]** **Il toggle storto** (bug 4). Le righe dentro un toggle
+  hanno ciascuna un campo suo, e Compose toglieva lo spazio sopra la prima
+  riga: il testo stava ~3dp più su della freccetta e dei numeri, che si
+  scrivono a parte (i numeri avevano in più 2dp di margine sopra). Ora la
+  riga è fatta come quella del testo condiviso (24, testo in mezzo), senza
+  i 2dp, e le righe dentro un toggle stanno al passo di quelle fuori (niente
+  4dp sopra e sotto). Il quadratino delle caselle non va più alzato a mano
+  (via `CHECKBOX_BASELINE_LIFT`). Verificato: freccetta centrata sul
+  titolo, "1." sulla riga di "A", stesso passo dell'elenco fuori
+- **[Bug fix]** **"1." dentro un toggle non faceva l'elenco numerato**
+  (bug 4): la regola c'era solo nel testo condiviso. Ora anche nelle righe
+  dentro un toggle (`startNumberedListInBlock`). Verificato: Invio sulla
+  riga vuota, "1." → elenco da 1, "Nuovo" scritto dentro; poi annullato
+- **[Bug fix]** **La pagina vuota: il primo Invio perdeva il cursore**
+  (trovato da Claude provando il bug 2, sistemato su richiesta). Una
+  pagina senza righe ne mostra una vuota che nel database non c'è; il
+  primo Invio salvava solo la riga nuova, quella vuota spariva e con lei
+  il campo: tastiera aperta, barra sparita, e quello che si scriveva non
+  andava da nessuna parte. Per trovarlo è servito far stampare al
+  database ogni sua scrittura: al tocco sulla pagina vuota non ne partiva
+  nessuna. Ora la riga vuota ha lo stesso id finché si resta sulla pagina
+  (prima cambiava a ogni lettura del database) e viene salvata **insieme**
+  alla prima modifica, nella stessa transazione (`placeholder`,
+  `unsavedPlaceholderIn`). Test nuovi in `EmptyPageTest`. Verificato:
+  pagina "Untitled" svuotata, tocco sotto il titolo, Invio, "Riga" → barra
+  al suo posto, "Riga" sulla seconda riga, nel database le due righe con la
+  prima salvata; poi annullato
+- Notato: il toggle "Riga dentro il toggle" di "My Space" alle 17:45 è
+  stato modificato dall'utente (righe "A" rifatte, toggle chiuso); lasciato
+  com'è
 
 **25/09/2026 — divisore sotto le pagine, menu dei font non più coperto**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 89 test

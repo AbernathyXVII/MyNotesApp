@@ -11,7 +11,6 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.draw.clip
@@ -750,14 +749,6 @@ private val PAGE_ICON_SIZE = 56.dp
 private val CHECKBOX_SIZE = 16.dp
 private val CHECKBOX_TOUCH_SIZE = 24.dp
 
-// Il quadrato va alzato per sembrare in riga con le lettere.
-// Centrarlo sulla riga di testo non basta: dentro la sua riga alta 24
-// il testo non sta in mezzo, perché sotto la linea di base resta lo
-// spazio per le code di g e p, e quindi le lettere appaiono più in
-// alto. Misurato ingrandendo lo schermo: il centro del quadrato
-// restava 1,5dp sotto il centro ottico delle maiuscole, da cui i 4,5
-// di adesso.
-private val CHECKBOX_BASELINE_LIFT = 4.5.dp
 
 // Entro quanto una divisione va considerata un'eco della tastiera e
 // non un secondo Invio: più larga quando torna indietro lo stesso
@@ -2141,13 +2132,12 @@ internal enum class PageImageTarget { ICON, COVER }
 
 /**
  * Scegliere l'immagine di un'icona o di una copertina: dalla galleria
- * del telefono, oppure da un collegamento.
+ * del telefono ("Upload"), e basta.
  *
- * Il collegamento **viene scaricato subito** e il file resta sul
- * telefono (vedi `PageImageStore`): è l'unico modo di avere i
- * collegamenti senza che l'app smetta di funzionare senza rete.
- * Mentre scarica il pulsante dice "Downloading…", perché un
- * collegamento lento senza nessun segno sembra un pulsante rotto.
+ * Fino al 25/09/2026 c'era anche un campo per il link di un'immagine da
+ * scaricare: tolto su richiesta dell'utente, che le immagini le carica
+ * dal telefono. Con lui se n'è andato il permesso di andare in rete: da
+ * allora l'app non si collega a niente.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -2161,7 +2151,6 @@ internal fun PageImageSheet(
     onDismiss: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
-    var link by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
@@ -2193,7 +2182,7 @@ internal fun PageImageSheet(
         }
     }
 
-    ModalBottomSheet(
+    NoteBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = DarkSheet
@@ -2206,60 +2195,13 @@ internal fun PageImageSheet(
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                PageImageAction(
-                    label = EditorStrings.upload,
-                    enabled = !busy,
-                    onClick = {
-                        gallery.launch(
-                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                        )
-                    }
-                )
-                Spacer(modifier = Modifier.size(12.dp))
-                PageImageAction(
-                    label = if (busy) EditorStrings.downloading else EditorStrings.link,
-                    enabled = !busy && link.isNotBlank(),
-                    onClick = {
-                        busy = true
-                        error = null
-                        scope.launch {
-                            val result = store.saveFromUrl(link)
-                            busy = false
-                            result.fold(
-                                onSuccess = { apply(it) },
-                                onFailure = {
-                                    error = EditorStrings.linkFailed
-                                }
-                            )
-                        }
-                    }
-                )
-            }
-
-            Spacer(modifier = Modifier.size(12.dp))
-            BasicTextField(
-                value = link,
-                onValueChange = { link = it.replace("\n", "") },
-                singleLine = true,
-                textStyle = MaterialTheme.typography.bodyMedium.copy(color = NotionWhite),
-                cursorBrush = SolidColor(NotionWhite),
-                decorationBox = { inner ->
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(DarkSurface, RoundedCornerShape(8.dp))
-                            .padding(horizontal = 12.dp, vertical = 14.dp)
-                    ) {
-                        if (link.isEmpty()) {
-                            Text(
-                                text = EditorStrings.pasteImageLink,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        inner()
-                    }
+            PageImageAction(
+                label = EditorStrings.upload,
+                enabled = !busy,
+                onClick = {
+                    gallery.launch(
+                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                    )
                 }
             )
 
@@ -2340,7 +2282,7 @@ private fun CoverMoveOverlay(onCancel: () -> Unit, onSave: () -> Unit) {
     }
 }
 
-/** Uno dei due pulsanti della finestra dell'immagine. */
+/** Un pulsante della finestra dell'immagine (e di quella che sposta la copertina). */
 @Composable
 private fun PageImageAction(label: String, enabled: Boolean, onClick: () -> Unit) {
     Text(
@@ -3625,8 +3567,7 @@ private fun RunCheckboxOverlay(
             ) {
                 CheckboxMark(
                     checked = block.isChecked,
-                    onToggle = { onToggle(block) },
-                    lifted = false
+                    onToggle = { onToggle(block) }
                 )
             }
         }
@@ -4293,7 +4234,7 @@ private fun NumberedListMenu(
     onRemoveNumber: () -> Unit,
     onChangeToBullet: () -> Unit
 ) {
-    ModalBottomSheet(
+    NoteBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = DarkSheet
@@ -4581,17 +4522,39 @@ private fun BlockRow(
 
     // Il testo più grande scelto con la barra Aa allunga la riga, come nel
     // testo condiviso (vedi `lineScaleFor`).
+    //
+    // **E la riga è fatta come quella del testo condiviso**: alta 24 col
+    // testo in mezzo. Di suo Compose toglie lo spazio in più sopra la
+    // prima riga e sotto l'ultima, e in un campo di una riga sola il
+    // testo finiva ~3dp più in alto di tutto quello che gli sta accanto,
+    // che invece è alto 24: la freccetta del toggle, i numeri e i
+    // pallini, che si scrivono in un testo a parte, sembravano scesi.
+    // Visto dall'utente il 25/09/2026 ("storto"), in un toggle con dentro
+    // un elenco numerato.
     val lineScale = lineScaleFor(editState.spans)
-    val textStyle = MaterialTheme.typography.bodyLarge.let { it.copy(lineHeight = it.lineHeight * lineScale) }.let { base ->
+    val textStyle = MaterialTheme.typography.bodyLarge.let {
+        it.copy(
+            lineHeight = it.lineHeight * lineScale,
+            lineHeightStyle = LineHeightStyle(
+                alignment = LineHeightStyle.Alignment.Center,
+                trim = LineHeightStyle.Trim.None
+            )
+        )
+    }.let { base ->
         if (block.type == BlockType.CHECKBOX && block.isChecked) {
             base.copy(textDecoration = TextDecoration.LineThrough)
         } else base
     }
 
+    // Le righe di testo dentro un toggle stanno al passo di quelle fuori
+    // (24, riga dopo riga): con altri 4dp sopra e sotto ognuna, un elenco
+    // dentro un toggle veniva più largo dello stesso elenco fuori. Il
+    // titolo del toggle e le altre isole tengono il loro respiro.
+    val rowPadding = if (block.type in FLOWING_TYPES) 0.dp else 4.dp
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = PAGE_SIDE_PADDING + NESTED_INDENT * depth, end = PAGE_SIDE_PADDING, top = 4.dp, bottom = 4.dp),
+            .padding(start = PAGE_SIDE_PADDING + NESTED_INDENT * depth, end = PAGE_SIDE_PADDING, top = rowPadding, bottom = rowPadding),
         verticalAlignment = Alignment.Top
     ) {
         when (block.type) {
@@ -4623,7 +4586,7 @@ private fun BlockRow(
                         fontSize = bulletMarkerSizeFor(block.indentLevel),
                         baselineShift = BULLET_MARKER_DROP
                     ),
-                    modifier = Modifier.padding(end = 8.dp, top = 2.dp)
+                    modifier = Modifier.padding(end = 8.dp)
                 )
             }
 
@@ -4636,9 +4599,11 @@ private fun BlockRow(
                         block.indentLevel,
                         viewModel.numberedListOrdinal(allBlocks, block)
                     ),
+                    // Stesso stile del testo accanto, e nessuno spazio in
+                    // più sopra: così il numero sta sulla sua stessa riga.
                     style = textStyle,
                     modifier = Modifier
-                        .padding(end = 8.dp, top = 2.dp)
+                        .padding(end = 8.dp)
                         // Stesso menu del numero nel testo unito: qui
                         // ci si arriva solo per un elenco numerato
                         // dentro un toggle, ma il gesto dev'essere
@@ -4832,6 +4797,26 @@ private fun BlockRow(
                     // stesso testo, il secondo Invio veniva scambiato
                     // per un'eco e **non andava a capo**.
                     lastSplit = null
+                    // Stessa scorciatoia del testo condiviso: "5." scritto
+                    // da solo in una riga di testo la fa diventare un
+                    // elenco numerato che parte da 5, e il "5." sparisce
+                    // perché il numero da lì in poi lo disegna la lista.
+                    val caretInBody = (newFieldValue.selection.end - RUN_LEAD.length).coerceAtLeast(0)
+                    val listPrefix = if (block.type == BlockType.PARAGRAPH) {
+                        numberedListPrefixJustTyped(oldText, newText, caretInBody)
+                    } else {
+                        null
+                    }
+                    if (listPrefix != null &&
+                        viewModel.startNumberedListInBlock(block.id, listPrefix.startNumber)
+                    ) {
+                        val stripped = newText.removeRange(listPrefix.lineStart, caretInBody)
+                        editState = BlockEditState(
+                            listOf(RichTextSpan(text = stripped)),
+                            TextFieldValue(RUN_LEAD + stripped, TextRange(RUN_LEAD.length + listPrefix.lineStart))
+                        )
+                        return@BasicTextField
+                    }
                     // Stessa scorciatoia del testo condiviso: `||x||`
                     // toglie le barre e copre quello che c'era in mezzo.
                     val spoiler = spoilerJustClosed(
@@ -4985,18 +4970,15 @@ private fun BlockRow(
 @Composable
 private fun CheckboxMark(
     checked: Boolean,
-    onToggle: () -> Unit,
-    /**
-     * Se alzare il quadratino per centrarlo sulla riga di testo. Serve
-     * dentro `BlockRow`, dove sta in una riga accanto al testo; sopra il
-     * campo condiviso no, perché lì la posizione arriva già dal testo.
-     */
-    lifted: Boolean = true
+    onToggle: () -> Unit
 ) {
     val shape = RoundedCornerShape(4.dp)
+    // Centrato sulla riga, che ha il testo in mezzo sia nel campo
+    // condiviso sia dentro un toggle: non va alzato a mano. (Fino al
+    // 25/09/2026 dentro un toggle lo si alzava di 4,5dp, perché lì il
+    // testo stava più in alto; ora le due righe sono fatte uguali.)
     Box(
         modifier = Modifier
-            .offset(y = if (lifted) -CHECKBOX_BASELINE_LIFT else 0.dp)
             .size(CHECKBOX_TOUCH_SIZE)
             .clip(RoundedCornerShape(6.dp))
             .clickable { onToggle() },

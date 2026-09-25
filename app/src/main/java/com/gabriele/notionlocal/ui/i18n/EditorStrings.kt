@@ -125,15 +125,11 @@ object EditorStrings {
     val addCover get() = t("Add cover", "Aggiungi copertina", "Titelbild hinzufügen", "Ajouter une couverture", "Añadir portada", "添加封面", "커버 추가", "カバーを追加")
     val addIcon get() = t("Add icon", "Aggiungi icona", "Symbol hinzufügen", "Ajouter une icône", "Añadir icono", "添加图标", "아이콘 추가", "アイコンを追加")
     val upload get() = t("Upload", "Carica", "Hochladen", "Importer", "Subir", "上传", "업로드", "アップロード")
-    val link get() = t("Link", "Link", "Link", "Lien", "Enlace", "链接", "링크", "リンク")
-    val downloading get() = t("Downloading…", "Download in corso…", "Wird geladen…", "Téléchargement…", "Descargando…", "正在下载…", "다운로드 중…", "ダウンロード中…")
-    val pasteImageLink get() = t("Paste an image link", "Incolla il link di un'immagine", "Bildlink einfügen", "Collez le lien d'une image", "Pega el enlace de una imagen", "粘贴图片链接", "이미지 링크 붙여넣기", "画像のリンクを貼り付け")
     val reposition get() = t("Reposition", "Riposiziona", "Neu positionieren", "Repositionner", "Reposicionar", "调整位置", "위치 조정", "位置を調整")
     val remove get() = t("Remove", "Rimuovi", "Entfernen", "Retirer", "Quitar", "移除", "제거", "削除")
     val dragToMove get() = t("Drag to move · pinch to zoom", "Trascina per spostare · pizzica per ingrandire", "Ziehen zum Verschieben · Zwei Finger zum Zoomen", "Glissez pour déplacer · pincez pour zoomer", "Arrastra para mover · pellizca para ampliar", "拖动以移动 · 双指缩放", "드래그하여 이동 · 핀치하여 확대", "ドラッグで移動・ピンチで拡大")
     val save get() = t("Save", "Salva", "Speichern", "Enregistrer", "Guardar", "保存", "저장", "保存")
     val imageReadFailed get() = t("Couldn't read the image.", "Non sono riuscito a leggere l'immagine.", "Das Bild konnte nicht gelesen werden.", "Impossible de lire l'image.", "No se pudo leer la imagen.", "无法读取图片。", "이미지를 읽을 수 없습니다.", "画像を読み込めませんでした。")
-    val linkFailed get() = t("The link didn't work.", "Il collegamento non ha funzionato.", "Der Link hat nicht funktioniert.", "Le lien n'a pas fonctionné.", "El enlace no funcionó.", "链接无效。", "링크가 작동하지 않았습니다.", "リンクが機能しませんでした。")
 
     // --- Blocchi e finestre dell'editor ---
 

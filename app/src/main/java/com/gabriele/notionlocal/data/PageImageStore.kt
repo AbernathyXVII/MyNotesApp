@@ -9,21 +9,16 @@ import androidx.exifinterface.media.ExifInterface
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.net.HttpURLConnection
-import java.net.URL
 import java.util.UUID
 
 /**
  * Le immagini delle pagine — icone e copertine — dentro la cartella
  * dell'app.
  *
- * **Anche quelle prese da un link finiscono qui.** Il collegamento
- * viene scaricato una volta sola al momento in cui lo si incolla, e da
- * lì in poi l'immagine è un file sul telefono come tutto il resto: si
- * vede senza rete, non sparisce se il sito la toglie, e l'app resta
- * quella che è — tutto salvato sul dispositivo. Il prezzo è che se
- * l'immagine cambia dall'altra parte, la nostra no: è una copia, non
- * una finestra.
+ * Arrivano solo dalla galleria del telefono, e ne viene fatta una copia:
+ * l'immagine resta anche se l'originale viene cancellato. (Fino al
+ * 25/09/2026 si potevano anche scaricare da un link: tolto su richiesta
+ * dell'utente.)
  *
  * Nel database si salva il **nome** del file e non il percorso intero:
  * la cartella dell'app può cambiare posto fra un'installazione e
@@ -40,9 +35,9 @@ class PageImageStore(context: Context) {
 
     /** Copia dentro l'app l'immagine scelta dalla galleria. */
     suspend fun saveFromGallery(uri: Uri): Result<String> = withContext(Dispatchers.IO) {
+        val name = newName()
+        val target = File(directory, name)
         runCatching {
-            val name = newName()
-            val target = File(directory, name)
             appContext.contentResolver.openInputStream(uri).use { input ->
                 requireNotNull(input) { "L'immagine scelta non si riesce ad aprire." }
                 target.outputStream().use { output -> input.copyTo(output) }
@@ -51,60 +46,10 @@ class PageImageStore(context: Context) {
                 "Quel file non sembra un'immagine."
             }
             name
-        }.onFailure { File(directory, it.message.orEmpty()).delete() }
-    }
-
-    /**
-     * Scarica l'immagine di un collegamento e la tiene.
-     *
-     * Il tetto sulla dimensione non è pignoleria: un collegamento può
-     * puntare a qualunque cosa, e senza tetto una pagina da mezzo giga
-     * riempirebbe il telefono mentre l'utente aspetta.
-     */
-    suspend fun saveFromUrl(url: String): Result<String> = withContext(Dispatchers.IO) {
-        runCatching {
-            val address = URL(url.trim())
-            require(address.protocol == "http" || address.protocol == "https") {
-                "Il collegamento deve cominciare con http o https."
-            }
-            val connection = (address.openConnection() as HttpURLConnection).apply {
-                instanceFollowRedirects = true
-                connectTimeout = TIMEOUT_MS
-                readTimeout = TIMEOUT_MS
-            }
-            try {
-                require(connection.responseCode in 200..299) {
-                    "Il sito ha risposto ${connection.responseCode}."
-                }
-                val name = newName()
-                val target = File(directory, name)
-                var written = 0L
-                connection.inputStream.use { input ->
-                    target.outputStream().use { output ->
-                        val buffer = ByteArray(BUFFER_BYTES)
-                        while (true) {
-                            val read = input.read(buffer)
-                            if (read <= 0) break
-                            written += read
-                            if (written > MAX_BYTES) {
-                                target.delete()
-                                throw IllegalArgumentException(
-                                    "L'immagine è troppo grande (oltre ${MAX_BYTES / 1_000_000} MB)."
-                                )
-                            }
-                            output.write(buffer, 0, read)
-                        }
-                    }
-                }
-                if (!isImage(target)) {
-                    target.delete()
-                    throw IllegalArgumentException("Quel collegamento non porta a un'immagine.")
-                }
-                name
-            } finally {
-                connection.disconnect()
-            }
-        }
+        // Una copia non riuscita (o che non è un'immagine) non deve
+        // restare nella cartella. Fino al 25/09/2026 qui si cancellava un
+        // file che aveva per nome il messaggio d'errore, cioè nessuno.
+        }.onFailure { target.delete() }
     }
 
     /**
@@ -234,9 +179,6 @@ class PageImageStore(context: Context) {
 
     private companion object {
         const val DIRECTORY = "page-images"
-        const val TIMEOUT_MS = 15_000
-        const val BUFFER_BYTES = 16 * 1024
-        const val MAX_BYTES = 20L * 1024 * 1024
 
         /** Sei megapixel in memoria sono ventiquattro megabyte: è il tetto. */
         const val MAX_PIXELS = 6_000_000L
