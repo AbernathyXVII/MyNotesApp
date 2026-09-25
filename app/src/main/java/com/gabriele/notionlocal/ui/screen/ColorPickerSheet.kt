@@ -84,7 +84,14 @@ fun ColorPickerSheet(
      * una cosa sola, come le barre dell'avanzamento nei widget: lì
      * scegliere "dietro al testo" non vorrebbe dire niente.
      */
-    showTargetSwitch: Boolean = true
+    showTargetSwitch: Boolean = true,
+    /** Cosa si colora, sotto l'anteprima: di suo "Text color" o "Background color". */
+    previewLabel: String? = null,
+    /**
+     * Il pulsante che toglie il colore. Per le penne del disegno non toglie
+     * niente, torna al colore del testo, e deve dirlo (dal 25/09/2026).
+     */
+    noColorLabel: String? = null
 ) {
     // **Lo stato si crea una volta sola, all'apertura.**
     //
@@ -187,7 +194,8 @@ fun ColorPickerSheet(
                 Spacer(modifier = Modifier.size(12.dp))
                 Column {
                     Text(
-                        text = if (background) EditorStrings.backgroundColor else EditorStrings.textColor,
+                        text = previewLabel
+                            ?: if (background) EditorStrings.backgroundColor else EditorStrings.textColor,
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Text(
@@ -262,7 +270,7 @@ fun ColorPickerSheet(
             ) {
                 // Togliere il colore è una cosa che si fa spesso quanto
                 // metterlo, e da qualche parte doveva stare.
-                TextButton(onClick = { onPick(null) }) { Text(EditorStrings.noColor) }
+                TextButton(onClick = { onPick(null) }) { Text(noColorLabel ?: EditorStrings.noColor) }
                 Spacer(modifier = Modifier.size(8.dp))
                 TextButton(onClick = { onPick(hsl.toHex()) }) { Text(EditorStrings.apply) }
             }

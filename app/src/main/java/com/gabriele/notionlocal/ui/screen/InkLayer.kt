@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Redo
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material.icons.filled.Undo
@@ -55,6 +56,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.input.pointer.PointerEvent
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -71,7 +73,6 @@ import com.gabriele.notionlocal.data.entity.InkStrokeEntity
 import com.gabriele.notionlocal.data.entity.InkTool
 import com.gabriele.notionlocal.data.ink.ERASER_SIZES
 import com.gabriele.notionlocal.data.ink.EraserMode
-import com.gabriele.notionlocal.data.ink.INK_COLORS
 import com.gabriele.notionlocal.data.ink.InkPen
 import com.gabriele.notionlocal.data.ink.InkPoint
 import com.gabriele.notionlocal.data.ink.InkPrefs
@@ -450,6 +451,9 @@ fun InkToolbar(
 ) {
     val settings = InkPrefs.settings
     var menuFor by remember { mutableStateOf<Int?>(null) }
+    // La penna di cui si sta scegliendo il colore, col selettore del pennello.
+    var colorFor by remember { mutableStateOf<Int?>(null) }
+    colorFor?.let { slot -> InkColorPicker(slot, onDismiss = { colorFor = null }) }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -491,7 +495,14 @@ fun InkToolbar(
                     onDismissRequest = { menuFor = null },
                     modifier = Modifier.background(DarkSheet)
                 ) {
-                    if (slot < 0) EraserMenu() else PenMenu(slot)
+                    if (slot < 0) {
+                        EraserMenu()
+                    } else {
+                        PenMenu(slot, onOpenColors = {
+                            menuFor = null
+                            colorFor = slot
+                        })
+                    }
                 }
             }
         }
@@ -506,6 +517,46 @@ fun InkToolbar(
             )
         }
     }
+}
+
+/**
+ * **Il colore di una penna, col selettore del pennello** (chiesto
+ * dall'utente il 25/09/2026: "la stessa palette colori e spettro dei
+ * grigi"): il riquadro di tinta e saturazione, la striscia dal bianco al
+ * nero, Rosso/Verde/Blu ed Hex. "Colore del testo" rimette quello che
+ * segue il tema.
+ */
+@Composable
+private fun InkColorPicker(index: Int, onDismiss: () -> Unit) {
+    val pen = InkPrefs.settings.pens.getOrNull(index) ?: return
+    ColorPickerSheet(
+        initialHex = inkHex(pen.color, NotionWhite),
+        background = false,
+        onDismiss = onDismiss,
+        onSwitchTarget = {},
+        onPick = { hex ->
+            val color = hex?.let(::hexToInkColor) ?: InkStrokeEntity.AUTO_COLOR
+            InkPrefs.updatePen(index) { it.copy(color = color) }
+            onDismiss()
+        },
+        showTargetSwitch = false,
+        previewLabel = InkStrings.toolName(pen.tool),
+        noColorLabel = InkStrings.textColor
+    )
+}
+
+/** Il colore di una penna scritto come nel selettore: "#RRGGBB". */
+fun inkHex(color: Long, textColor: Color): String {
+    val argb = inkColor(color, textColor).toArgb()
+    return "#%06X".format(argb and 0xFFFFFF)
+}
+
+/** "#RRGGBB" → il colore da salvare, pieno. Null se non è un colore. */
+fun hexToInkColor(hex: String): Long? {
+    val digits = hex.trim().removePrefix("#")
+    if (digits.length != 6) return null
+    val rgb = digits.toLongOrNull(16) ?: return null
+    return 0xFF000000L or rgb
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -685,7 +736,7 @@ private fun EraserMenu() {
 }
 
 @Composable
-private fun PenMenu(index: Int) {
+private fun PenMenu(index: Int, onOpenColors: () -> Unit) {
     val pen = InkPrefs.settings.pens.getOrNull(index) ?: return
     Column(modifier = Modifier.width(280.dp).padding(bottom = 8.dp)) {
         MenuTitle(InkStrings.thickness)
@@ -718,47 +769,37 @@ private fun PenMenu(index: Int) {
         }
 
         MenuTitle(InkStrings.colors)
-        INK_COLORS.chunked(5).forEach { row ->
-            Row(modifier = Modifier.padding(horizontal = 10.dp)) {
-                for (color in row) {
-                    val chosen = pen.color == color
-                    Box(
-                        modifier = Modifier
-                            .padding(4.dp)
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .then(if (chosen) Modifier.border(2.dp, AccentBlue, CircleShape) else Modifier)
-                            .clickable { InkPrefs.updatePen(index) { it.copy(color = color) } }
-                            .padding(4.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (color == InkStrokeEntity.AUTO_COLOR) {
-                            // "Il colore del testo": mezzo bianco e mezzo nero.
-                            Canvas(Modifier.size(28.dp)) {
-                                drawCircle(Color.Black)
-                                drawArc(Color.White, -90f, 180f, useCenter = true)
-                                drawCircle(NotionGray400, style = Stroke(1.dp.toPx()))
-                            }
-                        } else {
-                            Box(
-                                Modifier
-                                    .size(28.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(color))
-                                    .border(1.dp, Color.White.copy(alpha = 0.25f), CircleShape)
-                            )
-                        }
-                    }
+        // Il colore in uso; toccandolo si apre il selettore del pennello.
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onOpenColors)
+                .padding(horizontal = 14.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (pen.color == InkStrokeEntity.AUTO_COLOR) {
+                // "Il colore del testo": mezzo bianco e mezzo nero.
+                Canvas(Modifier.size(32.dp)) {
+                    drawCircle(Color.Black)
+                    drawArc(Color.White, -90f, 180f, useCenter = true)
+                    drawCircle(NotionGray400, style = Stroke(1.dp.toPx()))
                 }
+            } else {
+                Box(
+                    Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(Color(pen.color))
+                        .border(1.dp, Color.White.copy(alpha = 0.25f), CircleShape)
+                )
             }
-        }
-        if (pen.color == InkStrokeEntity.AUTO_COLOR) {
+            Spacer(Modifier.width(12.dp))
             Text(
-                InkStrings.textColor,
-                color = NotionGray400,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(horizontal = 14.dp, vertical = 2.dp)
+                if (pen.color == InkStrokeEntity.AUTO_COLOR) InkStrings.textColor else inkHex(pen.color, NotionWhite),
+                color = NotionWhite,
+                modifier = Modifier.weight(1f)
             )
+            Icon(Icons.Filled.KeyboardArrowRight, contentDescription = InkStrings.colors, tint = NotionGray400)
         }
     }
 }

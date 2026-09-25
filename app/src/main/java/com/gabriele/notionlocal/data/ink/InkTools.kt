@@ -79,16 +79,6 @@ fun thicker(width: Float): Float = (width * 1.25f).coerceAtMost(MAX_INK_WIDTH)
 fun nearestPreset(presets: List<Float>, width: Float): Int =
     presets.indices.minBy { kotlin.math.abs(presets[it] - width) }
 
-/** I colori delle penne. Il primo, 0, è "il colore del testo", che segue il tema. */
-val INK_COLORS: List<Long> = listOf(
-    InkStrokeEntity.AUTO_COLOR,
-    0xFF000000, 0xFFFFFFFF, 0xFF9B9A97, 0xFF64473A,
-    0xFFE03E3E, 0xFFFF7A00, 0xFFFFE600, 0xFF2E9E44,
-    0xFF76FF03, 0xFF0F9B8E, 0xFF18FFFF, 0xFF4FC3F7,
-    0xFF2383E2, 0xFF3F51B5, 0xFF9C27B0, 0xFFB388FF,
-    0xFFE91E63, 0xFFFF80AB, 0xFFFFAB40
-)
-
 /**
  * **Dove si ricordano gli strumenti**: `SharedPreferences`, come le
  * impostazioni dell'app (vedi `AppSettings`), e in uno stato di Compose,

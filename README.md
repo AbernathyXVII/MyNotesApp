@@ -1992,6 +1992,36 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**25/09/2026 — il colore delle penne col selettore del pennello**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 126 test
+passati; commit solo in locale)*
+
+Richiesta dell'utente, parola per parola:
+> «Il colore di quando disegno fammelo scegliere con la stessa palette
+> colori e spettro dei grigi del pennello sulla Toolbar»
+
+- **[Nuova funzionalità]** Nella finestra di una penna, sotto "Colors", c'è
+  il colore in uso (il tondo e il codice, "#2383E2"); toccandolo si apre
+  **il selettore del pennello**, lo stesso della barra del testo: il
+  riquadro di tinta e saturazione, la striscia dei grigi dal bianco al
+  nero, Rosso/Verde/Blu ed Hex. Si apre sul colore della penna. Al posto di
+  "No color" c'è **"Text color"**, che rimette il colore del testo (quello
+  che segue il tema); sotto l'anteprima c'è il nome della penna invece di
+  "Text color"
+- **[Rimosso]** I venti tondi dei colori fissi della finestra della penna
+- **[Progetto]** `ColorPickerSheet` prende due scritte da fuori
+  (`previewLabel`, `noColorLabel`); il pennello e le barre dei widget non
+  cambiano. Il colore della penna passa al selettore come "#RRGGBB" e torna
+  pieno (`inkHex`, `hexToInkColor`, test `InkColorTest`)
+- Verificato sul telefono: penna blu → "Colors" → il selettore del
+  pennello su #2383E2 (35, 131, 226), con "Text color" e "Apply"; "Apply"
+  sullo stesso colore → la penna resta #2383E2. Le altre penne sono come le
+  aveva lasciate l'utente
+- Notato: l'utente aveva già disegnato su "Titolo tre H3" con la S Pen vera
+  (scarabocchi bianchi e rosa, con la prima penna fatta rosa e più
+  spessa): **la pressione funziona**, il tratto si allarga e si stringe.
+  Lasciati com'erano. Nella prova è rimasta in mano la penna blu
+
 **25/09/2026 — disegnare a mano sulle pagine, anche con la S Pen**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno, con la S Pen
 simulata da adb, vedi in fondo; 123 test passati; commit solo in locale)*
@@ -2028,8 +2058,8 @@ evidenziatore):
   pennarello verde, evidenziatore giallo. Toccando lo strumento già in mano
   (o tenendolo premuto) si apre la sua finestra, come nella foto:
   **Thickness** (cinque spessori, e "−" "+" per i passi in mezzo), **Types**
-  (quale delle quattro è) e **Colors** (venti colori, il primo è "il colore
-  del testo"). La penna si allarga premendo di più con la S Pen; la matita
+  (quale delle quattro è) e **Colors** (dal 25/09/2026 col selettore del
+  pennello; prima venti colori fissi). La penna si allarga premendo di più con la S Pen; la matita
   è un po' trasparente; l'evidenziatore è trasparente, a punta piatta, e
   sta sotto gli altri tratti. Le scelte si ricordano
 - **[Nuova funzionalità]** **La gomma**, con **Thickness** e **Types**:
