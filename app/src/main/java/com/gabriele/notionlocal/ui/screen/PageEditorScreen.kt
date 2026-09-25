@@ -118,6 +118,15 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Notes
+import androidx.compose.material.icons.filled.Notifications
+import com.gabriele.notionlocal.data.notify.NotificationCommand
+import com.gabriele.notionlocal.data.notify.NotificationCommands
+import com.gabriele.notionlocal.data.notify.NotificationPermission
+import com.gabriele.notionlocal.ui.format.Formats
+import com.gabriele.notionlocal.ui.i18n.NotifyStrings
+import com.gabriele.notionlocal.ui.theme.AccentBlue
+import java.time.Instant
+import java.time.LocalDateTime
 import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Videocam
@@ -1159,7 +1168,15 @@ fun PageEditorScreen(
             // dovunque la si scelga. Vedi `SLASH_ENTRIES`.
             val applyInsertAction: (BlockEntity, SlashAction) -> Unit = { block, action ->
                 when (action) {
-                    is SlashAction.Type -> {
+                    is SlashAction.Type -> if (action.type == BlockType.NOTIFICATION) {
+                        // Come il toggle qui sotto, la riga esce dal testo
+                        // condiviso. La notifica nasce alle prossime 9:00
+                        // e si apre subito la finestra per scegliere
+                        // quando.
+                        focusPark.requestFocus()
+                        viewModel.makeNotification(block, null)
+                        NotificationPermission.request()
+                    } else {
                         // Diventando toggle la riga esce
                         // dal testo condiviso: se era
                         // l'unica, quel campo muore col
@@ -1985,6 +2002,9 @@ fun PageEditorScreen(
         when (val action = entry.action) {
             is SlashAction.Type -> if (action.type == BlockType.TABLE) {
                 viewModel.convertToTableKeepingText(block)
+            } else if (action.type == BlockType.NOTIFICATION) {
+                viewModel.makeNotification(block, null)
+                NotificationPermission.request()
             } else {
                 viewModel.updateBlockType(block, action.type)
             }
@@ -2700,6 +2720,99 @@ private fun slashMatchRank(label: String, query: String): Int? = when {
     else -> null
 }
 
+/**
+ * Invio appena premuto su una riga "/notification …" (vedi
+ * `NotificationCommands`): quale riga, e cosa dice. Null se l'ultima
+ * modifica non è un Invio, o la riga non è un comando. Vale anche con
+ * l'Invio a metà riga: conta la riga intera.
+ */
+private fun notificationOnEnter(oldBody: String, newBody: String, caret: Int): Pair<Int, NotificationCommand>? {
+    if (newBody.length != oldBody.length + 1 || caret < 1 || caret > newBody.length) return null
+    if (newBody[caret - 1] != '\n' || newBody.removeRange(caret - 1, caret) != oldBody) return null
+    val lineIndex = oldBody.take(caret - 1).count { it == '\n' }
+    val line = oldBody.split('\n').getOrNull(lineIndex) ?: return null
+    val command = NotificationCommands.parse(line, LocalDateTime.now(AppSettings.zoneId)) ?: return null
+    return lineIndex to command
+}
+
+/** Una riga-notifica già suonata: la campanella e la data si fanno grigie. */
+private fun notificationIsPast(block: BlockEntity): Boolean =
+    block.notifyAt?.let { it <= System.currentTimeMillis() } ?: false
+
+/**
+ * **Quando suona la riga-notifica**, in fondo alla riga: toccandola si
+ * sceglie il giorno e poi l'ora, con le finestre di Samsung. Appena creata
+ * dal menu "/" si apre da sola (`notificationPickerFor`).
+ *
+ * **Oggi e domani si scrivono per nome** ("Domani 19:34"), non con la
+ * data. La prima prova dell'utente, il 25/09/2026: "/notification" senza
+ * ora dopo le 9 va alle 9:00 di domani, poi scegliendo solo l'ora il
+ * giorno restava domani, e la notifica "non arrivava" ad app chiusa. Con
+ * "26.09.2026 19:34" non se n'era accorto; "Domani 19:34" si legge. E se
+ * l'ora scelta è già passata lo si dice subito, perché non suonerà.
+ */
+@Composable
+private fun NotificationTimeChip(block: BlockEntity, viewModel: PageEditorViewModel) {
+    val at = block.notifyAt ?: return
+    val zone = AppSettings.zoneId
+    val current = Instant.ofEpochMilli(at).atZone(zone).toLocalDateTime()
+    val locked = LocalPageLocked.current
+    var pickingDate by remember(block.id) { mutableStateOf(false) }
+    var pickedDate by remember(block.id) { mutableStateOf<java.time.LocalDate?>(null) }
+    val autoOpen by viewModel.notificationPickerFor.collectAsStateWithLifecycle()
+    LaunchedEffect(autoOpen) {
+        if (autoOpen == block.id) {
+            pickingDate = true
+            viewModel.consumeNotificationPicker()
+        }
+    }
+    val past = notificationIsPast(block)
+    val context = LocalContext.current
+    val today = java.time.LocalDate.now(zone)
+    val label = when (current.toLocalDate()) {
+        today -> "${DbStrings.today} ${Formats.time(at)}"
+        today.plusDays(1) -> "${NotifyStrings.tomorrow} ${Formats.time(at)}"
+        else -> Formats.dateTime(at)
+    }
+    Box(
+        modifier = Modifier
+            .padding(start = 8.dp)
+            .height(24.dp)
+            .clip(RoundedCornerShape(6.dp))
+            .background(if (past) NotionGray400.copy(alpha = 0.15f) else AccentBlue.copy(alpha = 0.15f))
+            .clickable(enabled = !locked) { pickingDate = true }
+            .padding(horizontal = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            color = if (past) NotionGray400 else AccentBlue,
+            maxLines = 1
+        )
+    }
+    if (pickingDate) {
+        SamsungDateDialog(
+            initial = current.toLocalDate(),
+            onPick = { pickedDate = it },
+            onDismiss = { pickingDate = false }
+        )
+    }
+    pickedDate?.let { day ->
+        SamsungTimeDialog(
+            initial = current.toLocalTime(),
+            onPick = { time ->
+                val chosen = LocalDateTime.of(day, time).atZone(zone).toInstant().toEpochMilli()
+                viewModel.setNotificationTime(block, chosen)
+                if (chosen <= System.currentTimeMillis()) {
+                    Toast.makeText(context, NotifyStrings.alreadyPassed, Toast.LENGTH_LONG).show()
+                }
+            },
+            onDismiss = { pickedDate = null }
+        )
+    }
+}
+
 /** Le tre famiglie del menu "/", nell'ordine in cui si vedono. */
 internal enum class SlashCategory(val title: String) {
     BASIC("Basic blocks"),
@@ -2767,6 +2880,8 @@ internal val SLASH_ENTRIES: List<SlashEntry> = listOf(
     ),
     SlashEntry("To-do list", SlashCategory.BASIC, SlashAction.Type(BlockType.CHECKBOX), Icons.Filled.CheckBox),
     SlashEntry("Toggle list", SlashCategory.BASIC, SlashAction.Type(BlockType.TOGGLE), Icons.Filled.ArrowRight),
+    // Una riga con data e ora che manda una notifica: vedi `makeNotification`.
+    SlashEntry("Notification", SlashCategory.BASIC, SlashAction.Type(BlockType.NOTIFICATION), Icons.Filled.Notifications),
     SlashEntry("Page", SlashCategory.BASIC, SlashAction.PageLink, Icons.Filled.Description),
     SlashEntry("Callout", SlashCategory.BASIC, SlashAction.NotYet, Icons.Filled.Info),
     SlashEntry("Quote", SlashCategory.BASIC, SlashAction.NotYet, Icons.Filled.FormatQuote),
@@ -3892,6 +4007,31 @@ private fun MergedTextRunField(
                 val newBody = bodyOf(normalizedText)
                 val caret = (caretRaw + shift - 1).coerceIn(0, newBody.length)
 
+                // **"/notification 22.10.2026 17:41 Buttare l'immondizia"
+                // e Invio**: la riga diventa una notifica con quel testo, e
+                // si continua a scrivere nella riga nuova sotto. Il comando
+                // sparisce e l'a-capo non entra nel testo: la riga nuova la
+                // fa `makeNotification`. Come per il menu "/", prima il
+                // testo scritto, poi il cambio di tipo.
+                val notification = notificationOnEnter(oldBody, newBody, caret)
+                val notificationBlock = notification?.let { runBlocks.getOrNull(it.first) }
+                if (notification != null && notificationBlock != null) {
+                    val (lineIndex, command) = notification
+                    val oldLines = oldBody.split('\n')
+                    val cleanedLines = oldLines.toMutableList().also { it[lineIndex] = command.text }
+                    val lineStart = cleanedLines.take(lineIndex).sumOf { it.length + 1 }
+                    val cleanedText = RUN_LEAD + cleanedLines.joinToString("\n")
+                    fieldValue = TextFieldValue(cleanedText, TextRange(RUN_LEAD.length + lineStart + command.text.length))
+                    pendingText = cleanedText
+                    slashAnchor = null
+                    slashQuery = ""
+                    viewModel.updateRun(runBlocks.map { it.id }, cleanedLines, oldLines, lineIndex)
+                    focusPark?.requestFocus()
+                    viewModel.makeNotification(notificationBlock, command)
+                    NotificationPermission.request()
+                    return@BasicTextField
+                }
+
                 // Il menu "/": si apre appena si scrive la barra, e da
                 // lì in poi quello che si continua a scrivere filtra la
                 // lista. Si chiude quando la barra non c'è più, quando
@@ -4624,6 +4764,18 @@ private fun BlockRow(
                 Spacer(modifier = Modifier.size(8.dp))
             }
 
+            BlockType.NOTIFICATION -> {
+                Box(modifier = Modifier.size(24.dp), contentAlignment = Alignment.Center) {
+                    Icon(
+                        Icons.Filled.Notifications,
+                        contentDescription = null,
+                        tint = if (notificationIsPast(block)) NotionGray400 else AccentBlue,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.size(8.dp))
+            }
+
             else -> { /* PARAGRAPH has no prefix */ }
         }
 
@@ -4719,6 +4871,20 @@ private fun BlockRow(
                             )
                         )
                         viewModel.enterInToggle(block, spansForFirstLine, lines[1])
+                    } else if (lines.size == 2 && block.type in FLOWING_TYPES &&
+                        notificationOnEnter(oldText, newText, (newFieldValue.selection.end - RUN_LEAD.length).coerceAtLeast(0)) != null
+                    ) {
+                        // "/notification …" e Invio, come nel testo
+                        // condiviso: qui la riga resta in questa casella,
+                        // che cambia solo aspetto.
+                        val command = NotificationCommands.parse(oldText, LocalDateTime.now(AppSettings.zoneId))!!
+                        lastSplit = null
+                        editState = BlockEditState(
+                            listOf(RichTextSpan(text = command.text)),
+                            TextFieldValue(RUN_LEAD + command.text, TextRange(RUN_LEAD.length + command.text.length))
+                        )
+                        viewModel.makeNotification(block, command)
+                        NotificationPermission.request()
                     } else if (lines.size == 2) {
                         val outcome = viewModel.splitBlockAt(block, spansForFirstLine, lines[1])
                         // La riga nuova è finita sopra e questo campo
@@ -4866,6 +5032,16 @@ private fun BlockRow(
                     null
                 }
             ),
+            // Una notifica senza testo mostrerà il nome della pagina: il
+            // suggerimento lo dice, finché non si scrive niente.
+            decorationBox = { inner ->
+                Box {
+                    if (block.type == BlockType.NOTIFICATION && bodyOf(editState.fieldValue.text).isEmpty()) {
+                        Text(NotifyStrings.textHint, style = textStyle, color = NotionGray400, maxLines = 1)
+                    }
+                    inner()
+                }
+            },
             modifier = Modifier
                 .weight(1f)
                 .focusRequester(focusRequester)
@@ -4878,6 +5054,8 @@ private fun BlockRow(
                     onFocusChanged(block.id, state.isFocused)
                 }
         )
+
+        if (block.type == BlockType.NOTIFICATION) NotificationTimeChip(block, viewModel)
     }
 
     val menuBlockId = numberMenuFor

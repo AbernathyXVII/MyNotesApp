@@ -4,10 +4,13 @@ import androidx.room.withTransaction
 import com.gabriele.notionlocal.data.AppDatabase
 import com.gabriele.notionlocal.data.dao.RowCover
 import com.gabriele.notionlocal.data.entity.BlockType
+import com.gabriele.notionlocal.data.entity.DATE_NOTIFY_FLAG
 import com.gabriele.notionlocal.data.entity.DatabaseCellEntity
 import com.gabriele.notionlocal.data.entity.DatabaseColumnEntity
 import com.gabriele.notionlocal.data.entity.DatabaseRowEntity
+import com.gabriele.notionlocal.data.entity.MULTI_VALUE_SEPARATOR
 import com.gabriele.notionlocal.data.entity.RichTextSpan
+import com.gabriele.notionlocal.data.notify.NoteAlarms
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.decodeFromString
@@ -218,5 +221,14 @@ class DatabaseRepository(private val db: AppDatabase) {
         // Modificare una cella è modificare la riga: è quello che
         // "Last edited time" deve rispecchiare.
         dao.touchRow(rowId, System.currentTimeMillis())
+        // Una data con "Include notification", accesa, spenta o spostata:
+        // la sveglia va rimessa (vedi `NoteAlarms`).
+        if (value.endsWith(NOTIFY_SUFFIX) || existing?.value?.endsWith(NOTIFY_SUFFIX) == true) {
+            NoteAlarms.reschedule()
+        }
+    }
+
+    private companion object {
+        val NOTIFY_SUFFIX = MULTI_VALUE_SEPARATOR + DATE_NOTIFY_FLAG
     }
 }

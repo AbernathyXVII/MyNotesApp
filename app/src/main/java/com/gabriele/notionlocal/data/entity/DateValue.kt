@@ -20,11 +20,20 @@ data class DateRange(
     val end: Long?,
     val hasTime: Boolean = false,
     /** La regola di ripetizione, se questa data si ripete. */
-    val recurrence: Recurrence? = null
+    val recurrence: Recurrence? = null,
+    /**
+     * **"Include notification"** (dal 25/09/2026): all'inizio (e alla
+     * fine, se c'è) arriva una notifica col nome della pagina. Senza ora,
+     * alle 9:00. Vedi `data/notify/Reminders.kt`.
+     */
+    val notify: Boolean = false
 )
 
 /** Il terzo campo del valore, quando l'ora conta. */
 const val DATE_TIME_FLAG = "t"
+
+/** Il quinto campo del valore, quando la data manda una notifica. */
+const val DATE_NOTIFY_FLAG = "n"
 
 /**
  * Legge il valore di una cella data.
@@ -44,7 +53,8 @@ fun parseDateRange(value: String): DateRange? {
         // ignora invece di disegnare un intervallo al contrario.
         end = end?.takeIf { it >= start },
         hasTime = parts.getOrNull(2) == DATE_TIME_FLAG,
-        recurrence = parts.getOrNull(3)?.let { RecurrenceCodec.decode(it) }
+        recurrence = parts.getOrNull(3)?.let { RecurrenceCodec.decode(it) },
+        notify = parts.getOrNull(4) == DATE_NOTIFY_FLAG
     )
 }
 
@@ -52,15 +62,20 @@ fun encodeDateRange(
     start: Long,
     end: Long? = null,
     hasTime: Boolean = false,
-    recurrence: Recurrence? = null
+    recurrence: Recurrence? = null,
+    notify: Boolean = false
 ): String {
-    if (!hasTime && end == null && recurrence == null) return start.toString()
+    if (!hasTime && end == null && recurrence == null && !notify) return start.toString()
     val endPart = end?.toString().orEmpty()
     val timePart = if (hasTime) DATE_TIME_FLAG else ""
     val base = "$start$MULTI_VALUE_SEPARATOR$endPart"
-    if (recurrence == null) {
-        return if (hasTime) "$base$MULTI_VALUE_SEPARATOR$timePart" else base
+    val rule = recurrence?.let { RecurrenceCodec.encode(it) }.orEmpty()
+    return when {
+        // Il segno della notifica sta in fondo, dopo la ripetizione (anche
+        // vuota): i valori scritti prima, che non l'hanno, restano validi.
+        notify -> "$base$MULTI_VALUE_SEPARATOR$timePart$MULTI_VALUE_SEPARATOR$rule$MULTI_VALUE_SEPARATOR$DATE_NOTIFY_FLAG"
+        recurrence != null -> "$base$MULTI_VALUE_SEPARATOR$timePart$MULTI_VALUE_SEPARATOR$rule"
+        hasTime -> "$base$MULTI_VALUE_SEPARATOR$timePart"
+        else -> base
     }
-    val rule = RecurrenceCodec.encode(recurrence)
-    return "$base$MULTI_VALUE_SEPARATOR$timePart$MULTI_VALUE_SEPARATOR$rule"
 }

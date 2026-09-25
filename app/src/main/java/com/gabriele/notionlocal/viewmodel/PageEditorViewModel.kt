@@ -24,6 +24,10 @@ import com.gabriele.notionlocal.data.entity.toggleFormatInRange
 import com.gabriele.notionlocal.data.entity.withSubscript
 import com.gabriele.notionlocal.data.entity.withSuperscript
 import com.gabriele.notionlocal.data.TextStats
+import com.gabriele.notionlocal.data.notify.NoteAlarms
+import com.gabriele.notionlocal.data.notify.NotificationCommand
+import com.gabriele.notionlocal.data.notify.NotificationCommands
+import com.gabriele.notionlocal.data.settings.AppSettings
 import com.gabriele.notionlocal.data.repository.PageRepository
 import com.gabriele.notionlocal.ui.theme.DEFAULT_PAGE_FONT_SIZE
 import com.gabriele.notionlocal.ui.theme.MAX_PAGE_FONT_SIZE
@@ -42,6 +46,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import java.time.LocalDateTime
 
 /** I tipi di formattazione inline selezionabili dalla barra "Aa". */
 enum class FormatType { BOLD, ITALIC, UNDERLINE, STRIKETHROUGH, SPOILER, SUBSCRIPT, SUPERSCRIPT }
@@ -1334,7 +1339,10 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         // resterebbero attaccati a questo blocco, che dopo la divisione
         // è la riga *di sotto*, e finirebbero sotto la riga sbagliata.
         val hasChildren = _blocks.value.any { it.parentBlockId == block.id }
-        if (!hasChildren) {
+        // Non per la riga-notifica: la riga di sopra sarebbe un paragrafo
+        // col testo della notifica, e la notifica resterebbe vuota sotto.
+        // Lì la riga nuova nasce sotto, com'era per tutte le isole.
+        if (!hasChildren && block.type != BlockType.NOTIFICATION) {
             val newBlockId = java.util.UUID.randomUUID().toString()
             val textBeforeJson = json.encodeToString(spansBeforeCursor)
             val textAfterJson = json.encodeToString(listOf(RichTextSpan(text = textAfterCursor)))
@@ -1474,6 +1482,62 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
      * di restare nascosto dentro il divisore, che non lo mostra. Dal menu
      * "/" la riga è vuota (il comando si è appena tolto) e non serve.
      */
+    // --- Le righe "/notification" (dal 25/09/2026) ---
+
+    /** La riga-notifica di cui aprire subito data e ora: appena creata dal menu "/". */
+    private val _notificationPickerFor = MutableStateFlow<String?>(null)
+    val notificationPickerFor: StateFlow<String?> = _notificationPickerFor
+
+    fun consumeNotificationPicker() {
+        _notificationPickerFor.value = null
+    }
+
+    /**
+     * **La riga diventa una notifica.** Due strade:
+     *
+     *  - scritta per intero, "/notification 22.10.2026 17:41 Buttare
+     *    l'immondizia" e Invio (`command`): resta il solo testo, e sotto
+     *    nasce una riga vuota dove si continua a scrivere, come dopo ogni
+     *    Invio;
+     *  - scelta "Notification" dal menu "/" o da "Turn into" (`command`
+     *    null): il testo resta com'è, l'ora è alle prossime 9:00, e si apre
+     *    subito la finestra per sceglierla.
+     *
+     * Un blocco con dei figli li lascia uscire, come diventando divisore:
+     * una notifica non ne mostra.
+     */
+    fun makeNotification(block: BlockEntity, command: NotificationCommand?) {
+        snapshotForStructuralChange()
+        val zone = AppSettings.zoneId
+        val at = (command?.at ?: NotificationCommands.nextDefault(LocalDateTime.now(zone)))
+            .atZone(zone).toInstant().toEpochMilli()
+        val textJson = command?.let { json.encodeToString(listOf(RichTextSpan(text = it.text))) }
+        val newBlockId = if (command != null) java.util.UUID.randomUUID().toString() else null
+        val liftChildren = hasChildren(block.id)
+        viewModelScope.launch {
+            structuralEdits.withLock {
+                if (liftChildren) repository.unnestChildren(block.id)
+                repository.turnIntoNotification(block.id, at, textJson, newBlockId)
+            }
+            NoteAlarms.reschedule()
+            if (newBlockId != null) {
+                delay(IME_SETTLE_DELAY_MS)
+                _focusRequestBlockId.value = newBlockId
+            } else {
+                _notificationPickerFor.value = block.id
+            }
+        }
+    }
+
+    /** Scelte nella finestra data e ora della riga-notifica. */
+    fun setNotificationTime(block: BlockEntity, at: Long) {
+        snapshotForStructuralChange()
+        viewModelScope.launch {
+            repository.setNotifyAt(block.id, at)
+            NoteAlarms.reschedule()
+        }
+    }
+
     fun convertToDividerAndFocusNext(block: BlockEntity, keepText: Boolean = false) {
         snapshotForStructuralChange()
         val newBlockId = java.util.UUID.randomUUID().toString()
@@ -1968,7 +2032,11 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
      */
     fun backspaceAtIslandStart(block: BlockEntity): Boolean {
         if (block.type == BlockType.TOGGLE) return unmakeToggle(block)
-        if (block.type != BlockType.CHECKBOX) return removeEmptyNestedLine(block)
+        // La riga-notifica, col backspace a inizio riga, torna testo come
+        // la casella da spuntare: la notifica se ne va, il testo resta.
+        if (block.type != BlockType.CHECKBOX && block.type != BlockType.NOTIFICATION) {
+            return removeEmptyNestedLine(block)
+        }
         snapshotForStructuralChange()
         viewModelScope.launch {
             // Solo la colonna del tipo: il testo resta quello che c'è

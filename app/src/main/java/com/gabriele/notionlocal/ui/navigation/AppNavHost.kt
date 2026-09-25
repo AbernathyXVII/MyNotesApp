@@ -31,6 +31,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.gabriele.notionlocal.data.entity.PageEntity
+import com.gabriele.notionlocal.data.notify.NotificationTarget
 import com.gabriele.notionlocal.data.settings.AnimationLevel
 import com.gabriele.notionlocal.data.settings.AppSettings
 import com.gabriele.notionlocal.data.settings.StartupMode
@@ -117,6 +118,8 @@ fun AppNavHost(factory: ViewModelFactory) {
     // Letta subito, prima che il registro dell'ultima pagina la sovrascriva
     // col menu principale da cui si parte.
     val lastRouteAtLaunch = remember { AppSettings.lastVisitedRoute }
+    // Aperta toccando una notifica: si va lì, non alla pagina d'avvio.
+    val launchedFromNotification = remember { NotificationTarget.pending.value != null }
     LaunchedEffect(Unit) {
         if (startupHandled) return@LaunchedEffect
         startupHandled = true
@@ -126,6 +129,7 @@ fun AppNavHost(factory: ViewModelFactory) {
             retentionDays = AppSettings.TRASH_RETENTION_DAYS
         ).forEach { factory.imageStore.delete(it) }
 
+        if (launchedFromNotification) return@LaunchedEffect
         val targetId = when (AppSettings.startupMode) {
             StartupMode.HOME -> null
             StartupMode.LAST_VISITED -> lastRouteAtLaunch?.let { Routes.pageIdOf(it) }
@@ -138,6 +142,28 @@ fun AppNavHost(factory: ViewModelFactory) {
             ?.let { repository.getPage(it) }
             ?.takeIf { it.trashedAt == null }
         if (target != null) navController.navigate(Routes.forPage(target.id, target.isDatabase))
+    }
+
+    // --- Toccata una notifica: la sua pagina ---
+    //
+    // Quella della riga di database per una data, quella con la riga
+    // "/notification" per un promemoria. Una riga senza più la sua pagina
+    // apre il database; una pagina sparita o nel cestino non apre niente.
+    val openRequest by NotificationTarget.pending
+    LaunchedEffect(openRequest) {
+        val request = openRequest ?: return@LaunchedEffect
+        NotificationTarget.pending.value = null
+        val repository = factory.pageRepository
+        suspend fun routeOf(pageId: String): String? = when (pageId) {
+            PageEntity.ROOT_PAGE_ID -> Routes.HOME
+            else -> repository.getPage(pageId)?.takeIf { it.trashedAt == null }?.let { Routes.forPage(it.id, it.isDatabase) }
+        }
+        val route = request.rowId?.let { rowId -> repository.ensureRowPage(rowId)?.let(Routes::pageEditor) }
+            ?: request.databaseId?.let { routeOf(it) }
+            ?: request.pageId?.let { routeOf(it) }
+            ?: return@LaunchedEffect
+        closeSidebar()
+        if (route == Routes.HOME) goHome() else jumpTo(route)
     }
 
     // L'ultima pagina aperta, per la finestra di avvio "Last visited page".

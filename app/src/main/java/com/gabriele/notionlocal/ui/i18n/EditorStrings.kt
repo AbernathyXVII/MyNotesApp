@@ -72,6 +72,7 @@ object EditorStrings {
         "Bulleted list" -> t("Bulleted list", "Elenco puntato", "Aufzählung", "Liste à puces", "Lista con viñetas", "项目符号列表", "글머리 기호 목록", "箇条書きリスト")
         "Numbered list" -> t("Numbered list", "Elenco numerato", "Nummerierte Liste", "Liste numérotée", "Lista numerada", "编号列表", "번호 매기기 목록", "番号付きリスト")
         "To-do list" -> t("To-do list", "Elenco di cose da fare", "To-do-Liste", "Liste de tâches", "Lista de tareas", "待办清单", "할 일 목록", "ToDoリスト")
+        "Notification" -> t("Notification", "Notifica", "Benachrichtigung", "Notification", "Notificación", "通知", "알림", "通知")
         "Toggle list" -> t("Toggle list", "Elenco a scomparsa", "Aufklappliste", "Liste dépliante", "Lista desplegable", "折叠列表", "토글 목록", "トグルリスト")
         "Table" -> t("Table", "Tabella", "Tabelle", "Tableau", "Tabla", "表格", "표", "テーブル")
         "Page" -> t("Page", "Pagina", "Seite", "Page", "Página", "页面", "페이지", "ページ")

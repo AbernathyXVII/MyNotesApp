@@ -1,10 +1,19 @@
 package com.gabriele.notionlocal
 
 import com.gabriele.notionlocal.data.widgets.WidgetStore
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import com.gabriele.notionlocal.data.notify.NoteAlarms
+import com.gabriele.notionlocal.data.notify.NotificationPermission
+import com.gabriele.notionlocal.data.notify.NotificationTarget
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -18,6 +27,11 @@ import com.gabriele.notionlocal.ui.theme.NotionLocalTheme
 import com.gabriele.notionlocal.viewmodel.ViewModelFactory
 
 class MainActivity : ComponentActivity() {
+
+    /** Il permesso delle notifiche, chiesto quando serve: vedi `NotificationPermission`. */
+    private val notificationPermission =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -27,6 +41,11 @@ class MainActivity : ComponentActivity() {
         // Dopo le impostazioni: il pomodoro, suonando, guarda se le
         // notifiche sono messe a tacere.
         WidgetStore.init(applicationContext)
+        // Le notifiche: i canali, e la sveglia rimessa alla prossima.
+        NoteAlarms.init(applicationContext)
+        NotificationPermission.requester = ::askNotificationPermission
+        // Aperta toccando una notifica: la pagina da mostrare.
+        NotificationTarget.takeFrom(intent)
         // Il tema "System" deve sapere com'è il telefono. Quando il
         // telefono cambia modalità l'attività viene ricreata e si passa di
         // nuovo di qui, quindi basta leggerlo ora.
@@ -53,6 +72,31 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        NotificationTarget.takeFrom(intent)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // Uscendo dall'app, la sveglia giusta: quello che è cambiato mentre
+        // era aperta deve suonare anche ad app chiusa.
+        NoteAlarms.reschedule()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (NotificationPermission.requester == ::askNotificationPermission) NotificationPermission.requester = null
+    }
+
+    /** Solo da Android 13, e solo se non c'è già: altrimenti non si chiede niente. */
+    private fun askNotificationPermission() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        val granted = ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
+            PackageManager.PERMISSION_GRANTED
+        if (!granted) notificationPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
     private fun applySystemBars(dark: Boolean) {

@@ -1,5 +1,6 @@
 package com.gabriele.notionlocal.ui.screen
 
+import com.gabriele.notionlocal.data.notify.NotificationPermission
 import android.content.Intent
 import android.media.RingtoneManager
 import android.net.Uri
@@ -988,7 +989,13 @@ private fun PomodoroView(widget: PomodoroWidget, active: Boolean) {
                 description = if (widget.running) WidgetStrings.pause else WidgetStrings.start,
                 background = accent
             ) {
-                if (widget.running) WidgetStore.pomodoroPause(widget.id) else WidgetStore.pomodoroStart(widget.id)
+                if (widget.running) {
+                    WidgetStore.pomodoroPause(widget.id)
+                } else {
+                    WidgetStore.pomodoroStart(widget.id)
+                    // La fine di ogni fase arriva anche con una notifica: il permesso si chiede qui.
+                    NotificationPermission.request()
+                }
             }
             Spacer(modifier = Modifier.width(6.dp))
             RoundButton(Icons.Filled.Refresh, WidgetStrings.reset, accent) { WidgetStore.pomodoroReset(widget.id) }

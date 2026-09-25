@@ -26,7 +26,14 @@ enum class BlockType {
     TABLE,
     PAGE_LINK,
     DATABASE_LINK,
-    DIVIDER
+    DIVIDER,
+    /**
+     * **Una notifica** (dal 25/09/2026): "/notification 22.10.2026 17:41
+     * Buttare l'immondizia" fa una riga col campanello, l'ora (`notifyAt`)
+     * e il testo, che è quello che la notifica mostrerà. È un'isola: il
+     * testo si scrive nel suo campo, l'ora si cambia toccandola.
+     */
+    NOTIFICATION
 }
 
 /**
@@ -106,5 +113,8 @@ data class BlockEntity(
     // per farla ripartire da 1).
     var numberStartsAt: Int? = null,
     var indentLevel: Int = 0, // usato solo dai tipi di testo scorrevole: livello di rientro visivo, come Tab in Word
-    var orderIndex: Int = 0
+    var orderIndex: Int = 0,
+    // Usato solo se type == NOTIFICATION: quando arriva la notifica, in
+    // millisecondi (dalla versione 32 del database).
+    var notifyAt: Long? = null
 )

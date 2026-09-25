@@ -120,7 +120,7 @@ fun SettingsScreen(onBack: () -> Unit) {
                 }
             )
             Text(
-                Strings.notificationsNotYet,
+                Strings.notificationsAbout,
                 color = NotionGray400,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)

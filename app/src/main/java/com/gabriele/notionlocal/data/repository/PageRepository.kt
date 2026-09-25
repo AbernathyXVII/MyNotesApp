@@ -1652,6 +1652,36 @@ class PageRepository(private val db: AppDatabase) {
     suspend fun setBlockType(blockId: String, type: BlockType) =
         blockDao.setType(blockId, type)
 
+    /**
+     * **La riga diventa una notifica** (dal 25/09/2026): tipo e ora
+     * insieme. Il testo solo se chi chiama ne porta uno — la riga
+     * "/notification 22.10.2026 17:41 Buttare l'immondizia" lascia il solo
+     * "Buttare l'immondizia" — e con `newBlockId` sotto nasce una riga
+     * vuota, come dopo un Invio. Letta dal database dentro la transazione,
+     * come il divisore: la copia della schermata può essere di un attimo fa.
+     */
+    suspend fun turnIntoNotification(blockId: String, at: Long, textJson: String?, newBlockId: String?) =
+        db.withTransaction {
+            val current = blockDao.getById(blockId) ?: return@withTransaction
+            blockDao.setNotification(current.id, at)
+            if (textJson != null) blockDao.setText(current.id, textJson)
+            if (newBlockId != null) {
+                blockDao.shiftOrderIndexes(current.pageId, current.parentBlockId, current.orderIndex + 1, 1)
+                blockDao.insert(
+                    BlockEntity(
+                        id = newBlockId,
+                        pageId = current.pageId,
+                        parentBlockId = current.parentBlockId,
+                        orderIndex = current.orderIndex + 1,
+                        textJson = "[]"
+                    )
+                )
+            }
+        }
+
+    /** L'ora di una riga "/notification", cambiata dalla sua data. */
+    suspend fun setNotifyAt(blockId: String, at: Long) = blockDao.setNotifyAt(blockId, at)
+
     /** Cambia solo il rientro di un blocco, senza riscriverne il testo. */
     suspend fun setIndentLevel(blockId: String, level: Int) =
         blockDao.setIndentLevel(blockId, level)

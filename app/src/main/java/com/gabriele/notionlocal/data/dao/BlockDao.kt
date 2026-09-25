@@ -9,6 +9,7 @@ import androidx.room.Update
 import androidx.room.Upsert
 import com.gabriele.notionlocal.data.entity.BlockEntity
 import com.gabriele.notionlocal.data.entity.BlockType
+import com.gabriele.notionlocal.data.notify.NotificationBlockRow
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -109,6 +110,29 @@ interface BlockDao {
      */
     @Query("UPDATE blocks SET textJson = :textJson WHERE id = :blockId")
     suspend fun setText(blockId: String, textJson: String)
+
+    /** La riga diventa una notifica: tipo e ora insieme, senza riscrivere il testo. */
+    @Query("UPDATE blocks SET type = 'NOTIFICATION', notifyAt = :at WHERE id = :blockId")
+    suspend fun setNotification(blockId: String, at: Long)
+
+    /** Cambia solo l'ora di una riga "/notification". */
+    @Query("UPDATE blocks SET notifyAt = :at WHERE id = :blockId")
+    suspend fun setNotifyAt(blockId: String, at: Long)
+
+    /**
+     * Le righe "/notification" con la loro ora, col titolo della pagina in
+     * cui stanno: quelle delle pagine nel cestino non suonano. Vedi
+     * `data/notify/Reminders.kt`.
+     */
+    @Query(
+        """
+        SELECT b.id AS blockId, b.pageId AS pageId, b.textJson AS textJson,
+               b.notifyAt AS notifyAt, p.title AS pageTitle
+        FROM blocks b JOIN pages p ON p.id = b.pageId
+        WHERE b.type = 'NOTIFICATION' AND b.notifyAt IS NOT NULL AND p.trashedAt IS NULL
+        """
+    )
+    suspend fun getNotificationRows(): List<NotificationBlockRow>
 
     /**
      * Un blocco letto adesso dal database.

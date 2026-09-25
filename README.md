@@ -602,6 +602,13 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   orizzontale, toccando il mese le rotelle di giorno, mese e anno; l'ora a
   rotelle, un minuto alla volta. La data di fine si chiede con
   l'interruttore "End date"
+- **Notifiche** (dal 25/09/2026): la riga **`/notification 22.10.2026
+  19:41 Buttare l'immondizia`** (Invio, e diventa una riga con la
+  campanella; senza ora alle 9:00; senza testo mostra il nome della
+  pagina), le date dei database con **"Include notification"** (col nome
+  della pagina della riga, all'inizio e alla fine), e la fine di timer e
+  fasi del pomodoro. Arrivano anche ad app chiusa, e toccandole si apre la
+  pagina
 - **Timeline**: il calendario srotolato. Un asse del tempo che scorre
   in orizzontale, una riga per pagina con la barra intera (non spezzata
   a fine settimana), i nomi in una colonna ferma a sinistra, i fine
@@ -817,10 +824,11 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
 - **Timeline: manca l'ingrandimento "5 anni"** che Notion ha. Escluso
   apposta: a quella scala un mese è largo due millimetri e non si
   distingue più niente
-- **Date: niente formato della data, fuso orario e promemoria**, che
-  Notion ha nella stessa finestra. Formato e fuso qui seguono il
-  telefono; il promemoria vorrebbe le notifiche, che sono un lavoro a
-  sé
+- **Date: niente formato della data e fuso orario** nella finestra della
+  data, che Notion ha: qui seguono le impostazioni dell'app. Il
+  promemoria c'è dal 25/09/2026 ("Include notification"), ma a un'ora
+  fissa — quella della data, o le 9:00 — e non "un giorno prima" o "un'ora
+  prima" come su Notion
 - **Date: l'ora vale per l'inizio e per la fine insieme**, non si può
   accenderla solo su uno dei due
 - **Timeline: l'asse copre al massimo quattrocento caselle** attorno
@@ -972,11 +980,10 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   per vista (una proprietà, uno o più valori), come nei database. Una
   vista non ha un nome suo: mostra sempre quello del database. Non si
   può fare una vista di una vista (si collega il database vero)
-- **Widget: il pomodoro non suona ad app chiusa.** Conta giusto lo
-  stesso (riaprendo è al punto giusto), ma per suonare con l'app chiusa
-  servirebbe un allarme di sistema, col suo permesso ("Sveglie e
-  promemoria") e una notifica. Con l'app in secondo piano suona finché
-  Android non la chiude
+- **Notifiche: la riga "/notification" legge la data col giorno
+  prima** (`22.10` è il 22 ottobre), qualunque sia il formato della data
+  scelto nelle impostazioni. E `9.05` è il 9 maggio, non le 9:05: per
+  l'ora, meglio i due punti (`9:05`)
 - **Widget: i nomi delle città sono quelli inglesi del sistema** ("Rome",
   "Beijing", "Kolkata"), gli stessi in tutte le lingue: tradurli
   vorrebbe un elenco di centinaia di città in otto lingue. Anche la sigla
@@ -1973,6 +1980,123 @@ Le voci nate nelle sessioni cloud stanno qui in cima, la più recente
 per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
+
+**25/09/2026 — le notifiche: "/notification", le date dei database, timer e
+pomodoro** *(Claude Code sul PC; in parte verificato sul telefono lo stesso
+giorno, vedi in fondo; 114 test passati; commit solo in locale)*
+
+Richiesta dell'utente, parola per parola:
+> «Implementa una nuova e grossa feature: dammi la possibilità tramite il
+> comando /notification di creare un qualcosa che mi dia una notifica se
+> io la imposto per esempio tramite un comando (magari scrivo
+> /notification 22.10.2026 17:41), stessa cosa per le date delle pagine
+> su un database (che deve essere precisamente una notifica impostata, non
+> una semplice data che scrivo su un database, magari quando inserisco una
+> data, sotto a Include time mettimi un'opzione chiamata Include
+> notification, che mi manda una notifica sia se è una singola data
+> precisa con giorno mese anno ora e minuti e sia se è un evento con
+> inizio a fine, quindi se è una pagina che ha come data dal 23 ottobre
+> 2026 fino al 17 dicembre 2026, in entrambi i giorni riceverò una
+> notifica). Se non inserisco ora e minuti, ma decido di farmi mandare una
+> notifica, ora e minuti di default saranno sempre alle 9:00 di mattina.
+> Quello che verrà visualizzato sulla notifica sarà: 1) o il titolo della
+> pagina appartenente alla data e ora della notifica che io ho importato;
+> 2) oppure quello che scrivo su un qualsiasi campo di testo scritto da
+> parentesi. Un esempio del primo caso: … database con i nomi degli album
+> … Revive + delle IVE … La notifica mi verrà fuori alle 9:00 (se non
+> metto io un'ora specifica) del 23 febbraio 2026 con scritto Revive +. Un
+> esempio del secondo caso: /notification 22.10.2026 19:41 Buttare
+> l'immondizia. La notifica mi farà vedere Buttare l'immondizia. Una mini
+> feature da implementare è anche una notifica quando finisce un timer, e
+> quando finisce la sessione di studio e di break del pomodoro.»
+
+- **[Nuova funzionalità]** **La riga "/notification".** Si scrive
+  `/notification 22.10.2026 19:41 Buttare l'immondizia` e si preme Invio:
+  il comando sparisce e resta una riga con la **campanella**, il testo
+  "Buttare l'immondizia" e in fondo, in un riquadro blu, **quando suona**;
+  la scrittura continua nella riga nuova sotto. Toccando il riquadro si
+  sceglie il giorno e poi l'ora, con le finestre di Samsung. La data si
+  può scrivere anche `22/10/2026`, `22-10-26`, `2026-10-22` o senza
+  l'anno (`22.10`: quest'anno, o il prossimo se è già passata); l'ora
+  anche `19.41`. **Senza ora, alle 9:00**; con la sola ora, oggi (o domani
+  se è già passata); con niente, le prossime 9:00. Il testo fra parentesi
+  perde le parentesi. Vale anche `/notifica`. Senza testo, la notifica
+  mostra il **nome della pagina** (la riga vuota lo suggerisce in grigio).
+  C'è anche la voce **"Notification"** nel menu "/" e in "Turn into":
+  lascia il testo com'è, mette le prossime 9:00 e apre subito la scelta
+  del giorno. Backspace a inizio riga la fa tornare testo, come una
+  casella da spuntare. Una notifica già passata si fa grigia
+- **[Nuova funzionalità]** **"Include notification"** nella finestra della
+  data dei database, sotto "Include time" (e sotto le sue ore): la data
+  manda una notifica col **nome della pagina della riga** ("Revive +") e
+  sotto il nome del database. All'ora della data, o **alle 9:00** se l'ora
+  non c'è; con una data di fine, **il primo giorno e l'ultimo** (sotto:
+  "Album · Inizio", "Album · Fine"); una data che si ripete suona a ogni
+  ripetizione. Sotto l'interruttore una riga dice quando suonerà. Nella
+  cella, accanto alla data, una campanellina
+- **[Nuova funzionalità]** **La fine di un timer e di ogni fase del
+  pomodoro** mandano una notifica ("Tempo scaduto", sotto "Timer · 10 m";
+  alla fine della sessione il suo nome e "È ora della pausa · 5 min"; alla
+  fine della pausa "Pausa finita" e di nuovo la sessione),
+  e adesso suonano **anche ad app chiusa**
+- **[Nuova funzionalità]** Toccando una notifica si apre **la sua
+  pagina**: quella della riga "/notification", o quella della riga del
+  database (se la riga non può avere una pagina, il database)
+- **[Nuova funzionalità]** Il **permesso delle notifiche** (Android 13 e
+  dopo) si chiede **quando serve**, non all'avvio: creando una notifica,
+  accendendo "Include notification", facendo partire un timer o un
+  pomodoro. Nelle impostazioni, al posto di "Le notifiche non ci sono
+  ancora", una riga dice da dove arrivano. **"Turn off notifications" e
+  "Turn off for a while" valgono per tutte**; il suono è quello scelto in
+  "Notification sound" (o quello del pomodoro), una volta sola
+- **[Progetto]** Come funziona (`data/notify/`): **una sola sveglia di
+  Android** (`NoteAlarms`, `AlarmManager` esatta, che suona anche col
+  telefono in standby) messa alla prima cosa che deve suonare, fra
+  promemoria e fine di timer e pomodori. Quando suona, `AlarmReceiver` —
+  anche ad app chiusa, Android fa partire l'app solo per questo — manda
+  quello che è arrivato **dall'ultima volta a adesso** (`deliveredUpTo`),
+  così niente arriva due volte, e una notifica persa a telefono spento
+  arriva alla riaccensione se non sono passate più di 12 ore; poi rimette
+  la sveglia alla cosa dopo. Dopo un riavvio, un aggiornamento o un cambio
+  d'ora la rimette `RescheduleReceiver`. Una sveglia messa per una cosa
+  poi cancellata non fa danni: quando suona si rilegge il database. I
+  canali "Promemoria" e "Timer e pomodoro" non hanno suono proprio: lo fa
+  l'app (`WidgetStore.playOnce`), così il suono scelto nelle impostazioni
+  vale subito. Il calcolo di cosa suona e quando (`Reminders.kt`) e il
+  comando (`NotificationCommand.kt`) sono senza Android, con 18 test
+  (`NotificationsTest`, sugli esempi della richiesta)
+- **[Progetto]** Permessi nuovi nel manifest: `POST_NOTIFICATIONS`,
+  `USE_EXACT_ALARM` (Android 13 e dopo; `SCHEDULE_EXACT_ALARM` fino al
+  12), `RECEIVE_BOOT_COMPLETED`. Ancora nessun permesso di rete
+- **[Progetto]** **Database alla versione 32**: `blocks.notifyAt`, l'ora
+  delle righe "/notification", aggiunta con `ALTER TABLE` (colonna vuota
+  per tutte le righe di prima). Test `MigrationTest.from31…` su un file
+  alla 31 (`schema/v31.sql`). Il segno di "Include notification" sta
+  invece nel valore della cella data, in fondo (`…|n`): i valori scritti
+  prima restano validi
+- Verificato sul telefono: `/notification 19:36 Prova notifica` + Invio →
+  riga con campanella e "25.09.2026 19:36", e alla prima notifica Android
+  ha chiesto il permesso. **Ad app chiusa** (processo ucciso):
+  `/notification 19:41 Test app chiusa` → alle 19:41 Android ha fatto
+  ripartire l'app e la notifica "Test app chiusa", sotto "Titolo tre H3",
+  è arrivata. L'utente ha provato "Include notification" su "Riga
+  semplice" alle 19:35, ad app chiusa: "funziona perfettamente". **Da
+  provare ancora**: la fine di timer e pomodoro, il tocco sulla notifica
+  che apre la pagina, la riaccensione del telefono
+
+Poi l'utente, parola per parola:
+> «Se l'app è chiusa, non mi manda la notifica se la creo su un campo
+> testo. Se la creo su un databse, funziona perfettamente»
+
+- **[Bug fix]** Non era l'app chiusa: nel database del telefono e nelle
+  sveglie di Android si vedeva che la sua riga era per **domani**. Aveva
+  scritto `/notification` senza ora alle 19:32, quindi le prossime 9:00,
+  cioè domani; poi, toccando il riquadro, aveva cambiato solo l'ora
+  (19:34), e il giorno era rimasto il 26. Il riquadro diceva
+  "26.09.2026 19:34" e non se n'era accorto. Ora **oggi e domani si
+  scrivono per nome** ("Oggi 19:41", "Domani 09:00"), e se l'ora scelta è
+  già passata un messaggio dice che la notifica non suonerà. La prova ad
+  app chiusa qui sopra è stata fatta proprio per escludere l'altra causa
 
 **25/09/2026 — i selettori di data e ora come quelli di Samsung**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 95 test
@@ -5717,7 +5841,9 @@ le finestre che apre. Chi lo usa passa solo l'id del blocco.
 
 ## Nota tecnica
 
-Lo schema è alla **versione 31** (la 31, del 25/09/2026, sposta font e
+Lo schema è alla **versione 32** (la 32, del 25/09/2026, aggiunge
+`blocks.notifyAt`, l'ora delle righe "/notification"; la 31, dello stesso
+giorno, sposta font e
 corpo dalla pagina al testo, senza cambiare la forma delle tabelle; la
 30, dello stesso giorno, toglie MS YaHei
 e aggiunge l'inquadratura delle schede della galleria; dalla 25 alla 29 vengono dalla

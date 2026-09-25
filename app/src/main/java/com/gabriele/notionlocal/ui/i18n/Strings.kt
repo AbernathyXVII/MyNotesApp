@@ -363,15 +363,16 @@ object Strings {
     val forOneWeek get() = t("For 1 week", "Per 1 settimana", "Für 1 Woche", "Pendant 1 semaine", "Durante 1 semana", "1 周", "1주일 동안", "1週間")
     fun offUntil(date: String) = t("Off until $date", "Disattivate fino al $date", "Aus bis $date", "Désactivées jusqu'au $date", "Desactivadas hasta el $date", "关闭至 $date", "$date 까지 꺼짐", "$date までオフ")
     val turnBackOn get() = t("Turn back on", "Riattiva", "Wieder einschalten", "Réactiver", "Volver a activar", "重新开启", "다시 켜기", "オンに戻す")
-    val notificationsNotYet get() = t(
-        "Notifications aren't available yet: these choices will apply once they are.",
-        "Le notifiche non ci sono ancora: queste scelte varranno quando arriveranno.",
-        "Benachrichtigungen gibt es noch nicht: Diese Einstellungen gelten, sobald sie verfügbar sind.",
-        "Les notifications ne sont pas encore disponibles : ces choix s'appliqueront dès qu'elles le seront.",
-        "Las notificaciones aún no están disponibles: estas opciones se aplicarán cuando lo estén.",
-        "通知功能尚未推出：这些设置将在推出后生效。",
-        "알림 기능은 아직 없습니다. 기능이 추가되면 이 설정이 적용됩니다.",
-        "通知はまだ利用できません。利用可能になるとこの設定が適用されます。"
+    /** Sotto le impostazioni delle notifiche: a cosa servono (dal 25/09/2026). */
+    val notificationsAbout get() = t(
+        "They come from /notification in a page, from database dates with \"Include notification\", and from timers and pomodoro.",
+        "Arrivano da /notification in una pagina, dalle date dei database con \"Includi notifica\", e da timer e pomodoro.",
+        "Sie kommen von /notification auf einer Seite, von Datenbankdaten mit \"Benachrichtigung einschließen\" und von Timer und Pomodoro.",
+        "Elles viennent de /notification dans une page, des dates de base de données avec « Inclure une notification », et du minuteur et du pomodoro.",
+        "Llegan desde /notification en una página, desde las fechas de bases de datos con \"Incluir notificación\" y desde el temporizador y el pomodoro.",
+        "通知来自页面中的 /notification、开启了“包含通知”的数据库日期，以及计时器和番茄钟。",
+        "알림은 페이지의 /notification, '알림 포함'을 켠 데이터베이스 날짜, 타이머와 뽀모도로에서 옵니다.",
+        "通知は、ページの /notification、「通知を含める」をオンにしたデータベースの日付、タイマーとポモドーロから届きます。"
     )
     val animations get() = t("Animations", "Animazioni", "Animationen", "Animations", "Animaciones", "动画", "애니메이션", "アニメーション")
     val animationsOn get() = t("On", "Attive", "An", "Activées", "Activadas", "开启", "켜기", "オン")

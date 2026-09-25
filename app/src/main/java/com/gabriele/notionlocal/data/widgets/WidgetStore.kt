@@ -7,6 +7,8 @@ import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
 import androidx.compose.runtime.mutableStateOf
+import com.gabriele.notionlocal.data.notify.NoteAlarms
+import com.gabriele.notionlocal.data.notify.Notifier
 import com.gabriele.notionlocal.data.settings.AppSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,9 +30,10 @@ import java.time.ZoneId
  *
  * **Il pomodoro suona anche con la barra chiusa**: non è la barra a
  * contare, ma un'attesa di questo oggetto, che vive quanto l'app e dorme
- * fino alla fine della fase (`scheduleAlarm`). Ad app chiusa non suona —
- * servirebbe un allarme di sistema — ma riaprendola il timer è al punto
- * giusto, perché si conta sull'orologio (vedi `PomodoroWidget`).
+ * fino alla fine della fase (`scheduleAlarm`). **E dal 25/09/2026 anche ad
+ * app chiusa**: la fine di timer e pomodori mette anche la sveglia di
+ * Android (`NoteAlarms`), che quando suona fa partire l'app e passa di qui
+ * (`onAlarm`). Ogni fine manda una notifica (`Notifier`) e suona.
  *
  * `init` va chiamato all'avvio, dopo `AppSettings.init`.
  */
@@ -49,17 +52,45 @@ object WidgetStore {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var alarm: Job? = null
+    private var lastSystemAlarmEnd: Long? = null
 
     fun init(context: Context) {
         if (::prefs.isInitialized) return
+        load(context)
+        // Le fasi finite mentre l'app era chiusa: si recuperano in
+        // silenzio, senza suonare per qualcosa di già passato.
+        advancePomodoros(ringIfRecent = false)
+    }
+
+    private fun load(context: Context) {
         appContext = context.applicationContext
         prefs = appContext.getSharedPreferences("widgets", Context.MODE_PRIVATE)
         stateHolder.value = prefs.getString(KEY_STATE, null)
             ?.let { runCatching { json.decodeFromString<WidgetsState>(it) }.getOrNull() }
             ?: WidgetsState()
-        // Le fasi finite mentre l'app era chiusa: si recuperano in
-        // silenzio, senza suonare per qualcosa di già passato.
-        advancePomodoros(ringIfRecent = false)
+    }
+
+    /**
+     * **La sveglia di Android è suonata** (vedi `AlarmReceiver`): si fa
+     * avanzare quello che è finito, con la sua notifica. Se l'app era
+     * chiusa lo stato si carica ora, **senza** il recupero silenzioso di
+     * `init`: è proprio la fine appena arrivata che deve suonare. La
+     * finestra è più larga (`ALARM_RING_WINDOW_MS`): la sveglia può
+     * arrivare con qualche secondo di ritardo, e l'app deve anche partire.
+     * Se l'app era aperta e l'attesa interna è arrivata prima, qui non c'è
+     * più niente da fare: la stessa fine non suona due volte.
+     */
+    fun onAlarm(context: Context) {
+        if (!::prefs.isInitialized) load(context)
+        advancePomodoros(ringIfRecent = true, window = ALARM_RING_WINDOW_MS)
+    }
+
+    /** La prima fine fra pomodori e timer che corrono, per la sveglia di Android. */
+    fun nextEnd(): Long? {
+        val widgets = stateHolder.value.widgets
+        val pomodoroEnds = widgets.filterIsInstance<PomodoroWidget>().filter { it.running }.mapNotNull { it.endsAt }
+        val timerEnds = widgets.filterIsInstance<TimerWidget>().flatMap { it.timers }.filter { it.running }.mapNotNull { it.endsAt }
+        return (pomodoroEnds + timerEnds).minOrNull()
     }
 
     private fun update(transform: (WidgetsState) -> WidgetsState) {
@@ -233,9 +264,9 @@ object WidgetStore {
      * non deve suonare per il passato. (Fino al 25/09/2026 c'erano solo i
      * pomodori.)
      */
-    private fun advancePomodoros(ringIfRecent: Boolean) {
+    private fun advancePomodoros(ringIfRecent: Boolean, window: Long = RING_WINDOW_MS) {
         val now = System.currentTimeMillis()
-        var ring = false
+        val events = mutableListOf<WidgetEvent>()
         // Il suono del primo pomodoro appena finito: due che finiscono
         // insieme suonano una volta sola, come prima. I timer suonano col
         // suono delle notifiche dell'app.
@@ -245,50 +276,47 @@ object WidgetStore {
                 when (w) {
                     is PomodoroWidget -> {
                         val (next, ended) = w.advancedTo(now)
-                        if (ended != null && now - ended < RING_WINDOW_MS) {
-                            if (!ring) sound = w.soundUri
-                            ring = true
+                        if (ended != null && now - ended < window) {
+                            if (events.none { it is WidgetEvent.PomodoroPhaseEnded }) sound = w.soundUri
+                            events += WidgetEvent.PomodoroPhaseEnded(
+                                widgetId = w.id,
+                                sessionName = w.sessionName,
+                                nowIn = next.phase,
+                                nextMinutes = (next.lengthOf(next.phase) / MINUTE_MS).toInt()
+                            )
                         }
                         next
                     }
                     is TimerWidget -> w.copy(timers = w.timers.map { t ->
                         val (next, ended) = t.finishedBy(now)
-                        if (ended != null && now - ended < RING_WINDOW_MS) ring = true
+                        if (ended != null && now - ended < window) events += WidgetEvent.TimerDone(t.id, t.durationMs)
                         next
                     })
                     else -> w
                 }
             })
         }
-        if (ring && ringIfRecent) ring(sound)
+        if (events.isNotEmpty() && ringIfRecent && ::appContext.isInitialized) {
+            Notifier.postWidgetEvents(appContext, events, sound)
+        }
         scheduleAlarm()
     }
 
     /** Dorme fino alla prima fine, fra tutti i pomodori e i timer che corrono. */
     private fun scheduleAlarm() {
         alarm?.cancel()
-        val widgets = stateHolder.value.widgets
-        val pomodoroEnds = widgets.filterIsInstance<PomodoroWidget>().filter { it.running }.mapNotNull { it.endsAt }
-        val timerEnds = widgets.filterIsInstance<TimerWidget>().flatMap { it.timers }.filter { it.running }.mapNotNull { it.endsAt }
-        val next = (pomodoroEnds + timerEnds).minOrNull() ?: return
+        val next = nextEnd()
+        // La sveglia di Android, per quando l'app sarà chiusa: rimessa solo
+        // se la prima fine è cambiata, non a ogni tocco del contatore.
+        if (next != lastSystemAlarmEnd) {
+            lastSystemAlarmEnd = next
+            NoteAlarms.reschedule()
+        }
+        if (next == null) return
         alarm = scope.launch {
             delay((next - System.currentTimeMillis()).coerceAtLeast(0))
             advancePomodoros(ringIfRecent = true)
         }
-    }
-
-    /**
-     * Il suono di fine fase: quello scelto per il pomodoro, se c'è, se no
-     * quello scelto nelle impostazioni per le notifiche, o quello del
-     * telefono. Tace se le notifiche sono messe a tacere nelle
-     * impostazioni dell'app.
-     */
-    private fun ring(pomodoroSound: String?) {
-        if (!::appContext.isInitialized) return
-        if (AppSettings.notificationsMuted || AppSettings.mutedUntil != null) return
-        val uri = (pomodoroSound ?: AppSettings.notificationSoundUri)?.let(Uri::parse)
-            ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-        playOnce(appContext, uri)
     }
 
     /** Il suono che sta suonando adesso, per fermarlo: vedi `playOnce`. */
@@ -325,6 +353,7 @@ object WidgetStore {
 
     private const val KEY_STATE = "state"
     private const val RING_WINDOW_MS = 5_000L
+    private const val ALARM_RING_WINDOW_MS = 60_000L
     private const val MAX_SOUND_MS = 8_000L
     const val MAX_POMODORO_MINUTES = 180
 }

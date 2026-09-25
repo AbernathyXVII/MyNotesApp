@@ -9,7 +9,24 @@
       n'è andato anche il permesso: l'app non si collega a niente. I font
       cinesi e giapponesi li scarica Google Play Services per conto suo,
       col permesso suo.
+
+      **Notifiche e sveglie** (dal 25/09/2026): i promemoria di
+      "/notification" e delle date dei database, e la fine di timer e
+      pomodori. Il permesso di mostrarle (Android 13 e dopo) lo si chiede
+      quando serve, non all'avvio (vedi `NotificationPermission`). La
+      sveglia esatta serve perché un promemoria delle 17:41 arrivi alle
+      17:41 e non "verso le 17:50": su Android 13 e dopo basta
+      `USE_EXACT_ALARM`, su Android 12 c'è `SCHEDULE_EXACT_ALARM`. Dopo un
+      riavvio le sveglie di Android sono sparite: `RECEIVE_BOOT_COMPLETED`
+      serve a rimetterle.
     -->
+
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission
+        android:name="android.permission.SCHEDULE_EXACT_ALARM"
+        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:allowBackup="true"
@@ -46,6 +63,23 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- La sveglia delle notifiche: vedi `NoteAlarms`. -->
+        <receiver
+            android:name=".data.notify.AlarmReceiver"
+            android:exported="false" />
+
+        <!-- Rimette la sveglia dopo un riavvio, un aggiornamento, un cambio d'ora o di fuso. -->
+        <receiver
+            android:name=".data.notify.RescheduleReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

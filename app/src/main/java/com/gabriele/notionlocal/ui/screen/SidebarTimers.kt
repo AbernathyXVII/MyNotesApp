@@ -1,5 +1,6 @@
 package com.gabriele.notionlocal.ui.screen
 
+import com.gabriele.notionlocal.data.notify.NotificationPermission
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -280,6 +281,8 @@ private fun TimerSetupPage(widgetId: String, timer: CountdownTimer) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
             ActionCircle(WidgetStrings.start, SamsungOrange, enabled = timer.durationMs > 0) {
                 WidgetStore.timerStart(widgetId, timer.id)
+                // La fine arriva anche con una notifica: il permesso si chiede qui.
+                NotificationPermission.request()
             }
         }
     }

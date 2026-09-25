@@ -8,6 +8,7 @@ import androidx.room.Query
 import androidx.room.Update
 import com.gabriele.notionlocal.data.entity.BlockType
 import com.gabriele.notionlocal.data.entity.DatabaseCellEntity
+import com.gabriele.notionlocal.data.notify.DateReminderRow
 import com.gabriele.notionlocal.data.entity.DatabaseColumnEntity
 import com.gabriele.notionlocal.data.entity.DatabaseRowEntity
 import kotlinx.coroutines.flow.Flow
@@ -275,4 +276,23 @@ interface DatabaseDao {
         """
     )
     suspend fun getAllCellsForPageOnce(pageId: String): List<DatabaseCellEntity>
+
+    /**
+     * Le celle data con "Include notification" acceso (il segno `n` in
+     * fondo al valore, vedi `DateRange.notify`), col nome della riga e del
+     * database: quelle dei database nel cestino non suonano. Vedi
+     * `data/notify/Reminders.kt`.
+     */
+    @Query(
+        """
+        SELECT c.rowId AS rowId, c.columnId AS columnId, c.value AS value,
+               r.title AS rowTitle, col.pageId AS databaseId, p.title AS databaseTitle
+        FROM database_cells c
+        JOIN database_columns col ON col.id = c.columnId
+        JOIN database_rows r ON r.id = c.rowId
+        JOIN pages p ON p.id = col.pageId
+        WHERE col.type = 'DATE' AND c.value LIKE '%|n' AND p.trashedAt IS NULL
+        """
+    )
+    suspend fun getNotifyingDateCells(): List<DateReminderRow>
 }

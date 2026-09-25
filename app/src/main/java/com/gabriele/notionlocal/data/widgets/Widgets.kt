@@ -101,6 +101,22 @@ data class CounterWidget(
 enum class PomodoroPhase { SESSION, BREAK }
 
 /**
+ * **Qualcosa è finito** in un widget, e va detto con una notifica (dal
+ * 25/09/2026): un timer, o una fase del pomodoro. Vedi `Notifier`.
+ */
+sealed class WidgetEvent {
+    data class TimerDone(val timerId: String, val durationMs: Long) : WidgetEvent()
+
+    /** `nowIn`: la fase appena cominciata; `nextMinutes`: quanto dura. */
+    data class PomodoroPhaseEnded(
+        val widgetId: String,
+        val sessionName: String,
+        val nowIn: PomodoroPhase,
+        val nextMinutes: Int
+    ) : WidgetEvent()
+}
+
+/**
  * **Pomodoro**: una sessione di studio e una pausa, a turno.
  *
  * **Si conta sull'orologio, non a colpi di secondo**: quando corre si

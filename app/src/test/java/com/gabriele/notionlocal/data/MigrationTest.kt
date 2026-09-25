@@ -65,7 +65,7 @@ class MigrationTest {
         assertNull(page.sourceDatabaseId)
         assertNull(page.viewHiddenColumnIds)
         assertNull(page.cardCoverScale)
-        assertEquals(31, db.openHelper.readableDatabase.version)
+        assertEquals(32, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -81,7 +81,7 @@ class MigrationTest {
         assertNull(yahei.cardCoverScale)
         assertNull(yahei.cardCoverOffsetX)
         assertNull(yahei.cardCoverOffsetY)
-        assertEquals(31, db.openHelper.readableDatabase.version)
+        assertEquals(32, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -109,6 +109,18 @@ class MigrationTest {
         assertEquals(listOf(RichTextSpan(text = "", color = "#E03E3E")), spans("b2"))
         // Una pagina senza font resta com'era.
         assertEquals(listOf(RichTextSpan(text = "Normale")), spans("b3"))
-        assertEquals(31, db.openHelper.readableDatabase.version)
+        assertEquals(32, db.openHelper.readableDatabase.version)
+    }
+
+    @Test
+    fun from31TheBlocksGetAnEmptyNotificationTime() = runBlocking<Unit> {
+        val db = AppDatabase.getInstance(databaseAtVersion(31))
+        assertEquals("Pagina alla 31", db.pageDao().getById("p1")!!.title)
+        // La colonna nuova c'è, vuota: nessuna riga di prima era una notifica.
+        val block = db.blockDao().getById("b1")!!
+        assertNull(block.notifyAt)
+        assertTrue(db.blockDao().getNotificationRows().isEmpty())
+        assertTrue(db.databaseDao().getNotifyingDateCells().isEmpty())
+        assertEquals(32, db.openHelper.readableDatabase.version)
     }
 }

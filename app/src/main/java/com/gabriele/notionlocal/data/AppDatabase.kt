@@ -47,7 +47,7 @@ import kotlinx.serialization.json.Json
         TableCellEntity::class,
         PageEditEntity::class
     ],
-    version = 31,
+    version = 32,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -489,6 +489,17 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /**
+         * **L'ora delle notifiche** (25/09/2026): la colonna `notifyAt` per
+         * le righe fatte con "/notification". Vuota per tutte le righe che
+         * c'erano, che non sono notifiche.
+         */
+        private val MIGRATION_31_32 = object : Migration(31, 32) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE blocks ADD COLUMN notifyAt INTEGER")
+            }
+        }
+
+        /**
          * Solo per i test: chiude il database e lo dimentica, così il
          * `getInstance` dopo riapre il file da capo (e ne esegue le
          * migrazioni). Senza, il secondo test troverebbe il database del
@@ -532,7 +543,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_27_28,
                         MIGRATION_28_29,
                         MIGRATION_29_30,
-                        MIGRATION_30_31
+                        MIGRATION_30_31,
+                        MIGRATION_31_32
                     )
                     .build()
                 INSTANCE = instance

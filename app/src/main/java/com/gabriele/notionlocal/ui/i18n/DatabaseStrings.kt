@@ -330,6 +330,15 @@ object DbStrings {
     // --- Data e ripetizioni ---
 
     val includeTime get() = t("Include time", "Includi l'ora", "Uhrzeit einschließen", "Inclure l'heure", "Incluir hora", "包含时间", "시간 포함", "時刻を含める")
+    val includeNotification get() = t("Include notification", "Includi notifica", "Benachrichtigung einschließen", "Inclure une notification", "Incluir notificación", "包含通知", "알림 포함", "通知を含める")
+
+    /** Quando suona la notifica di una data, detto sotto l'interruttore. */
+    fun notificationWhen(hasTime: Boolean, hasEnd: Boolean): String = when {
+        hasTime && hasEnd -> t("At the start and at the end", "All'inizio e alla fine", "Zu Beginn und am Ende", "Au début et à la fin", "Al inicio y al final", "在开始和结束时", "시작할 때와 끝날 때", "開始時と終了時")
+        hasTime -> t("At the chosen time", "All'ora scelta", "Zur gewählten Uhrzeit", "À l'heure choisie", "A la hora elegida", "在所选时间", "선택한 시간에", "選んだ時刻に")
+        hasEnd -> t("At 9:00 on the first and last day", "Alle 9:00 del primo e dell'ultimo giorno", "Um 9:00 am ersten und letzten Tag", "À 9:00 le premier et le dernier jour", "A las 9:00 el primer y el último día", "第一天和最后一天的 9:00", "첫날과 마지막 날 9:00에", "初日と最終日の 9:00 に")
+        else -> t("At 9:00 on that day", "Alle 9:00 di quel giorno", "Um 9:00 an diesem Tag", "À 9:00 ce jour-là", "A las 9:00 de ese día", "当天 9:00", "그날 9:00에", "その日の 9:00 に")
+    }
     val startTime get() = t("Start time", "Ora di inizio", "Startzeit", "Heure de début", "Hora de inicio", "开始时间", "시작 시간", "開始時刻")
     val endDate get() = t("End date", "Data di fine", "Enddatum", "Date de fin", "Fecha de fin", "结束日期", "종료 날짜", "終了日")
     val endTime get() = t("End time", "Ora di fine", "Endzeit", "Heure de fin", "Hora de fin", "结束时间", "종료 시간", "終了時刻")

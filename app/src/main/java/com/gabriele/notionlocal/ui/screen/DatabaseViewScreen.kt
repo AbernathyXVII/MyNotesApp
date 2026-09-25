@@ -127,6 +127,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.OutlinedTextField
@@ -187,6 +188,7 @@ import com.gabriele.notionlocal.data.entity.DateRange
 import com.gabriele.notionlocal.data.entity.PageEntity
 import com.gabriele.notionlocal.data.entity.MULTI_VALUE_SEPARATOR
 import com.gabriele.notionlocal.data.entity.encodeDateRange
+import com.gabriele.notionlocal.data.notify.NotificationPermission
 import com.gabriele.notionlocal.data.entity.parseDateRange
 import com.gabriele.notionlocal.data.entity.MonthlyMode
 import com.gabriele.notionlocal.data.entity.Recurrence
@@ -5074,12 +5076,25 @@ private fun DateCell(
             .padding(horizontal = contentPadding),
         contentAlignment = Alignment.CenterStart
     ) {
-        Text(
-            text = range?.label() ?: "—",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            maxLines = 1
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = range?.label() ?: "—",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+                maxLines = 1,
+                modifier = Modifier.weight(1f, fill = false)
+            )
+            // "Include notification" acceso: la data manda una notifica.
+            if (range?.notify == true) {
+                Spacer(modifier = Modifier.size(4.dp))
+                Icon(
+                    Icons.Filled.Notifications,
+                    contentDescription = DbStrings.includeNotification,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(14.dp)
+                )
+            }
+        }
     }
 
     if (showPicker) {
@@ -5105,9 +5120,13 @@ private fun DateCell(
  * grandissima parte delle pagine.
  *
  * Quello che Notion ha e qui non c'è — formato della data, fuso
- * orario, promemoria — non è stato dimenticato: il formato e il fuso
- * sono preferenze che qui seguono il telefono, e il promemoria
- * vorrebbe le notifiche, che sono un lavoro a sé.
+ * orario — non è stato dimenticato: sono preferenze che qui seguono le
+ * impostazioni dell'app.
+ *
+ * **"Include notification"** (dal 25/09/2026), sotto "Include time":
+ * la data manda una notifica col nome della pagina, all'ora scelta o
+ * alle 9:00 se l'ora non c'è; con una data di fine, il primo giorno e
+ * l'ultimo. Vedi `data/notify/Reminders.kt`.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -5124,6 +5143,7 @@ private fun DateEditorSheet(
     // sposta la data, e il periodo si fa solo ad interruttore acceso.
     var withEndDate by remember { mutableStateOf(range?.end != null) }
     var includeTime by remember { mutableStateOf(range?.hasTime == true) }
+    var includeNotification by remember { mutableStateOf(range?.notify == true) }
     var startTime by remember {
         mutableStateOf(
             range?.takeIf { it.hasTime }?.start?.toLocalDateTime()?.toLocalTime()
@@ -5190,7 +5210,8 @@ private fun DateEditorSheet(
                         start = startAt.toEpochMillis(),
                         end = endAt?.toEpochMillis(),
                         hasTime = includeTime,
-                        recurrence = recurrence
+                        recurrence = recurrence,
+                        notify = includeNotification
                     )
                 )
             }) { Text(Strings.done) }
@@ -5287,6 +5308,45 @@ private fun DateEditorSheet(
                         onClick = { editingTime = false }
                     )
                 }
+            }
+
+            // **La notifica della data**, chiesta dall'utente proprio qui:
+            // sotto "Include time", perché è l'ora che decide quando suona.
+            HorizontalDivider()
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        includeNotification = !includeNotification
+                        if (includeNotification) NotificationPermission.request()
+                    }
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = DbStrings.includeNotification,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    if (includeNotification) {
+                        Text(
+                            text = DbStrings.notificationWhen(
+                                hasTime = includeTime,
+                                hasEnd = withEndDate && endDate != null
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                Switch(
+                    checked = includeNotification,
+                    onCheckedChange = {
+                        includeNotification = it
+                        if (it) NotificationPermission.request()
+                    }
+                )
             }
 
             // La ripetizione sta sotto all'ora perché è la stessa
