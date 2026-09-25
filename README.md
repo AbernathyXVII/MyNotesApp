@@ -597,7 +597,11 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   sposta e ingrandisce la copertina nella sola scheda
 - **Data con ora facoltativa**: l'interruttore "Include time" nella
   finestra della data aggiunge l'orario all'inizio e alla fine. Spento,
-  la data vale il giorno intero
+  la data vale il giorno intero. **Selettori come quelli di Samsung**
+  (dal 25/09/2026): il mese a griglia con le frecce e lo scorrimento
+  orizzontale, toccando il mese le rotelle di giorno, mese e anno; l'ora a
+  rotelle, un minuto alla volta. La data di fine si chiede con
+  l'interruttore "End date"
 - **Timeline**: il calendario srotolato. Un asse del tempo che scorre
   in orizzontale, una riga per pagina con la barra intera (non spezzata
   a fine settimana), i nomi in una colonna ferma a sinistra, i fine
@@ -1969,6 +1973,69 @@ Le voci nate nelle sessioni cloud stanno qui in cima, la più recente
 per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
+
+**25/09/2026 — i selettori di data e ora come quelli di Samsung**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 95 test
+passati; commit solo in locale)*
+
+Richiesta dell'utente, parola per parola, con tre foto dei Promemoria di
+Samsung (il mese di settembre 2026 col 25 cerchiato d'arancio; le rotelle
+SEP · 25 · 2026; le rotelle 19 : 00 di "Set time"):
+> «Nei database, quando creo la proprietà Date, si crea una cella con un -
+> . Quando lo tocco si apre il menu del calendario, ma non mi piace tanto
+> come sono il selettore della data e quello dell'ora. Fallo come nelle
+> foto che ti mando: per selezionare la data, si vede il mese corrente,
+> con le due freccette che vedi in alto a destra e in alto a sinistra per
+> cambiare mese, mettimi anche lo scorrimento orizzontale), se premo il
+> mese e l'anno corrente mi si apre un qualcosa simile alla seconda foto,
+> con giorno, mese e anno a scorrimento verticale. Per quanto riguarda
+> l'ora, si apre la finestra simile alla terza foto con ore e minuti a
+> scorrimento verticale. Non far caso che nella foto vedi 55, 00, 05. Fai
+> gli intervalli ad ogni secondo»
+
+- **[Nuova funzionalità]** **Il mese come quello di Samsung**
+  (`SamsungCalendar` in `SamsungPickers.kt`), al posto del calendario di
+  Material: in alto "Settembre 2026 ▾" con le frecce ‹ › ai lati, e il
+  mese si cambia anche **trascinando in orizzontale**. Sei settimane a
+  griglia, le domeniche in rosso, i giorni degli altri mesi spenti (ma si
+  possono toccare), oggi in arancio, il giorno scelto in un **cerchio
+  arancio**. Toccando il mese si passa alle **rotelle** di mese, giorno e
+  anno (▴), nell'ordine in cui si scrive la data dove si è (in Italia
+  giorno, mese, anno); il giorno si adatta al mese (dal 31 a febbraio si va
+  al 28); ritoccando il mese si torna alla griglia, sul mese scelto. Anni
+  dal 1900 al 2100
+- **[Nuova funzionalità]** **"Set time" a rotelle** (`SamsungTimeDialog`):
+  ore e minuti, sulle ventiquattro ore, **un minuto alla volta** — la
+  richiesta "intervalli ad ogni secondo" letta come "ogni singolo valore"
+  (la foto andava di cinque in cinque, e l'utente ha chiesto ore e minuti,
+  non secondi). In fondo **Cancel | Done**, come nella foto
+- **[Nuova funzionalità]** **"End date"**: con il calendario nuovo toccare
+  un altro giorno **sposta** la data (prima, col calendario di Material, un
+  secondo tocco faceva un periodo). Il periodo si fa con l'interruttore
+  "End date", come su Notion: acceso, il primo tocco è l'inizio e il
+  secondo la fine, con una fascia arancio chiaro fra i due
+- **[Nuova funzionalità]** Lo stesso calendario, in una finestra "Set date"
+  con Cancel | Done (`SamsungDateDialog`), anche dove si sceglie un giorno
+  solo: la fine di una ripetizione, il filtro per data, le date proprie del
+  widget Life progress
+- **[Progetto]** Le rotelle sono **una sola** (`WheelPicker`), la stessa del
+  timer della barra laterale (lì color pesca, qui in bianco); fanno anche le
+  rotelle che si fermano ai capi (gli anni). Tolti il calendario e l'ora di
+  Material (`DateRangePicker`, `DatePickerDialog`, `TimeInput`) e le loro
+  conversioni dei millisecondi in UTC, che non servono più
+- **[Bug fix]** (trovato provando) La finestra di "Set time" finiva sotto la
+  barra di navigazione, con Cancel e Done tagliati: dentro la finestra c'era
+  un riquadro a tutto schermo con la scheda in fondo, e la finestra non sa
+  dov'è la barra. Ora è la finestra stessa a stare in fondo, alta quanto la
+  scheda
+- Verificato sul telefono, sulla cella Date di "Riga semplice": il mese di
+  settembre come nella foto, tocco sul 25 → cerchio arancio, trascinamento
+  → ottobre, tocco sul mese → rotelle SEP · 25 · 2026, rotella del mese su
+  OCT → ritorno alla griglia su ottobre col 25 scelto; Include time →
+  Start time → "Set time" 09 : 00, minuti girati di tre → 09:03 nella riga.
+  Poi Cancel: nella cella non è stato salvato niente
+- Notato: in cima a "My Space" ci sono sei righe vuote prima di "Titolo
+  uno H1", nate dalle prove dell'utente delle 17:45; lasciate com'erano
 
 **25/09/2026 — il cestino per i timer aggiunti** *(Claude Code sul PC;
 verificato sul telefono lo stesso giorno; 95 test passati; commit solo in

@@ -1,0 +1,589 @@
+package com.gabriele.notionlocal.ui.screen
+
+import android.view.Gravity
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowDropUp
+import androidx.compose.material.icons.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
+import com.gabriele.notionlocal.data.settings.AppSettings
+import com.gabriele.notionlocal.ui.i18n.DbStrings
+import com.gabriele.notionlocal.ui.i18n.Strings
+import com.gabriele.notionlocal.ui.theme.DarkSurfaceVariant
+import com.gabriele.notionlocal.ui.theme.NotionGray400
+import com.gabriele.notionlocal.ui.theme.NotionWhite
+import kotlinx.coroutines.launch
+import java.time.DayOfWeek
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.YearMonth
+import java.time.chrono.IsoChronology
+import java.time.format.DateTimeFormatterBuilder
+import java.time.format.FormatStyle
+import java.time.format.TextStyle
+import java.time.temporal.WeekFields
+import java.util.Locale
+
+/*
+ * I selettori di data e ora "come quelli di Samsung" (dal 25/09/2026),
+ * chiesti dall'utente con tre foto dei Promemoria del S25 Ultra:
+ *
+ *  - la data: il **mese** a griglia, con le frecce ai lati e lo
+ *    scorrimento orizzontale per cambiarlo; toccando "Settembre 2026 ▾" si
+ *    passa alle **rotelle** di giorno, mese e anno, e ritoccandolo si torna
+ *    al mese;
+ *  - l'ora: le **rotelle** di ore e minuti, un minuto alla volta (nella foto
+ *    andavano di cinque in cinque: l'utente li vuole tutti).
+ *
+ * In fondo Cancel | Fatto, come nelle foto. Le rotelle sono le stesse del
+ * timer della barra laterale (`WheelPicker`), in bianco invece che pesca.
+ */
+
+/** L'arancio di Samsung: il giorno scelto qui, Start e Resume nel cronometro e nel timer. */
+internal val SamsungOrange = Color(0xFFE39A62)
+private val SundayRed = Color(0xFFE5646E)
+
+internal val WHEEL_ITEM_HEIGHT = 38.dp
+
+/** Quante volte si ripete una rotella che gira senza fine (dopo 59 c'è 00). */
+private const val WHEEL_REPEATS = 1_000
+
+/**
+ * Una rotella da far scorrere in verticale: tre valori visibili, quello in
+ * mezzo è quello scelto, e ci si ferma sempre su un valore intero.
+ *
+ * Con `wraps` gira senza fine (sopra 00 c'è l'ultimo); senza — gli anni —
+ * si ferma ai due capi. Il valore si comunica **quando la rotella si
+ * ferma**, non a ogni numero che passa; e se cambia da fuori (un altro
+ * mese, un timer riportato alle rotelle) la rotella ci va da sola. Se
+ * cambia `range` (i giorni di un mese diverso) la rotella rinasce.
+ */
+@Composable
+internal fun WheelPicker(
+    range: Int,
+    value: Int,
+    onValueChange: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+    label: (Int) -> String = { "%02d".format(it) },
+    selectedColor: Color = NotionWhite,
+    otherColor: Color = NotionGray400.copy(alpha = 0.45f),
+    selectedSize: TextUnit = 28.sp,
+    otherSize: TextUnit = 22.sp,
+    wraps: Boolean = true
+) {
+    key(range, wraps) {
+        WheelPickerContent(range, value, onValueChange, modifier, label, selectedColor, otherColor, selectedSize, otherSize, wraps)
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun WheelPickerContent(
+    range: Int,
+    value: Int,
+    onValueChange: (Int) -> Unit,
+    modifier: Modifier,
+    label: (Int) -> String,
+    selectedColor: Color,
+    otherColor: Color,
+    selectedSize: TextUnit,
+    otherSize: TextUnit,
+    wraps: Boolean
+) {
+    // Senza fine: tante copie, e si parte da quella in mezzo. Con i capi:
+    // un posto vuoto sopra il primo e sotto l'ultimo, così anche loro
+    // possono stare al centro.
+    val total = if (wraps) range * WHEEL_REPEATS else range + 2
+    val base = if (wraps) (WHEEL_REPEATS / 2) * range else 1
+    fun valueAt(index: Int): Int? = if (wraps) index % range else (index - 1).takeIf { it in 0 until range }
+
+    val safeValue = value.coerceIn(0, range - 1)
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = base + safeValue - 1)
+    val itemPx = with(LocalDensity.current) { WHEEL_ITEM_HEIGHT.toPx() }
+    // L'elemento al centro dei tre visibili.
+    val centerIndex by remember {
+        derivedStateOf {
+            listState.firstVisibleItemIndex + 1 + if (listState.firstVisibleItemScrollOffset > itemPx / 2) 1 else 0
+        }
+    }
+
+    LaunchedEffect(listState.isScrollInProgress) {
+        if (!listState.isScrollInProgress) {
+            val picked = valueAt(centerIndex)?.coerceIn(0, range - 1) ?: return@LaunchedEffect
+            if (picked != safeValue) onValueChange(picked)
+        }
+    }
+    LaunchedEffect(safeValue) {
+        if (!listState.isScrollInProgress && valueAt(centerIndex) != safeValue) {
+            val start = if (wraps) centerIndex - centerIndex % range else 1
+            listState.scrollToItem(start + safeValue - 1)
+        }
+    }
+
+    LazyColumn(
+        state = listState,
+        flingBehavior = rememberSnapFlingBehavior(listState),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier.height(WHEEL_ITEM_HEIGHT * 3)
+    ) {
+        items(total) { index ->
+            val selected = index == centerIndex
+            Box(modifier = Modifier.height(WHEEL_ITEM_HEIGHT), contentAlignment = Alignment.Center) {
+                val shown = valueAt(index)
+                if (shown != null) {
+                    Text(
+                        text = label(shown),
+                        color = if (selected) selectedColor else otherColor,
+                        fontSize = if (selected) selectedSize else otherSize,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+        }
+    }
+}
+
+// --- Il mese ---
+
+private const val MIN_YEAR = 1900
+private const val MAX_YEAR = 2100
+private const val MONTH_COUNT = (MAX_YEAR - MIN_YEAR + 1) * 12
+private val DAY_CELL_HEIGHT = 44.dp
+
+private fun pageOf(month: YearMonth): Int =
+    ((month.year.coerceIn(MIN_YEAR, MAX_YEAR) - MIN_YEAR) * 12 + month.monthValue - 1)
+
+private fun monthAt(page: Int): YearMonth = YearMonth.of(MIN_YEAR + page / 12, page % 12 + 1)
+
+private val pickerLocale: Locale get() = AppSettings.language.locale
+
+/** "Settembre 2026": il mese per esteso con la maiuscola, e l'anno. */
+private fun monthTitle(month: YearMonth): String =
+    month.month.getDisplayName(TextStyle.FULL_STANDALONE, pickerLocale)
+        .replaceFirstChar { it.titlecase(pickerLocale) } + " " + month.year
+
+/** Il giorno da cui comincia la settimana dove si è: domenica negli Stati Uniti, lunedì in Italia. */
+private val firstDayOfWeek: DayOfWeek get() = WeekFields.of(Locale.getDefault()).firstDayOfWeek
+
+/**
+ * Il calendario di un mese, come quello di Samsung.
+ *
+ * In alto il mese con le frecce per cambiarlo; il mese si cambia anche
+ * **trascinando in orizzontale**. Toccando il nome del mese si passa alle
+ * rotelle (giorno, mese, anno — nell'ordine in cui si scrive la data dove si
+ * è), e ritoccandolo si torna al mese, su quello della data scelta.
+ *
+ * Chi lo usa decide cosa fa un tocco su un giorno (`onPick`): una data sola,
+ * o l'inizio e la fine di un periodo. Le rotelle scelgono sempre la data di
+ * partenza (`onWheelPick`). Fra `start` ed `end`, se ci sono tutte e due, i
+ * giorni in mezzo hanno una fascia arancio chiaro.
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+internal fun SamsungCalendar(
+    start: LocalDate?,
+    end: LocalDate?,
+    onPick: (LocalDate) -> Unit,
+    onWheelPick: (LocalDate) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val today = remember { LocalDate.now() }
+    val pagerState = rememberPagerState(initialPage = pageOf(YearMonth.from(start ?: today))) { MONTH_COUNT }
+    val scope = rememberCoroutineScope()
+    var wheels by remember { mutableStateOf(false) }
+    val shownMonth = monthAt(pagerState.currentPage)
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(modifier = Modifier.size(44.dp), contentAlignment = Alignment.Center) {
+                if (!wheels) {
+                    Icon(
+                        Icons.Filled.KeyboardArrowLeft,
+                        contentDescription = DbStrings.previousMonth,
+                        tint = NotionWhite,
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .clickable {
+                                scope.launch { pagerState.animateScrollToPage((pagerState.currentPage - 1).coerceAtLeast(0)) }
+                            }
+                    )
+                }
+            }
+            Row(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable {
+                        if (wheels) {
+                            // Tornando al mese, si va su quello della data scelta.
+                            val target = start?.let { YearMonth.from(it) } ?: shownMonth
+                            scope.launch { pagerState.scrollToPage(pageOf(target)) }
+                        }
+                        wheels = !wheels
+                    }
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val titleMonth = if (wheels) YearMonth.from(start ?: shownMonth.atDay(1)) else shownMonth
+                Text(monthTitle(titleMonth), color = NotionWhite, fontSize = 19.sp)
+                Icon(
+                    if (wheels) Icons.Filled.ArrowDropUp else Icons.Filled.ArrowDropDown,
+                    contentDescription = null,
+                    tint = NotionWhite
+                )
+            }
+            Box(modifier = Modifier.size(44.dp), contentAlignment = Alignment.Center) {
+                if (!wheels) {
+                    Icon(
+                        Icons.Filled.KeyboardArrowRight,
+                        contentDescription = DbStrings.nextMonth,
+                        tint = NotionWhite,
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape)
+                            .clickable {
+                                scope.launch { pagerState.animateScrollToPage((pagerState.currentPage + 1).coerceAtMost(MONTH_COUNT - 1)) }
+                            }
+                    )
+                }
+            }
+        }
+
+        if (wheels) {
+            DateWheels(
+                date = start ?: shownMonth.atDay(1),
+                onChange = onWheelPick,
+                modifier = Modifier.padding(vertical = 24.dp)
+            )
+        } else {
+            Spacer(modifier = Modifier.height(8.dp))
+            WeekdayHeader()
+            HorizontalPager(state = pagerState, beyondBoundsPageCount = 1) { page ->
+                MonthGrid(
+                    month = monthAt(page),
+                    today = today,
+                    start = start,
+                    end = end,
+                    onPick = onPick
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun WeekdayHeader() {
+    Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
+        (0 until 7).forEach { offset ->
+            val day = firstDayOfWeek.plus(offset.toLong())
+            Text(
+                text = day.getDisplayName(TextStyle.SHORT, pickerLocale).uppercase(pickerLocale).trimEnd('.'),
+                color = if (day == DayOfWeek.SUNDAY) SundayRed else NotionWhite.copy(alpha = 0.85f),
+                fontSize = 13.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.weight(1f).padding(vertical = 8.dp)
+            )
+        }
+    }
+}
+
+/** Sei settimane, dalla prima che tocca il mese: i giorni degli altri mesi sono spenti, ma si possono scegliere. */
+@Composable
+private fun MonthGrid(
+    month: YearMonth,
+    today: LocalDate,
+    start: LocalDate?,
+    end: LocalDate?,
+    onPick: (LocalDate) -> Unit
+) {
+    val first = month.atDay(1)
+    val shift = (first.dayOfWeek.value - firstDayOfWeek.value + 7) % 7
+    val gridStart = first.minusDays(shift.toLong())
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
+        (0 until 6).forEach { week ->
+            Row(modifier = Modifier.fillMaxWidth()) {
+                (0 until 7).forEach { weekday ->
+                    val date = gridStart.plusDays((week * 7 + weekday).toLong())
+                    DayCell(
+                        date = date,
+                        inMonth = date.month == month.month,
+                        today = date == today,
+                        start = start,
+                        end = end,
+                        onPick = onPick,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DayCell(
+    date: LocalDate,
+    inMonth: Boolean,
+    today: Boolean,
+    start: LocalDate?,
+    end: LocalDate?,
+    onPick: (LocalDate) -> Unit,
+    modifier: Modifier
+) {
+    val selected = date == start || date == end
+    val isRange = start != null && end != null && end > start
+    val band = SamsungOrange.copy(alpha = 0.28f)
+    Box(modifier = modifier.height(DAY_CELL_HEIGHT), contentAlignment = Alignment.Center) {
+        // La fascia del periodo: piena fra i due capi, a metà sui capi.
+        if (isRange && start != null && end != null && date >= start && date <= end) {
+            Row(modifier = Modifier.fillMaxWidth().height(36.dp)) {
+                Box(modifier = Modifier.weight(1f).fillMaxHeight().background(if (date == start) Color.Transparent else band))
+                Box(modifier = Modifier.weight(1f).fillMaxHeight().background(if (date == end) Color.Transparent else band))
+            }
+        }
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(if (selected) SamsungOrange else Color.Transparent)
+                .clickable { onPick(date) },
+            contentAlignment = Alignment.Center
+        ) {
+            val base = when {
+                selected -> Color.White
+                date.dayOfWeek == DayOfWeek.SUNDAY -> SundayRed
+                today -> SamsungOrange
+                else -> NotionWhite
+            }
+            Text(
+                text = date.dayOfMonth.toString(),
+                color = if (inMonth || selected) base else base.copy(alpha = 0.35f),
+                fontSize = 17.sp,
+                fontWeight = if (today || selected) FontWeight.Bold else FontWeight.Normal
+            )
+        }
+    }
+}
+
+/**
+ * Le rotelle della data: il mese in lettere ("SET"), il giorno, l'anno —
+ * nell'ordine in cui si scrive la data dove si è. Il giorno si adatta al
+ * mese: passando dal 31 marzo a febbraio si finisce al 28 (o 29).
+ */
+@Composable
+private fun DateWheels(date: LocalDate, onChange: (LocalDate) -> Unit, modifier: Modifier = Modifier) {
+    val length = YearMonth.from(date).lengthOfMonth()
+    fun emit(year: Int, month: Int, day: Int) {
+        val safeDay = day.coerceAtMost(YearMonth.of(year, month).lengthOfMonth())
+        onChange(LocalDate.of(year, month, safeDay))
+    }
+    val monthWheel: @Composable (Modifier) -> Unit = { m ->
+        WheelPicker(
+            range = 12,
+            value = date.monthValue - 1,
+            onValueChange = { emit(date.year, it + 1, date.dayOfMonth) },
+            label = { java.time.Month.of(it + 1).getDisplayName(TextStyle.SHORT, pickerLocale).uppercase(pickerLocale).trimEnd('.') },
+            modifier = m
+        )
+    }
+    val dayWheel: @Composable (Modifier) -> Unit = { m ->
+        WheelPicker(
+            range = length,
+            value = date.dayOfMonth - 1,
+            onValueChange = { emit(date.year, date.monthValue, it + 1) },
+            label = { (it + 1).toString() },
+            modifier = m
+        )
+    }
+    val yearWheel: @Composable (Modifier) -> Unit = { m ->
+        WheelPicker(
+            range = MAX_YEAR - MIN_YEAR + 1,
+            value = date.year - MIN_YEAR,
+            onValueChange = { emit(it + MIN_YEAR, date.monthValue, date.dayOfMonth) },
+            label = { (it + MIN_YEAR).toString() },
+            wraps = false,
+            modifier = m
+        )
+    }
+    Row(modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
+        val order = if (dayComesFirst()) listOf(dayWheel, monthWheel, yearWheel) else listOf(monthWheel, dayWheel, yearWheel)
+        order.forEach { wheel -> wheel(Modifier.weight(1f)) }
+    }
+}
+
+/** Se dove si è la data si scrive col giorno prima del mese (Italia: 25/9) o dopo (Stati Uniti: 9/25). */
+private fun dayComesFirst(): Boolean {
+    val pattern = DateTimeFormatterBuilder.getLocalizedDateTimePattern(
+        FormatStyle.SHORT, null, IsoChronology.INSTANCE, pickerLocale
+    )
+    return pattern.indexOf('d').let { d -> d >= 0 && d < pattern.indexOf('M').let { if (it < 0) Int.MAX_VALUE else it } }
+}
+
+// --- Le finestre ---
+
+/**
+ * La finestra in basso come quelle di Samsung: una scheda arrotondata col
+ * titolo in alto a sinistra e **Cancel | Fatto** in fondo, divisi da una
+ * lineetta. Toccando fuori si chiude senza scegliere.
+ */
+@Composable
+private fun SamsungPickerDialog(
+    title: String,
+    onDismiss: () -> Unit,
+    onDone: () -> Unit,
+    content: @Composable () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        // **La finestra sta in fondo e non è più alta della scheda.** Con un
+        // riquadro a tutto schermo dentro la finestra, e la scheda in fondo
+        // a quello, Cancel | Fatto finivano sotto il bordo dello schermo:
+        // la finestra non sa dov'è la barra di navigazione (visto sul
+        // telefono). Così a metterla in fondo è Android, e il tocco fuori la
+        // chiude da sé.
+        val window = (LocalView.current.parent as? DialogWindowProvider)?.window
+        SideEffect { window?.setGravity(Gravity.BOTTOM) }
+        Box(modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 12.dp, bottom = 16.dp)) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(DarkSurfaceVariant)
+                    .padding(top = 24.dp, bottom = 8.dp)
+            ) {
+                Text(
+                    text = title,
+                    color = NotionWhite,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(horizontal = 24.dp)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                content()
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(modifier = Modifier.fillMaxWidth().height(52.dp), verticalAlignment = Alignment.CenterVertically) {
+                    DialogButton(Strings.cancel, onDismiss, Modifier.weight(1f))
+                    Box(modifier = Modifier.width(1.dp).height(20.dp).background(NotionGray400.copy(alpha = 0.5f)))
+                    DialogButton(Strings.done, onDone, Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DialogButton(label: String, onClick: () -> Unit, modifier: Modifier) {
+    Box(
+        modifier = modifier
+            .fillMaxHeight()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(label, color = NotionWhite, fontSize = 17.sp, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+/** "Set date": il mese (o le rotelle) per scegliere un giorno solo. */
+@Composable
+internal fun SamsungDateDialog(
+    initial: LocalDate,
+    onPick: (LocalDate) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var picked by remember { mutableStateOf(initial) }
+    SamsungPickerDialog(
+        title = DbStrings.setDate,
+        onDismiss = onDismiss,
+        onDone = {
+            onPick(picked)
+            onDismiss()
+        }
+    ) {
+        SamsungCalendar(
+            start = picked,
+            end = null,
+            onPick = { picked = it },
+            onWheelPick = { picked = it }
+        )
+    }
+}
+
+/** "Set time": ore e minuti a rotelle, un minuto alla volta, sulle ventiquattro ore. */
+@Composable
+internal fun SamsungTimeDialog(
+    initial: LocalTime,
+    onPick: (LocalTime) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var hour by remember { mutableStateOf(initial.hour) }
+    var minute by remember { mutableStateOf(initial.minute) }
+    SamsungPickerDialog(
+        title = DbStrings.setTime,
+        onDismiss = onDismiss,
+        onDone = {
+            onPick(LocalTime.of(hour, minute))
+            onDismiss()
+        }
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 48.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            WheelPicker(range = 24, value = hour, onValueChange = { hour = it }, modifier = Modifier.weight(1f), selectedSize = 32.sp, otherSize = 26.sp)
+            Text(":", color = NotionWhite, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+            WheelPicker(range = 60, value = minute, onValueChange = { minute = it }, modifier = Modifier.weight(1f), selectedSize = 32.sp, otherSize = 26.sp)
+        }
+    }
+}

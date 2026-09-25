@@ -127,14 +127,10 @@ import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material.icons.filled.Repeat
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DateRangePicker
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -144,12 +140,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TimeInput
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.VerticalDivider
-import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
-import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
@@ -223,7 +216,6 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.YearMonth
 import java.time.ZoneId
-import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.DayOfWeek
 import java.time.format.TextStyle
@@ -3200,18 +3192,6 @@ private fun Long.toLocalDateTime(): LocalDateTime =
 private fun LocalDateTime.toEpochMillis(): Long =
     atZone(AppSettings.zoneId).toInstant().toEpochMilli()
 
-/**
- * I millisecondi che il selettore di Material usa: mezzanotte **UTC**
- * del giorno scelto, non mezzanotte locale. Confonderli sposta la data
- * di un giorno in tutti i fusi a occidente di Greenwich, quindi la
- * conversione si fa sempre passando da qui.
- */
-internal fun LocalDate.toPickerMillis(): Long =
-    atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
-
-internal fun Long.pickerMillisToLocalDate(): LocalDate =
-    Instant.ofEpochMilli(this).atZone(ZoneOffset.UTC).toLocalDate()
-
 /** "12 Jan 2026", "12 Jan 2026, 09:30" oppure con la freccia e la fine. */
 private fun DateRange.label(): String {
     val format = if (hasTime) DATE_TIME_FORMAT else DATE_FORMAT
@@ -4170,7 +4150,7 @@ private fun DateFilterEditor(
                 ?: range?.start?.toLocalDate()
                 ?: LocalDate.now()
         }
-        DayPickerDialog(
+        SamsungDateDialog(
             initial = initial,
             onPick = { day ->
                 val millis = day.atStartOfDay(AppSettings.zoneId).toInstant().toEpochMilli()
@@ -5136,10 +5116,13 @@ private fun DateEditorSheet(
     onConfirm: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val pickerState = rememberDateRangePickerState(
-        initialSelectedStartDateMillis = range?.start?.toLocalDate()?.toPickerMillis(),
-        initialSelectedEndDateMillis = range?.end?.toLocalDate()?.toPickerMillis()
-    )
+    var startDate by remember { mutableStateOf(range?.start?.toLocalDate()) }
+    var endDate by remember { mutableStateOf(range?.end?.toLocalDate()) }
+    // **La data di fine si chiede con un interruttore**, come su Notion.
+    // Col calendario di Material toccare un secondo giorno faceva un
+    // periodo; con quello nuovo (dal 25/09/2026) toccare un altro giorno
+    // sposta la data, e il periodo si fa solo ad interruttore acceso.
+    var withEndDate by remember { mutableStateOf(range?.end != null) }
     var includeTime by remember { mutableStateOf(range?.hasTime == true) }
     var startTime by remember {
         mutableStateOf(
@@ -5164,8 +5147,7 @@ private fun DateEditorSheet(
     // Le ripetizioni si descrivono a partire dal giorno scelto qui
     // sopra ("ogni lunedì" se si è scelto un lunedì): se non è stato
     // scelto ancora niente si parla di oggi.
-    val selectedStartDate = pickerState.selectedStartDateMillis?.pickerMillisToLocalDate()
-        ?: LocalDate.now()
+    val selectedStartDate = startDate ?: LocalDate.now()
 
     NoteBottomSheet(
         onDismissRequest = onDismiss,
@@ -5190,18 +5172,17 @@ private fun DateEditorSheet(
             )
             TextButton(onClick = onDismiss) { Text(Strings.cancel) }
             TextButton(onClick = {
-                val startDate = pickerState.selectedStartDateMillis?.pickerMillisToLocalDate()
-                if (startDate == null) {
+                val chosenStart = startDate
+                if (chosenStart == null) {
                     // Confermare senza aver scelto niente svuota la cella.
                     onConfirm("")
                     return@TextButton
                 }
-                val endDate = pickerState.selectedEndDateMillis?.pickerMillisToLocalDate()
                 val startAt = LocalDateTime.of(
-                    startDate,
+                    chosenStart,
                     if (includeTime) startTime else LocalTime.MIDNIGHT
                 )
-                val endAt = endDate?.let {
+                val endAt = endDate?.takeIf { withEndDate }?.let {
                     LocalDateTime.of(it, if (includeTime) endTime else LocalTime.MIDNIGHT)
                 }
                 onConfirm(
@@ -5221,13 +5202,58 @@ private fun DateEditorSheet(
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
         ) {
-            DateRangePicker(
-                state = pickerState,
-                title = null,
-                headline = null,
-                showModeToggle = false,
-                modifier = Modifier.heightIn(max = 420.dp)
+            // Il mese come quello di Samsung (vedi `SamsungCalendar`).
+            Spacer(modifier = Modifier.height(8.dp))
+            SamsungCalendar(
+                start = startDate,
+                end = endDate.takeIf { withEndDate },
+                onPick = { day ->
+                    val start = startDate
+                    when {
+                        !withEndDate -> startDate = day
+                        // Ad interruttore acceso: il primo tocco è
+                        // l'inizio, il secondo (più avanti) la fine; un
+                        // tocco dopo un periodo completo, o prima
+                        // dell'inizio, ricomincia.
+                        start == null || endDate != null || day < start -> {
+                            startDate = day
+                            endDate = null
+                        }
+                        day > start -> endDate = day
+                    }
+                },
+                onWheelPick = { day ->
+                    startDate = day
+                    if (endDate?.let { it <= day } == true) endDate = null
+                }
             )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            HorizontalDivider()
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        withEndDate = !withEndDate
+                        if (!withEndDate) endDate = null
+                    }
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = DbStrings.endDate,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.weight(1f)
+                )
+                Switch(
+                    checked = withEndDate,
+                    onCheckedChange = {
+                        withEndDate = it
+                        if (!it) endDate = null
+                    }
+                )
+            }
 
             HorizontalDivider()
             Row(
@@ -5253,7 +5279,7 @@ private fun DateEditorSheet(
                     time = startTime,
                     onClick = { editingTime = true }
                 )
-                if (pickerState.selectedEndDateMillis != null) {
+                if (withEndDate && endDate != null) {
                     HorizontalDivider()
                     DateEditorTimeRow(
                         label = DbStrings.endTime,
@@ -5314,7 +5340,7 @@ private fun DateEditorSheet(
 
     val editing = editingTime
     if (editing != null) {
-        TimePickerDialog(
+        SamsungTimeDialog(
             initial = if (editing) startTime else endTime,
             onPick = { picked -> if (editing) startTime = picked else endTime = picked },
             onDismiss = { editingTime = null }
@@ -5657,7 +5683,7 @@ private fun CustomRecurrenceDialog(
     )
 
     if (showEndDatePicker) {
-        DayPickerDialog(
+        SamsungDateDialog(
             initial = endDate,
             onPick = { picked ->
                 endDate = picked
@@ -5679,34 +5705,6 @@ private fun RecurrenceChoiceRow(selected: Boolean, label: String, onSelect: () -
     ) {
         RadioButton(selected = selected, onClick = onSelect)
         Text(label, style = MaterialTheme.typography.bodyLarge)
-    }
-}
-
-/**
- * Il calendarietto per scegliere un giorno solo: serve a "finisce
- * il..." delle ripetizioni e ai due estremi del filtro per data.
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-internal fun DayPickerDialog(
-    initial: LocalDate,
-    onPick: (LocalDate) -> Unit,
-    onDismiss: () -> Unit
-) {
-    val state = rememberDatePickerState(
-        initialSelectedDateMillis = initial.toPickerMillis()
-    )
-    DatePickerDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(onClick = {
-                state.selectedDateMillis?.pickerMillisToLocalDate()?.let(onPick)
-                onDismiss()
-            }) { Text(DbStrings.ok) }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(Strings.cancel) } }
-    ) {
-        DatePicker(state = state, title = null, showModeToggle = false)
     }
 }
 
@@ -5796,47 +5794,6 @@ private fun DateEditorTimeRow(label: String, time: LocalTime, onClick: () -> Uni
             color = MaterialTheme.colorScheme.primary
         )
     }
-}
-
-/**
- * Il campo per scegliere un'ora.
- *
- * È `TimeInput`, le due caselle ore/minuti, e non il quadrante
- * dell'orologio: il quadrante vuole più di trecento punti di
- * larghezza e dentro una finestra di dialogo, su un telefono, resta
- * schiacciato. Metterlo in una finestra a scomparsa non si può — ce
- * n'è già una aperta sotto, e due si contendono il gesto di chiusura
- * (stessa ragione per cui l'editor dei tag vive dentro la sua).
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun TimePickerDialog(
-    initial: LocalTime,
-    onPick: (LocalTime) -> Unit,
-    onDismiss: () -> Unit
-) {
-    val state = rememberTimePickerState(
-        initialHour = initial.hour,
-        initialMinute = initial.minute,
-        // Ventiquattro ore come il resto dell'app, che scrive le date
-        // con "HH:mm" dappertutto.
-        is24Hour = true
-    )
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(onClick = {
-                onPick(LocalTime.of(state.hour, state.minute))
-                onDismiss()
-            }) { Text(DbStrings.ok) }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(Strings.cancel) } },
-        text = {
-            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                TimeInput(state = state)
-            }
-        }
-    )
 }
 
 /**

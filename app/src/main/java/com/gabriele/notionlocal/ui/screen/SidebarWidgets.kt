@@ -849,8 +849,8 @@ private fun DateBarDialog(
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(Strings.cancel) } }
     )
-    if (pickingStart) DayPickerDialog(initial = start, onPick = { start = it }, onDismiss = { pickingStart = false })
-    if (pickingEnd) DayPickerDialog(initial = end, onPick = { end = it }, onDismiss = { pickingEnd = false })
+    if (pickingStart) SamsungDateDialog(initial = start, onPick = { start = it }, onDismiss = { pickingStart = false })
+    if (pickingEnd) SamsungDateDialog(initial = end, onPick = { end = it }, onDismiss = { pickingEnd = false })
 }
 
 @Composable

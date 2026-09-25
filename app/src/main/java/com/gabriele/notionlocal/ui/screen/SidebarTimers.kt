@@ -4,7 +4,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,8 +15,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -31,7 +28,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -48,7 +44,6 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.TextUnit
@@ -83,7 +78,6 @@ import kotlin.math.sin
  */
 
 private val Peach = Color(0xFFF2C6A5)
-private val SamsungOrange = Color(0xFFE39A62)
 private val StopRed = Color(0xFFE5646E)
 private val StopBackground = Color(0xFF3B1E22)
 private val GrayButton = Color(0xFF3A3A3A)
@@ -296,66 +290,20 @@ private fun WheelColon() {
     Text(":", color = Peach, fontSize = 24.sp, fontWeight = FontWeight.Bold)
 }
 
-private val WHEEL_ITEM_HEIGHT = 38.dp
-
-/** Quante volte si ripete la rotella per sembrare senza fine, come su Samsung (dopo 99 c'è 00). */
-private const val WHEEL_REPEATS = 1_000
-
 /**
- * Una rotella da far scorrere in verticale: tre numeri visibili, quello in
- * mezzo è quello scelto (grande, color pesca), e ci si ferma sempre su un
- * numero intero. Gira senza fine: sopra 00 c'è l'ultimo numero.
- *
- * Il valore si comunica **quando la rotella si ferma**, non a ogni numero
- * che passa; e se il valore cambia da fuori (un timer riportato alle
- * rotelle, un'altra pagina) la rotella ci va da sola.
+ * Una rotella del timer: quella comune (`WheelPicker`, vedi
+ * `SamsungPickers.kt`), con le cifre color pesca dell'orologio Samsung.
  */
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun NumberWheel(range: Int, value: Int, onValueChange: (Int) -> Unit, modifier: Modifier = Modifier) {
-    val total = range * WHEEL_REPEATS
-    val middle = (WHEEL_REPEATS / 2) * range
-    val listState = rememberLazyListState(initialFirstVisibleItemIndex = middle + value - 1)
-    val itemPx = with(LocalDensity.current) { WHEEL_ITEM_HEIGHT.toPx() }
-    // L'elemento al centro dei tre visibili.
-    val centerIndex by remember {
-        derivedStateOf {
-            listState.firstVisibleItemIndex + 1 + if (listState.firstVisibleItemScrollOffset > itemPx / 2) 1 else 0
-        }
-    }
-
-    LaunchedEffect(listState.isScrollInProgress) {
-        if (!listState.isScrollInProgress) {
-            val picked = centerIndex % range
-            if (picked != value) onValueChange(picked)
-        }
-    }
-    LaunchedEffect(value) {
-        if (!listState.isScrollInProgress && centerIndex % range != value) {
-            val base = centerIndex - centerIndex % range
-            listState.scrollToItem(base + value - 1)
-        }
-    }
-
-    LazyColumn(
-        state = listState,
-        flingBehavior = rememberSnapFlingBehavior(listState),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier.height(WHEEL_ITEM_HEIGHT * 3)
-    ) {
-        items(total) { index ->
-            val selected = index == centerIndex
-            Box(modifier = Modifier.height(WHEEL_ITEM_HEIGHT), contentAlignment = Alignment.Center) {
-                Text(
-                    text = "%02d".format(index % range),
-                    color = if (selected) Peach else NotionGray400.copy(alpha = 0.35f),
-                    fontSize = if (selected) 28.sp else 22.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-        }
-    }
-}
+private fun NumberWheel(range: Int, value: Int, onValueChange: (Int) -> Unit, modifier: Modifier = Modifier) =
+    WheelPicker(
+        range = range,
+        value = value,
+        onValueChange = onValueChange,
+        modifier = modifier,
+        selectedColor = Peach,
+        otherColor = NotionGray400.copy(alpha = 0.35f)
+    )
 
 /**
  * Un timer partito: il quadrante con le tacche arancio per il tempo che

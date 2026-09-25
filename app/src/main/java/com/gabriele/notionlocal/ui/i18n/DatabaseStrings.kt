@@ -331,10 +331,16 @@ object DbStrings {
 
     val includeTime get() = t("Include time", "Includi l'ora", "Uhrzeit einschließen", "Inclure l'heure", "Incluir hora", "包含时间", "시간 포함", "時刻を含める")
     val startTime get() = t("Start time", "Ora di inizio", "Startzeit", "Heure de début", "Hora de inicio", "开始时间", "시작 시간", "開始時刻")
+    val endDate get() = t("End date", "Data di fine", "Enddatum", "Date de fin", "Fecha de fin", "结束日期", "종료 날짜", "終了日")
     val endTime get() = t("End time", "Ora di fine", "Endzeit", "Heure de fin", "Hora de fin", "结束时间", "종료 시간", "終了時刻")
     val repeat get() = t("Repeat", "Ripeti", "Wiederholen", "Répéter", "Repetir", "重复", "반복", "繰り返し")
     val clear get() = t("Clear", "Cancella", "Löschen", "Effacer", "Borrar", "清除", "지우기", "クリア")
     val ok get() = t("OK", "OK", "OK", "OK", "Aceptar", "确定", "확인", "OK")
+    // I selettori di data e ora come quelli di Samsung (vedi `SamsungPickers.kt`).
+    val setDate get() = t("Set date", "Imposta data", "Datum festlegen", "Définir la date", "Establecer fecha", "设置日期", "날짜 설정", "日付を設定")
+    val setTime get() = t("Set time", "Imposta ora", "Uhrzeit festlegen", "Définir l'heure", "Establecer hora", "设置时间", "시간 설정", "時刻を設定")
+    val previousMonth get() = t("Previous month", "Mese precedente", "Vorheriger Monat", "Mois précédent", "Mes anterior", "上个月", "이전 달", "前の月")
+    val nextMonth get() = t("Next month", "Mese successivo", "Nächster Monat", "Mois suivant", "Mes siguiente", "下个月", "다음 달", "次の月")
     val doesNotRepeat get() = t("Does not repeat", "Non si ripete", "Keine Wiederholung", "Ne se répète pas", "No se repite", "不重复", "반복 안 함", "繰り返さない")
     val daily get() = t("Daily", "Ogni giorno", "Täglich", "Tous les jours", "Diariamente", "每天", "매일", "毎日")
     fun weeklyOn(days: String) = t("Weekly on $days", "Ogni settimana di $days", "Wöchentlich am $days", "Chaque semaine le $days", "Cada semana el $days", "每周的$days", "매주 $days", "毎週$days")
