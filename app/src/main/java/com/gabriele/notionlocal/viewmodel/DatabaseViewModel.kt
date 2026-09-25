@@ -14,6 +14,7 @@ import com.gabriele.notionlocal.data.entity.GalleryCardPreview
 import com.gabriele.notionlocal.data.entity.GalleryCardSize
 import com.gabriele.notionlocal.data.entity.PageEntity
 import com.gabriele.notionlocal.data.entity.MULTI_VALUE_SEPARATOR
+import com.gabriele.notionlocal.data.entity.parseColorCell
 import com.gabriele.notionlocal.data.entity.SORT_BY_NAME
 import com.gabriele.notionlocal.data.entity.parseDateRange
 import com.gabriele.notionlocal.data.entity.SelectOption
@@ -120,6 +121,7 @@ data class DatabaseTableState(
 /** Le proprietà in cui cerca la lente: quelle il cui valore salvato è il testo che si legge. */
 private val SEARCHABLE_COLUMN_TYPES = setOf(
     ColumnType.TEXT,
+    ColumnType.COLOR,
     ColumnType.NUMBER,
     ColumnType.SELECT,
     ColumnType.MULTI_SELECT,
@@ -160,9 +162,10 @@ internal fun searchRows(
         if (row.id in addedWhileSearching) return@filter true
         if (row.title.contains(wanted, ignoreCase = true)) return@filter true
         val inProperty = searchable.any { column ->
-            cellValues[row.id to column.id].orEmpty()
-                .replace(MULTI_VALUE_SEPARATOR, " ")
-                .contains(wanted, ignoreCase = true)
+            val raw = cellValues[row.id to column.id].orEmpty()
+            // Di una cella colorata si cerca il testo, non il codice del colore.
+            val readable = if (column.type == ColumnType.COLOR) parseColorCell(raw).text else raw
+            readable.replace(MULTI_VALUE_SEPARATOR, " ").contains(wanted, ignoreCase = true)
         }
         val inPage = index[row.id]?.contains(wanted, ignoreCase = true) == true
         (inProperty || inPage).also { found -> if (found) foundInside += row.id }
@@ -640,6 +643,8 @@ class DatabaseViewModel(
                 raw
             )
             ColumnType.CHECKBOX -> SortValue(if (raw == "true") 1.0 else 0.0, raw)
+            // Per il testo che c'è scritto sopra, non per il colore.
+            ColumnType.COLOR -> SortValue(null, parseColorCell(raw).text)
             ColumnType.CREATED_TIME -> SortValue(row.createdAt.toDouble(), "x")
             ColumnType.LAST_EDITED_TIME ->
                 SortValue((row.updatedAt ?: row.createdAt).toDouble(), "x")

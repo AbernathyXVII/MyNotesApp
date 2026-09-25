@@ -579,9 +579,10 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   alle colonne, `OPEN` per aprire una riga come pagina vera,
   `+ New page` in fondo. Toccando un'intestazione si apre la finestra
   della proprietà (nome, tipo con ricerca, elimina; dal 24/09/2026 non
-  più "sposta", che sta nel menu dell'intestazione tenuta premuta). Undici
-  tipi: Text, Number, Select, Multi-select, Date, Checkbox, URL,
-  Email, Phone, Created time, Last edited time
+  più "sposta", che sta nel menu dell'intestazione tenuta premuta). Dodici
+  tipi: Text, Number, Select, Multi-select, Date, Checkbox, **Color cell**
+  (dal 26/09/2026: la cella piena di un colore, con sopra del testo se si
+  vuole), URL, Email, Phone, Created time, Last edited time
 - **Sei viste per i database** — Table, List, Board, **Calendar**,
   **Timeline** e **Gallery**, una per volta, scelte da Settings → Layout
   e ricordate per ogni database
@@ -1993,6 +1994,44 @@ Le voci nate nelle sessioni cloud stanno qui in cima, la più recente
 per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
+
+**26/09/2026 — la proprietà "Color cell"**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno, tranne le
+targhette della bacheca e della galleria; 131 test passati; commit solo in
+locale)*
+
+Richiesta dell'utente, parola per parola:
+> «Nuova feature: ai database (semplici e complessi) aggiungi una
+> proprietà, chiamata Color cell, che mi consente letteralmente di riempire
+> la cella con un colore a mia scelta. Dammi anche la possibilità di
+> scriverci sopra del testo (possibilità, non obbligo)»
+
+- **[Nuova funzionalità]** **"Color cell"** fra i tipi di proprietà (col
+  secchiello), nei database normali e in quelli semplici. Nella tabella il
+  colore **riempie tutta la cella**; il testo, se c'è, sta sopra, **nero o
+  bianco** a seconda di cosa si legge meglio su quel colore. Toccando la
+  cella si apre la sua finestra: com'è, il **testo (facoltativo)** e il
+  **colore**, che si sceglie col selettore del pennello (spettro, grigi,
+  RGB, Hex; "No color" lo toglie). Si salva con "Done". Nella scheda di una
+  riga è un riquadro colorato; nelle schede della bacheca e della galleria
+  e nell'elenco, una targhetta del suo colore. Col database bloccato si
+  guarda e basta
+- **[Progetto]** Il valore sta nella cella come gli altri, in una stringa:
+  `"#RRGGBB|testo"`, solo il colore o solo il testo (`ColorCellValue.kt`).
+  Nessuna migrazione: il tipo di una colonna è già salvato come testo.
+  L'ordinamento e la ricerca guardano il testo, non il codice del colore;
+  la tabella non si raggruppa per una cella colorata (il gruppo si
+  chiamerebbe "#E03E3E"). Cambiando il tipo della colonna i valori restano
+  quelli, come per gli altri tipi. Test `ColorCellValueTest`
+- **[Bug fix]** (trovato provando) Sul verde acceso scelto nella prova
+  (#12F20D) il testo veniva bianco e non si leggeva: la soglia fra nero e
+  bianco è scesa a metà
+- Verificato sul telefono, nella tabella "Untitled" di My Space: "Color
+  cell" nell'elenco dei tipi → colonna nuova, cella "—"; toccata → la
+  finestra; colore dal selettore (#12F20D) → anteprima verde; testo
+  "Fatto" → "Done" → la cella tutta verde con "Fatto" (salvato
+  "#12F20D|Fatto"); la scheda della riga → riquadro verde con "Fatto". Poi
+  la proprietà di prova tolta ("Delete property"): la tabella è com'era
 
 **26/09/2026 — via il cestino accanto ai collegamenti alle pagine**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 126 test

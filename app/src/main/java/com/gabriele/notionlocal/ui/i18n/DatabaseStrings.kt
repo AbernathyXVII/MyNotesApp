@@ -31,6 +31,7 @@ object DbStrings {
         ColumnType.MULTI_SELECT -> "Multi-select"
         ColumnType.DATE -> "Date"
         ColumnType.CHECKBOX -> "Checkbox"
+        ColumnType.COLOR -> "Color cell"
         ColumnType.URL -> "URL"
         ColumnType.EMAIL -> "Email"
         ColumnType.PHONE -> "Phone"
@@ -45,6 +46,7 @@ object DbStrings {
         ColumnType.MULTI_SELECT -> t("Multi-select", "Selezione multipla", "Mehrfachauswahl", "Sélection multiple", "Selección múltiple", "多选", "다중 선택", "マルチセレクト")
         ColumnType.DATE -> t("Date", "Data", "Datum", "Date", "Fecha", "日期", "날짜", "日付")
         ColumnType.CHECKBOX -> t("Checkbox", "Casella", "Kontrollkästchen", "Case à cocher", "Casilla", "复选框", "체크박스", "チェックボックス")
+        ColumnType.COLOR -> t("Color cell", "Cella colorata", "Farbzelle", "Cellule colorée", "Celda de color", "颜色单元格", "색상 셀", "色付きセル")
         ColumnType.URL -> t("URL", "URL", "URL", "URL", "URL", "网址", "URL", "URL")
         ColumnType.EMAIL -> t("Email", "Email", "E-Mail", "E-mail", "Correo", "电子邮件", "이메일", "メール")
         ColumnType.PHONE -> t("Phone", "Telefono", "Telefon", "Téléphone", "Teléfono", "电话", "전화", "電話")
@@ -156,6 +158,12 @@ object DbStrings {
     )
     val expandGroup get() = t("Expand group", "Espandi gruppo", "Gruppe aufklappen", "Déplier le groupe", "Expandir grupo", "展开分组", "그룹 펼치기", "グループを展開")
     val collapseGroup get() = t("Collapse group", "Comprimi gruppo", "Gruppe zuklappen", "Replier le groupe", "Contraer grupo", "折叠分组", "그룹 접기", "グループを折りたたむ")
+    // --- "Color cell" ---
+
+    val colorCellTextHint get() = t("Text (optional)", "Testo (facoltativo)", "Text (optional)", "Texte (facultatif)", "Texto (opcional)", "文本（可选）", "텍스트(선택)", "テキスト（任意）")
+    val cellColor get() = t("Color", "Colore", "Farbe", "Couleur", "Color", "颜色", "색상", "色")
+    val noCellColor get() = t("No color", "Nessun colore", "Keine Farbe", "Aucune couleur", "Sin color", "无颜色", "색상 없음", "色なし")
+
     fun noValue(property: String) = t("No $property", "Senza $property", "Ohne $property", "Sans $property", "Sin $property", "无$property", "$property 없음", "$property なし")
     val checked get() = t("Checked", "Spuntata", "Abgehakt", "Cochée", "Marcada", "已勾选", "선택됨", "チェック済み")
     val unchecked get() = t("Unchecked", "Non spuntata", "Nicht abgehakt", "Non cochée", "Sin marcar", "未勾选", "선택 안 됨", "未チェック")

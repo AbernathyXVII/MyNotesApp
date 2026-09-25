@@ -17,6 +17,11 @@ enum class ColumnType {
     NUMBER,
     DATE,
     CHECKBOX,
+    /**
+     * "Color cell" (dal 26/09/2026): la cella si riempie di un colore
+     * scelto, con sopra del testo se si vuole. Vedi `ColorCellValue`.
+     */
+    COLOR,
     SELECT,
     MULTI_SELECT,
     URL,

@@ -188,6 +188,14 @@ import com.gabriele.notionlocal.data.entity.DateRange
 import com.gabriele.notionlocal.data.entity.PageEntity
 import com.gabriele.notionlocal.data.entity.MULTI_VALUE_SEPARATOR
 import com.gabriele.notionlocal.data.entity.encodeDateRange
+import com.gabriele.notionlocal.data.entity.ColorCellValue
+import com.gabriele.notionlocal.data.entity.darkTextOn
+import com.gabriele.notionlocal.data.entity.encodeColorCell
+import com.gabriele.notionlocal.data.entity.parseColorCell
+import androidx.compose.material.icons.filled.FormatColorFill
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.defaultMinSize
 import com.gabriele.notionlocal.data.notify.NotificationPermission
 import com.gabriele.notionlocal.data.entity.parseDateRange
 import com.gabriele.notionlocal.data.entity.MonthlyMode
@@ -1858,12 +1866,7 @@ private fun BoardCard(
                 val value = state.cellValues[row.id to column.id].orEmpty()
                 if (value.isNotBlank()) {
                     Spacer(modifier = Modifier.size(6.dp))
-                    Text(
-                        text = listCellLabel(column, value),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1
-                    )
+                    CardPropertyValue(column, value)
                 }
             }
     }
@@ -2777,12 +2780,7 @@ private fun ListLayout(
                     val value = state.cellValues[row.id to column.id].orEmpty()
                     if (value.isNotBlank()) {
                         Spacer(modifier = Modifier.size(10.dp))
-                        Text(
-                            text = listCellLabel(column, value),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1
-                        )
+                        CardPropertyValue(column, value)
                     }
                 }
             }
@@ -3096,16 +3094,14 @@ private fun GalleryCard(
             // che si vedono e che hanno un valore, una per riga.
             state.visibleColumns.forEach { column ->
                 val value = state.cellValues[row.id to column.id].orEmpty()
-                val label = listCellLabel(column, value)
-                if (label.isNotBlank()) {
+                val shown = if (column.type == ColumnType.COLOR) {
+                    !parseColorCell(value).isEmpty
+                } else {
+                    listCellLabel(column, value).isNotBlank()
+                }
+                if (shown) {
                     Spacer(modifier = Modifier.size(4.dp))
-                    Text(
-                        text = label,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    CardPropertyValue(column, value, overflow = TextOverflow.Ellipsis)
                 }
             }
         }
@@ -3212,6 +3208,7 @@ private fun todayAtStartOfDay(): Long =
 /** Il valore di una cella reso leggibile in una riga sola, per la vista a elenco. */
 private fun listCellLabel(column: DatabaseColumnEntity, value: String): String = when (column.type) {
     ColumnType.CHECKBOX -> if (value == "true") "✓" else ""
+    ColumnType.COLOR -> parseColorCell(value).text
     ColumnType.DATE -> parseDateRange(value)?.label() ?: value
     ColumnType.MULTI_SELECT -> value.split(MULTI_VALUE_SEPARATOR)
         .filter { it.isNotBlank() }
@@ -4536,7 +4533,16 @@ private fun CellEditor(
             // qui": il cursore finiva sotto al database e si apriva la
             // tastiera. I figli vengono serviti per primi, quindi la
             // casella continua a rispondere normalmente.
-            .pointerInput(Unit) { detectTapGestures { } },
+            .pointerInput(Unit) { detectTapGestures { } }
+            // "Color cell": il colore riempie **tutta** la cella, bordi
+            // compresi, non solo lo spazio del testo.
+            .then(
+                if (column.type == ColumnType.COLOR) {
+                    hexToColor(parseColorCell(value).color)?.let { Modifier.background(it) } ?: Modifier
+                } else {
+                    Modifier
+                }
+            ),
         contentAlignment = if (column.centerContent) {
             Alignment.Center
         } else {
@@ -4584,8 +4590,9 @@ private fun CellContent(
     val cellKey = "${row.id}:${column.id}"
 
     Box(
-        // La data se lo mette da sé, dentro la propria zona toccabile.
-        modifier = if (column.type == ColumnType.DATE) {
+        // La data e la cella colorata se lo mettono da sé, dentro la
+        // propria zona toccabile.
+        modifier = if (column.type == ColumnType.DATE || column.type == ColumnType.COLOR) {
             Modifier
         } else {
             Modifier.padding(horizontal = cellPadding)
@@ -4626,6 +4633,16 @@ private fun CellContent(
             ColumnType.DATE -> DateCell(
                 value = value,
                 onValueChange = onValueChange,
+                contentPadding = cellPadding
+            )
+
+            ColumnType.COLOR -> ColorCell(
+                columnName = DbStrings.columnName(column.name),
+                value = value,
+                onValueChange = onValueChange,
+                // Nella tabella il colore lo stende la cella intera
+                // (`CellEditor`); nella scheda di una riga è un riquadro.
+                inTable = cellPadding > 0.dp,
                 contentPadding = cellPadding
             )
 
@@ -5106,6 +5123,259 @@ private fun DateCell(
             },
             onDismiss = { showPicker = false }
         )
+    }
+}
+
+/**
+ * **Una cella "Color cell"** (dal 26/09/2026, chiesta così dall'utente:
+ * "riempire la cella con un colore a mia scelta", e scriverci sopra "come
+ * possibilità, non obbligo"). Nella tabella il colore lo stende la cella
+ * intera (`CellEditor`) e qui c'è il testo, nero o bianco a seconda di
+ * cosa si legge meglio; nella scheda di una riga è un riquadro colorato.
+ * Toccandola si apre `ColorCellSheet`.
+ */
+@Composable
+private fun ColorCell(
+    columnName: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    inTable: Boolean,
+    contentPadding: Dp
+) {
+    val cell = parseColorCell(value)
+    val fill = hexToColor(cell.color)
+    val locked = LocalDatabaseLocked.current
+    var editing by remember { mutableStateOf(false) }
+    val textColor = when {
+        cell.color == null -> MaterialTheme.colorScheme.onBackground
+        darkTextOn(cell.color) -> Color.Black
+        else -> Color.White
+    }
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (inTable) {
+                    Modifier.fillMaxHeight()
+                } else {
+                    Modifier
+                        .height(36.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .then(
+                            if (fill != null) {
+                                Modifier.background(fill)
+                            } else {
+                                Modifier.border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(6.dp))
+                            }
+                        )
+                }
+            )
+            .clickable(enabled = !locked) { editing = true }
+            .padding(horizontal = if (inTable) contentPadding else 10.dp),
+        contentAlignment = Alignment.CenterStart
+    ) {
+        Text(
+            // Una cella vuota mostra il trattino, come le altre.
+            text = cell.text.ifEmpty { if (fill == null) "—" else "" },
+            style = MaterialTheme.typography.bodyMedium,
+            color = textColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+    if (editing) {
+        ColorCellSheet(
+            title = columnName,
+            initial = cell,
+            onDismiss = { editing = false },
+            onConfirm = {
+                onValueChange(encodeColorCell(it))
+                editing = false
+            }
+        )
+    }
+}
+
+/**
+ * La finestra di una cella colorata: com'è, il testo da scriverci sopra
+ * (se si vuole) e il colore, che si sceglie **col selettore del
+ * pennello**, come le penne del disegno. Si salva con "Done".
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ColorCellSheet(
+    title: String,
+    initial: ColorCellValue,
+    onDismiss: () -> Unit,
+    onConfirm: (ColorCellValue) -> Unit
+) {
+    var text by remember { mutableStateOf(initial.text) }
+    var color by remember { mutableStateOf(initial.color) }
+    var picking by remember { mutableStateOf(false) }
+    val fill = hexToColor(color)
+
+    NoteBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = DarkSheet
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.weight(1f)
+            )
+            TextButton(onClick = onDismiss) { Text(Strings.cancel) }
+            TextButton(onClick = { onConfirm(ColorCellValue(color, text.trim())) }) { Text(Strings.done) }
+        }
+        HorizontalDivider()
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+                .navigationBarsPadding()
+        ) {
+            // Com'è la cella, prima di salvarla.
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(fill ?: MaterialTheme.colorScheme.surfaceVariant)
+                    .padding(horizontal = 12.dp),
+                contentAlignment = Alignment.CenterStart
+            ) {
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = when {
+                        color == null -> MaterialTheme.colorScheme.onBackground
+                        darkTextOn(color!!) -> Color.Black
+                        else -> Color.White
+                    },
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Spacer(modifier = Modifier.size(16.dp))
+            SheetTextField(
+                value = text,
+                onValueChange = { text = it },
+                placeholder = DbStrings.colorCellTextHint,
+                leading = Icons.Filled.Notes
+            )
+            Spacer(modifier = Modifier.size(8.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable { picking = true }
+                    .padding(vertical = 12.dp, horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .background(fill ?: Color.Transparent)
+                        .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
+                )
+                Spacer(modifier = Modifier.size(12.dp))
+                Text(
+                    text = DbStrings.cellColor,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = color ?: DbStrings.noCellColor,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Icon(
+                    Icons.Filled.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+
+    if (picking) {
+        ColorPickerSheet(
+            initialHex = color,
+            // Con "dietro al testo" l'anteprima del selettore è proprio
+            // una cella: il colore pieno con la scritta sopra.
+            background = true,
+            onDismiss = { picking = false },
+            onSwitchTarget = {},
+            onPick = { hex ->
+                color = hex?.uppercase()
+                picking = false
+            },
+            showTargetSwitch = false,
+            previewLabel = title
+        )
+    }
+}
+
+/**
+ * Il valore di una proprietà su una scheda (bacheca, galleria, elenco):
+ * scritto, e per una cella colorata una targhetta del suo colore.
+ */
+@Composable
+private fun CardPropertyValue(
+    column: DatabaseColumnEntity,
+    value: String,
+    overflow: TextOverflow = TextOverflow.Clip
+) {
+    if (column.type != ColumnType.COLOR) {
+        Text(
+            text = listCellLabel(column, value),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = overflow
+        )
+        return
+    }
+    val cell = parseColorCell(value)
+    val fill = hexToColor(cell.color)
+    if (fill == null) {
+        if (cell.text.isNotEmpty()) {
+            Text(
+                text = cell.text,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = overflow
+            )
+        }
+        return
+    }
+    Box(
+        modifier = Modifier
+            .defaultMinSize(minWidth = 28.dp, minHeight = 16.dp)
+            .clip(RoundedCornerShape(4.dp))
+            .background(fill)
+            .padding(horizontal = 6.dp, vertical = 1.dp),
+        contentAlignment = Alignment.CenterStart
+    ) {
+        if (cell.text.isNotEmpty()) {
+            Text(
+                text = cell.text,
+                style = MaterialTheme.typography.bodySmall,
+                color = if (darkTextOn(cell.color!!)) Color.Black else Color.White,
+                maxLines = 1,
+                overflow = overflow
+            )
+        }
     }
 }
 
@@ -6581,7 +6851,10 @@ private fun SettingsSheet(
                     // istante esatto sarebbe un gruppo per riga.
                     val groupable = columns.filter {
                         it.type != ColumnType.CREATED_TIME &&
-                            it.type != ColumnType.LAST_EDITED_TIME
+                            it.type != ColumnType.LAST_EDITED_TIME &&
+                            // Un gruppo per colore avrebbe per nome un
+                            // codice ("#E03E3E"): non si legge.
+                            it.type != ColumnType.COLOR
                     }
                     SheetGroup {
                         SettingsRow(
@@ -7187,6 +7460,7 @@ private fun ColumnType.icon(): ImageVector = when (this) {
     ColumnType.MULTI_SELECT -> Icons.Filled.Checklist
     ColumnType.DATE -> Icons.Filled.CalendarToday
     ColumnType.CHECKBOX -> Icons.Filled.CheckBox
+    ColumnType.COLOR -> Icons.Filled.FormatColorFill
     ColumnType.URL -> Icons.Filled.Link
     ColumnType.EMAIL -> Icons.Filled.AlternateEmail
     ColumnType.PHONE -> Icons.Filled.Call
