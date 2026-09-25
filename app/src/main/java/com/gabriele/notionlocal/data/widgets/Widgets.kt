@@ -153,7 +153,162 @@ data class PomodoroWidget(
 
 const val MINUTE_MS = 60_000L
 
+/**
+ * **Cronometro** (dal 25/09/2026, chiesto dall'utente "uguale a quello di
+ * Samsung"): Start, e il tempo corre; Stop lo ferma, Resume lo riprende da
+ * dov'era, Reset lo azzera; Lap segna un giro, e sotto c'è la lista dei
+ * giri col tempo del giro e quello totale.
+ *
+ * Come il pomodoro **si conta sull'orologio**: si salva quando è partita
+ * la corsa in corso e quanto era già accumulato prima, e il tempo si ricava
+ * da lì — resta giusto con la barra chiusa e ad app chiusa.
+ */
+@Serializable
+@SerialName("stopwatch")
+data class StopwatchWidget(
+    override val id: String = newWidgetId(),
+    /** Il tempo delle corse già finite, cioè fino all'ultimo Stop. */
+    val accumulatedMs: Long = 0,
+    /** Quando è partita la corsa in corso; null a cronometro fermo. */
+    val startedAt: Long? = null,
+    /** Il tempo totale segnato a ogni Lap, dal primo all'ultimo. */
+    val laps: List<Long> = emptyList()
+) : Widget() {
+    val running: Boolean get() = startedAt != null
+
+    /** Mai partito, o azzerato: i pulsanti sono Lap (spento) e Start. */
+    val idle: Boolean get() = !running && accumulatedMs == 0L && laps.isEmpty()
+
+    fun elapsedAt(now: Long): Long = accumulatedMs + (startedAt?.let { (now - it).coerceAtLeast(0) } ?: 0)
+}
+
+/**
+ * **Timer** (dal 25/09/2026, come quello di Samsung): uno o più conti alla
+ * rovescia, uno per pagina, che si sfogliano in orizzontale. Ognuno si
+ * imposta con tre rotelle — ore da 0 a 99, minuti e secondi da 0 a 59 — e
+ * parte con Start.
+ */
+@Serializable
+@SerialName("timer")
+data class TimerWidget(
+    override val id: String = newWidgetId(),
+    val timers: List<CountdownTimer> = listOf(CountdownTimer())
+) : Widget()
+
+/**
+ * Un conto alla rovescia. Quattro stati: **da impostare** (le rotelle,
+ * `started` falso), **in corsa**, **in pausa**, **finito** (0:00 in rosso
+ * finché non lo si riporta alle rotelle).
+ */
+@Serializable
+data class CountdownTimer(
+    val id: String = newWidgetId(),
+    /** Il tempo scelto con le rotelle: quello con cui parte e a cui torna. */
+    val durationMs: Long = 10 * MINUTE_MS,
+    val started: Boolean = false,
+    val running: Boolean = false,
+    val finished: Boolean = false,
+    /** A timer fermo, quanto manca; mentre corre, quanto mancava quando è ripartito. */
+    val remainingMs: Long = durationMs,
+    /** Mentre corre: quando finisce. */
+    val endsAt: Long? = null
+) {
+    /** Quanto manca adesso: mai più di quanto mancava alla partenza, come il pomodoro. */
+    fun remainingAt(now: Long): Long = when {
+        finished -> 0
+        running && endsAt != null -> (endsAt - now).coerceAtMost(remainingMs).coerceAtLeast(0)
+        else -> remainingMs
+    }
+}
+
+/** Il tempo delle tre rotelle, in millisecondi. */
+fun wheelDurationMs(hours: Int, minutes: Int, seconds: Int): Long =
+    ((hours * 60L + minutes) * 60L + seconds) * 1_000L
+
+/** Le tre rotelle di un tempo: ore (fino a 99), minuti, secondi. */
+fun wheelValues(durationMs: Long): Triple<Int, Int, Int> {
+    val totalSeconds = durationMs / 1_000
+    return Triple((totalSeconds / 3_600).toInt().coerceAtMost(99), ((totalSeconds / 60) % 60).toInt(), (totalSeconds % 60).toInt())
+}
+
 // --- Calcoli, senza Android: si provano coi test ---
+
+// Cronometro
+
+fun StopwatchWidget.started(now: Long): StopwatchWidget = if (running) this else copy(startedAt = now)
+
+fun StopwatchWidget.stopped(now: Long): StopwatchWidget =
+    if (!running) this else copy(accumulatedMs = elapsedAt(now), startedAt = null)
+
+fun StopwatchWidget.lapped(now: Long): StopwatchWidget = if (!running) this else copy(laps = laps + elapsedAt(now))
+
+fun StopwatchWidget.cleared(): StopwatchWidget = copy(accumulatedMs = 0, startedAt = null, laps = emptyList())
+
+/** Una riga della lista dei giri: il numero, il tempo del giro, il tempo totale. */
+data class LapRow(val number: Int, val lapMs: Long, val overallMs: Long)
+
+/** I giri come li mostra la lista: **dal più recente**, come su Samsung. */
+fun lapRows(laps: List<Long>): List<LapRow> =
+    laps.mapIndexed { i, overall -> LapRow(i + 1, overall - (laps.getOrNull(i - 1) ?: 0L), overall) }.reversed()
+
+/**
+ * Il giro più veloce e quello più lento, per colorarli come su Samsung
+ * (arancio il più veloce, rosso il più lento). Solo da tre giri in su: con
+ * due, sarebbero colorati tutti e due e non direbbe niente.
+ */
+fun fastestAndSlowestLap(rows: List<LapRow>): Pair<Int, Int>? {
+    if (rows.size < 3) return null
+    return rows.minBy { it.lapMs }.number to rows.maxBy { it.lapMs }.number
+}
+
+/** "00:32.52" (minuti, secondi, centesimi); oltre l'ora "1:02:03.45". */
+fun stopwatchText(ms: Long): String {
+    val centis = (ms / 10) % 100
+    val totalSeconds = ms / 1_000
+    val hours = totalSeconds / 3_600
+    val minutes = (totalSeconds / 60) % 60
+    val seconds = totalSeconds % 60
+    val tail = "%02d:%02d.%02d".format(minutes, seconds, centis)
+    return if (hours > 0) "$hours:$tail" else tail
+}
+
+// Timer
+
+fun CountdownTimer.startedAt(now: Long): CountdownTimer =
+    copy(started = true, running = true, finished = false, remainingMs = durationMs, endsAt = now + durationMs)
+
+fun CountdownTimer.pausedAt(now: Long): CountdownTimer =
+    if (!running) this else copy(running = false, remainingMs = remainingAt(now), endsAt = null)
+
+fun CountdownTimer.resumedAt(now: Long): CountdownTimer =
+    if (running || finished || !started) this else copy(running = true, endsAt = now + remainingMs)
+
+/** Di nuovo alle rotelle, col tempo che c'era. */
+fun CountdownTimer.backToSetup(): CountdownTimer =
+    copy(started = false, running = false, finished = false, remainingMs = durationMs, endsAt = null)
+
+/** Se è arrivato a zero, finito; con quando è finito, per decidere se suonare. */
+fun CountdownTimer.finishedBy(now: Long): Pair<CountdownTimer, Long?> {
+    val end = endsAt
+    if (!running || end == null || end > now) return this to null
+    return copy(running = false, finished = true, remainingMs = 0, endsAt = null) to end
+}
+
+/** "9:55", "0:05", "1:09:55": arrotondato per eccesso come il pomodoro. */
+fun countdownText(ms: Long): String {
+    val totalSeconds = (ms + 999) / 1_000
+    val hours = totalSeconds / 3_600
+    val minutes = (totalSeconds / 60) % 60
+    val seconds = totalSeconds % 60
+    return if (hours > 0) "%d:%02d:%02d".format(hours, minutes, seconds) else "%d:%02d".format(minutes, seconds)
+}
+
+/** Il tempo impostato, in piccolo sopra il timer come su Samsung: "10 m", "1 h 30 m", "45 s". */
+fun durationLabel(ms: Long): String {
+    val (h, m, s) = wheelValues(ms)
+    return listOfNotNull(h.takeIf { it > 0 }?.let { "$it h" }, m.takeIf { it > 0 }?.let { "$it m" }, s.takeIf { it > 0 }?.let { "$it s" })
+        .joinToString(" ").ifEmpty { "0 s" }
+}
 
 /**
  * Fra quanti millisecondi cambia la cifra di un timer a cui mancano

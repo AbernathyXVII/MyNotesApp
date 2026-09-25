@@ -85,6 +85,8 @@ object WidgetStore {
             WidgetKind.LIFE_PROGRESS -> LifeProgressWidget()
             WidgetKind.COUNTER -> CounterWidget()
             WidgetKind.POMODORO -> PomodoroWidget()
+            WidgetKind.STOPWATCH -> StopwatchWidget()
+            WidgetKind.TIMER -> TimerWidget()
         }
         s.copy(widgets = s.widgets + widget)
     }
@@ -190,40 +192,83 @@ object WidgetStore {
         it.copy(soundUri = uri, soundName = name?.takeIf { uri != null })
     }
 
+    // --- Cronometro ---
+
+    fun stopwatchStart(widgetId: String) = updateWidget<StopwatchWidget>(widgetId) { it.started(System.currentTimeMillis()) }
+    fun stopwatchStop(widgetId: String) = updateWidget<StopwatchWidget>(widgetId) { it.stopped(System.currentTimeMillis()) }
+    fun stopwatchLap(widgetId: String) = updateWidget<StopwatchWidget>(widgetId) { it.lapped(System.currentTimeMillis()) }
+    fun stopwatchReset(widgetId: String) = updateWidget<StopwatchWidget>(widgetId) { it.cleared() }
+
+    // --- Timer ---
+
+    private fun updateTimer(widgetId: String, timerId: String, transform: (CountdownTimer) -> CountdownTimer) =
+        updateWidget<TimerWidget>(widgetId) { w -> w.copy(timers = w.timers.map { if (it.id == timerId) transform(it) else it }) }
+
+    /** Il tempo scelto con le rotelle, salvato subito: resta anche chiudendo la barra. */
+    fun timerSetDuration(widgetId: String, timerId: String, durationMs: Long) = updateTimer(widgetId, timerId) {
+        if (it.started) it else it.copy(durationMs = durationMs, remainingMs = durationMs)
+    }
+
+    fun timerStart(widgetId: String, timerId: String) = updateTimer(widgetId, timerId) {
+        if (it.durationMs <= 0) it else it.startedAt(System.currentTimeMillis())
+    }
+
+    fun timerPause(widgetId: String, timerId: String) = updateTimer(widgetId, timerId) { it.pausedAt(System.currentTimeMillis()) }
+    fun timerResume(widgetId: String, timerId: String) = updateTimer(widgetId, timerId) { it.resumedAt(System.currentTimeMillis()) }
+    fun timerReset(widgetId: String, timerId: String) = updateTimer(widgetId, timerId) { it.backToSetup() }
+
+    /** Un timer in più, da impostare, in fondo: il "+" in alto a destra. */
+    fun timerAdd(widgetId: String) = updateWidget<TimerWidget>(widgetId) { it.copy(timers = it.timers + CountdownTimer()) }
+
+    /** Toglie un timer; l'ultimo rimasto non si toglie (resta il widget, con le rotelle). */
+    fun timerRemove(widgetId: String, timerId: String) = updateWidget<TimerWidget>(widgetId) { w ->
+        if (w.timers.size <= 1) w else w.copy(timers = w.timers.filterNot { it.id == timerId })
+    }
+
     /**
-     * Fa avanzare i pomodori la cui fase è finita. Suona se una è finita
-     * **da poco** (`RING_WINDOW_MS`): chi recupera fasi finite ad app
-     * chiusa non deve suonare per il passato.
+     * Fa avanzare pomodori e timer arrivati alla fine. Suona se qualcosa è
+     * finito **da poco** (`RING_WINDOW_MS`): chi recupera ad app chiusa
+     * non deve suonare per il passato. (Fino al 25/09/2026 c'erano solo i
+     * pomodori.)
      */
     private fun advancePomodoros(ringIfRecent: Boolean) {
         val now = System.currentTimeMillis()
         var ring = false
         // Il suono del primo pomodoro appena finito: due che finiscono
-        // insieme suonano una volta sola, come prima.
+        // insieme suonano una volta sola, come prima. I timer suonano col
+        // suono delle notifiche dell'app.
         var sound: String? = null
         update { s ->
             s.copy(widgets = s.widgets.map { w ->
-                if (w !is PomodoroWidget) return@map w
-                val (next, ended) = w.advancedTo(now)
-                if (ended != null && now - ended < RING_WINDOW_MS) {
-                    if (!ring) sound = w.soundUri
-                    ring = true
+                when (w) {
+                    is PomodoroWidget -> {
+                        val (next, ended) = w.advancedTo(now)
+                        if (ended != null && now - ended < RING_WINDOW_MS) {
+                            if (!ring) sound = w.soundUri
+                            ring = true
+                        }
+                        next
+                    }
+                    is TimerWidget -> w.copy(timers = w.timers.map { t ->
+                        val (next, ended) = t.finishedBy(now)
+                        if (ended != null && now - ended < RING_WINDOW_MS) ring = true
+                        next
+                    })
+                    else -> w
                 }
-                next
             })
         }
         if (ring && ringIfRecent) ring(sound)
         scheduleAlarm()
     }
 
-    /** Dorme fino alla prima fase che finisce, fra tutti i pomodori che corrono. */
+    /** Dorme fino alla prima fine, fra tutti i pomodori e i timer che corrono. */
     private fun scheduleAlarm() {
         alarm?.cancel()
-        val next = stateHolder.value.widgets
-            .filterIsInstance<PomodoroWidget>()
-            .filter { it.running }
-            .mapNotNull { it.endsAt }
-            .minOrNull() ?: return
+        val widgets = stateHolder.value.widgets
+        val pomodoroEnds = widgets.filterIsInstance<PomodoroWidget>().filter { it.running }.mapNotNull { it.endsAt }
+        val timerEnds = widgets.filterIsInstance<TimerWidget>().flatMap { it.timers }.filter { it.running }.mapNotNull { it.endsAt }
+        val next = (pomodoroEnds + timerEnds).minOrNull() ?: return
         alarm = scope.launch {
             delay((next - System.currentTimeMillis()).coerceAtLeast(0))
             advancePomodoros(ringIfRecent = true)
@@ -283,4 +328,4 @@ object WidgetStore {
 }
 
 /** I widget che si possono aggiungere, nell'ordine del menu. */
-enum class WidgetKind { TIME_ZONES, LIFE_PROGRESS, COUNTER, POMODORO }
+enum class WidgetKind { TIME_ZONES, LIFE_PROGRESS, COUNTER, POMODORO, STOPWATCH, TIMER }

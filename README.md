@@ -566,8 +566,9 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   analogici o digitali, e un elenco sempre da ovest a est), avanzamento
   di anno, mese, settimana, giorno e date proprie, contatore, pomodoro
   con sessione e pausa (e dal 25/09/2026 il suo suono, scelto fra le
-  suonerie del telefono). Una freccetta nasconde tutta la sezione, e la
-  scelta resta
+  suonerie del telefono), e dal 25/09/2026 **cronometro** coi giri e
+  **timer** (anche più d'uno insieme), come quelli dell'orologio Samsung.
+  Una freccetta nasconde tutta la sezione, e la scelta resta
 - **Database dentro le pagine**: creandone uno dal menu "+" compare
   nella pagina e si modifica lì; l'icona con le frecce lo apre a
   schermo intero, e dalle impostazioni lo si elimina
@@ -1938,7 +1939,7 @@ gg/mm/aaaa)" accanto al titolo.
 
 **25/09/2026 — le prove dell'utente, e quello che ne è venuto** *(Claude
 Code sul PC; tutto verificato sul telefono lo stesso giorno; schema alla
-versione **30**; 74 test passati)*
+versione **30**; 80 test passati)*
 
 Richieste dell'utente, parola per parola (dopo le prove della sera
 prima: copertine, rotazione, pomodoro, font offline, voce 14):
@@ -2023,6 +2024,61 @@ prova: «La suoneria sta continuando a suonare all'infinito».
   time zone" di un orologio (`ZonePickerSheet`). Verificato: Midway 19:33
   → 19:34 allo scatto del minuto, Marquesas (GMT-9:30) 21:03 → 21:04; in
   "Add clock" 19:36 alle 08:36 italiane
+- **[Nuova funzionalità]** **Cronometro e Timer fra i widget.** Richiesta
+  dell'utente, parola per parola, con quattro foto dell'orologio Samsung
+  (il cronometro fermo a 00:32.52 con tre giri e in corsa a 00:10.84; le
+  rotelle del timer a 00:10:00 coi tempi pronti; un timer a 9:55 con
+  sopra "Add timer"): «Mettimi tra i widget Lo Stopwatch (prima e quarta
+  foto) e il Timer (seconda e terza foto). Saranno uguali a quelli di
+  Samsung (ovviamente i riquadri dei widget saranno piccoli e
+  rispetteranno la grande della sidebar). Nel caso dello Stopwatch, ci
+  saranno all'inizio due pulsanti, Lap e Start, faccio Start e parte lo
+  Stopwatch, il tempo scorre, Start sarà diventato Stop interrompendo
+  temporaneamente il tempo, che poi diventerà Resume per farlo continuare
+  a dov'era prima ed aggiungerà al posto di Lap Reset per resettare lo
+  Stopwatch; Lap servirà per vedere i giri (come nei circuiti), e sotto
+  apparirà una lista di giri come vedi nelle foto, con Lap, Lap times e
+  Overall times. Nel caso del Timer, il widget mi consentirà di scorrere
+  verticalmente da 0 a 99 ore, da 0 a 59 minuti e da 0 a 59 secondi,
+  toccherò Start, e in alto a destra avrò un'iconcina che mi consente di
+  resettare il timer e un'altra iconcina che mi consente di impostazione
+  contemporaneamente un altro timer (i vari timer saranno visualizzabili
+  tramite scorrimento orizzontale)». E: «Per il momento no, non mandarlo
+  su Github, te lo dirò io quando sarà il momento».
+  - **Stopwatch** (`StopwatchWidget`, `StopwatchView` in
+    `SidebarTimers.kt`): il quadrante a sessanta tacche coi centesimi al
+    centro in color pesca, la lancetta **blu** per i secondi del tempo
+    totale e, dopo il primo giro, quella **bianca** per il giro in corso
+    (è così nelle foto: a 00:32.52 la bianca segna i 24,76 s del quarto
+    giro). Pulsanti come chiesto: **Lap** (spento) e **Start**; in corsa
+    **Lap** e **Stop** (rosso scuro); fermo **Reset** e **Resume**. Sotto,
+    la lista **Lap / Lap times / Overall time**, dal giro più recente, col
+    **più veloce in arancio e il più lento in rosso** come nella foto (da
+    tre giri in su: con due sarebbero colorati tutti e due — scelta mia,
+    da confermare). Si conta sull'orologio come il pomodoro: il tempo va
+    avanti anche a barra o app chiusa
+  - **Timer** (`TimerWidget`, `CountdownTimer`, `TimerView`): tre
+    **rotelle** che girano senza fine come su Samsung (ore 0-99, minuti e
+    secondi 0-59), ognuna si ferma su un numero intero e il tempo si salva
+    subito; i tempi pronti **00:10:00, 00:15:00, 00:30:00**; **Start**.
+    Partito: il quadrante con le **tacche arancio per il tempo che resta**,
+    dentro il tempo impostato ("10 m"), il conto alla rovescia ("9:55") e
+    la **campanella con l'ora in cui finisce**; sotto **Pause** / **Resume**.
+    In alto a destra **↻** (torna alle rotelle) e **+** (un altro timer, che
+    corre insieme agli altri): la pagina nuova si apre da sola con
+    **Cancel / Start**, come l'"Add timer" della terza foto, e i timer si
+    **sfogliano in orizzontale** coi pallini sotto. Finito, **suona** (il
+    suono delle notifiche dell'app, una volta sola, anche a barra chiusa)
+    e mostra **0:00 in rosso** con **Reset**
+  - Verificato sul telefono: cronometro Start → tre Lap → Stop (00:10.28,
+    giri 01 bianco, 02 rosso, 03 arancio), Resume da 10.28 a 11.83, Reset;
+    timer con le rotelle portate a 00:07:02 e poi a 00:00:05 trascinando,
+    Start → 0:03 con le tacche e la fine alle 08:57, a zero il suono
+    (08:57:05-08:57:08) e 0:00 rosso; "+" → secondo timer con Cancel/Start
+    e i pallini, partito, **lo scorrimento orizzontale sfoglia i timer
+    senza chiudere la barra**, ↻ e Cancel lo tolgono. Test nuovi in
+    `WidgetsTest` (cronometro, giri e colori coi tempi delle foto, stati
+    del timer, rotelle, testi): 80 test passati
 - **[Rimosso]** **MS YaHei.** Non era rotto: il suo sosia libero, Noto
   Sans SC, è **lo stesso disegno** che Android usa già per il cinese, e
   sul telefono non si distingueva dal font di sistema. Tolto su richiesta

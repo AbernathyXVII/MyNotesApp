@@ -35,7 +35,11 @@ object WidgetStrings {
         com.gabriele.notionlocal.data.widgets.WidgetKind.LIFE_PROGRESS -> lifeProgress
         com.gabriele.notionlocal.data.widgets.WidgetKind.COUNTER -> counter
         com.gabriele.notionlocal.data.widgets.WidgetKind.POMODORO -> pomodoro
+        com.gabriele.notionlocal.data.widgets.WidgetKind.STOPWATCH -> stopwatch
+        com.gabriele.notionlocal.data.widgets.WidgetKind.TIMER -> timer
     }
+    val stopwatch get() = t("Stopwatch", "Cronometro", "Stoppuhr", "Chronomètre", "Cronómetro", "秒表", "스톱워치", "ストップウォッチ")
+    val timer get() = t("Timer", "Timer", "Timer", "Minuteur", "Temporizador", "计时器", "타이머", "タイマー")
     val timeZones get() = t("Time zones", "Fusi orari", "Zeitzonen", "Fuseaux horaires", "Zonas horarias", "时区", "시간대", "タイムゾーン")
     val lifeProgress get() = t("Life progress", "Avanzamento", "Fortschritt", "Progression", "Progreso", "进度", "진행률", "進捗")
     val counter get() = t("Counter", "Contatore", "Zähler", "Compteur", "Contador", "计数器", "카운터", "カウンター")
@@ -91,4 +95,16 @@ object WidgetStrings {
     val sound get() = t("Sound", "Suono", "Ton", "Son", "Sonido", "声音", "소리", "サウンド")
     val setTime get() = t("Set the time", "Imposta il tempo", "Zeit einstellen", "Régler le temps", "Ajustar el tiempo", "设置时间", "시간 설정", "時間を設定")
     val sessionName get() = t("Session name", "Nome della sessione", "Name der Sitzung", "Nom de la session", "Nombre de la sesión", "专注名称", "세션 이름", "セッション名")
+
+    // --- Cronometro e timer (dal 25/09/2026) ---
+
+    val lap get() = t("Lap", "Giro", "Runde", "Tour", "Vuelta", "计次", "랩", "ラップ")
+    val lapTimes get() = t("Lap times", "Tempo del giro", "Rundenzeit", "Temps du tour", "Tiempo de vuelta", "计次时间", "구간 기록", "ラップタイム")
+    val overallTime get() = t("Overall time", "Tempo totale", "Gesamtzeit", "Temps total", "Tiempo total", "总时间", "전체 시간", "合計時間")
+    val stop get() = t("Stop", "Stop", "Stopp", "Arrêter", "Detener", "停止", "중지", "停止")
+    val resume get() = t("Resume", "Riprendi", "Fortsetzen", "Reprendre", "Reanudar", "继续", "계속", "再開")
+    val hours get() = t("Hours", "Ore", "Stunden", "Heures", "Horas", "小时", "시간", "時間")
+    val addTimer get() = t("Add timer", "Aggiungi timer", "Timer hinzufügen", "Ajouter un minuteur", "Añadir temporizador", "添加计时器", "타이머 추가", "タイマーを追加")
+    val resetTimer get() = t("Reset timer", "Azzera il timer", "Timer zurücksetzen", "Réinitialiser le minuteur", "Reiniciar temporizador", "重置计时器", "타이머 초기화", "タイマーをリセット")
+    val timerEndsAt get() = t("Ends at", "Finisce alle", "Endet um", "Se termine à", "Termina a las", "结束于", "종료 시각", "終了時刻")
 }

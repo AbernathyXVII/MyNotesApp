@@ -90,6 +90,8 @@ import com.gabriele.notionlocal.data.widgets.PomodoroPhase
 import com.gabriele.notionlocal.data.widgets.PomodoroWidget
 import com.gabriele.notionlocal.data.widgets.ProgressBarSetting
 import com.gabriele.notionlocal.data.widgets.ProgressKind
+import com.gabriele.notionlocal.data.widgets.StopwatchWidget
+import com.gabriele.notionlocal.data.widgets.TimerWidget
 import com.gabriele.notionlocal.data.widgets.TimeZonesWidget
 import com.gabriele.notionlocal.data.widgets.Widget
 import com.gabriele.notionlocal.data.widgets.WidgetKind
@@ -203,7 +205,7 @@ private fun rememberNow(active: Boolean) = produceState(System.currentTimeMillis
  * e si riparte da capo appena il timer cambia (▶, pausa, fase nuova).
  */
 @Composable
-private fun rememberTimerNow(endsAt: Long?, active: Boolean) =
+internal fun rememberTimerNow(endsAt: Long?, active: Boolean) =
     produceState(System.currentTimeMillis(), endsAt, active) {
         value = System.currentTimeMillis()
         while (active && endsAt != null) {
@@ -284,6 +286,8 @@ private fun WidgetCard(widget: Widget, index: Int, count: Int, now: Long, active
                 is LifeProgressWidget -> LifeProgressView(widget, now)
                 is CounterWidget -> CounterView(widget)
                 is PomodoroWidget -> PomodoroView(widget, active)
+                is StopwatchWidget -> StopwatchView(widget, active)
+                is TimerWidget -> TimerView(widget, active)
             }
         }
     }
@@ -316,6 +320,8 @@ private fun Widget.kind(): WidgetKind = when (this) {
     is LifeProgressWidget -> WidgetKind.LIFE_PROGRESS
     is CounterWidget -> WidgetKind.COUNTER
     is PomodoroWidget -> WidgetKind.POMODORO
+    is StopwatchWidget -> WidgetKind.STOPWATCH
+    is TimerWidget -> WidgetKind.TIMER
 }
 
 @Composable

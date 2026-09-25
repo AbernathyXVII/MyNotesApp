@@ -152,9 +152,86 @@ class WidgetsTest {
                 TimeZonesWidget(clocks = listOf(ClockSetting(zoneId = "Asia/Tokyo", analog = false)), list = listOf("Europe/Rome")),
                 LifeProgressWidget(),
                 CounterWidget(value = -3, name = "Caffè"),
-                PomodoroWidget(sessionName = "Studio", sessionMinutes = 50, running = true, endsAt = 123L)
+                PomodoroWidget(sessionName = "Studio", sessionMinutes = 50, running = true, endsAt = 123L),
+                StopwatchWidget(accumulatedMs = 4_000, startedAt = 99L, laps = listOf(800L, 4_420L)),
+                TimerWidget(timers = listOf(CountdownTimer(durationMs = 90_000).startedAt(1_000), CountdownTimer()))
             )
         )
         assertEquals(state, json.decodeFromString<WidgetsState>(json.encodeToString(state)))
+    }
+
+    // --- Cronometro ---
+
+    @Test
+    fun theStopwatchCountsWhileRunningAndKeepsItsTimeWhenStopped() {
+        val idle = StopwatchWidget()
+        assertTrue(idle.idle)
+        val running = idle.started(1_000)
+        assertEquals(2_500, running.elapsedAt(3_500))
+        val stopped = running.stopped(3_500)
+        assertEquals(2_500, stopped.elapsedAt(99_999))
+        assertTrue(!stopped.running && !stopped.idle)
+        // Resume riparte da dov'era.
+        assertEquals(3_500, stopped.started(10_000).elapsedAt(11_000))
+        assertTrue(stopped.cleared().idle)
+    }
+
+    @Test
+    fun lapsListTheNewestFirstWithLapAndOverallTimes() {
+        // I tempi delle foto dell'utente: 0,80 — 4,42 — 7,76.
+        val laps = StopwatchWidget().started(0).lapped(800).lapped(4_420).lapped(7_760).laps
+        val rows = lapRows(laps)
+        assertEquals(listOf(3, 2, 1), rows.map { it.number })
+        assertEquals(LapRow(3, 3_340, 7_760), rows[0])
+        assertEquals(LapRow(2, 3_620, 4_420), rows[1])
+        assertEquals(LapRow(1, 800, 800), rows[2])
+        // Come nella foto: il primo (0,80) il più veloce, il secondo (3,62) il più lento.
+        assertEquals(1 to 2, fastestAndSlowestLap(rows))
+        assertNull(fastestAndSlowestLap(rows.take(2)))
+    }
+
+    @Test
+    fun stopwatchTimesReadLikeSamsung() {
+        assertEquals("00:32.52", stopwatchText(32_520))
+        assertEquals("00:00.80", stopwatchText(800))
+        assertEquals("1:02:03.45", stopwatchText(3_723_450))
+    }
+
+    // --- Timer ---
+
+    @Test
+    fun aTimerRunsPausesResumesAndFinishes() {
+        val set = CountdownTimer(durationMs = 10 * MINUTE_MS)
+        val running = set.startedAt(0)
+        assertEquals(5 * MINUTE_MS, running.remainingAt(5 * MINUTE_MS))
+        val paused = running.pausedAt(5 * MINUTE_MS)
+        assertEquals(5 * MINUTE_MS, paused.remainingAt(99 * MINUTE_MS))
+        val resumed = paused.resumedAt(20 * MINUTE_MS)
+        assertEquals(25 * MINUTE_MS, resumed.endsAt)
+        assertEquals(resumed to null, resumed.finishedBy(24 * MINUTE_MS))
+        val (finished, endedAt) = resumed.finishedBy(26 * MINUTE_MS)
+        assertTrue(finished.finished && !finished.running)
+        assertEquals(25 * MINUTE_MS, endedAt)
+        assertEquals(0, finished.remainingAt(30 * MINUTE_MS))
+        // ↻: di nuovo alle rotelle, col tempo di prima.
+        val back = finished.backToSetup()
+        assertTrue(!back.started && back.durationMs == 10 * MINUTE_MS && back.remainingMs == 10 * MINUTE_MS)
+    }
+
+    @Test
+    fun theWheelsGoFromZeroTo99HoursAnd59MinutesAndSeconds() {
+        assertEquals(Triple(0, 10, 0), wheelValues(10 * MINUTE_MS))
+        assertEquals(Triple(99, 59, 59), wheelValues(wheelDurationMs(99, 59, 59)))
+        assertEquals(wheelDurationMs(1, 2, 3), 3_723_000L)
+    }
+
+    @Test
+    fun timerTextsReadLikeSamsung() {
+        assertEquals("9:55", countdownText(595_000))
+        assertEquals("10:00", countdownText(599_001))
+        assertEquals("1:09:55", countdownText(4_195_000))
+        assertEquals("10 m", durationLabel(10 * MINUTE_MS))
+        assertEquals("1 h 30 m", durationLabel(90 * MINUTE_MS))
+        assertEquals("45 s", durationLabel(45_000))
     }
 }
