@@ -21,7 +21,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Notifications
@@ -249,7 +248,7 @@ internal fun TimerView(widget: TimerWidget, active: Boolean) {
     }
 }
 
-/** Le tre rotelle, i tempi pronti e Start. Con più timer, anche Cancel: toglie questo. */
+/** Le tre rotelle e Start. Con più timer, anche Cancel: toglie questo. */
 @Composable
 private fun TimerSetupPage(widgetId: String, timer: CountdownTimer, canCancel: Boolean) {
     val (h, m, s) = wheelValues(timer.durationMs)
@@ -269,23 +268,9 @@ private fun TimerSetupPage(widgetId: String, timer: CountdownTimer, canCancel: B
             WheelColon()
             NumberWheel(range = 60, value = s, onValueChange = { set(h, m, it) }, modifier = Modifier.weight(1f))
         }
-        Spacer(modifier = Modifier.height(8.dp))
-        // I tre tempi pronti di Samsung.
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            listOf(10, 15, 30).forEach { minutes ->
-                Text(
-                    text = "00:%02d:00".format(minutes),
-                    color = NotionWhite,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(50))
-                        .background(GrayButton)
-                        .clickable { set(0, minutes, 0) }
-                        .padding(horizontal = 10.dp, vertical = 7.dp)
-                )
-            }
-        }
+        // Niente tempi pronti (i 10, 15 e 30 minuti di Samsung): tolti su
+        // richiesta dell'utente il 25/09/2026, il tempo si sceglie solo
+        // con le rotelle.
         Spacer(modifier = Modifier.height(12.dp))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
             if (canCancel) ActionCircle(Strings.cancel, GrayButton) { WidgetStore.timerRemove(widgetId, timer.id) }
@@ -312,8 +297,8 @@ private const val WHEEL_REPEATS = 1_000
  * numero intero. Gira senza fine: sopra 00 c'è l'ultimo numero.
  *
  * Il valore si comunica **quando la rotella si ferma**, non a ogni numero
- * che passa; e se il valore cambia da fuori (un tempo pronto) la rotella ci
- * va da sola.
+ * che passa; e se il valore cambia da fuori (un timer riportato alle
+ * rotelle, un'altra pagina) la rotella ci va da sola.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable

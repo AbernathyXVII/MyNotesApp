@@ -2060,7 +2060,11 @@ prova: «La suoneria sta continuando a suonare all'infinito».
   - **Timer** (`TimerWidget`, `CountdownTimer`, `TimerView`): tre
     **rotelle** che girano senza fine come su Samsung (ore 0-99, minuti e
     secondi 0-59), ognuna si ferma su un numero intero e il tempo si salva
-    subito; i tempi pronti **00:10:00, 00:15:00, 00:30:00**; **Start**.
+    subito; **Start**. *(I tempi pronti 00:10:00, 00:15:00 e 00:30:00
+    della seconda foto c'erano nella prima versione e sono stati tolti
+    subito dopo, **[Rimosso]** su richiesta dell'utente: «Mi sono
+    dimenticato di dirti che i tre timer di preset (ossia 10 minuti, 15
+    minuti e 30 minuti) di Samsung non li volevo. Toglimeli per favore.»)*
     Partito: il quadrante con le **tacche arancio per il tempo che resta**,
     dentro il tempo impostato ("10 m"), il conto alla rovescia ("9:55") e
     la **campanella con l'ora in cui finisce**; sotto **Pause** / **Resume**.
