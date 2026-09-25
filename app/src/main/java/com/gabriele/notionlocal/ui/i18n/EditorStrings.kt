@@ -144,7 +144,6 @@ object EditorStrings {
         "빈 토글입니다. 탭하여 블록을 추가하세요.",
         "空のトグルです。タップしてブロックを追加します。"
     )
-    val removeLink get() = t("Remove link", "Rimuovi collegamento", "Link entfernen", "Supprimer le lien", "Quitar enlace", "移除链接", "링크 제거", "リンクを削除")
     val deleteDividerTitle get() = t("Delete this divider?", "Eliminare questo divisore?", "Diese Trennlinie löschen?", "Supprimer ce séparateur ?", "¿Eliminar este divisor?", "删除此分割线？", "이 구분선을 삭제할까요?", "この区切り線を削除しますか？")
     val deleteTable get() = t("Delete table", "Elimina tabella", "Tabelle löschen", "Supprimer le tableau", "Eliminar tabla", "删除表格", "표 삭제", "テーブルを削除")
     val deleteDatabaseTitle get() = t("Delete this database?", "Eliminare questo database?", "Diese Datenbank löschen?", "Supprimer cette base de données ?", "¿Eliminar esta base de datos?", "删除此数据库？", "이 데이터베이스를 삭제할까요?", "このデータベースを削除しますか？")

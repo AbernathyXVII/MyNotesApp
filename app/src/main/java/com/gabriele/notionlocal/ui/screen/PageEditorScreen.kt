@@ -5482,20 +5482,15 @@ private fun PageLinkBlockContent(
                 }
             )
         }
-        IconButton(onClick = { viewModel.deleteBlock(block) }, modifier = Modifier.size(28.dp)) {
-            Icon(
-                Icons.Filled.Delete,
-                contentDescription = EditorStrings.removeLink,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(16.dp)
-            )
-        }
+        // **Niente cestino a destra** (tolto il 26/09/2026, su richiesta
+        // dell'utente): per eliminare si tiene premuto il collegamento, e
+        // dal menu del blocco c'è "Move to trash".
     }
 }
 
 /**
- * Il divisore non ha campo di testo, quindi niente backspace-elimina —
- * serve un'icona dedicata, come già per tabelle e link a pagina.
+ * Il divisore non ha campo di testo, quindi niente backspace-elimina:
+ * tenendolo premuto si chiede se toglierlo.
  */
 @Composable
 private fun DividerBlockContent(

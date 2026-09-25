@@ -1994,6 +1994,22 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**26/09/2026 — via il cestino accanto ai collegamenti alle pagine**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 126 test
+passati; commit solo in locale)*
+
+Richiesta dell'utente, parola per parola:
+> «Toglimi l'icona del cestino a destra delle pagine nei campi di testo. Mi
+> basta tenerci premuto se voglio eliminarla»
+
+- **[Rimosso]** Il cestino a destra di ogni collegamento a una pagina
+  dentro il testo (e la sua scritta "Remove link"). Per eliminare si tiene
+  premuto il collegamento: nel menu del blocco, in fondo, c'è "Move to
+  trash". Su una pagina bloccata il menu non si apre, come prima
+- Verificato sul telefono, su "Titolo tre H3" in My Space: il cestino non
+  c'è più; tenendo premuto si apre il menu con "Move to trash" (richiuso
+  senza toccare niente)
+
 **25/09/2026 — il dito disegna, due dita scorrono, il palmo non conta**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno, le due dita
 dall'utente il 26/09/2026, vedi in fondo; 126 test passati; commit solo in
