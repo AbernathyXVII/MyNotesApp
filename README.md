@@ -602,6 +602,11 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   orizzontale, toccando il mese le rotelle di giorno, mese e anno; l'ora a
   rotelle, un minuto alla volta. La data di fine si chiede con
   l'interruttore "End date"
+- **Disegno a mano** (dal 25/09/2026): "Draw" nei tre puntini di una
+  pagina. Penna, matita, pennarello ed evidenziatore, con spessore e
+  colore; gomma per tratti o a punto; Annulla e Ripeti. Con la S Pen
+  (pressione, tasto laterale per cancellare) il dito scorre la pagina. I
+  disegni seguono le righe, il database o il titolo su cui li si è fatti
 - **Notifiche** (dal 25/09/2026): la riga **`/notification 22.10.2026
   19:41 Buttare l'immondizia`** (Invio, e diventa una riga con la
   campanella; senza ora alle 9:00; senza testo mostra il nome della
@@ -980,6 +985,12 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   per vista (una proprietà, uno o più valori), come nei database. Una
   vista non ha un nome suo: mostra sempre quello del database. Non si
   può fare una vista di una vista (si collega il database vero)
+- **Disegno: dentro un gruppo di righe il disegno non segue la singola
+  riga.** È attaccato al gruppo intero (le righe fra due isole, come i
+  divisori): scrivendo righe nuove *dentro* il gruppo, sopra al disegno,
+  il testo scende e il disegno no. Per questo l'utente mette i divisori
+  come confini. Niente selezione a lazo né zoom, e sui database a schermo
+  intero non si disegna
 - **Notifiche: la riga "/notification" legge la data col giorno
   prima** (`22.10` è il 22 ottobre), qualunque sia il formato della data
   scelto nelle impostazioni. E `9.05` è il 9 maggio, non le 9:05: per
@@ -1980,6 +1991,90 @@ Le voci nate nelle sessioni cloud stanno qui in cima, la più recente
 per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
+
+**25/09/2026 — disegnare a mano sulle pagine, anche con la S Pen**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno, con la S Pen
+simulata da adb, vedi in fondo; 123 test passati; commit solo in locale)*
+
+Richiesta dell'utente, parola per parola, con una foto della barra "Drawing
+Tools" di OneNote (una gomma aperta sul menu Thickness / Types — Stroke
+Eraser, Point Eraser — e sei penne di colori diversi, l'ultima gialla un
+evidenziatore):
+> «Dammi la possibilità di disegnare su una pagina toccando l'icona di una
+> matita che metterai dentro i tre puntini di ogni pagina. Non preoccuparti
+> se disegno sopra del testo normale. Se voglio disegnare qualcosa, metterò
+> dei divider sopra e sotto come dei "confini". Ovviamente, ho anche la
+> scelta di disegnare sopra qualsiasi cosa (iniziando dalla fine della
+> copertina NON compresa in giù), tipo sopra un database se voglio cerchiare
+> qualcosa. Mettimi le opzioni che vedi in foto, con la gomma che cancella
+> solo quello che la gomma trova oppure il tratto completo che viene toccato
+> (stroke e point come in Onenote), con la verie tipologie di penne,
+> pennarelli e l'evidenziatore. Per tutti quanti metti anche il thickness e
+> i colori (tranne per la gomma ovviamente). Dimmi se riesci a far
+> funzionare la mia SPen»
+
+- **[Nuova funzionalità]** **"Draw"**, con la matita, nei tre puntini di
+  ogni pagina di testo (anche le pagine delle righe; non nei database a
+  schermo intero). Si disegna **su tutta la pagina dalla fine della
+  copertina in giù**, copertina esclusa: sopra il testo, il titolo, un
+  database. In fondo c'è la barra del disegno al posto di quella del testo:
+  **✓** per finire (anche il gesto indietro), **Annulla** e **Ripeti** (solo
+  dei disegni, separati da quelli del testo), la **gomma** e sei penne come
+  nella foto, e la **mano** per disegnare col dito. Mentre si disegna il
+  testo si legge e basta; finito, i disegni restano e si vedono sempre
+- **[Nuova funzionalità]** **Le penne**: penna, matita, pennarello ed
+  evidenziatore. Di partenza: penna del colore del testo (bianca sul tema
+  scuro, nera sul chiaro), penna blu, penna rossa, matita grigia,
+  pennarello verde, evidenziatore giallo. Toccando lo strumento già in mano
+  (o tenendolo premuto) si apre la sua finestra, come nella foto:
+  **Thickness** (cinque spessori, e "−" "+" per i passi in mezzo), **Types**
+  (quale delle quattro è) e **Colors** (venti colori, il primo è "il colore
+  del testo"). La penna si allarga premendo di più con la S Pen; la matita
+  è un po' trasparente; l'evidenziatore è trasparente, a punta piatta, e
+  sta sotto gli altri tratti. Le scelte si ricordano
+- **[Nuova funzionalità]** **La gomma**, con **Thickness** e **Types**:
+  **Stroke Eraser** toglie tutto il tratto toccato, **Point Eraser** solo
+  quello che passa sotto la gomma (il tratto si spezza). Mentre si cancella
+  si vede il cerchio della gomma. Una passata è un Annulla solo
+- **[Nuova funzionalità]** **La S Pen.** Sì, funziona: il telefono è un
+  Galaxy S25 Ultra (SM-S938B) e la S Pen arriva all'app come penna vera, con
+  la **pressione**. La prima volta che la si usa il dito smette di
+  disegnare e **scorre la pagina** (un avviso lo dice): così il palmo
+  appoggiato non lascia segni. La mano nella barra lo fa tornare a
+  disegnare; col dito che disegna, **due dita** scorrono. Col **tasto
+  laterale** premuto la S Pen **cancella**, come su Samsung Notes (la
+  gomma scelta nella barra). Quello che non c'è: i gesti a distanza (Air
+  actions), che la S Pen del S25 Ultra non ha più
+- **[Progetto]** **I disegni seguono quello su cui li si è fatti.** Ogni
+  tratto è attaccato alla voce della pagina dove è cominciato — il gruppo
+  di righe fra due divisori, un database, un toggle, o la testata col
+  titolo — con le coordinate contate dal suo angolo (`InkStrokeEntity`,
+  `InkGeometry.kt`). Se sopra si aggiungono righe o un divisore, il disegno
+  scende con le sue righe. Cancellato quello su cui era fatto (il database
+  che si era cerchiato), il disegno non si vede ma resta: annullando la
+  cancellazione torna. Duplicando la pagina i disegni vengono con la copia
+- **[Progetto]** **Database alla versione 33**: la tabella `ink_strokes`,
+  un tratto per riga (i punti in una stringa compatta, "x,y,pressione" in
+  dp), cancellata con la sua pagina. Test `MigrationTest.from32…` su un
+  file alla 32 (`schema/v32.sql`); 8 test nuovi dei conti
+  (`InkGeometryTest`: salvataggio dei punti, le due gomme, gli ancoraggi,
+  gli spessori). Gli strumenti stanno nelle preferenze (`InkPrefs`), non
+  nel database, come le impostazioni
+- Verificato sul telefono, su "Titolo tre H3", con la S Pen simulata da
+  adb (`input stylus`): "Draw" nei tre puntini → barra; due tratti →
+  salvati, attaccati alla riga sotto il titolo, e l'avviso "S Pen
+  rilevata"; menu della penna come nella foto; Stroke Eraser su una linea →
+  sparita, Annulla → tornata; Point Eraser in mezzo all'altra → spezzata in
+  due; matita, pennarello ed evidenziatore sul titolo (attaccato alla
+  testata); il dito, spento, non disegna; **divisore messo sopra le righe
+  disegnate → i tratti sono scesi con le righe**, l'evidenziatore rimasto
+  sul titolo; un tratto è rimasto dopo aver ucciso e riaperto l'app. Poi
+  tutto rimesso com'era: testo, disegni (zero) e strumenti di partenza.
+  **Da provare con la S Pen vera**: la pressione (adb la dà sempre piena),
+  il tasto laterale, le due dita
+- Notato: le righe-notifica di prova in "Titolo tre H3" non c'erano più.
+  Dalla cronologia della pagina le ha svuotate l'utente alle 23:16–23:17,
+  prima dell'aggiornamento: non è stata la migrazione
 
 **25/09/2026 — le notifiche: "/notification", le date dei database, timer e
 pomodoro** *(Claude Code sul PC; verificato sul telefono lo stesso giorno,
@@ -5876,9 +5971,10 @@ le finestre che apre. Chi lo usa passa solo l'id del blocco.
 
 ## Nota tecnica
 
-Lo schema è alla **versione 32** (la 32, del 25/09/2026, aggiunge
-`blocks.notifyAt`, l'ora delle righe "/notification"; la 31, dello stesso
-giorno, sposta font e
+Lo schema è alla **versione 33** (la 33, del 25/09/2026, aggiunge la
+tabella `ink_strokes` dei disegni a mano; la 32, dello stesso giorno,
+aggiunge `blocks.notifyAt`, l'ora delle righe "/notification"; la 31, dello
+stesso giorno, sposta font e
 corpo dalla pagina al testo, senza cambiare la forma delle tabelle; la
 30, dello stesso giorno, toglie MS YaHei
 e aggiunge l'inquadratura delle schede della galleria; dalla 25 alla 29 vengono dalla

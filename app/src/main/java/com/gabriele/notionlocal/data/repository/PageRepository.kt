@@ -13,6 +13,7 @@ import com.gabriele.notionlocal.data.entity.PageEntity
 import com.gabriele.notionlocal.data.entity.RichTextSpan
 import com.gabriele.notionlocal.data.entity.TableCellEntity
 import com.gabriele.notionlocal.data.entity.plainText
+import com.gabriele.notionlocal.data.ink.remapAnchor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -1052,6 +1053,22 @@ class PageRepository(private val db: AppDatabase) {
                     cell.copy(id = UUID.randomUUID().toString(), blockId = newBlockIds.getValue(table.id))
                 )
             }
+        }
+
+        // I disegni a mano vengono con la pagina, attaccati ai blocchi
+        // della copia: agli originali non li vedrebbe nessuno.
+        val inkDao = db.inkDao()
+        val strokes = inkDao.getForPageOnce(pageId)
+        if (strokes.isNotEmpty()) {
+            inkDao.insertAll(
+                strokes.map { stroke ->
+                    stroke.copy(
+                        id = UUID.randomUUID().toString(),
+                        pageId = copyId,
+                        anchor = remapAnchor(stroke.anchor, newBlockIds)
+                    )
+                }
+            )
         }
 
         if (original.isDatabase) {

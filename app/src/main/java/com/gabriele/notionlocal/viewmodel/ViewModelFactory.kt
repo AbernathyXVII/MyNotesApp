@@ -54,6 +54,9 @@ class ViewModelFactory(private val context: Context) : ViewModelProvider.Factory
             modelClass.isAssignableFrom(StartupViewModel::class.java) ->
                 StartupViewModel(pageRepository) as T
 
+            modelClass.isAssignableFrom(InkViewModel::class.java) ->
+                InkViewModel(database) as T
+
             else -> throw IllegalArgumentException("ViewModel sconosciuto: ${modelClass.name}")
         }
     }

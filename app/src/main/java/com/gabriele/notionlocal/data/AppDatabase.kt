@@ -8,6 +8,7 @@ import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.gabriele.notionlocal.data.dao.BlockDao
 import com.gabriele.notionlocal.data.dao.DatabaseDao
+import com.gabriele.notionlocal.data.dao.InkDao
 import com.gabriele.notionlocal.data.dao.PageDao
 import com.gabriele.notionlocal.data.dao.PageEditDao
 import com.gabriele.notionlocal.data.dao.TableCellDao
@@ -15,6 +16,7 @@ import com.gabriele.notionlocal.data.entity.BlockEntity
 import com.gabriele.notionlocal.data.entity.DatabaseCellEntity
 import com.gabriele.notionlocal.data.entity.DatabaseColumnEntity
 import com.gabriele.notionlocal.data.entity.DatabaseRowEntity
+import com.gabriele.notionlocal.data.entity.InkStrokeEntity
 import com.gabriele.notionlocal.data.entity.PageEditEntity
 import com.gabriele.notionlocal.data.entity.PageEntity
 import com.gabriele.notionlocal.data.entity.RichTextSpan
@@ -45,9 +47,10 @@ import kotlinx.serialization.json.Json
         DatabaseRowEntity::class,
         DatabaseCellEntity::class,
         TableCellEntity::class,
-        PageEditEntity::class
+        PageEditEntity::class,
+        InkStrokeEntity::class
     ],
-    version = 32,
+    version = 33,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -57,6 +60,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun blockDao(): BlockDao
     abstract fun databaseDao(): DatabaseDao
     abstract fun tableCellDao(): TableCellDao
+    abstract fun inkDao(): InkDao
 
     companion object {
         @Volatile
@@ -500,6 +504,24 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /**
+         * **I disegni a mano** (25/09/2026): la tabella `ink_strokes`, un
+         * tratto per riga, attaccato a una pagina (e con lei cancellato).
+         * Vedi `InkStrokeEntity`. Nessun dato da spostare: prima non si
+         * disegnava.
+         */
+        private val MIGRATION_32_33 = object : Migration(32, 33) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `ink_strokes` (`id` TEXT NOT NULL, `pageId` TEXT NOT NULL, " +
+                        "`anchor` TEXT NOT NULL, `tool` TEXT NOT NULL, `color` INTEGER NOT NULL, `width` REAL NOT NULL, " +
+                        "`points` TEXT NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`), " +
+                        "FOREIGN KEY(`pageId`) REFERENCES `pages`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )"
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_ink_strokes_pageId` ON `ink_strokes` (`pageId`)")
+            }
+        }
+
+        /**
          * Solo per i test: chiude il database e lo dimentica, così il
          * `getInstance` dopo riapre il file da capo (e ne esegue le
          * migrazioni). Senza, il secondo test troverebbe il database del
@@ -544,7 +566,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_28_29,
                         MIGRATION_29_30,
                         MIGRATION_30_31,
-                        MIGRATION_31_32
+                        MIGRATION_31_32,
+                        MIGRATION_32_33
                     )
                     .build()
                 INSTANCE = instance

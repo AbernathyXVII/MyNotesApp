@@ -11,6 +11,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import com.gabriele.notionlocal.data.ink.InkPrefs
 import com.gabriele.notionlocal.data.notify.NoteAlarms
 import com.gabriele.notionlocal.data.notify.NotificationPermission
 import com.gabriele.notionlocal.data.notify.NotificationTarget
@@ -41,6 +42,8 @@ class MainActivity : ComponentActivity() {
         // Dopo le impostazioni: il pomodoro, suonando, guarda se le
         // notifiche sono messe a tacere.
         WidgetStore.init(applicationContext)
+        // Gli strumenti del disegno, come li si è lasciati.
+        InkPrefs.init(applicationContext)
         // Le notifiche: i canali, e la sveglia rimessa alla prossima.
         NoteAlarms.init(applicationContext)
         NotificationPermission.requester = ::askNotificationPermission

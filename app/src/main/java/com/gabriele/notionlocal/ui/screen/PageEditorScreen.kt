@@ -119,6 +119,12 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Notes
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.gabriele.notionlocal.data.entity.InkStrokeEntity
+import com.gabriele.notionlocal.data.ink.InkPrefs
+import com.gabriele.notionlocal.data.ink.resolveAnchor
+import com.gabriele.notionlocal.ui.i18n.InkStrings
+import com.gabriele.notionlocal.viewmodel.InkViewModel
 import com.gabriele.notionlocal.data.notify.NotificationCommand
 import com.gabriele.notionlocal.data.notify.NotificationCommands
 import com.gabriele.notionlocal.data.notify.NotificationPermission
@@ -883,6 +889,21 @@ private sealed class RenderItem {
     data class Island(val block: BlockEntity) : RenderItem()
 }
 
+/** La chiave della testata (copertina, icona, titolo) nella lista della pagina. */
+private const val PAGE_HEADER_KEY = "page-header"
+
+/** La chiave di una voce della lista: la stessa per la lista e per i disegni. */
+private fun renderItemKey(item: RenderItem): String = when (item) {
+    is RenderItem.Run -> "run:" + item.blocks.first().id
+    is RenderItem.Island -> "island:" + item.block.id
+}
+
+/** I blocchi di una voce, nell'ordine: a questi si attacca un disegno fatto lì sopra. */
+private fun renderItemBlockIds(item: RenderItem): List<String> = when (item) {
+    is RenderItem.Run -> item.blocks.map { it.id }
+    is RenderItem.Island -> listOf(item.block.id)
+}
+
 /** Raggruppa una lista piatta di blocchi in sequenze di testo scorrevole consecutive e isole singole, preservando l'ordine. */
 private fun groupIntoRenderItems(blocks: List<BlockEntity>): List<RenderItem> {
     val result = mutableListOf<RenderItem>()
@@ -1001,6 +1022,19 @@ fun PageEditorScreen(
     val isTrashed = page?.trashedAt != null
     val readOnlyPage = page?.isLocked == true || isTrashed
 
+    // **Il disegno a mano** (dal 25/09/2026): la matita nei tre puntini.
+    // Mentre si disegna il testo non si scrive (la pagina è come
+    // bloccata) e in fondo c'è la barra degli strumenti al posto di
+    // quella del testo. I disegni si vedono sempre; si fanno solo qui.
+    var drawing by rememberSaveable(pageId) { mutableStateOf(false) }
+    val drawingMode = drawing && !readOnlyPage
+    val inkViewModel: InkViewModel = viewModel(factory = factory)
+    LaunchedEffect(pageId) { inkViewModel.load(pageId) }
+    val inkStrokes by inkViewModel.strokes.collectAsStateWithLifecycle()
+    val inkCanUndo by inkViewModel.canUndo.collectAsStateWithLifecycle()
+    val inkCanRedo by inkViewModel.canRedo.collectAsStateWithLifecycle()
+    BackHandler(enabled = drawingMode) { drawing = false }
+
     // **La barra resta mentre il cursore passa da una riga all'altra.**
     //
     // Quando una riga cambia specie (un divisore, un toggle, una casella
@@ -1027,7 +1061,7 @@ fun PageEditorScreen(
     // Pagina bloccata: niente barra. Tutto quello che ci sta sopra —
     // rientri, spostamenti, "+" e formattazione — modifica, e offrirla
     // spenta sarebbe solo un modo più lento di dire di no.
-    val showBar = !readOnlyPage &&
+    val showBar = !readOnlyPage && !drawingMode &&
         (((focusedBlockId != null || barHeld) && imeVisible) || showTypeMenu)
 
     val isRootPage = pageId == PageEntity.ROOT_PAGE_ID
@@ -1158,6 +1192,23 @@ fun PageEditorScreen(
             val topLevelBlocks = blocks.filter { it.parentBlockId == null }
             val renderItems = remember(topLevelBlocks) { groupIntoRenderItems(topLevelBlocks) }
             val listState = rememberLazyListState()
+            val inkState = remember(listState) { InkPageState(listState) }
+            val inkCache = remember { InkPathCache() }
+            val inkDensity = LocalDensity.current
+            // Dove si attacca un tratto: la testata, poi una voce per
+            // gruppo di righe o per isola (vedi `InkStrokeEntity`).
+            remember(renderItems) {
+                inkState.itemKeys = listOf<Any>(PAGE_HEADER_KEY) + renderItems.map { renderItemKey(it) }
+                inkState.anchorOfItem = listOf(InkStrokeEntity.HEADER_ANCHOR) +
+                    renderItems.map { item -> renderItemBlockIds(item).joinToString(",") }
+                inkState.itemOfBlock = buildMap {
+                    put(InkStrokeEntity.HEADER_ANCHOR, 0)
+                    renderItems.forEachIndexed { index, item ->
+                        renderItemBlockIds(item).forEach { put(it, index + 1) }
+                    }
+                }
+            }
+            inkState.coverHeightPx = if (page?.coverImage != null) with(inkDensity) { COVER_HEIGHT.toPx() } else 0f
             val focusPark = remember { FocusRequester() }
 
             // **Cosa fa una voce del catalogo**, scelta dal menu "/" o dal
@@ -1322,10 +1373,43 @@ fun PageEditorScreen(
             //
             // Copre solo la pagina, non la barra: così il "+" resta un
             // interruttore vero e lo si può ritoccare per chiudere.
-            Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .inkLayer(inkState, inkStrokes, inkCache, NotionWhite)
+                    .then(
+                        if (drawingMode) {
+                            Modifier.inkInput(
+                                state = inkState,
+                                onPenDetected = {
+                                    InkPrefs.update { it.copy(fingerDraws = false) }
+                                    Toast.makeText(context, InkStrings.penDetected, Toast.LENGTH_LONG).show()
+                                },
+                                onStroke = { anchor, pen, points ->
+                                    inkViewModel.addStroke(anchor, pen.tool, pen.color, pen.width, points)
+                                },
+                                onErase = { x, y ->
+                                    val info = listState.layoutInfo
+                                    val d = inkDensity.density
+                                    val settings = InkPrefs.settings
+                                    inkViewModel.eraseAt(x / d, y / d, settings.eraserRadius, settings.eraserMode) { stroke ->
+                                        resolveAnchor(stroke.entity.anchor, inkState.itemOfBlock)
+                                            ?.let { inkState.itemTop(info, it) }
+                                            ?.let { 0f to it / d }
+                                    }
+                                },
+                                onEraseEnd = { inkViewModel.endErase() }
+                            )
+                        } else {
+                            Modifier
+                        }
+                    )
+            ) {
             CompositionLocalProvider(
                 LocalFocusPark provides focusPark,
-                LocalPageLocked provides readOnlyPage
+                // Mentre si disegna, il testo si legge e basta.
+                LocalPageLocked provides (readOnlyPage || drawingMode)
                 // (Fino al 25/09/2026 qui passavano anche il font e il corpo
                 // della pagina intera, `LocalPageTypography`: ora stanno sul
                 // testo selezionato, dentro gli span — vedi `fontStyleOf`.)
@@ -1377,7 +1461,7 @@ fun PageEditorScreen(
                 // la riga che prende il cursore, e uno scarto fisso
                 // di uno e' molto piu' facile da tenere giusto di
                 // uno variabile.
-                item(key = "page-header") {
+                item(key = PAGE_HEADER_KEY) {
                     Column {
                 // La copertina sta sopra a tutto, a tutta larghezza, e si
                 // tocca per cambiarla. Senza copertina non occupa spazio:
@@ -1569,12 +1653,7 @@ fun PageEditorScreen(
                     }
                 }
 
-                items(renderItems, key = { item ->
-                    when (item) {
-                        is RenderItem.Run -> "run:" + item.blocks.first().id
-                        is RenderItem.Island -> "island:" + item.block.id
-                    }
-                }) { item ->
+                items(renderItems, key = { item -> renderItemKey(item) }) { item ->
                     when (item) {
                         is RenderItem.Run -> MergedTextRunField(
                             runBlocks = item.blocks,
@@ -1612,6 +1691,16 @@ fun PageEditorScreen(
                         }
                 )
             }
+            }
+
+            if (drawingMode) {
+                InkToolbar(
+                    canUndo = inkCanUndo,
+                    canRedo = inkCanRedo,
+                    onUndo = { inkViewModel.undo() },
+                    onRedo = { inkViewModel.redo() },
+                    onDone = { drawing = false }
+                )
             }
 
             // La barra sopra la tastiera.
@@ -2085,6 +2174,14 @@ fun PageEditorScreen(
                 onUpdates = {
                     showPageOptions = false
                     onOpenUpdates(current.id)
+                },
+                onDraw = if (isTrashed) null else {
+                    {
+                        showPageOptions = false
+                        // La tastiera se ne va: da qui si disegna.
+                        focusManager.clearFocus()
+                        drawing = true
+                    }
                 }
             )
         }

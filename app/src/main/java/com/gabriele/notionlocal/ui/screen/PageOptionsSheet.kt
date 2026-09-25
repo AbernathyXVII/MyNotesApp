@@ -14,6 +14,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Draw
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.runtime.getValue
@@ -58,6 +59,7 @@ import com.gabriele.notionlocal.data.repository.PageRepository.PageTreeNode
 import com.gabriele.notionlocal.viewmodel.ViewModelFactory
 import com.gabriele.notionlocal.data.settings.AppSettings
 import com.gabriele.notionlocal.data.settings.TrashPolicy
+import com.gabriele.notionlocal.ui.i18n.InkStrings
 import com.gabriele.notionlocal.ui.i18n.Strings
 import com.gabriele.notionlocal.ui.theme.DarkSheet
 import com.gabriele.notionlocal.ui.theme.DarkSurface
@@ -91,6 +93,12 @@ fun PageOptionsSheet(
     onToggleViewLock: () -> Unit,
     onToggleLock: () -> Unit,
     onUpdates: () -> Unit,
+    /**
+     * **La matita**: disegnare a mano sulla pagina (dal 25/09/2026). Solo
+     * per le pagine di testo — un database a schermo intero non ha dove
+     * tenere i disegni — e null altrove, e allora la voce non c'è.
+     */
+    onDraw: (() -> Unit)? = null,
     /**
      * Solo per un database che da qualche parte è mostrato come pagina
      * (dopo "Turn into page"): lo rimette dentro la pagina che lo
@@ -146,6 +154,16 @@ fun PageOptionsSheet(
                     label = Strings.search,
                     onClick = onSearch
                 )
+                if (onDraw != null) {
+                    HorizontalDivider()
+                    // Bloccata, la pagina non si scrive e non si disegna.
+                    OptionRow(
+                        icon = Icons.Filled.Draw,
+                        label = InkStrings.draw,
+                        enabled = !page.isLocked,
+                        onClick = onDraw
+                    )
+                }
                 // Duplicare la pagina principale vorrebbe dire copiare
                 // l'archivio intero, sottopagine comprese, dentro sé
                 // stesso. Buttarla non si può comunque.

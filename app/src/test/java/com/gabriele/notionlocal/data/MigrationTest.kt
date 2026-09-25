@@ -4,6 +4,8 @@ import android.app.Application
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import androidx.test.core.app.ApplicationProvider
+import com.gabriele.notionlocal.data.entity.InkStrokeEntity
+import com.gabriele.notionlocal.data.entity.InkTool
 import com.gabriele.notionlocal.data.entity.RichTextSpan
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.decodeFromString
@@ -65,7 +67,7 @@ class MigrationTest {
         assertNull(page.sourceDatabaseId)
         assertNull(page.viewHiddenColumnIds)
         assertNull(page.cardCoverScale)
-        assertEquals(32, db.openHelper.readableDatabase.version)
+        assertEquals(33, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -81,7 +83,7 @@ class MigrationTest {
         assertNull(yahei.cardCoverScale)
         assertNull(yahei.cardCoverOffsetX)
         assertNull(yahei.cardCoverOffsetY)
-        assertEquals(32, db.openHelper.readableDatabase.version)
+        assertEquals(33, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -109,7 +111,7 @@ class MigrationTest {
         assertEquals(listOf(RichTextSpan(text = "", color = "#E03E3E")), spans("b2"))
         // Una pagina senza font resta com'era.
         assertEquals(listOf(RichTextSpan(text = "Normale")), spans("b3"))
-        assertEquals(32, db.openHelper.readableDatabase.version)
+        assertEquals(33, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -121,6 +123,26 @@ class MigrationTest {
         assertNull(block.notifyAt)
         assertTrue(db.blockDao().getNotificationRows().isEmpty())
         assertTrue(db.databaseDao().getNotifyingDateCells().isEmpty())
-        assertEquals(32, db.openHelper.readableDatabase.version)
+        assertEquals(33, db.openHelper.readableDatabase.version)
+    }
+
+    @Test
+    fun from32ThePagesGetATableForTheirDrawings() = runBlocking<Unit> {
+        val db = AppDatabase.getInstance(databaseAtVersion(32))
+        assertEquals("Pagina alla 32", db.pageDao().getById("p1")!!.title)
+        // La riga-notifica della 32 resta com'era.
+        assertEquals(1790000000000L, db.blockDao().getById("b1")!!.notifyAt)
+        // La tabella nuova c'è, vuota, e ci si scrive.
+        assertTrue(db.inkDao().getForPageOnce("p1").isEmpty())
+        db.inkDao().insertAll(
+            listOf(
+                InkStrokeEntity(
+                    pageId = "p1", anchor = "b1", tool = InkTool.PEN,
+                    color = InkStrokeEntity.AUTO_COLOR, width = 2f, points = "1,2,50;3,4,50"
+                )
+            )
+        )
+        assertEquals("b1", db.inkDao().getForPageOnce("p1").single().anchor)
+        assertEquals(33, db.openHelper.readableDatabase.version)
     }
 }
