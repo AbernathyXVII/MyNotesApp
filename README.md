@@ -1995,9 +1995,9 @@ telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
 **25/09/2026 — il dito disegna, due dita scorrono, il palmo non conta**
-*(Claude Code sul PC; verificato sul telefono lo stesso giorno, tranne le
-due dita e la penna sospesa, vedi in fondo; 126 test passati; commit solo
-in locale)*
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno, le due dita
+dall'utente il 26/09/2026, vedi in fondo; 126 test passati; commit solo in
+locale)*
 
 L'utente, parola per parola:
 > «Ma è normale che con il dito non disegna? È un bug?»
@@ -2027,8 +2027,14 @@ solo. Risposta, parola per parola:
   dell'utente, lasciati com'erano): la mano accanto a Ripeti, blu; un dito
   → disegna; S Pen (simulata) e subito dopo un dito → la linea del dito non
   c'è; un dito un secondo dopo → disegna. Le tre linee di prova tolte con
-  Annulla (restano i 7 tratti dell'utente). **Da provare a mano**: lo
-  scorrimento con due dita e la penna sospesa, che adb non sa simulare
+  Annulla (restano i 7 tratti dell'utente). **Lo scorrimento con due dita
+  l'ha provato l'utente il 26/09/2026: "funziona"**. Da provare a mano
+  resta la penna sospesa col palmo appoggiato
+- Notato: la S Pen simulata da adb aveva lasciato accesa l'icona mobile
+  della S Pen di Samsung, come se la penna fosse fuori dal foro. L'utente
+  l'ha estratta e rimessa, e l'icona è sparita. Da qui in poi le prove di
+  disegno si fanno col dito, e quello che vuole la penna vera lo prova
+  l'utente
 
 **25/09/2026 — il colore delle penne col selettore del pennello**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 126 test
