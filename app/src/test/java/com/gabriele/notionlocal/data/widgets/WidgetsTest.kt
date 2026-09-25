@@ -234,4 +234,19 @@ class WidgetsTest {
         assertEquals("1 h 30 m", durationLabel(90 * MINUTE_MS))
         assertEquals("45 s", durationLabel(45_000))
     }
+
+    @Test
+    fun onlyTheTimersAddedAfterTheFirstCanBeDeleted() {
+        val first = CountdownTimer()
+        val second = CountdownTimer().startedAt(0)
+        val third = CountdownTimer()
+        val widget = TimerWidget(timers = listOf(first, second, third))
+        // Il primo resta sempre.
+        assertEquals(widget, widget.withoutTimer(first.id))
+        // Dal secondo in poi si toglie, in qualunque stato (qui uno che corre).
+        assertEquals(listOf(first, third), widget.withoutTimer(second.id).timers)
+        assertEquals(listOf(first, second), widget.withoutTimer(third.id).timers)
+        // Un id che non c'è non cambia niente.
+        assertEquals(widget, widget.withoutTimer("nessuno"))
+    }
 }

@@ -105,6 +105,7 @@ object WidgetStrings {
     val resume get() = t("Resume", "Riprendi", "Fortsetzen", "Reprendre", "Reanudar", "继续", "계속", "再開")
     val hours get() = t("Hours", "Ore", "Stunden", "Heures", "Horas", "小时", "시간", "時間")
     val addTimer get() = t("Add timer", "Aggiungi timer", "Timer hinzufügen", "Ajouter un minuteur", "Añadir temporizador", "添加计时器", "타이머 추가", "タイマーを追加")
+    val deleteTimer get() = t("Delete timer", "Elimina timer", "Timer löschen", "Supprimer le minuteur", "Eliminar temporizador", "删除计时器", "타이머 삭제", "タイマーを削除")
     val resetTimer get() = t("Reset timer", "Azzera il timer", "Timer zurücksetzen", "Réinitialiser le minuteur", "Reiniciar temporizador", "重置计时器", "타이머 초기화", "タイマーをリセット")
     val timerEndsAt get() = t("Ends at", "Finisce alle", "Endet um", "Se termine à", "Termina a las", "结束于", "종료 시각", "終了時刻")
 }

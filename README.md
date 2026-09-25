@@ -567,7 +567,9 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   di anno, mese, settimana, giorno e date proprie, contatore, pomodoro
   con sessione e pausa (e dal 25/09/2026 il suo suono, scelto fra le
   suonerie del telefono), e dal 25/09/2026 **cronometro** coi giri e
-  **timer** (anche più d'uno insieme), come quelli dell'orologio Samsung.
+  **timer** (anche più d'uno insieme), come quelli dell'orologio Samsung;
+  i timer aggiunti col "+", dal secondo in poi, si eliminano col cestino
+  in alto a destra, il primo resta sempre.
   Una freccetta nasconde tutta la sezione, e la scelta resta
 - **Database dentro le pagine**: creandone uno dal menu "+" compare
   nella pagina e si modifica lì; l'icona con le frecce lo apre a
@@ -1967,6 +1969,34 @@ Le voci nate nelle sessioni cloud stanno qui in cima, la più recente
 per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
+
+**25/09/2026 — il cestino per i timer aggiunti** *(Claude Code sul PC;
+verificato sul telefono lo stesso giorno; 95 test passati; commit solo in
+locale)*
+
+Richiesta dell'utente, parola per parola:
+> «Quando metto un nuovo timer con il +, sia quando finisce sia quando lo
+> resetta rimane lì fermo. Metti un'opzione che mi consente di rimuovere
+> ogni timer aggiuntivo rispetto al primo. Fai sì che il sistema riconosca
+> quando c'è un secondo timer attivato, e dal secondo timer in poi dammi
+> la possibilità di eliminare i successivi al primo»
+
+- **[Nuova funzionalità]** **Il cestino dei timer aggiunti.** Nel widget
+  Timer, dalla seconda pagina in poi, in alto a destra c'è un **cestino**
+  che elimina quel timer, in qualunque stato: sulle rotelle, in corsa, in
+  pausa, finito. Sulla prima pagina non c'è: **il primo timer non si
+  elimina mai**, e la regola sta anche nel salvataggio
+  (`TimerWidget.withoutTimer`), non solo nella schermata. Se il timer
+  eliminato correva, la sua sveglia se ne va con lui. Test nuovo
+  `WidgetsTest.onlyTheTimersAddedAfterTheFirstCanBeDeleted`
+- **[Rimosso]** Il **"Cancel"** sulle rotelle, che c'era con più di un
+  timer: eliminava il timer, ma non si capiva — e valeva anche per il
+  primo. Ora sulle rotelle c'è solo Start, e per eliminare il cestino
+- Verificato sul telefono, coi due timer dell'utente (10:02 e 14:00, sulle
+  rotelle): sulla prima pagina solo Start, sulla seconda il cestino; fatto
+  partire il secondo, aggiunto un terzo col "+", fatto partire (9:58, con
+  cestino, ↻ e +) ed eliminato col cestino → due timer; il secondo
+  riportato alle rotelle con ↻ — i due timer dell'utente sono com'erano
 
 **25/09/2026 — quattro bug, il link delle immagini tolto, la pagina vuota**
 *(Claude Code sul PC; tutto verificato sul telefono lo stesso giorno; 94

@@ -284,6 +284,14 @@ fun CountdownTimer.resumedAt(now: Long): CountdownTimer =
     if (running || finished || !started) this else copy(running = true, endsAt = now + remainingMs)
 
 /** Di nuovo alle rotelle, col tempo che c'era. */
+/**
+ * Il widget senza un timer. **Il primo non si toglie mai**, e con lui il
+ * widget resta sempre con almeno un timer: si eliminano solo quelli
+ * aggiunti col "+", dal secondo in poi (chiesto dall'utente il 25/09/2026).
+ */
+fun TimerWidget.withoutTimer(timerId: String): TimerWidget =
+    if (timers.firstOrNull()?.id == timerId) this else copy(timers = timers.filterNot { it.id == timerId })
+
 fun CountdownTimer.backToSetup(): CountdownTimer =
     copy(started = false, running = false, finished = false, remainingMs = durationMs, endsAt = null)
 

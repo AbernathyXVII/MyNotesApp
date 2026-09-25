@@ -220,10 +220,12 @@ object WidgetStore {
     /** Un timer in più, da impostare, in fondo: il "+" in alto a destra. */
     fun timerAdd(widgetId: String) = updateWidget<TimerWidget>(widgetId) { it.copy(timers = it.timers + CountdownTimer()) }
 
-    /** Toglie un timer; l'ultimo rimasto non si toglie (resta il widget, con le rotelle). */
-    fun timerRemove(widgetId: String, timerId: String) = updateWidget<TimerWidget>(widgetId) { w ->
-        if (w.timers.size <= 1) w else w.copy(timers = w.timers.filterNot { it.id == timerId })
-    }
+    /**
+     * Toglie un timer aggiunto col "+" (il cestino in alto a destra, dal
+     * secondo timer in poi); il primo resta sempre. Se stava correndo, la
+     * sua sveglia se ne va con lui: `update` le ricalcola.
+     */
+    fun timerRemove(widgetId: String, timerId: String) = updateWidget<TimerWidget>(widgetId) { it.withoutTimer(timerId) }
 
     /**
      * Fa avanzare pomodori e timer arrivati alla fine. Suona se qualcosa è

@@ -23,6 +23,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.HorizontalDivider
@@ -64,7 +65,6 @@ import com.gabriele.notionlocal.data.widgets.lapRows
 import com.gabriele.notionlocal.data.widgets.stopwatchText
 import com.gabriele.notionlocal.data.widgets.wheelDurationMs
 import com.gabriele.notionlocal.data.widgets.wheelValues
-import com.gabriele.notionlocal.ui.i18n.Strings
 import com.gabriele.notionlocal.ui.i18n.WidgetStrings
 import com.gabriele.notionlocal.ui.theme.NotionGray400
 import com.gabriele.notionlocal.ui.theme.NotionWhite
@@ -193,7 +193,14 @@ private fun LapLine(a: String, b: String, c: String, color: Color, size: TextUni
  * orizzontale coi pallini sotto. In alto a destra, quando il timer della
  * pagina è partito, **↻** lo riporta alle rotelle e **+** ne aggiunge un
  * altro, che parte insieme a quelli che corrono già: la pagina nuova si
- * apre da sola, con Cancel e Start come l'"Add timer" di Samsung.
+ * apre da sola, sulle rotelle.
+ *
+ * **Dal secondo timer in poi c'è anche il cestino**, in qualunque stato
+ * (rotelle, in corsa, in pausa, finito): elimina quel timer. Il primo non si
+ * elimina mai. Chiesto dall'utente il 25/09/2026: finito o riportato alle
+ * rotelle, un timer aggiunto restava lì e non c'era modo di toglierlo
+ * (c'era solo un "Cancel" sulle rotelle, che non si capiva che eliminasse —
+ * e valeva anche per il primo).
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -205,6 +212,7 @@ internal fun TimerView(widget: TimerWidget, active: Boolean) {
         knownCount = widget.timers.size
     }
     val current = widget.timers.getOrNull(pagerState.currentPage)
+    val isExtra = current != null && pagerState.currentPage >= 1
 
     Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         // Sempre alta uguale, anche senza icone: il quadrante non salta
@@ -214,6 +222,9 @@ internal fun TimerView(widget: TimerWidget, active: Boolean) {
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            if (isExtra && current != null) {
+                TopIcon(Icons.Filled.Delete, WidgetStrings.deleteTimer) { WidgetStore.timerRemove(widget.id, current.id) }
+            }
             if (current?.started == true) {
                 TopIcon(Icons.Filled.Refresh, WidgetStrings.resetTimer) { WidgetStore.timerReset(widget.id, current.id) }
                 TopIcon(Icons.Filled.Add, WidgetStrings.addTimer) { WidgetStore.timerAdd(widget.id) }
@@ -229,7 +240,7 @@ internal fun TimerView(widget: TimerWidget, active: Boolean) {
             if (timer.started) {
                 RunningTimerPage(widget.id, timer, active)
             } else {
-                TimerSetupPage(widget.id, timer, canCancel = widget.timers.size > 1)
+                TimerSetupPage(widget.id, timer)
             }
         }
         if (widget.timers.size > 1) {
@@ -248,9 +259,9 @@ internal fun TimerView(widget: TimerWidget, active: Boolean) {
     }
 }
 
-/** Le tre rotelle e Start. Con più timer, anche Cancel: toglie questo. */
+/** Le tre rotelle e Start. (Per togliere un timer aggiunto c'è il cestino in alto.) */
 @Composable
-private fun TimerSetupPage(widgetId: String, timer: CountdownTimer, canCancel: Boolean) {
+private fun TimerSetupPage(widgetId: String, timer: CountdownTimer) {
     val (h, m, s) = wheelValues(timer.durationMs)
     fun set(hours: Int, minutes: Int, seconds: Int) =
         WidgetStore.timerSetDuration(widgetId, timer.id, wheelDurationMs(hours, minutes, seconds))
@@ -273,7 +284,6 @@ private fun TimerSetupPage(widgetId: String, timer: CountdownTimer, canCancel: B
         // con le rotelle.
         Spacer(modifier = Modifier.height(12.dp))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            if (canCancel) ActionCircle(Strings.cancel, GrayButton) { WidgetStore.timerRemove(widgetId, timer.id) }
             ActionCircle(WidgetStrings.start, SamsungOrange, enabled = timer.durationMs > 0) {
                 WidgetStore.timerStart(widgetId, timer.id)
             }
