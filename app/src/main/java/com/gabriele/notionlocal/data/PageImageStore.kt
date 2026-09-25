@@ -168,6 +168,11 @@ class PageImageStore(context: Context) {
         }.getOrDefault(bitmap)
     }
 
+    /** Tutte le immagini delle pagine, via: per "Elimina tutto il contenuto" (vedi `AppCleanup`). */
+    fun deleteAll() {
+        directory.listFiles()?.forEach { it.delete() }
+    }
+
     /** Decodifica i soli contorni: se non sono quelli di un'immagine, non lo è. */
     private fun isImage(file: File): Boolean {
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }

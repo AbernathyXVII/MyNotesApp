@@ -1995,6 +1995,48 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**26/09/2026 — svuotare la cache, cancellare tutto il contenuto**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno, tranne la
+cancellazione vera, vedi in fondo; 133 test passati; commit solo in
+locale)*
+
+L'utente, parola per parola:
+> «Ho provato la Color cell sulla galleria, funziona.
+>
+> Altra feature: dammi la possibilità, mettendo due voci in Settings, sotto
+> Time Zones, che mi consentono di cancellare tutta la cache dell'app e
+> tutto il contenuto»
+
+- **[Nuova funzionalità]** In Settings, **sotto "Time zone"** e separate da
+  una riga, due voci:
+  - **"Clear cache"**, con accanto quanto occupa: toglie i soli file
+    temporanei, che l'app rifà quando servono. Chiede conferma, poi dice
+    "Cache cleared". Pagine, database, disegni e immagini non si toccano
+  - **"Delete all content"** ("Pagine, database, disegni, immagini e
+    cestino"): cancella ogni pagina, database, riga, disegno, la
+    cronologia delle modifiche, il cestino e le immagini delle pagine.
+    Restano le impostazioni e i widget della barra. **Non si può
+    annullare**, quindi il pulsante rosso "Delete everything" si accende
+    solo dopo aver **scritto la parola** che la finestra chiede ("DELETE"
+    in inglese, "ELIMINA" in italiano). Fatto, My Space rinasce vuota e
+    **l'app riparte da capo**: le schermate aperte avevano ancora in mano
+    il contenuto di prima, e un loro Annulla l'avrebbe rimesso
+- **[Progetto]** `AppCleanup`: la cache è `cacheDir` (e quella esterna);
+  il contenuto si cancella con `clearAllTables()` di Room, poi la pagina
+  principale si ricrea subito (il resto dell'app dà per scontato che ci
+  sia), si svuota la cartella delle immagini (`PageImageStore.deleteAll`)
+  e si rimette la sveglia delle notifiche. Test `AppCleanupTest`, con
+  Robolectric, su un database e dei file di prova
+- Verificato sul telefono: le due voci sotto "Time zone"; "Clear cache" (la
+  cache era già vuota, 0 B) → conferma → "Cache cleared". "Delete all
+  content" → la finestra con l'avviso e la parola da scrivere, "Delete
+  everything" spento finché la parola non c'è → annullata: le 9 pagine
+  dell'utente ci sono tutte. **La cancellazione vera non è stata fatta sul
+  telefono** (avrebbe cancellato le note dell'utente): la prova il test
+- Notato: in un primo tentativo di arrivare alle impostazioni il menu
+  laterale non si era aperto, e un tocco è finito sull'icona delle
+  impostazioni del database a galleria di My Space; nessuna scelta toccata
+
 **26/09/2026 — la proprietà "Color cell"**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno, tranne le
 targhette della bacheca e della galleria; 131 test passati; commit solo in

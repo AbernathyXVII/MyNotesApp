@@ -1,5 +1,25 @@
 package com.gabriele.notionlocal.ui.screen
 
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import android.text.format.Formatter
+import android.widget.Toast
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.filled.CleaningServices
+import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import com.gabriele.notionlocal.MainActivity
+import com.gabriele.notionlocal.data.AppCleanup
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import android.content.Intent
 import android.media.RingtoneManager
 import android.net.Uri
@@ -62,7 +82,7 @@ import java.time.ZoneId
 import java.time.format.TextStyle
 
 /** Quale finestra di scelta è aperta. */
-private enum class SettingsDialog { THEME, SOUND, MUTE_FOR, ANIMATIONS, NUMBER, DATE, LANGUAGE, TIME_ZONE }
+private enum class SettingsDialog { THEME, SOUND, MUTE_FOR, ANIMATIONS, NUMBER, DATE, LANGUAGE, TIME_ZONE, CLEAR_CACHE, DELETE_ALL }
 
 /**
  * Le impostazioni. Ogni scelta si salva appena la si fa e vale subito: il
@@ -76,6 +96,11 @@ private enum class SettingsDialog { THEME, SOUND, MUTE_FOR, ANIMATIONS, NUMBER, 
 @Composable
 fun SettingsScreen(onBack: () -> Unit) {
     var dialog by remember { mutableStateOf<SettingsDialog?>(null) }
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    // Quanto occupa la cache, contato fuori dal disegno: sono file su disco.
+    var cacheBytes by remember { mutableStateOf(0L) }
+    LaunchedEffect(Unit) { cacheBytes = withContext(Dispatchers.IO) { AppCleanup.cacheBytes(context) } }
 
     Scaffold(
         topBar = { WorkspaceTopBar(title = Strings.settings, onBack = onBack) },
@@ -157,6 +182,23 @@ fun SettingsScreen(onBack: () -> Unit) {
                 value = zoneLabel(AppSettings.timeZoneId),
                 onClick = { dialog = SettingsDialog.TIME_ZONE }
             )
+
+            // **Sotto il fuso orario, come ha chiesto l'utente** (26/09/2026):
+            // svuotare la cache e cancellare tutto il contenuto. Separate
+            // dal resto da una riga: non sono scelte, sono azioni.
+            HorizontalDivider(color = NotionGray900, modifier = Modifier.padding(vertical = 12.dp))
+            SettingsItem(
+                Strings.clearCache,
+                icon = Icons.Filled.CleaningServices,
+                value = Formatter.formatShortFileSize(context, cacheBytes),
+                onClick = { dialog = SettingsDialog.CLEAR_CACHE }
+            )
+            SettingsItem(
+                Strings.deleteAllContent,
+                icon = Icons.Filled.DeleteForever,
+                value = Strings.deleteAllContentNote,
+                onClick = { dialog = SettingsDialog.DELETE_ALL }
+            )
         }
     }
 
@@ -201,11 +243,104 @@ fun SettingsScreen(onBack: () -> Unit) {
             onDismiss = { dialog = null }
         )
         SettingsDialog.TIME_ZONE -> TimeZoneDialog(onDismiss = { dialog = null })
+        SettingsDialog.CLEAR_CACHE -> AlertDialog(
+            onDismissRequest = { dialog = null },
+            title = { Text(Strings.clearCacheTitle) },
+            text = { Text(Strings.clearCacheText) },
+            confirmButton = {
+                TextButton(onClick = {
+                    dialog = null
+                    scope.launch {
+                        AppCleanup.clearCache(context)
+                        cacheBytes = AppCleanup.cacheBytes(context)
+                        Toast.makeText(context, Strings.cacheCleared, Toast.LENGTH_SHORT).show()
+                    }
+                }) { Text(Strings.clear) }
+            },
+            dismissButton = { TextButton(onClick = { dialog = null }) { Text(Strings.cancel) } }
+        )
+        SettingsDialog.DELETE_ALL -> DeleteAllDialog(
+            onDismiss = { dialog = null },
+            onConfirm = {
+                scope.launch {
+                    AppCleanup.deleteAllContent(context)
+                    restartApp(context)
+                }
+            }
+        )
         null -> Unit
     }
 }
 
 private fun today(): LocalDate = LocalDate.now(AppSettings.zoneId)
+
+/**
+ * **"Elimina tutto il contenuto"**: una volta fatto non si torna indietro,
+ * quindi il pulsante rosso si accende solo dopo aver **scritto la parola**
+ * ("ELIMINA" in italiano). Un tocco sbagliato non deve bastare.
+ */
+@Composable
+private fun DeleteAllDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
+    var typed by remember { mutableStateOf("") }
+    var working by remember { mutableStateOf(false) }
+    val word = Strings.deleteAllWord
+    val armed = typed.trim().equals(word, ignoreCase = true) && !working
+    AlertDialog(
+        onDismissRequest = { if (!working) onDismiss() },
+        icon = { Icon(Icons.Filled.DeleteForever, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+        title = { Text(Strings.deleteAllTitle) },
+        text = {
+            Column {
+                Text(Strings.deleteAllText)
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(Strings.typeToConfirm(word), color = NotionGray400, style = MaterialTheme.typography.bodyMedium)
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = typed,
+                    onValueChange = { typed = it },
+                    singleLine = true,
+                    enabled = !working,
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    working = true
+                    onConfirm()
+                },
+                enabled = armed
+            ) {
+                Text(
+                    Strings.deleteEverything,
+                    color = if (armed) MaterialTheme.colorScheme.error else NotionGray400
+                )
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss, enabled = !working) { Text(Strings.cancel) } }
+    )
+}
+
+/**
+ * Fa ripartire l'app da capo, su una My Space vuota. Le schermate aperte
+ * hanno ancora in mano il contenuto di prima — un Annulla rimetterebbe i
+ * blocchi cancellati — e con l'attività chiusa se ne vanno anche loro.
+ */
+private fun restartApp(context: Context) {
+    val activity = context.findActivity() ?: return
+    val intent = Intent(activity, MainActivity::class.java)
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+    activity.startActivity(intent)
+    activity.finish()
+}
+
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
 
 private fun themeLabel(mode: ThemeMode) = when (mode) {
     ThemeMode.DARK -> Strings.themeDark

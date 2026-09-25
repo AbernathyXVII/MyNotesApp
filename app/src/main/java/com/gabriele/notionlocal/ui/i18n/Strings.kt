@@ -401,5 +401,57 @@ object Strings {
         "アプリの表示のみを翻訳し、あなたが書いた内容は翻訳しません。"
     )
     val timeZone get() = t("Time zone", "Fuso orario", "Zeitzone", "Fuseau horaire", "Zona horaria", "时区", "시간대", "タイムゾーン")
+
+    // --- Svuotare la cache e cancellare tutto (dal 26/09/2026) ---
+
+    val clearCache get() = t("Clear cache", "Svuota la cache", "Cache leeren", "Vider le cache", "Borrar la caché", "清除缓存", "캐시 지우기", "キャッシュを消去")
+    val clearCacheTitle get() = t("Clear the cache?", "Svuotare la cache?", "Cache leeren?", "Vider le cache ?", "¿Borrar la caché?", "清除缓存？", "캐시를 지울까요?", "キャッシュを消去しますか？")
+    val clearCacheText get() = t(
+        "Only temporary files that the app makes again when it needs them. Pages, databases, drawings and images are not touched.",
+        "Solo i file temporanei, che l'app rifà quando le servono. Pagine, database, disegni e immagini non si toccano.",
+        "Nur temporäre Dateien, die die App bei Bedarf neu erstellt. Seiten, Datenbanken, Zeichnungen und Bilder bleiben unberührt.",
+        "Uniquement les fichiers temporaires que l'app recrée quand elle en a besoin. Les pages, bases de données, dessins et images ne sont pas touchés.",
+        "Solo los archivos temporales, que la app vuelve a crear cuando los necesita. Las páginas, bases de datos, dibujos e imágenes no se tocan.",
+        "只清除临时文件，应用需要时会重新生成。页面、数据库、绘图和图片不受影响。",
+        "앱이 필요할 때 다시 만드는 임시 파일만 지웁니다. 페이지, 데이터베이스, 그림, 이미지는 그대로입니다.",
+        "アプリが必要に応じて作り直す一時ファイルだけを消去します。ページ、データベース、描画、画像はそのままです。"
+    )
+    val clear get() = t("Clear", "Svuota", "Leeren", "Vider", "Borrar", "清除", "지우기", "消去")
+    val cacheCleared get() = t("Cache cleared", "Cache svuotata", "Cache geleert", "Cache vidé", "Caché borrada", "缓存已清除", "캐시를 지웠습니다", "キャッシュを消去しました")
+    val deleteAllContent get() = t("Delete all content", "Elimina tutto il contenuto", "Alle Inhalte löschen", "Supprimer tout le contenu", "Eliminar todo el contenido", "删除所有内容", "모든 콘텐츠 삭제", "すべてのコンテンツを削除")
+    val deleteAllContentNote get() = t(
+        "Pages, databases, drawings, images and trash",
+        "Pagine, database, disegni, immagini e cestino",
+        "Seiten, Datenbanken, Zeichnungen, Bilder und Papierkorb",
+        "Pages, bases de données, dessins, images et corbeille",
+        "Páginas, bases de datos, dibujos, imágenes y papelera",
+        "页面、数据库、绘图、图片和回收站",
+        "페이지, 데이터베이스, 그림, 이미지, 휴지통",
+        "ページ、データベース、描画、画像、ゴミ箱"
+    )
+    val deleteAllTitle get() = t("Delete all content?", "Eliminare tutto il contenuto?", "Alle Inhalte löschen?", "Supprimer tout le contenu ?", "¿Eliminar todo el contenido?", "删除所有内容？", "모든 콘텐츠를 삭제할까요?", "すべてのコンテンツを削除しますか？")
+    val deleteAllText get() = t(
+        "Every page, database, drawing and image will be deleted, trash included, and My Space will be empty. It can't be undone. Settings and the sidebar widgets stay as they are.",
+        "Si cancellano tutte le pagine, i database, i disegni e le immagini, cestino compreso, e My Space resta vuota. Non si può annullare. Le impostazioni e i widget della barra restano come sono.",
+        "Alle Seiten, Datenbanken, Zeichnungen und Bilder werden gelöscht, auch der Papierkorb, und My Space bleibt leer. Das lässt sich nicht rückgängig machen. Einstellungen und Widgets der Seitenleiste bleiben erhalten.",
+        "Toutes les pages, bases de données, dessins et images seront supprimés, corbeille comprise, et My Space sera vide. C'est irréversible. Les réglages et les widgets de la barre latérale restent tels quels.",
+        "Se eliminarán todas las páginas, bases de datos, dibujos e imágenes, incluida la papelera, y My Space quedará vacío. No se puede deshacer. Los ajustes y los widgets de la barra lateral se quedan como están.",
+        "所有页面、数据库、绘图和图片都将被删除（包括回收站），My Space 将变为空白。此操作无法撤销。设置和侧边栏小组件保持不变。",
+        "모든 페이지, 데이터베이스, 그림, 이미지가 휴지통까지 삭제되고 My Space는 비게 됩니다. 되돌릴 수 없습니다. 설정과 사이드바 위젯은 그대로 남습니다.",
+        "すべてのページ、データベース、描画、画像がゴミ箱も含めて削除され、My Space は空になります。元に戻せません。設定とサイドバーのウィジェットはそのままです。"
+    )
+    /** La parola da scrivere per confermare: sbagliare dito non deve bastare a cancellare tutto. */
+    val deleteAllWord get() = t("DELETE", "ELIMINA", "LÖSCHEN", "SUPPRIMER", "ELIMINAR", "删除", "삭제", "削除")
+    fun typeToConfirm(word: String) = t(
+        "To confirm, type $word",
+        "Per confermare, scrivi $word",
+        "Zur Bestätigung $word eingeben",
+        "Pour confirmer, tapez $word",
+        "Para confirmar, escribe $word",
+        "输入 $word 以确认",
+        "확인하려면 $word 를 입력하세요",
+        "確認のため $word と入力してください"
+    )
+    val deleteEverything get() = t("Delete everything", "Elimina tutto", "Alles löschen", "Tout supprimer", "Eliminar todo", "全部删除", "모두 삭제", "すべて削除")
     val searchTimeZones get() = t("Search time zones", "Cerca un fuso orario", "Zeitzonen suchen", "Rechercher un fuseau", "Buscar zona horaria", "搜索时区", "시간대 검색", "タイムゾーンを検索")
 }
