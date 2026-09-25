@@ -1,14 +1,9 @@
 package com.gabriele.notionlocal.ui.theme
 
-import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.googlefonts.GoogleFont
-import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.isSpecified
 import com.gabriele.notionlocal.R
 import com.gabriele.notionlocal.data.entity.PageFont
 import androidx.compose.ui.text.font.Font as ResourceFont
@@ -42,7 +37,7 @@ import androidx.compose.ui.text.googlefonts.Font as DownloadableFont
  * esiste: su sua scelta è stato tolto.
  */
 
-/** Il corpo del testo quando la pagina non ne ha scelto uno: quello che c'era prima dei font. */
+/** Il corpo del testo quando non se ne è scelto uno: quello di sempre. */
 const val DEFAULT_PAGE_FONT_SIZE = 16
 const val MIN_PAGE_FONT_SIZE = 5
 const val MAX_PAGE_FONT_SIZE = 72
@@ -182,43 +177,3 @@ fun PageFont.fontFamily(): FontFamily = families.getOrPut(this) {
         PageFont.KAISEI -> downloadable(lookalike)
     }
 }
-
-/**
- * Il carattere del testo di una pagina: il font scelto (null = quello di
- * sistema, come prima) e il corpo. Passa da un `CompositionLocal` perché
- * il testo di una pagina si disegna in una dozzina di posti diversi —
- * il campo unito, le isole, le celle delle tabelle, i toggle — in fondo
- * a catene di composable che non hanno altro motivo per saperlo.
- *
- * **Il corpo scala tutto in proporzione**, non solo le lettere:
- * l'altezza delle righe e i segni degli elenchi crescono insieme al
- * testo. A 16, il corpo di sempre, ogni misura resta esattamente quella
- * di prima; a 32 tutto è grande il doppio. (Fino al 24/09/2026 c'erano
- * anche i titoli H1-H3, che scalavano allo stesso modo: tolti su
- * richiesta dell'utente, vedi `BlockType`.)
- */
-@Immutable
-data class PageTypography(
-    val fontFamily: FontFamily? = null,
-    val size: Int = DEFAULT_PAGE_FONT_SIZE
-) {
-    val scale: Float get() = size / DEFAULT_PAGE_FONT_SIZE.toFloat()
-
-    /** Una misura di testo portata al corpo scelto. */
-    fun scaled(unit: TextUnit): TextUnit = if (unit.isSpecified) unit * scale else unit
-
-    /** Uno stile di testo della pagina col font e il corpo scelti. */
-    fun apply(style: TextStyle): TextStyle = style.copy(
-        fontFamily = fontFamily ?: style.fontFamily,
-        fontSize = scaled(style.fontSize),
-        lineHeight = scaled(style.lineHeight)
-    )
-
-    /**
-     * Solo il font, non il corpo: per il titolo della pagina, che ha già
-     * una misura sua e a 72 diventerebbe più largo dello schermo.
-     */
-    fun fontOnly(style: TextStyle): TextStyle = style.copy(fontFamily = fontFamily ?: style.fontFamily)
-}
-
-val LocalPageTypography = staticCompositionLocalOf { PageTypography() }

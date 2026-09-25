@@ -7,7 +7,6 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.gabriele.notionlocal.data.entity.PageEntity
-import com.gabriele.notionlocal.data.entity.PageFont
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -103,14 +102,6 @@ interface PageDao {
 
     @Query("UPDATE pages SET isViewLocked = :locked WHERE id = :pageId")
     suspend fun setViewLocked(pageId: String, locked: Boolean)
-
-    /** Il font del testo della pagina, o null per quello di sistema. Una colonna sola, come sopra. */
-    @Query("UPDATE pages SET pageFont = :font WHERE id = :pageId")
-    suspend fun setPageFont(pageId: String, font: PageFont?)
-
-    /** Il corpo del testo della pagina, o null per quello di partenza (16). */
-    @Query("UPDATE pages SET pageFontSize = :size WHERE id = :pageId")
-    suspend fun setPageFontSize(pageId: String, size: Int?)
 
     /**
      * Solo l'inquadratura della copertina nelle schede della galleria,

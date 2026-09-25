@@ -22,8 +22,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Animation
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.FontDownload
-import androidx.compose.material.icons.filled.FormatSize
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Numbers
@@ -71,7 +69,9 @@ private enum class SettingsDialog { THEME, SOUND, MUTE_FOR, ANIMATIONS, NUMBER, 
  * tema cambia sotto le dita, la lingua ridisegna le voci, le date si
  * riscrivono nel formato nuovo ovunque compaiano.
  *
- * Carattere e dimensione del carattere ci sono ma sono grigie: arriveranno.
+ * Carattere e dimensione del carattere non ci sono più (tolti il
+ * 25/09/2026, su richiesta): si scelgono sul testo selezionato, nella
+ * barra Aa della pagina.
  */
 @Composable
 fun SettingsScreen(onBack: () -> Unit) {
@@ -88,8 +88,6 @@ fun SettingsScreen(onBack: () -> Unit) {
                 .verticalScroll(rememberScrollState())
                 .padding(bottom = 24.dp)
         ) {
-            SettingsItem(Strings.font, icon = Icons.Filled.FontDownload, enabled = false)
-            SettingsItem(Strings.fontSize, icon = Icons.Filled.FormatSize, enabled = false)
             SettingsItem(
                 Strings.theme,
                 icon = Icons.Filled.DarkMode,

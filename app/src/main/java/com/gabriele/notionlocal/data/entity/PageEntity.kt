@@ -253,9 +253,12 @@ data class PageEntity(
     // è spiegato il perché della scelta.
     var galleryCardPreview: GalleryCardPreview? = null,
     var galleryCardSize: GalleryCardSize? = null,
-    // Il font e il corpo del testo della pagina, scelti dalla barra Aa.
-    // Valgono per **tutta la pagina**, non per un pezzo di testo. null
-    // vale "come prima": il font di sistema e il corpo 16.
+    // Il font e il corpo del testo **di tutta la pagina**, come si
+    // sceglievano dalla barra Aa fino al 25/09/2026. **Non si usano più**:
+    // ora font e corpo stanno sul testo selezionato (`RichTextSpan.font`,
+    // `size`), e la migrazione 30→31 ha spostato lì quelli delle pagine che
+    // li avevano, lasciando queste due colonne vuote. Restano solo per non
+    // rifare la tabella delle pagine.
     var pageFont: PageFont? = null,
     var pageFontSize: Int? = null,
     // In base a quale proprietà sono ordinate le righe, e in che verso.

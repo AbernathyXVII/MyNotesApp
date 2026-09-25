@@ -15,7 +15,10 @@ import com.gabriele.notionlocal.data.entity.applyTextEdit
 import com.gabriele.notionlocal.data.entity.joinLines
 import com.gabriele.notionlocal.data.entity.plainText
 import com.gabriele.notionlocal.data.entity.setColorInRange
+import com.gabriele.notionlocal.data.entity.setFontInRange
 import com.gabriele.notionlocal.data.entity.setFormatInRange
+import com.gabriele.notionlocal.data.entity.setSizeInRange
+import com.gabriele.notionlocal.data.entity.spanAt
 import com.gabriele.notionlocal.data.entity.splitLines
 import com.gabriele.notionlocal.data.entity.toggleFormatInRange
 import com.gabriele.notionlocal.data.entity.withSubscript
@@ -333,10 +336,17 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
 
     /** Posizioni **nel testo dei blocchi**, senza l'a-capo nascosto del campo. */
     fun reportSelection(blockIds: List<String>, start: Int, end: Int) {
-        liveSelection = SelectionSnapshot(blockIds, start, end)
+        val selection = SelectionSnapshot(blockIds, start, end)
+        liveSelection = selection
+        _selectionTypography.value = typographyAt(selection)
     }
 
-    fun captureSelectionForColor() {
+    /**
+     * La selezione di adesso, messa da parte: prima di aprire il pannello
+     * del colore o la finestrella del corpo del testo, che portano via il
+     * fuoco (e con lui la selezione). Anche il menu dei font la usa.
+     */
+    fun captureSelection() {
         capturedSelection = liveSelection
     }
 
@@ -347,6 +357,82 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
     fun applyCapturedColor(background: Boolean, hex: String?) {
         val selection = capturedSelection ?: return
         applyColorToRun(selection.blockIds, selection.start, selection.end, background, hex)
+    }
+
+    // --- Font e corpo del testo selezionato (barra Aa) ---
+    //
+    // Dal 25/09/2026 valgono **per il testo selezionato**, come il colore,
+    // e stanno negli span (`RichTextSpan.font`, `size`); prima valevano per
+    // tutta la pagina. Le due caselle della barra mostrano quelli del punto
+    // in cui si è: il primo carattere della selezione, o quello subito
+    // prima del cursore — che è anche quello che il testo scritto lì
+    // eredita.
+
+    data class SelectionTypography(val font: PageFont?, val size: Int?)
+
+    private val _selectionTypography = MutableStateFlow(SelectionTypography(null, null))
+    val selectionTypography: StateFlow<SelectionTypography> = _selectionTypography
+
+    private fun typographyAt(selection: SelectionSnapshot): SelectionTypography {
+        val all = _blocks.value
+        val position = if (selection.end > selection.start) selection.start else selection.start - 1
+        var pos = 0
+        for (id in selection.blockIds) {
+            val block = all.find { it.id == id } ?: continue
+            val spans = spansOf(block)
+            val length = spans.plainText().length
+            if (position < pos + length || id == selection.blockIds.last()) {
+                val span = spanAt(spans, position - pos) ?: return SelectionTypography(null, null)
+                val font = span.font?.let { name -> runCatching { PageFont.valueOf(name) }.getOrNull() }
+                return SelectionTypography(font, span.size)
+            }
+            pos += length + 1 // +1 per l'a-capo che separa i blocchi
+        }
+        return SelectionTypography(null, null)
+    }
+
+    /** Il font sul testo messo da parte; falso se non c'era testo selezionato. */
+    fun applyFontToCapturedSelection(font: PageFont?): Boolean {
+        val selection = capturedSelection?.takeIf { it.start < it.end } ?: return false
+        transformRun(selection) { spans, from, to -> setFontInRange(spans, from, to, font?.name) }
+        _selectionTypography.value = _selectionTypography.value.copy(font = font)
+        return true
+    }
+
+    /** Il corpo sul testo messo da parte (5-72; 16 torna al normale); falso se non c'era testo selezionato. */
+    fun applySizeToCapturedSelection(size: Int): Boolean {
+        val selection = capturedSelection?.takeIf { it.start < it.end } ?: return false
+        val clamped = size.coerceIn(MIN_PAGE_FONT_SIZE, MAX_PAGE_FONT_SIZE)
+        transformRun(selection) { spans, from, to -> setSizeInRange(spans, from, to, clamped, DEFAULT_PAGE_FONT_SIZE) }
+        _selectionTypography.value = _selectionTypography.value.copy(size = clamped.takeIf { it != DEFAULT_PAGE_FONT_SIZE })
+        return true
+    }
+
+    /**
+     * Applica una modifica degli span a una selezione che può attraversare
+     * più blocchi, come `applyColorToRun`: ogni blocco riceve la sua parte.
+     */
+    private fun transformRun(
+        selection: SelectionSnapshot,
+        transform: (List<RichTextSpan>, Int, Int) -> List<RichTextSpan>
+    ) {
+        val all = _blocks.value
+        val runBlocks = selection.blockIds.mapNotNull { id -> all.find { it.id == id } }
+        if (runBlocks.isEmpty()) return
+        snapshotForStructuralChange()
+        var pos = 0
+        val updates = mutableListOf<BlockEntity>()
+        for (block in runBlocks) {
+            val text = plainTextOf(block)
+            val blockStart = pos
+            val blockEnd = pos + text.length
+            pos = blockEnd + 1
+            val overlapStart = maxOf(blockStart, selection.start) - blockStart
+            val overlapEnd = minOf(blockEnd, selection.end) - blockStart
+            if (overlapStart >= overlapEnd) continue
+            updates.add(block.copy(textJson = json.encodeToString(transform(spansOf(block), overlapStart, overlapEnd))))
+        }
+        viewModelScope.launch { updates.forEach { repository.saveBlock(it) } }
     }
 
     /**
@@ -787,33 +873,6 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
             repository.deletePermanently(current.id).forEach { imageStore.delete(it) }
             onDone()
         }
-    }
-
-    /**
-     * Il font del testo della pagina, dalla barra Aa (null = quello di
-     * sistema). Scrive solo quella colonna, come `toggleLocked`; il valore
-     * in mano alla UI cambia subito, così il testo si ridisegna senza
-     * aspettare il giro dal database.
-     */
-    fun setPageFont(font: PageFont?) {
-        val current = _page.value ?: return
-        if (current.pageFont == font) return
-        _page.value = current.copy(pageFont = font)
-        viewModelScope.launch { repository.setPageFont(current.id, font) }
-    }
-
-    /**
-     * Il corpo del testo della pagina, da 5 a 72. Il 16 di partenza si
-     * salva come null, cioè "come prima": una pagina rimessa a 16 torna
-     * uguale a una che non l'ha mai cambiato.
-     */
-    fun setPageFontSize(size: Int) {
-        val current = _page.value ?: return
-        val clamped = size.coerceIn(MIN_PAGE_FONT_SIZE, MAX_PAGE_FONT_SIZE)
-        val stored = clamped.takeIf { it != DEFAULT_PAGE_FONT_SIZE }
-        if (current.pageFontSize == stored) return
-        _page.value = current.copy(pageFontSize = stored)
-        viewModelScope.launch { repository.setPageFontSize(current.id, stored) }
     }
 
     /**

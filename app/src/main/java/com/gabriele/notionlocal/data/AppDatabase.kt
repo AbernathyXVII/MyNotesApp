@@ -17,7 +17,11 @@ import com.gabriele.notionlocal.data.entity.DatabaseColumnEntity
 import com.gabriele.notionlocal.data.entity.DatabaseRowEntity
 import com.gabriele.notionlocal.data.entity.PageEditEntity
 import com.gabriele.notionlocal.data.entity.PageEntity
+import com.gabriele.notionlocal.data.entity.RichTextSpan
 import com.gabriele.notionlocal.data.entity.TableCellEntity
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 /**
  * Il database SQLite locale dell'app. Questo è letteralmente "tutto
@@ -43,7 +47,7 @@ import com.gabriele.notionlocal.data.entity.TableCellEntity
         TableCellEntity::class,
         PageEditEntity::class
     ],
-    version = 30,
+    version = 31,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -429,6 +433,62 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /**
+         * **Font e corpo passano dalla pagina al testo** (25/09/2026,
+         * chiesto dall'utente: selezionare un pezzo di testo e cambiare il
+         * font solo di quello). Le pagine che avevano un font o un corpo
+         * "di pagina" li danno a ogni pezzo di testo dei loro blocchi che
+         * non ne ha già uno suo, così si vedono esattamente come prima;
+         * poi le due colonne della pagina si svuotano, e nessuno le scrive
+         * più. Le celle delle tabelle semplici sono testo senza
+         * formattazione: lì il font di pagina si perde, e tornano al font
+         * di sistema. Nessun cambio di forma alle tabelle.
+         *
+         * Il corpo 16 è quello di sempre, e nel testo si scrive come
+         * "nessun corpo" (`DEFAULT_SPAN_SIZE`).
+         */
+        private const val DEFAULT_SPAN_SIZE = 16
+
+        private val MIGRATION_30_31 = object : Migration(30, 31) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                val json = Json { ignoreUnknownKeys = true }
+                val pages = mutableListOf<Triple<String, String?, Int?>>()
+                db.query("SELECT id, pageFont, pageFontSize FROM pages WHERE pageFont IS NOT NULL OR pageFontSize IS NOT NULL")
+                    .use { c ->
+                        while (c.moveToNext()) {
+                            pages += Triple(
+                                c.getString(0),
+                                if (c.isNull(1)) null else c.getString(1),
+                                if (c.isNull(2)) null else c.getInt(2)
+                            )
+                        }
+                    }
+                for ((pageId, font, size) in pages) {
+                    val blocks = mutableListOf<Pair<String, String>>()
+                    db.query("SELECT id, textJson FROM blocks WHERE pageId = ?", arrayOf<Any?>(pageId)).use { c ->
+                        while (c.moveToNext()) blocks += c.getString(0) to c.getString(1)
+                    }
+                    for ((blockId, textJson) in blocks) {
+                        val spans = runCatching { json.decodeFromString<List<RichTextSpan>>(textJson) }.getOrNull() ?: continue
+                        val moved = spans.map { span ->
+                            if (span.text.isEmpty()) {
+                                span
+                            } else {
+                                span.copy(
+                                    font = span.font ?: font,
+                                    size = span.size ?: size?.takeIf { it != DEFAULT_SPAN_SIZE }
+                                )
+                            }
+                        }
+                        if (moved != spans) {
+                            db.execSQL("UPDATE blocks SET textJson = ? WHERE id = ?", arrayOf<Any?>(json.encodeToString(moved), blockId))
+                        }
+                    }
+                }
+                db.execSQL("UPDATE pages SET pageFont = NULL, pageFontSize = NULL")
+            }
+        }
+
+        /**
          * Solo per i test: chiude il database e lo dimentica, così il
          * `getInstance` dopo riapre il file da capo (e ne esegue le
          * migrazioni). Senza, il secondo test troverebbe il database del
@@ -471,7 +531,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_26_27,
                         MIGRATION_27_28,
                         MIGRATION_28_29,
-                        MIGRATION_29_30
+                        MIGRATION_29_30,
+                        MIGRATION_30_31
                     )
                     .build()
                 INSTANCE = instance

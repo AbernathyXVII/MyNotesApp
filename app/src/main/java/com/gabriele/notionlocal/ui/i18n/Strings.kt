@@ -345,8 +345,6 @@ object Strings {
 
     // --- Impostazioni ---
 
-    val font get() = t("Font", "Carattere", "Schriftart", "Police", "Fuente", "字体", "글꼴", "フォント")
-    val fontSize get() = t("Font size", "Dimensione del carattere", "Schriftgröße", "Taille de police", "Tamaño de fuente", "字号", "글꼴 크기", "文字サイズ")
     val theme get() = t("Theme", "Tema", "Design", "Thème", "Tema", "主题", "테마", "テーマ")
     val themeDark get() = t("Dark", "Scuro", "Dunkel", "Sombre", "Oscuro", "深色", "어둡게", "ダーク")
     val themeLight get() = t("Light", "Chiaro", "Hell", "Clair", "Claro", "浅色", "밝게", "ライト")

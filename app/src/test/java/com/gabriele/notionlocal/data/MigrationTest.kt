@@ -4,8 +4,10 @@ import android.app.Application
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import androidx.test.core.app.ApplicationProvider
-import com.gabriele.notionlocal.data.entity.PageFont
+import com.gabriele.notionlocal.data.entity.RichTextSpan
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -63,7 +65,7 @@ class MigrationTest {
         assertNull(page.sourceDatabaseId)
         assertNull(page.viewHiddenColumnIds)
         assertNull(page.cardCoverScale)
-        assertEquals(30, db.openHelper.readableDatabase.version)
+        assertEquals(31, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -73,10 +75,40 @@ class MigrationTest {
         val yahei = db.pageDao().getById("p1")!!
         assertEquals("Pagina in MS YaHei", yahei.title)
         assertNull(yahei.pageFont)
-        assertEquals(PageFont.SONGTI, db.pageDao().getById("p2")!!.pageFont)
+        // Il Songti resta fino alla 30; dalla 31 il font non è più della
+        // pagina ma del testo, e questa pagina di testo non ne ha.
+        assertNull(db.pageDao().getById("p2")!!.pageFont)
         assertNull(yahei.cardCoverScale)
         assertNull(yahei.cardCoverOffsetX)
         assertNull(yahei.cardCoverOffsetY)
-        assertEquals(30, db.openHelper.readableDatabase.version)
+        assertEquals(31, db.openHelper.readableDatabase.version)
+    }
+
+    @Test
+    fun from30ThePageFontMovesIntoItsText() = runBlocking<Unit> {
+        val db = AppDatabase.getInstance(databaseAtVersion(30))
+        val json = Json { ignoreUnknownKeys = true }
+        fun spans(blockId: String) = runBlocking {
+            json.decodeFromString<List<RichTextSpan>>(db.blockDao().getById(blockId)!!.textJson)
+        }
+
+        // La pagina non ha più font né corpo suoi...
+        val page = db.pageDao().getById("p1")!!
+        assertNull(page.pageFont)
+        assertNull(page.pageFontSize)
+        // ...li ha il suo testo, e si vede come prima. Il pezzo che aveva
+        // già un font suo lo tiene, e prende solo il corpo.
+        assertEquals(
+            listOf(
+                RichTextSpan(text = "Ciao ", font = "GARAMOND", size = 20),
+                RichTextSpan(text = "mondo", bold = true, font = "CONSOLAS", size = 20)
+            ),
+            spans("b1")
+        )
+        // Lo span vuoto del collegamento tiene solo il colore.
+        assertEquals(listOf(RichTextSpan(text = "", color = "#E03E3E")), spans("b2"))
+        // Una pagina senza font resta com'era.
+        assertEquals(listOf(RichTextSpan(text = "Normale")), spans("b3"))
+        assertEquals(31, db.openHelper.readableDatabase.version)
     }
 }

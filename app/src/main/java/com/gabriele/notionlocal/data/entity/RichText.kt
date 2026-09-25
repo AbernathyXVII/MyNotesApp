@@ -46,7 +46,19 @@ data class RichTextSpan(
      * `spoiler`, il testo salvato prima non ha la chiave e vale `false`.
      */
     val subscript: Boolean = false,
-    val superscript: Boolean = false
+    val superscript: Boolean = false,
+    /**
+     * **Font e corpo di questo pezzo di testo** (dal 25/09/2026), scelti
+     * dalla barra Aa sul testo selezionato, come in Word e OneNote. Il font
+     * è il nome di un `PageFont` ("GARAMOND"); un nome che l'app non
+     * conosce più si legge col font di sistema invece di far chiudere
+     * l'app. Il corpo è in punti, da 5 a 72. Null = quello di sempre (il
+     * font di sistema, 16). Prima c'erano un font e un corpo **per pagina
+     * intera**: l'utente voleva poterli cambiare pezzo per pezzo, e la
+     * migrazione 30→31 li ha spostati sul testo delle pagine che li usavano.
+     */
+    val font: String? = null,
+    val size: Int? = null
 )
 
 /** Accende o spegne il pedice; accenderlo spegne l'apice, perché un pezzo di testo non può stare sotto e sopra insieme. */
@@ -320,6 +332,57 @@ fun setColorInRange(
         }
     }
     return result.filter { it.text.isNotEmpty() }.merged()
+}
+
+/**
+ * Cambia qualcosa di ogni span nell'intervallo [start, end), spezzando gli
+ * span ai bordi della selezione come `setColorInRange`. È il pezzo comune
+ * a font e corpo, che come il colore si **impostano** e non si invertono.
+ */
+private fun transformRange(
+    spans: List<RichTextSpan>,
+    start: Int,
+    end: Int,
+    transform: (RichTextSpan) -> RichTextSpan
+): List<RichTextSpan> {
+    if (start >= end) return spans
+    val result = mutableListOf<RichTextSpan>()
+    var pos = 0
+    for (span in spans) {
+        val spanStart = pos
+        val spanEnd = pos + span.text.length
+        pos = spanEnd
+        if (spanEnd <= start || spanStart >= end) {
+            result.add(span)
+            continue
+        }
+        if (spanStart < start) result.add(span.copy(text = span.text.substring(0, start - spanStart)))
+        val innerStart = maxOf(spanStart, start)
+        val innerEnd = minOf(spanEnd, end)
+        result.add(transform(span.copy(text = span.text.substring(innerStart - spanStart, innerEnd - spanStart))))
+        if (spanEnd > end) result.add(span.copy(text = span.text.substring(end - spanStart)))
+    }
+    return result.filter { it.text.isNotEmpty() }.merged()
+}
+
+/** Il font di un intervallo; null lo riporta a quello di sistema. */
+fun setFontInRange(spans: List<RichTextSpan>, start: Int, end: Int, font: String?): List<RichTextSpan> =
+    transformRange(spans, start, end) { it.copy(font = font) }
+
+/** Il corpo di un intervallo, in punti; null (o 16, quello di sempre) lo riporta al normale. */
+fun setSizeInRange(spans: List<RichTextSpan>, start: Int, end: Int, size: Int?, defaultSize: Int): List<RichTextSpan> =
+    transformRange(spans, start, end) { it.copy(size = size?.takeIf { s -> s != defaultSize }) }
+
+/** Lo span che contiene il carattere in posizione `index`, o null fuori dal testo. */
+fun spanAt(spans: List<RichTextSpan>, index: Int): RichTextSpan? {
+    if (index < 0) return null
+    var pos = 0
+    for (span in spans) {
+        val spanEnd = pos + span.text.length
+        if (index < spanEnd) return span
+        pos = spanEnd
+    }
+    return null
 }
 
 /**

@@ -647,16 +647,22 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
 - **Titolo del database nascondibile** quando sta dentro una pagina,
   dalle impostazioni della vista. A schermo intero resta sempre visibile
 - **Ricerca full-text** tra titoli e contenuto dei blocchi
-- **Font e dimensione del testo per ogni pagina** *(sessione cloud del
-  24/09/2026, provati sul telefono il 24/09/2026)*: nella barra Aa, prima di B,
-  la voce del font (col nome in uso) e quella della dimensione (col
-  numero in uso), come su OneNote. Sedici font in tre gruppi —
-  occidentali, cinesi, giapponesi — che sono **sosia liberi** dei font
-  commerciali chiesti; dimensione da 5 a 72, di partenza 16, **scritta
-  a mano** in una finestrella. Valgono per tutta la pagina
+- **Font e dimensione del testo selezionato** *(sessione cloud del
+  24/09/2026 per tutta la pagina; **dal 25/09/2026 solo sul testo
+  selezionato**, provato sul telefono lo stesso giorno)*: nella barra Aa,
+  prima di B, la voce del font e quella della dimensione, come su
+  OneNote; mostrano quelli del testo dove sta il cursore. Si seleziona un
+  pezzo di testo e si sceglie: cambia **solo quel pezzo**, come il colore
+  o il grassetto, e un altro pezzo può avere un altro font. Senza niente
+  di selezionato dicono "Select some text first". Sedici font in tre
+  gruppi — occidentali, cinesi, giapponesi — che sono **sosia liberi**
+  dei font commerciali chiesti; dimensione da 5 a 72, di partenza 16,
+  **scritta a mano** in una finestrella. Nelle impostazioni **non** ci
+  sono più "Font" e "Font size" per tutto il Workspace (tolte il
+  25/09/2026, su richiesta)
 - **Niente titoli (Heading)** dal 24/09/2026: tolti dall'app su
-  richiesta dell'utente, ora che la dimensione del testo si sceglie per
-  pagina. Quelli che c'erano sono diventati testo normale
+  richiesta dell'utente, ora che la dimensione del testo si sceglie
+  dalla barra Aa. Quelli che c'erano sono diventati testo normale
 - **Conteggio del testo** *(sessione cloud del 24/09/2026, provato sul
   telefono il 24/09/2026)*: in fondo al menu dei tre puntini di una pagina c'è
   **"X words"**; toccandola si apre lì sotto l'elenco come nella
@@ -686,6 +692,18 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
 
 ## Limiti noti
 
+- **Un pezzo di testo più grande allunga tutte le righe del suo
+  gruppo**, non solo la sua (dal 25/09/2026, con la dimensione sul testo
+  selezionato). Le righe di testo scorrevole consecutive stanno in un
+  campo solo con **un'altezza di riga unica** — è quella che tiene i
+  segni degli elenchi tutti allo stesso passo — e per darla riga per
+  riga servirebbe uno `ParagraphStyle` per riga dentro la
+  trasformazione, la strada che ha già fatto smettere di disegnare il
+  campo e perdere del testo (vedi "Strade già tentate"). Così l'altezza
+  del gruppo si allunga quanto serve al pezzo più grande (`lineScaleFor`),
+  e torna com'era appena quel pezzo torna a 16. Un gruppo finisce dove
+  c'è un blocco che non è testo scorrevole (tabella, toggle, collegamento
+  a pagina, divisore…)
 - **Copiare con "Seleziona tutto" da un blocco di testo unito porta con
   sé un a-capo in più** in testa (il `RUN_LEAD`, vedi sopra). Toglierlo
   richiederebbe di intercettare copia/taglia
@@ -1936,6 +1954,73 @@ Le voci nate nelle sessioni cloud stanno qui in cima, la più recente
 per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
+
+**25/09/2026 — font e dimensione sul testo selezionato** *(Claude Code
+sul PC; verificato sul telefono lo stesso giorno; schema alla versione
+**31**; 89 test passati; commit solo in locale, **non** su GitHub finché
+l'utente non lo dice)*
+
+Richiesta dell'utente, parola per parola:
+> «In Settings, ti ho già detto in passato di mettermi Font e Font size.
+> Toglili: non mi va di farti scervellare solo per farti mettere font e
+> size diversi tra tutto il Workspace. Però ho notato una cosa:
+> selezionando una parte di un testo e cambiando font e size mi modifica
+> tutto quanto quello che c'è in una pagina. La mia idea era quella di
+> selezionare del testo e modificare il font di quel testo. Poi
+> selezionarne altro e modificare quel testo con un altro font. Puoi
+> farlo?»
+
+- **[Rimosso]** **"Font" e "Font size" nelle impostazioni.** Erano due
+  voci grigie, messe lì per un futuro font di tutto il Workspace: tolte,
+  con le loro scritte (`Strings.font`, `Strings.fontSize`)
+- **[Nuova funzionalità]** **Font e dimensione valgono solo per il testo
+  selezionato.** Prima le due voci della barra Aa cambiavano **tutta la
+  pagina**, qualunque cosa fosse selezionata (non era un bug: era fatta
+  così il 24/09, "per ogni pagina"). Ora si comportano come il colore:
+  si seleziona un pezzo di testo, si sceglie il font o si scrive la
+  dimensione, e cambia **solo quel pezzo**; si seleziona un altro pezzo
+  e gli si dà un altro font. Le due voci mostrano il font e la
+  dimensione del testo selezionato (o di quello subito prima del
+  cursore). Toccandole senza niente di selezionato compare **"Select some
+  text first"**. Il font e la dimensione stanno nel testo stesso, come
+  grassetto e colore (`RichTextSpan.font`, `RichTextSpan.size`;
+  `setFontInRange`, `setSizeInRange`, `spanAt`;
+  `PageEditorViewModel.applyFontToCapturedSelection`,
+  `applySizeToCapturedSelection`, `selectionTypography`; a schermo
+  `fontStyleOf`), e si annullano con ↶ come ogni altra modifica. Il 16
+  di partenza non si scrive nel testo. Il testo scritto subito dopo un
+  pezzo in un altro font ne prende il font, come il grassetto. Non
+  c'è più niente "di pagina": via `PageTypography`, `LocalPageTypography`,
+  `setPageFont`, `setPageFontSize`. Le celle delle tabelle semplici e il
+  titolo della pagina, che prendevano il font della pagina, tornano al
+  font di sistema (sono testo senza formattazione)
+- **[Nuova funzionalità]** **Le righe si allungano per il testo grande.**
+  Con una dimensione più grande di 16 in un gruppo di righe, **tutte**
+  le righe di quel gruppo diventano più alte, quanto serve al pezzo più
+  grande; perché non solo la sua, vedi "Limiti noti"
+- **[Progetto]** Migrazione **30→31** (`MIGRATION_30_31`): le pagine che
+  avevano un font o una dimensione "di pagina" li danno a ogni pezzo di
+  testo dei loro blocchi che non ne ha già uno suo — così si vedono come
+  prima — e poi `pageFont` e `pageFontSize` si svuotano in tutte le
+  pagine. Le due colonne restano (toglierle vorrebbe dire ricostruire la
+  tabella) ma non le scrive più nessuno. `MigrationTest` prova anche
+  dalla 30 (schema in `test/resources/schema/v30.sql`, generato dal
+  codice di Room al commit `a68a44c`, con una pagina in Garamond a 20 e i
+  suoi blocchi); test nuovi in `RichTextFontTest`. Verificato sul
+  telefono: backup del database, `user_version` 31, nessun crash
+- Verificato sul telefono, nella pagina "My Space": selezionato "prova"
+  → Consolas, **solo quella parola**; selezionato "titolo" → le voci
+  dicono "Default" e "16", scelto Georgia e poi 28 → solo "titolo",
+  grande, e le righe del gruppo più larghe; nel database
+  `{"text":"prova","font":"CONSOLAS"}` e
+  `{"text":"titolo","font":"GEORGIA","size":28}`; ↶ riporta "titolo" a 16
+  e le righe al passo di prima; col solo cursore "Select some text
+  first"; le impostazioni senza Font e Font size. "prova" in Consolas e
+  "titolo" in Georgia sono rimasti nella pagina, per farli vedere
+- Notato durante la prova, **non corretto** (c'era già): con una parola
+  selezionata, il menu dei font si apre **sotto** la barrettina di
+  sistema Copy / Cut / Select all, che copre una o due voci (Garamond,
+  Arial) finché non si chiude
 
 **25/09/2026 — le prove dell'utente, e quello che ne è venuto** *(Claude
 Code sul PC; tutto verificato sul telefono lo stesso giorno; schema alla
@@ -5377,7 +5462,9 @@ le finestre che apre. Chi lo usa passa solo l'id del blocco.
 
 ## Nota tecnica
 
-Lo schema è alla **versione 30** (la 30, del 25/09/2026, toglie MS YaHei
+Lo schema è alla **versione 31** (la 31, del 25/09/2026, sposta font e
+corpo dalla pagina al testo, senza cambiare la forma delle tabelle; la
+30, dello stesso giorno, toglie MS YaHei
 e aggiunge l'inquadratura delle schede della galleria; dalla 25 alla 29 vengono dalla
 sessione cloud del 24/09/2026, vedi Diario: migrazioni simulate su
 SQLite in cloud e **provate su un telefono vero la sera stessa**, da

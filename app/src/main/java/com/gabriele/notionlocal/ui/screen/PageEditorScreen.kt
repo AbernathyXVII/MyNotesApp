@@ -35,8 +35,6 @@ import com.gabriele.notionlocal.ui.theme.label
 import com.gabriele.notionlocal.ui.theme.lookalike
 import com.gabriele.notionlocal.ui.theme.group
 import com.gabriele.notionlocal.ui.theme.fontFamily
-import com.gabriele.notionlocal.ui.theme.LocalPageTypography
-import com.gabriele.notionlocal.ui.theme.PageTypography
 import com.gabriele.notionlocal.ui.theme.DEFAULT_PAGE_FONT_SIZE
 import com.gabriele.notionlocal.ui.theme.MIN_PAGE_FONT_SIZE
 import com.gabriele.notionlocal.ui.theme.MAX_PAGE_FONT_SIZE
@@ -493,6 +491,8 @@ private val BarMenuProperties = PopupProperties(focusable = false)
 @Composable
 private fun FontPickerChip(
     current: PageFont?,
+    /** Toccando la casella, prima di aprire il menu: qui si mette da parte la selezione. */
+    onOpen: () -> Unit,
     onPick: (PageFont?) -> Unit
 ) {
     var open by remember { mutableStateOf(false) }
@@ -500,7 +500,10 @@ private fun FontPickerChip(
         BarValueChip(
             text = current?.label ?: EditorStrings.defaultFont,
             contentDescription = EditorStrings.font,
-            onClick = { open = true },
+            onClick = {
+                onOpen()
+                open = true
+            },
             modifier = Modifier.widthIn(max = FONT_CHIP_MAX_WIDTH)
         )
         DropdownMenu(
@@ -926,6 +929,7 @@ fun PageEditorScreen(
     val blocks by viewModel.blocks.collectAsStateWithLifecycle()
     val focusRequestBlockId by viewModel.focusRequestBlockId.collectAsStateWithLifecycle()
     val formatRequest by viewModel.formatRequest.collectAsStateWithLifecycle()
+    val selectionTypography by viewModel.selectionTypography.collectAsStateWithLifecycle()
     val canUndo by viewModel.canUndo.collectAsStateWithLifecycle()
     val canRedo by viewModel.canRedo.collectAsStateWithLifecycle()
 
@@ -1304,13 +1308,10 @@ fun PageEditorScreen(
             Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
             CompositionLocalProvider(
                 LocalFocusPark provides focusPark,
-                LocalPageLocked provides readOnlyPage,
-                // Il font e il corpo scelti dalla barra Aa, per tutto il
-                // testo della pagina: vedi `PageTypography`.
-                LocalPageTypography provides PageTypography(
-                    fontFamily = page?.pageFont?.fontFamily(),
-                    size = page?.pageFontSize ?: DEFAULT_PAGE_FONT_SIZE
-                )
+                LocalPageLocked provides readOnlyPage
+                // (Fino al 25/09/2026 qui passavano anche il font e il corpo
+                // della pagina intera, `LocalPageTypography`: ora stanno sul
+                // testo selezionato, dentro gli span — vedi `fontStyleOf`.)
             ) {
             LazyColumn(
                 state = listState,
@@ -1533,12 +1534,7 @@ fun PageEditorScreen(
                         imeAction = ImeAction.Done
                     ),
                     keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                    // Il titolo prende il font della pagina ma non il
-                    // corpo: ha già una misura sua, e a 72 non ci
-                    // starebbe più nello schermo.
-                    textStyle = LocalPageTypography.current.fontOnly(
-                        MaterialTheme.typography.titleLarge.copy(color = NotionWhite)
-                    ),
+                    textStyle = MaterialTheme.typography.titleLarge.copy(color = NotionWhite),
                     cursorBrush = SolidColor(NotionWhite),
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1654,18 +1650,34 @@ fun PageEditorScreen(
                             Icon(Icons.Filled.ArrowBack, contentDescription = Strings.back, tint = NotionWhite, modifier = Modifier.size(BAR_ICON_SIZE))
                         }
                         // Font e corpo del testo, prima di B come su
-                        // OneNote. Valgono per **tutta la pagina**, non
-                        // per il testo selezionato: vedi `PageTypography`.
-                        // Con la pagina bloccata non si toccano, come il
-                        // resto del contenuto.
+                        // OneNote. Dal 25/09/2026 valgono **per il testo
+                        // selezionato**, come il colore (prima per tutta la
+                        // pagina); le caselle dicono quelli del punto in
+                        // cui si è. La selezione si mette da parte appena
+                        // le si tocca, come fa il pennello: la finestrella
+                        // del corpo porta via il fuoco. Con la pagina
+                        // bloccata non si toccano, come il resto del
+                        // contenuto.
                         if (!readOnlyPage) {
                             FontPickerChip(
-                                current = page?.pageFont,
-                                onPick = { viewModel.setPageFont(it) }
+                                current = selectionTypography.font,
+                                onOpen = { viewModel.captureSelection() },
+                                onPick = { font ->
+                                    if (!viewModel.applyFontToCapturedSelection(font)) {
+                                        Toast.makeText(context, EditorStrings.selectTextFirst, Toast.LENGTH_SHORT).show()
+                                    }
+                                }
                             )
                             FontSizeChip(
-                                current = page?.pageFontSize ?: DEFAULT_PAGE_FONT_SIZE,
-                                onClick = { showFontSizeDialog = true }
+                                current = selectionTypography.size ?: DEFAULT_PAGE_FONT_SIZE,
+                                onClick = {
+                                    viewModel.captureSelection()
+                                    if (viewModel.hasCapturedSelection()) {
+                                        showFontSizeDialog = true
+                                    } else {
+                                        Toast.makeText(context, EditorStrings.selectTextFirst, Toast.LENGTH_SHORT).show()
+                                    }
+                                }
                             )
                         }
                         BarButton(onClick = {
@@ -1780,7 +1792,7 @@ fun PageEditorScreen(
                                 // si chiude in un cursore, e fra un
                                 // attimo non ci sarebbe più niente da
                                 // colorare.
-                                viewModel.captureSelectionForColor()
+                                viewModel.captureSelection()
                                 showColorPicker = true
                             }) {
                                 Icon(
@@ -1937,11 +1949,11 @@ fun PageEditorScreen(
 
     if (showFontSizeDialog) {
         FontSizeDialog(
-            current = page?.pageFontSize ?: DEFAULT_PAGE_FONT_SIZE,
+            current = selectionTypography.size ?: DEFAULT_PAGE_FONT_SIZE,
             onDismiss = { showFontSizeDialog = false },
             onConfirm = { size ->
                 showFontSizeDialog = false
-                viewModel.setPageFontSize(size)
+                viewModel.applySizeToCapturedSelection(size)
             }
         )
     }
@@ -3264,15 +3276,6 @@ private class MergedRunVisualTransformation(
     private val allBlocks: List<BlockEntity>,
     private val viewModel: PageEditorViewModel,
     /**
-     * Quanto il corpo scelto dalla barra Aa è più grande (o più piccolo)
-     * del 16 di partenza: moltiplica le misure scritte qui dentro — i
-     * titoli e i segni degli elenchi — che altrimenti resterebbero fisse
-     * mentre il resto del testo cresce. Tocca solo `fontSize` negli
-     * stili: nessun carattere in più o in meno, quindi la traduzione
-     * delle posizioni non cambia.
-     */
-    private val scale: Float,
-    /**
      * Dove sta il cursore, in posizioni del testo senza l'a-capo
      * nascosto, oppure `null` se il campo non ha il fuoco. Serve solo
      * agli spoiler: quello che il cursore tocca si scopre. Col campo
@@ -3312,7 +3315,7 @@ private class MergedRunVisualTransformation(
                 val symbolStart = lineStart + prefix.indent.length
                 builder.addStyle(
                     SpanStyle(
-                        fontSize = BULLET_MARKER_SIZES[bulletAt] * scale,
+                        fontSize = BULLET_MARKER_SIZES[bulletAt],
                         baselineShift = BULLET_MARKER_DROP
                     ),
                     symbolStart,
@@ -3397,6 +3400,7 @@ private class MergedRunVisualTransformation(
                         // velo deve vincere su tutto, altrimenti si
                         // leggerebbe il testo colorato attraverso.
                         colorStyleOf(span)?.let { builder.addStyle(it, s, e) }
+                        fontStyleOf(span)?.let { builder.addStyle(it, s, e) }
                         scriptStyleOf(span)?.let { builder.addStyle(it, s, e) }
                         if (span.spoiler) {
                             // Posizioni nel testo vero, che è quello in
@@ -3466,8 +3470,8 @@ private fun colorStyleOf(span: RichTextSpan): SpanStyle? {
 
 /**
  * Pedice e apice: il testo a sette decimi, spostato sotto o sopra la riga
- * di quanto è alto, come in Word. In `em`, cioè relativo al corpo della
- * pagina (barra Aa): con un corpo più grande crescono anche loro.
+ * di quanto è alto, come in Word. In `em`, cioè relativo al corpo del suo
+ * pezzo di testo (barra Aa): con un corpo più grande crescono anche loro.
  *
  * Solo aspetto: le lettere restano dove sono nel testo, quindi cursore,
  * selezione e ricerca non se ne accorgono.
@@ -3476,6 +3480,35 @@ internal fun scriptStyleOf(span: RichTextSpan): SpanStyle? = when {
     span.subscript -> SpanStyle(fontSize = SCRIPT_SIZE, baselineShift = SUBSCRIPT_SHIFT)
     span.superscript -> SpanStyle(fontSize = SCRIPT_SIZE, baselineShift = BaselineShift.Superscript)
     else -> null
+}
+
+/**
+ * Il font e il corpo scelti per questo pezzo di testo dalla barra Aa (dal
+ * 25/09/2026). Va aggiunto **prima** di `scriptStyleOf`: il pedice è a sette
+ * decimi del corpo del suo pezzo, non di quello normale. Un nome di font che
+ * l'app non conosce più si ignora.
+ */
+internal fun fontStyleOf(span: RichTextSpan): SpanStyle? {
+    val family = span.font?.let { name -> runCatching { PageFont.valueOf(name) }.getOrNull()?.fontFamily() }
+    val size = span.size?.takeIf { it != DEFAULT_PAGE_FONT_SIZE }
+    if (family == null && size == null) return null
+    return SpanStyle(fontFamily = family, fontSize = size?.sp ?: TextUnit.Unspecified)
+}
+
+/**
+ * Di quanto vanno allungate le righe perché il pezzo di testo più grande ci
+ * stia senza toccare quelle vicine: il suo corpo diviso 16, mai meno di 1.
+ *
+ * **Vale per tutto il gruppo di righe**, non per la riga sola: l'altezza di
+ * riga del campo condiviso è fissa e unica (vedi `lineHeight` in
+ * `MergedTextRunField`), e darla riga per riga vorrebbe dire uno
+ * `ParagraphStyle` dentro la trasformazione — la strada che in passato ha
+ * fatto smettere di disegnare il campo e cancellato del testo ("Strade già
+ * tentate" nel README).
+ */
+internal fun lineScaleFor(spans: List<RichTextSpan>): Float {
+    val largest = spans.maxOfOrNull { it.size ?: DEFAULT_PAGE_FONT_SIZE } ?: DEFAULT_PAGE_FONT_SIZE
+    return (largest / DEFAULT_PAGE_FONT_SIZE.toFloat()).coerceAtLeast(1f)
 }
 
 private val SCRIPT_SIZE = 0.7.em
@@ -3858,6 +3891,10 @@ private fun MergedTextRunField(
         if (block != null) onSlashAction(block, entry.action)
     }
 
+    // Il corpo più grande scelto con la barra Aa in queste righe: tutte le
+    // righe del gruppo si allungano quanto basta per lui (vedi `lineScaleFor`).
+    val lineScale = remember(runBlocks) { lineScaleFor(runBlocks.flatMap { viewModel.spansOf(it) }) }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -4066,13 +4103,11 @@ private fun MergedTextRunField(
         // è facile spuntare quella sbagliata. Vale per tutto il campo,
         // non riga per riga — vedi `CHECKBOX_LINE_HEIGHT` per il
         // perché.
-        // Font e corpo della pagina (barra Aa) applicati al campo intero:
-        // `apply` porta in proporzione anche l'altezza di riga qui sotto,
-        // così a 16 tutto resta com'era e a ogni altro corpo le righe
-        // crescono insieme al testo. È lo stesso posto — il `textStyle`
-        // dell'intero campo — dove il README dice che le misure si
-        // possono toccare senza rischi.
-        textStyle = LocalPageTypography.current.apply(MaterialTheme.typography.bodyLarge.copy(
+        // Il testo più grande scelto con la barra Aa allunga qui le righe
+        // (`lineScale`): il `textStyle` dell'intero campo è il posto dove
+        // il README dice che le misure si possono toccare senza rischi.
+        // Font e corpo, invece, stanno sui pezzi di testo (`fontStyleOf`).
+        textStyle = MaterialTheme.typography.bodyLarge.copy(
             color = NotionWhite,
             // **L'altezza della riga è sempre fissata.**
             //
@@ -4088,7 +4123,7 @@ private fun MergedTextRunField(
                 CHECKBOX_LINE_HEIGHT
             } else {
                 RUN_LINE_HEIGHT
-            },
+            } * lineScale,
             // **Il testo si centra nella riga alta.** Di suo Compose
             // spartisce lo spazio in più in proporzione a quanto le
             // lettere salgono e scendono, e il risultato è che il testo
@@ -4100,7 +4135,7 @@ private fun MergedTextRunField(
                 alignment = LineHeightStyle.Alignment.Center,
                 trim = LineHeightStyle.Trim.None
             )
-        )),
+        ),
         cursorBrush = SolidColor(NotionWhite),
         // Pagina bloccata: si legge e si seleziona, non si scrive.
         // `readOnly` e non `enabled = false` di proposito — disabilitato
@@ -4116,7 +4151,6 @@ private fun MergedTextRunField(
             runBlocks,
             allBlocks,
             viewModel,
-            scale = LocalPageTypography.current.scale,
             // Il cursore serve solo a scoprire gli spoiler che tocca, e
             // senza fuoco non c'è nessun cursore da guardare.
             caret = if (fieldFocused) {
@@ -4536,9 +4570,10 @@ private fun BlockRow(
         }
     }
 
-    // Font e corpo della pagina (barra Aa), come nel testo condiviso.
-    val pageTypography = LocalPageTypography.current
-    val textStyle = pageTypography.apply(MaterialTheme.typography.bodyLarge).let { base ->
+    // Il testo più grande scelto con la barra Aa allunga la riga, come nel
+    // testo condiviso (vedi `lineScaleFor`).
+    val lineScale = lineScaleFor(editState.spans)
+    val textStyle = MaterialTheme.typography.bodyLarge.let { it.copy(lineHeight = it.lineHeight * lineScale) }.let { base ->
         if (block.type == BlockType.CHECKBOX && block.isChecked) {
             base.copy(textDecoration = TextDecoration.LineThrough)
         } else base
@@ -4576,7 +4611,7 @@ private fun BlockRow(
                 Text(
                     bulletMarkerFor(block.indentLevel),
                     style = textStyle.copy(
-                        fontSize = pageTypography.scaled(bulletMarkerSizeFor(block.indentLevel)),
+                        fontSize = bulletMarkerSizeFor(block.indentLevel),
                         baselineShift = BULLET_MARKER_DROP
                     ),
                     modifier = Modifier.padding(end = 8.dp, top = 2.dp)
@@ -4912,7 +4947,7 @@ private fun BlockRow(
         // con l'Invio, dal titolo o dall'ultima riga, come su Notion.
         Text(
             text = EditorStrings.emptyToggle,
-            style = LocalPageTypography.current.apply(MaterialTheme.typography.bodyLarge),
+            style = MaterialTheme.typography.bodyLarge,
             color = NotionGray400,
             modifier = Modifier
                 .fillMaxWidth()
@@ -5038,6 +5073,7 @@ private class RichTextVisualTransformation(
                 )
             }
             colorStyleOf(span)?.let { builder.addStyle(it, start, pos) }
+            fontStyleOf(span)?.let { builder.addStyle(it, start, pos) }
             scriptStyleOf(span)?.let { builder.addStyle(it, start, pos) }
             if (span.spoiler) {
                 // Dentro, non sui bordi: vedi il gemello nel campo unito.
@@ -5156,14 +5192,11 @@ private fun PageLinkBlockContent(
             }
         }
         Spacer(modifier = Modifier.size(8.dp))
-        // Il nome della pagina collegata si scrive col font e il corpo di
-        // questa pagina: è una riga del suo testo, e con un corpo grande
-        // resterebbe l'unica piccola.
         Box(modifier = Modifier.weight(1f)) {
             Text(
                 text = linkedPage?.title?.ifBlank { Strings.untitled } ?: Strings.untitled,
                 color = nameColor,
-                style = LocalPageTypography.current.apply(MaterialTheme.typography.bodyLarge),
+                style = MaterialTheme.typography.bodyLarge,
                 modifier = if (nameBackground != null) {
                     Modifier
                         .clip(RoundedCornerShape(4.dp))
@@ -5268,10 +5301,7 @@ private fun TableBlockContent(
                                 localCellText = newText
                                 viewModel.setTableCell(block.id, r, c, newText)
                             },
-                            // Font e corpo della pagina, come il resto del testo.
-                            textStyle = LocalPageTypography.current.apply(
-                                MaterialTheme.typography.bodyLarge.copy(color = NotionWhite)
-                            ),
+                            textStyle = MaterialTheme.typography.bodyLarge.copy(color = NotionWhite),
                             cursorBrush = SolidColor(NotionWhite),
                             modifier = Modifier
                                 .weight(1f)
