@@ -86,6 +86,9 @@ object WidgetStrings {
     val start get() = t("Start", "Avvia", "Starten", "Démarrer", "Iniciar", "开始", "시작", "開始")
     val pause get() = t("Pause", "Pausa", "Pausieren", "Pause", "Pausar", "暂停", "일시정지", "一時停止")
     val timerSettings get() = t("Timer settings", "Impostazioni del timer", "Timer-Einstellungen", "Réglages du minuteur", "Ajustes del temporizador", "计时器设置", "타이머 설정", "タイマー設定")
+
+    /** Il suono di fine fase del pomodoro, nell'ingranaggio. */
+    val sound get() = t("Sound", "Suono", "Ton", "Son", "Sonido", "声音", "소리", "サウンド")
     val setTime get() = t("Set the time", "Imposta il tempo", "Zeit einstellen", "Régler le temps", "Ajustar el tiempo", "设置时间", "시간 설정", "時間を設定")
     val sessionName get() = t("Session name", "Nome della sessione", "Name der Sitzung", "Nom de la session", "Nombre de la sesión", "专注名称", "세션 이름", "セッション名")
 }

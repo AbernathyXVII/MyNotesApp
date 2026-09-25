@@ -2343,7 +2343,7 @@ private fun PageImageAction(label: String, enabled: Boolean, onClick: () -> Unit
  * sgranata. Il tetto vero lo mette comunque `PageImageStore`, che non
  * porta in memoria più di sei megapixel.
  */
-private const val MAX_COVER_ZOOM = 4f
+internal const val MAX_COVER_ZOOM = 4f
 private const val MAX_COVER_DETAIL = 2
 
 /**
@@ -2452,7 +2452,7 @@ private fun coverFitFactor(box: IntSize, imageWidth: Int, imageHeight: Int): Flo
  * bordo. Senza questo limite si può trascinare l'immagine fuori dalla
  * striscia e restare a guardare un rettangolo vuoto.
  */
-private fun coverPanLimit(
+internal fun coverPanLimit(
     box: IntSize,
     imageWidth: Int,
     imageHeight: Int,

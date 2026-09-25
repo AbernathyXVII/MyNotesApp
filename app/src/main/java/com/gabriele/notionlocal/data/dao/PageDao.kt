@@ -112,6 +112,17 @@ interface PageDao {
     @Query("UPDATE pages SET pageFontSize = :size WHERE id = :pageId")
     suspend fun setPageFontSize(pageId: String, size: Int?)
 
+    /**
+     * Solo l'inquadratura della copertina nelle schede della galleria,
+     * scelta dalla galleria: la pagina può essere aperta altrove, e
+     * riscriverla intera rimetterebbe indietro quello che è cambiato lì.
+     */
+    @Query(
+        "UPDATE pages SET cardCoverScale = :scale, cardCoverOffsetX = :offsetX, " +
+            "cardCoverOffsetY = :offsetY WHERE id = :pageId"
+    )
+    suspend fun setCardCoverTransform(pageId: String, scale: Float?, offsetX: Float?, offsetY: Float?)
+
     @Query("UPDATE pages SET trashedAt = :at WHERE id = :pageId")
     suspend fun setTrashedAt(pageId: String, at: Long?)
 

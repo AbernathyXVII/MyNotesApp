@@ -151,6 +151,10 @@ class PageRepository(private val db: AppDatabase) {
     suspend fun setPageFontSize(pageId: String, size: Int?) =
         pageDao.setPageFontSize(pageId, size)
 
+    /** Come è inquadrata la copertina nelle schede della galleria: vedi `PageEntity.cardCoverScale`. */
+    suspend fun setCardCoverTransform(pageId: String, scale: Float, offsetX: Float, offsetY: Float) =
+        pageDao.setCardCoverTransform(pageId, scale, offsetX, offsetY)
+
     /** Blocca o sblocca **l'impaginazione** di un database (vista, ordine, filtro, colonne). */
     suspend fun setViewLocked(pageId: String, locked: Boolean) =
         pageDao.setViewLocked(pageId, locked)

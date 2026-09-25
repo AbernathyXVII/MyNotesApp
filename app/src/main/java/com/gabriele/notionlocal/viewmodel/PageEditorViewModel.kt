@@ -869,7 +869,8 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
      * La copertina, o null per toglierla. Vedi `setIconImage`.
      *
      * L'inquadratura torna a zero: era stata scelta guardando l'altra
-     * immagine, e su una nuova darebbe un ritaglio deciso a caso.
+     * immagine, e su una nuova darebbe un ritaglio deciso a caso. Anche
+     * quella delle schede della galleria, per la stessa ragione.
      */
     fun setCoverImage(fileName: String?): String? {
         val current = _page.value ?: return null
@@ -878,7 +879,10 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
             coverImage = fileName,
             coverScale = 1f,
             coverOffsetX = 0f,
-            coverOffsetY = 0f
+            coverOffsetY = 0f,
+            cardCoverScale = null,
+            cardCoverOffsetX = null,
+            cardCoverOffsetY = null
         )
         _page.value = updated
         viewModelScope.launch { repository.updatePage(updated) }

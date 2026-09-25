@@ -50,6 +50,7 @@ import com.gabriele.notionlocal.data.settings.AppSettings
 import com.gabriele.notionlocal.data.settings.DateStyle
 import com.gabriele.notionlocal.data.settings.NumberStyle
 import com.gabriele.notionlocal.data.settings.ThemeMode
+import com.gabriele.notionlocal.data.widgets.WidgetStore
 import com.gabriele.notionlocal.ui.format.Formats
 import com.gabriele.notionlocal.ui.i18n.Strings
 import com.gabriele.notionlocal.ui.theme.DarkBackground
@@ -342,7 +343,9 @@ private fun SoundDialog(onDismiss: () -> Unit) {
                 DialogAction(Strings.playSound) {
                     val uri = AppSettings.notificationSoundUri?.let(Uri::parse)
                         ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-                    runCatching { RingtoneManager.getRingtone(context, uri)?.play() }
+                    // Una volta sola e per pochi secondi: un file scelto qui
+                    // può essere una suoneria che si ripete all'infinito.
+                    WidgetStore.playOnce(context, uri)
                 }
             }
         },

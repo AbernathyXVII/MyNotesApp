@@ -565,7 +565,8 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   24/09/2026, provati in parte sul telefono il 24/09/2026)*: fusi orari (orologi
   analogici o digitali, e un elenco sempre da ovest a est), avanzamento
   di anno, mese, settimana, giorno e date proprie, contatore, pomodoro
-  con sessione e pausa. Una freccetta nasconde tutta la sezione, e la
+  con sessione e pausa (e dal 25/09/2026 il suo suono, scelto fra le
+  suonerie del telefono). Una freccetta nasconde tutta la sezione, e la
   scelta resta
 - **Database dentro le pagine**: creandone uno dal menu "+" compare
   nella pagina e si modifica lì; l'icona con le frecce lo apre a
@@ -588,7 +589,9 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   pagina. Sotto, nome e proprietà. Dalle impostazioni della vista si
   sceglie **Card preview** (None / Page cover / Page content) e **Card
   size** (Small / Medium / Large: tre, due o una scheda per riga su un
-  telefono in verticale). Si crea anche dal menu "/" con "Gallery view"
+  telefono in verticale). Si crea anche dal menu "/" con "Gallery view".
+  Dal 25/09/2026, tenendo premuta una scheda, **"Reposition cover"**
+  sposta e ingrandisce la copertina nella sola scheda
 - **Data con ora facoltativa**: l'interruttore "Include time" nella
   finestra della data aggiunge l'orario all'inizio e alla fine. Spento,
   la data vale il giorno intero
@@ -840,8 +843,9 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
 - **Immagini: non c'è una raccolta da cui scegliere**, come le copertine pronte di Notion. Si mette la propria
 - **Immagini da collegamento: fino a 20 MB.** Un collegamento può puntare a qualunque cosa, e senza tetto una pagina da mezzo giga riempirebbe il telefono mentre l'utente aspetta
 - **Font: nessuno è quello vero.** Helvetica, Arial, Calibri, Cambria,
-  Consolas, Georgia, Verdana, Times New Roman, Futura, Garamond e MS
-  YaHei sono commerciali: il telefono non li ha e l'app non li può
+  Consolas, Georgia, Verdana, Times New Roman, Futura, Garamond e SimSun
+  (dal 25/09/2026 al posto di MS YaHei, che col suo sosia era identico
+  al font di sistema) sono commerciali: il telefono non li ha e l'app non li può
   distribuire. Li disegnano dei sosia liberi (tabella in Cronologia,
   "Pagine — font e dimensione del testo"); cinque hanno le stesse
   identiche misure dell'originale, gli altri somigliano. **Verdana** non
@@ -1463,24 +1467,26 @@ del 24/09/2026"):
 - 1 🟡 compila sul PC da riga di comando; Android Studio non aperto
 - 2 ✅ migrazione 24→25 (e tutte fino alla 29) su un database vero
 - 3 ✅ — 4 ✅ — 5 ✅
-- 6 ⏸️ copertine: serve una foto dell'utente o un link (pagina senza
-  copertina → riquadro vuoto ✅)
+- 6 ✅ copertine (provate dall'utente il 24/09/2026 sera; dal 25/09 si
+  possono anche riposizionare nella sola scheda)
 - 7 🟡 testo, elenco numerato, casella, toggle ✅; mancano spoiler ed
   elenchi rientrati o partiti da un numero scelto
-- 8 🟡 Small 3, Medium 2, Large 1, altezze uguali, ultima riga non
-  allargata ✅; manca la rotazione
+- 8 ✅ Small 3, Medium 2, Large 1, altezze uguali, ultima riga non
+  allargata; in orizzontale più schede per riga (provata dall'utente)
 - 9 ✅ — 10 ✅
 - 11 🟡 ordinamento ✅; filtro non provato
 - 12 ⏸️ servono molte schede con copertina
 - 13 ✅
-- 14 ⏸️ da chiedere all'utente
+- 14 ✅ confermate dall'utente: piccole, medie e grandi, medie di
+  partenza
 - 15 🟡 ordine delle voci, grigie agli estremi, spostamento, Edit
   property senza Move ✅; mancano colonna nascosta in mezzo, tabella
   raggruppata, Lock view
 - 16 ✅ (valori controllati a mano); giapponese, cinese e coreano solo
   dai test automatici
-- 17 🟡 ✅ salvo caselle, tabelle, collegamenti, grassetto/corsivo
-  simulati, modalità aereo
+- 17 🟡 ✅ anche la modalità aereo (provata dall'utente); MS YaHei non si
+  distingueva dal font di sistema e il 25/09 è stato sostituito da SimSun;
+  mancano caselle, tabelle, collegamenti, grassetto/corsivo simulati
 - 18 ✅ dopo la correzione della voce vuota; mancano caselle col dito,
   elenchi a corpo grande, riapertura dell'app
 - 19 ✅ — 20 🟡 provata solo To-do dal "+" su una riga di testo
@@ -1509,9 +1515,12 @@ del 24/09/2026"):
   −, azzera, il numero resta), pomodoro (▶ corre e diventa ⏸, la
   freccetta lo rimette a 25:00), sezione nascosta che resta tale dopo
   aver chiuso l'app ✅. Sotto l'orologio si legge "GMT+02:00" e non la
-  sigla "CEST" che la voce si aspettava (da guardare). Mancano: menu
-  degli orologi, scelta del fuso, elenco, date proprie e colori,
-  rinomina, pomodoro a fine fase (suono) e ad app chiusa, tema chiaro
+  sigla "CEST" che la voce si aspettava (da guardare). Il pomodoro a fine
+  fase suona e passa alla pausa ✅ (provato dall'utente e il 25/09 da qui,
+  dopo le correzioni del secondo in più e del suono infinito). Orologi
+  aggiunti dall'utente e l'elenco dei fusi ✅ (visti il 25/09). Mancano:
+  menu degli orologi, date proprie e colori, rinomina, pomodoro ad app
+  chiusa, tema chiaro
 - 30 🟡 pedice, apice, scambio, riga che non si allarga ✅;
   mancano gli altri punti
 
@@ -1926,6 +1935,89 @@ Le voci nate nelle sessioni cloud stanno qui in cima, la più recente
 per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
+
+**25/09/2026 — le prove dell'utente, e quello che ne è venuto** *(Claude
+Code sul PC; tutto verificato sul telefono lo stesso giorno; schema alla
+versione **30**; 73 test passati)*
+
+Richieste dell'utente, parola per parola (dopo le prove della sera
+prima: copertine, rotazione, pomodoro, font offline, voce 14):
+> «1. Funziona. Dammi per favore la possibilità di risposizione (come
+> faccio nelle pagine in maniera classica) le immagini delle pagine in
+> visualizzazione Gallery dei database
+> 2. Sì, si vedono le cinque pagine in Gallery
+> 3. Sì, si sente il classico Ringtone di quando mi arrivano le
+> notifiche. Dammi la possibilità di cambiarlo tramite i ringtone
+> standard del telefono (se puoi). Piccolo bug: quando metto un minuto,
+> si vede uno scatto che fa vedere che si è aggiunto un secondo
+> 4. Sì, sembra funzionare. Ma, altro bug, Ms Yahei non cambia font,
+> rimane sempre quello di default
+> 5. Fai come Notion: piccole, medie e grandi. Di base medie (su
+> telefono, poi su pc vedremo in futuro)»
+
+Alle tre domande fatte subito dopo ha risposto: inquadratura **solo
+della scheda** (non la copertina della pagina); suono **solo del
+pomodoro**; MS YaHei: «Toglilo. Mi ci puoi mettere SimSum?». E durante la
+prova: «La suoneria sta continuando a suonare all'infinito».
+
+- **[Nuova funzionalità]** **"Reposition cover" nelle schede della
+  galleria.** Tenendo premuta una scheda che mostra la copertina, nelle
+  azioni c'è "Reposition cover": la copertina **dentro la scheda** si
+  trascina e si pizzica (fino a 4×, come nella pagina), mai oltre i bordi;
+  ✓ salva, ✕ lascia com'era. Mentre si sposta la scheda ha un bordo e non
+  si apre toccandola. L'inquadratura è **solo della scheda**: la copertina
+  in cima alla pagina resta com'è, e viceversa. Finché non se ne sceglie
+  una, la scheda usa quella della pagina come prima; una copertina nuova
+  le azzera tutte e due. La voce c'è solo in galleria con "Page cover",
+  una copertina da spostare e il contenuto non bloccato
+  (`GalleryCard`, `CardCoverMoveControls`, `DatabaseViewModel.setRowCardCover`;
+  colonne `cardCoverScale`, `cardCoverOffsetX`, `cardCoverOffsetY` in
+  `pages`). Verificato: trascinata la copertina di "Gioco uno", salvata
+  nella sola scheda (`cardCoverOffsetY` 0,085, la pagina a 0)
+- **[Nuova funzionalità]** **Il suono del pomodoro fra le suonerie del
+  telefono.** Nell'ingranaggio c'è "Sound": apre l'elenco di sistema dei
+  suoni (con l'anteprima), si sceglie, e con "Fatto" vale **per quel
+  pomodoro**; "Use default sound" torna al suono delle notifiche dell'app,
+  che resta quello di partenza (`PomodoroWidget.soundUri`, `soundName`).
+  Sul S25 Ultra il telefono chiede con quale app sceglierlo (SecSoundPicker
+  o Zedge, se installato). Verificato con "Asteroid"
+- **[Bug fix]** **Un suono che non finiva più.** Le suonerie del telefono
+  (le "Galaxy" di Samsung) sono fatte per ripetersi finché non si
+  risponde — lo chiede il file stesso, con l'etichetta `ANDROID_LOOP` — e
+  suonate come avviso andavano avanti all'infinito (fermate chiudendo
+  l'app). Ora ogni suono dell'app (fine fase del pomodoro, e "Play" nelle
+  impostazioni del suono) suona **una volta sola** (`isLooping = false`,
+  da Android 9) e comunque **si ferma dopo 8 secondi** (`WidgetStore.playOnce`).
+  Verificato: partito alle 08:22:58, fermato e rilasciato alle 08:23:06
+- **[Bug fix]** **Il pomodoro appena avviato mostrava un secondo in
+  più** ("01:01" per un attimo, con un minuto). L'ora che la barra
+  laterale passa al widget si rinfresca allo scoccare di ogni secondo, e
+  subito dopo ▶ era indietro di quasi un secondo rispetto a quando il
+  timer era partito. Ora il tempo mostrato non supera mai quello di
+  partenza (`PomodoroWidget.remainingAt`). Test nuovo
+  `WidgetsTest.aJustStartedPomodoroNeverShowsMoreThanItStartedWith`.
+  Verificato: subito dopo ▶ "01:00", e un minuto dopo la pausa in verde
+- **[Rimosso]** **MS YaHei.** Non era rotto: il suo sosia libero, Noto
+  Sans SC, è **lo stesso disegno** che Android usa già per il cinese, e
+  sul telefono non si distingueva dal font di sistema. Tolto su richiesta
+  dell'utente; le pagine che lo usavano tornano al font di sistema
+  (migrazione 29→30)
+- **[Nuova funzionalità]** **SimSun** al posto di MS YaHei, nel gruppo
+  cinese: un Song dai tratti sottili, reso con **Noto Serif SC nel peso
+  Light** — lo stesso font del Songti ma più leggero, che a SimSun somiglia
+  e dal Songti si distingue. Si scarica come gli altri cinesi. Verificato
+  su "我们都是意大利人": Default, Songti e SimSun sono tre disegni diversi
+- **[Progetto]** Migrazione **29→30** (`MIGRATION_29_30`): le pagine con
+  `pageFont = 'MS_YAHEI'` tornano a NULL — deve succedere prima di
+  qualunque lettura, perché il nome non esiste più nell'enum — e tre
+  colonne vuote per l'inquadratura delle schede. `MigrationTest` ora prova
+  sia dalla 28 sia dalla 29 (schema in `test/resources/schema/v29.sql`,
+  generato dal codice di Room al commit `b53a7bf`, con una pagina in MS
+  YaHei e una in Songti); `AppDatabase.resetForTests` perché i due test
+  non si pestino i piedi. Verificato sul telefono: `user_version` 30,
+  colonne in fondo al `CREATE TABLE`, nessun crash
+- **[Progetto]** Voce 14 confermata dall'utente: le schede piccole, medie
+  e grandi come su Notion, **medie** di partenza — è già così
 
 **Ripresa sul PC del 24/09/2026 — il lavoro cloud provato sul
 telefono** *(Claude Code sul PC, S25 Ultra in debug wireless, build
@@ -2709,7 +2801,7 @@ del 24/09/2026, richiesta 27: compilato, migrazione 25→26 simulata,
   | Consolas | Inconsolata (niente corsivo vero) | dentro l'app |
   | Songti | Noto Serif SC | scaricato |
   | Kaiti | Ma Shan Zheng (niente grassetto vero) | scaricato |
-  | MS YaHei | Noto Sans SC | scaricato |
+  | ~~MS YaHei~~ SimSun *(dal 25/09/2026)* | ~~Noto Sans SC~~ Noto Serif SC nel peso Light | scaricato |
   | Mincho | Noto Serif JP | scaricato |
   | Gothic | Noto Sans JP | scaricato |
   | Kaisei | Kaisei Opti (è proprio lui, già libero) | scaricato |
@@ -5199,7 +5291,8 @@ le finestre che apre. Chi lo usa passa solo l'id del blocco.
 
 ## Nota tecnica
 
-Lo schema è alla **versione 29** (dalla 25 alla 29 vengono dalla
+Lo schema è alla **versione 30** (la 30, del 25/09/2026, toglie MS YaHei
+e aggiunge l'inquadratura delle schede della galleria; dalla 25 alla 29 vengono dalla
 sessione cloud del 24/09/2026, vedi Diario: migrazioni simulate su
 SQLite in cloud e **provate su un telefono vero la sera stessa**, da
 un database alla versione 24 con note di prova, vedi Cronologia

@@ -28,6 +28,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -79,6 +80,7 @@ import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Notes
 import androidx.compose.material.icons.filled.OpenInFull
+import androidx.compose.material.icons.filled.OpenWith
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
@@ -98,6 +100,7 @@ import androidx.compose.material.icons.filled.ViewAgenda
 import androidx.compose.material.icons.filled.ViewComfy
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import com.gabriele.notionlocal.data.dao.RowCover
@@ -178,6 +181,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -637,6 +641,10 @@ fun DatabaseContent(
 
     var propertyTarget by remember { mutableStateOf<PropertyTarget?>(null) }
     var rowActionsFor by remember { mutableStateOf<DatabaseRowEntity?>(null) }
+    // La scheda della galleria di cui si sta spostando la copertina
+    // ("Reposition cover" nelle azioni della riga): quella scheda smette
+    // di rispondere ai tocchi e segue il dito, finché Save o Cancel.
+    var repositioningRowId by remember { mutableStateOf<String?>(null) }
     var rowPendingDeletion by remember { mutableStateOf<DatabaseRowEntity?>(null) }
     var showSettings by remember { mutableStateOf(false) }
     var showSort by remember { mutableStateOf(false) }
@@ -1012,7 +1020,13 @@ fun DatabaseContent(
                     onRowLongPress = { row ->
                         focusManager.clearFocus()
                         rowActionsFor = row
-                    }
+                    },
+                    repositioningRowId = repositioningRowId,
+                    onRepositionSave = { row, scale, offset ->
+                        viewModel.setRowCardCover(row, scale, offset.x, offset.y)
+                        repositioningRowId = null
+                    },
+                    onRepositionCancel = { repositioningRowId = null }
                 )
             }
 
@@ -1239,6 +1253,23 @@ fun DatabaseContent(
             onEditIcon = {
                 rowActionsFor = null
                 iconForRow = live
+            },
+            // Solo dove la copertina si vede nella scheda: galleria con
+            // "Page cover", una copertina da spostare, e il contenuto non
+            // bloccato.
+            onRepositionCover = if (
+                page?.databaseLayout == DatabaseLayout.GALLERY &&
+                !simple &&
+                (page?.galleryCardPreview ?: GALLERY_DEFAULT_PREVIEW) == GalleryCardPreview.PAGE_COVER &&
+                rowCovers.containsKey(live.id) &&
+                !contentLocked
+            ) {
+                {
+                    rowActionsFor = null
+                    repositioningRowId = live.id
+                }
+            } else {
+                null
             },
             onDelete = {
                 rowActionsFor = null
@@ -2825,7 +2856,11 @@ private fun GalleryLayout(
     covers: Map<String, RowCover>,
     contentPreviews: Map<String, List<RowPreviewLine>>,
     onOpenRow: (DatabaseRowEntity) -> Unit,
-    onRowLongPress: (DatabaseRowEntity) -> Unit
+    onRowLongPress: (DatabaseRowEntity) -> Unit,
+    /** La scheda di cui si sta spostando la copertina, se ce n'è una: vedi `GalleryCard`. */
+    repositioningRowId: String? = null,
+    onRepositionSave: (DatabaseRowEntity, Float, Offset) -> Unit = { _, _, _ -> },
+    onRepositionCancel: () -> Unit = {}
 ) {
     BoxWithConstraints(
         modifier = Modifier
@@ -2851,6 +2886,9 @@ private fun GalleryLayout(
                             contentLines = contentPreviews[row.id],
                             onOpen = { onOpenRow(row) },
                             onLongPress = { onRowLongPress(row) },
+                            repositioning = row.id == repositioningRowId,
+                            onRepositionSave = { scale, offset -> onRepositionSave(row, scale, offset) },
+                            onRepositionCancel = onRepositionCancel,
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxHeight()
@@ -2866,6 +2904,42 @@ private fun GalleryLayout(
                 }
             }
         }
+    }
+}
+
+/**
+ * I due pulsanti mentre si sposta la copertina di una scheda: ✕ lascia
+ * com'era, ✓ salva. Tondi e piccoli nell'angolo, invece dei "Cancel" e
+ * "Save" della pagina: quelli, insieme, sono più larghi di una scheda
+ * media. Il bordo attorno dice che la scheda è in modifica, al posto
+ * della scritta "trascina per spostare" che qui non ci starebbe.
+ */
+@Composable
+private fun CardCoverMoveControls(onCancel: () -> Unit, onSave: () -> Unit, modifier: Modifier = Modifier) {
+    Box(modifier = modifier.border(2.dp, MaterialTheme.colorScheme.primary)) {
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            CardCoverMoveButton(Icons.Filled.Close, Strings.cancel, onCancel)
+            CardCoverMoveButton(Icons.Filled.Check, EditorStrings.save, onSave)
+        }
+    }
+}
+
+@Composable
+private fun CardCoverMoveButton(icon: ImageVector, description: String, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(32.dp)
+            .clip(CircleShape)
+            .background(DarkSheet.copy(alpha = 0.9f))
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(icon, contentDescription = description, tint = NotionWhite, modifier = Modifier.size(18.dp))
     }
 }
 
@@ -2886,18 +2960,52 @@ private fun GalleryCard(
     contentLines: List<RowPreviewLine>?,
     onOpen: () -> Unit,
     onLongPress: () -> Unit,
+    /**
+     * "Reposition cover": la copertina della scheda segue il dito —
+     * trascinare e pizzicare, come nella pagina — e la scheda non si apre
+     * né apre le azioni finché non si sceglie ✓ o ✕.
+     */
+    repositioning: Boolean = false,
+    onRepositionSave: (Float, Offset) -> Unit = { _, _ -> },
+    onRepositionCancel: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     val store = remember(context) { PageImageStore(context) }
+
+    // L'inquadratura della copertina: quella della scheda, se l'utente ne
+    // ha scelta una, altrimenti la stessa della pagina. Mentre la si
+    // sposta comanda quella di prova, e il database si scrive solo con ✓.
+    val cardScale = cover?.cardCoverScale
+    val savedScale = cardScale ?: cover?.coverScale ?: 1f
+    val savedOffset = if (cardScale != null) {
+        Offset(cover?.cardCoverOffsetX ?: 0f, cover?.cardCoverOffsetY ?: 0f)
+    } else {
+        Offset(cover?.coverOffsetX ?: 0f, cover?.coverOffsetY ?: 0f)
+    }
+    var liveScale by remember(row.id, repositioning) { mutableStateOf(savedScale) }
+    var liveOffset by remember(row.id, repositioning) { mutableStateOf(savedOffset) }
+    var previewBox by remember { mutableStateOf(IntSize.Zero) }
+    var imageSize by remember { mutableStateOf(IntSize.Zero) }
+
+    /** L'inquadratura di prova tenuta dentro i bordi della scheda, in frazioni della scheda. */
+    fun clampedToCard(scale: Float, offsetPx: Offset): Offset {
+        val limit = coverPanLimit(previewBox, imageSize.width, imageSize.height, scale)
+        return Offset(
+            offsetPx.x.coerceIn(-limit.x, limit.x) / previewBox.width.coerceAtLeast(1),
+            offsetPx.y.coerceIn(-limit.y, limit.y) / previewBox.height.coerceAtLeast(1)
+        )
+    }
 
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(8.dp))
             .background(DarkSurface)
             .foundInside(row.id)
-            .pointerInput(row.id) {
-                detectTapGestures(onTap = { onOpen() }, onLongPress = { onLongPress() })
+            .pointerInput(row.id, repositioning) {
+                if (!repositioning) {
+                    detectTapGestures(onTap = { onOpen() }, onLongPress = { onLongPress() })
+                }
             }
     ) {
         if (preview != GalleryCardPreview.NONE) {
@@ -2906,20 +3014,63 @@ private fun GalleryCard(
                     .fillMaxWidth()
                     .aspectRatio(GALLERY_PREVIEW_RATIO)
                     .background(DarkSurfaceVariant)
+                    .onSizeChanged { previewBox = it }
             ) {
                 if (preview == GalleryCardPreview.PAGE_COVER && cover != null) {
-                    // La stessa inquadratura scelta nella pagina con
-                    // "Reposition", tenuta dentro i bordi: la scheda ha
-                    // un'altra forma della striscia della pagina.
+                    // Tenuta dentro i bordi: l'inquadratura della pagina è
+                    // nata su una striscia di un'altra forma, e anche quella
+                    // di prova non deve mai scoprire un angolo vuoto.
                     CoverImage(
                         fileName = cover.coverImage,
                         store = store,
-                        scale = cover.coverScale,
-                        offsetFraction = Offset(cover.coverOffsetX, cover.coverOffsetY),
-                        onImageSize = {},
+                        scale = if (repositioning) liveScale else savedScale,
+                        offsetFraction = if (repositioning) liveOffset else savedOffset,
+                        onImageSize = { imageSize = it },
                         clampOffset = true,
-                        modifier = Modifier.matchParentSize()
+                        modifier = Modifier
+                            .matchParentSize()
+                            .then(
+                                if (repositioning) {
+                                    Modifier.pointerInput(row.id, previewBox, imageSize) {
+                                        detectTransformGestures { _, pan, zoom, _ ->
+                                            val newScale = (liveScale * zoom).coerceIn(1f, MAX_COVER_ZOOM)
+                                            // Si parte da dove l'immagine si vede davvero
+                                            // (già tenuta dentro i bordi), non da dove
+                                            // direbbe la frazione salvata per la pagina.
+                                            val current = clampedToCard(
+                                                newScale,
+                                                Offset(liveOffset.x * previewBox.width, liveOffset.y * previewBox.height)
+                                            )
+                                            liveScale = newScale
+                                            liveOffset = clampedToCard(
+                                                newScale,
+                                                Offset(
+                                                    current.x * previewBox.width + pan.x,
+                                                    current.y * previewBox.height + pan.y
+                                                )
+                                            )
+                                        }
+                                    }
+                                } else {
+                                    Modifier
+                                }
+                            )
                     )
+                    if (repositioning) {
+                        CardCoverMoveControls(
+                            onCancel = onRepositionCancel,
+                            onSave = {
+                                onRepositionSave(
+                                    liveScale,
+                                    clampedToCard(
+                                        liveScale,
+                                        Offset(liveOffset.x * previewBox.width, liveOffset.y * previewBox.height)
+                                    )
+                                )
+                            },
+                            modifier = Modifier.matchParentSize()
+                        )
+                    }
                 }
                 if (preview == GalleryCardPreview.PAGE_CONTENT && !contentLines.isNullOrEmpty()) {
                     GalleryContentPreview(
@@ -5796,6 +5947,11 @@ private fun RowActionsSheet(
     simple: Boolean = false,
     onTitleChange: (String) -> Unit = {},
     onEditIcon: () -> Unit,
+    /**
+     * "Reposition cover": l'inquadratura della copertina nella scheda della
+     * galleria. Null dove non ha senso (le altre viste, niente copertina).
+     */
+    onRepositionCover: (() -> Unit)? = null,
     onDelete: () -> Unit
 ) {
     var page by remember(row.id) { mutableStateOf(RowActionsPage.ROOT) }
@@ -5877,6 +6033,12 @@ private fun RowActionsSheet(
                             onClick = onEditIcon
                         )
                         HorizontalDivider()
+                        if (onRepositionCover != null) {
+                            SheetAction(Icons.Filled.OpenWith, DbStrings.repositionCover) {
+                                onRepositionCover()
+                            }
+                            HorizontalDivider()
+                        }
                         SettingsRow(
                             icon = Icons.Filled.FormatListBulleted,
                             label = DbStrings.editProperty,

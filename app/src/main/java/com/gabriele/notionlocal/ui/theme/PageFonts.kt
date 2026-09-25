@@ -62,7 +62,7 @@ val PageFont.label: String
         PageFont.CONSOLAS -> "Consolas"
         PageFont.SONGTI -> "Songti"
         PageFont.KAITI -> "Kaiti"
-        PageFont.MS_YAHEI -> "MS YaHei"
+        PageFont.SIMSUN -> "SimSun"
         PageFont.MINCHO -> "Mincho"
         PageFont.GOTHIC -> "Gothic"
         PageFont.KAISEI -> "Kaisei"
@@ -72,7 +72,8 @@ val PageFont.label: String
  * Il font libero che disegna davvero il testo: nel menu di scelta sta
  * fra parentesi dopo il nome. Per i font scaricati è anche il nome con
  * cui lo si chiede a Google, quindi va scritto esattamente come nel
- * catalogo di Google Fonts.
+ * catalogo di Google Fonts — salvo SimSun, che dice anche il peso (vedi
+ * `fontFamily`).
  */
 val PageFont.lookalike: String
     get() = when (this) {
@@ -96,7 +97,11 @@ val PageFont.lookalike: String
         // Un kaishu a pennello: il più vicino al Kaiti fra quelli liberi
         // che coprono il cinese semplificato.
         PageFont.KAITI -> "Ma Shan Zheng"
-        PageFont.MS_YAHEI -> "Noto Sans SC"
+        // SimSun è un Song dai tratti sottili: lo stesso Noto Serif SC del
+        // Songti, ma nel peso Light, che gli somiglia e dal Songti si
+        // distingue. (Al suo posto c'era MS YaHei → Noto Sans SC, identico
+        // al font cinese di sistema: tolto il 25/09/2026.)
+        PageFont.SIMSUN -> "Noto Serif SC Light"
         PageFont.MINCHO -> "Noto Serif JP"
         PageFont.GOTHIC -> "Noto Sans JP"
         PageFont.KAISEI -> "Kaisei Opti"
@@ -107,7 +112,7 @@ enum class PageFontGroup { LATIN, CHINESE, JAPANESE }
 
 val PageFont.group: PageFontGroup
     get() = when (this) {
-        PageFont.SONGTI, PageFont.KAITI, PageFont.MS_YAHEI -> PageFontGroup.CHINESE
+        PageFont.SONGTI, PageFont.KAITI, PageFont.SIMSUN -> PageFontGroup.CHINESE
         PageFont.MINCHO, PageFont.GOTHIC, PageFont.KAISEI -> PageFontGroup.JAPANESE
         else -> PageFontGroup.LATIN
     }
@@ -132,13 +137,15 @@ private fun bundled(regular: Int, bold: Int, italic: Int? = null, boldItalic: In
 /**
  * Un font scaricato da Google. Il grassetto si chiede solo se il font ce
  * l'ha: Ma Shan Zheng ne ha uno solo, e lì il grassetto lo simula il
- * telefono.
+ * telefono. `regular` è il peso da usare per il testo normale: di solito
+ * Normal, Light per SimSun (Compose, cercando il normale, prende il più
+ * vicino che la famiglia ha).
  */
-private fun downloadable(name: String, hasBold: Boolean = true): FontFamily {
+private fun downloadable(name: String, hasBold: Boolean = true, regular: FontWeight = FontWeight.Normal): FontFamily {
     val font = GoogleFont(name)
     return FontFamily(
         listOfNotNull(
-            DownloadableFont(googleFont = font, fontProvider = googleFontsProvider, weight = FontWeight.Normal),
+            DownloadableFont(googleFont = font, fontProvider = googleFontsProvider, weight = regular),
             if (hasBold) {
                 DownloadableFont(googleFont = font, fontProvider = googleFontsProvider, weight = FontWeight.Bold)
             } else {
@@ -169,7 +176,7 @@ fun PageFont.fontFamily(): FontFamily = families.getOrPut(this) {
         PageFont.CONSOLAS -> bundled(R.font.inconsolata_regular, R.font.inconsolata_bold)
         PageFont.SONGTI -> downloadable(lookalike)
         PageFont.KAITI -> downloadable(lookalike, hasBold = false)
-        PageFont.MS_YAHEI -> downloadable(lookalike)
+        PageFont.SIMSUN -> downloadable("Noto Serif SC", regular = FontWeight.Light)
         PageFont.MINCHO -> downloadable(lookalike)
         PageFont.GOTHIC -> downloadable(lookalike)
         PageFont.KAISEI -> downloadable(lookalike)

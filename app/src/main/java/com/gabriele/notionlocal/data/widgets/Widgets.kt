@@ -119,19 +119,36 @@ data class PomodoroWidget(
     val breakMinutes: Int = 5,
     val phase: PomodoroPhase = PomodoroPhase.SESSION,
     val running: Boolean = false,
-    /** Il tempo che manca, a timer fermo. */
+    /**
+     * Il tempo che manca, a timer fermo; a timer che corre, quello che
+     * mancava quando è partito (vedi `remainingAt`).
+     */
     val remainingMs: Long = 25 * MINUTE_MS,
     /** Quando finirà la fase, a timer che corre. */
-    val endsAt: Long? = null
+    val endsAt: Long? = null,
+    /**
+     * Il suono di fine fase **di questo pomodoro**, scelto fra le suonerie
+     * del telefono dall'ingranaggio (dal 25/09/2026, chiesto dall'utente).
+     * Null = il suono delle notifiche dell'app, com'era prima. Il nome è
+     * quello da far leggere, perché dall'indirizzo non si capisce.
+     */
+    val soundUri: String? = null,
+    val soundName: String? = null
 ) : Widget() {
     fun lengthOf(phase: PomodoroPhase): Long = when (phase) {
         PomodoroPhase.SESSION -> sessionMinutes * MINUTE_MS
         PomodoroPhase.BREAK -> breakMinutes * MINUTE_MS
     }
 
-    /** Il tempo che manca adesso. */
+    /**
+     * Il tempo che manca adesso. Mentre corre, **mai più di quello con cui
+     * è partito** (`remainingMs`): l'ora che la barra laterale passa qui si
+     * rinfresca allo scoccare di ogni secondo, e subito dopo ▶ può essere
+     * indietro di quasi un secondo — un minuto appena avviato si leggeva
+     * "01:01" per un attimo (visto sul telefono il 24/09/2026).
+     */
     fun remainingAt(now: Long): Long =
-        if (running && endsAt != null) (endsAt - now).coerceAtLeast(0) else remainingMs
+        if (running && endsAt != null) (endsAt - now).coerceAtMost(remainingMs).coerceAtLeast(0) else remainingMs
 }
 
 const val MINUTE_MS = 60_000L

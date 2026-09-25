@@ -24,7 +24,11 @@ data class RowCover(
     val coverImage: String,
     val coverScale: Float,
     val coverOffsetX: Float,
-    val coverOffsetY: Float
+    val coverOffsetY: Float,
+    /** L'inquadratura sua della scheda, se l'utente ne ha scelta una: vedi `PageEntity.cardCoverScale`. */
+    val cardCoverScale: Float? = null,
+    val cardCoverOffsetX: Float? = null,
+    val cardCoverOffsetY: Float? = null
 )
 
 /**
@@ -193,7 +197,8 @@ interface DatabaseDao {
     @Query(
         "SELECT database_rows.id AS rowId, pages.coverImage AS coverImage, " +
             "pages.coverScale AS coverScale, pages.coverOffsetX AS coverOffsetX, " +
-            "pages.coverOffsetY AS coverOffsetY " +
+            "pages.coverOffsetY AS coverOffsetY, pages.cardCoverScale AS cardCoverScale, " +
+            "pages.cardCoverOffsetX AS cardCoverOffsetX, pages.cardCoverOffsetY AS cardCoverOffsetY " +
             "FROM database_rows JOIN pages ON pages.id = database_rows.linkedPageId " +
             "WHERE database_rows.pageId = :pageId AND pages.coverImage IS NOT NULL"
     )

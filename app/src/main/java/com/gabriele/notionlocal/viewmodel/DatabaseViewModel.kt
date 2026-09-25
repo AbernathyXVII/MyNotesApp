@@ -782,6 +782,16 @@ class DatabaseViewModel(
         return previous?.takeIf { it != fileName }
     }
 
+    /**
+     * "Reposition cover" dalla galleria: l'inquadratura della copertina
+     * **nella scheda** di questa riga, indipendente da quella in cima alla
+     * pagina. Una scheda con la copertina ha per forza la sua pagina.
+     */
+    fun setRowCardCover(row: DatabaseRowEntity, scale: Float, offsetX: Float, offsetY: Float) {
+        val pageId = row.linkedPageId ?: return
+        viewModelScope.launch { pageRepository.setCardCoverTransform(pageId, scale, offsetX, offsetY) }
+    }
+
     /** Se da qualche parte questo database è mostrato come pagina: solo allora ha senso "Turn into database". */
     suspend fun isShownAsPage(): Boolean {
         val current = _page.value ?: return false

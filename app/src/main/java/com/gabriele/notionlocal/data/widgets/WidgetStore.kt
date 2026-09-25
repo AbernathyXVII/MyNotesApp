@@ -2,8 +2,10 @@ package com.gabriele.notionlocal.data.widgets
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.media.Ringtone
 import android.media.RingtoneManager
 import android.net.Uri
+import android.os.Build
 import androidx.compose.runtime.mutableStateOf
 import com.gabriele.notionlocal.data.settings.AppSettings
 import kotlinx.coroutines.CoroutineScope
@@ -183,6 +185,11 @@ object WidgetStore {
 
     fun pomodoroRename(widgetId: String, name: String) = updateWidget<PomodoroWidget>(widgetId) { it.copy(sessionName = name) }
 
+    /** Il suono di fine fase di un pomodoro; null = quello delle notifiche dell'app. */
+    fun pomodoroSetSound(widgetId: String, uri: String?, name: String?) = updateWidget<PomodoroWidget>(widgetId) {
+        it.copy(soundUri = uri, soundName = name?.takeIf { uri != null })
+    }
+
     /**
      * Fa avanzare i pomodori la cui fase è finita. Suona se una è finita
      * **da poco** (`RING_WINDOW_MS`): chi recupera fasi finite ad app
@@ -191,15 +198,21 @@ object WidgetStore {
     private fun advancePomodoros(ringIfRecent: Boolean) {
         val now = System.currentTimeMillis()
         var ring = false
+        // Il suono del primo pomodoro appena finito: due che finiscono
+        // insieme suonano una volta sola, come prima.
+        var sound: String? = null
         update { s ->
             s.copy(widgets = s.widgets.map { w ->
                 if (w !is PomodoroWidget) return@map w
                 val (next, ended) = w.advancedTo(now)
-                if (ended != null && now - ended < RING_WINDOW_MS) ring = true
+                if (ended != null && now - ended < RING_WINDOW_MS) {
+                    if (!ring) sound = w.soundUri
+                    ring = true
+                }
                 next
             })
         }
-        if (ring && ringIfRecent) ring()
+        if (ring && ringIfRecent) ring(sound)
         scheduleAlarm()
     }
 
@@ -218,17 +231,45 @@ object WidgetStore {
     }
 
     /**
-     * Il suono di fine fase: quello scelto nelle impostazioni per le
-     * notifiche, o quello del telefono. Tace se le notifiche sono messe a
-     * tacere nelle impostazioni dell'app.
+     * Il suono di fine fase: quello scelto per il pomodoro, se c'è, se no
+     * quello scelto nelle impostazioni per le notifiche, o quello del
+     * telefono. Tace se le notifiche sono messe a tacere nelle
+     * impostazioni dell'app.
      */
-    private fun ring() {
+    private fun ring(pomodoroSound: String?) {
         if (!::appContext.isInitialized) return
         if (AppSettings.notificationsMuted || AppSettings.mutedUntil != null) return
-        runCatching {
-            val uri = AppSettings.notificationSoundUri?.let(Uri::parse)
-                ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-            RingtoneManager.getRingtone(appContext, uri)?.play()
+        val uri = (pomodoroSound ?: AppSettings.notificationSoundUri)?.let(Uri::parse)
+            ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+        playOnce(appContext, uri)
+    }
+
+    /** Il suono che sta suonando adesso, per fermarlo: vedi `playOnce`. */
+    private var playing: Ringtone? = null
+    private var stopPlaying: Job? = null
+
+    /**
+     * Suona un suono **una volta sola, e al massimo per `MAX_SOUND_MS`**.
+     *
+     * Le suonerie del telefono (quelle "Galaxy" di Samsung, per esempio)
+     * sono fatte per ripetersi finché non si risponde: il file stesso lo
+     * chiede (l'etichetta `ANDROID_LOOP`), e suonate come un avviso non
+     * finivano più — trovato sul telefono il 25/09/2026, scelta "Asteroid"
+     * per il pomodoro. Si chiede di non ripetere (da Android 9), e in ogni
+     * caso lo si ferma dopo qualche secondo: vale anche per un brano lungo
+     * scelto come suono delle notifiche. Un suono nuovo ferma il vecchio.
+     */
+    fun playOnce(context: Context, uri: Uri) {
+        stopPlaying?.cancel()
+        playing?.stop()
+        val ringtone = runCatching { RingtoneManager.getRingtone(context, uri) }.getOrNull() ?: return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) ringtone.isLooping = false
+        runCatching { ringtone.play() }
+        playing = ringtone
+        stopPlaying = scope.launch {
+            delay(MAX_SOUND_MS)
+            ringtone.stop()
+            if (playing === ringtone) playing = null
         }
     }
 
@@ -237,6 +278,7 @@ object WidgetStore {
 
     private const val KEY_STATE = "state"
     private const val RING_WINDOW_MS = 5_000L
+    private const val MAX_SOUND_MS = 8_000L
     const val MAX_POMODORO_MINUTES = 180
 }
 

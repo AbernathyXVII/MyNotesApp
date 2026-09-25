@@ -418,6 +418,9 @@ object DbStrings {
     val allShown get() = t("All shown", "Tutte visibili", "Alle sichtbar", "Toutes affichées", "Todas visibles", "全部显示", "모두 표시", "すべて表示")
     fun nHidden(n: Int) = t("$n hidden", "$n nascoste", "$n ausgeblendet", "$n masquées", "$n ocultas", "已隐藏 $n 个", "${n}개 숨김", "${n}件非表示")
     val change get() = t("Change", "Cambia", "Ändern", "Changer", "Cambiar", "更改", "변경", "変更")
+
+    /** Nelle azioni di una scheda della galleria: l'inquadratura della copertina, solo nella scheda. */
+    val repositionCover get() = t("Reposition cover", "Riposiziona copertina", "Titelbild neu positionieren", "Repositionner la couverture", "Reposicionar portada", "调整封面位置", "커버 위치 조정", "カバーの位置を調整")
     val showTitle get() = t("Show title", "Mostra il titolo", "Titel anzeigen", "Afficher le titre", "Mostrar título", "显示标题", "제목 표시", "タイトルを表示")
     val cardPreview get() = t("Card preview", "Anteprima della scheda", "Kartenvorschau", "Aperçu de la carte", "Vista previa de la tarjeta", "卡片预览", "카드 미리보기", "カードプレビュー")
     val cardSize get() = t("Card size", "Dimensione della scheda", "Kartengröße", "Taille de la carte", "Tamaño de la tarjeta", "卡片大小", "카드 크기", "カードサイズ")

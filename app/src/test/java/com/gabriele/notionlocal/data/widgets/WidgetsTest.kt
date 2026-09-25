@@ -125,6 +125,15 @@ class WidgetsTest {
     }
 
     @Test
+    fun aJustStartedPomodoroNeverShowsMoreThanItStartedWith() {
+        // ▶ premuto a metà secondo, con l'ora della barra ancora ferma allo scatto prima.
+        val started = 10_600L
+        val pomodoro = PomodoroWidget(running = true, remainingMs = MINUTE_MS, endsAt = started + MINUTE_MS)
+        assertEquals(MINUTE_MS, pomodoro.remainingAt(10_005))
+        assertEquals(MINUTE_MS - 405, pomodoro.remainingAt(11_005))
+    }
+
+    @Test
     fun everyWidgetIsSavedAndReadBackTheSame() {
         val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
         val state = WidgetsState(

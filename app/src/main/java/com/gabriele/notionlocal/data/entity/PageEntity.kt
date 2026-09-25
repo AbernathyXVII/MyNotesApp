@@ -78,7 +78,14 @@ enum class PageFont {
     CONSOLAS,
     SONGTI,
     KAITI,
-    MS_YAHEI,
+    // MS_YAHEI c'era fino al 25/09/2026: il suo sosia libero (Noto Sans SC)
+    // è lo stesso disegno che Android usa già per il cinese, e sul
+    // telefono non si distingueva dal font di sistema. Tolto su richiesta
+    // dell'utente, che ha chiesto SimSun al suo posto; la migrazione 29→30
+    // ha rimesso al font di sistema le pagine che lo usavano. **Non
+    // rimetterlo senza una migrazione**: un nome che l'enum non conosce fa
+    // chiudere l'app all'apertura della pagina.
+    SIMSUN,
     MINCHO,
     GOTHIC,
     KAISEI
@@ -171,6 +178,15 @@ data class PageEntity(
     var coverScale: Float = 1f,
     var coverOffsetX: Float = 0f,
     var coverOffsetY: Float = 0f,
+    // L'inquadratura della copertina **nelle schede della galleria**
+    // (dal 25/09/2026): tenendo premuta la scheda → "Reposition cover". La
+    // scheda ha un'altra forma della striscia in cima alla pagina, e
+    // l'utente ha voluto un'inquadratura sua, indipendente da quella. Stesso
+    // significato dei tre campi sopra, ma in frazioni della scheda. Null =
+    // la stessa della pagina, com'era prima; una copertina nuova la azzera.
+    var cardCoverScale: Float? = null,
+    var cardCoverOffsetX: Float? = null,
+    var cardCoverOffsetY: Float? = null,
     var isDatabase: Boolean = false,
     // **Database semplice** (solo con isDatabase = true): un database vero
     // — viste, filtri, ordinamento, raggruppamento, proprietà — in cui

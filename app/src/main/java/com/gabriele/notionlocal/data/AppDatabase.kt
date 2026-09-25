@@ -43,7 +43,7 @@ import com.gabriele.notionlocal.data.entity.TableCellEntity
         TableCellEntity::class,
         PageEditEntity::class
     ],
-    version = 29,
+    version = 30,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -409,6 +409,36 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Due cose del 25/09/2026, in una migrazione sola:
+         *  - **via MS YaHei** (chiesto dall'utente, al suo posto SimSun): le
+         *    pagine che lo usavano tornano al font di sistema, che sul
+         *    cinese è lo stesso disegno. Va fatto prima di qualunque
+         *    lettura: Room legge il font per nome, e "MS_YAHEI" non esiste
+         *    più nell'enum;
+         *  - **l'inquadratura della copertina nelle schede della galleria**:
+         *    tre colonne vuote, cioè "la stessa della pagina", com'era.
+         */
+        private val MIGRATION_29_30 = object : Migration(29, 30) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("UPDATE pages SET pageFont = NULL WHERE pageFont = 'MS_YAHEI'")
+                db.execSQL("ALTER TABLE pages ADD COLUMN cardCoverScale REAL")
+                db.execSQL("ALTER TABLE pages ADD COLUMN cardCoverOffsetX REAL")
+                db.execSQL("ALTER TABLE pages ADD COLUMN cardCoverOffsetY REAL")
+            }
+        }
+
+        /**
+         * Solo per i test: chiude il database e lo dimentica, così il
+         * `getInstance` dopo riapre il file da capo (e ne esegue le
+         * migrazioni). Senza, il secondo test troverebbe il database del
+         * primo, già chiuso.
+         */
+        internal fun resetForTests() = synchronized(this) {
+            INSTANCE?.close()
+            INSTANCE = null
+        }
+
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -440,7 +470,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_25_26,
                         MIGRATION_26_27,
                         MIGRATION_27_28,
-                        MIGRATION_28_29
+                        MIGRATION_28_29,
+                        MIGRATION_29_30
                     )
                     .build()
                 INSTANCE = instance
