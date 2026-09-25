@@ -2009,6 +2009,20 @@ prova: «La suoneria sta continuando a suonare all'infinito».
   Test nuovo `WidgetsTest.theTimerRedrawsExactlyWhenItsDigitChanges`.
   Verificato con screenshot a tempo dal telefono: "01:00" fino a 0,76 s
   dopo il tocco, "00:59" a 1,13 s, "00:58" a 2,16 s, "00:57" a 3,06 s
+- **[Nuova funzionalità]** **L'ora nella scelta del fuso di "Add to the
+  list".** Richiesta dell'utente, parola per parola: «Nella lista degli
+  orologi, non quando faccio "Add clock" ma "Add to the list", aggiungimi
+  a destra anche l'ora. Mi serve saperla in aggiunta del fuso orario
+  appartenente (ovviamente si deve aggiornare man mano che il tempo reale
+  scorre)». Letta così: nell'elenco del widget l'ora c'era già, mancava
+  nella finestra di scelta. Ora lì, a destra di ogni fuso (sotto il nome
+  resta "Regione · GMT±x"), c'è **l'ora che è in quel posto adesso**, che
+  avanza mentre la finestra resta aperta. Subito dopo l'utente: «Me la
+  metti anche in Add clock per favore?» — ora c'è in tutte e tre le
+  strade che aprono la finestra: "Add to the list", "Add clock" e "Change
+  time zone" di un orologio (`ZonePickerSheet`). Verificato: Midway 19:33
+  → 19:34 allo scatto del minuto, Marquesas (GMT-9:30) 21:03 → 21:04; in
+  "Add clock" 19:36 alle 08:36 italiane
 - **[Rimosso]** **MS YaHei.** Non era rotto: il suo sosia libero, Noto
   Sans SC, è **lo stesso disegno** che Android usa già per il cinese, e
   sul telefono non si distingueva dal font di sistema. Tolto su richiesta

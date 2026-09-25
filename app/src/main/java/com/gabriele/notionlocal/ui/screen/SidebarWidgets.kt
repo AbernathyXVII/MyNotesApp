@@ -538,6 +538,9 @@ private fun DigitalClock(time: ZonedDateTime, height: Dp) {
     }
 }
 
+/** L'ora nell'elenco dei fusi e nella sua finestra di scelta: "9:05", "23:40". */
+private val ZONE_LIST_TIME: DateTimeFormatter = DateTimeFormatter.ofPattern("H:mm")
+
 /** Una riga dell'elenco dei fusi: la città, l'ora, il sole o la luna. Tenendola premuta si toglie. */
 @Composable
 private fun ZoneListRow(zoneId: String, instant: Instant, onRemove: () -> Unit) {
@@ -560,7 +563,7 @@ private fun ZoneListRow(zoneId: String, instant: Instant, onRemove: () -> Unit) 
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f)
             )
-            Text(DateTimeFormatter.ofPattern("H:mm").format(time), color = NotionWhite, style = MaterialTheme.typography.bodyMedium)
+            Text(ZONE_LIST_TIME.format(time), color = NotionWhite, style = MaterialTheme.typography.bodyMedium)
             Spacer(modifier = Modifier.width(8.dp))
             Icon(
                 imageVector = if (daytime) Icons.Filled.WbSunny else Icons.Filled.DarkMode,
@@ -582,11 +585,17 @@ private fun ZoneListRow(zoneId: String, instant: Instant, onRemove: () -> Unit) 
  * La scelta del fuso: tutti quelli con un nome di città, **da ovest a est**
  * come l'elenco, con la distanza da Greenwich di adesso; si cerca per
  * città, regione o "GMT+2".
+ *
+ * A destra di ogni fuso **l'ora che è lì adesso**, che avanza mentre la
+ * finestra resta aperta — per scegliere una città sapendo già che ore
+ * sono (dal 25/09/2026, chiesta dall'utente prima per "Add to the list",
+ * poi anche per "Add clock"; vale anche per "Change time zone").
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ZonePickerSheet(onDismiss: () -> Unit, onPick: (String) -> Unit) {
     var query by remember { mutableStateOf("") }
+    val now by rememberNow(true)
     val all = remember {
         val now = Instant.now()
         sortedWestToEast(selectableZoneIds(), now).map { id -> id to gmtLabel(ZoneId.of(id), now) }
@@ -639,14 +648,22 @@ private fun ZonePickerSheet(onDismiss: () -> Unit, onPick: (String) -> Unit) {
             }
             LazyColumn(modifier = Modifier.weight(1f)) {
                 items(shown, key = { it.first }) { (id, gmt) ->
-                    Column(
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { onPick(id) }
-                            .padding(horizontal = 20.dp, vertical = 10.dp)
+                            .padding(horizontal = 20.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(cityName(id), color = NotionWhite, style = MaterialTheme.typography.bodyLarge)
-                        Text("${regionName(id)} · $gmt", color = NotionGray400, style = MaterialTheme.typography.bodySmall)
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(cityName(id), color = NotionWhite, style = MaterialTheme.typography.bodyLarge)
+                            Text("${regionName(id)} · $gmt", color = NotionGray400, style = MaterialTheme.typography.bodySmall)
+                        }
+                        Text(
+                            text = ZONE_LIST_TIME.format(Instant.ofEpochMilli(now).atZone(zoneOf(id))),
+                            color = NotionWhite,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
                     }
                 }
             }
