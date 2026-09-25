@@ -1983,8 +1983,8 @@ coperto, nella voce qui sotto):
 - Notato durante la prova: nella pagina "My Space" la parola "Paragrafo"
   è in **Futura**. Non l'ha messa Claude: alle 13:21 era nel font
   normale, alle 13:27, appena reinstallata l'app e prima di toccare la
-  pagina, era già in Futura — probabilmente una prova dell'utente. Lasciata
-  com'è
+  pagina, era già in Futura. **Confermato dall'utente**: «Sì, l'ho
+  provato io, tranquillo». Lasciata com'è
 
 **25/09/2026 — font e dimensione sul testo selezionato** *(Claude Code
 sul PC; verificato sul telefono lo stesso giorno; schema alla versione
