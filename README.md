@@ -604,9 +604,11 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   l'interruttore "End date"
 - **Disegno a mano** (dal 25/09/2026): "Draw" nei tre puntini di una
   pagina. Penna, matita, pennarello ed evidenziatore, con spessore e
-  colore; gomma per tratti o a punto; Annulla e Ripeti. Con la S Pen
-  (pressione, tasto laterale per cancellare) il dito scorre la pagina. I
-  disegni seguono le righe, il database o il titolo su cui li si è fatti
+  colore; gomma per tratti o a punto; Annulla e Ripeti. La S Pen (con la
+  pressione, e il tasto laterale per cancellare) e un dito disegnano, due
+  dita scorrono; il palmo appoggiato mentre si usa la penna non lascia
+  segni. I disegni seguono le righe, il database o il titolo su cui li si è
+  fatti
 - **Notifiche** (dal 25/09/2026): la riga **`/notification 22.10.2026
   19:41 Buttare l'immondizia`** (Invio, e diventa una riga con la
   campanella; senza ora alle 9:00; senza testo mostra il nome della
@@ -1991,6 +1993,42 @@ Le voci nate nelle sessioni cloud stanno qui in cima, la più recente
 per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
+
+**25/09/2026 — il dito disegna, due dita scorrono, il palmo non conta**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno, tranne le
+due dita e la penna sospesa, vedi in fondo; 126 test passati; commit solo
+in locale)*
+
+L'utente, parola per parola:
+> «Ma è normale che con il dito non disegna? È un bug?»
+
+Non era un bug: la prima volta che si usava la S Pen il dito smetteva di
+disegnare e scorreva la pagina, per il palmo. Lo diceva un avviso di pochi
+secondi, e la mano per riaccenderlo stava in fondo alla barra, fuori dallo
+schermo. Proposto di spostare la mano, o di non spegnere più il dito da
+solo. Risposta, parola per parola:
+> «Sì. Quando disegno lo scorrimento lo devi mettere solo con due dita»
+
+- **[Nuova funzionalità]** **Mentre si disegna, un dito disegna e la pagina
+  scorre solo con due dita**, sempre. Con la mano spenta un dito non fa
+  niente (non scorre più la pagina)
+- **[Nuova funzionalità]** **La mano sta accanto a ✓, Annulla e Ripeti**,
+  sempre in vista, blu quando il dito disegna
+- **[Rimosso]** Lo spegnimento automatico del dito al primo uso della S Pen,
+  e il suo avviso. La scelta salvata ha un nome nuovo (`fingerDrawing`):
+  quella spenta da sola sul telefono dell'utente si è dimenticata, e il dito
+  è tornato a disegnare
+- **[Nuova funzionalità]** **Il palmo non conta**, al posto dello
+  spegnimento: mentre la S Pen è vicina allo schermo (anche solo sospesa) o
+  lo tocca, e per 0,6 secondi dopo, i tocchi della mano si ignorano; e se la
+  mano ha cominciato un segno prima che la penna tocchi, quel segno si butta
+  e disegna la penna
+- Verificato sul telefono, su "Titolo tre H3" (dove ci sono i disegni
+  dell'utente, lasciati com'erano): la mano accanto a Ripeti, blu; un dito
+  → disegna; S Pen (simulata) e subito dopo un dito → la linea del dito non
+  c'è; un dito un secondo dopo → disegna. Le tre linee di prova tolte con
+  Annulla (restano i 7 tratti dell'utente). **Da provare a mano**: lo
+  scorrimento con due dita e la penna sospesa, che adb non sa simulare
 
 **25/09/2026 — il colore delle penne col selettore del pennello**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 126 test

@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import androidx.compose.runtime.mutableStateOf
 import com.gabriele.notionlocal.data.entity.InkStrokeEntity
 import com.gabriele.notionlocal.data.entity.InkTool
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -37,10 +38,14 @@ data class InkSettings(
     /** Il raggio della gomma, in dp. */
     val eraserRadius: Float = ERASER_SIZES[1],
     /**
-     * Se il dito disegna. Si spegne da solo la prima volta che si usa la
-     * S Pen: da lì il dito scorre la pagina, e il palmo appoggiato sullo
-     * schermo non lascia segni.
+     * Se un dito disegna (la mano nella barra). Due dita scorrono sempre.
+     *
+     * **Salvato con un nome nuovo** (`fingerDrawing`) dal 25/09/2026: fino
+     * ad allora la prima S Pen lo spegneva da sola, e sul telefono
+     * dell'utente era rimasto spento senza che l'avesse scelto. Col nome
+     * nuovo quel valore si dimentica e il dito torna a disegnare.
      */
+    @SerialName("fingerDrawing")
     val fingerDraws: Boolean = true
 ) {
     val eraserSelected: Boolean get() = selected < 0

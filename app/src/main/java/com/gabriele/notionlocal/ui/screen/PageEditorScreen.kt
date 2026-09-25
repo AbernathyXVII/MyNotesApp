@@ -123,7 +123,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import com.gabriele.notionlocal.data.entity.InkStrokeEntity
 import com.gabriele.notionlocal.data.ink.InkPrefs
 import com.gabriele.notionlocal.data.ink.resolveAnchor
-import com.gabriele.notionlocal.ui.i18n.InkStrings
 import com.gabriele.notionlocal.viewmodel.InkViewModel
 import com.gabriele.notionlocal.data.notify.NotificationCommand
 import com.gabriele.notionlocal.data.notify.NotificationCommands
@@ -1382,10 +1381,6 @@ fun PageEditorScreen(
                         if (drawingMode) {
                             Modifier.inkInput(
                                 state = inkState,
-                                onPenDetected = {
-                                    InkPrefs.update { it.copy(fingerDraws = false) }
-                                    Toast.makeText(context, InkStrings.penDetected, Toast.LENGTH_LONG).show()
-                                },
                                 onStroke = { anchor, pen, points ->
                                     inkViewModel.addStroke(anchor, pen.tool, pen.color, pen.width, points)
                                 },

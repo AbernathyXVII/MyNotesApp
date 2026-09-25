@@ -22,16 +22,6 @@ object InkStrings {
     val thinner get() = t("Thinner", "Più sottile", "Dünner", "Plus fin", "Más fino", "更细", "더 얇게", "細く")
     val thicker get() = t("Thicker", "Più spesso", "Dicker", "Plus épais", "Más grueso", "更粗", "더 굵게", "太く")
     val fingerDraws get() = t("Draw with finger", "Disegna col dito", "Mit dem Finger zeichnen", "Dessiner au doigt", "Dibujar con el dedo", "用手指绘图", "손가락으로 그리기", "指で描く")
-    val penDetected get() = t(
-        "S Pen detected: from now on your finger scrolls the page. The hand in the bar turns finger drawing back on.",
-        "S Pen rilevata: da ora il dito scorre la pagina. La mano nella barra fa tornare a disegnare col dito.",
-        "S Pen erkannt: Ab jetzt scrollt der Finger die Seite. Die Hand in der Leiste schaltet das Fingerzeichnen wieder ein.",
-        "S Pen détecté : désormais le doigt fait défiler la page. La main dans la barre réactive le dessin au doigt.",
-        "S Pen detectado: desde ahora el dedo desplaza la página. La mano de la barra vuelve a activar el dibujo con el dedo.",
-        "已检测到 S Pen：手指现在用于滚动页面。点栏中的手形图标可恢复手指绘图。",
-        "S Pen이 감지되었습니다. 이제 손가락으로 페이지를 스크롤합니다. 바의 손 아이콘으로 손가락 그리기를 다시 켤 수 있습니다.",
-        "S Pen を検出しました。これからは指でページをスクロールします。バーの手のアイコンで指描きに戻せます。"
-    )
 
     fun toolName(tool: InkTool): String = when (tool) {
         InkTool.PEN -> t("Pen", "Penna", "Stift", "Stylo", "Bolígrafo", "钢笔", "펜", "ペン")

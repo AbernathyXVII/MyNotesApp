@@ -62,6 +62,7 @@ import androidx.compose.ui.input.pointer.PointerEvent
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.PointerType
+import androidx.compose.ui.input.pointer.changedToDown
 import androidx.compose.ui.input.pointer.isPrimaryPressed
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -132,6 +133,9 @@ class InkPageState(val listState: LazyListState) {
 
     /** Dov'è la gomma mentre cancella, in px: per disegnarne il cerchio. */
     var eraserAt by mutableStateOf<Offset?>(null)
+
+    /** L'ultima volta che si è sentita la S Pen, anche sospesa (ms dall'avvio): per il palmo. */
+    var lastPenAt: Long = Long.MIN_VALUE / 2
 
     fun remember(info: LazyListLayoutInfo) {
         for (item in info.visibleItemsInfo) heights[item.key] = item.size
@@ -332,89 +336,151 @@ fun Modifier.inkLayer(
 
 /**
  * **Chi disegna, in modalità disegno.** Guarda ogni tocco **prima** della
- * pagina (`PointerEventPass.Initial`) e se lo prende quando è suo:
+ * pagina (`PointerEventPass.Initial`) e se lo prende tutto: mentre si
+ * disegna la pagina non riceve niente.
  *
  *  - la **S Pen** disegna sempre; col **tasto laterale** premuto cancella,
  *    come su Samsung Notes;
- *  - il **dito** disegna solo se "Disegna col dito" è acceso; spento, il
- *    tocco passa alla pagina, che scorre. Si spegne da solo la prima volta
- *    che arriva la S Pen: così il palmo appoggiato non lascia segni;
- *  - col dito che disegna, **due dita** scorrono la pagina.
+ *  - **un dito** disegna, se la mano nella barra è accesa (lo è di
+ *    partenza); spenta, un dito non fa niente;
+ *  - **due dita** scorrono la pagina, sempre: è l'unico modo di scorrere
+ *    mentre si disegna, come ha chiesto l'utente il 25/09/2026.
+ *
+ * **Il palmo.** Mentre la S Pen è vicina allo schermo (Android la sente
+ * già a un paio di centimetri) o lo tocca, e per un attimo dopo, i tocchi
+ * della mano non contano (`PALM_WINDOW_MS`). E se la mano è arrivata per
+ * prima e ha cominciato un segno, appena la penna tocca quel segno si
+ * butta e disegna la penna. Prima, invece, la prima S Pen spegneva il dito
+ * per sempre, e l'utente non capiva perché il dito non disegnasse più.
  *
  * Sopra la copertina non si comincia a disegnare.
  */
 @OptIn(ExperimentalComposeUiApi::class)
 fun Modifier.inkInput(
     state: InkPageState,
-    onPenDetected: () -> Unit,
     onStroke: (anchor: String, pen: InkPen, points: List<InkPoint>) -> Unit,
     onErase: (xPx: Float, yPx: Float) -> Unit,
     onEraseEnd: () -> Unit
-): Modifier = pointerInput(state) {
-    awaitEachGesture {
-        val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
-        val stylus = down.type == PointerType.Stylus || down.type == PointerType.Eraser
-        if (stylus && InkPrefs.settings.fingerDraws) onPenDetected()
-        val settings = InkPrefs.settings
-        if (!stylus && !settings.fingerDraws) return@awaitEachGesture
-        if (down.position.y < state.boundary(state.listState.layoutInfo)) return@awaitEachGesture
-        val pen = settings.pen
-        val erasing = settings.eraserSelected || pen == null ||
-            down.type == PointerType.Eraser ||
-            (stylus && currentEvent.buttons.isPrimaryPressed)
-        down.consume()
+): Modifier = this
+    // Dov'è la S Pen, anche solo sospesa sopra lo schermo: per il palmo.
+    .pointerInput(state) {
+        awaitPointerEventScope {
+            while (true) {
+                val event = awaitPointerEvent(PointerEventPass.Initial)
+                event.changes.firstOrNull { it.type.isPen() }?.let { state.lastPenAt = it.uptimeMillis }
+            }
+        }
+    }
+    .pointerInput(state) {
+        awaitEachGesture {
+            val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+            down.consume()
+            if (!down.type.isPen() && down.uptimeMillis - state.lastPenAt < PALM_WINDOW_MS) {
+                // Il palmo, con la penna vicina: non disegna e non scorre.
+                swallowRest()
+                return@awaitEachGesture
+            }
+            val settings = InkPrefs.settings
+            val pen = settings.pen
+            val boundary = state.boundary(state.listState.layoutInfo)
 
-        fun pressureOf(change: PointerInputChange) =
-            if (stylus) change.pressure.coerceIn(0f, 1f) else NEUTRAL_PRESSURE
+            var trackedId = down.id
+            var stylus = down.type.isPen()
+            var erasing = false
+            var drawing = false
 
-        fun take(position: Offset, pressure: Float) {
-            if (erasing) {
-                state.eraserAt = position
-                onErase(position.x, position.y)
-            } else {
-                val last = state.current.lastOrNull()
-                if (last == null || hypot(position.x - last.x, position.y - last.y) >= 1f) {
-                    state.current += InkPoint(position.x, position.y, pressure)
+            fun start(change: PointerInputChange, buttonPressed: Boolean) {
+                drawing = (stylus || settings.fingerDraws) && change.position.y >= boundary
+                erasing = settings.eraserSelected || pen == null ||
+                    change.type == PointerType.Eraser ||
+                    (stylus && buttonPressed)
+            }
+
+            fun pressureOf(change: PointerInputChange) =
+                if (stylus) change.pressure.coerceIn(0f, 1f) else NEUTRAL_PRESSURE
+
+            fun take(position: Offset, pressure: Float) {
+                if (!drawing) return
+                if (erasing) {
+                    state.eraserAt = position
+                    onErase(position.x, position.y)
+                } else {
+                    val last = state.current.lastOrNull()
+                    if (last == null || hypot(position.x - last.x, position.y - last.y) >= 1f) {
+                        state.current += InkPoint(position.x, position.y, pressure)
+                    }
                 }
             }
-        }
 
-        take(down.position, pressureOf(down))
-        var cancelled = false
-        while (true) {
-            val event = awaitPointerEvent(PointerEventPass.Initial)
-            if (!stylus && event.changes.count { it.pressed } >= 2) {
-                // Due dita: non è un tratto, è scorrere.
-                cancelled = true
+            fun dropCurrent() {
                 state.current.clear()
+                if (erasing && drawing) onEraseEnd()
                 state.eraserAt = null
-                panWithTwoFingers(state, event)
-                break
             }
-            val change = event.changes.firstOrNull { it.id == down.id } ?: break
-            val pressure = pressureOf(change)
-            change.historical.forEach { take(it.position, pressure) }
-            take(change.position, pressure)
-            event.changes.forEach { it.consume() }
-            if (!change.pressed) break
-        }
 
-        if (erasing) {
-            state.eraserAt = null
-            onEraseEnd()
-        } else if (!cancelled && state.current.isNotEmpty() && pen != null) {
-            val info = state.listState.layoutInfo
-            val points = state.current.toList()
-            val anchorItem = state.itemAt(info, points.first().y)
-            val anchor = anchorItem?.let { state.anchorOfItem.getOrNull(it.first) }
-            if (anchorItem != null && anchor != null) {
-                val top = anchorItem.second
-                onStroke(anchor, pen, points.map { InkPoint(it.x / density, (it.y - top) / density, it.p) })
+            start(down, currentEvent.buttons.isPrimaryPressed)
+            take(down.position, pressureOf(down))
+            var scrolled = false
+            while (true) {
+                val event = awaitPointerEvent(PointerEventPass.Initial)
+                // La penna arriva mentre un dito disegna: il dito era il palmo.
+                val penDown = if (stylus) null else event.changes.firstOrNull { it.changedToDown() && it.type.isPen() }
+                if (penDown != null) {
+                    dropCurrent()
+                    trackedId = penDown.id
+                    stylus = true
+                    start(penDown, event.buttons.isPrimaryPressed)
+                    take(penDown.position, pressureOf(penDown))
+                    event.changes.forEach { it.consume() }
+                    continue
+                }
+                if (!stylus && event.changes.count { it.pressed } >= 2) {
+                    // Due dita: non è un tratto, è scorrere.
+                    dropCurrent()
+                    scrolled = true
+                    panWithTwoFingers(state, event)
+                    break
+                }
+                val change = event.changes.firstOrNull { it.id == trackedId } ?: break
+                val pressure = pressureOf(change)
+                change.historical.forEach { take(it.position, pressure) }
+                take(change.position, pressure)
+                event.changes.forEach { it.consume() }
+                if (!change.pressed) break
             }
-            state.current.clear()
-        } else {
-            state.current.clear()
+
+            if (scrolled || !drawing) {
+                state.current.clear()
+            } else if (erasing) {
+                state.eraserAt = null
+                onEraseEnd()
+            } else if (state.current.isNotEmpty() && pen != null) {
+                val info = state.listState.layoutInfo
+                val points = state.current.toList()
+                val anchorItem = state.itemAt(info, points.first().y)
+                val anchor = anchorItem?.let { state.anchorOfItem.getOrNull(it.first) }
+                if (anchorItem != null && anchor != null) {
+                    val top = anchorItem.second
+                    onStroke(anchor, pen, points.map { InkPoint(it.x / density, (it.y - top) / density, it.p) })
+                }
+                state.current.clear()
+            } else {
+                state.current.clear()
+            }
         }
+    }
+
+private fun PointerType.isPen() = this == PointerType.Stylus || this == PointerType.Eraser
+
+/** Per quanto la mano non conta dopo che la S Pen si è allontanata. */
+private const val PALM_WINDOW_MS = 600L
+
+/** Si prende il resto di un tocco che non deve fare niente, finché non si stacca. */
+private suspend fun AwaitPointerEventScope.swallowRest() {
+    while (true) {
+        val event = awaitPointerEvent(PointerEventPass.Initial)
+        event.changes.forEach { it.consume() }
+        if (event.changes.none { it.pressed }) return
     }
 }
 
@@ -436,8 +502,8 @@ private suspend fun AwaitPointerEventScope.panWithTwoFingers(state: InkPageState
 
 /**
  * **La barra del disegno**, in fondo alla pagina al posto di quella del
- * testo: Fine, Annulla e Ripeti, la gomma e le penne come nella foto di
- * OneNote, e la mano per disegnare col dito. Toccando lo strumento già in
+ * testo: Fine, Annulla, Ripeti e la mano per disegnare col dito, poi la
+ * gomma e le penne come nella foto di OneNote. Toccando lo strumento già in
  * mano (o tenendolo premuto) si aprono spessore, tipo e colori.
  */
 @OptIn(ExperimentalFoundationApi::class)
@@ -470,6 +536,16 @@ fun InkToolbar(
         }
         IconButton(onClick = onRedo, enabled = canRedo) {
             Icon(Icons.Filled.Redo, contentDescription = InkStrings.redo, tint = if (canRedo) NotionWhite else NotionGray400)
+        }
+        // La mano sta qui, sempre in vista: in fondo alla barra finiva
+        // fuori dallo schermo, e non la si trovava (25/09/2026).
+        val finger = settings.fingerDraws
+        IconButton(onClick = { InkPrefs.update { it.copy(fingerDraws = !it.fingerDraws) } }) {
+            Icon(
+                Icons.Filled.TouchApp,
+                contentDescription = InkStrings.fingerDraws,
+                tint = if (finger) AccentBlue else NotionGray400
+            )
         }
         Spacer(Modifier.width(4.dp))
 
@@ -507,15 +583,6 @@ fun InkToolbar(
             }
         }
 
-        Spacer(Modifier.width(4.dp))
-        val finger = settings.fingerDraws
-        IconButton(onClick = { InkPrefs.update { it.copy(fingerDraws = !it.fingerDraws) } }) {
-            Icon(
-                Icons.Filled.TouchApp,
-                contentDescription = InkStrings.fingerDraws,
-                tint = if (finger) AccentBlue else NotionGray400
-            )
-        }
     }
 }
 
