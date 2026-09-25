@@ -142,10 +142,10 @@ data class PomodoroWidget(
 
     /**
      * Il tempo che manca adesso. Mentre corre, **mai più di quello con cui
-     * è partito** (`remainingMs`): l'ora che la barra laterale passa qui si
-     * rinfresca allo scoccare di ogni secondo, e subito dopo ▶ può essere
-     * indietro di quasi un secondo — un minuto appena avviato si leggeva
-     * "01:01" per un attimo (visto sul telefono il 24/09/2026).
+     * è partito** (`remainingMs`): nell'istante in cui si preme ▶ l'ora in
+     * mano alla schermata è ancora quella di prima, indietro fino a quasi
+     * un secondo — un minuto appena avviato si leggeva "01:01" per un
+     * attimo (visto sul telefono il 24/09/2026).
      */
     fun remainingAt(now: Long): Long =
         if (running && endsAt != null) (endsAt - now).coerceAtMost(remainingMs).coerceAtLeast(0) else remainingMs
@@ -154,6 +154,14 @@ data class PomodoroWidget(
 const val MINUTE_MS = 60_000L
 
 // --- Calcoli, senza Android: si provano coi test ---
+
+/**
+ * Fra quanti millisecondi cambia la cifra di un timer a cui mancano
+ * `leftMs`: il timer si legge arrotondato per eccesso ("01:00" finché
+ * manca più di 59 secondi), quindi cambia quando mancano esattamente dei
+ * secondi interi. Da 60 000 è un secondo pieno, da 59 600 sono 600.
+ */
+fun msUntilTimerTicks(leftMs: Long): Long = (leftMs - 1) % 1_000 + 1
 
 /**
  * Il turno successivo di un pomodoro che corre, se la fase è finita.

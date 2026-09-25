@@ -97,6 +97,7 @@ import com.gabriele.notionlocal.data.widgets.WidgetStore
 import com.gabriele.notionlocal.data.widgets.cityName
 import com.gabriele.notionlocal.data.widgets.fractionAt
 import com.gabriele.notionlocal.data.widgets.gmtLabel
+import com.gabriele.notionlocal.data.widgets.msUntilTimerTicks
 import com.gabriele.notionlocal.data.widgets.regionName
 import com.gabriele.notionlocal.data.widgets.selectableZoneIds
 import com.gabriele.notionlocal.data.widgets.sortedWestToEast
@@ -174,7 +175,7 @@ internal fun WidgetsSection(active: Boolean) {
     }
 
     state.widgets.forEachIndexed { index, widget ->
-        WidgetCard(widget = widget, index = index, count = state.widgets.size, now = now)
+        WidgetCard(widget = widget, index = index, count = state.widgets.size, now = now, active = active)
     }
     AddWidgetButton()
 }
@@ -189,10 +190,34 @@ private fun rememberNow(active: Boolean) = produceState(System.currentTimeMillis
     }
 }
 
+/**
+ * L'ora per un pomodoro che corre, rinfrescata **quando cambia la cifra
+ * del timer** e non allo scoccare dei secondi dell'orologio.
+ *
+ * Il timer parte quando si preme ▶, a metà di un secondo qualunque: con
+ * l'ora di `rememberNow` il primo "00:59" arrivava al primo scatto
+ * dell'orologio dopo un secondo intero di timer, fino a quasi due secondi
+ * dopo ▶, e sembrava partire in ritardo (visto sul telefono il
+ * 25/09/2026). Qui si dorme fino all'istante esatto in cui mancano dei
+ * secondi interi — quando `timerText`, che arrotonda per eccesso, cambia —
+ * e si riparte da capo appena il timer cambia (▶, pausa, fase nuova).
+ */
+@Composable
+private fun rememberTimerNow(endsAt: Long?, active: Boolean) =
+    produceState(System.currentTimeMillis(), endsAt, active) {
+        value = System.currentTimeMillis()
+        while (active && endsAt != null) {
+            val left = endsAt - System.currentTimeMillis()
+            if (left <= 0) break
+            delay(msUntilTimerTicks(left) + 5)
+            value = System.currentTimeMillis()
+        }
+    }
+
 // --- La cornice di ogni widget ---
 
 @Composable
-private fun WidgetCard(widget: Widget, index: Int, count: Int, now: Long) {
+private fun WidgetCard(widget: Widget, index: Int, count: Int, now: Long, active: Boolean) {
     var menuOpen by remember(widget.id) { mutableStateOf(false) }
     var confirmRemove by remember(widget.id) { mutableStateOf(false) }
     var renaming by remember(widget.id) { mutableStateOf(false) }
@@ -258,7 +283,7 @@ private fun WidgetCard(widget: Widget, index: Int, count: Int, now: Long) {
                 is TimeZonesWidget -> TimeZonesView(widget, now)
                 is LifeProgressWidget -> LifeProgressView(widget, now)
                 is CounterWidget -> CounterView(widget)
-                is PomodoroWidget -> PomodoroView(widget, now)
+                is PomodoroWidget -> PomodoroView(widget, active)
             }
         }
     }
@@ -883,11 +908,12 @@ private val BreakAccent = Color(0xFF7FC49A)
  * ingranaggio per le durate di sessione e pausa.
  */
 @Composable
-private fun PomodoroView(widget: PomodoroWidget, now: Long) {
+private fun PomodoroView(widget: PomodoroWidget, active: Boolean) {
     var settingTime by remember(widget.id) { mutableStateOf(false) }
     var renaming by remember(widget.id) { mutableStateOf(false) }
     var settings by remember(widget.id) { mutableStateOf(false) }
     val accent = if (widget.phase == PomodoroPhase.SESSION) SessionAccent else BreakAccent
+    val now by rememberTimerNow(widget.endsAt.takeIf { widget.running }, active)
     val remaining = widget.remainingAt(now)
 
     Column(

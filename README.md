@@ -1938,7 +1938,7 @@ gg/mm/aaaa)" accanto al titolo.
 
 **25/09/2026 — le prove dell'utente, e quello che ne è venuto** *(Claude
 Code sul PC; tutto verificato sul telefono lo stesso giorno; schema alla
-versione **30**; 73 test passati)*
+versione **30**; 74 test passati)*
 
 Richieste dell'utente, parola per parola (dopo le prove della sera
 prima: copertine, rotazione, pomodoro, font offline, voce 14):
@@ -1997,6 +1997,18 @@ prova: «La suoneria sta continuando a suonare all'infinito».
   partenza (`PomodoroWidget.remainingAt`). Test nuovo
   `WidgetsTest.aJustStartedPomodoroNeverShowsMoreThanItStartedWith`.
   Verificato: subito dopo ▶ "01:00", e un minuto dopo la pausa in verde
+- **[Bug fix]** **…e partiva con un secondo di ritardo.** Segnalato
+  dall'utente dopo la correzione qui sopra: «non si vede il secondo in
+  più che ti dicevo, ma comunque il pomodoro ci mette un secondo in più a
+  partire rispetto a quando premo il pulsante play». Il widget si
+  ridisegnava allo scoccare dei secondi **dell'orologio**, e il timer
+  parte a metà di un secondo qualunque: il primo "00:59" arrivava fino a
+  quasi due secondi dopo ▶. Ora il pomodoro ha un'ora sua, rinfrescata
+  **quando cambia la cifra del timer** (`rememberTimerNow`,
+  `msUntilTimerTicks`); gli orologi restano sui secondi dell'orologio.
+  Test nuovo `WidgetsTest.theTimerRedrawsExactlyWhenItsDigitChanges`.
+  Verificato con screenshot a tempo dal telefono: "01:00" fino a 0,76 s
+  dopo il tocco, "00:59" a 1,13 s, "00:58" a 2,16 s, "00:57" a 3,06 s
 - **[Rimosso]** **MS YaHei.** Non era rotto: il suo sosia libero, Noto
   Sans SC, è **lo stesso disegno** che Android usa già per il cinese, e
   sul telefono non si distingueva dal font di sistema. Tolto su richiesta

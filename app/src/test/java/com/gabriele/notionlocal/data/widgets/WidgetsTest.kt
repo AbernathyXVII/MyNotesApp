@@ -134,6 +134,16 @@ class WidgetsTest {
     }
 
     @Test
+    fun theTimerRedrawsExactlyWhenItsDigitChanges() {
+        // Appena avviato: "01:00" per un secondo pieno, poi "00:59".
+        assertEquals(1_000, msUntilTimerTicks(60_000))
+        // Avviato a metà di un secondo dell'orologio: conta il timer, non l'orologio.
+        assertEquals(600, msUntilTimerTicks(59_600))
+        assertEquals(1, msUntilTimerTicks(59_001))
+        assertEquals(1_000, msUntilTimerTicks(59_000))
+    }
+
+    @Test
     fun everyWidgetIsSavedAndReadBackTheSame() {
         val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
         val state = WidgetsState(
