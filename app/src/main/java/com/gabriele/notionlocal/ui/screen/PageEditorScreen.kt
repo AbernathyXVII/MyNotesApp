@@ -2735,9 +2735,23 @@ private fun notificationOnEnter(oldBody: String, newBody: String, caret: Int): P
     return lineIndex to command
 }
 
-/** Una riga-notifica già suonata: la campanella e la data si fanno grigie. */
-private fun notificationIsPast(block: BlockEntity): Boolean =
-    block.notifyAt?.let { it <= System.currentTimeMillis() } ?: false
+/**
+ * Una riga-notifica già suonata: la campanella e la data si fanno grigie.
+ * **Da sole, nel momento in cui suona**: guardando l'ora solo quando la
+ * pagina si ridisegnava, la riga restava blu a notifica arrivata (visto
+ * sul telefono il 25/09/2026, alle 22:59).
+ */
+@Composable
+private fun rememberNotificationIsPast(block: BlockEntity): Boolean {
+    val at = block.notifyAt
+    var past by remember(at) { mutableStateOf(at != null && at <= System.currentTimeMillis()) }
+    LaunchedEffect(at) {
+        if (at == null || past) return@LaunchedEffect
+        delay((at - System.currentTimeMillis()).coerceAtLeast(0))
+        past = true
+    }
+    return past
+}
 
 /**
  * **Quando suona la riga-notifica**, in fondo alla riga: toccandola si
@@ -2766,7 +2780,7 @@ private fun NotificationTimeChip(block: BlockEntity, viewModel: PageEditorViewMo
             viewModel.consumeNotificationPicker()
         }
     }
-    val past = notificationIsPast(block)
+    val past = rememberNotificationIsPast(block)
     val context = LocalContext.current
     val today = java.time.LocalDate.now(zone)
     val label = when (current.toLocalDate()) {
@@ -4769,7 +4783,7 @@ private fun BlockRow(
                     Icon(
                         Icons.Filled.Notifications,
                         contentDescription = null,
-                        tint = if (notificationIsPast(block)) NotionGray400 else AccentBlue,
+                        tint = if (rememberNotificationIsPast(block)) NotionGray400 else AccentBlue,
                         modifier = Modifier.size(18.dp)
                     )
                 }

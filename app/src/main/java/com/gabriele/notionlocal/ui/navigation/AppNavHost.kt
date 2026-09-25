@@ -178,6 +178,15 @@ fun AppNavHost(factory: ViewModelFactory) {
         }
     }
 
+    // **La barra riaperta da Android.** Se l'app viene chiusa con la barra
+    // aperta, riaprendola la barra torna aperta da sola, senza passare da
+    // `openSidebar`: l'albero delle pagine non veniva letto, e sotto
+    // "Pages" non c'era niente. Visto sul telefono il 25/09/2026, provando
+    // le notifiche ad app chiusa.
+    LaunchedEffect(Unit) {
+        if (drawerState.isOpen) sidebar.refresh()
+    }
+
     BackHandler(enabled = drawerState.isOpen) { closeSidebar() }
 
     val actions = SidebarActions(

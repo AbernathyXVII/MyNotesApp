@@ -1982,8 +1982,9 @@ telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
 **25/09/2026 — le notifiche: "/notification", le date dei database, timer e
-pomodoro** *(Claude Code sul PC; in parte verificato sul telefono lo stesso
-giorno, vedi in fondo; 114 test passati; commit solo in locale)*
+pomodoro** *(Claude Code sul PC; verificato sul telefono lo stesso giorno,
+tranne la riaccensione vera, vedi in fondo; 114 test passati; commit solo in
+locale)*
 
 Richiesta dell'utente, parola per parola:
 > «Implementa una nuova e grossa feature: dammi la possibilità tramite il
@@ -2080,9 +2081,7 @@ Richiesta dell'utente, parola per parola:
   `/notification 19:41 Test app chiusa` → alle 19:41 Android ha fatto
   ripartire l'app e la notifica "Test app chiusa", sotto "Titolo tre H3",
   è arrivata. L'utente ha provato "Include notification" su "Riga
-  semplice" alle 19:35, ad app chiusa: "funziona perfettamente". **Da
-  provare ancora**: la fine di timer e pomodoro, il tocco sulla notifica
-  che apre la pagina, la riaccensione del telefono
+  semplice" alle 19:35, ad app chiusa: "funziona perfettamente"
 
 Poi l'utente, parola per parola:
 > «Se l'app è chiusa, non mi manda la notifica se la creo su un campo
@@ -2097,6 +2096,42 @@ Poi l'utente, parola per parola:
   scrivono per nome** ("Oggi 19:41", "Domani 09:00"), e se l'ora scelta è
   già passata un messaggio dice che la notifica non suonerà. La prova ad
   app chiusa qui sopra è stata fatta proprio per escludere l'altra causa
+
+Poi l'utente, parola per parola:
+> «Ho riattivato il debug wireless, prova tu»
+
+e, durante le prove:
+> «Mettila alle 22:57, per non perdere tempo»
+
+(erano già le 22:56:36: messa alle 22:58)
+
+- Verificato sul telefono, ad app chiusa (processo ucciso) in tutti i
+  casi: **riavvio simulato** — app fermata del tutto, che toglie le sue
+  sveglie come un riavvio, poi `RescheduleReceiver` chiamato a mano: la
+  sveglia delle 22:59 è tornata, e la notifica è arrivata; **tocco sulla
+  notifica** "Tocca per aprire" delle 22:58 → l'app si apre direttamente su
+  "Titolo tre H3" (non su My Space, la pagina d'avvio); **pomodoro** da
+  1 minuto → alle 23:01 "Session · Time for a break · 5 min"; **timer** di
+  14 secondi aggiunto col "+" → "Time's up · Timer · 14 s". Poi tutto
+  rimesso com'era: pomodoro fermo su 01:00, timer di prova eliminato col
+  cestino, il primo timer riportato alle sue rotelle (00:21:02), il secondo
+  mai toccato (00:14:00). Il riavvio vero del telefono non è stato provato:
+  spegnerebbe il debug wireless
+- **[Bug fix]** (trovato provando) **La riga-notifica restava blu dopo aver
+  suonato**, finché la pagina non si ridisegnava per altro: l'ora si
+  guardava solo al disegno. Ora campanella e riquadro si fanno grigi da
+  soli nel momento in cui la notifica suona (provato: "Diventa grigia"
+  alle 23:12, a pagina aperta senza toccare niente)
+- **[Bug fix]** (trovato provando, c'era già prima) **La barra laterale
+  senza pagine.** Se Android chiudeva l'app con la barra aperta, alla
+  riapertura la barra tornava aperta da sola, ma senza passare dal
+  pulsante che legge l'albero: sotto "Pages" non c'era niente, finché non
+  la si chiudeva e riapriva. Ora l'albero si legge anche in quel caso
+  (provato: barra aperta, app uccisa, riaperta → My Space, Titolo tre H3 e
+  i due database al loro posto)
+- Notato: le prove hanno lasciato in "Titolo tre H3" quattro righe-notifica
+  già suonate ("Test app chiusa", due "Tocca per aprire", "Diventa
+  grigia"); lasciate lì, sono sulla pagina di prova dell'utente
 
 **25/09/2026 — i selettori di data e ora come quelli di Samsung**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 95 test
