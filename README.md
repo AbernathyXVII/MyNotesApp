@@ -1955,6 +1955,37 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**25/09/2026 — divisore sotto le pagine, menu dei font non più coperto**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 89 test
+passati; commit solo in locale)*
+
+Richiesta dell'utente, parola per parola (dopo aver letto del menu
+coperto, nella voce qui sotto):
+> «Sì, sistemalo per favore. Ed un'altra cosa: sotto Pages, ossia la
+> sezione con la visualizzazione gerarchica del Workspace nella sidebar,
+> mettimici un divider, così non si confonde con Search»
+
+- **[Nuova funzionalità]** **Un divisore sotto l'albero delle pagine**
+  nella barra laterale, uguale a quello sotto "Main menu": l'ultima
+  pagina dell'albero e "Search" non sembrano più la stessa lista
+  (`Sidebar.kt`). Verificato sul telefono: il divisore sta fra l'ultimo
+  "Untitled" e "Search"
+- **[Bug fix]** **Il menu dei font era coperto dalla barrettina Copy /
+  Cut / Select all** del telefono, quando c'era del testo selezionato:
+  copriva Garamond e Arial. Il menu non prende il fuoco apposta (così la
+  tastiera e la barra Aa restano), quindi il campo restava a fuoco con la
+  selezione e il telefono lasciava la barrettina sopra il menu. Ora
+  aprendo il menu la barrettina si chiude (`LocalTextToolbar.hide()` in
+  `FontPickerChip`); la selezione resta, e la barrettina torna dopo la
+  scelta. Verificato: selezionato "sotto", aperto il menu — tutto
+  visibile, Garamond compreso — scelto Garamond → solo "sotto" in
+  Garamond, ancora selezionato; poi annullato con ↶
+- Notato durante la prova: nella pagina "My Space" la parola "Paragrafo"
+  è in **Futura**. Non l'ha messa Claude: alle 13:21 era nel font
+  normale, alle 13:27, appena reinstallata l'app e prima di toccare la
+  pagina, era già in Futura — probabilmente una prova dell'utente. Lasciata
+  com'è
+
 **25/09/2026 — font e dimensione sul testo selezionato** *(Claude Code
 sul PC; verificato sul telefono lo stesso giorno; schema alla versione
 **31**; 89 test passati; commit solo in locale, **non** su GitHub finché
@@ -2017,10 +2048,10 @@ Richiesta dell'utente, parola per parola:
   e le righe al passo di prima; col solo cursore "Select some text
   first"; le impostazioni senza Font e Font size. "prova" in Consolas e
   "titolo" in Georgia sono rimasti nella pagina, per farli vedere
-- Notato durante la prova, **non corretto** (c'era già): con una parola
-  selezionata, il menu dei font si apre **sotto** la barrettina di
-  sistema Copy / Cut / Select all, che copre una o due voci (Garamond,
-  Arial) finché non si chiude
+- Notato durante la prova (c'era già): con una parola selezionata, il
+  menu dei font si apriva **sotto** la barrettina di sistema Copy / Cut /
+  Select all, che copriva Garamond e Arial. **Corretto subito dopo**, vedi
+  la voce qui sopra
 
 **25/09/2026 — le prove dell'utente, e quello che ne è venuto** *(Claude
 Code sul PC; tutto verificato sul telefono lo stesso giorno; schema alla

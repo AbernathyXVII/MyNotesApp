@@ -174,6 +174,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.platform.LocalTextToolbar
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
@@ -487,6 +488,12 @@ private val BarMenuProperties = PopupProperties(focusable = false)
  * di Word: sono dentro l'app e si vedono subito. Quelli cinesi e
  * giapponesi no — farli vedere vorrebbe dire scaricarli tutti e sei,
  * decine di megabyte, solo per aprire il menu.
+ *
+ * **Aprendolo si chiude la barrettina Copy / Cut / Select all** del
+ * telefono. Il menu non prende il fuoco (vedi `BarMenuProperties`), quindi
+ * il campo resta a fuoco con la sua selezione e il telefono non ha motivo
+ * di chiuderla: restava sopra il menu e copriva Garamond e Arial. La
+ * selezione resta, si chiude solo la barrettina.
  */
 @Composable
 private fun FontPickerChip(
@@ -496,12 +503,14 @@ private fun FontPickerChip(
     onPick: (PageFont?) -> Unit
 ) {
     var open by remember { mutableStateOf(false) }
+    val textToolbar = LocalTextToolbar.current
     Box {
         BarValueChip(
             text = current?.label ?: EditorStrings.defaultFont,
             contentDescription = EditorStrings.font,
             onClick = {
                 onOpen()
+                textToolbar.hide()
                 open = true
             },
             modifier = Modifier.widthIn(max = FONT_CHIP_MAX_WIDTH)

@@ -158,7 +158,13 @@ internal fun SidebarContent(
                 }
             }
         }
-        Spacer(modifier = Modifier.height(10.dp))
+        // Un divisore sotto l'albero, come quello sotto il menu principale:
+        // senza, l'ultima pagina e "Search" sembravano la stessa lista
+        // (richiesta dell'utente del 25/09/2026).
+        HorizontalDivider(
+            color = NotionGray900,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        )
 
         // 6–14. Le voci di servizio.
         SidebarItem(Icons.Filled.Search, Strings.search, onClick = actions.onSearch)
