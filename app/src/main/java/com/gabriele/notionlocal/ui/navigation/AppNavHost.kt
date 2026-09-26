@@ -39,6 +39,7 @@ import com.gabriele.notionlocal.data.settings.TrashPolicy
 import com.gabriele.notionlocal.ui.screen.DatabaseViewScreen
 import com.gabriele.notionlocal.ui.screen.LockGate
 import com.gabriele.notionlocal.ui.screen.NotebookSectionScreen
+import com.gabriele.notionlocal.ui.screen.NotebookScreen
 import com.gabriele.notionlocal.ui.screen.NotebooksSidebarSection
 import com.gabriele.notionlocal.ui.i18n.NotebookStrings
 import com.gabriele.notionlocal.viewmodel.NotebooksViewModel
@@ -99,6 +100,8 @@ fun AppNavHost(factory: ViewModelFactory) {
             else -> null
         }
     }
+    val currentNotebookId = backStackEntry?.takeIf { it.destination.route == Routes.NOTEBOOK }
+        ?.arguments?.getString("notebookId")
 
     fun openSidebar() {
         sidebar.refresh()
@@ -252,9 +255,14 @@ fun AppNavHost(factory: ViewModelFactory) {
                             viewModel = notebooks,
                             store = factory.imageStore,
                             currentSectionId = currentSectionId,
+                            currentNotebookId = currentNotebookId,
                             onOpenSection = { sectionId ->
                                 closeSidebar()
                                 jumpTo(Routes.notebookSection(sectionId))
+                            },
+                            onOpenNotebook = { notebookId ->
+                                closeSidebar()
+                                jumpTo(Routes.notebook(notebookId))
                             }
                         )
                     }
@@ -445,6 +453,22 @@ private fun AppRoutes(
                 }
             )
             }
+        }
+
+        // **Un quaderno** (dal 26/09/2026): toccandone il nome nella barra,
+        // tutte le sue sezioni e i gruppi in una pagina a sé.
+        composable(
+            route = Routes.NOTEBOOK,
+            arguments = listOf(navArgument("notebookId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val notebookId = backStackEntry.arguments?.getString("notebookId") ?: return@composable
+            NotebookScreen(
+                notebookId = notebookId,
+                factory = factory,
+                onBack = { navController.popBackStack() },
+                onOpenSidebar = onOpenSidebar,
+                onOpenSection = { id -> navController.navigate(Routes.notebookSection(id)) }
+            )
         }
 
         composable(Routes.STARTUP) {

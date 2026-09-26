@@ -51,6 +51,18 @@ object NotebookStrings {
         "Todavía no hay páginas en esta sección", "此分区中还没有页面", "이 섹션에 아직 페이지가 없습니다",
         "このセクションにはまだページがありません"
     )
+    fun pageCount(n: Int) = t(
+        if (n == 1) "1 page" else "$n pages",
+        if (n == 1) "1 pagina" else "$n pagine",
+        if (n == 1) "1 Seite" else "$n Seiten",
+        if (n == 1) "1 page" else "$n pages",
+        if (n == 1) "1 página" else "$n páginas",
+        "$n 页", "${n}페이지", "$n ページ"
+    )
+    val noSections get() = t(
+        "No sections yet", "Ancora nessuna sezione", "Noch keine Abschnitte", "Aucune section pour l'instant",
+        "Todavía no hay secciones", "还没有分区", "아직 섹션이 없습니다", "セクションはまだありません"
+    )
     val emptyGroup get() = t("Empty group", "Gruppo vuoto", "Leere Gruppe", "Groupe vide", "Grupo vacío", "空分区组", "빈 그룹", "空のグループ")
     val lockedSection get() = t(
         "This section is locked", "Questa sezione è bloccata", "Dieser Abschnitt ist gesperrt",

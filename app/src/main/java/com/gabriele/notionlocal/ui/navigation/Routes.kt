@@ -25,10 +25,14 @@ object Routes {
     /** Una sezione di un quaderno, con le sue pagine (vedi `NotebookSectionScreen`). */
     const val NOTEBOOK_SECTION = "notebookSection/{sectionId}"
 
+    /** Un quaderno: tutte le sue sezioni e i gruppi (vedi `NotebookScreen`). */
+    const val NOTEBOOK = "notebook/{notebookId}"
+
     fun pageEditor(pageId: String) = "page/$pageId"
     fun databaseView(pageId: String) = "database/$pageId"
     fun updates(pageId: String) = "updates/$pageId"
     fun notebookSection(sectionId: String) = "notebookSection/$sectionId"
+    fun notebook(notebookId: String) = "notebook/$notebookId"
 
     /** La rotta di una pagina, che sia testo o database. */
     fun forPage(pageId: String, isDatabase: Boolean) =

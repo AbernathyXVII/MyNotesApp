@@ -8,6 +8,7 @@ import com.gabriele.notionlocal.data.entity.NotebookSectionEntity
 import com.gabriele.notionlocal.data.entity.PageEntity
 import com.gabriele.notionlocal.data.security.AppLock
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 
 /**
  * **I quaderni** (dal 26/09/2026): quaderni, gruppi di sezioni, sezioni e le
@@ -26,6 +27,10 @@ class NotebookRepository(private val db: AppDatabase, private val pages: PageRep
     fun observeSections(): Flow<List<NotebookSectionEntity>> = dao.observeSections()
     fun observeSection(id: String): Flow<NotebookSectionEntity?> = dao.observeSection(id)
     fun observePages(sectionId: String): Flow<List<PageEntity>> = dao.observePagesInSection(sectionId)
+
+    /** Sezione → quante pagine ha (quelle vuote non ci sono). */
+    fun observePageCounts(): Flow<Map<String, Int>> =
+        dao.observePageCounts().map { counts -> counts.associate { it.sectionId to it.pages } }
 
     suspend fun getNotebook(id: String): NotebookEntity? = dao.getNotebook(id)
     suspend fun getSection(id: String): NotebookSectionEntity? = dao.getSection(id)

@@ -112,7 +112,13 @@ internal fun SidebarContent(
         // la stessa fascia di un altro colore, staccata dal resto, e sotto
         // i quaderni come in OneNote. Un mondo a parte dal menu principale.
         notebooks()
-        Spacer(modifier = Modifier.height(10.dp))
+        // Un divisore sotto i quaderni (chiesto dall'utente il 26/09/2026):
+        // senza, l'ultima riga dei quaderni e "Main menu" sembravano la
+        // stessa lista.
+        HorizontalDivider(
+            color = NotionGray900,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        )
 
         // 3. Menu principale, e sotto un divisore semplice.
         SidebarItem(Icons.Filled.Home, Strings.mainMenu, onClick = actions.onMainMenu)

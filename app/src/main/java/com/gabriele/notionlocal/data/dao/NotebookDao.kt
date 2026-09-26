@@ -10,6 +10,9 @@ import com.gabriele.notionlocal.data.entity.NotebookSectionEntity
 import com.gabriele.notionlocal.data.entity.PageEntity
 import kotlinx.coroutines.flow.Flow
 
+/** Una sezione e quante pagine ha: vedi `NotebookDao.observePageCounts`. */
+data class SectionPageCount(val sectionId: String, val pages: Int)
+
 /** I quaderni, le loro sezioni e le pagine delle sezioni: vedi `NotebookEntity`. */
 @Dao
 interface NotebookDao {
@@ -63,6 +66,13 @@ interface NotebookDao {
 
     @Query("SELECT * FROM pages WHERE notebookSectionId = :sectionId ORDER BY orderIndex, createdAt")
     suspend fun getPagesInSection(sectionId: String): List<PageEntity>
+
+    /** Quante pagine ha ogni sezione, per la pagina di un quaderno. */
+    @Query(
+        "SELECT notebookSectionId AS sectionId, COUNT(*) AS pages FROM pages " +
+            "WHERE notebookSectionId IS NOT NULL GROUP BY notebookSectionId"
+    )
+    fun observePageCounts(): Flow<List<SectionPageCount>>
 
     @Query("SELECT id FROM pages WHERE notebookSectionId IN (:sectionIds)")
     suspend fun getPageIdsInSections(sectionIds: List<String>): List<String>

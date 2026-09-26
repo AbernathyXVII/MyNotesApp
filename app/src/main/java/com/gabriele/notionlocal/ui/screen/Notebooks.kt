@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -71,6 +72,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.listSaver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -205,13 +208,17 @@ internal fun NotebooksSidebarSection(
     viewModel: NotebooksViewModel,
     store: PageImageStore,
     currentSectionId: String?,
-    onOpenSection: (String) -> Unit
+    onOpenSection: (String) -> Unit,
+    /** Il quaderno aperto adesso a schermo intero, se ce n'è uno: si evidenzia. */
+    currentNotebookId: String? = null,
+    /** Toccando il nome di un quaderno: la sua pagina, con tutte le sezioni. */
+    onOpenNotebook: (String) -> Unit = {}
 ) {
     val notebooks by viewModel.notebooks.collectAsStateWithLifecycle()
     val sections by viewModel.sections.collectAsStateWithLifecycle()
     val menus = remember { NotebookMenus() }
     val collapsed = AppSettings.notebooksCollapsed
-    val currentNotebookId = sections.firstOrNull { it.id == currentSectionId }?.notebookId
+    val currentSectionNotebookId = sections.firstOrNull { it.id == currentSectionId }?.notebookId
 
     Row(
         modifier = Modifier
@@ -253,8 +260,12 @@ internal fun NotebooksSidebarSection(
                 notebook = notebook,
                 store = store,
                 // Chiuso, il quaderno dice lui dove si è: la sezione aperta non si vede.
-                isCurrent = notebook.id == currentNotebookId && !notebook.isExpanded,
-                onClick = { viewModel.toggleNotebook(notebook) },
+                isCurrent = notebook.id == currentNotebookId ||
+                    (notebook.id == currentSectionNotebookId && !notebook.isExpanded),
+                // **Il nome apre la pagina del quaderno, la freccetta apre e
+                // chiude l'albero qui** (dal 26/09/2026, chiesto dall'utente).
+                onClick = { onOpenNotebook(notebook.id) },
+                onToggle = { viewModel.toggleNotebook(notebook) },
                 onLongPress = { menus.sheet = NotebookMenuTarget.OfNotebook(notebook) }
             )
             if (notebook.isExpanded) {
@@ -308,8 +319,10 @@ internal fun NotebooksSidebarSection(
 private val NOTEBOOK_ICON = 24.dp
 private val ROW_START = 20.dp
 private val ROW_INDENT = 22.dp
-private val MARKER_WIDTH = 20.dp
-private val MARKER_GAP = 10.dp
+// Larga abbastanza da toccarla col dito: nella riga di un quaderno è un
+// pulsante a sé (apre e chiude), accanto al nome che apre la pagina.
+private val MARKER_WIDTH = 28.dp
+private val MARKER_GAP = 6.dp
 
 private fun rowStart(depth: Int): Dp = ROW_START + ROW_INDENT * depth
 
@@ -321,6 +334,8 @@ private fun TreeLine(
     onClick: () -> Unit,
     onLongPress: () -> Unit,
     marker: @Composable () -> Unit,
+    /** La freccetta si tocca da sola: apre e chiude, mentre il resto della riga fa `onClick`. */
+    onMarkerClick: (() -> Unit)? = null,
     content: @Composable RowScope.() -> Unit
 ) {
     Row(
@@ -334,7 +349,21 @@ private fun TreeLine(
             .height(40.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(modifier = Modifier.width(MARKER_WIDTH), contentAlignment = Alignment.Center) { marker() }
+        Box(
+            modifier = Modifier
+                .width(MARKER_WIDTH)
+                .fillMaxHeight()
+                .then(
+                    if (onMarkerClick != null) {
+                        Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .clickable(onClick = onMarkerClick)
+                    } else {
+                        Modifier
+                    }
+                ),
+            contentAlignment = Alignment.Center
+        ) { marker() }
         Spacer(modifier = Modifier.width(MARKER_GAP))
         content()
     }
@@ -346,6 +375,7 @@ private fun NotebookRow(
     store: PageImageStore,
     isCurrent: Boolean,
     onClick: () -> Unit,
+    onToggle: () -> Unit,
     onLongPress: () -> Unit
 ) {
     TreeLine(
@@ -353,6 +383,7 @@ private fun NotebookRow(
         isCurrent = isCurrent,
         onClick = onClick,
         onLongPress = onLongPress,
+        onMarkerClick = onToggle,
         marker = {
             Icon(
                 if (notebook.isExpanded) Icons.Filled.KeyboardArrowDown else Icons.Filled.KeyboardArrowRight,
@@ -502,7 +533,8 @@ internal fun NotebookMenuHost(
     store: PageImageStore,
     sections: List<NotebookSectionEntity>,
     onOpenSection: (String) -> Unit,
-    onSectionDeleted: (String) -> Unit = {}
+    onSectionDeleted: (String) -> Unit = {},
+    onNotebookDeleted: (String) -> Unit = {}
 ) {
     menus.sheet?.let { target ->
         NoteBottomSheet(
@@ -615,6 +647,7 @@ internal fun NotebookMenuHost(
             onConfirm = {
                 viewModel.deleteNotebook(dialog.notebook.id)
                 sections.filter { it.notebookId == dialog.notebook.id }.forEach { onSectionDeleted(it.id) }
+                onNotebookDeleted(dialog.notebook.id)
                 menus.dialog = null
             },
             onDismiss = { menus.dialog = null }
@@ -1206,3 +1239,195 @@ internal fun NotebookPageStamp(createdAt: Long) {
         }
     }
 }
+
+// --- Un quaderno: tutte le sue sezioni ----------------------------------------
+
+/**
+ * **La pagina di un quaderno** (dal 26/09/2026, chiesta dall'utente):
+ * toccandone il nome nella barra laterale si arriva qui, con **tutte** le
+ * sezioni e i gruppi in una volta sola, rientrati come nell'albero. I
+ * gruppi si chiudono con la freccetta (solo qui: la barra resta com'è),
+ * una sezione si apre toccandola, e tenendo premuto c'è il suo menu. In
+ * fondo, sezione o gruppo nuovi.
+ */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@Composable
+fun NotebookScreen(
+    notebookId: String,
+    factory: ViewModelFactory,
+    onBack: () -> Unit,
+    onOpenSidebar: () -> Unit,
+    onOpenSection: (String) -> Unit,
+    viewModel: NotebooksViewModel = viewModel(factory = factory)
+) {
+    val notebooks by viewModel.notebooks.collectAsStateWithLifecycle()
+    val allSections by viewModel.sections.collectAsStateWithLifecycle()
+    val pageCounts by viewModel.pageCounts.collectAsStateWithLifecycle()
+    val notebook = notebooks.firstOrNull { it.id == notebookId }
+    val sections = allSections.filter { it.notebookId == notebookId }
+    val menus = remember { NotebookMenus() }
+    // I gruppi chiusi qui: all'inizio aperti tutti, è la lista intera. Si
+    // ricordano anche tornando indietro da una sezione.
+    var collapsed by rememberSaveable(stateSaver = CollapsedSaver) { mutableStateOf(emptySet<String>()) }
+    val context = LocalContext.current
+    val store = remember(context) { PageImageStore(context) }
+
+    val rows = remember(sections, collapsed) {
+        flattenSections(sections.map { if (it.isGroup) it.copy(isExpanded = it.id !in collapsed) else it })
+    }
+
+    Scaffold(
+        containerColor = DarkBackground,
+        topBar = {
+            TopAppBar(
+                title = {},
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = DarkBackground),
+                navigationIcon = {
+                    Row {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.Filled.ArrowBack, contentDescription = Strings.back)
+                        }
+                        IconButton(onClick = onOpenSidebar) {
+                            Icon(Icons.Filled.Menu, contentDescription = Strings.openSidebar)
+                        }
+                    }
+                },
+                actions = {
+                    notebook?.let { current ->
+                        IconButton(onClick = { menus.sheet = NotebookMenuTarget.OfNotebook(current) }) {
+                            Icon(Icons.Filled.MoreHoriz, contentDescription = Strings.pageOptions)
+                        }
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(top = padding.calculateTopPadding(), bottom = 32.dp)
+        ) {
+            item(key = "header") {
+                Row(
+                    modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    notebook?.let { NotebookIcon(it, store, size = 40.dp) }
+                    Spacer(modifier = Modifier.width(14.dp))
+                    Text(
+                        notebook?.title?.ifBlank { Strings.untitled }.orEmpty(),
+                        color = NotionWhite,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+            if (sections.isEmpty()) {
+                item(key = "empty") {
+                    Text(
+                        NotebookStrings.noSections,
+                        color = NotionGray400,
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+                    )
+                }
+            }
+            items(rows, key = { it.section.id }) { row ->
+                val section = row.section
+                // Qui l'albero parte dal margine: il quaderno è il titolo in cima.
+                val depth = row.depth - 1
+                if (section.isGroup) {
+                    TreeLine(
+                        depth = depth,
+                        isCurrent = false,
+                        onClick = { collapsed = if (section.id in collapsed) collapsed - section.id else collapsed + section.id },
+                        onLongPress = { menus.sheet = NotebookMenuTarget.OfSection(section) },
+                        marker = {
+                            Icon(
+                                if (section.isExpanded) Icons.Filled.KeyboardArrowDown else Icons.Filled.KeyboardArrowRight,
+                                contentDescription = if (section.isExpanded) Strings.collapse else Strings.expand,
+                                tint = NotionGray400,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    ) {
+                        Text(
+                            section.title.ifBlank { Strings.untitled },
+                            color = NotionWhite,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    if (row.isEmptyGroup) {
+                        Text(
+                            NotebookStrings.emptyGroup,
+                            color = NotionGray400,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(
+                                start = rowStart(depth + 1) + MARKER_WIDTH + MARKER_GAP,
+                                top = 2.dp,
+                                bottom = 6.dp
+                            )
+                        )
+                    }
+                } else {
+                    TreeLine(
+                        depth = depth,
+                        isCurrent = false,
+                        onClick = { onOpenSection(section.id) },
+                        onLongPress = { menus.sheet = NotebookMenuTarget.OfSection(section) },
+                        marker = { SectionTab(section.color, height = 20.dp) }
+                    ) {
+                        // Nome e lucchetto prendono tutto lo spazio: il numero
+                        // delle pagine resta in fila sul bordo destro, a
+                        // qualunque rientro.
+                        Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                section.title.ifBlank { Strings.untitled },
+                                color = NotionWhite,
+                                style = MaterialTheme.typography.bodyLarge,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false)
+                            )
+                            if (section.isProtected) {
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Icon(Icons.Filled.Lock, contentDescription = null, tint = NotionGray400, modifier = Modifier.size(14.dp))
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            NotebookStrings.pageCount(pageCounts[section.id] ?: 0),
+                            color = NotionGray400,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+            }
+            item(key = "add") {
+                Spacer(modifier = Modifier.height(8.dp))
+                AddRow(NotebookStrings.newSection, depth = 0) {
+                    menus.dialog = NotebookDialog.NewSection(notebookId, parentId = null, isGroup = false)
+                }
+                AddRow(NotebookStrings.newSectionGroup, depth = 0) {
+                    menus.dialog = NotebookDialog.NewSection(notebookId, parentId = null, isGroup = true)
+                }
+            }
+        }
+    }
+
+    NotebookMenuHost(
+        menus = menus,
+        viewModel = viewModel,
+        store = store,
+        sections = allSections,
+        onOpenSection = onOpenSection,
+        onNotebookDeleted = { if (it == notebookId) onBack() }
+    )
+}
+
+/** I gruppi chiusi nella pagina di un quaderno, salvati come elenco. */
+private val CollapsedSaver = listSaver<Set<String>, String>(save = { it.toList() }, restore = { it.toSet() })

@@ -2022,6 +2022,51 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**26/09/2026 — la pagina di un quaderno, e un divisore sotto i quaderni**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 152 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Altre due cose: mettimi un divider sotto il riquadro dei Notebooks, così
+> non mi confondo con il pulsante del Main menu. Poi, quando apro la
+> sidebar e tocco su Notebook, indirizzami direttamente in una pagina a
+> parte, con tutta la lista delle Section e delle Section group. Sulla
+> sidebar, ovviamente, fammi funzionare tutto quanto normalmente, così
+> invece che ricercare sezione per sezione, posso toccare le freccette a
+> sinistra per aprire la gerarchia di tutto il Notebook»
+
+- **[Nuova funzionalità]** **Un divisore sotto i quaderni**, come quello
+  sotto "Main menu": l'ultima riga dei quaderni non si confonde più con
+  "Main menu"
+- **[Nuova funzionalità]** **Nella barra, il nome di un quaderno apre la sua
+  pagina, la freccetta a sinistra apre e chiude l'albero** lì dov'è. La
+  freccetta ora è un pulsante a sé, un po' più largo, per il dito. I gruppi
+  si aprono e chiudono come prima
+- **[Nuova funzionalità]** **La pagina di un quaderno**: in cima il quaderno
+  (icona grande e nome), sotto **tutte** le sezioni e i gruppi, rientrati
+  come nell'albero, ogni sezione con la sua linguetta, il lucchetto se è
+  protetta e **quante pagine ha**, in fila sul bordo destro. Toccando una
+  sezione la si apre (e "indietro" torna qui); tenendola premuta, il suo
+  menu; la freccetta di un gruppo lo chiude **solo in questa pagina** (la
+  barra resta com'è), e lo ricorda anche tornando da una sezione. In fondo
+  "+ New section" e "+ New section group"; i tre puntini aprono il menu del
+  quaderno, ed eliminandolo si torna indietro. Nella barra, il quaderno
+  aperto è evidenziato
+- **[Progetto]** La rotta `notebook/{notebookId}` e `NotebookScreen`; il
+  conteggio delle pagine per sezione (`NotebookDao.observePageCounts`) si
+  legge solo mentre la pagina è aperta, perché la tabella delle pagine
+  cambia a ogni tasto
+- **[Bug fix]** (trovato provando) I numeri delle pagine si spostavano a
+  destra a ogni rientro invece di stare in colonna
+- Verificato sul telefono, coi quaderni dell'utente ("My Notebook", con
+  due gruppi uno dentro l'altro, e "My Notebook 2"): il divisore sopra
+  "Main menu"; la freccetta di "My Notebook" lo chiude e lo riapre (lasciato
+  aperto com'era); il nome apre la pagina con tutte e cinque le sezioni e i
+  due gruppi, "0 pages" in colonna; "New Section Group 2" chiuso nella
+  pagina e ancora aperto nel database; "New Section 3" → la sezione, con
+  "My Notebook › New Section Group 1" → indietro → di nuovo la pagina del
+  quaderno, col gruppo ancora chiuso. Nessun dato dell'utente toccato
+
 **26/09/2026 — le ripetizioni: senza toccare il giorno, i pallini arancioni, fino al 2100**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 152 test
 passati; commit solo in locale)*

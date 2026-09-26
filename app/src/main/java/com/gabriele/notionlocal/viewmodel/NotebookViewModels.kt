@@ -34,6 +34,14 @@ class NotebooksViewModel(
     val sections: StateFlow<List<NotebookSectionEntity>> =
         repository.observeSections().stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
+    /**
+     * Quante pagine ha ogni sezione: solo mentre qualcuno le guarda (la
+     * pagina di un quaderno). La tabella delle pagine cambia a ogni tasto,
+     * e la barra laterale non ne ha bisogno.
+     */
+    val pageCounts: StateFlow<Map<String, Int>> =
+        repository.observePageCounts().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+
     fun createNotebook(title: String, color: Int, firstSectionTitle: String) {
         viewModelScope.launch { repository.createNotebook(title, color, firstSectionTitle) }
     }
