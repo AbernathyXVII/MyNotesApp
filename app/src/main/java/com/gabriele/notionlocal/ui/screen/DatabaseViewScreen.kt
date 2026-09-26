@@ -444,6 +444,16 @@ fun DatabaseViewScreen(
                         }
                     },
                     actions = {
+                        // Il lucchetto chiuso dei database bloccati con la
+                        // password, a sinistra dei tre puntini come nelle
+                        // pagine.
+                        if (menuPage?.isProtected == true) {
+                            IconButton(onClick = {
+                                Toast.makeText(trashContext, LockStrings.protectedByPassword, Toast.LENGTH_SHORT).show()
+                            }) {
+                                Icon(Icons.Filled.Lock, contentDescription = LockStrings.protectedByPassword)
+                            }
+                        }
                         // Stessa icona e stesso posto della lente di prima,
                         // come su ogni pagina: un database aperto a schermo
                         // intero **è** una pagina.

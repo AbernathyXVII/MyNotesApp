@@ -1990,18 +1990,36 @@ fun PageEditorScreen(
                     )
                 }
             }
-            FloatingPageButton(
-                onClick = { showPageOptions = true },
+            Row(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(top = padding.calculateTopPadding() + FLOATING_BUTTON_MARGIN, end = FLOATING_BUTTON_MARGIN)
+                    .padding(top = padding.calculateTopPadding() + FLOATING_BUTTON_MARGIN, end = FLOATING_BUTTON_MARGIN),
+                horizontalArrangement = Arrangement.spacedBy(FLOATING_BUTTON_GAP)
             ) {
-                Icon(
-                    Icons.Filled.MoreHoriz,
-                    contentDescription = Strings.pageOptions,
-                    tint = NotionWhite,
-                    modifier = Modifier.size(FLOATING_ICON_SIZE)
-                )
+                // **Il lucchetto chiuso** (dal 26/09/2026, chiesto
+                // dall'utente): stesso cerchio dei tre puntini, alla loro
+                // sinistra, sulle pagine bloccate con la password. Dice che
+                // la pagina è protetta; toccato, lo dice anche a parole.
+                if (page?.isProtected == true) {
+                    FloatingPageButton(onClick = {
+                        Toast.makeText(context, LockStrings.protectedByPassword, Toast.LENGTH_SHORT).show()
+                    }) {
+                        Icon(
+                            Icons.Filled.Lock,
+                            contentDescription = LockStrings.protectedByPassword,
+                            tint = NotionWhite,
+                            modifier = Modifier.size(FLOATING_ICON_SIZE)
+                        )
+                    }
+                }
+                FloatingPageButton(onClick = { showPageOptions = true }) {
+                    Icon(
+                        Icons.Filled.MoreHoriz,
+                        contentDescription = Strings.pageOptions,
+                        tint = NotionWhite,
+                        modifier = Modifier.size(FLOATING_ICON_SIZE)
+                    )
+                }
             }
         }
         }

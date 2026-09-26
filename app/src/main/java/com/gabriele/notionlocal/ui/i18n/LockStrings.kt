@@ -78,5 +78,15 @@ object LockStrings {
     val passwordSet get() = t("Set", "Impostata", "Festgelegt", "Défini", "Configurada", "已设置", "설정됨", "設定済み")
     val passwordNotSet get() = t("Not set", "Non impostata", "Nicht festgelegt", "Non défini", "Sin configurar", "未设置", "설정 안 됨", "未設定")
     val passwordChanged get() = t("Password changed", "Password cambiata", "Passwort geändert", "Mot de passe modifié", "Contraseña cambiada", "密码已更改", "비밀번호가 변경되었습니다", "パスワードを変更しました")
+    val protectedByPassword get() = t(
+        "Protected by a password",
+        "Protezione con password attiva",
+        "Mit Passwort geschützt",
+        "Protection par mot de passe active",
+        "Protección con contraseña activa",
+        "受密码保护",
+        "비밀번호로 보호됨",
+        "パスワードで保護されています"
+    )
     val passwordRemoved get() = t("Password removed", "Password tolta", "Passwort entfernt", "Mot de passe supprimé", "Contraseña quitada", "密码已移除", "비밀번호가 제거되었습니다", "パスワードを削除しました")
 }

@@ -622,7 +622,8 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   prima volta e cambiata o tolta da Settings. Chiudono anche quello che
   hanno dentro; un database bloccato dentro una pagina diventa un
   collegamento, e nella galleria la loro scheda mostra un lucchetto bianco
-  al posto della copertina
+  al posto della copertina. Aperte, hanno un lucchetto chiuso accanto ai
+  tre puntini
 - **Timeline**: il calendario srotolato. Un asse del tempo che scorre
   in orizzontale, una riga per pagina con la barra intera (non spezzata
   a fine settimana), i nomi in una colonna ferma a sinistra, i fine
@@ -727,7 +728,6 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
     mostra il suo testo anche se sta in una pagina bloccata
   - dimenticata la password, la si rifà col blocco schermo del telefono:
     se il telefono non ne ha uno, le pagine bloccate restano chiuse
-  - il database che diventa un collegamento è provato solo dal test
 - **Un pezzo di testo più grande allunga tutte le righe del suo
   gruppo**, non solo la sua (dal 25/09/2026, con la dimensione sul testo
   selezionato). Le righe di testo scorrevole consecutive stanno in un
@@ -2007,6 +2007,32 @@ Le voci nate nelle sessioni cloud stanno qui in cima, la più recente
 per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
+
+**26/09/2026 — il lucchetto accanto ai tre puntini**
+*(Claude Code sul PC; il lucchetto **da verificare sul telefono**, vedi in
+fondo; 141 test passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Ho provato, funziona. Mi aggiungi un'icona uguale identica a quella dei
+> tre puntini per ogni pagina ma di un lucchetto chiuso alla sinnistra di
+> quella dei tre puntini per descrivere quella come protetta da password?»
+
+- **[Nuova funzionalità]** Su una pagina bloccata con la password, **alla
+  sinistra dei tre puntini** c'è un secondo pulsante **identico** — lo
+  stesso cerchio grigio semitrasparente, la stessa grandezza — con **un
+  lucchetto chiuso**. Toccato, dice "Protected by a password"
+  ("Protezione con password attiva"). Anche sui database aperti a schermo
+  intero, accanto ai loro tre puntini (lì senza cerchio, come i tre
+  puntini). Compare solo sulla pagina bloccata lei stessa, come
+  l'interruttore "Lock with password" nel menu: le sue sottopagine no
+- **Verificato sul telefono, dalla voce di prima**: il database che
+  l'utente ha bloccato ("Untitled", dentro "Titolo tre H3") **è diventato
+  un collegamento** col lucchetto accanto al nome — la conversione, fin qui
+  provata solo dal test, funziona anche sul telefono
+- **Il lucchetto accanto ai tre puntini non l'ho visto sul telefono**: si
+  vede solo con la pagina aperta, e le pagine bloccate adesso si aprono con
+  l'impronta o la password dell'utente. Build installata; va guardato
+  aprendo "Untitled" in "Titolo tre H3"
 
 **26/09/2026 — la scheda della galleria di una pagina bloccata**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 141 test
