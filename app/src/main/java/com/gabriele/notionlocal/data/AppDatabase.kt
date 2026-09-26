@@ -55,7 +55,7 @@ import kotlinx.serialization.json.Json
         NotebookEntity::class,
         NotebookSectionEntity::class
     ],
-    version = 37,
+    version = 38,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -595,6 +595,17 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /**
+         * **Il formato della data e dell'ora delle colonne Date**
+         * (26/09/2026): vuoti per tutte, e le date si leggono come prima.
+         */
+        private val MIGRATION_37_38 = object : Migration(37, 38) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE database_columns ADD COLUMN dateFormat TEXT")
+                db.execSQL("ALTER TABLE database_columns ADD COLUMN timeFormat TEXT")
+            }
+        }
+
+        /**
          * Solo per i test: chiude il database e lo dimentica, così il
          * `getInstance` dopo riapre il file da capo (e ne esegue le
          * migrazioni). Senza, il secondo test troverebbe il database del
@@ -644,7 +655,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_33_34,
                         MIGRATION_34_35,
                         MIGRATION_35_36,
-                        MIGRATION_36_37
+                        MIGRATION_36_37,
+                        MIGRATION_37_38
                     )
                     .build()
                 INSTANCE = instance

@@ -89,7 +89,7 @@ import java.time.ZoneId
 import java.time.format.TextStyle
 
 /** Quale finestra di scelta è aperta. */
-private enum class SettingsDialog { THEME, SOUND, MUTE_FOR, ANIMATIONS, NUMBER, DATE, LANGUAGE, TIME_ZONE, LOCK_PASSWORD, CLEAR_CACHE, DELETE_ALL }
+private enum class SettingsDialog { THEME, SOUND, MUTE_FOR, ANIMATIONS, NUMBER, LANGUAGE, TIME_ZONE, LOCK_PASSWORD, CLEAR_CACHE, DELETE_ALL }
 
 /**
  * Le impostazioni. Ogni scelta si salva appena la si fa e vale subito: il
@@ -171,12 +171,10 @@ fun SettingsScreen(onBack: () -> Unit) {
                 value = Formats.numberSample(AppSettings.numberStyle),
                 onClick = { dialog = SettingsDialog.NUMBER }
             )
-            SettingsItem(
-                Strings.dateFormat,
-                icon = Icons.Filled.CalendarMonth,
-                value = "${dateStyleLabel(AppSettings.dateStyle)} — ${Formats.sample(AppSettings.dateStyle, today())}",
-                onClick = { dialog = SettingsDialog.DATE }
-            )
+            // "Date format" non c'è più (dal 26/09/2026, chiesto dall'utente): si
+            // sceglie per ogni colonna Date, dal suo "Edit property". Quello
+            // scelto qui fino ad allora resta lo stile delle date fuori dai
+            // database e delle colonne a cui non se ne sceglie uno.
             SettingsItem(
                 Strings.language,
                 icon = Icons.Filled.Language,
@@ -240,14 +238,6 @@ fun SettingsScreen(onBack: () -> Unit) {
             options = NumberStyle.entries.map { it to Formats.numberSample(it) },
             selected = AppSettings.numberStyle,
             onSelect = { AppSettings.numberStyle = it },
-            onDismiss = { dialog = null }
-        )
-        SettingsDialog.DATE -> ChoiceDialog(
-            title = Strings.dateFormat,
-            options = DateStyle.entries.map { it to dateStyleLabel(it) },
-            details = DateStyle.entries.associateWith { Formats.sample(it, today()) },
-            selected = AppSettings.dateStyle,
-            onSelect = { AppSettings.dateStyle = it },
             onDismiss = { dialog = null }
         )
         SettingsDialog.LANGUAGE -> ChoiceDialog(
@@ -441,18 +431,6 @@ private fun animationLabel(level: AnimationLevel) = when (level) {
     AnimationLevel.FULL -> Strings.animationsOn
     AnimationLevel.REDUCED -> Strings.animationsReduced
     AnimationLevel.OFF -> Strings.animationsOff
-}
-
-private fun dateStyleLabel(style: DateStyle) = when (style) {
-    DateStyle.FULL -> Strings.dateFull
-    DateStyle.SHORT -> Strings.dateShort
-    DateStyle.MONTH_DAY_YEAR_DOT -> Strings.dateMonthDayYearDot
-    DateStyle.MONTH_DAY_YEAR_SLASH -> Strings.dateMonthDayYearSlash
-    DateStyle.DAY_MONTH_YEAR_DOT -> Strings.dateDayMonthYearDot
-    DateStyle.DAY_MONTH_YEAR_SLASH -> Strings.dateDayMonthYearSlash
-    DateStyle.YEAR_MONTH_DAY_DOT -> Strings.dateYearMonthDayDot
-    DateStyle.YEAR_MONTH_DAY_SLASH -> Strings.dateYearMonthDaySlash
-    DateStyle.CHINESE -> Strings.dateChinese
 }
 
 /**

@@ -1,5 +1,7 @@
 package com.gabriele.notionlocal.ui.format
 
+import com.gabriele.notionlocal.data.entity.TimeFormatKind
+import com.gabriele.notionlocal.ui.i18n.Strings
 import com.gabriele.notionlocal.data.settings.AppLanguage
 import com.gabriele.notionlocal.data.settings.AppSettings
 import com.gabriele.notionlocal.data.settings.DateStyle
@@ -76,6 +78,38 @@ object Formats {
 
     /** Un giorno scritto in un certo formato, per gli esempi del menu delle impostazioni. */
     fun sample(style: DateStyle, day: LocalDate): String = formatterFor(style).format(day)
+
+    /** La data in uno stile scelto (quello di una colonna Date), invece che in quello di tutta l'app. */
+    fun dateFormatter(style: DateStyle): DateTimeFormatter = formatterFor(style)
+
+    /**
+     * **Data e ora come le vuole una colonna Date** (dal 26/09/2026): l'ora a
+     * 24 ore (21:30), a 12 ore (9:30 PM, nella lingua dell'app) o nascosta.
+     */
+    fun dateTimeFormatter(style: DateStyle, time: TimeFormatKind): DateTimeFormatter =
+        if (time == TimeFormatKind.HIDDEN) {
+            formatterFor(style)
+        } else {
+            DateTimeFormatterBuilder()
+                .append(formatterFor(style))
+                .appendLiteral(' ')
+                .appendPattern(if (time == TimeFormatKind.H12) "h:mm a" else "HH:mm")
+                .toFormatter(AppSettings.language.locale)
+        }
+
+    /** Il nome di uno stile di data: "Full date", "Day/Month/Year (.)"… */
+    fun dateStyleName(style: DateStyle): String = when (style) {
+        DateStyle.FULL -> Strings.dateFull
+        DateStyle.SHORT -> Strings.dateShort
+        DateStyle.MONTH_DAY_YEAR_DOT -> Strings.dateMonthDayYearDot
+        DateStyle.MONTH_DAY_YEAR_SLASH -> Strings.dateMonthDayYearSlash
+        DateStyle.DAY_MONTH_YEAR_DOT -> Strings.dateDayMonthYearDot
+        DateStyle.DAY_MONTH_YEAR_SLASH -> Strings.dateDayMonthYearSlash
+        DateStyle.YEAR_MONTH_DAY_DOT -> Strings.dateYearMonthDayDot
+        DateStyle.YEAR_MONTH_DAY_SLASH -> Strings.dateYearMonthDaySlash
+        DateStyle.CHINESE -> Strings.dateChinese
+    }
+
 
     private fun formatterFor(style: DateStyle): DateTimeFormatter {
         val language = AppSettings.language

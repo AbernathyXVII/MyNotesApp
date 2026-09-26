@@ -1,5 +1,7 @@
 package com.gabriele.notionlocal.viewmodel
 
+import com.gabriele.notionlocal.data.entity.withDateSettings
+import com.gabriele.notionlocal.data.entity.DateSettings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gabriele.notionlocal.data.PageImageStore
@@ -1174,12 +1176,15 @@ class DatabaseViewModel(
         type: ColumnType,
         optionsJson: String,
         /** Solo per una colonna Number: formato, cifre, barra o anello (vedi `NumberSettings`). */
-        number: NumberSettings? = null
+        number: NumberSettings? = null,
+        /** Solo per una colonna Date: formato della data e dell'ora (vedi `DateSettings`). */
+        date: DateSettings? = null
     ) {
         val column = rawColumn(columnId) ?: return
         viewModelScope.launch {
             val renamed = column.copy(name = name, type = type, optionsJson = optionsJson)
-            repository.updateColumn(number?.let { renamed.withNumberSettings(it) } ?: renamed)
+            val withNumber = number?.let { renamed.withNumberSettings(it) } ?: renamed
+            repository.updateColumn(date?.let { withNumber.withDateSettings(it) } ?: withNumber)
         }
     }
 

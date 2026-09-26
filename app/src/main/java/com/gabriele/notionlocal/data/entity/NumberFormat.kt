@@ -296,3 +296,36 @@ fun DatabaseColumnEntity.withNumberSettings(settings: NumberSettings): DatabaseC
     showNumber = settings.showNumber,
     ringCentered = settings.ringCentered
 )
+
+// --- Le colonne Date: formato della data e dell'ora (dal 26/09/2026) ---
+
+/** Come si scrive l'ora di una data: a 24 ore (21:30), a 12 ore (9:30 PM), o per niente. */
+enum class TimeFormatKind {
+    H24,
+    H12,
+    HIDDEN;
+
+    companion object {
+        /** Null o un nome sconosciuto: a 24 ore, com'era prima. */
+        fun of(name: String?): TimeFormatKind = entries.find { it.name == name } ?: H24
+    }
+}
+
+/**
+ * Le scelte di "Edit property" per una colonna Date: lo stile della data
+ * (null = quello scelto prima nelle impostazioni) e come si scrive l'ora.
+ */
+data class DateSettings(
+    val style: com.gabriele.notionlocal.data.settings.DateStyle? = null,
+    val time: TimeFormatKind = TimeFormatKind.H24
+)
+
+fun DatabaseColumnEntity.dateSettings(): DateSettings = DateSettings(
+    style = com.gabriele.notionlocal.data.settings.DateStyle.entries.find { it.name == dateFormat },
+    time = TimeFormatKind.of(timeFormat)
+)
+
+fun DatabaseColumnEntity.withDateSettings(settings: DateSettings): DatabaseColumnEntity = copy(
+    dateFormat = settings.style?.name,
+    timeFormat = settings.time.takeIf { it != TimeFormatKind.H24 }?.name
+)

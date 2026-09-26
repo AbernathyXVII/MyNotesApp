@@ -2022,6 +2022,52 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**26/09/2026 — "Date format" e "Time format" nella proprietà Date, e via da Settings**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 164 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «In Edit property della proprietà Date, aggiungimi due voci, ossia Date
+> format (prima foto) e Time format (seconda foto). In Date format
+> dell'Edit property della proprietà Date, mettimi tutto quello che c'è in
+> Date format in Settings. Quest'ultimo poi, una volta aver messo tutto
+> lì, toglimelo. È ridondante»
+
+e subito dopo, con le due foto di Notion:
+> «Perdonami, eccole»
+
+- **[Nuova funzionalità]** **Date format** in Edit property di una
+  colonna Date: gli stessi nove formati che c'erano in Settings (Full
+  date, Short date, Month.Day.Year, Month/Day/Year, Day.Month.Year,
+  Day/Month/Year, Year.Month.Day, Year/Month/Day, Chinese date), ognuno
+  con la data di oggi scritta così e la spunta su quello attuale. "Relative"
+  della foto di Notion non c'è: la richiesta era la lista di Settings
+- **[Nuova funzionalità]** **Time format** accanto: **Hidden**, **12
+  hour**, **24 hour**, come nella seconda foto. 12 hour scrive "7:43 PM",
+  24 hour "19:43", Hidden toglie l'ora dalla cella (resta salvata, e la
+  notifica pure). Vale per le celle, le liste, i calcoli (Earliest,
+  Latest…) e il riassunto del filtro, in tutte le viste della colonna;
+  ogni colonna Date ha il suo
+- **[Rimosso]** **Date format da Settings**. Le colonne Date che non ne
+  hanno ancora scelto uno (e quelle nuove) continuano col formato scelto
+  lì l'ultima volta, e così la cronologia, i preferiti, il cestino e la
+  data dei quaderni, che non hanno una proprietà da cui prenderlo
+- **[Progetto]** **Database alla versione 38**:
+  `database_columns.dateFormat` (il nome di `DateStyle`; vuoto = quello
+  di prima) e `database_columns.timeFormat` (H12, HIDDEN; vuoto = 24
+  ore), letti con `dateSettings()`. `Formats.dateTimeFormatter(style,
+  time)` e `Formats.dateStyleName`. Test in `MigrationTest` 37→38 (le
+  date restano come prima, ora a 24 ore), col file `v37.sql`
+- Verificato sul telefono (copia del database prima; migrazione alla 38,
+  le 10 pagine tutte lì), su "SuduS al contrario": Edit property di Date
+  → Date format "Chinese date", Time format "24 hour"; la lista dei nove
+  formati con gli esempi di oggi e la spunta su Chinese date; Time format
+  con Hidden, 12 hour, 24 hour. Day/Month/Year e 12 hour → "25/09/2026
+  7:43 PM", "08/12/2025", e il calcolo Earliest "08/12/2025"; Hidden →
+  "25/09/2026". In Settings, dopo Number format viene subito Language.
+  Alla fine rimesso Chinese date e 24 hour: le celle sono tornate
+  "2026年09月25日 19:43" e "2025年12月08日" come prima
+
 **26/09/2026 — a sinistra, al centro o a destra: le celle e i calcoli**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 163 test
 passati; commit solo in locale)*
@@ -6764,8 +6810,9 @@ le finestre che apre. Chi lo usa passa solo l'id del blocco.
 
 ## Nota tecnica
 
-Lo schema è alla **versione 37** (la 37, del 26/09/2026, aggiunge
-l'allineamento delle celle; la 36, dello stesso giorno, aggiunge le
+Lo schema è alla **versione 38** (la 38, del 26/09/2026, aggiunge il
+formato della data e dell'ora delle colonne Date; la 37, dello stesso
+giorno, aggiunge l'allineamento delle celle; la 36, dello stesso giorno, aggiunge le
 impostazioni delle colonne Number e i calcoli delle viste; la 35, dello
 stesso giorno, aggiunge i
 quaderni: le tabelle `notebooks` e `notebook_sections` e

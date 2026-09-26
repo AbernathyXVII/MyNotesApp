@@ -1,5 +1,6 @@
 package com.gabriele.notionlocal.ui.i18n
 
+import com.gabriele.notionlocal.data.entity.TimeFormatKind
 import com.gabriele.notionlocal.data.entity.CalendarMode
 import com.gabriele.notionlocal.data.entity.Calculation
 import com.gabriele.notionlocal.data.entity.CalculationGroup
@@ -475,6 +476,17 @@ object DbStrings {
         NumberFormatKind.NUMBER -> displayNumber
         NumberFormatKind.PERCENT -> formatPercent
         else -> kind.label
+    }
+
+    val timeFormat get() = t("Time format", "Formato dell'ora", "Zeitformat", "Format de l'heure", "Formato de hora", "时间格式", "시간 형식", "時刻の形式")
+    val timeHidden get() = t("Hidden", "Nascosta", "Ausgeblendet", "Masquée", "Oculta", "隐藏", "숨김", "非表示")
+    val time12 get() = t("12 hour", "12 ore", "12 Stunden", "12 heures", "12 horas", "12 小时制", "12시간", "12 時間")
+    val time24 get() = t("24 hour", "24 ore", "24 Stunden", "24 heures", "24 horas", "24 小时制", "24시간", "24 時間")
+
+    fun timeFormatName(time: TimeFormatKind): String = when (time) {
+        TimeFormatKind.HIDDEN -> timeHidden
+        TimeFormatKind.H12 -> time12
+        TimeFormatKind.H24 -> time24
     }
 
     val calcCount get() = t("Count", "Conteggio", "Anzahl", "Nombre", "Recuento", "计数", "개수", "カウント")

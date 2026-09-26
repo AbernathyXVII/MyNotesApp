@@ -1,5 +1,8 @@
 package com.gabriele.notionlocal.data
 
+import com.gabriele.notionlocal.data.entity.DateSettings
+import com.gabriele.notionlocal.data.entity.TimeFormatKind
+import com.gabriele.notionlocal.data.entity.dateSettings
 import com.gabriele.notionlocal.data.entity.CellAlignment
 import com.gabriele.notionlocal.data.entity.cellAlignment
 import android.app.Application
@@ -70,7 +73,7 @@ class MigrationTest {
         assertNull(page.sourceDatabaseId)
         assertNull(page.viewHiddenColumnIds)
         assertNull(page.cardCoverScale)
-        assertEquals(37, db.openHelper.readableDatabase.version)
+        assertEquals(38, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -86,7 +89,7 @@ class MigrationTest {
         assertNull(yahei.cardCoverScale)
         assertNull(yahei.cardCoverOffsetX)
         assertNull(yahei.cardCoverOffsetY)
-        assertEquals(37, db.openHelper.readableDatabase.version)
+        assertEquals(38, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -114,7 +117,7 @@ class MigrationTest {
         assertEquals(listOf(RichTextSpan(text = "", color = "#E03E3E")), spans("b2"))
         // Una pagina senza font resta com'era.
         assertEquals(listOf(RichTextSpan(text = "Normale")), spans("b3"))
-        assertEquals(37, db.openHelper.readableDatabase.version)
+        assertEquals(38, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -126,7 +129,7 @@ class MigrationTest {
         assertNull(block.notifyAt)
         assertTrue(db.blockDao().getNotificationRows().isEmpty())
         assertTrue(db.databaseDao().getNotifyingDateCells().isEmpty())
-        assertEquals(37, db.openHelper.readableDatabase.version)
+        assertEquals(38, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -146,7 +149,7 @@ class MigrationTest {
             )
         )
         assertEquals("b1", db.inkDao().getForPageOnce("p1").single().anchor)
-        assertEquals(37, db.openHelper.readableDatabase.version)
+        assertEquals(38, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -156,7 +159,7 @@ class MigrationTest {
         assertEquals("Pagina alla 33", page.title)
         assertFalse(page.isProtected)
         assertEquals(0, db.pageDao().countProtected())
-        assertEquals(37, db.openHelper.readableDatabase.version)
+        assertEquals(38, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -167,7 +170,7 @@ class MigrationTest {
         assertNull(page.notebookSectionId)
         assertTrue(db.notebookDao().getNotebooksOnce().isEmpty())
         assertEquals(0, db.notebookDao().countProtectedSections())
-        assertEquals(37, db.openHelper.readableDatabase.version)
+        assertEquals(38, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -181,7 +184,7 @@ class MigrationTest {
         assertTrue(column.showNumber)
         assertFalse(column.ringCentered)
         assertNull(db.pageDao().getById("db1")!!.viewCalculations)
-        assertEquals(37, db.openHelper.readableDatabase.version)
+        assertEquals(38, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -191,6 +194,17 @@ class MigrationTest {
         assertNull(columns.getValue("c1").contentAlignment)
         assertEquals(CellAlignment.LEFT, columns.getValue("c1").cellAlignment)
         assertEquals(CellAlignment.CENTER, columns.getValue("c2").cellAlignment)
-        assertEquals(37, db.openHelper.readableDatabase.version)
+        assertEquals(38, db.openHelper.readableDatabase.version)
+    }
+
+    @Test
+    fun from37TheDatesKeepTheOldFormatAndTheTimeAt24Hours() = runBlocking<Unit> {
+        val db = AppDatabase.getInstance(databaseAtVersion(37))
+        val date = db.databaseDao().getColumnsForPageOnce("db1").single { it.id == "c3" }
+        assertNull(date.dateFormat)
+        assertNull(date.timeFormat)
+        assertEquals(DateSettings(), date.dateSettings())
+        assertEquals(TimeFormatKind.H24, date.dateSettings().time)
+        assertEquals(38, db.openHelper.readableDatabase.version)
     }
 }

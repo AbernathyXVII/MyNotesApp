@@ -144,7 +144,16 @@ data class DatabaseColumnEntity(
      * sinistra. Null = come prima: al centro se `centerContent`, se no a
      * sinistra. Letto con `cellAlignment`.
      */
-    var contentAlignment: String? = null
+    var contentAlignment: String? = null,
+    // --- Solo per le colonne Date (dal 26/09/2026), "Edit property" ---
+    /**
+     * Come si scrive la data (il nome di uno stile `DateStyle`, gli stessi
+     * che prima si sceglievano per tutta l'app nelle impostazioni). Null =
+     * quello scelto allora nelle impostazioni.
+     */
+    var dateFormat: String? = null,
+    /** "H12" a 12 ore (9:30 PM), "HIDDEN" senza ora; null = a 24 ore (21:30). Vedi `TimeFormatKind`. */
+    var timeFormat: String? = null
 )
 
 /** A sinistra, al centro o a destra: le celle di una colonna, e i calcoli sotto la tabella. */

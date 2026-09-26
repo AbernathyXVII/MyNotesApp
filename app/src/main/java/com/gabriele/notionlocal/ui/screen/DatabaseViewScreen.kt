@@ -1,5 +1,7 @@
 package com.gabriele.notionlocal.ui.screen
 
+import com.gabriele.notionlocal.data.entity.dateSettings
+import com.gabriele.notionlocal.data.entity.DateSettings
 import androidx.compose.material.icons.filled.FormatAlignRight
 import com.gabriele.notionlocal.data.entity.parseCalculationAlignments
 import com.gabriele.notionlocal.data.entity.cellAlignment
@@ -1283,11 +1285,11 @@ fun DatabaseContent(
         PropertySheet(
             target = target,
             onDismiss = { propertyTarget = null },
-            onSave = { name, type, optionsJson, number ->
+            onSave = { name, type, optionsJson, number, date ->
                 when (target) {
                     is PropertyTarget.New -> viewModel.addColumn(name, type, optionsJson)
                     is PropertyTarget.Existing ->
-                        viewModel.updateColumn(target.column.id, name, type, optionsJson, number)
+                        viewModel.updateColumn(target.column.id, name, type, optionsJson, number, date)
                 }
                 propertyTarget = null
             },
@@ -1653,7 +1655,7 @@ private fun CalculationFooter(
                         }
                     }
                     val result = calculate(calc, column.type, values, startOfDate = { parseDateRange(it)?.start })
-                    CalculationLabel(calc, calculationText(result, column.takeIf { it.type == ColumnType.NUMBER }))
+                    CalculationLabel(calc, calculationText(result, column))
                 }
             }
             Spacer(modifier = Modifier.width(SEPARATOR_WIDTH))
@@ -3485,9 +3487,14 @@ private fun Long.toLocalDateTime(): LocalDateTime =
 private fun LocalDateTime.toEpochMillis(): Long =
     atZone(AppSettings.zoneId).toInstant().toEpochMilli()
 
-/** "12 Jan 2026", "12 Jan 2026, 09:30" oppure con la freccia e la fine. */
-private fun DateRange.label(): String {
-    val format = if (hasTime) DATE_TIME_FORMAT else DATE_FORMAT
+/**
+ * "12 Jan 2026", "12 Jan 2026, 09:30" oppure con la freccia e la fine. Nel
+ * formato della colonna (dal 26/09/2026): lo stile della data e l'ora a 12,
+ * a 24 ore o nascosta; di suo quelli di sempre.
+ */
+private fun DateRange.label(settings: DateSettings = DateSettings()): String {
+    val style = settings.style ?: AppSettings.dateStyle
+    val format = if (hasTime) Formats.dateTimeFormatter(style, settings.time) else Formats.dateFormatter(style)
     val startText = Instant.ofEpochMilli(start)
         .atZone(AppSettings.zoneId).format(format)
     val endText = end?.let {
@@ -3505,7 +3512,7 @@ private fun listCellLabel(column: DatabaseColumnEntity, value: String): String =
     ColumnType.CHECKBOX -> if (value == "true") "✓" else ""
     ColumnType.COLOR -> parseColorCell(value).text
     ColumnType.NUMBER -> formatNumberValue(value, column)
-    ColumnType.DATE -> parseDateRange(value)?.label() ?: value
+    ColumnType.DATE -> parseDateRange(value)?.label(column.dateSettings()) ?: value
     ColumnType.MULTI_SELECT -> value.split(MULTI_VALUE_SEPARATOR)
         .filter { it.isNotBlank() }
         .joinToString(", ")
@@ -4058,7 +4065,7 @@ private fun filterSummary(column: DatabaseColumnEntity?, value: String): String 
     when (column.type) {
         ColumnType.DATE -> {
             val range = parseDateRange(value) ?: return DbStrings.none
-            return "${DbStrings.columnName(column.name)}: ${range.label()}"
+            return "${DbStrings.columnName(column.name)}: ${range.label(column.dateSettings())}"
         }
         ColumnType.NUMBER -> {
             val parts = value.split(MULTI_VALUE_SEPARATOR)
@@ -5000,7 +5007,8 @@ private fun CellContent(
             ColumnType.DATE -> DateCell(
                 value = value,
                 onValueChange = onValueChange,
-                contentPadding = cellPadding
+                contentPadding = cellPadding,
+                settings = column.dateSettings()
             )
 
             ColumnType.COLOR -> ColorCell(
@@ -5458,7 +5466,9 @@ private fun TagPickerSheet(
 private fun DateCell(
     value: String,
     onValueChange: (String) -> Unit,
-    contentPadding: Dp = 0.dp
+    contentPadding: Dp = 0.dp,
+    /** Il formato della colonna: vedi `DateRange.label`. */
+    settings: DateSettings = DateSettings()
 ) {
     var showPicker by remember { mutableStateOf(false) }
     val range = parseDateRange(value)
@@ -5483,7 +5493,7 @@ private fun DateCell(
         // spostarla dentro è la disposizione, non il riquadro intorno.
         Row(horizontalArrangement = LocalCellAlignment.current.arrangement, verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = range?.label() ?: "—",
+                text = range?.label(settings) ?: "—",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground,
                 maxLines = 1,
@@ -7802,7 +7812,7 @@ private fun SettingsRow(
 private fun PropertySheet(
     target: PropertyTarget,
     onDismiss: () -> Unit,
-    onSave: (String, ColumnType, String, NumberSettings?) -> Unit,
+    onSave: (String, ColumnType, String, NumberSettings?, DateSettings?) -> Unit,
     onDelete: () -> Unit
 ) {
     val existing = (target as? PropertyTarget.Existing)?.column
@@ -7812,6 +7822,7 @@ private fun PropertySheet(
     val changeTypeOnly = (target as? PropertyTarget.Existing)?.changeType == true
     val showTypes = existing == null || changeTypeOnly
     var number by remember(existing?.id) { mutableStateOf(existing?.numberSettings() ?: NumberSettings()) }
+    var date by remember(existing?.id) { mutableStateOf(existing?.dateSettings() ?: DateSettings()) }
 
     var name by remember(existing?.id) { mutableStateOf(existing?.name ?: "") }
     var selectedType by remember(existing?.id) {
@@ -7855,7 +7866,13 @@ private fun PropertySheet(
                 TextButton(onClick = onDismiss) { Text(Strings.cancel) }
                 TextButton(
                     onClick = {
-                        onSave(effectiveName, selectedType, optionsJson, number.takeIf { selectedType == ColumnType.NUMBER })
+                        onSave(
+                            effectiveName,
+                            selectedType,
+                            optionsJson,
+                            number.takeIf { selectedType == ColumnType.NUMBER },
+                            date.takeIf { selectedType == ColumnType.DATE }
+                        )
                     }
                 ) { Text(if (existing == null) DbStrings.add else EditorStrings.save) }
             }
@@ -7883,6 +7900,12 @@ private fun PropertySheet(
             if (!showTypes && existing?.type == ColumnType.NUMBER) {
                 Spacer(modifier = Modifier.size(12.dp))
                 NumberSettingsSection(settings = number, onChange = { number = it })
+            }
+
+            // "Edit property" di una colonna Date: Date format e Time format.
+            if (!showTypes && existing?.type == ColumnType.DATE) {
+                Spacer(modifier = Modifier.size(12.dp))
+                DateSettingsSection(settings = date, onChange = { date = it })
             }
 
             if (showTypes) {

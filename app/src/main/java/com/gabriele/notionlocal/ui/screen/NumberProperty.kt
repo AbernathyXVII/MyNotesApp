@@ -1,5 +1,12 @@
 package com.gabriele.notionlocal.ui.screen
 
+import java.time.LocalDate
+import java.time.Instant
+import com.gabriele.notionlocal.data.settings.DateStyle
+import com.gabriele.notionlocal.data.settings.AppSettings
+import com.gabriele.notionlocal.data.entity.dateSettings
+import com.gabriele.notionlocal.data.entity.TimeFormatKind
+import com.gabriele.notionlocal.data.entity.DateSettings
 import com.gabriele.notionlocal.data.entity.CellAlignment
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -553,6 +560,94 @@ private fun DecimalPlacesDialog(current: Int?, onPick: (Int?) -> Unit, onDismiss
     )
 }
 
+// --- "Edit property" di una colonna Date (dal 26/09/2026) ---
+
+/**
+ * **Date format e Time format**, come su Notion: lo stile della data (gli
+ * stessi di prima nelle impostazioni, con un esempio di oggi) e l'ora a 12
+ * ore, a 24 ore o nascosta.
+ */
+@Composable
+fun DateSettingsSection(settings: DateSettings, onChange: (DateSettings) -> Unit) {
+    var pickingDate by remember { mutableStateOf(false) }
+    var pickingTime by remember { mutableStateOf(false) }
+    val style = settings.style ?: AppSettings.dateStyle
+    Column(modifier = Modifier.fillMaxWidth()) {
+        SettingsLine(Strings.dateFormat, Formats.dateStyleName(style)) { pickingDate = true }
+        SettingsLine(DbStrings.timeFormat, DbStrings.timeFormatName(settings.time)) { pickingTime = true }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(DbStrings.appliesToAllViews, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+    if (pickingDate) {
+        val today = remember { LocalDate.now(AppSettings.zoneId) }
+        ChoiceListDialog(
+            title = Strings.dateFormat,
+            options = DateStyle.entries.map { it to Formats.dateStyleName(it) },
+            details = DateStyle.entries.associateWith { Formats.sample(it, today) },
+            selected = style,
+            onPick = {
+                onChange(settings.copy(style = it))
+                pickingDate = false
+            },
+            onDismiss = { pickingDate = false }
+        )
+    }
+    if (pickingTime) {
+        ChoiceListDialog(
+            title = DbStrings.timeFormat,
+            // Nell'ordine di Notion: Hidden, 12 hour, 24 hour.
+            options = listOf(TimeFormatKind.HIDDEN, TimeFormatKind.H12, TimeFormatKind.H24).map { it to DbStrings.timeFormatName(it) },
+            selected = settings.time,
+            onPick = {
+                onChange(settings.copy(time = it))
+                pickingTime = false
+            },
+            onDismiss = { pickingTime = false }
+        )
+    }
+}
+
+/** Una scelta da un elenco, con la spunta su quella attuale e, se c'è, un esempio sotto il nome. */
+@Composable
+private fun <T> ChoiceListDialog(
+    title: String,
+    options: List<Pair<T, String>>,
+    selected: T,
+    onPick: (T) -> Unit,
+    onDismiss: () -> Unit,
+    details: Map<T, String> = emptyMap()
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = DarkSheet,
+        title = { Text(title) },
+        text = {
+            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                options.forEach { (option, label) ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onPick(option) }
+                            .padding(vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(label, style = MaterialTheme.typography.bodyLarge)
+                            details[option]?.let {
+                                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                        if (option == selected) {
+                            Icon(Icons.Filled.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(Strings.cancel) } }
+    )
+}
+
 // --- "Calculate" ---
 
 /**
@@ -651,7 +746,10 @@ fun calculationText(result: CalculationResult, column: DatabaseColumnEntity?): S
         val raw = result.value.stripTrailingZeros().toPlainString()
         if (column != null) formatNumberValue(raw, column) else Formats.number(raw)
     }
-    is CalculationResult.Date -> Formats.date(result.epochMillis)
+    // Le date più vecchia e più recente nel formato della colonna.
+    is CalculationResult.Date -> column?.dateSettings()?.style?.let { style ->
+        Formats.dateFormatter(style).format(Instant.ofEpochMilli(result.epochMillis).atZone(AppSettings.zoneId).toLocalDate())
+    } ?: Formats.date(result.epochMillis)
     is CalculationResult.Days -> DbStrings.daysCount(result.days)
     CalculationResult.Nothing -> "—"
 }
