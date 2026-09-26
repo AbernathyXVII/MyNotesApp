@@ -895,8 +895,9 @@ private fun backspacedLineStart(oldBody: String, newBody: String, caret: Int): I
     return oldBody.take(caret).count { it == '\n' } + 1
 }
 
-private sealed class RenderItem {
-    data class Run(val blocks: List<BlockEntity>) : RenderItem()
+internal sealed class RenderItem {
+    /** `key`: vedi `groupIntoRenderItems`. */
+    data class Run(val blocks: List<BlockEntity>, val key: String) : RenderItem()
     data class Island(val block: BlockEntity) : RenderItem()
 }
 
@@ -904,8 +905,8 @@ private sealed class RenderItem {
 private const val PAGE_HEADER_KEY = "page-header"
 
 /** La chiave di una voce della lista: la stessa per la lista e per i disegni. */
-private fun renderItemKey(item: RenderItem): String = when (item) {
-    is RenderItem.Run -> "run:" + item.blocks.first().id
+internal fun renderItemKey(item: RenderItem): String = when (item) {
+    is RenderItem.Run -> item.key
     is RenderItem.Island -> "island:" + item.block.id
 }
 
@@ -915,24 +916,40 @@ private fun renderItemBlockIds(item: RenderItem): List<String> = when (item) {
     is RenderItem.Island -> listOf(item.block.id)
 }
 
-/** Raggruppa una lista piatta di blocchi in sequenze di testo scorrevole consecutive e isole singole, preservando l'ordine. */
-private fun groupIntoRenderItems(blocks: List<BlockEntity>): List<RenderItem> {
+/**
+ * Raggruppa una lista piatta di blocchi in sequenze di testo scorrevole
+ * consecutive e isole singole, preservando l'ordine.
+ *
+ * **La chiave di un gruppo di righe è quello che gli sta sopra**:
+ * l'isola che lo precede, o l'inizio della pagina. Era il suo primo
+ * blocco, ma l'Invio a inizio della prima riga mette la riga vuota
+ * nuova *sopra* di lui, e con un altro primo blocco il campo veniva
+ * rifatto da capo: la tastiera spariva (trovato dall'utente il
+ * 26/09/2026, solo sulla prima riga e solo se aveva del testo). Quello
+ * che sta sopra, invece, scrivendo non cambia. Due gruppi di righe non
+ * possono avere la stessa isola sopra, né stare tutti e due in cima:
+ * fra due gruppi c'è sempre un'isola, altrimenti sarebbero uno solo.
+ */
+internal fun groupIntoRenderItems(blocks: List<BlockEntity>): List<RenderItem> {
     val result = mutableListOf<RenderItem>()
     var currentRun = mutableListOf<BlockEntity>()
+    var islandAbove: BlockEntity? = null
+    fun closeRun() {
+        if (currentRun.isEmpty()) return
+        val key = "run:" + (islandAbove?.id ?: ("top:" + currentRun.first().pageId))
+        result.add(RenderItem.Run(currentRun.toList(), key))
+        currentRun = mutableListOf()
+    }
     for (block in blocks) {
         if (block.type in FLOWING_TYPES) {
             currentRun.add(block)
         } else {
-            if (currentRun.isNotEmpty()) {
-                result.add(RenderItem.Run(currentRun.toList()))
-                currentRun = mutableListOf()
-            }
+            closeRun()
             result.add(RenderItem.Island(block))
+            islandAbove = block
         }
     }
-    if (currentRun.isNotEmpty()) {
-        result.add(RenderItem.Run(currentRun.toList()))
-    }
+    closeRun()
     return result
 }
 
@@ -1717,6 +1734,7 @@ private fun PageEditorContent(
                     when (item) {
                         is RenderItem.Run -> MergedTextRunField(
                             runBlocks = item.blocks,
+                            runKey = item.key,
                             allBlocks = blocks,
                             viewModel = viewModel,
                             focusRequestBlockId = focusRequestBlockId,
@@ -3959,6 +3977,8 @@ private fun RunCheckboxOverlay(
 @Composable
 private fun MergedTextRunField(
     runBlocks: List<BlockEntity>,
+    /** Chi è questo campo: la chiave del gruppo, vedi `groupIntoRenderItems`. */
+    runKey: String,
     allBlocks: List<BlockEntity>,
     viewModel: PageEditorViewModel,
     focusRequestBlockId: String?,
@@ -3967,7 +3987,6 @@ private fun MergedTextRunField(
     /** Cosa fare con la voce scelta dal menu "/": lo sa la schermata, che può anche navigare. */
     onSlashAction: (BlockEntity, SlashAction) -> Unit
 ) {
-    val runKey = runBlocks.first().id
     var fieldValue by remember(runKey) {
         mutableStateOf(TextFieldValue(runFieldText(runBlocks, viewModel), TextRange(1)))
     }

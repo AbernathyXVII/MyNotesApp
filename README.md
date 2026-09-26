@@ -2022,6 +2022,48 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**26/09/2026 — l'Invio a inizio della prima riga non chiude più la tastiera**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 168 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Prima dimmi se il telefono è collegato. Poi, piccolo bug: se con il
+> text cursor mi trovo sul primissimo blocco di un campo di testo su
+> questo blocco c'è qualcosa scritto e vado a capo, la tastiera
+> scompare. Questa cosa accade solo se mi trovo al primo blocco e solo
+> se c'è qualcosa scritto.»
+
+- **[Bug fix]** **Invio col cursore all'inizio della prima riga** di un
+  gruppo di righe di testo (in cima alla pagina, o subito sotto un
+  toggle, un divisore, un link…): la tastiera spariva. Il campo che
+  tiene insieme le righe era riconosciuto dal suo primo blocco, e la
+  riga vuota nuova nasce proprio sopra di lui: con un primo blocco
+  diverso il campo veniva rifatto da capo e perdeva il cursore. Solo
+  sulla prima riga e solo con del testo perché su una riga vuota, o su
+  una riga più sotto, la riga nuova non diventa la prima del gruppo.
+  Ora il campo è riconosciuto da quello che gli sta sopra (l'isola che
+  lo precede, o l'inizio della pagina), che andando a capo non cambia
+- **[Bug fix]** Nello stesso caso, sotto un'isola **la riga vuota finiva
+  in cima alla pagina**, sopra l'isola, invece che subito sopra la riga:
+  le si dava il posto zero della pagina invece di quello della riga.
+  Non si vedeva ancora perché il campo si chiudeva prima
+- **[Progetto]** `groupIntoRenderItems` dà la chiave ai gruppi di righe
+  (`RenderItem.Run.key`), e `MergedTextRunField` la riceve invece di
+  ricavarla dal primo blocco; in `updateRun` le righe nuove senza un
+  blocco prima vanno al posto della prima riga. Test in `RunKeyTest` e
+  `EnterAtFirstLineTest`
+- Verificato sul telefono (Galaxy S25 Ultra, collegato col debug senza
+  fili), sulla pagina "Titolo tre H3", che ha solo righe vuote: scritto
+  "prova" sulla prima riga, cursore all'inizio, Invio col tasto della
+  tastiera. **Prima** la tastiera si chiudeva (riprodotto), **dopo**
+  resta aperta, "prova" scende di una riga e la lettera scritta subito
+  dopo va davanti a "prova". Lo stesso con un divisore sopra: la riga
+  vuota nasce fra il divisore e "prova", la tastiera resta. (In fondo
+  alla riga l'Invio andava già bene: provato prima della correzione,
+  non di nuovo dopo.) Alla fine
+  tolti il testo e il divisore di prova: la pagina ha di nuovo le sue
+  23 righe vuote
+
 **26/09/2026 — "Date format" e "Time format" nella proprietà Date, e via da Settings**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 164 test
 passati; commit solo in locale)*

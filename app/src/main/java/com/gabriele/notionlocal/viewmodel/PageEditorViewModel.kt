@@ -2311,8 +2311,9 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         // riscritte.** Col backspace a inizio della seconda di quattro
         // righe vuote, il confronto dal fondo le trovava tutte uguali e
         // toglieva la **prima**: per il testo è lo stesso, ma il campo
-        // condiviso è legato al suo primo blocco (la chiave nell'elenco),
-        // e tolto quello rinasceva da capo — la tastiera spariva.
+        // condiviso era legato al suo primo blocco (la chiave nell'elenco;
+        // oggi non più, vedi `groupIntoRenderItems`), e tolto quello
+        // rinasceva da capo — la tastiera spariva.
         // Trovato dall'utente il 25/09/2026. Tenendo dentro la riga del
         // cursore si riscrive quella e si toglie la successiva, che è
         // quella davvero cancellata. Solo quando le righe calano:
@@ -2415,7 +2416,14 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
                     )
                 }
                 val extraLines = newMiddleLines.drop(oldMiddleBlocks.size)
-                val shiftFromIndex = (referenceBlock?.orderIndex ?: -1) + 1
+                // Senza un blocco prima (Invio a inizio della prima riga)
+                // le righe nuove vanno al posto di quella prima riga, non
+                // a zero: zero è la cima della **pagina**, e se sopra il
+                // gruppo c'è un toggle o un link a una pagina la riga
+                // vuota ci saltava sopra.
+                val shiftFromIndex = referenceBlock?.let { it.orderIndex + 1 }
+                    ?: runBlocks.getOrNull(oldMiddleStart)?.orderIndex
+                    ?: 0
                 repository.applyBlockChanges(
                     shift = if (extraLines.isEmpty()) {
                         null
