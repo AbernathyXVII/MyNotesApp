@@ -240,6 +240,10 @@ class DatabaseViewModel(
     private val _rowPreviews = MutableStateFlow<Map<String, List<RowPreviewLine>>>(emptyMap())
     val rowPreviews: StateFlow<Map<String, List<RowPreviewLine>>> = _rowPreviews
 
+    /** Le righe con la pagina bloccata dalla password: nella galleria, il lucchetto al posto dell'anteprima. */
+    private val _lockedRows = MutableStateFlow<Set<String>>(emptySet())
+    val lockedRows: StateFlow<Set<String>> = _lockedRows
+
     // --- La ricerca dentro il database (la lente accanto a Sort) ---
     //
     // Sta qui e non nella schermata: aprendo una pagina trovata e
@@ -374,6 +378,18 @@ class DatabaseViewModel(
                 }
                 .distinctUntilChanged()
                 .collect { _rowPreviews.value = it }
+        }
+        viewModelScope.launch {
+            combine(dataIds, previewShown) { id, shown -> id to shown }
+                .distinctUntilChanged()
+                .flatMapLatest { (id, shown) ->
+                    if (shown != null && shown != GalleryCardPreview.NONE) {
+                        repository.observeLockedRowIds(id)
+                    } else {
+                        flowOf(emptySet())
+                    }
+                }
+                .collect { _lockedRows.value = it }
         }
 
         viewModelScope.launch {

@@ -621,7 +621,8 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   nei tre puntini; si aprono con l'impronta o con la password, scelta la
   prima volta e cambiata o tolta da Settings. Chiudono anche quello che
   hanno dentro; un database bloccato dentro una pagina diventa un
-  collegamento
+  collegamento, e nella galleria la loro scheda mostra un lucchetto bianco
+  al posto della copertina
 - **Timeline**: il calendario srotolato. Un asse del tempo che scorre
   in orizzontale, una riga per pagina con la barra intera (non spezzata
   a fine settimana), i nomi in una colonna ferma a sinistra, i fine
@@ -2006,6 +2007,43 @@ Le voci nate nelle sessioni cloud stanno qui in cima, la più recente
 per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
+
+**26/09/2026 — la scheda della galleria di una pagina bloccata**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 141 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Funziona tutto, a quanto pare. Una cosa: nel secondo database, quello in
+> vista Gallery, fai sì che le pagine bloccate facciano vedere uno sfondo di
+> default con un lucchetto bianco. Adesso, ho bloccato una pagina con una
+> cover, ma la cover si vede. Vorrei evitare questo, ecco»
+
+E subito dopo:
+> «Ovviamente, perdonami, questo deve vale per tutti i database, non solo
+> per questo che ti ho appena menzionato»
+
+- **[Bug fix]** Nella vista Gallery **di qualunque database** (anche dentro
+  una pagina, anche una vista collegata), la scheda di una pagina bloccata
+  con la password mostrava la sua copertina. Ora al posto dell'anteprima
+  c'è **uno sfondo grigio scuro sfumato, sempre uguale, con un lucchetto
+  bianco** in un cerchio; il lucchetto cresce con la dimensione della
+  scheda. Vale per "Page cover" e per "Page content"; con "None" la scheda
+  non ha anteprima e resta com'è. Tenendo premuta la scheda non c'è più
+  "Reposition cover", che avrebbe fatto rivedere la copertina
+- **[Bug fix]** (trovato lavorandoci) La lente accanto a Sort cercava anche
+  dentro il testo delle pagine bloccate, e trovandolo illuminava la riga:
+  ora le salta, come la ricerca generale
+- **[Progetto]** La copertina e il testo di una pagina bloccata non escono
+  nemmeno dal database (`observeRowCovers`, e le tre query della lente);
+  le righe bloccate arrivano alla galleria da `observeLockedRowIds`, seguite
+  solo mentre la galleria ha un'anteprima. Lo sfondo è `LockedCardPreview`,
+  scuro anche col tema chiaro perché il lucchetto resti bianco. Test in
+  `PageLockTest`
+- Verificato sul telefono, nel database a galleria di My Space: la scheda
+  "UntitledZeta" (bloccata dall'utente, con una copertina) mostra lo sfondo
+  col lucchetto, "Gioco uno" accanto la sua copertina; tenuta premuta,
+  "UntitledZeta" ha Icon, Edit property e Delete, senza "Reposition cover",
+  che invece "Gioco uno" ha ancora
 
 **26/09/2026 — bloccare pagine e database con la password o l'impronta**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno, tranne il

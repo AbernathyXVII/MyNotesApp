@@ -1,5 +1,8 @@
 package com.gabriele.notionlocal.ui.screen
 
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.material.icons.filled.Lock
+import com.gabriele.notionlocal.ui.i18n.LockStrings
 import androidx.compose.material.icons.filled.LinkOff
 import androidx.compose.material.icons.filled.NorthEast
 import androidx.compose.ui.text.SpanStyle
@@ -634,6 +637,7 @@ fun DatabaseContent(
     // vista è la galleria (vedi `DatabaseViewModel.load`).
     val rowCovers by viewModel.rowCovers.collectAsStateWithLifecycle()
     val rowPreviews by viewModel.rowPreviews.collectAsStateWithLifecycle()
+    val lockedRows by viewModel.lockedRows.collectAsStateWithLifecycle()
     // La riga di cui si sta scegliendo l'icona, dalla finestra delle azioni.
     var iconForRow by remember { mutableStateOf<DatabaseRowEntity?>(null) }
 
@@ -1029,6 +1033,7 @@ fun DatabaseContent(
                     size = page?.galleryCardSize ?: GALLERY_DEFAULT_SIZE,
                     covers = rowCovers,
                     contentPreviews = rowPreviews,
+                    lockedRows = lockedRows,
                     onOpenRow = openRow,
                     onRowLongPress = { row ->
                         focusManager.clearFocus()
@@ -2858,6 +2863,8 @@ private fun GalleryLayout(
     size: GalleryCardSize,
     covers: Map<String, RowCover>,
     contentPreviews: Map<String, List<RowPreviewLine>>,
+    /** Le righe con la pagina bloccata dalla password: vedi `LockedCardPreview`. */
+    lockedRows: Set<String>,
     onOpenRow: (DatabaseRowEntity) -> Unit,
     onRowLongPress: (DatabaseRowEntity) -> Unit,
     /** La scheda di cui si sta spostando la copertina, se ce n'è una: vedi `GalleryCard`. */
@@ -2887,6 +2894,7 @@ private fun GalleryLayout(
                             size = size,
                             cover = covers[row.id],
                             contentLines = contentPreviews[row.id],
+                            locked = row.id in lockedRows,
                             onOpen = { onOpenRow(row) },
                             onLongPress = { onRowLongPress(row) },
                             repositioning = row.id == repositioningRowId,
@@ -2909,6 +2917,42 @@ private fun GalleryLayout(
         }
     }
 }
+
+/**
+ * **L'anteprima di una scheda la cui pagina è bloccata con la password**
+ * (dal 26/09/2026, chiesta dall'utente): uno sfondo sempre uguale, grigio
+ * scuro sfumato, con un lucchetto bianco in mezzo. Scuro anche col tema
+ * chiaro, perché il lucchetto resti bianco e si veda. Uguale per ogni
+ * pagina bloccata, così non lascia capire niente di cosa c'è dentro.
+ */
+@Composable
+private fun LockedCardPreview(modifier: Modifier = Modifier) {
+    BoxWithConstraints(
+        modifier = modifier.background(Brush.verticalGradient(listOf(LockedCardTop, LockedCardBottom))),
+        contentAlignment = Alignment.Center
+    ) {
+        // Il lucchetto cresce con la scheda: piccolo nelle schede piccole,
+        // senza diventare enorme in quelle grandi.
+        val iconSize = (minOf(maxWidth, maxHeight) * 0.34f).coerceIn(20.dp, 56.dp)
+        Box(
+            modifier = Modifier
+                .size(iconSize * 1.7f)
+                .clip(CircleShape)
+                .background(Color.White.copy(alpha = 0.10f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                Icons.Filled.Lock,
+                contentDescription = LockStrings.passwordLock,
+                tint = Color.White,
+                modifier = Modifier.size(iconSize)
+            )
+        }
+    }
+}
+
+private val LockedCardTop = Color(0xFF4A4A4F)
+private val LockedCardBottom = Color(0xFF26262A)
 
 /**
  * I due pulsanti mentre si sposta la copertina di una scheda: ✕ lascia
@@ -2961,6 +3005,8 @@ private fun GalleryCard(
     size: GalleryCardSize,
     cover: RowCover?,
     contentLines: List<RowPreviewLine>?,
+    /** La pagina della riga è bloccata con la password: al posto dell'anteprima, il lucchetto. */
+    locked: Boolean,
     onOpen: () -> Unit,
     onLongPress: () -> Unit,
     /**
@@ -3019,7 +3065,12 @@ private fun GalleryCard(
                     .background(DarkSurfaceVariant)
                     .onSizeChanged { previewBox = it }
             ) {
-                if (preview == GalleryCardPreview.PAGE_COVER && cover != null) {
+                if (locked) {
+                    // Né la copertina né il testo: copertina e testo di una
+                    // pagina bloccata non arrivano nemmeno fin qui (vedi
+                    // `DatabaseDao.observeRowCovers`), questo è il loro posto.
+                    LockedCardPreview(modifier = Modifier.matchParentSize())
+                } else if (preview == GalleryCardPreview.PAGE_COVER && cover != null) {
                     // Tenuta dentro i bordi: l'inquadratura della pagina è
                     // nata su una striscia di un'altra forma, e anche quella
                     // di prova non deve mai scoprire un angolo vuoto.

@@ -201,9 +201,21 @@ interface DatabaseDao {
             "pages.coverOffsetY AS coverOffsetY, pages.cardCoverScale AS cardCoverScale, " +
             "pages.cardCoverOffsetX AS cardCoverOffsetX, pages.cardCoverOffsetY AS cardCoverOffsetY " +
             "FROM database_rows JOIN pages ON pages.id = database_rows.linkedPageId " +
-            "WHERE database_rows.pageId = :pageId AND pages.coverImage IS NOT NULL"
+            // La copertina di una pagina bloccata con la password non
+            // arriva nemmeno alla galleria: la scheda mostra il lucchetto.
+            "WHERE database_rows.pageId = :pageId AND pages.coverImage IS NOT NULL AND pages.isProtected = 0"
     )
     fun observeRowCovers(pageId: String): Flow<List<RowCover>>
+
+    /**
+     * Le righe la cui pagina è bloccata con la password: nella galleria la
+     * loro scheda mostra un lucchetto al posto della copertina o del testo.
+     */
+    @Query(
+        "SELECT database_rows.id FROM database_rows JOIN pages ON pages.id = database_rows.linkedPageId " +
+            "WHERE database_rows.pageId = :pageId AND pages.isProtected = 1"
+    )
+    fun observeLockedRowIds(pageId: String): Flow<List<String>>
 
     /**
      * I blocchi **di primo livello** delle pagine delle righe, nell'ordine
@@ -240,7 +252,8 @@ interface DatabaseDao {
         """
         SELECT database_rows.id AS rowId, blocks.textJson AS text FROM database_rows
         INNER JOIN blocks ON blocks.pageId = database_rows.linkedPageId
-        WHERE database_rows.pageId = :databasePageId
+        INNER JOIN pages AS rowPage ON rowPage.id = database_rows.linkedPageId
+        WHERE database_rows.pageId = :databasePageId AND rowPage.isProtected = 0
         """
     )
     suspend fun getRowPageBlockTexts(databasePageId: String): List<RowPageText>
@@ -251,7 +264,8 @@ interface DatabaseDao {
         SELECT database_rows.id AS rowId, table_cells.text AS text FROM database_rows
         INNER JOIN blocks ON blocks.pageId = database_rows.linkedPageId
         INNER JOIN table_cells ON table_cells.blockId = blocks.id
-        WHERE database_rows.pageId = :databasePageId
+        INNER JOIN pages AS rowPage ON rowPage.id = database_rows.linkedPageId
+        WHERE database_rows.pageId = :databasePageId AND rowPage.isProtected = 0
         """
     )
     suspend fun getRowPageTableTexts(databasePageId: String): List<RowPageText>
@@ -262,7 +276,8 @@ interface DatabaseDao {
         SELECT database_rows.id AS rowId, pages.title AS text FROM database_rows
         INNER JOIN blocks ON blocks.pageId = database_rows.linkedPageId
         INNER JOIN pages ON pages.id = blocks.linkedPageId
-        WHERE database_rows.pageId = :databasePageId AND pages.trashedAt IS NULL
+        INNER JOIN pages AS rowPage ON rowPage.id = database_rows.linkedPageId
+        WHERE database_rows.pageId = :databasePageId AND pages.trashedAt IS NULL AND rowPage.isProtected = 0
         """
     )
     suspend fun getRowPageLinkTitles(databasePageId: String): List<RowPageText>

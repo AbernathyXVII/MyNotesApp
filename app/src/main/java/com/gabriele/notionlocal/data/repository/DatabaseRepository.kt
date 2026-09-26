@@ -97,6 +97,10 @@ class DatabaseRepository(private val db: AppDatabase) {
     fun observeRowCovers(pageId: String): Flow<Map<String, RowCover>> =
         dao.observeRowCovers(pageId).map { covers -> covers.associateBy { it.rowId } }
 
+    /** Le righe la cui pagina è bloccata con la password. */
+    fun observeLockedRowIds(pageId: String): Flow<Set<String>> =
+        dao.observeLockedRowIds(pageId).map { it.toSet() }
+
     /**
      * Riga → le prime righe di testo della sua pagina, per l'anteprima
      * delle schede della galleria.

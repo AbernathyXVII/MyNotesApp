@@ -8,7 +8,9 @@ import com.gabriele.notionlocal.data.entity.BlockEntity
 import com.gabriele.notionlocal.data.entity.BlockType
 import com.gabriele.notionlocal.data.entity.DatabaseRowEntity
 import com.gabriele.notionlocal.data.entity.PageEntity
+import com.gabriele.notionlocal.data.repository.DatabaseRepository
 import com.gabriele.notionlocal.data.repository.PageRepository
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -112,6 +114,24 @@ class PageLockTest {
         // Aperta, si trova tutto.
         AppLock.unlock("diary")
         assertTrue(repository.search("segreto", inContent = true, inTrash = false).any { it.pageId == "diary" })
+    }
+
+    @Test
+    fun theGalleryShowsTheLockInsteadOfTheCoverOfALockedRowPage() = runBlocking<Unit> {
+        val databases = DatabaseRepository(db)
+        db.pageDao().update(db.pageDao().getById("row")!!.copy(coverImage = "cover.jpg"))
+        db.blockDao().insert(BlockEntity(id = "t2", pageId = "row", orderIndex = 0, textJson = """[{"text":"Conto del ristorante"}]"""))
+        assertEquals(setOf("r1"), databases.observeRowCovers("db").first().keys)
+        assertTrue(databases.observeLockedRowIds("db").first().isEmpty())
+        assertTrue(databases.searchIndex("db").getValue("r1").contains("ristorante"))
+
+        repository.setProtected("row", true)
+        // La copertina non arriva alla scheda: al suo posto il lucchetto.
+        assertTrue(databases.observeRowCovers("db").first().isEmpty())
+        assertEquals(setOf("r1"), databases.observeLockedRowIds("db").first())
+        // Né il testo all'anteprima né alla lente accanto a Sort.
+        assertTrue(databases.observeRowContentPreviews("db", 12).first().isEmpty())
+        assertFalse(databases.searchIndex("db").containsKey("r1"))
     }
 
     @Test
