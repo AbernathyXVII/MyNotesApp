@@ -3,6 +3,8 @@ package com.gabriele.notionlocal.ui.screen
 import android.view.Gravity
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import com.gabriele.notionlocal.data.entity.Recurrence
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
@@ -233,7 +235,13 @@ internal fun SamsungCalendar(
     end: LocalDate?,
     onPick: (LocalDate) -> Unit,
     onWheelPick: (LocalDate) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /**
+     * **La ripetizione** (dal 26/09/2026): i giorni in cui capita hanno il
+     * pallino arancione del giorno scelto, da `start` in avanti. Il giorno
+     * da cui parte, se non è uno di quelli, ha solo il contorno.
+     */
+    repeat: Recurrence? = null
 ) {
     val today = remember { LocalDate.now() }
     val pagerState = rememberPagerState(initialPage = pageOf(YearMonth.from(start ?: today))) { MONTH_COUNT }
@@ -317,7 +325,8 @@ internal fun SamsungCalendar(
                     today = today,
                     start = start,
                     end = end,
-                    onPick = onPick
+                    onPick = onPick,
+                    repeat = repeat
                 )
             }
         }
@@ -347,11 +356,18 @@ private fun MonthGrid(
     today: LocalDate,
     start: LocalDate?,
     end: LocalDate?,
-    onPick: (LocalDate) -> Unit
+    onPick: (LocalDate) -> Unit,
+    repeat: Recurrence?
 ) {
     val first = month.atDay(1)
     val shift = (first.dayOfWeek.value - firstDayOfWeek.value + 7) % 7
     val gridStart = first.minusDays(shift.toLong())
+    // I giorni della ripetizione nelle sei settimane mostrate: si calcolano
+    // solo per queste, come fa il calendario del database.
+    val repeatDays = remember(month, repeat, start) {
+        val from = start ?: today
+        repeat?.occurrences(from, gridStart, gridStart.plusDays(41))?.toSet().orEmpty()
+    }
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
         (0 until 6).forEach { week ->
             Row(modifier = Modifier.fillMaxWidth()) {
@@ -364,7 +380,9 @@ private fun MonthGrid(
                         start = start,
                         end = end,
                         onPick = onPick,
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        repeating = repeat != null,
+                        repeatDay = date in repeatDays
                     )
                 }
             }
@@ -380,9 +398,14 @@ private fun DayCell(
     start: LocalDate?,
     end: LocalDate?,
     onPick: (LocalDate) -> Unit,
-    modifier: Modifier
+    modifier: Modifier,
+    repeating: Boolean = false,
+    repeatDay: Boolean = false
 ) {
-    val selected = date == start || date == end
+    // Con una ripetizione il pallino va sui giorni in cui capita; quello da
+    // cui parte, se non capita lì, ha solo il contorno arancione.
+    val selected = if (repeating) repeatDay || date == end else date == start || date == end
+    val startRing = repeating && date == start && !repeatDay
     val isRange = start != null && end != null && end > start
     val band = SamsungOrange.copy(alpha = 0.28f)
     Box(modifier = modifier.height(DAY_CELL_HEIGHT), contentAlignment = Alignment.Center) {
@@ -398,6 +421,7 @@ private fun DayCell(
                 .size(36.dp)
                 .clip(CircleShape)
                 .background(if (selected) SamsungOrange else Color.Transparent)
+                .then(if (startRing) Modifier.border(2.dp, SamsungOrange, CircleShape) else Modifier)
                 .clickable { onPick(date) },
             contentAlignment = Alignment.Center
         ) {

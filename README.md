@@ -2022,6 +2022,73 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**26/09/2026 — le ripetizioni: senza toccare il giorno, i pallini arancioni, fino al 2100**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 152 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Quando vado su un database, creo una pagina, gli dico che voglio
+> ripeterlo ogni, per esempio lunedì, ogni ultima domenica del mese, o
+> altro, non me li fa visualizzare sul calendario quando seleziono la data
+> e neanche sulla vista Calendar del database. Peraltro, nel calendario di
+> selezione della data e della ripetizione, vorrei che ci fossero dei
+> pallini arancioni (stesso usato quando seleziono un giorno) per
+> rispettare la mia condizione del repeat. Quindi, se io per esempio
+> voglio ripetere l'evento ogni sabato, su quel calendario di selezione
+> della data, ogni sabato d'ora in poi avrà il pallino arancione. Fai sì
+> che se uso la funzione Repeat non devo selezionare il giorno sul
+> calendario, perché tanto gliel'ho detto già io di ripeterlo in base a
+> ciò che desidero io. Metti anche un'altra opzione che mi consente di
+> ripetere quell'evento 1) o da oggi (il giorno corrente) fino al 2100 2)
+> oppure da un giorno preciso che decido io fino al 2100»
+
+- **[Bug fix]** **La ripetizione senza un giorno toccato andava persa.**
+  Scegliendo solo "Repeat" senza toccare un giorno sul calendario, "Done"
+  trovava la data vuota e **svuotava la cella**: la regola non arrivava
+  mai al database, e per questo non si vedeva né sul calendario né nella
+  vista Calendar (che le ripetizioni le sa già disegnare). Sul telefono la
+  riga "Esempio" dell'utente aveva infatti la data vuota. Ora, con una
+  ripetizione, **il giorno non va toccato**: si parte da oggi
+- **[Nuova funzionalità]** **I pallini arancioni della ripetizione** sul
+  calendario della data, gli stessi del giorno scelto: con "ogni sabato",
+  tutti i sabati **da quel giorno in avanti** (quelli prima no). Il giorno
+  da cui parte, se non è uno di quelli, ha solo il contorno arancione
+- **[Nuova funzionalità]** **Da quando**: sotto "Repeat", quando c'è una
+  ripetizione, la riga **"Starts"** ("Today" o la data). Toccandola:
+  **"From today until 2100"** oppure **"From a day I choose until 2100"**
+  (col selettore della data). Tutte e due fanno finire la ripetizione il
+  31/12/2100, che si legge nel riassunto ("Weekly on Saturday, until
+  2100年12月31日")
+- **[Nuova funzionalità]** **"L'ultima domenica del mese" senza partire da
+  un'ultima domenica.** In "Custom…" con "month": "On [giorno]" col numero
+  da scrivere, oppure "The first / second / third / fourth / last
+  [giorno]" da un menu, col giorno della settimana scelto dai pallini sotto.
+  Prima si poteva solo "come il giorno toccato sul calendario"
+- **[Nuova funzionalità]** Nella cella, accanto alla data, le **frecce in
+  cerchio** di una data che si ripete (come la campanella della notifica)
+- **[Progetto]** `Recurrence` ha tre campi in più, `monthDay`, `nthWeek`
+  (1–4 o `LAST_WEEK`) e `nthWeekday`, salvati nella regola (`MDAY`,
+  `NTH`, `NWD`): null vuol dire "dalla data di partenza", quindi le regole
+  scritte prima si leggono come prima. Niente migrazione: la regola sta
+  già nel testo della cella. Anche il modo rapido "Monthly on the last
+  Saturday" scrive settimana e giorno nella regola, così cambiando poi il
+  giorno di partenza resta l'ultimo sabato. "Ogni giorno" salta dritto al
+  periodo mostrato: dal 2026 al 2100 sono ventisettemila giorni, oltre il
+  tetto di sicurezza del calcolo. Test `RecurrenceTest` (5)
+- Verificato sul telefono, sulla riga "Esempio" del primo database di My
+  Space (data vuota): Repeat → "Weekly on Saturday" senza toccare giorni →
+  pallini su 26 settembre, 3 e 10 ottobre, non sui sabati passati; "Starts
+  Today". "Starts" → "From a day I choose until 2100" → 5 ottobre →
+  contorno sul 5, pallini da sabato 10; il riassunto "…, until
+  2100年12月31日". "Custom…" → month → "The last Sunday" (menu e pallino
+  della domenica) → pallino sul 25 ottobre. "Done" → salvato
+  `FREQ=MONTHLY;…;NTH=5;NWD=SUNDAY;UNTIL=…`, la cella con la data e le
+  frecce. Vista Calendar (messa per la prova e poi rimessa Table):
+  "Esempio" il 25 ottobre. Alla fine la data di "Esempio" è stata
+  cancellata, com'era prima
+- Da sapere: la cella mostra il giorno da cui la ripetizione parte, non la
+  prossima volta in cui capita
+
 **26/09/2026 — i quaderni, come in OneNote**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno, tranne
 quello che è elencato in fondo; 147 test passati; commit solo in locale)*

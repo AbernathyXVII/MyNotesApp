@@ -397,7 +397,15 @@ object DbStrings {
     fun nthWeekday(date: LocalDate, dayName: String, capitalized: Boolean = false): String {
         val last = date.plusWeeks(1).month != date.month
         val index = if (last) 4 else ((date.dayOfMonth - 1) / 7).coerceAtMost(3)
-        val feminine = date.dayOfWeek == DayOfWeek.SUNDAY
+        return nthWeekdayPhrase(index, date.dayOfWeek, dayName, capitalized)
+    }
+
+    /**
+     * La stessa frase con settimana e giorno scelti apposta (dal 26/09/2026):
+     * `index` 0–3 per la prima–quarta, 4 per l'ultima.
+     */
+    fun nthWeekdayPhrase(index: Int, weekday: DayOfWeek, dayName: String, capitalized: Boolean = false): String {
+        val feminine = weekday == DayOfWeek.SUNDAY
         val phrase = when (AppSettings.language) {
             AppLanguage.ENGLISH -> "the ${listOf("first", "second", "third", "fourth", "last")[index]} $dayName"
             AppLanguage.ITALIAN -> if (feminine) {
@@ -414,6 +422,20 @@ object DbStrings {
         }
         return if (capitalized) phrase.replaceFirstChar { it.uppercase(AppSettings.language.locale) } else phrase
     }
+
+    // --- Da quando si ripete (dal 26/09/2026) ---
+
+    val repeatStarts get() = t("Starts", "Inizia", "Beginnt", "Commence", "Empieza", "开始", "시작", "開始")
+    val repeatFromTitle get() = t("Repeat from", "Ripeti a partire da", "Wiederholen ab", "Répéter à partir de", "Repetir desde", "重复开始于", "반복 시작", "繰り返しの開始")
+    val repeatFromToday get() = t(
+        "From today until 2100", "Da oggi fino al 2100", "Ab heute bis 2100", "À partir d'aujourd'hui jusqu'en 2100",
+        "Desde hoy hasta 2100", "从今天到2100年", "오늘부터 2100년까지", "今日から2100年まで"
+    )
+    val repeatFromChosenDay get() = t(
+        "From a day I choose until 2100", "Da un giorno che scelgo io fino al 2100", "Ab einem Tag meiner Wahl bis 2100",
+        "À partir d'un jour que je choisis jusqu'en 2100", "Desde un día que elijo hasta 2100", "从我选择的日期到2100年",
+        "내가 고른 날부터 2100년까지", "選んだ日から2100年まで"
+    )
 
     /** L'unità di una ripetizione, al singolare o al plurale. */
     fun unit(freq: RecurrenceFreq, plural: Boolean): String = when (freq) {

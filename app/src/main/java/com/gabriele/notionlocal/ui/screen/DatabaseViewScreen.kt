@@ -5174,6 +5174,16 @@ private fun DateCell(
                 maxLines = 1,
                 modifier = Modifier.weight(1f, fill = false)
             )
+            // Una data che si ripete ha le frecce in cerchio accanto.
+            if (range?.recurrence != null) {
+                Spacer(modifier = Modifier.size(4.dp))
+                Icon(
+                    Icons.Filled.Repeat,
+                    contentDescription = DbStrings.repeat,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(14.dp)
+                )
+            }
             // "Include notification" acceso: la data manda una notifica.
             if (range?.notify == true) {
                 Spacer(modifier = Modifier.size(4.dp))
@@ -5511,6 +5521,9 @@ private fun DateEditorSheet(
     // sopra ("ogni lunedì" se si è scelto un lunedì): se non è stato
     // scelto ancora niente si parla di oggi.
     val selectedStartDate = startDate ?: LocalDate.now()
+    // "Starts": da oggi, o da un giorno scelto, fino al 2100 (vedi sotto).
+    var showRepeatFrom by remember { mutableStateOf(false) }
+    var pickRepeatStart by remember { mutableStateOf(false) }
 
     NoteBottomSheet(
         onDismissRequest = onDismiss,
@@ -5535,7 +5548,11 @@ private fun DateEditorSheet(
             )
             TextButton(onClick = onDismiss) { Text(Strings.cancel) }
             TextButton(onClick = {
-                val chosenStart = startDate
+                // **Con una ripetizione il giorno non va toccato** (dal
+                // 26/09/2026, chiesto dall'utente): "ogni sabato" dice già
+                // tutto, e si parte da oggi. Prima, senza un giorno toccato,
+                // "Done" svuotava la cella e la ripetizione andava persa.
+                val chosenStart = startDate ?: if (recurrence != null) LocalDate.now() else null
                 if (chosenStart == null) {
                     // Confermare senza aver scelto niente svuota la cella.
                     onConfirm("")
@@ -5589,7 +5606,9 @@ private fun DateEditorSheet(
                 onWheelPick = { day ->
                     startDate = day
                     if (endDate?.let { it <= day } == true) endDate = null
-                }
+                },
+                // I giorni in cui la ripetizione capita, col pallino arancione.
+                repeat = recurrence
             )
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -5723,8 +5742,39 @@ private fun DateEditorSheet(
                         MaterialTheme.colorScheme.onSurfaceVariant
                     } else {
                         MaterialTheme.colorScheme.primary
-                    }
+                    },
+                    textAlign = TextAlign.End,
+                    modifier = Modifier.weight(1.4f, fill = false)
                 )
+            }
+
+            // **Da quando si ripete** (dal 26/09/2026): da oggi, o da un
+            // giorno scelto, fino al 2100. Senza toccare niente è da oggi.
+            if (recurrence != null) {
+                HorizontalDivider()
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showRepeatFrom = true }
+                        .padding(start = 48.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = DbStrings.repeatStarts,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Text(
+                        text = if (startDate == null || startDate == LocalDate.now()) {
+                            DbStrings.today
+                        } else {
+                            selectedStartDate.format(DATE_FORMAT)
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
 
             HorizontalDivider()
@@ -5763,6 +5813,53 @@ private fun DateEditorSheet(
                 showRepeatPresets = false
                 showCustomRecurrence = true
             }
+        )
+    }
+
+    if (showRepeatFrom) {
+        AlertDialog(
+            onDismissRequest = { showRepeatFrom = false },
+            confirmButton = {},
+            dismissButton = { TextButton(onClick = { showRepeatFrom = false }) { Text(Strings.cancel) } },
+            title = { Text(DbStrings.repeatFromTitle) },
+            text = {
+                Column {
+                    listOf(DbStrings.repeatFromToday to false, DbStrings.repeatFromChosenDay to true).forEach { (label, choose) ->
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    showRepeatFrom = false
+                                    if (choose) {
+                                        pickRepeatStart = true
+                                    } else {
+                                        startDate = LocalDate.now()
+                                        if (endDate?.let { it <= LocalDate.now() } == true) endDate = null
+                                        recurrence = recurrence?.copy(
+                                            end = RecurrenceEnd.OnDate(Recurrence.END_2100.toEpochDay())
+                                        )
+                                    }
+                                }
+                                .padding(vertical = 12.dp)
+                        )
+                    }
+                }
+            }
+        )
+    }
+
+    if (pickRepeatStart) {
+        SamsungDateDialog(
+            initial = selectedStartDate,
+            onPick = { picked ->
+                startDate = picked
+                if (endDate?.let { it <= picked } == true) endDate = null
+                recurrence = recurrence?.copy(end = RecurrenceEnd.OnDate(Recurrence.END_2100.toEpochDay()))
+            },
+            onDismiss = { pickRepeatStart = false }
         )
     }
 
@@ -5806,7 +5903,14 @@ private fun RepeatPresetDialog(
         DbStrings.weeklyOn(dayName(start.dayOfWeek)) to
             Recurrence(RecurrenceFreq.WEEKLY, weekdays = setOf(start.dayOfWeek)),
         DbStrings.monthlyOn(DbStrings.nthWeekday(start, dayName(start.dayOfWeek))) to
-            Recurrence(RecurrenceFreq.MONTHLY, monthlyMode = MonthlyMode.NTH_WEEKDAY),
+            Recurrence(
+                RecurrenceFreq.MONTHLY,
+                monthlyMode = MonthlyMode.NTH_WEEKDAY,
+                // Scritti nella regola: cambiando poi il giorno da cui parte,
+                // "l'ultimo sabato" resta l'ultimo sabato.
+                nthWeek = if (start.plusWeeks(1).month != start.month) Recurrence.LAST_WEEK else ((start.dayOfMonth - 1) / 7 + 1).coerceAtMost(4),
+                nthWeekday = start.dayOfWeek
+            ),
         DbStrings.annuallyOn(start.format(DATE_FORMAT)) to Recurrence(RecurrenceFreq.YEARLY),
         DbStrings.everyWeekday to
             Recurrence(RecurrenceFreq.WEEKLY, weekdays = weekdaysOnly)
@@ -5876,6 +5980,17 @@ private fun CustomRecurrenceDialog(
     var monthlyMode by remember {
         mutableStateOf(initial?.monthlyMode ?: MonthlyMode.DAY_OF_MONTH)
     }
+    // **Il giorno del mese, e "il primo / … / l'ultimo lunedì", scelti qui**
+    // (dal 26/09/2026): non serve più toccare prima quel giorno sul calendario.
+    var monthDay by remember { mutableStateOf((initial?.monthDay ?: start.dayOfMonth).toString()) }
+    var nthIndex by remember {
+        mutableStateOf(
+            initial?.nthWeek?.let { if (it == Recurrence.LAST_WEEK) 4 else (it - 1).coerceIn(0, 3) }
+                ?: if (start.plusWeeks(1).month != start.month) 4 else ((start.dayOfMonth - 1) / 7).coerceAtMost(3)
+        )
+    }
+    var nthWeekday by remember { mutableStateOf(initial?.nthWeekday ?: start.dayOfWeek) }
+    var nthMenuOpen by remember { mutableStateOf(false) }
     var endKind by remember {
         mutableStateOf(
             when (initial?.end) {
@@ -5910,6 +6025,21 @@ private fun CustomRecurrenceDialog(
                         interval = interval.toIntOrNull()?.coerceIn(1, 999) ?: 1,
                         weekdays = if (freq == RecurrenceFreq.WEEKLY) weekdays else emptySet(),
                         monthlyMode = monthlyMode,
+                        monthDay = if (freq == RecurrenceFreq.MONTHLY && monthlyMode == MonthlyMode.DAY_OF_MONTH) {
+                            monthDay.toIntOrNull()?.coerceIn(1, 31) ?: start.dayOfMonth
+                        } else {
+                            null
+                        },
+                        nthWeek = if (freq == RecurrenceFreq.MONTHLY && monthlyMode == MonthlyMode.NTH_WEEKDAY) {
+                            if (nthIndex == 4) Recurrence.LAST_WEEK else nthIndex + 1
+                        } else {
+                            null
+                        },
+                        nthWeekday = if (freq == RecurrenceFreq.MONTHLY && monthlyMode == MonthlyMode.NTH_WEEKDAY) {
+                            nthWeekday
+                        } else {
+                            null
+                        },
                         end = when (endKind) {
                             1 -> RecurrenceEnd.OnDate(endDate.toEpochDay())
                             2 -> RecurrenceEnd.AfterCount(
@@ -5977,64 +6107,89 @@ private fun CustomRecurrenceDialog(
                     Spacer(modifier = Modifier.size(12.dp))
                     Text(DbStrings.repeatOn, style = MaterialTheme.typography.bodyMedium)
                     Spacer(modifier = Modifier.size(8.dp))
-                    Row {
-                        // L'ordine dei giorni segue le convenzioni
-                        // locali, come il calendario: lunedì in Italia.
-                        val first = WeekFields.of(Locale.getDefault()).firstDayOfWeek
-                        (0..6).forEach { offset ->
-                            val day = first.plus(offset.toLong())
-                            val on = day in weekdays
-                            Box(
-                                modifier = Modifier
-                                    .padding(end = 6.dp)
-                                    .size(34.dp)
-                                    .clip(RoundedCornerShape(percent = 50))
-                                    .background(
-                                        if (on) {
-                                            MaterialTheme.colorScheme.primary
-                                        } else {
-                                            MaterialTheme.colorScheme.surfaceVariant
-                                        }
-                                    )
-                                    .clickable {
-                                        // Almeno un giorno deve restare
-                                        // acceso: "ogni settimana in
-                                        // nessun giorno" non vuol dire
-                                        // niente e non genererebbe mai.
-                                        weekdays = if (on && weekdays.size > 1) {
-                                            weekdays - day
-                                        } else {
-                                            weekdays + day
-                                        }
-                                    },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = dayInitial(day),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = if (on) {
-                                        MaterialTheme.colorScheme.onPrimary
-                                    } else {
-                                        MaterialTheme.colorScheme.onSurfaceVariant
-                                    }
-                                )
-                            }
+                    // L'ordine dei giorni segue le convenzioni locali, come il
+                    // calendario: lunedì in Italia. Almeno un giorno resta
+                    // acceso: "ogni settimana in nessun giorno" non vuol dire niente.
+                    WeekdayChips(
+                        isOn = { it in weekdays },
+                        onClick = { day ->
+                            weekdays = if (day in weekdays && weekdays.size > 1) weekdays - day else weekdays + day
                         }
-                    }
+                    )
                 }
 
                 if (freq == RecurrenceFreq.MONTHLY) {
                     Spacer(modifier = Modifier.size(12.dp))
-                    RecurrenceChoiceRow(
-                        selected = monthlyMode == MonthlyMode.DAY_OF_MONTH,
-                        label = DbStrings.onDayOfMonth(start.dayOfMonth),
-                        onSelect = { monthlyMode = MonthlyMode.DAY_OF_MONTH }
-                    )
-                    RecurrenceChoiceRow(
-                        selected = monthlyMode == MonthlyMode.NTH_WEEKDAY,
-                        label = DbStrings.nthWeekday(start, dayName(start.dayOfWeek), capitalized = true),
-                        onSelect = { monthlyMode = MonthlyMode.NTH_WEEKDAY }
-                    )
+                    // "Il giorno [21]": il numero si scrive.
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(
+                            selected = monthlyMode == MonthlyMode.DAY_OF_MONTH,
+                            onClick = { monthlyMode = MonthlyMode.DAY_OF_MONTH }
+                        )
+                        Text(DbStrings.on, style = MaterialTheme.typography.bodyLarge)
+                        Spacer(modifier = Modifier.size(12.dp))
+                        OutlinedTextField(
+                            value = monthDay,
+                            onValueChange = { typed ->
+                                monthDay = typed.filter { it.isDigit() }.take(2)
+                                monthlyMode = MonthlyMode.DAY_OF_MONTH
+                            },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.width(80.dp)
+                        )
+                    }
+                    // "L'ultima domenica": quale settimana dal menu, il giorno
+                    // dai pallini qui sotto.
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(
+                            selected = monthlyMode == MonthlyMode.NTH_WEEKDAY,
+                            onClick = { monthlyMode = MonthlyMode.NTH_WEEKDAY }
+                        )
+                        Box {
+                            Row(
+                                modifier = Modifier
+                                    .clickable {
+                                        monthlyMode = MonthlyMode.NTH_WEEKDAY
+                                        nthMenuOpen = true
+                                    }
+                                    .padding(vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = DbStrings.nthWeekdayPhrase(nthIndex, nthWeekday, dayName(nthWeekday), capitalized = true),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = if (monthlyMode == MonthlyMode.NTH_WEEKDAY) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.onBackground
+                                    }
+                                )
+                                Icon(
+                                    Icons.Filled.KeyboardArrowDown,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            DropdownMenu(expanded = nthMenuOpen, onDismissRequest = { nthMenuOpen = false }) {
+                                (0..4).forEach { index ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(DbStrings.nthWeekdayPhrase(index, nthWeekday, dayName(nthWeekday), capitalized = true))
+                                        },
+                                        onClick = {
+                                            nthIndex = index
+                                            nthMenuOpen = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    if (monthlyMode == MonthlyMode.NTH_WEEKDAY) {
+                        Spacer(modifier = Modifier.size(4.dp))
+                        WeekdayChips(isOn = { it == nthWeekday }, onClick = { nthWeekday = it })
+                    }
                 }
 
                 Spacer(modifier = Modifier.size(16.dp))
@@ -6097,6 +6252,33 @@ private fun CustomRecurrenceDialog(
     }
 }
 
+/** I sette giorni in pallini, lunedì per primo dove si usa così: accesi quelli scelti. */
+@Composable
+private fun WeekdayChips(isOn: (DayOfWeek) -> Boolean, onClick: (DayOfWeek) -> Unit) {
+    Row {
+        val first = WeekFields.of(Locale.getDefault()).firstDayOfWeek
+        (0..6).forEach { offset ->
+            val day = first.plus(offset.toLong())
+            val on = isOn(day)
+            Box(
+                modifier = Modifier
+                    .padding(end = 6.dp)
+                    .size(34.dp)
+                    .clip(RoundedCornerShape(percent = 50))
+                    .background(if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant)
+                    .clickable { onClick(day) },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = dayInitial(day),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = if (on) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
 /** Una riga con il pallino di scelta, usata dentro la ripetizione. */
 @Composable
 private fun RecurrenceChoiceRow(selected: Boolean, label: String, onSelect: () -> Unit) {
@@ -6149,8 +6331,15 @@ private fun recurrenceSummary(rule: Recurrence?, start: LocalDate): String {
             // intende sempre l'ultima, non la quarta quando ce ne sono
             // cinque. Vedi `DbStrings.nthWeekday`.
             val what = when (rule.monthlyMode) {
-                MonthlyMode.DAY_OF_MONTH -> DbStrings.dayOfMonth(start.dayOfMonth)
-                MonthlyMode.NTH_WEEKDAY -> DbStrings.nthWeekday(start, dayName(start.dayOfWeek))
+                MonthlyMode.DAY_OF_MONTH -> DbStrings.dayOfMonth(rule.monthDay ?: start.dayOfMonth)
+                MonthlyMode.NTH_WEEKDAY -> if (rule.nthWeek != null || rule.nthWeekday != null) {
+                    val weekday = rule.nthWeekday ?: start.dayOfWeek
+                    val index = rule.nthWeek?.let { if (it == Recurrence.LAST_WEEK) 4 else (it - 1).coerceIn(0, 3) }
+                        ?: if (start.plusWeeks(1).month != start.month) 4 else ((start.dayOfMonth - 1) / 7).coerceAtMost(3)
+                    DbStrings.nthWeekdayPhrase(index, weekday, dayName(weekday))
+                } else {
+                    DbStrings.nthWeekday(start, dayName(start.dayOfWeek))
+                }
             }
             if (every == 1) DbStrings.monthlyOn(what) else DbStrings.everyNMonthsOn(every, what)
         }

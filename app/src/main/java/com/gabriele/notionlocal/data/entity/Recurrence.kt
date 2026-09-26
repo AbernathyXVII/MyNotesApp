@@ -50,7 +50,20 @@ data class Recurrence(
     val weekdays: Set<DayOfWeek> = emptySet(),
     /** Solo per MONTHLY. */
     val monthlyMode: MonthlyMode = MonthlyMode.DAY_OF_MONTH,
-    val end: RecurrenceEnd = RecurrenceEnd.Never
+    val end: RecurrenceEnd = RecurrenceEnd.Never,
+    /**
+     * **Scelti apposta** (dal 26/09/2026), invece che presi dalla data di
+     * partenza: "ogni ultima domenica del mese" si dice senza dover prima
+     * toccare un'ultima domenica sul calendario. Null = come prima, dalla
+     * data di partenza — le regole salvate prima restano uguali.
+     *
+     * Solo MONTHLY con DAY_OF_MONTH: il giorno del mese (1–31).
+     */
+    val monthDay: Int? = null,
+    /** Solo MONTHLY con NTH_WEEKDAY: quale settimana, 1–4, o `LAST_WEEK` per l'ultima. */
+    val nthWeek: Int? = null,
+    /** Solo MONTHLY con NTH_WEEKDAY: che giorno della settimana. */
+    val nthWeekday: DayOfWeek? = null
 ) {
     /**
      * I giorni in cui la cosa capita dentro la finestra chiesta,
@@ -83,6 +96,12 @@ data class Recurrence(
         when (freq) {
             RecurrenceFreq.DAILY -> {
                 var day = start
+                // Senza un numero di volte da contare, si salta dritti alla
+                // finestra: ogni giorno dal 2026 al 2100 sono ventisettemila
+                // passi, e il tetto qui sotto si fermerebbe prima.
+                if (maxCount == null && from.isAfter(start)) {
+                    day = start.plusDays(ChronoUnit.DAYS.between(start, from) / step * step)
+                }
                 while (!day.isAfter(to) && guard++ < MAX_STEPS) {
                     if (!offer(day)) break
                     day = day.plusDays(step.toLong())
@@ -108,8 +127,10 @@ data class Recurrence(
 
             RecurrenceFreq.MONTHLY -> {
                 var month = start.withDayOfMonth(1)
-                val nth = ((start.dayOfMonth - 1) / 7) + 1
-                val isLast = start.plusWeeks(1).month != start.month
+                val nth = nthWeek?.coerceIn(1, 4) ?: (((start.dayOfMonth - 1) / 7) + 1)
+                val isLast = nthWeek?.let { it == LAST_WEEK } ?: (start.plusWeeks(1).month != start.month)
+                val weekday = nthWeekday ?: start.dayOfWeek
+                val dayOfMonth = monthDay?.coerceIn(1, 31) ?: start.dayOfMonth
                 while (!month.isAfter(to) && guard++ < MAX_STEPS) {
                     val day = when (monthlyMode) {
                         MonthlyMode.DAY_OF_MONTH ->
@@ -117,9 +138,9 @@ data class Recurrence(
                             // capita l'ultimo giorno, che è quello che
                             // ci si aspetta da "ogni mese il 31".
                             month.withDayOfMonth(
-                                start.dayOfMonth.coerceAtMost(month.lengthOfMonth())
+                                dayOfMonth.coerceAtMost(month.lengthOfMonth())
                             )
-                        MonthlyMode.NTH_WEEKDAY -> nthWeekdayOf(month, start.dayOfWeek, nth, isLast)
+                        MonthlyMode.NTH_WEEKDAY -> nthWeekdayOf(month, weekday, nth, isLast)
                     }
                     if (!day.isBefore(start)) {
                         if (!offer(day)) break
@@ -139,8 +160,14 @@ data class Recurrence(
         return result
     }
 
-    private companion object {
-        const val MAX_STEPS = 10_000
+    companion object {
+        private const val MAX_STEPS = 10_000
+
+        /** `nthWeek` per "l'ultimo" del mese: l'ultima domenica, anche nei mesi che ne hanno cinque. */
+        const val LAST_WEEK = 5
+
+        /** Dove finiscono le ripetizioni "fino al 2100". */
+        val END_2100: LocalDate = LocalDate.of(2100, 12, 31)
     }
 }
 
@@ -195,6 +222,9 @@ object RecurrenceCodec {
         }
         if (rule.freq == RecurrenceFreq.MONTHLY) {
             parts += "MODE=${rule.monthlyMode.name}"
+            rule.monthDay?.let { parts += "MDAY=$it" }
+            rule.nthWeek?.let { parts += "NTH=$it" }
+            rule.nthWeekday?.let { parts += "NWD=${it.name}" }
         }
         when (val end = rule.end) {
             is RecurrenceEnd.OnDate -> parts += "UNTIL=${end.epochDay}"
@@ -225,6 +255,9 @@ object RecurrenceCodec {
             monthlyMode = fields["MODE"]?.let { name ->
                 MonthlyMode.entries.find { it.name == name }
             } ?: MonthlyMode.DAY_OF_MONTH,
+            monthDay = fields["MDAY"]?.toIntOrNull()?.takeIf { it in 1..31 },
+            nthWeek = fields["NTH"]?.toIntOrNull()?.takeIf { it in 1..Recurrence.LAST_WEEK },
+            nthWeekday = fields["NWD"]?.let { name -> DayOfWeek.entries.find { it.name == name } },
             end = when {
                 fields["UNTIL"] != null ->
                     fields["UNTIL"]?.toLongOrNull()
