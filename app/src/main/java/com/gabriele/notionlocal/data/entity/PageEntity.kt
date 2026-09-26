@@ -324,6 +324,11 @@ data class PageEntity(
     // nell'albero, né nella ricerca, né fra le pagine da cui partire. Il loro
     // ordine nella sezione è `orderIndex`.
     var notebookSectionId: String? = null,
+    // **I calcoli sotto la tabella di questa vista** (dal 26/09/2026,
+    // "Calculate"): "colonna=CALCOLO;…", con `NAME_CALCULATION_KEY` per la
+    // colonna del nome. Per vista, come su Notion: una vista collegata ha i
+    // suoi. Vedi `parseViewCalculations`.
+    var viewCalculations: String? = null,
     // Quando è stata buttata nel cestino, o null se non ci sta. La
     // pagina **resta nel database** con tutto il suo contenuto: qui si
     // cancella per davvero solo il collegamento che la mostrava, così

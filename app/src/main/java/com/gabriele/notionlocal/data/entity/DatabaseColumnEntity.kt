@@ -120,5 +120,22 @@ data class DatabaseColumnEntity(
      * posto. Essendo un allineamento e non una misura, resta al centro
      * qualunque larghezza abbia la colonna.
      */
-    var centerContent: Boolean = false
+    var centerContent: Boolean = false,
+    // --- Solo per le colonne Number (dal 26/09/2026), "Edit property" ---
+    // Valgono in tutte le viste che mostrano la colonna, come su Notion.
+    // Salvati per nome e letti con `NumberFormatKind.of` e `NumberDisplay.of`:
+    // un nome sconosciuto torna al valore di sempre invece di far chiudere
+    // l'app. Vedi `NumberFormat.kt`.
+    /** Number, Percent o una valuta; null = Number. */
+    var numberFormat: String? = null,
+    /** Quante cifre dopo la virgola si vedono (0–5); null = quelle scritte. */
+    var decimalPlaces: Int? = null,
+    /** Number, Bar o Ring; null = Number. */
+    var numberDisplay: String? = null,
+    /** Il colore della barra o dell'anello, "#RRGGBB"; null = il verde di sempre. */
+    var numberColor: String? = null,
+    /** Accanto alla barra o all'anello si vede anche il numero. */
+    var showNumber: Boolean = true,
+    /** L'anello in mezzo alla cella invece che a sinistra. */
+    var ringCentered: Boolean = false
 )

@@ -1,6 +1,9 @@
 package com.gabriele.notionlocal.ui.i18n
 
 import com.gabriele.notionlocal.data.entity.CalendarMode
+import com.gabriele.notionlocal.data.entity.Calculation
+import com.gabriele.notionlocal.data.entity.CalculationGroup
+import com.gabriele.notionlocal.data.entity.NumberFormatKind
 import com.gabriele.notionlocal.data.entity.ColumnType
 import com.gabriele.notionlocal.data.entity.DatabaseLayout
 import com.gabriele.notionlocal.data.entity.GalleryCardPreview
@@ -435,6 +438,99 @@ object DbStrings {
         "From a day I choose until 2100", "Da un giorno che scelgo io fino al 2100", "Ab einem Tag meiner Wahl bis 2100",
         "À partir d'un jour que je choisis jusqu'en 2100", "Desde un día que elijo hasta 2100", "从我选择的日期到2100年",
         "내가 고른 날부터 2100년까지", "選んだ日から2100年まで"
+    )
+
+    // --- Le colonne Number e i calcoli (dal 26/09/2026) ---
+
+    val changeType get() = t("Change type", "Cambia tipo", "Typ ändern", "Changer le type", "Cambiar tipo", "更改类型", "유형 변경", "種類を変更")
+    val calculate get() = t("Calculate", "Calcola", "Berechnen", "Calculer", "Calcular", "计算", "계산", "計算")
+    val numberFormat get() = t("Number format", "Formato del numero", "Zahlenformat", "Format du nombre", "Formato de número", "数字格式", "숫자 형식", "数値の形式")
+    val decimalPlaces get() = t("Decimal places", "Cifre decimali", "Dezimalstellen", "Décimales", "Decimales", "小数位数", "소수 자릿수", "小数点以下の桁数")
+    val showAs get() = t("Show as", "Mostra come", "Anzeigen als", "Afficher comme", "Mostrar como", "显示为", "표시 방식", "表示方法")
+    val displayNumber get() = t("Number", "Numero", "Zahl", "Nombre", "Número", "数字", "숫자", "数値")
+    val displayBar get() = t("Bar", "Barra", "Balken", "Barre", "Barra", "条形", "막대", "バー")
+    val displayRing get() = t("Ring", "Anello", "Ring", "Anneau", "Anillo", "圆环", "링", "リング")
+    val color get() = t("Color", "Colore", "Farbe", "Couleur", "Color", "颜色", "색", "色")
+    val showNumber get() = t("Show number", "Mostra il numero", "Zahl anzeigen", "Afficher le nombre", "Mostrar número", "显示数字", "숫자 표시", "数値を表示")
+    val position get() = t("Position", "Posizione", "Position", "Position", "Posición", "位置", "위치", "位置")
+    val positionLeft get() = t("Left", "A sinistra", "Links", "Gauche", "Izquierda", "左侧", "왼쪽", "左")
+    val positionCenter get() = t("Center", "Al centro", "Mitte", "Centre", "Centro", "居中", "가운데", "中央")
+    val defaultDecimals get() = t("Default", "Predefinito", "Standard", "Par défaut", "Predeterminado", "默认", "기본값", "デフォルト")
+    val filterFormats get() = t("Filter formats…", "Cerca un formato…", "Formate filtern…", "Filtrer les formats…", "Filtrar formatos…", "筛选格式…", "형식 필터…", "形式を絞り込む…")
+    val formatPercent get() = t("Percent", "Percentuale", "Prozent", "Pourcentage", "Porcentaje", "百分比", "퍼센트", "パーセント")
+    val appliesToAllViews get() = t(
+        "Changes apply to all views showing this property.",
+        "Vale in tutte le viste che mostrano questa proprietà.",
+        "Gilt für alle Ansichten mit dieser Eigenschaft.",
+        "S'applique à toutes les vues qui affichent cette propriété.",
+        "Se aplica a todas las vistas que muestran esta propiedad.",
+        "更改适用于显示此属性的所有视图。",
+        "이 속성을 표시하는 모든 보기에 적용됩니다.",
+        "このプロパティを表示するすべてのビューに適用されます。"
+    )
+
+    /** Il nome di un formato: "Number" e "Percent" tradotti, le valute come le ha scritte l'utente. */
+    fun numberFormatName(kind: NumberFormatKind): String = when (kind) {
+        NumberFormatKind.NUMBER -> displayNumber
+        NumberFormatKind.PERCENT -> formatPercent
+        else -> kind.label
+    }
+
+    val calcCount get() = t("Count", "Conteggio", "Anzahl", "Nombre", "Recuento", "计数", "개수", "カウント")
+    val calcPercent get() = t("Percent", "Percentuale", "Prozent", "Pourcentage", "Porcentaje", "百分比", "퍼센트", "パーセント")
+    val calcDate get() = t("Date", "Data", "Datum", "Date", "Fecha", "日期", "날짜", "日付")
+    val calcMore get() = t("More options", "Altre opzioni", "Weitere Optionen", "Plus d'options", "Más opciones", "更多选项", "더 보기", "その他のオプション")
+
+    fun calcGroupName(group: CalculationGroup): String = when (group) {
+        CalculationGroup.COUNT -> calcCount
+        CalculationGroup.PERCENT -> calcPercent
+        CalculationGroup.DATE -> calcDate
+        CalculationGroup.MORE -> calcMore
+    }
+
+    /** Il nome di un calcolo, nel menu "Calculate". */
+    fun calcName(calc: Calculation): String = when (calc) {
+        Calculation.COUNT_ALL -> t("Count all", "Conta tutte", "Alle zählen", "Tout compter", "Contar todo", "全部计数", "모두 세기", "すべてカウント")
+        Calculation.COUNT_VALUES -> t("Count values", "Conta i valori", "Werte zählen", "Compter les valeurs", "Contar valores", "值计数", "값 세기", "値をカウント")
+        Calculation.COUNT_UNIQUE -> t("Count unique values", "Conta i valori unici", "Eindeutige Werte zählen", "Compter les valeurs uniques", "Contar valores únicos", "唯一值计数", "고유 값 세기", "一意の値をカウント")
+        Calculation.COUNT_EMPTY -> t("Count empty", "Conta le vuote", "Leere zählen", "Compter les vides", "Contar vacíos", "空值计数", "빈 항목 세기", "空をカウント")
+        Calculation.COUNT_NOT_EMPTY -> t("Count not empty", "Conta le non vuote", "Nicht leere zählen", "Compter les non vides", "Contar no vacíos", "非空值计数", "비어 있지 않은 항목 세기", "空でないものをカウント")
+        Calculation.CHECKED -> t("Checked", "Spuntate", "Angehakt", "Cochées", "Marcadas", "已勾选", "체크됨", "チェック済み")
+        Calculation.UNCHECKED -> t("Unchecked", "Non spuntate", "Nicht angehakt", "Non cochées", "Sin marcar", "未勾选", "체크 안 됨", "未チェック")
+        Calculation.PERCENT_EMPTY -> t("Percent empty", "Percentuale vuote", "Prozent leer", "Pourcentage vide", "Porcentaje vacío", "空值百分比", "빈 항목 비율", "空の割合")
+        Calculation.PERCENT_NOT_EMPTY -> t("Percent not empty", "Percentuale non vuote", "Prozent nicht leer", "Pourcentage non vide", "Porcentaje no vacío", "非空值百分比", "비어 있지 않은 항목 비율", "空でない割合")
+        Calculation.EARLIEST_DATE -> t("Earliest date", "Data più vecchia", "Frühestes Datum", "Date la plus ancienne", "Fecha más antigua", "最早日期", "가장 이른 날짜", "最も早い日付")
+        Calculation.LATEST_DATE -> t("Latest date", "Data più recente", "Spätestes Datum", "Date la plus récente", "Fecha más reciente", "最晚日期", "가장 늦은 날짜", "最も遅い日付")
+        Calculation.DATE_RANGE -> t("Date range", "Intervallo di date", "Datumsbereich", "Plage de dates", "Rango de fechas", "日期范围", "날짜 범위", "日付の範囲")
+        Calculation.SUM -> t("Sum", "Somma", "Summe", "Somme", "Suma", "求和", "합계", "合計")
+        Calculation.AVERAGE -> t("Average", "Media", "Durchschnitt", "Moyenne", "Promedio", "平均值", "평균", "平均")
+        Calculation.MEDIAN -> t("Median", "Mediana", "Median", "Médiane", "Mediana", "中位数", "중앙값", "中央値")
+        Calculation.MIN -> t("Min", "Minimo", "Min", "Min", "Mín", "最小值", "최소", "最小")
+        Calculation.MAX -> t("Max", "Massimo", "Max", "Max", "Máx", "最大值", "최대", "最大")
+        Calculation.RANGE -> t("Range", "Intervallo", "Spanne", "Étendue", "Rango", "范围", "범위", "範囲")
+    }
+
+    /** La parola corta in fondo alla colonna, prima del risultato: "SUM 309". */
+    fun calcShortName(calc: Calculation): String = when (calc) {
+        Calculation.COUNT_ALL -> calcCount
+        Calculation.COUNT_VALUES -> t("Values", "Valori", "Werte", "Valeurs", "Valores", "值", "값", "値")
+        Calculation.COUNT_UNIQUE -> t("Unique", "Unici", "Eindeutig", "Uniques", "Únicos", "唯一", "고유", "一意")
+        Calculation.COUNT_EMPTY, Calculation.PERCENT_EMPTY ->
+            t("Empty", "Vuote", "Leer", "Vides", "Vacíos", "空", "빈 항목", "空")
+        Calculation.COUNT_NOT_EMPTY, Calculation.PERCENT_NOT_EMPTY ->
+            t("Not empty", "Non vuote", "Nicht leer", "Non vides", "No vacíos", "非空", "비어 있지 않음", "空でない")
+        Calculation.EARLIEST_DATE -> t("Earliest", "La più vecchia", "Frühestes", "Plus ancienne", "Más antigua", "最早", "가장 이른", "最も早い")
+        Calculation.LATEST_DATE -> t("Latest", "La più recente", "Spätestes", "Plus récente", "Más reciente", "最晚", "가장 늦은", "最も遅い")
+        else -> calcName(calc)
+    }
+
+    fun daysCount(n: Long) = t(
+        if (n == 1L) "1 day" else "$n days",
+        if (n == 1L) "1 giorno" else "$n giorni",
+        if (n == 1L) "1 Tag" else "$n Tage",
+        if (n == 1L) "1 jour" else "$n jours",
+        if (n == 1L) "1 día" else "$n días",
+        "$n 天", "${n}일", "$n 日"
     )
 
     /** L'unità di una ripetizione, al singolare o al plurale. */

@@ -55,7 +55,7 @@ import kotlinx.serialization.json.Json
         NotebookEntity::class,
         NotebookSectionEntity::class
     ],
-    version = 35,
+    version = 36,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -565,6 +565,24 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /**
+         * **Le colonne Number e i calcoli** (26/09/2026): formato, cifre
+         * decimali, barra o anello, colore, numero accanto, anello al centro;
+         * e per ogni vista i calcoli sotto la tabella. Tutto vuoto per quello
+         * che c'era: i numeri si vedono come prima.
+         */
+        private val MIGRATION_35_36 = object : Migration(35, 36) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE database_columns ADD COLUMN numberFormat TEXT")
+                db.execSQL("ALTER TABLE database_columns ADD COLUMN decimalPlaces INTEGER")
+                db.execSQL("ALTER TABLE database_columns ADD COLUMN numberDisplay TEXT")
+                db.execSQL("ALTER TABLE database_columns ADD COLUMN numberColor TEXT")
+                db.execSQL("ALTER TABLE database_columns ADD COLUMN showNumber INTEGER NOT NULL DEFAULT 1")
+                db.execSQL("ALTER TABLE database_columns ADD COLUMN ringCentered INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE pages ADD COLUMN viewCalculations TEXT")
+            }
+        }
+
+        /**
          * Solo per i test: chiude il database e lo dimentica, così il
          * `getInstance` dopo riapre il file da capo (e ne esegue le
          * migrazioni). Senza, il secondo test troverebbe il database del
@@ -612,7 +630,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_31_32,
                         MIGRATION_32_33,
                         MIGRATION_33_34,
-                        MIGRATION_34_35
+                        MIGRATION_34_35,
+                        MIGRATION_35_36
                     )
                     .build()
                 INSTANCE = instance

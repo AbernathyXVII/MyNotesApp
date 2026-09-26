@@ -15,6 +15,11 @@ import com.gabriele.notionlocal.data.entity.GalleryCardSize
 import com.gabriele.notionlocal.data.entity.PageEntity
 import com.gabriele.notionlocal.data.entity.MULTI_VALUE_SEPARATOR
 import com.gabriele.notionlocal.data.entity.parseColorCell
+import com.gabriele.notionlocal.data.entity.Calculation
+import com.gabriele.notionlocal.data.entity.NumberSettings
+import com.gabriele.notionlocal.data.entity.encodeViewCalculations
+import com.gabriele.notionlocal.data.entity.parseViewCalculations
+import com.gabriele.notionlocal.data.entity.withNumberSettings
 import com.gabriele.notionlocal.data.security.AppLock
 import com.gabriele.notionlocal.data.entity.SORT_BY_NAME
 import com.gabriele.notionlocal.data.entity.parseDateRange
@@ -1168,13 +1173,32 @@ class DatabaseViewModel(
      * numeriche così com'erano, e tornando indietro le ritrova intatte —
      * meglio che perderle per un tipo sbagliato scelto per errore.
      */
-    fun updateColumn(columnId: String, name: String, type: ColumnType, optionsJson: String) {
+    fun updateColumn(
+        columnId: String,
+        name: String,
+        type: ColumnType,
+        optionsJson: String,
+        /** Solo per una colonna Number: formato, cifre, barra o anello (vedi `NumberSettings`). */
+        number: NumberSettings? = null
+    ) {
         val column = rawColumn(columnId) ?: return
         viewModelScope.launch {
-            repository.updateColumn(
-                column.copy(name = name, type = type, optionsJson = optionsJson)
-            )
+            val renamed = column.copy(name = name, type = type, optionsJson = optionsJson)
+            repository.updateColumn(number?.let { renamed.withNumberSettings(it) } ?: renamed)
         }
+    }
+
+    /**
+     * **Il calcolo in fondo a una colonna** di questa vista ("Calculate"), o
+     * null per toglierlo. `key` è l'id della colonna, o `NAME_CALCULATION_KEY`.
+     */
+    fun setCalculation(key: String, calculation: Calculation?) {
+        val current = _page.value ?: return
+        val calcs = parseViewCalculations(current.viewCalculations).toMutableMap()
+        if (calculation == null) calcs.remove(key) else calcs[key] = calculation
+        val updated = current.copy(viewCalculations = encodeViewCalculations(calcs))
+        _page.value = updated
+        viewModelScope.launch { pageRepository.updatePage(updated) }
     }
 
     /**

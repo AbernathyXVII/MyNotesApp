@@ -1,5 +1,17 @@
 package com.gabriele.notionlocal.ui.screen
 
+import androidx.compose.ui.draw.alpha
+import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.filled.Functions
+import com.gabriele.notionlocal.data.entity.parseViewCalculations
+import com.gabriele.notionlocal.data.entity.numberSettings
+import com.gabriele.notionlocal.data.entity.numberDisplayKind
+import com.gabriele.notionlocal.data.entity.calculationsFor
+import com.gabriele.notionlocal.data.entity.calculate
+import com.gabriele.notionlocal.data.entity.NumberSettings
+import com.gabriele.notionlocal.data.entity.NumberDisplay
+import com.gabriele.notionlocal.data.entity.NAME_CALCULATION_KEY
+import com.gabriele.notionlocal.data.entity.Calculation
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.TextRange
 import androidx.compose.runtime.DisposableEffect
@@ -349,8 +361,16 @@ private val displayLocale: Locale get() = AppSettings.language.locale
 private sealed class PropertyTarget {
     /** `initialType` serve a chi la propone già sapendo che tipo serve (il calendario una data, la bacheca una selezione). */
     data class New(val initialType: ColumnType = ColumnType.TEXT) : PropertyTarget()
-    data class Existing(val column: DatabaseColumnEntity) : PropertyTarget()
+    /**
+     * `changeType`: aperta da "Change type" (dal 26/09/2026), solo la scelta
+     * del tipo; altrimenti "Edit property": il nome e, per i numeri, formato,
+     * cifre e "Show as".
+     */
+    data class Existing(val column: DatabaseColumnEntity, val changeType: Boolean = false) : PropertyTarget()
 }
+
+/** Di quale colonna si sceglie il calcolo: `key` è l'id, o `NAME_CALCULATION_KEY`; `type` null = il nome. */
+private data class CalculateTarget(val key: String, val type: ColumnType?, val title: String)
 
 /**
  * Il database a schermo intero: una barra in alto per tornare indietro,
@@ -671,6 +691,9 @@ fun DatabaseContent(
     var editingIcon by remember { mutableStateOf(false) }
 
     var propertyTarget by remember { mutableStateOf<PropertyTarget?>(null) }
+    // "Calculate" (dal 26/09/2026): di quale colonna si sceglie il calcolo.
+    var calculateTarget by remember { mutableStateOf<CalculateTarget?>(null) }
+    val calculations = parseViewCalculations(page?.viewCalculations)
     var rowActionsFor by remember { mutableStateOf<DatabaseRowEntity?>(null) }
     // La scheda della galleria di cui si sta spostando la copertina
     // ("Reposition cover" nelle azioni della riga): quella scheda smette
@@ -939,6 +962,15 @@ fun DatabaseContent(
                     },
                     onTitleChange = { row, title -> viewModel.updateRowTitle(row, title) },
                     onTitleEditing = { editing -> if (editing) viewModel.startTitleEdit() else viewModel.endTitleEdit() },
+                    onChangeTypeProperty = {
+                        focusManager.clearFocus()
+                        propertyTarget = PropertyTarget.Existing(it, changeType = true)
+                    },
+                    calculations = calculations,
+                    onCalculate = {
+                        focusManager.clearFocus()
+                        calculateTarget = it
+                    },
                     onOpenRow = openRow,
                     onRowLongPress = { row ->
                         focusManager.clearFocus()
@@ -1245,11 +1277,11 @@ fun DatabaseContent(
         PropertySheet(
             target = target,
             onDismiss = { propertyTarget = null },
-            onSave = { name, type, optionsJson ->
+            onSave = { name, type, optionsJson, number ->
                 when (target) {
                     is PropertyTarget.New -> viewModel.addColumn(name, type, optionsJson)
                     is PropertyTarget.Existing ->
-                        viewModel.updateColumn(target.column.id, name, type, optionsJson)
+                        viewModel.updateColumn(target.column.id, name, type, optionsJson, number)
                 }
                 propertyTarget = null
             },
@@ -1257,6 +1289,19 @@ fun DatabaseContent(
                 if (target is PropertyTarget.Existing) viewModel.deleteColumn(target.column)
                 propertyTarget = null
             }
+        )
+    }
+
+    calculateTarget?.let { target ->
+        CalculateSheet(
+            title = target.title,
+            type = target.type,
+            current = calculations[target.key],
+            onPick = {
+                viewModel.setCalculation(target.key, it)
+                calculateTarget = null
+            },
+            onDismiss = { calculateTarget = null }
         )
     }
 
@@ -1371,7 +1416,11 @@ private fun TableLayout(
     /** Crea una pagina già dentro il gruppo: riceve il valore del gruppo. */
     onAddRowInGroup: (String) -> Unit,
     /** Si scrive il nome di una riga (true) o si è finito (false): l'ordine resta fermo intanto. */
-    onTitleEditing: (Boolean) -> Unit = {}
+    onTitleEditing: (Boolean) -> Unit = {},
+    onChangeTypeProperty: (DatabaseColumnEntity) -> Unit = {},
+    /** I calcoli di questa vista, per colonna (vedi `CalculationFooter`). */
+    calculations: Map<String, Calculation> = emptyMap(),
+    onCalculate: (CalculateTarget) -> Unit = {}
 ) {
     // Dentro un contenitore che scorre in orizzontale la larghezza
     // disponibile è illimitata: una linea che chiede "tutta la
@@ -1401,7 +1450,9 @@ private fun TableLayout(
                 onMoveProperty = onMoveProperty,
                 onHideProperty = onHideProperty,
                 onToggleCenterProperty = onToggleCenterProperty,
-                onAddProperty = onAddProperty
+                onAddProperty = onAddProperty,
+                onChangeTypeProperty = onChangeTypeProperty,
+                onCalculate = onCalculate
             )
             HorizontalDivider(modifier = Modifier.width(tableWidth))
             // **Ogni riga col suo id** (dal 26/09/2026): con un ordinamento
@@ -1427,6 +1478,7 @@ private fun TableLayout(
                 HorizontalDivider(modifier = Modifier.width(tableWidth))
                 }
             }
+            CalculationFooter(state.rows, state, shownColumns, calculations, onCalculate)
             return@Column
         }
 
@@ -1447,7 +1499,9 @@ private fun TableLayout(
                     onMoveProperty = onMoveProperty,
                     onHideProperty = onHideProperty,
                     onToggleCenterProperty = onToggleCenterProperty,
-                    onAddProperty = onAddProperty
+                    onAddProperty = onAddProperty,
+                    onChangeTypeProperty = onChangeTypeProperty,
+                    onCalculate = onCalculate
                 )
                 HorizontalDivider(modifier = Modifier.width(tableWidth))
                 group.rows.forEach { row ->
@@ -1469,6 +1523,8 @@ private fun TableLayout(
                     HorizontalDivider(modifier = Modifier.width(tableWidth))
                     }
                 }
+                // I calcoli di questo gruppo, sotto le sue righe.
+                CalculationFooter(group.rows, state, shownColumns, calculations, onCalculate)
                 // Una pagina creata da dentro un gruppo nasce già con
                 // quel valore: altrimenti comparirebbe nel gruppo
                 // "senza valore", cioè da tutt'altra parte rispetto a
@@ -1508,10 +1564,12 @@ private fun TableHeaderRow(
     onMoveProperty: (DatabaseColumnEntity, Int) -> Unit,
     onHideProperty: (DatabaseColumnEntity) -> Unit,
     onToggleCenterProperty: (DatabaseColumnEntity) -> Unit,
-    onAddProperty: () -> Unit
+    onAddProperty: () -> Unit,
+    onChangeTypeProperty: (DatabaseColumnEntity) -> Unit = {},
+    onCalculate: (CalculateTarget) -> Unit = {}
 ) {
     Row {
-        NameHeaderCell()
+        NameHeaderCell(onCalculate = { onCalculate(CalculateTarget(NAME_CALCULATION_KEY, null, DbStrings.name)) })
         CellSeparator()
         columns.forEachIndexed { index, column ->
             PropertyHeaderCell(
@@ -1522,11 +1580,96 @@ private fun TableHeaderRow(
                 onEdit = { onEditProperty(column) },
                 onMove = { delta -> onMoveProperty(column, delta) },
                 onHide = { onHideProperty(column) },
-                onToggleCenter = { onToggleCenterProperty(column) }
+                onToggleCenter = { onToggleCenterProperty(column) },
+                onChangeType = { onChangeTypeProperty(column) },
+                onCalculate = { onCalculate(CalculateTarget(column.id, column.type, DbStrings.columnName(column.name))) }
             )
             CellSeparator()
         }
         AddPropertyCell(onClick = onAddProperty)
+    }
+}
+
+/**
+ * **La riga dei calcoli in fondo alla tabella** (dal 26/09/2026,
+ * "Calculate"): sotto ogni colonna col suo calcolo, la parola corta e il
+ * risultato ("SUM 309"), sulle righe mostrate (filtrate, cercate, del
+ * gruppo). Non c'è finché nessuna colonna mostrata ne ha uno: "None" su
+ * tutte la toglie. Toccando un calcolo si cambia.
+ */
+@Composable
+private fun CalculationFooter(
+    rows: List<DatabaseRowEntity>,
+    state: DatabaseTableState,
+    columns: List<DatabaseColumnEntity>,
+    calculations: Map<String, Calculation>,
+    onCalculate: (CalculateTarget) -> Unit
+) {
+    // Un calcolo che il tipo della colonna non ha più (cambiato dopo) non si mostra.
+    fun valid(key: String, type: ColumnType?): Calculation? =
+        calculations[key]?.takeIf { calc -> calculationsFor(type).values.any { calc in it } }
+    val nameCalc = valid(NAME_CALCULATION_KEY, null)
+    val columnCalcs = columns.associate { it.id to valid(it.id, it.type) }
+    if (nameCalc == null && columnCalcs.values.all { it == null }) return
+
+    Row {
+        Box(
+            modifier = Modifier
+                .width(NAME_COLUMN_WIDTH)
+                .height(ROW_HEIGHT)
+                .clickable { onCalculate(CalculateTarget(NAME_CALCULATION_KEY, null, DbStrings.name)) }
+                .padding(horizontal = 12.dp),
+            contentAlignment = Alignment.CenterEnd
+        ) {
+            if (nameCalc != null) {
+                CalculationLabel(nameCalc, calculationText(calculate(nameCalc, null, rows.map { it.title }), null))
+            }
+        }
+        Spacer(modifier = Modifier.width(SEPARATOR_WIDTH))
+        columns.forEach { column ->
+            val calc = columnCalcs[column.id]
+            Box(
+                modifier = Modifier
+                    .width(COLUMN_WIDTH)
+                    .height(ROW_HEIGHT)
+                    .clickable { onCalculate(CalculateTarget(column.id, column.type, DbStrings.columnName(column.name))) }
+                    .padding(horizontal = 12.dp),
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                if (calc != null) {
+                    val values = rows.map { row ->
+                        when (column.type) {
+                            ColumnType.CREATED_TIME -> row.createdAt.toString()
+                            ColumnType.LAST_EDITED_TIME -> (row.updatedAt ?: row.createdAt).toString()
+                            ColumnType.COLOR -> parseColorCell(state.cellValues[row.id to column.id].orEmpty())
+                                .let { if (it.isEmpty) "" else state.cellValues[row.id to column.id].orEmpty() }
+                            else -> state.cellValues[row.id to column.id].orEmpty()
+                        }
+                    }
+                    val result = calculate(calc, column.type, values, startOfDate = { parseDateRange(it)?.start })
+                    CalculationLabel(calc, calculationText(result, column.takeIf { it.type == ColumnType.NUMBER }))
+                }
+            }
+            Spacer(modifier = Modifier.width(SEPARATOR_WIDTH))
+        }
+        Box(modifier = Modifier.width(ADD_PROPERTY_WIDTH).height(ROW_HEIGHT))
+    }
+}
+
+/** "SUM  309": la parola piccola, grigia e maiuscola, poi il risultato. */
+@Composable
+private fun CalculationLabel(calc: Calculation, value: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            DbStrings.calcShortName(calc).uppercase(AppSettings.language.locale),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f, fill = false)
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onBackground, maxLines = 1)
     }
 }
 
@@ -3301,6 +3444,7 @@ private fun todayAtStartOfDay(): Long =
 private fun listCellLabel(column: DatabaseColumnEntity, value: String): String = when (column.type) {
     ColumnType.CHECKBOX -> if (value == "true") "✓" else ""
     ColumnType.COLOR -> parseColorCell(value).text
+    ColumnType.NUMBER -> formatNumberValue(value, column)
     ColumnType.DATE -> parseDateRange(value)?.label() ?: value
     ColumnType.MULTI_SELECT -> value.split(MULTI_VALUE_SEPARATOR)
         .filter { it.isNotBlank() }
@@ -4274,12 +4418,16 @@ private fun CellSeparator() {
     VerticalDivider(modifier = Modifier.height(ROW_HEIGHT))
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun NameHeaderCell() {
+private fun NameHeaderCell(onCalculate: () -> Unit = {}) {
+    var menuOpen by remember { mutableStateOf(false) }
+    Box {
     Row(
         modifier = Modifier
             .width(NAME_COLUMN_WIDTH)
             .height(ROW_HEIGHT)
+            .combinedClickable(onClick = {}, onLongClick = { menuOpen = true })
             .padding(horizontal = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -4294,6 +4442,22 @@ private fun NameHeaderCell() {
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+    }
+    // Anche il nome ha il suo calcolo (quante pagine, quante col nome…).
+    DropdownMenu(
+        expanded = menuOpen,
+        onDismissRequest = { menuOpen = false },
+        modifier = Modifier.background(DarkSheet)
+    ) {
+        DropdownMenuItem(
+            text = { Text(DbStrings.calculate) },
+            leadingIcon = { Icon(Icons.Filled.Functions, contentDescription = null) },
+            onClick = {
+                menuOpen = false
+                onCalculate()
+            }
+        )
+    }
     }
 }
 
@@ -4326,7 +4490,9 @@ private fun PropertyHeaderCell(
     onEdit: () -> Unit,
     onMove: (Int) -> Unit,
     onHide: () -> Unit,
-    onToggleCenter: () -> Unit
+    onToggleCenter: () -> Unit,
+    onChangeType: () -> Unit = {},
+    onCalculate: () -> Unit = {}
 ) {
     var menuOpen by remember(column.id) { mutableStateOf(false) }
 
@@ -4399,6 +4565,18 @@ private fun PropertyHeaderCell(
                     onEdit()
                 }
             )
+            // Il tipo si cambia da qui (dal 26/09/2026): "Edit property" ha le
+            // impostazioni della proprietà, come su Notion.
+            DropdownMenuItem(
+                text = { Text(DbStrings.changeType) },
+                leadingIcon = {
+                    Icon(Icons.Filled.SwapHoriz, contentDescription = null)
+                },
+                onClick = {
+                    menuOpen = false
+                    onChangeType()
+                }
+            )
             // Solo per le caselle da spuntare: è l'unico contenuto di
             // cella che è un segno solo, dove l'allineamento si nota.
             // Un testo o una data centrati renderebbero la colonna
@@ -4433,6 +4611,17 @@ private fun PropertyHeaderCell(
                 onClick = {
                     menuOpen = false
                     onHide()
+                }
+            )
+            // Il calcolo in fondo alla colonna (dal 26/09/2026).
+            DropdownMenuItem(
+                text = { Text(DbStrings.calculate) },
+                leadingIcon = {
+                    Icon(Icons.Filled.Functions, contentDescription = null)
+                },
+                onClick = {
+                    menuOpen = false
+                    onCalculate()
                 }
             )
         }
@@ -4800,15 +4989,30 @@ private fun CellContent(
                         onValueChange(newValue)
                     },
                     singleLine = true,
-                    // Un numero si legge nel formato delle impostazioni
+                    // Un numero si legge nel formato delle impostazioni e della colonna
                     // (1.000.000 o 1,000,000), ma **si scrive grezzo**:
                     // mentre la cella ha il cursore il formato sparisce,
                     // altrimenti i separatori comparirebbero e si
                     // sposterebbero sotto le dita a ogni cifra.
                     visualTransformation = if (column.type == ColumnType.NUMBER && !editing) {
-                        NumberDisplayTransformation
+                        NumberDisplayTransformation(column.numberSettings())
                     } else {
                         VisualTransformation.None
+                    },
+                    // **Barra o anello** (dal 26/09/2026): finché non la si tocca,
+                    // la cella di un numero li disegna al posto del testo; il campo
+                    // resta lì sotto, invisibile, e al tocco si scrive il numero.
+                    decorationBox = { field ->
+                        if (column.type == ColumnType.NUMBER && !editing &&
+                            column.numberDisplayKind != NumberDisplay.NUMBER && localValue.isNotBlank()
+                        ) {
+                            Box(contentAlignment = Alignment.CenterStart) {
+                                Box(modifier = Modifier.alpha(0f)) { field() }
+                                NumberVisual(column, localValue)
+                            }
+                        } else {
+                            field()
+                        }
                     },
                     // Database bloccato: la cella si legge, non si
                     // riscrive.
@@ -4838,9 +5042,10 @@ private fun CellContent(
  * salvato. Si usa solo quando la cella non ha il cursore, quindi le
  * posizioni non contano: tutto si ancora in fondo.
  */
-private object NumberDisplayTransformation : VisualTransformation {
+private class NumberDisplayTransformation(private val settings: NumberSettings) : VisualTransformation {
     override fun filter(text: AnnotatedString): TransformedText {
-        val shown = Formats.number(text.text)
+        // Il formato della colonna (dal 26/09/2026): cifre decimali, percentuale o valuta.
+        val shown = formatNumberValue(text.text, settings)
         return TransformedText(
             AnnotatedString(shown),
             object : OffsetMapping {
@@ -7536,10 +7741,16 @@ private fun SettingsRow(
 private fun PropertySheet(
     target: PropertyTarget,
     onDismiss: () -> Unit,
-    onSave: (String, ColumnType, String) -> Unit,
+    onSave: (String, ColumnType, String, NumberSettings?) -> Unit,
     onDelete: () -> Unit
 ) {
     val existing = (target as? PropertyTarget.Existing)?.column
+    // **"Change type" e "Edit property" separati** (dal 26/09/2026, chiesto
+    // dall'utente): il tipo si cambia dalla sua voce; "Edit property" ha il
+    // nome e, per una colonna Number, formato, cifre decimali e "Show as".
+    val changeTypeOnly = (target as? PropertyTarget.Existing)?.changeType == true
+    val showTypes = existing == null || changeTypeOnly
+    var number by remember(existing?.id) { mutableStateOf(existing?.numberSettings() ?: NumberSettings()) }
 
     var name by remember(existing?.id) { mutableStateOf(existing?.name ?: "") }
     var selectedType by remember(existing?.id) {
@@ -7571,14 +7782,20 @@ private fun PropertySheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = if (existing == null) DbStrings.newProperty else DbStrings.editProperty,
+                    text = when {
+                        existing == null -> DbStrings.newProperty
+                        changeTypeOnly -> DbStrings.changeType
+                        else -> DbStrings.editProperty
+                    },
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f),
                     fontWeight = FontWeight.Bold
                 )
                 TextButton(onClick = onDismiss) { Text(Strings.cancel) }
                 TextButton(
-                    onClick = { onSave(effectiveName, selectedType, optionsJson) }
+                    onClick = {
+                        onSave(effectiveName, selectedType, optionsJson, number.takeIf { selectedType == ColumnType.NUMBER })
+                    }
                 ) { Text(if (existing == null) DbStrings.add else EditorStrings.save) }
             }
             HorizontalDivider()
@@ -7592,12 +7809,22 @@ private fun PropertySheet(
         ) {
             Spacer(modifier = Modifier.size(16.dp))
 
-            SheetTextField(
-                value = name,
-                onValueChange = { name = it },
-                placeholder = DbStrings.propertyName,
-                leading = Icons.Filled.Notes
-            )
+            if (!changeTypeOnly) {
+                SheetTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    placeholder = DbStrings.propertyName,
+                    leading = Icons.Filled.Notes
+                )
+            }
+
+            // "Edit property" di una colonna Number: formato, cifre, "Show as".
+            if (!showTypes && existing?.type == ColumnType.NUMBER) {
+                Spacer(modifier = Modifier.size(12.dp))
+                NumberSettingsSection(settings = number, onChange = { number = it })
+            }
+
+            if (showTypes) {
 
             // Qui non si scrivono le opzioni di un tag. Prima c'era un
             // campo per elencarle separate da virgola, ed era una
@@ -7649,13 +7876,14 @@ private fun PropertySheet(
                         }
                     }
                 }
+            }
 
             // Qui non si sposta la colonna: "Move to left" e "Move to
             // right" stanno in cima al menu che si apre tenendo premuta
             // l'intestazione, e averle in due posti voleva dire due
             // versioni della stessa cosa (in questa finestra, per di
             // più, comparivano e sparivano a seconda della colonna).
-            if (existing != null) {
+            if (existing != null && !changeTypeOnly) {
                 Spacer(modifier = Modifier.size(20.dp))
                 HorizontalDivider()
                 SheetAction(Icons.Filled.Delete, DbStrings.deleteProperty, isDestructive = true) {

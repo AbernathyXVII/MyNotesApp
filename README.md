@@ -2022,6 +2022,130 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**26/09/2026 — la proprietà Number: formato, cifre, barra e anello; "Calculate" sotto la tabella**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno, tranne quello
+elencato in fondo; 161 test passati; commit solo in locale)*
+
+L'utente, parola per parola (con quattordici foto di Notion: il menu della
+proprietà, "Edit property" con Number format, Decimal places e "Show as",
+la lista dei formati, le cifre decimali, Bar e Ring con le loro celle, e i
+menu di "Calculate"):
+> «Tante nuove mini feature nella proprietà Number dei database:
+> 1) quando tengo premuto sulla proprietà Number, mi appariranno le
+> classiche opzioni, tra cui Edit property. Quello che c'era qui dentro,
+> ossia le opzioni per cambiare tipo di proprietà, mettilo in un'altra
+> nuova opzione chiamata Change Type;
+> 2) dentro Edit property invece ci metterai tre voci come vedi nella prima
+> foto: Number format, Decimal places, qui ci metti un divider con il
+> titolo Show as e tre piccoli riquadri uguali alla foto, Number (con il
+> numero 42), Bar (con una barra riempita a metà) e Ring (con un anello
+> riempito del 40%);
+> 3) quando tocco Number format, apparirà una lista completa di tutte le
+> tipologie di numeri inseribili come vedi nella seconda foto: qui metti
+> Number, Percent, un divider che farà iniziare tutte le valute con il
+> rispettivo simbolo della valuta, ossia US Dollar (USD), Euro (EUR), Pound
+> (GBR), Swiss Franc (CHF), Yuan (CNY), Yen (JPY), Won (KRW), Australian
+> Dollar (AUD), Canadian Dollar (CAD), Singapore Dollar (SGD), Ruble (RUB),
+> Rupee (INR), Hong Kong Dollar (HKD), New Zealand Dollar (NZD),  Swedish
+> Krone (SEK), Norwegian Krone (NOK), Mexican Peso (MXN), Taiwan Dollar
+> (TWD), Danish Krone (DKK) e Złoty (PLN). Tutto il resto che vedi nella
+> seconda foto non lo mettere e rispetta per favore l'ordine che ho usato
+> qui nel prompt;
+> 4) in Decimal places, metterai una lista che va da 0 a 5 come vedi nella
+> terza foto, e questi rappresenteranno il numero dei numeri che possono
+> essere aggiunti a destra della virgola di un numero decimale. Se scrivo
+> 45.76, ma i Decimal places sono solo uno, il 6 non me lo visualizza ma
+> rimane comunque nascosto, non me lo cancellare. Se scrivo 45.76, ma i
+> Decimal places sono tre, mi visualizzerà 45.760;
+> 5) se è attivo number, sotto non ci saranno altre opzioni. Se attivo Bar,
+> invece, mi visualizzerà nelle celle del database una barra orizzontale
+> di riempimento che rappresenta il numero (come hai fatto con il widget
+> Life progress bar). Se è attivo Bar, sotto appariranno due opzioni come
+> vedi nella quarta foto, ossia Color (con la selezione del colore della
+> barra riempita, sempre con la classica palette colori che già hai messo
+> altrove) e Show number. Divide by non mi interessa; nelle celle vedrò un
+> qualcosa simile che vedi nella quinta foto;
+> 6) il Ring è un anello che entra nella cella (concedimi di scegliere se
+> metterlo più a sinistra o al centro) come vedi nella sesta foto; stesse
+> opzioni di Bar (ossia Color e Show number) e verrà qualcosa fuori come
+> vedi nella settima foto;
+> 7) ogni volta che tengo premuto su una proprietà mi metterai una voce
+> chiamata Calculate, come vedi nell'ottava foto: come vedi in tutte le
+> foto successive alla nona compresa, queste opzioni mi consentiranno di
+> far apparire una barra attaccata sotto a quel database con dei valori di
+> riassunto, diciamo. Questi valori sono: None (per disattivare tutto e la
+> barra compresa), Count (con Count all, Count values, Count unique
+> values, Count empty e Count not empty) e Percent (con Percent empty e
+> Percent not empty). Queste due voci sono universali per tutte le
+> proprietà. Alla proprietà Date aggiungi la voce Date (con Earliest date,
+> Latest date e Range date). Alla proprietà Number aggiungi la voce More
+> option (con Sum, Average, Median, Min, Max, Range). Alla proprietà
+> Checkbox, modifica le voci di Count in Count all, Checked e Unchecked.»
+
+- **[Nuova funzionalità]** **"Change type"** nel menu che si apre tenendo
+  premuta l'intestazione di una colonna, di **qualunque** tipo: lì c'è la
+  lista dei tipi con la ricerca. **"Edit property"** (e il tocco
+  sull'intestazione) ha il nome e, per una colonna Number, le impostazioni
+  qui sotto; il tipo non c'è più
+- **[Nuova funzionalità]** **Edit property di una colonna Number**, come
+  nella prima foto: **Number format**, **Decimal places**, una riga, "Show
+  as" e i tre riquadri **Number** (42), **Bar** (piena a metà) e **Ring**
+  (pieno al 40%); quello scelto è bordato di blu. Si salva con "Save"; vale
+  in tutte le viste che mostrano la colonna
+- **[Nuova funzionalità]** **Number format**: Number e Percent, una riga,
+  poi le venti valute **nell'ordine chiesto**, ognuna col suo segno ($, €,
+  £, CHF, ¥, ₩, A$, CA$, S$, ₽, ₹, HK$, NZ$, kr, MX$, NT$, kr., zł), con un
+  campo per cercarle. Il segno va davanti ("€25,00") o dopo per ₽, kr e zł
+  ("100 kr"). "Pound" è **GBP**: nella richiesta c'era "GBR", che è il
+  codice del paese. **Percent** aggiunge il segno % al numero scritto: 45
+  si legge 45% (non si moltiplica per 100)
+- **[Nuova funzionalità]** **Decimal places**: Default (come l'ha scritto
+  l'utente) e da 0 a 5. Le cifre in più **si nascondono senza
+  arrotondare** e senza essere cancellate: 45.76 con una cifra si legge
+  45.7, con tre 45.760; il valore salvato resta 45.76. Scrivendo nella
+  cella si vede il numero com'è, senza formato
+- **[Nuova funzionalità]** **Bar e Ring nelle celle**: una barra orizzontale
+  o un anello pieni per il numero diviso 100 (72 → quasi tre quarti; "Divide
+  by" non c'è, come chiesto), col numero accanto se **Show number** è
+  acceso. **Color** apre la tavolozza di sempre (spettro, grigi, RGB, Hex);
+  di suo è verde. Per l'anello, **Position**: a sinistra o al centro della
+  cella. Nell'elenco e nelle schede il numero si legge col suo formato
+- **[Nuova funzionalità]** **"Calculate"**, tenendo premuta l'intestazione di
+  qualunque colonna **e del nome**: None, **Count** (Count all, Count
+  values, Count unique values, Count empty, Count not empty; per le caselle
+  Count all, Checked, Unchecked), **Percent** (Percent empty, Percent not
+  empty), per le date **Date** (Earliest date, Latest date, Date range),
+  per i numeri **More options** (Sum, Average, Median, Min, Max, Range). I
+  gruppi si aprono toccandoli. Il calcolo compare in una **riga sotto la
+  tabella**, sotto la sua colonna ("SUM €25,00", "COUNT 4"), sulle righe
+  mostrate; in una tabella a gruppi, sotto ogni gruppo. Toccandolo si
+  cambia; con None su tutte le colonne la riga sparisce. I calcoli sono
+  **della vista**, come su Notion: una vista collegata ha i suoi
+- **[Progetto]** **Database alla versione 36**: in `database_columns`
+  `numberFormat`, `decimalPlaces`, `numberDisplay`, `numberColor`,
+  `showNumber`, `ringCentered`; in `pages` `viewCalculations`
+  ("colonna=CALCOLO;…"). Formati e calcoli in `NumberFormat.kt` (letti per
+  nome: uno sconosciuto torna al valore di sempre invece di far chiudere
+  l'app), la parte grafica in `NumberProperty.kt`. Test `NumberFormatTest`
+  (8, anche coi numeri delle foto: somma 309, media 38,63, mediana 30,5) e
+  `MigrationTest` 35→36 col file `v35.sql`
+- Verificato sul telefono (copia del database prima; migrazione alla 36, le
+  10 pagine tutte lì), sulla colonna "Number" di "SuduS al contrario" (25
+  in "Riga semplice"): tenuta premuta → Move, Edit property, **Change
+  type**, Hide, **Calculate**; Edit property come nella foto; Number format
+  → la lista con i segni, Number e Percent sopra la riga → Euro; Decimal
+  places → 2; Bar → Color e Show number → "Save" → **"€25,00" e la barra
+  verde piena a un quarto**; Ring + Center → "€25,00" e l'anello in mezzo
+  alla cella; Calculate → More options → Sum → **"SUM €25,00"** sotto la
+  colonna; sul nome Count all → **"COUNT 4"**; toccando la cella si scrive
+  "25", con "Done" torna "€25,00"; Change type → solo i tipi. Alla fine
+  tutto rimesso com'era (Number, Default, Number, a sinistra, nessun
+  calcolo: la riga dei calcoli sparisce), controllato nel database
+- **Non provato sul telefono**: le cifre che si nascondono (45.76 → 45.7;
+  lo prova il test, sul telefono avrebbe voluto dire cambiare un numero
+  dell'utente), il cambio di colore della barra, i calcoli delle date e
+  delle caselle e quelli sotto i gruppi
+
 **26/09/2026 — il nome di una riga: il cursore in fondo, e la tastiera che resta con l'ordinamento**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 152 test
 passati; commit solo in locale)*
@@ -6592,7 +6716,9 @@ le finestre che apre. Chi lo usa passa solo l'id del blocco.
 
 ## Nota tecnica
 
-Lo schema è alla **versione 35** (la 35, del 26/09/2026, aggiunge i
+Lo schema è alla **versione 36** (la 36, del 26/09/2026, aggiunge le
+impostazioni delle colonne Number e i calcoli delle viste; la 35, dello
+stesso giorno, aggiunge i
 quaderni: le tabelle `notebooks` e `notebook_sections` e
 `pages.notebookSectionId`; la 34, dello stesso giorno, aggiunge
 `pages.isProtected`, le pagine bloccate con la password; la 33, del
