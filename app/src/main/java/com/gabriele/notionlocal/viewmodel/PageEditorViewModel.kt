@@ -2717,6 +2717,28 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         }
     }
 
+    // --- Template (dal 26/09/2026, vedi `PageEntity.isTemplate`) ---
+
+    /**
+     * Scrive nella pagina tutto quello che c'è nel template scelto (vedi
+     * `PageRepository.applyTemplate`). Annulla lo toglie, come ogni
+     * cambiamento della struttura della pagina.
+     */
+    fun applyTemplate(templateId: String, imageStore: PageImageStore) {
+        val pageId = currentPageId ?: return
+        snapshotForStructuralChange()
+        viewModelScope.launch {
+            structuralEdits.withLock {
+                repository.applyTemplate(templateId, pageId) { imageStore.copy(it) }
+            }
+        }
+    }
+
+    /** Un template nuovo e vuoto; `onCreated` riceve il suo id, per aprirlo e scriverlo. */
+    fun createTemplate(onCreated: (String) -> Unit) {
+        viewModelScope.launch { onCreated(repository.createTemplate()) }
+    }
+
     // --- Viste collegate ("Linked view of data source") ---
 
     /** I database fra cui scegliere quello da mostrare in una vista collegata. */

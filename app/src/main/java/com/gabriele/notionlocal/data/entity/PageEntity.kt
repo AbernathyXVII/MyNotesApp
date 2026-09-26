@@ -329,6 +329,14 @@ data class PageEntity(
     // colonna del nome. Per vista, come su Notion: una vista collegata ha i
     // suoi. Vedi `parseViewCalculations`.
     var viewCalculations: String? = null,
+    // **Un template** (dal 26/09/2026, come su Notion): una pagina da cui
+    // copiare il contenuto nelle pagine nuove dei database, per non
+    // riscrivere ogni volta la stessa base (le stesse caselle da spuntare,
+    // per esempio). Si scrive come una pagina qualsiasi, ma non sta da
+    // nessuna parte nell'albero: sta nella voce "Templates" della barra
+    // laterale, e non compare né nella ricerca né fra le pagine da cui
+    // partire. I template sono uno solo per tutti i database.
+    var isTemplate: Boolean = false,
     // Quando è stata buttata nel cestino, o null se non ci sta. La
     // pagina **resta nel database** con tutto il suo contenuto: qui si
     // cancella per davvero solo il collegamento che la mostrava, così

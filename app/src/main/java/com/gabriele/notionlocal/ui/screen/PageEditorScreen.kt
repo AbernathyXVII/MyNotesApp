@@ -233,6 +233,15 @@ import com.gabriele.notionlocal.ui.theme.DarkBackground
 import com.gabriele.notionlocal.ui.theme.FavoriteStar
 import com.gabriele.notionlocal.ui.theme.FloatingButtonBackground
 import com.gabriele.notionlocal.ui.i18n.Strings
+import com.gabriele.notionlocal.ui.i18n.TemplateStrings
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.foundation.shape.CircleShape
 import com.gabriele.notionlocal.ui.theme.NotionGray400
 import com.gabriele.notionlocal.ui.theme.NotionWhite
@@ -1085,6 +1094,22 @@ private fun PageEditorContent(
     val isTrashed = page?.trashedAt != null
     val readOnlyPage = page?.isLocked == true || isTrashed
 
+    // **Le voci dei template** (dal 26/09/2026, come su Notion): in una
+    // pagina di un database ancora vuota, "+ New template" e "Add existing
+    // template", in grigio. Se ne vanno toccando un punto qualsiasi della
+    // pagina — vuol dire che non servono — o appena c'è qualcosa scritto;
+    // riaprendo la pagina ancora vuota tornano. `blocks` vuoto è la pagina
+    // non ancora letta: lì non si propone niente, se no le voci
+    // lampeggerebbero anche sulle pagine piene.
+    var templatePickerDismissed by remember(pageId) { mutableStateOf(false) }
+    var choosingTemplate by remember { mutableStateOf(false) }
+    var templatePickerBounds by remember { mutableStateOf<Rect?>(null) }
+    var pageAreaOrigin by remember { mutableStateOf(Offset.Zero) }
+    val showTemplatePicker = page?.isRowPage == true && !readOnlyPage && !templatePickerDismissed &&
+        blocks.isNotEmpty() && blocks.all { block ->
+            block.type == BlockType.PARAGRAPH && block.parentBlockId == null && viewModel.plainTextOf(block).isEmpty()
+        }
+
     // **Il disegno a mano** (dal 25/09/2026): la matita nei tre puntini.
     // Mentre si disegna il testo non si scrive (la pagina è come
     // bloccata) e in fondo c'è la barra degli strumenti al posto di
@@ -1441,6 +1466,21 @@ private fun PageEditorContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
+                    .onGloballyPositioned { pageAreaOrigin = it.positionInWindow() }
+                    // Un tocco fuori dalle voci dei template le manda via.
+                    // Si guarda soltanto, prima di tutti e senza prenderlo:
+                    // il tocco arriva lo stesso dove doveva, e se era sulla
+                    // prima riga ci si comincia a scrivere.
+                    .pointerInput(showTemplatePicker) {
+                        if (!showTemplatePicker) return@pointerInput
+                        awaitEachGesture {
+                            val down = awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+                            val bounds = templatePickerBounds
+                            if (bounds == null || !bounds.contains(down.position + pageAreaOrigin)) {
+                                templatePickerDismissed = true
+                            }
+                        }
+                    }
                     .inkLayer(inkState, inkStrokes, inkCache, NotionWhite)
                     .then(
                         if (drawingMode) {
@@ -1608,6 +1648,28 @@ private fun PageEditorContent(
                     }
                 }
 
+                // Un template si scrive come una pagina: lo dice una riga in
+                // grigio, perché da fuori le due cose non si distinguono.
+                if (page?.isTemplate == true) {
+                    Row(
+                        modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Outlined.Description,
+                            contentDescription = null,
+                            tint = NotionGray400,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.size(6.dp))
+                        Text(
+                            TemplateStrings.editingTemplate,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = NotionGray400
+                        )
+                    }
+                }
+
                 if (!inNotebook) Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1701,9 +1763,9 @@ private fun PageEditorContent(
                     // posto, grigio, "Untitled page", come in OneNote.
                     decorationBox = { field ->
                         Box {
-                            if (inNotebook && titleText.isEmpty()) {
+                            if ((inNotebook || page?.isTemplate == true) && titleText.isEmpty()) {
                                 Text(
-                                    NotebookStrings.untitledPage,
+                                    if (inNotebook) NotebookStrings.untitledPage else TemplateStrings.untitledTemplate,
                                     style = MaterialTheme.typography.titleLarge,
                                     color = NotionGray400
                                 )
@@ -1723,6 +1785,30 @@ private fun PageEditorContent(
                 )
                 if (inNotebook) {
                     page?.let { NotebookPageStamp(it.createdAt) }
+                }
+
+                // **Le proprietà della riga** (dal 26/09/2026), come su
+                // Notion: fra il titolo e il testo, separate da una linea.
+                if (page?.isRowPage == true && !inNotebook) {
+                    RowPageProperties(
+                        pageId = pageId,
+                        factory = factory,
+                        editable = !readOnlyPage,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+                if (showTemplatePicker) {
+                    TemplatePicker(
+                        onNewTemplate = {
+                            focusManager.clearFocus()
+                            viewModel.createTemplate { id -> onNavigateToPage(id) }
+                        },
+                        onAddExisting = {
+                            focusManager.clearFocus()
+                            choosingTemplate = true
+                        },
+                        modifier = Modifier.onGloballyPositioned { templatePickerBounds = it.boundsInWindow() }
+                    )
                 }
 
                 Spacer(modifier = Modifier.size(12.dp))
@@ -2254,6 +2340,21 @@ private fun PageEditorContent(
     // Sta qui fuori dallo Scaffold e non dentro la barra in alto: una
     // finestra che sale dal basso non è figlia del pulsante che
     // l'apre, e messa lì dentro erediterebbe i margini della barra.
+    if (choosingTemplate) {
+        TemplateChooserSheet(
+            factory = factory,
+            onDismiss = { choosingTemplate = false },
+            onPick = { template ->
+                choosingTemplate = false
+                viewModel.applyTemplate(template.id, imageStore)
+            },
+            onNewTemplate = {
+                choosingTemplate = false
+                viewModel.createTemplate { id -> onNavigateToPage(id) }
+            }
+        )
+    }
+
     page?.let { current ->
         if (showPageOptions) {
             PageOptionsSheet(

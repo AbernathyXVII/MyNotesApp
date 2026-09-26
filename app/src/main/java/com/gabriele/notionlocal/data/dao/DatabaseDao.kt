@@ -286,6 +286,10 @@ interface DatabaseDao {
     @Query("SELECT * FROM database_rows WHERE linkedPageId = :pageId")
     suspend fun getRowsLinkingTo(pageId: String): List<DatabaseRowEntity>
 
+    /** La riga di cui questa è la pagina, seguita: le sue proprietà si vedono in cima alla pagina. */
+    @Query("SELECT * FROM database_rows WHERE linkedPageId = :pageId LIMIT 1")
+    fun observeRowLinkingTo(pageId: String): Flow<DatabaseRowEntity?>
+
     @Query(
         """
         SELECT database_cells.* FROM database_cells

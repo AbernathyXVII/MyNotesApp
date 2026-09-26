@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.RocketLaunch
 import androidx.compose.material.icons.filled.Search
@@ -49,6 +50,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.gabriele.notionlocal.data.repository.PageRepository.PageTreeNode
 import com.gabriele.notionlocal.ui.i18n.Strings
+import com.gabriele.notionlocal.ui.i18n.TemplateStrings
 import com.gabriele.notionlocal.ui.theme.DarkSurfaceVariant
 import com.gabriele.notionlocal.ui.theme.NotebookBand
 import com.gabriele.notionlocal.ui.theme.NotionGray400
@@ -69,6 +71,8 @@ internal class SidebarActions(
     val onToggleNode: (PageTreeNode) -> Unit,
     val onSearch: () -> Unit,
     val onStartup: () -> Unit,
+    /** "Templates", sotto "Startup window" (dal 26/09/2026). */
+    val onTemplates: () -> Unit,
     val onTrash: () -> Unit,
     val onSettings: () -> Unit
 )
@@ -167,6 +171,7 @@ internal fun SidebarContent(
         // 6–14. Le voci di servizio.
         SidebarItem(Icons.Filled.Search, Strings.search, onClick = actions.onSearch)
         SidebarItem(Icons.Filled.RocketLaunch, Strings.startupWindow, onClick = actions.onStartup)
+        SidebarItem(Icons.Outlined.Description, TemplateStrings.templates, onClick = actions.onTemplates)
         SidebarItem(Icons.Filled.Backup, Strings.backup, enabled = false)
         SidebarItem(Icons.Filled.Notifications, Strings.notifications, enabled = false)
         SidebarItem(Icons.Filled.Delete, Strings.trash, onClick = actions.onTrash)

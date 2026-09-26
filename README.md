@@ -2022,6 +2022,113 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**26/09/2026 — i template delle pagine, e le proprietà in cima alla pagina di una riga**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 173 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola, con tre foto di Notion (le voci dei template
+in una pagina nuova, la pagina "2" con le caselle 1…10 del template
+"SaaS", le proprietà Date, Number, Select e "Add a property" sotto il
+titolo):
+> «Due feature che riguardano le pagine contenuti nei database complessi:
+> 1) come fa Notion, implementa i templates; creami innanzitutto una voce
+> nella Sidebar, sotto Startup window, chiamata Templates, dove ci sarà la
+> lista dei template che creerò. Notion concede di creare un template per
+> le pagine che mi consentono di risparmiare tempo se in più pagina voglio
+> scrivere principalmente una base uguale per tutte (se per esempio voglio
+> creare un template con tutte to-do list, con nomi specifici, che mi
+> consente di non scrivere per ogni pagina svariate check-box uguali).
+> Appena creo una pagina, verrà visualizzato quello che vedi nella prima
+> foto, ossia delle voci in un grigio visibile per differenziarlo dal
+> colore classico di tutto il resto (vediamo poi se mi piace come lo
+> farai) che scomparirà se premo su un punto a caso della pagina (dato che
+> significa che non mi serve più quello che c'è scritto). Le voci saranno
+> '+ New template' che mi consentirà di creare anche qui dentro un
+> template (stessa cosa nella sua sezione privata nella sidebar), e 'Add
+> existing template', che mi aprirà la lista dei template che ho creato e
+> che mi consentirà di scrivere esattamente tutto quello che c'è scritto
+> in quel template al fine di, come ti ho detto prima, farmi risparmiare
+> tempo. Un esempio che vedi nella prima foto, è un template che ho
+> rinominato SaaS che, una volta che lo tocco, mi farà apparire tutte le
+> checkbox perché creandolo ho scritto tutte quelle checkbox precise con
+> le scritte (come vedi nella seconda foto). Ovviamente, fai sì che i
+> template che creo nella voce Templates nella sidebar e i template che
+> creo direttamente in una pagina vengano sincronizzati, anche per altri
+> database;
+> 2) sempre su Notion, sia su PC che su telefono, quando apro una pagina in
+> un database, mi fa vede tutte le proprietà collegate ed esistenti a
+> questa pagina (come vedi nella terza foto). Aggiungi questa feature
+> anche qui, con un divider che dividerà le proprietà e il campo di testo
+> su cui scrivere. Ovviamente, sarò in grado di modificare anche dentro un
+> pagina le sue proprietà, ed ovviamente fai sì che tutto venga
+> sincronizzato. Fammi anche vedere le proprietà nascoste che posso
+> comunque modificare»
+
+- **[Nuova funzionalità]** **"Templates" nella barra laterale**, sotto
+  "Startup window": l'elenco dei template, "New template" in cima per
+  crearne uno, e i tre puntini di ciascuno per mandarlo nel cestino (da cui
+  torna fra i template, non nel menu principale). Un template **si scrive
+  come una pagina qualsiasi** — caselle, elenchi, titoli, toggle, tabelle,
+  sottopagine — con in cima, in grigio, "You're editing a template"; senza
+  nome si chiama "Untitled template". Nei tre puntini di un template non ci
+  sono "Duplicate" e "Move to", che lo farebbero diventare una pagina del
+  menu principale
+- **[Nuova funzionalità]** **Le voci grigie di una pagina nuova di un
+  database**: aprendo la pagina di una riga ancora vuota, sotto le
+  proprietà compaiono "Tap anywhere to continue with an empty page, or pick
+  a template" e le due voci **"+ New template"** (crea un template e lo
+  apre, da scrivere) e **"Add existing template"** (l'elenco dei template:
+  toccato uno, tutto quello che c'è scritto dentro finisce nella pagina e
+  le voci se ne vanno). Sono grigie come il resto dei suggerimenti
+  dell'app. **Un tocco in un punto qualsiasi della pagina** le fa sparire;
+  riaprendo la pagina ancora vuota tornano, come su Notion. Il template
+  prende il posto delle righe vuote della pagina (in una pagina già scritta
+  andrebbe in fondo); titolo, proprietà, icona e copertina della pagina non
+  cambiano; Annulla lo toglie. I template sono **gli stessi per tutti i
+  database**, sia quelli creati dalla barra laterale sia quelli creati da
+  una pagina
+- **[Nuova funzionalità]** **Le proprietà in cima alla pagina di una
+  riga**, come nella terza foto: fra il titolo e il testo, una per riga,
+  con l'icona del tipo e il nome, **ciascuna modificabile lì** come nella
+  sua cella (tag, date con ripetizioni e notifiche, numeri, caselle,
+  colori, testo…); sotto, "**Add a property**" per aggiungerne una al
+  database, e una linea che le separa dal testo. **Ci sono anche quelle
+  nascoste nella tabella**, con accanto l'occhio sbarrato. Tutto
+  sincronizzato: cambiata qui, la proprietà cambia nella tabella e nelle
+  altre viste, e al contrario. Con la pagina o il database bloccati si
+  leggono soltanto. I database semplici non c'entrano: le loro righe non
+  hanno pagine
+- **[Progetto]** **Database alla versione 39**: `pages.isTemplate`. I
+  template non compaiono nell'albero, nella ricerca, fra le pagine da cui
+  partire e fra le destinazioni di "Move to". `PageRepository`:
+  `observeTemplates`, `createTemplate`, `applyTemplate` (copia blocchi,
+  figli, celle delle tabelle e sottopagine, come "Duplicate"),
+  `observeRowOfPage`. `RowPageProperties` (in `DatabaseViewScreen.kt`, con
+  le celle della tabella) usa un `DatabaseViewModel` caricato
+  `light`, senza le anteprime della galleria che cambierebbero a ogni
+  tasto. `TemplatesScreen.kt` ha l'elenco, `TemplatePicker` e
+  `TemplateChooserSheet`; le scritte stanno in `TemplateStrings`. Test in
+  `TemplateTest` e `MigrationTest` 38→39, col file `v38.sql`
+- Verificato sul telefono (copia del database prima; migrazione alla 39, le
+  10 pagine tutte lì): Templates sotto Startup window, vuoto; "New
+  template" → "SaaS" con le caselle 1, 2, 3; nei suoi tre puntini niente
+  Duplicate e Move to. Nel database "Untitled", pagina "2": Select PS5,
+  Text, "Add a property", la linea, e le voci grigie; "Add existing
+  template" → SaaS → le tre caselle nella pagina, le voci sparite. Select
+  cambiato in PC dalla pagina → PC nella tabella; rimesso PS5 dalla
+  tabella → PS5 nella pagina. "Text" nascosta nella tabella → nella pagina
+  c'è, con l'occhio sbarrato. Un tocco nel vuoto fa sparire le voci; "Add a
+  property" apre "New property" (annullato); "+ New template" dalla pagina
+  "4" apre un template nuovo, e tornando le voci sono ancora lì con due
+  template nell'elenco; la pagina "1", che ha del testo, non le mostra.
+  Alla fine rimesso tutto com'era: Annulla ha tolto le caselle dalla pagina
+  "2" (stesso blocco di prima), "Text" di nuovo visibile, PS5 al suo posto,
+  e i due template di prova nel cestino. Il confronto col database di prima
+  ha trovato **un mio errore**, corretto: un tocco finito su una cella di
+  "SuduS al contrario" e uno scorrimento sopra la tastiera avevano
+  aggiunto "⁵" al nome "Riga semplice"; tolto, e al secondo confronto i
+  dati erano identici a prima (a parte i due template di prova)
+
 **26/09/2026 — l'Invio a inizio della prima riga non chiude più la tastiera**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 168 test
 passati; commit solo in locale)*
@@ -6852,7 +6959,8 @@ le finestre che apre. Chi lo usa passa solo l'id del blocco.
 
 ## Nota tecnica
 
-Lo schema è alla **versione 38** (la 38, del 26/09/2026, aggiunge il
+Lo schema è alla **versione 39** (la 39, del 26/09/2026, aggiunge i
+template delle pagine; la 38, dello stesso giorno, aggiunge il
 formato della data e dell'ora delle colonne Date; la 37, dello stesso
 giorno, aggiunge l'allineamento delle celle; la 36, dello stesso giorno, aggiunge le
 impostazioni delle colonne Number e i calcoli delle viste; la 35, dello

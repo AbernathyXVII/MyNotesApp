@@ -311,8 +311,14 @@ class DatabaseViewModel(
         repository.setCellValue(rowId, columnId, value)
     }
 
+    /**
+     * `light`: per le proprietà in cima alla pagina di una riga (dal
+     * 26/09/2026), a cui servono colonne, righe e celle e basta. Lì non si
+     * seguono mai le copertine e il testo delle pagine per la galleria, che
+     * cambierebbero a ogni tasto battuto proprio in quella pagina.
+     */
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun load(pageId: String) {
+    fun load(pageId: String, light: Boolean = false) {
         if (currentPageId == pageId) return
         currentPageId = pageId
 
@@ -370,7 +376,7 @@ class DatabaseViewModel(
         // scritta altrove, per una vista che magari non è nemmeno quella
         // scelta.
         val previewShown = combine(_page, _dataPage) { page, data ->
-            page?.galleryPreviewShown(simple = data?.isSimpleDatabase == true)
+            if (light) null else page?.galleryPreviewShown(simple = data?.isSimpleDatabase == true)
         }.distinctUntilChanged()
         viewModelScope.launch {
             combine(dataIds, previewShown) { id, shown -> id to shown }

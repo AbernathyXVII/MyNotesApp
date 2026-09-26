@@ -184,7 +184,9 @@ fun PageOptionsSheet(
                 // Duplicare la pagina principale vorrebbe dire copiare
                 // l'archivio intero, sottopagine comprese, dentro sé
                 // stesso. Buttarla non si può comunque.
-                if (!isRoot && !inNotebook) {
+                // Nemmeno per un template: la copia finirebbe nel menu
+                // principale, come una pagina, e i template stanno a parte.
+                if (!isRoot && !inNotebook && !page.isTemplate) {
                     HorizontalDivider()
                     OptionRow(
                         icon = Icons.Filled.ContentCopy,
@@ -197,7 +199,9 @@ fun PageOptionsSheet(
                 // sparire come le altre: l'utente ha chiesto di vederla,
                 // e grigia dice "non qui" senza bisogno di un messaggio
                 // (24/09/2026).
-                if (!inNotebook) {
+                // Un template non sta dentro nessuna pagina: "Move to" lo
+                // farebbe diventare una pagina qualsiasi.
+                if (!inNotebook && !page.isTemplate) {
                     HorizontalDivider()
                     OptionRow(
                         icon = Icons.Filled.DriveFileMove,

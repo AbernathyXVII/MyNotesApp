@@ -165,6 +165,24 @@ class TrashViewModel(
     }
 }
 
+/**
+ * I template delle pagine (dal 26/09/2026, vedi `PageEntity.isTemplate`):
+ * l'elenco, uno nuovo da scrivere, uno da mandare nel cestino.
+ */
+class TemplatesViewModel(private val repository: PageRepository) : ViewModel() {
+    val templates: StateFlow<List<PageEntity>> = repository.observeTemplates()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Crea un template vuoto; `onCreated` riceve il suo id, per aprirlo. */
+    fun create(onCreated: (String) -> Unit) {
+        viewModelScope.launch { onCreated(repository.createTemplate()) }
+    }
+
+    fun moveToTrash(templateId: String) {
+        viewModelScope.launch { repository.moveToTrash(templateId) }
+    }
+}
+
 /** La finestra di avvio: serve l'elenco delle pagine fra cui sceglierne una. */
 class StartupViewModel(private val repository: PageRepository) : ViewModel() {
 

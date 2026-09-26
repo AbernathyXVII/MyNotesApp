@@ -52,6 +52,7 @@ import com.gabriele.notionlocal.ui.screen.SettingsScreen
 import com.gabriele.notionlocal.ui.screen.SidebarActions
 import com.gabriele.notionlocal.ui.screen.SidebarContent
 import com.gabriele.notionlocal.ui.screen.StartupScreen
+import com.gabriele.notionlocal.ui.screen.TemplatesScreen
 import com.gabriele.notionlocal.ui.screen.TrashScreen
 import com.gabriele.notionlocal.ui.screen.UpdatesScreen
 import com.gabriele.notionlocal.ui.theme.SidebarBackground
@@ -224,6 +225,7 @@ fun AppNavHost(factory: ViewModelFactory) {
         onToggleNode = { sidebar.toggle(it) },
         onSearch = { closeSidebar(); navController.navigate(Routes.SEARCH) { launchSingleTop = true } },
         onStartup = { closeSidebar(); navController.navigate(Routes.STARTUP) { launchSingleTop = true } },
+        onTemplates = { closeSidebar(); navController.navigate(Routes.TEMPLATES) { launchSingleTop = true } },
         onTrash = { closeSidebar(); navController.navigate(Routes.TRASH) { launchSingleTop = true } },
         onSettings = { closeSidebar(); navController.navigate(Routes.SETTINGS) { launchSingleTop = true } }
     )
@@ -414,6 +416,14 @@ private fun AppRoutes(
                 factory = factory,
                 onBack = { navController.popBackStack() },
                 onOpenPage = { page -> navController.navigate(Routes.forPage(page.id, page.isDatabase)) }
+            )
+        }
+
+        composable(Routes.TEMPLATES) {
+            TemplatesScreen(
+                factory = factory,
+                onBack = { navController.popBackStack() },
+                onOpenTemplate = { id -> navController.navigate(Routes.pageEditor(id)) }
             )
         }
 

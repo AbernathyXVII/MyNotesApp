@@ -42,6 +42,7 @@ import com.gabriele.notionlocal.ui.i18n.DbStrings
 import com.gabriele.notionlocal.data.settings.AppSettings
 import com.gabriele.notionlocal.ui.format.Formats
 import com.gabriele.notionlocal.ui.i18n.Strings
+import com.gabriele.notionlocal.ui.i18n.TemplateStrings
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.foundation.layout.statusBarsPadding
 import android.widget.Toast
@@ -192,6 +193,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -7015,6 +7017,155 @@ private fun RowPropertiesList(
             }
         }
     }
+    }
+}
+
+/**
+ * **Le proprietà in cima alla pagina di una riga** (dal 26/09/2026, come su
+ * Notion): sotto il titolo, una per riga, con l'icona del tipo e il nome, e
+ * ciascuna si modifica sul posto come nella sua cella. Ci sono **anche
+ * quelle nascoste nella tabella**, con accanto l'occhio sbarrato: nascosta
+ * vuol dire "non in quella griglia", non "senza valore". Sotto, "Add a
+ * property" e la linea che le separa dal testo della pagina.
+ *
+ * Scrivere qui è scrivere nella riga: la tabella, la bacheca e le altre viste
+ * si aggiornano da sole, e al contrario. Non disegna niente per le pagine che
+ * non sono quella di una riga.
+ */
+@Composable
+internal fun RowPageProperties(
+    pageId: String,
+    factory: ViewModelFactory,
+    /** Falso con la pagina bloccata o nel cestino: le proprietà si leggono e basta. */
+    editable: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val row by remember(pageId) { factory.pageRepository.observeRowOfPage(pageId) }
+        .collectAsStateWithLifecycle(initialValue = null)
+    val current = row ?: return
+    val databaseId = current.pageId
+    // Un ViewModel suo, "leggero": colonne, righe e celle, senza le
+    // anteprime della galleria (vedi `DatabaseViewModel.load`).
+    val viewModel: DatabaseViewModel = viewModel(factory = factory, key = "row-properties-$databaseId")
+    LaunchedEffect(databaseId) { viewModel.load(databaseId, light = true) }
+    val state by viewModel.tableState.collectAsStateWithLifecycle()
+    val dataPage by viewModel.dataPage.collectAsStateWithLifecycle()
+    if (dataPage?.isSimpleDatabase == true) return
+    // Il database bloccato blocca anche le sue proprietà, come nella tabella.
+    val canEdit = editable && dataPage?.isLocked != true
+    var addingProperty by remember { mutableStateOf(false) }
+
+    CompositionLocalProvider(LocalDatabaseLocked provides !canEdit) {
+        Column(
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp)
+        ) {
+            Column(
+                modifier = if (canEdit) {
+                    Modifier
+                } else {
+                    // Bloccate, nemmeno i tag, le date e le caselle si
+                    // aprono: i tocchi si fermano qui.
+                    Modifier.pointerInput(Unit) {
+                        awaitPointerEventScope {
+                            while (true) {
+                                awaitPointerEvent(PointerEventPass.Initial).changes.forEach { it.consume() }
+                            }
+                        }
+                    }
+                }
+            ) {
+                state.columns.forEach { column ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = 44.dp)
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            column.type.icon(),
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.size(10.dp))
+                        Row(
+                            modifier = Modifier.width(120.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = DbStrings.columnName(column.name),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f, fill = false)
+                            )
+                            if (column.hidden) {
+                                Spacer(modifier = Modifier.size(4.dp))
+                                Icon(
+                                    Icons.Filled.VisibilityOff,
+                                    contentDescription = TemplateStrings.hiddenInView,
+                                    modifier = Modifier.size(14.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.size(10.dp))
+                        Box(modifier = Modifier.weight(1f)) {
+                            CellContent(
+                                row = current,
+                                column = column,
+                                value = state.cellValues[current.id to column.id] ?: "",
+                                onValueChange = { viewModel.setCellValue(current, column, it) },
+                                onAddOption = { viewModel.addSelectOption(column.id, it) },
+                                onRenameOption = { columnId, old, new -> viewModel.renameSelectOption(columnId, old, new) },
+                                onSetOptionColor = { columnId, label, hex -> viewModel.setSelectOptionColor(columnId, label, hex) },
+                                onDeleteOption = { columnId, label -> viewModel.deleteSelectOption(columnId, label) }
+                            )
+                        }
+                    }
+                }
+            }
+            if (canEdit) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { addingProperty = true }
+                        .padding(vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Filled.Add,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.size(10.dp))
+                    Text(
+                        TemplateStrings.addAProperty,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.size(8.dp))
+            HorizontalDivider()
+        }
+    }
+
+    if (addingProperty) {
+        PropertySheet(
+            target = PropertyTarget.New(),
+            onDismiss = { addingProperty = false },
+            onSave = { name, type, optionsJson, _, _ ->
+                viewModel.addColumn(name, type, optionsJson)
+                addingProperty = false
+            },
+            onDelete = { addingProperty = false }
+        )
     }
 }
 

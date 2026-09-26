@@ -20,6 +20,8 @@ object Routes {
     const val FAVORITES = "favorites"
     const val TRASH = "trash"
     const val STARTUP = "startup"
+    /** I template delle pagine (dal 26/09/2026). */
+    const val TEMPLATES = "templates"
     const val SETTINGS = "settings"
 
     /** Una sezione di un quaderno, con le sue pagine (vedi `NotebookSectionScreen`). */

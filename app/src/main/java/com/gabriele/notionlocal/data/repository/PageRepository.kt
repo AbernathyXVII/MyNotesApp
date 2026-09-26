@@ -60,6 +60,83 @@ class PageRepository(private val db: AppDatabase) {
 
     fun getRootPages(): Flow<List<PageEntity>> = pageDao.getRootPages()
 
+    // --- Template (dal 26/09/2026, vedi `PageEntity.isTemplate`) ---
+
+    /** I template, per la voce "Templates" della barra laterale e per le pagine nuove. */
+    fun observeTemplates(): Flow<List<PageEntity>> = pageDao.observeTemplates()
+
+    /** Un template nuovo, vuoto e senza nome. Restituisce il suo id, per aprirlo e scriverlo. */
+    suspend fun createTemplate(): String {
+        val template = PageEntity(title = "", isTemplate = true)
+        pageDao.insert(template)
+        return template.id
+    }
+
+    /** La riga di cui la pagina è la pagina (`isRowPage`), seguita: null per le altre. */
+    fun observeRowOfPage(pageId: String): Flow<DatabaseRowEntity?> =
+        db.databaseDao().observeRowLinkingTo(pageId)
+
+    /**
+     * **Scrive in una pagina tutto quello che c'è in un template**: i
+     * blocchi, coi loro figli, le celle delle tabelle e le sottopagine,
+     * che si copiano anche loro (come fa "Duplicate": due collegamenti
+     * alla stessa sottopagina non sarebbero una copia, e scrivendo nella
+     * pagina si cambierebbe il template).
+     *
+     * Se la pagina ha solo righe vuote — è il caso per cui si sceglie un
+     * template, appena creata — quelle se ne vanno e il template prende il
+     * loro posto; altrimenti il template si aggiunge in fondo. Il titolo, le
+     * proprietà e l'icona della pagina non si toccano.
+     */
+    suspend fun applyTemplate(
+        templateId: String,
+        pageId: String,
+        copyImage: suspend (String) -> String?
+    ): Boolean {
+        if (templateId == pageId) return false
+        pageDao.getById(templateId) ?: return false
+        return db.withTransaction {
+            val existing = blockDao.getBlocksForPageOnce(pageId)
+            val onlyEmptyLines = existing.all { block ->
+                block.type == BlockType.PARAGRAPH && block.parentBlockId == null &&
+                    runCatching { json.decodeFromString<List<RichTextSpan>>(block.textJson) }
+                        .getOrNull()?.plainText().isNullOrEmpty()
+            }
+            val startAt = if (onlyEmptyLines) {
+                existing.forEach { blockDao.delete(it) }
+                0
+            } else {
+                (existing.filter { it.parentBlockId == null }.maxOfOrNull { it.orderIndex } ?: -1) + 1
+            }
+
+            val copies = mutableMapOf<String, String>()
+            // La pagina stessa è già "copiata": se il template la richiamasse
+            // (un collegamento verso la pagina in cui lo si usa), il
+            // collegamento punterebbe a lei invece di copiarla.
+            copies[pageId] = pageId
+            val blocks = inDocumentOrder(blockDao.getBlocksForPageOnce(templateId))
+            val newBlockIds = blocks.associate { it.id to UUID.randomUUID().toString() }
+            val copied = blocks.map { block ->
+                block.copy(
+                    id = newBlockIds.getValue(block.id),
+                    pageId = pageId,
+                    parentBlockId = block.parentBlockId?.let { newBlockIds[it] },
+                    orderIndex = if (block.parentBlockId == null) startAt + block.orderIndex else block.orderIndex,
+                    linkedPageId = block.linkedPageId?.let { copyLinkedPage(it, copies, copyImage) }
+                )
+            }
+            blockDao.insertAll(copied)
+            blocks.filter { it.type == BlockType.TABLE }.forEach { table ->
+                tableCellDao.getCellsForBlockOnce(table.id).forEach { cell ->
+                    tableCellDao.insertCell(
+                        cell.copy(id = UUID.randomUUID().toString(), blockId = newBlockIds.getValue(table.id))
+                    )
+                }
+            }
+            true
+        }
+    }
+
     fun getChildPages(parentId: String): Flow<List<PageEntity>> =
         pageDao.getChildPages(parentId)
 
@@ -194,7 +271,8 @@ class PageRepository(private val db: AppDatabase) {
         val page = pageDao.getById(pageId) ?: return
         db.withTransaction {
             pageDao.setTrashedAt(pageId, null)
-            if (!page.isRowPage && blockDao.getBlocksLinkingTo(pageId).isEmpty()) {
+            // Un template torna fra i template, non nel menu principale.
+            if (!page.isRowPage && !page.isTemplate && blockDao.getBlocksLinkingTo(pageId).isEmpty()) {
                 appendLink(PageEntity.ROOT_PAGE_ID, pageId, page.isDatabase)
             }
         }
@@ -421,7 +499,9 @@ class PageRepository(private val db: AppDatabase) {
 
         // Le pagine dei quaderni non si cercano da qui: sono un mondo a parte
         // (vedi `NotebookEntity`).
-        fun allowed(page: PageEntity) = (page.trashedAt == null || inTrash) && page.notebookSectionId == null
+        // Nemmeno i template: stanno nella loro voce della barra laterale.
+        fun allowed(page: PageEntity) = (page.trashedAt == null || inTrash) &&
+            page.notebookSectionId == null && !page.isTemplate
 
         fun hitFor(page: PageEntity, snippet: Snippet?) = SearchHit(
             pageId = page.id,

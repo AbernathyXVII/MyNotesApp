@@ -177,10 +177,14 @@ interface PageDao {
      */
     @Query(
         "SELECT * FROM pages WHERE trashedAt IS NULL AND id != 'root' AND notebookSectionId IS NULL " +
-            "ORDER BY title COLLATE NOCASE ASC"
+            "AND isTemplate = 0 ORDER BY title COLLATE NOCASE ASC"
     )
     suspend fun getAllLivePages(): List<PageEntity>
 
     @Query("SELECT * FROM pages WHERE id IN (:ids)")
     suspend fun getByIds(ids: List<String>): List<PageEntity>
+
+    /** I template (`PageEntity.isTemplate`) fuori dal cestino, per nome. */
+    @Query("SELECT * FROM pages WHERE isTemplate = 1 AND trashedAt IS NULL ORDER BY title COLLATE NOCASE ASC, createdAt ASC")
+    fun observeTemplates(): Flow<List<PageEntity>>
 }
