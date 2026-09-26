@@ -407,6 +407,14 @@ private fun FloatingPageButton(
 
 private val TOGGLE_ARROW_SIZE = 24.dp
 private val TOGGLE_ARROW_GAP = 4.dp
+/**
+ * Di quanto sale il triangolino del toggle. Il triangolo sta in mezzo al
+ * suo quadrato di 24, come la riga del titolo sta in mezzo ai suoi 24; ma
+ * le lettere non stanno in mezzo alla loro riga, stanno un po' più su
+ * (sotto c'è il posto delle gambe di g, p, q). Misurato sul telefono il
+ * 26/09/2026: il triangolo stava 2dp sotto il centro delle lettere.
+ */
+private val TOGGLE_ARROW_LIFT = 2.dp
 private val NESTED_INDENT = TOGGLE_ARROW_SIZE + TOGGLE_ARROW_GAP
 private val BAR_ICON_SIZE = 22.dp
 
@@ -4852,7 +4860,9 @@ private fun BlockRow(
                 // il segno diceva l'opposto di quello che si vedeva.
                 IconButton(
                     onClick = { viewModel.toggleExpanded(block) },
-                    modifier = Modifier.size(TOGGLE_ARROW_SIZE)
+                    modifier = Modifier
+                        .size(TOGGLE_ARROW_SIZE)
+                        .offset(y = -TOGGLE_ARROW_LIFT)
                 ) {
                     Icon(
                         imageVector = if (block.isExpanded) Icons.Filled.ArrowDropDown else Icons.Filled.ArrowRight,

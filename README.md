@@ -2008,9 +2008,34 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**26/09/2026 — la freccetta del toggle, un pelino più su**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; commit solo
+in locale)*
+
+L'utente, parola per parola:
+> «Ho controllato, il lucchetto c'è.
+>
+> Piccolo buggettino: se vedi in fondo, dopo il secondo database a vista
+> Gallery, c'è un toggle. La freccetta è ancora storta, alzamela di un
+> pelino»
+
+- **[Bug fix]** **Il triangolino del toggle stava un po' basso** rispetto al
+  titolo. Il triangolo è in mezzo al suo quadrato di 24dp e la riga del
+  titolo è in mezzo ai suoi 24, ma le lettere non stanno in mezzo alla loro
+  riga: stanno più su, perché sotto c'è il posto delle gambe di g, p e q.
+  Misurato sul telefono (in pixel, sulla schermata): il triangolo aveva il
+  centro 5 pixel sotto il centro delle minuscole e 9 sotto quello delle
+  maiuscole. Ora sale di 2dp (`TOGGLE_ARROW_LIFT`) e il suo centro sta fra
+  i due, 2 pixel sopra le minuscole e 2 sotto le maiuscole. Vale per ogni
+  toggle, chiuso e aperto
+- Verificato sul telefono, sul toggle "Riga dentro il toggle" in fondo a My
+  Space: prima 2422–2455 (in pixel), dopo 2415–2448, con la "R" del titolo
+  a 2414–2445
+
 **26/09/2026 — il lucchetto accanto ai tre puntini**
-*(Claude Code sul PC; il lucchetto **da verificare sul telefono**, vedi in
-fondo; 141 test passati; commit solo in locale)*
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno
+dall'utente: «Ho controllato, il lucchetto c'è»; 141 test passati; commit
+solo in locale)*
 
 L'utente, parola per parola:
 > «Ho provato, funziona. Mi aggiungi un'icona uguale identica a quella dei
@@ -2029,10 +2054,9 @@ L'utente, parola per parola:
   l'utente ha bloccato ("Untitled", dentro "Titolo tre H3") **è diventato
   un collegamento** col lucchetto accanto al nome — la conversione, fin qui
   provata solo dal test, funziona anche sul telefono
-- **Il lucchetto accanto ai tre puntini non l'ho visto sul telefono**: si
-  vede solo con la pagina aperta, e le pagine bloccate adesso si aprono con
-  l'impronta o la password dell'utente. Build installata; va guardato
-  aprendo "Untitled" in "Titolo tre H3"
+- Il lucchetto accanto ai tre puntini si vede solo con la pagina aperta,
+  e le pagine bloccate si aprono con l'impronta o la password dell'utente:
+  **l'ha guardato l'utente**, aprendo "Untitled" in "Titolo tre H3"
 
 **26/09/2026 — la scheda della galleria di una pagina bloccata**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 141 test
