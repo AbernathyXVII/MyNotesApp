@@ -28,6 +28,7 @@ import com.gabriele.notionlocal.data.notify.NoteAlarms
 import com.gabriele.notionlocal.data.notify.NotificationCommand
 import com.gabriele.notionlocal.data.notify.NotificationCommands
 import com.gabriele.notionlocal.data.settings.AppSettings
+import com.gabriele.notionlocal.data.security.AppLock
 import com.gabriele.notionlocal.data.repository.PageRepository
 import com.gabriele.notionlocal.ui.theme.DEFAULT_PAGE_FONT_SIZE
 import com.gabriele.notionlocal.ui.theme.MAX_PAGE_FONT_SIZE
@@ -823,6 +824,19 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         val wanted = !current.isLocked
         _page.value = current.copy(isLocked = wanted)
         viewModelScope.launch { repository.setLocked(current.id, wanted) }
+    }
+
+    /**
+     * Blocca o sblocca la pagina con la password (vedi `AppLock`). Bloccata,
+     * si richiude subito: il cancello davanti alla pagina chiede di
+     * sbloccarla, così si vede che il blocco c'è.
+     */
+    fun setPasswordLocked(wanted: Boolean) {
+        val current = _page.value ?: return
+        if (current.id == PageEntity.ROOT_PAGE_ID) return
+        _page.value = current.copy(isProtected = wanted)
+        if (wanted) AppLock.lock(current.id)
+        viewModelScope.launch { repository.setProtected(current.id, wanted) }
     }
 
     /** Blocca o sblocca l'impaginazione di un database (vista, ordine, filtro, colonne). */

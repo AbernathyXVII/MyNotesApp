@@ -50,7 +50,7 @@ import kotlinx.serialization.json.Json
         PageEditEntity::class,
         InkStrokeEntity::class
     ],
-    version = 33,
+    version = 34,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -522,6 +522,16 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /**
+         * **Le pagine bloccate con la password** (26/09/2026): la colonna
+         * `isProtected`, spenta per tutte le pagine che c'erano.
+         */
+        private val MIGRATION_33_34 = object : Migration(33, 34) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE pages ADD COLUMN isProtected INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        /**
          * Solo per i test: chiude il database e lo dimentica, così il
          * `getInstance` dopo riapre il file da capo (e ne esegue le
          * migrazioni). Senza, il secondo test troverebbe il database del
@@ -567,7 +577,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_29_30,
                         MIGRATION_30_31,
                         MIGRATION_31_32,
-                        MIGRATION_32_33
+                        MIGRATION_32_33,
+                        MIGRATION_33_34
                     )
                     .build()
                 INSTANCE = instance

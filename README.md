@@ -617,6 +617,11 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   della pagina della riga, all'inizio e alla fine), e la fine di timer e
   fasi del pomodoro. Arrivano anche ad app chiusa, e toccandole si apre la
   pagina
+- **Pagine e database bloccati** (dal 26/09/2026): "Lock with password"
+  nei tre puntini; si aprono con l'impronta o con la password, scelta la
+  prima volta e cambiata o tolta da Settings. Chiudono anche quello che
+  hanno dentro; un database bloccato dentro una pagina diventa un
+  collegamento
 - **Timeline**: il calendario srotolato. Un asse del tempo che scorre
   in orizzontale, una riga per pagina con la barra intera (non spezzata
   a fine settimana), i nomi in una colonna ferma a sinistra, i fine
@@ -715,6 +720,13 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
 
 ## Limiti noti
 
+- **Pagine bloccate con la password** (dal 26/09/2026):
+  - l'impronta c'è solo da Android 11 in su; prima, solo la password
+  - una notifica ("/notification" o una data con "Include notification")
+    mostra il suo testo anche se sta in una pagina bloccata
+  - dimenticata la password, la si rifà col blocco schermo del telefono:
+    se il telefono non ne ha uno, le pagine bloccate restano chiuse
+  - il database che diventa un collegamento è provato solo dal test
 - **Un pezzo di testo più grande allunga tutte le righe del suo
   gruppo**, non solo la sua (dal 25/09/2026, con la dimensione sul testo
   selezionato). Le righe di testo scorrevole consecutive stanno in un
@@ -1994,6 +2006,73 @@ Le voci nate nelle sessioni cloud stanno qui in cima, la più recente
 per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
+
+**26/09/2026 — bloccare pagine e database con la password o l'impronta**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno, tranne il
+database che diventa un collegamento, vedi in fondo; 140 test passati;
+commit solo in locale)*
+
+Richiesta dell'utente, parola per parola:
+> «Possibilità di bloccare pagine e database con una password o con
+> l'impronta (nelle opzioni dell'icona dei tre puntini in alto a destra).
+> Se blocco un database, fai sì che diventi una pagina come se avessi
+> usato il Turn into page, e poi mi chiede la password o l'impronta se
+> voglio aprirla»
+
+- **[Nuova funzionalità]** **"Lock with password"** nei tre puntini di ogni
+  pagina e di ogni database, sotto "Lock page", con l'icona dell'impronta e
+  l'interruttore. Non c'è in My Space: bloccarla chiuderebbe l'app intera.
+  **La prima volta si sceglie la password** (almeno 4 caratteri, scritta
+  due volte) e se aprire anche con l'impronta; dopo, bloccare è immediato.
+  Bloccata, la pagina si richiude subito: al suo posto un lucchetto, e
+  **la richiesta dell'impronta parte da sola**; "Use password" passa alla
+  password. Con la pagina si chiude **tutto quello che ha dentro**:
+  sottopagine, database, pagine delle righe. Nella barra laterale non
+  mostra più cosa contiene, la ricerca ne trova solo il titolo (senza il
+  testo), e il suo collegamento ha accanto un piccolo lucchetto. Aperta,
+  resta aperta finché ci si muove al suo interno; andando altrove, o
+  uscendo dall'app per più di 30 secondi, si richiude. Togliere il blocco
+  (l'interruttore spento) chiede di nuovo impronta o password
+- **[Nuova funzionalità]** **Un database bloccato, dentro una pagina,
+  diventa un collegamento**, come con "Turn into page", e aprirlo chiede
+  impronta o password. Si chiudono anche le sue righe e le sue viste
+  collegate: una vista collegata dentro una pagina aperta mostra, al posto
+  della tabella, la richiesta di sbloccarlo
+- **[Nuova funzionalità]** In Settings, sotto "Time zone", **"Password for
+  locked pages"** (Set / Not set): l'impronta sì o no, **"Change
+  password"** (prima si conferma che si è noi) e **"Remove password"**,
+  che funziona solo quando nessuna pagina è più bloccata — altrimenti
+  resterebbero chiuse per sempre. Dalla finestra della password,
+  **"Forgot the password?"** chiede il blocco schermo del telefono (PIN,
+  sequenza o impronta) e poi una password nuova
+- **[Progetto]** **Database alla versione 34**: `pages.isProtected`. La
+  password non si salva: si tiene solo un hash PBKDF2 col suo sale, nelle
+  preferenze dell'app (`AppLock`, `PasswordHash`). Il cancello `LockGate`
+  sta davanti a ogni pagina e database a schermo intero (`AppNavHost`) e
+  davanti ai database dentro le pagine; `lockingPageOf` risale
+  collegamenti, righe e viste collegate per trovare chi blocca cosa. La
+  ricerca e la barra laterale filtrano in `PageRepository`; le anteprime
+  delle schede della galleria saltano le pagine bloccate. L'impronta è il
+  `BiometricPrompt` di sistema (permesso `USE_BIOMETRIC`). Test
+  `PageLockTest` e `MigrationTest` (33→34, col file `v33.sql`)
+- **[Bug fix]** (trovato provando) Tornando indietro da una pagina bloccata
+  appena aperta, la richiesta dell'impronta ripartiva dalla schermata che
+  se ne stava andando: ora parte solo quando la schermata è davvero
+  davanti
+- Verificato sul telefono: la prima volta la finestra per scegliere la
+  password → pagina bloccata, col lucchetto; **l'impronta l'ha provata
+  l'utente**: «L'ho fatto io, ed ho sbloccato la pagina con l'impronta».
+  Password sbagliata → "Wrong password"; quella giusta → la pagina si
+  apre; indietro → nessuna richiesta; riaperta → la richiesta torna; il
+  lucchetto accanto al collegamento in My Space; togliere il blocco dal
+  menu chiede di confermare. Alla fine Settings → "Remove password" →
+  "Password removed", "Not set": **la password di prova non c'è più**, e
+  la prima volta che l'utente blocca qualcosa sceglie la sua. **Il
+  database che diventa un collegamento non è stato provato sul
+  telefono**: lo prova il test
+- Notato: i disegni della pagina "Titolo tre H3" erano spariti già prima
+  dell'installazione; li aveva cancellati l'utente («L'ho fatto io»), non
+  è un errore
 
 **26/09/2026 — svuotare la cache, cancellare tutto il contenuto**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno, tranne la
@@ -6142,8 +6221,9 @@ le finestre che apre. Chi lo usa passa solo l'id del blocco.
 
 ## Nota tecnica
 
-Lo schema è alla **versione 33** (la 33, del 25/09/2026, aggiunge la
-tabella `ink_strokes` dei disegni a mano; la 32, dello stesso giorno,
+Lo schema è alla **versione 34** (la 34, del 26/09/2026, aggiunge
+`pages.isProtected`, le pagine bloccate con la password; la 33, del
+25/09/2026, aggiunge la tabella `ink_strokes` dei disegni a mano; la 32, dello stesso giorno,
 aggiunge `blocks.notifyAt`, l'ora delle righe "/notification"; la 31, dello
 stesso giorno, sposta font e
 corpo dalla pagina al testo, senza cambiare la forma delle tabelle; la

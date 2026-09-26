@@ -376,6 +376,7 @@ fun DatabaseViewScreen(
     var moveExclusions by remember { mutableStateOf<PageRepository.MoveExclusions?>(null) }
     var confirmTrash by remember { mutableStateOf(false) }
     var showDuplicate by remember { mutableStateOf(false) }
+    var passwordLockRequest by remember { mutableStateOf<Boolean?>(null) }
 
     // Se questo database è richiamato come pagina da qualche parte:
     // solo allora "Turn into database" ha un posto in cui rimetterlo.
@@ -488,6 +489,10 @@ fun DatabaseViewScreen(
                 },
                 onToggleViewLock = { menuViewModel.toggleViewLocked() },
                 onToggleLock = { menuViewModel.toggleLocked() },
+                onTogglePasswordLock = {
+                    showPageOptions = false
+                    passwordLockRequest = !current.isProtected
+                },
                 onUpdates = {
                     showPageOptions = false
                     onOpenUpdates(current.id)
@@ -502,6 +507,13 @@ fun DatabaseViewScreen(
                 } else {
                     null
                 }
+            )
+        }
+        passwordLockRequest?.let { wanted ->
+            PasswordLockFlow(
+                wanted = wanted,
+                onFinished = { passwordLockRequest = null },
+                apply = { menuViewModel.setPasswordLocked(it) }
             )
         }
 

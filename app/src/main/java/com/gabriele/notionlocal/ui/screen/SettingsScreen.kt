@@ -1,5 +1,12 @@
 package com.gabriele.notionlocal.ui.screen
 
+import androidx.compose.material.icons.filled.Fingerprint
+import androidx.compose.material3.Switch
+import androidx.compose.foundation.layout.Row
+import androidx.compose.ui.Alignment
+import com.gabriele.notionlocal.data.AppDatabase
+import com.gabriele.notionlocal.data.security.AppLock
+import com.gabriele.notionlocal.ui.i18n.LockStrings
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import android.app.Activity
@@ -82,7 +89,7 @@ import java.time.ZoneId
 import java.time.format.TextStyle
 
 /** Quale finestra di scelta è aperta. */
-private enum class SettingsDialog { THEME, SOUND, MUTE_FOR, ANIMATIONS, NUMBER, DATE, LANGUAGE, TIME_ZONE, CLEAR_CACHE, DELETE_ALL }
+private enum class SettingsDialog { THEME, SOUND, MUTE_FOR, ANIMATIONS, NUMBER, DATE, LANGUAGE, TIME_ZONE, LOCK_PASSWORD, CLEAR_CACHE, DELETE_ALL }
 
 /**
  * Le impostazioni. Ogni scelta si salva appena la si fa e vale subito: il
@@ -183,6 +190,15 @@ fun SettingsScreen(onBack: () -> Unit) {
                 onClick = { dialog = SettingsDialog.TIME_ZONE }
             )
 
+            // La password delle pagine bloccate (dal 26/09/2026): cambiarla,
+            // toglierla, e se si apre anche con l'impronta.
+            SettingsItem(
+                LockStrings.setPasswordTitle,
+                icon = Icons.Filled.Fingerprint,
+                value = if (AppLock.hasPassword) LockStrings.passwordSet else LockStrings.passwordNotSet,
+                onClick = { dialog = SettingsDialog.LOCK_PASSWORD }
+            )
+
             // **Sotto il fuso orario, come ha chiesto l'utente** (26/09/2026):
             // svuotare la cache e cancellare tutto il contenuto. Separate
             // dal resto da una riga: non sono scelte, sono azioni.
@@ -243,6 +259,7 @@ fun SettingsScreen(onBack: () -> Unit) {
             onDismiss = { dialog = null }
         )
         SettingsDialog.TIME_ZONE -> TimeZoneDialog(onDismiss = { dialog = null })
+        SettingsDialog.LOCK_PASSWORD -> LockPasswordSettings(onDismiss = { dialog = null })
         SettingsDialog.CLEAR_CACHE -> AlertDialog(
             onDismissRequest = { dialog = null },
             title = { Text(Strings.clearCacheTitle) },
@@ -321,6 +338,75 @@ private fun DeleteAllDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
         },
         dismissButton = { TextButton(onClick = onDismiss, enabled = !working) { Text(Strings.cancel) } }
     )
+}
+
+/**
+ * **La password delle pagine bloccate**, dalle impostazioni. Senza password
+ * si sceglie; con la password: l'impronta sì o no, cambiarla (prima si
+ * conferma che si è noi) e toglierla — solo quando nessuna pagina è più
+ * bloccata, altrimenti quelle resterebbero chiuse per sempre.
+ */
+@Composable
+private fun LockPasswordSettings(onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    // 0 il menu, 1 conferma per cambiarla, 2 password nuova, 3 conferma per toglierla
+    var step by remember { mutableStateOf(if (AppLock.hasPassword) 0 else 2) }
+    when (step) {
+        0 -> AlertDialog(
+            onDismissRequest = onDismiss,
+            icon = { Icon(Icons.Filled.Fingerprint, contentDescription = null) },
+            title = { Text(LockStrings.setPasswordTitle) },
+            text = {
+                Column {
+                    if (Biometrics.available(context)) {
+                        var fingerprint by remember { mutableStateOf(AppLock.biometricEnabled) }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(LockStrings.alsoFingerprint, modifier = Modifier.weight(1f))
+                            Switch(checked = fingerprint, onCheckedChange = {
+                                fingerprint = it
+                                AppLock.biometricEnabled = it
+                            })
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                    TextButton(onClick = { step = 1 }) { Text(LockStrings.changePassword) }
+                    TextButton(onClick = {
+                        scope.launch {
+                            val locked = withContext(Dispatchers.IO) {
+                                AppDatabase.getInstance(context).pageDao().countProtected()
+                            }
+                            if (locked > 0) {
+                                Toast.makeText(context, LockStrings.removePasswordBlocked, Toast.LENGTH_LONG).show()
+                            } else {
+                                step = 3
+                            }
+                        }
+                    }) { Text(LockStrings.removePassword, color = MaterialTheme.colorScheme.error) }
+                }
+            },
+            confirmButton = { TextButton(onClick = onDismiss) { Text(Strings.done) } }
+        )
+        1 -> UnlockPrompt(onUnlocked = { step = 2 }, onDismiss = onDismiss)
+        2 -> SetPasswordDialog(
+            onSaved = {
+                Toast.makeText(context, LockStrings.passwordChanged, Toast.LENGTH_SHORT).show()
+                onDismiss()
+            },
+            onDismiss = onDismiss
+        )
+        3 -> UnlockPrompt(
+            onUnlocked = {
+                AppLock.removePassword()
+                Toast.makeText(context, LockStrings.passwordRemoved, Toast.LENGTH_SHORT).show()
+                onDismiss()
+            },
+            onDismiss = onDismiss
+        )
+    }
 }
 
 /**

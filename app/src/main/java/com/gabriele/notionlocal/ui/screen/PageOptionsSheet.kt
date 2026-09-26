@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Draw
+import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.runtime.getValue
@@ -60,6 +61,7 @@ import com.gabriele.notionlocal.viewmodel.ViewModelFactory
 import com.gabriele.notionlocal.data.settings.AppSettings
 import com.gabriele.notionlocal.data.settings.TrashPolicy
 import com.gabriele.notionlocal.ui.i18n.InkStrings
+import com.gabriele.notionlocal.ui.i18n.LockStrings
 import com.gabriele.notionlocal.ui.i18n.Strings
 import com.gabriele.notionlocal.ui.theme.DarkSheet
 import com.gabriele.notionlocal.ui.theme.DarkSurface
@@ -99,6 +101,12 @@ fun PageOptionsSheet(
      * tenere i disegni — e null altrove, e allora la voce non c'è.
      */
     onDraw: (() -> Unit)? = null,
+    /**
+     * **"Blocca con password"** (dal 26/09/2026): per aprire la pagina (o
+     * il database) servono la password o l'impronta. Null sulla pagina
+     * principale, che non si blocca: chiuderebbe l'app intera.
+     */
+    onTogglePasswordLock: (() -> Unit)? = null,
     /**
      * Solo per un database che da qualche parte è mostrato come pagina
      * (dopo "Turn into page"): lo rimette dentro la pagina che lo
@@ -226,6 +234,17 @@ fun PageOptionsSheet(
                     trailing = { Switch(checked = page.isLocked, onCheckedChange = { onToggleLock() }) },
                     onClick = onToggleLock
                 )
+                if (onTogglePasswordLock != null) {
+                    HorizontalDivider()
+                    OptionRow(
+                        icon = Icons.Filled.Fingerprint,
+                        label = LockStrings.passwordLock,
+                        trailing = {
+                            Switch(checked = page.isProtected, onCheckedChange = { onTogglePasswordLock() })
+                        },
+                        onClick = onTogglePasswordLock
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.size(12.dp))

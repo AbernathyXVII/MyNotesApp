@@ -12,6 +12,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import com.gabriele.notionlocal.data.ink.InkPrefs
+import com.gabriele.notionlocal.data.security.AppLock
+import android.os.SystemClock
 import com.gabriele.notionlocal.data.notify.NoteAlarms
 import com.gabriele.notionlocal.data.notify.NotificationPermission
 import com.gabriele.notionlocal.data.notify.NotificationTarget
@@ -44,6 +46,8 @@ class MainActivity : ComponentActivity() {
         WidgetStore.init(applicationContext)
         // Gli strumenti del disegno, come li si è lasciati.
         InkPrefs.init(applicationContext)
+        // La password delle pagine bloccate, e quali sono aperte adesso.
+        AppLock.init(applicationContext)
         // Le notifiche: i canali, e la sveglia rimessa alla prossima.
         NoteAlarms.init(applicationContext)
         NotificationPermission.requester = ::askNotificationPermission
@@ -82,8 +86,15 @@ class MainActivity : ComponentActivity() {
         NotificationTarget.takeFrom(intent)
     }
 
+    override fun onStart() {
+        super.onStart()
+        // Rimasta fuori a lungo: le pagine bloccate si richiudono.
+        AppLock.onAppStarted(SystemClock.elapsedRealtime())
+    }
+
     override fun onStop() {
         super.onStop()
+        AppLock.onAppStopped(SystemClock.elapsedRealtime())
         // Uscendo dall'app, la sveglia giusta: quello che è cambiato mentre
         // era aperta deve suonare anche ad app chiusa.
         NoteAlarms.reschedule()

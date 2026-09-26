@@ -221,7 +221,10 @@ interface DatabaseDao {
             "blocks.isChecked AS isChecked, blocks.indentLevel AS indentLevel, " +
             "blocks.numberStartsAt AS numberStartsAt, blocks.orderIndex AS orderIndex " +
             "FROM database_rows JOIN blocks ON blocks.pageId = database_rows.linkedPageId " +
-            "WHERE database_rows.pageId = :pageId AND blocks.parentBlockId IS NULL " +
+            // Le pagine bloccate con la password non mostrano il loro testo
+            // nella scheda della galleria.
+            "JOIN pages ON pages.id = database_rows.linkedPageId " +
+            "WHERE database_rows.pageId = :pageId AND blocks.parentBlockId IS NULL AND pages.isProtected = 0 " +
             "ORDER BY database_rows.id, blocks.orderIndex"
     )
     fun observeRowPreviewBlocks(pageId: String): Flow<List<RowPreviewBlock>>

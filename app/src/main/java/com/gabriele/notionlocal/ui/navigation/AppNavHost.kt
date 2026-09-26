@@ -37,6 +37,7 @@ import com.gabriele.notionlocal.data.settings.AppSettings
 import com.gabriele.notionlocal.data.settings.StartupMode
 import com.gabriele.notionlocal.data.settings.TrashPolicy
 import com.gabriele.notionlocal.ui.screen.DatabaseViewScreen
+import com.gabriele.notionlocal.ui.screen.LockGate
 import com.gabriele.notionlocal.ui.screen.FavoritesScreen
 import com.gabriele.notionlocal.ui.screen.NoInsets
 import com.gabriele.notionlocal.ui.screen.PageEditorScreen
@@ -279,7 +280,14 @@ private fun AppRoutes(
         popExitTransition = { exit }
     ) {
 
+        // **Il cancello delle pagine bloccate con la password** (dal
+        // 26/09/2026) sta davanti a ogni pagina e database a schermo
+        // intero: da qualunque parte ci si arrivi — un collegamento, la
+        // barra, la ricerca, i preferiti, una notifica — prima di vederla
+        // si chiede impronta o password (vedi `LockGate`). La pagina
+        // principale non si blocca, ma passandoci le altre si richiudono.
         composable(Routes.HOME) {
+            LockGate(PageEntity.ROOT_PAGE_ID, factory.pageRepository, fullScreen = true) {
             PageEditorScreen(
                 pageId = PageEntity.ROOT_PAGE_ID,
                 factory = factory,
@@ -290,6 +298,7 @@ private fun AppRoutes(
                 onNavigateToDatabase = { pageId -> navController.navigate(Routes.databaseView(pageId)) },
                 onOpenSidebar = onOpenSidebar
             )
+            }
         }
 
         composable(
@@ -297,6 +306,7 @@ private fun AppRoutes(
             arguments = listOf(navArgument("pageId") { type = NavType.StringType })
         ) { backStackEntry ->
             val pageId = backStackEntry.arguments?.getString("pageId") ?: return@composable
+            LockGate(pageId, factory.pageRepository, fullScreen = true, onBack = { navController.popBackStack() }) {
             PageEditorScreen(
                 pageId = pageId,
                 factory = factory,
@@ -307,6 +317,7 @@ private fun AppRoutes(
                 onNavigateToDatabase = { linkedId -> navController.navigate(Routes.databaseView(linkedId)) },
                 onOpenSidebar = onOpenSidebar
             )
+            }
         }
 
         composable(
@@ -326,6 +337,7 @@ private fun AppRoutes(
             arguments = listOf(navArgument("pageId") { type = NavType.StringType })
         ) { backStackEntry ->
             val pageId = backStackEntry.arguments?.getString("pageId") ?: return@composable
+            LockGate(pageId, factory.pageRepository, fullScreen = true, isDatabase = true, onBack = { navController.popBackStack() }) {
             DatabaseViewScreen(
                 pageId = pageId,
                 factory = factory,
@@ -337,6 +349,7 @@ private fun AppRoutes(
                 onOpenDatabase = { id -> navController.navigate(Routes.databaseView(id)) },
                 onOpenSidebar = onOpenSidebar
             )
+            }
         }
 
         composable(Routes.SEARCH) {

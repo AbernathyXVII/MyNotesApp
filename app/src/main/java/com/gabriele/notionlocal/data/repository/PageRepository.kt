@@ -14,6 +14,7 @@ import com.gabriele.notionlocal.data.entity.RichTextSpan
 import com.gabriele.notionlocal.data.entity.TableCellEntity
 import com.gabriele.notionlocal.data.entity.plainText
 import com.gabriele.notionlocal.data.ink.remapAnchor
+import com.gabriele.notionlocal.data.security.AppLock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -299,6 +300,8 @@ class PageRepository(private val db: AppDatabase) {
      */
     suspend fun treeChildren(pageId: String): List<PageTreeNode> {
         val page = pageDao.getById(pageId) ?: return emptyList()
+        // Bloccata con la password e non aperta: cosa contiene non si vede.
+        if (page.isProtected && !AppLock.isUnlocked(page.id)) return emptyList()
         // Le righe di un database semplice non sono pagine: nell'albero
         // il database è una foglia, e le righe si guardano aprendolo.
         if (page.isSimpleDatabase) return emptyList()
@@ -359,7 +362,7 @@ class PageRepository(private val db: AppDatabase) {
         emoji = page.icon,
         iconImage = page.iconImage,
         isDatabase = page.isDatabase,
-        hasChildren = if (page.isSimpleDatabase) {
+        hasChildren = if (page.isSimpleDatabase || (page.isProtected && !AppLock.isUnlocked(page.id))) {
             false
         } else if (page.isDatabase) {
             db.databaseDao().countRows(page.id) > 0
@@ -496,7 +499,29 @@ class PageRepository(private val db: AppDatabase) {
                 )
             }
         }
-        return hits.values.toList()
+        // **Le pagine bloccate con la password** (dal 26/09/2026): del loro
+        // contenuto non si mostra niente. Di una pagina bloccata resta il
+        // titolo, se è lui che corrisponde — si vede comunque nella barra
+        // laterale; quello che sta dentro (sottopagine, righe) sparisce,
+        // come sparisce dalla barra.
+        val closedBy = HashMap<String, String?>()
+        suspend fun closedBy(id: String): String? = closedBy.getOrPut(id) {
+            lockingPageOf(id)?.takeIf { !AppLock.isUnlocked(it) }
+        }
+        return hits.entries.mapNotNull { (key, hit) ->
+            val containerId = if (key.startsWith("row:")) {
+                db.databaseDao().getRowById(key.removePrefix("row:"))?.pageId
+            } else {
+                hit.pageId
+            } ?: return@mapNotNull hit
+            val lockedBy = closedBy(containerId) ?: return@mapNotNull hit
+            when {
+                key.startsWith("row:") -> null
+                lockedBy == containerId && hit.title.contains(needle, ignoreCase = true) ->
+                    hit.copy(snippet = null, matchStart = 0, matchLength = 0)
+                else -> null
+            }
+        }
     }
 
     private data class Snippet(val text: String, val start: Int, val length: Int)
@@ -1668,6 +1693,52 @@ class PageRepository(private val db: AppDatabase) {
     /** Cambia solo il tipo di un blocco, senza riscriverne il testo. */
     suspend fun setBlockType(blockId: String, type: BlockType) =
         blockDao.setType(blockId, type)
+
+    /**
+     * **Blocca o sblocca una pagina con la password.** Un database bloccato
+     * che si vede dentro una pagina ci diventa un collegamento, come con
+     * "Turn into page", richiesto così dall'utente: altrimenti le sue righe
+     * resterebbero lì sotto gli occhi di tutti. Sbloccandolo resta un
+     * collegamento; per rimetterlo dentro c'è "Turn into database".
+     */
+    suspend fun setProtected(pageId: String, protected: Boolean) {
+        pageDao.setProtected(pageId, protected)
+        if (protected && pageDao.getById(pageId)?.isDatabase == true) {
+            blockDao.retypeLinks(pageId, BlockType.DATABASE_LINK, BlockType.PAGE_LINK)
+        }
+        AppLock.protectionChanged()
+    }
+
+    suspend fun countProtectedPages(): Int = pageDao.countProtected()
+
+    /**
+     * **La pagina bloccata che chiude questa**: lei stessa, o una che la
+     * contiene — risalendo i collegamenti, dal database di una riga alla
+     * pagina che richiama il database, fino in cima; e per una vista
+     * collegata, il database che mostra. Null se nessuna è bloccata.
+     */
+    suspend fun lockingPageOf(pageId: String): String? {
+        val databaseDao = db.databaseDao()
+        val seen = HashSet<String>()
+        var frontier = listOf(pageId)
+        while (frontier.isNotEmpty()) {
+            val next = mutableListOf<String>()
+            for (id in frontier) {
+                if (!seen.add(id)) continue
+                val page = pageDao.getById(id) ?: continue
+                if (page.isProtected) return id
+                blockDao.getBlocksLinkingTo(id).forEach { next += it.pageId }
+                databaseDao.getRowsLinkingTo(id).forEach { next += it.pageId }
+                page.sourceDatabaseId?.let { next += it }
+            }
+            frontier = next
+        }
+        return null
+    }
+
+    /** Se adesso questa pagina non si può leggere: bloccata (lei o chi la contiene) e non aperta. */
+    suspend fun isLockedNow(pageId: String): Boolean =
+        lockingPageOf(pageId)?.let { !AppLock.isUnlocked(it) } ?: false
 
     /**
      * **La riga diventa una notifica** (dal 25/09/2026): tipo e ora

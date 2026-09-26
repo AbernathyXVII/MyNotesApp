@@ -15,6 +15,7 @@ import com.gabriele.notionlocal.data.entity.GalleryCardSize
 import com.gabriele.notionlocal.data.entity.PageEntity
 import com.gabriele.notionlocal.data.entity.MULTI_VALUE_SEPARATOR
 import com.gabriele.notionlocal.data.entity.parseColorCell
+import com.gabriele.notionlocal.data.security.AppLock
 import com.gabriele.notionlocal.data.entity.SORT_BY_NAME
 import com.gabriele.notionlocal.data.entity.parseDateRange
 import com.gabriele.notionlocal.data.entity.SelectOption
@@ -685,6 +686,18 @@ class DatabaseViewModel(
         val wanted = !current.isLocked
         _page.value = current.copy(isLocked = wanted)
         viewModelScope.launch { pageRepository.setLocked(current.id, wanted) }
+    }
+
+    /**
+     * Blocca o sblocca il database con la password. Bloccato, dove lo si
+     * vedeva dentro una pagina diventa un collegamento, come con "Turn into
+     * page" (vedi `PageRepository.setProtected`), e si richiude subito.
+     */
+    fun setPasswordLocked(wanted: Boolean) {
+        val current = _page.value ?: return
+        _page.value = current.copy(isProtected = wanted)
+        if (wanted) AppLock.lock(current.id)
+        viewModelScope.launch { pageRepository.setProtected(current.id, wanted) }
     }
 
     fun toggleViewLocked() {

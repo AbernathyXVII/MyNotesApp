@@ -313,6 +313,11 @@ data class PageEntity(
     // proprio per poter continuare a lavorare sui dati senza
     // scombinarla per sbaglio.
     var isViewLocked: Boolean = false,
+    // **Bloccata con la password** (dal 26/09/2026): per aprirla servono la
+    // password dell'app o l'impronta (vedi `AppLock`). Vale anche per quello
+    // che contiene: le sue sottopagine, le righe se è un database. Diverso
+    // da `isLocked`, che lascia leggere e impedisce solo di scrivere.
+    var isProtected: Boolean = false,
     // Quando è stata buttata nel cestino, o null se non ci sta. La
     // pagina **resta nel database** con tutto il suo contenuto: qui si
     // cancella per davvero solo il collegamento che la mostrava, così

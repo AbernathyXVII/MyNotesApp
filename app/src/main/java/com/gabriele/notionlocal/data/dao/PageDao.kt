@@ -100,6 +100,13 @@ interface PageDao {
     @Query("UPDATE pages SET isLocked = :locked WHERE id = :pageId")
     suspend fun setLocked(pageId: String, locked: Boolean)
 
+    /** Blocca o sblocca una pagina con la password (vedi `PageEntity.isProtected`). */
+    @Query("UPDATE pages SET isProtected = :locked WHERE id = :pageId")
+    suspend fun setProtected(pageId: String, locked: Boolean)
+
+    @Query("SELECT COUNT(*) FROM pages WHERE isProtected = 1")
+    suspend fun countProtected(): Int
+
     @Query("UPDATE pages SET isViewLocked = :locked WHERE id = :pageId")
     suspend fun setViewLocked(pageId: String, locked: Boolean)
 

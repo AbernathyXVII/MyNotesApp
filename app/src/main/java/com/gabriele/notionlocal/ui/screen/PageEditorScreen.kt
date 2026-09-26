@@ -119,11 +119,13 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Notes
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.runtime.saveable.rememberSaveable
 import com.gabriele.notionlocal.data.entity.InkStrokeEntity
 import com.gabriele.notionlocal.data.ink.InkPrefs
 import com.gabriele.notionlocal.data.ink.resolveAnchor
 import com.gabriele.notionlocal.viewmodel.InkViewModel
+import com.gabriele.notionlocal.ui.i18n.LockStrings
 import com.gabriele.notionlocal.data.notify.NotificationCommand
 import com.gabriele.notionlocal.data.notify.NotificationCommands
 import com.gabriele.notionlocal.data.notify.NotificationPermission
@@ -1003,6 +1005,8 @@ fun PageEditorScreen(
     var moveExclusions by remember { mutableStateOf<PageRepository.MoveExclusions?>(null) }
     var confirmTrash by remember { mutableStateOf(false) }
     var showDuplicate by remember { mutableStateOf(false) }
+    // "Blocca con password": bloccare (true) o sbloccare (false), mentre se ne occupano le finestre.
+    var passwordLockRequest by remember { mutableStateOf<Boolean?>(null) }
 
     // **Il cursore che cambia riga chiude la modifica in corso.**
     //
@@ -2177,7 +2181,21 @@ fun PageEditorScreen(
                         focusManager.clearFocus()
                         drawing = true
                     }
+                },
+                onTogglePasswordLock = if (isRootPage) null else {
+                    {
+                        showPageOptions = false
+                        focusManager.clearFocus()
+                        passwordLockRequest = !current.isProtected
+                    }
                 }
+            )
+        }
+        passwordLockRequest?.let { wanted ->
+            PasswordLockFlow(
+                wanted = wanted,
+                onFinished = { passwordLockRequest = null },
+                apply = { viewModel.setPasswordLocked(it) }
             )
         }
 
@@ -4575,6 +4593,10 @@ private fun BlockRow(
         }.collectAsStateWithLifecycle(initialValue = null)
         val isLinkedView = shownPage?.sourceDatabaseId != null
 
+        // Un database bloccato con la password (o una vista collegata a
+        // lui) dentro una pagina aperta: al suo posto la richiesta di
+        // sbloccarlo.
+        LockGate(databasePageId, factory.pageRepository, fullScreen = false, isDatabase = true) {
         DatabaseContent(
             pageId = databasePageId,
             factory = factory,
@@ -4601,6 +4623,7 @@ private fun BlockRow(
             // mentre a schermo intero è attaccata.
             modifier = Modifier.padding(start = (depth * 20).dp, top = 8.dp, bottom = 8.dp)
         )
+        }
 
         if (confirmDatabaseDeletion) {
             AlertDialog(
@@ -5480,6 +5503,14 @@ private fun PageLinkBlockContent(
                 } else {
                     Modifier
                 }
+            )
+        }
+        if (linkedPage?.isProtected == true) {
+            Icon(
+                Icons.Filled.Lock,
+                contentDescription = LockStrings.passwordLock,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(16.dp)
             )
         }
         // **Niente cestino a destra** (tolto il 26/09/2026, su richiesta
