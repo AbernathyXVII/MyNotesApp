@@ -164,6 +164,8 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.runtime.compositionLocalOf
+import com.gabriele.notionlocal.ui.i18n.NotebookStrings
 import androidx.compose.ui.draw.alpha
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -934,7 +936,6 @@ private fun groupIntoRenderItems(blocks: List<BlockEntity>): List<RenderItem> {
     return result
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun PageEditorScreen(
     pageId: String,
@@ -947,6 +948,40 @@ fun PageEditorScreen(
     onOpenSidebar: () -> Unit = {},
     viewModel: PageEditorViewModel = viewModel(factory = factory)
 ) {
+    // **Una pagina di un quaderno** (dal 26/09/2026) è la stessa pagina con
+    // lo stesso editor, ma i menu non offrono quello che la legherebbe al
+    // menu principale — sottopagine, database, collegamenti — e in cima ha
+    // l'intestazione di OneNote invece di icona e copertina.
+    val page by viewModel.page.collectAsStateWithLifecycle()
+    CompositionLocalProvider(LocalInNotebook provides (page?.notebookSectionId != null)) {
+        PageEditorContent(
+            pageId = pageId,
+            factory = factory,
+            onBack = onBack,
+            onOpenSearch = onOpenSearch,
+            onOpenUpdates = onOpenUpdates,
+            onNavigateToPage = onNavigateToPage,
+            onNavigateToDatabase = onNavigateToDatabase,
+            onOpenSidebar = onOpenSidebar,
+            viewModel = viewModel
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+private fun PageEditorContent(
+    pageId: String,
+    factory: ViewModelFactory,
+    onBack: () -> Unit,
+    onOpenSearch: () -> Unit,
+    onOpenUpdates: (String) -> Unit,
+    onNavigateToPage: (String) -> Unit,
+    onNavigateToDatabase: (String) -> Unit,
+    onOpenSidebar: () -> Unit,
+    viewModel: PageEditorViewModel
+) {
+    val inNotebook = LocalInNotebook.current
     LaunchedEffect(pageId) {
         viewModel.load(pageId)
         // Gira anche tornando su questa pagina dall'indietro: se la
@@ -1077,6 +1112,7 @@ fun PageEditorScreen(
 
     val isRootPage = pageId == PageEntity.ROOT_PAGE_ID
     var confirmDeleteForever by remember { mutableStateOf(false) }
+    var confirmNotebookDelete by remember { mutableStateOf(false) }
 
     // Il menu del blocco aperto **senza la barra**: tenendo premuto un
     // collegamento a una pagina, o dai sei puntini di un database dentro
@@ -1473,7 +1509,7 @@ fun PageEditorScreen(
                 // La copertina sta sopra a tutto, a tutta larghezza, e si
                 // tocca per cambiarla. Senza copertina non occupa spazio:
                 // per metterla c'è il pulsante accanto all'icona.
-                val coverImage = page?.coverImage
+                val coverImage = if (inNotebook) null else page?.coverImage
                 // Senza copertina, in cima si lascia la fascia dei
                 // pulsanti sospesi: altrimenti indietro e tre puntini
                 // finirebbero sopra l'icona e su "Add cover".
@@ -1555,7 +1591,7 @@ fun PageEditorScreen(
                     }
                 }
 
-                Row(
+                if (!inNotebook) Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp, vertical = 8.dp),
@@ -1644,6 +1680,20 @@ fun PageEditorScreen(
                     keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                     textStyle = MaterialTheme.typography.titleLarge.copy(color = NotionWhite),
                     cursorBrush = SolidColor(NotionWhite),
+                    // Una pagina di un quaderno nasce senza titolo: al suo
+                    // posto, grigio, "Untitled page", come in OneNote.
+                    decorationBox = { field ->
+                        Box {
+                            if (inNotebook && titleText.isEmpty()) {
+                                Text(
+                                    NotebookStrings.untitledPage,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    color = NotionGray400
+                                )
+                            }
+                            field()
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp, vertical = 4.dp)
@@ -1654,6 +1704,9 @@ fun PageEditorScreen(
                             if (!it.isFocused) viewModel.closeEditSession()
                         }
                 )
+                if (inNotebook) {
+                    page?.let { NotebookPageStamp(it.createdAt) }
+                }
 
                 Spacer(modifier = Modifier.size(12.dp))
 
@@ -2033,6 +2086,18 @@ fun PageEditorScreen(
         }
     }
 
+    if (confirmNotebookDelete) {
+        DeleteForeverDialog(
+            title = NotebookStrings.deletePageTitle,
+            text = NotebookStrings.deletePageText,
+            onDismiss = { confirmNotebookDelete = false },
+            onConfirm = {
+                confirmNotebookDelete = false
+                viewModel.deletePermanently(imageStore) { onBack() }
+            }
+        )
+    }
+
     if (confirmDeleteForever) {
         DeleteForeverDialog(
             onDismiss = { confirmDeleteForever = false },
@@ -2175,6 +2240,7 @@ fun PageEditorScreen(
         if (showPageOptions) {
             PageOptionsSheet(
                 page = current,
+                inNotebook = inNotebook,
                 textStats = textStats,
                 onDismiss = { showPageOptions = false },
                 onToggleFavorite = { viewModel.toggleFavorite() },
@@ -2192,7 +2258,9 @@ fun PageEditorScreen(
                 },
                 onMoveToTrash = {
                     showPageOptions = false
-                    confirmTrash = true
+                    // Il cestino è del menu principale: una pagina di un
+                    // quaderno se ne va per sempre, dopo la domanda.
+                    if (inNotebook) confirmNotebookDelete = true else confirmTrash = true
                 },
                 onToggleViewLock = { viewModel.toggleViewLocked() },
                 onToggleLock = { viewModel.toggleLocked() },
@@ -2672,7 +2740,7 @@ private fun BlockTypeMenu(
                 .background(DarkBackground)
                 .padding(8.dp)
         ) {
-            SLASH_ENTRIES.chunked(2).forEach { rowEntries ->
+            slashEntries().chunked(2).forEach { rowEntries ->
                 Row(modifier = Modifier.fillMaxWidth()) {
                     rowEntries.forEach { entry ->
                         val tint = if (entry.enabled) NotionWhite else NotionWhite.copy(alpha = 0.3f)
@@ -2745,12 +2813,13 @@ private fun SlashMenu(
     // "/div" trova "Divisore", ma chi è abituato ai comandi di Notion può
     // continuare a scrivere "/divider".
     val language = AppSettings.language
-    val matching = remember(query, language) {
+    val entries = slashEntries()
+    val matching = remember(query, language, entries) {
         val q = query.trim()
         if (q.isEmpty()) {
             null
         } else {
-            SLASH_ENTRIES
+            entries
                 .mapNotNull { entry ->
                     listOfNotNull(
                         slashMatchRank(EditorStrings.blockType(entry.label), q),
@@ -2794,14 +2863,14 @@ private fun SlashMenu(
                 .padding(vertical = 8.dp)
         ) {
             if (matching == null) {
-                SlashCategory.entries.forEach { category ->
+                SlashCategory.entries.filter { category -> entries.any { it.category == category } }.forEach { category ->
                     Text(
                         text = EditorStrings.blockType(category.title),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.labelMedium,
                         modifier = Modifier.padding(start = 14.dp, top = 8.dp, bottom = 4.dp)
                     )
-                    SLASH_ENTRIES
+                    entries
                         .filter { it.category == category }
                         .forEach { entry -> SlashMenuRow(entry, onSelect) }
                 }
@@ -3102,6 +3171,29 @@ internal val SLASH_ENTRIES: List<SlashEntry> = listOf(
     // raggruppamenti suoi: vedi `PageEntity.sourceDatabaseId`.
     SlashEntry("Linked view of data source", SlashCategory.DATABASE, SlashAction.LinkedView, Icons.Filled.Link)
 )
+
+/**
+ * La pagina aperta sta in un quaderno (vedi `NotebookEntity`). Lo sanno i
+ * menu, che lì non offrono quello che porta al menu principale.
+ */
+internal val LocalInNotebook = compositionLocalOf { false }
+
+/**
+ * Le voci dei menu "/" e "+" per la pagina aperta. **In un quaderno senza
+ * sottopagine, database e collegamenti a pagine**: i quaderni sono un mondo
+ * a parte, e una pagina o un database nati lì dentro non starebbero né di
+ * qua né di là.
+ */
+@Composable
+internal fun slashEntries(): List<SlashEntry> = if (LocalInNotebook.current) NOTEBOOK_SLASH_ENTRIES else SLASH_ENTRIES
+
+private val NOTEBOOK_SLASH_ENTRIES: List<SlashEntry> by lazy {
+    SLASH_ENTRIES.filter { entry ->
+        entry.category != SlashCategory.DATABASE &&
+            entry.action != SlashAction.PageLink &&
+            entry.label != "Link to page"
+    }
+}
 
 /**
  * Mappa le posizioni tra il testo "vero" (quello che il campo modifica

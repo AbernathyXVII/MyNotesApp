@@ -318,6 +318,12 @@ data class PageEntity(
     // che contiene: le sue sottopagine, le righe se è un database. Diverso
     // da `isLocked`, che lascia leggere e impedisce solo di scrivere.
     var isProtected: Boolean = false,
+    // **La sezione di un quaderno** in cui sta la pagina (dal 26/09/2026,
+    // vedi `NotebookEntity`), o null per le pagine del menu principale. Le
+    // pagine dei quaderni non si vedono mai dal menu principale: né
+    // nell'albero, né nella ricerca, né fra le pagine da cui partire. Il loro
+    // ordine nella sezione è `orderIndex`.
+    var notebookSectionId: String? = null,
     // Quando è stata buttata nel cestino, o null se non ci sta. La
     // pagina **resta nel database** con tutto il suo contenuto: qui si
     // cancella per davvero solo il collegamento che la mostrava, così

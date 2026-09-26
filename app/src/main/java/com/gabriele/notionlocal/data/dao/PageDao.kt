@@ -147,7 +147,7 @@ interface PageDao {
      */
     @Query(
         "SELECT * FROM pages WHERE isDatabase = 1 AND trashedAt IS NULL " +
-            "AND sourceDatabaseId IS NULL ORDER BY title COLLATE NOCASE ASC"
+            "AND sourceDatabaseId IS NULL AND notebookSectionId IS NULL ORDER BY title COLLATE NOCASE ASC"
     )
     suspend fun getLinkableDatabases(): List<PageEntity>
 
@@ -171,9 +171,12 @@ interface PageDao {
     @Query("SELECT * FROM pages WHERE title LIKE '%' || :query || '%'")
     suspend fun searchByTitle(query: String): List<PageEntity>
 
-    /** Tutte le pagine fuori dal cestino, tranne quella principale, in ordine di titolo. */
+    /**
+     * Tutte le pagine fuori dal cestino, tranne quella principale, in ordine di
+     * titolo. Quelle dei quaderni no: sono un mondo a parte.
+     */
     @Query(
-        "SELECT * FROM pages WHERE trashedAt IS NULL AND id != 'root' " +
+        "SELECT * FROM pages WHERE trashedAt IS NULL AND id != 'root' AND notebookSectionId IS NULL " +
             "ORDER BY title COLLATE NOCASE ASC"
     )
     suspend fun getAllLivePages(): List<PageEntity>

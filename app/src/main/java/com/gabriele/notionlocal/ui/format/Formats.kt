@@ -39,6 +39,17 @@ object Formats {
         return "${date(zoned.toLocalDate())} ${TIME.format(zoned)}"
     }
 
+    /**
+     * Il giorno della settimana e la data, come sotto il titolo delle pagine
+     * di OneNote: "Saturday, 26.09.2026". Il giorno nella lingua dell'app.
+     */
+    fun weekdayAndDate(millis: Long): String {
+        val zoned = Instant.ofEpochMilli(millis).atZone(AppSettings.zoneId)
+        val weekday = DateTimeFormatter.ofPattern("EEEE", AppSettings.language.locale).format(zoned)
+            .replaceFirstChar { it.titlecase(AppSettings.language.locale) }
+        return "$weekday, ${date(zoned.toLocalDate())}"
+    }
+
     /** Solo l'ora. */
     fun time(millis: Long): String =
         TIME.format(Instant.ofEpochMilli(millis).atZone(AppSettings.zoneId))

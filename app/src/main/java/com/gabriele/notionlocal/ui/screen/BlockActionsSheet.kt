@@ -611,7 +611,7 @@ private fun TurnIntoList(
         )
     }
     OptionsGroup {
-        SLASH_ENTRIES.forEachIndexed { index, entry ->
+        slashEntries().forEachIndexed { index, entry ->
             if (index > 0) HorizontalDivider()
             val current = (entry.action as? SlashAction.Type)?.type == block.type
             OptionRow(

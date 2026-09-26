@@ -7,6 +7,7 @@ import androidx.lifecycle.viewmodel.CreationExtras
 import com.gabriele.notionlocal.data.AppDatabase
 import com.gabriele.notionlocal.data.PageImageStore
 import com.gabriele.notionlocal.data.repository.DatabaseRepository
+import com.gabriele.notionlocal.data.repository.NotebookRepository
 import com.gabriele.notionlocal.data.repository.PageRepository
 
 /**
@@ -27,6 +28,8 @@ class ViewModelFactory(private val context: Context) : ViewModelProvider.Factory
     val pageRepository by lazy { PageRepository(database) }
     private val databaseRepository by lazy { DatabaseRepository(database) }
     val imageStore by lazy { PageImageStore(context) }
+    /** I quaderni, come quelli di OneNote: vedi `NotebookEntity`. */
+    val notebookRepository by lazy { NotebookRepository(database, pageRepository) }
 
     override fun <T : ViewModel> create(modelClass: Class<T>, extras: CreationExtras): T {
         return when {
@@ -56,6 +59,12 @@ class ViewModelFactory(private val context: Context) : ViewModelProvider.Factory
 
             modelClass.isAssignableFrom(InkViewModel::class.java) ->
                 InkViewModel(database) as T
+
+            modelClass.isAssignableFrom(NotebooksViewModel::class.java) ->
+                NotebooksViewModel(notebookRepository, imageStore) as T
+
+            modelClass.isAssignableFrom(NotebookSectionViewModel::class.java) ->
+                NotebookSectionViewModel(notebookRepository, imageStore) as T
 
             else -> throw IllegalArgumentException("ViewModel sconosciuto: ${modelClass.name}")
         }

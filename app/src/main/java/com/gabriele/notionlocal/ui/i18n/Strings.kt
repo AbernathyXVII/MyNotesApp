@@ -420,14 +420,14 @@ object Strings {
     val cacheCleared get() = t("Cache cleared", "Cache svuotata", "Cache geleert", "Cache vidé", "Caché borrada", "缓存已清除", "캐시를 지웠습니다", "キャッシュを消去しました")
     val deleteAllContent get() = t("Delete all content", "Elimina tutto il contenuto", "Alle Inhalte löschen", "Supprimer tout le contenu", "Eliminar todo el contenido", "删除所有内容", "모든 콘텐츠 삭제", "すべてのコンテンツを削除")
     val deleteAllContentNote get() = t(
-        "Pages, databases, drawings, images and trash",
-        "Pagine, database, disegni, immagini e cestino",
-        "Seiten, Datenbanken, Zeichnungen, Bilder und Papierkorb",
-        "Pages, bases de données, dessins, images et corbeille",
-        "Páginas, bases de datos, dibujos, imágenes y papelera",
-        "页面、数据库、绘图、图片和回收站",
-        "페이지, 데이터베이스, 그림, 이미지, 휴지통",
-        "ページ、データベース、描画、画像、ゴミ箱"
+        "Pages, databases, notebooks, drawings, images and trash",
+        "Pagine, database, quaderni, disegni, immagini e cestino",
+        "Seiten, Datenbanken, Notizbücher, Zeichnungen, Bilder und Papierkorb",
+        "Pages, bases de données, blocs-notes, dessins, images et corbeille",
+        "Páginas, bases de datos, blocs de notas, dibujos, imágenes y papelera",
+        "页面、数据库、笔记本、绘图、图片和回收站",
+        "페이지, 데이터베이스, 전자 필기장, 그림, 이미지, 휴지통",
+        "ページ、データベース、ノートブック、描画、画像、ゴミ箱"
     )
     val deleteAllTitle get() = t("Delete all content?", "Eliminare tutto il contenuto?", "Alle Inhalte löschen?", "Supprimer tout le contenu ?", "¿Eliminar todo el contenido?", "删除所有内容？", "모든 콘텐츠를 삭제할까요?", "すべてのコンテンツを削除しますか？")
     val deleteAllText get() = t(

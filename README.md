@@ -617,6 +617,11 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   della pagina della riga, all'inizio e alla fine), e la fine di timer e
   fasi del pomodoro. Arrivano anche ad app chiusa, e toccandole si apre la
   pagina
+- **Quaderni come in OneNote** (dal 26/09/2026): "Notebooks" nella barra
+  laterale, con quaderni, gruppi di sezioni, sezioni colorate e pagine che
+  si allungano man mano che si scrive, col giorno e l'ora sotto il titolo.
+  Un mondo a parte dal menu principale: non si cercano da lì e non si
+  collegano alle sue pagine
 - **Pagine e database bloccati** (dal 26/09/2026): "Lock with password"
   nei tre puntini; si aprono con l'impronta o con la password, scelta la
   prima volta e cambiata o tolta da Settings. Chiudono anche quello che
@@ -722,6 +727,15 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
 
 ## Limiti noti
 
+- **Quaderni** (dal 26/09/2026):
+  - eliminare una pagina, una sezione o un quaderno è per sempre: il
+    cestino è del menu principale, e un cestino dei quaderni non c'è
+  - nei quaderni non si cerca (la ricerca è quella del menu principale,
+    che le loro pagine non le vede)
+  - dal menu di OneNote mancano Export, Move or Copy, Merge e Copy Link;
+    le pagine non si ordinano per data o nome e non hanno sottopagine
+  - la pagina è quella dell'editor, che si scrive dall'alto in basso: non
+    si scrive in un punto qualsiasi del foglio come in OneNote
 - **Pagine bloccate con la password** (dal 26/09/2026):
   - l'impronta c'è solo da Android 11 in su; prima, solo la password
   - una notifica ("/notification" o una data con "Include notification")
@@ -2007,6 +2021,124 @@ Le voci nate nelle sessioni cloud stanno qui in cima, la più recente
 per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
+
+**26/09/2026 — i quaderni, come in OneNote**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno, tranne
+quello che è elencato in fondo; 147 test passati; commit solo in locale)*
+
+L'utente, parola per parola (con tre foto della colonna di sinistra di
+OneNote: l'albero dei quaderni, il menu di una sezione col tasto destro, e
+una pagina aperta con titolo, data e ora):
+> «Creami la sezione Notebooks (che in realtà hai già creato, ma attivala)
+> nella sidebar (ti mando una foto così capisci meglio come sarà
+> strutturata la gerarchia). Il concetto sarà lo stesso identico di come
+> funziona OneNote, ma sarà un qualcosa esclusivo a sé stesso, che non avrà
+> niente a che fare con tutto ciò che inizia dal menu principale e che non
+> avrà alcuna interazione con tutto ciò che sta nel sistema gerarchico del
+> menu principale. Workspace e Notebooks funzioneranno da sole, l'una
+> libera dall'altra. La "gerarchia" funziona in pratica che creo vari
+> quaderni (con un'icona che se vuoi ti metto io, altrimenti le classiche
+> icone da Notebook prese da Flaticon) quelli che vedi in alto con l'icona
+> del quaderno blu, con sezioni o sezioni da gruppo (che hanno lo stesso
+> concetto dei toggle di Notion) e dentro le sezioni posso creare delle
+> pagine a scrolling infinito (ovviamente infinito da creare, di base la
+> grandezza di una pagina è solo quello che si vede, poi se scrivo tante
+> cose, non avrò limiti finché scrivo)
+> (non far caso a Copilot Notebook, non mi interessa)»
+
+- **[Nuova funzionalità]** **La voce "Notebooks" della barra laterale è
+  accesa**: è la fascia di prima (un altro colore, sotto i widget), con la
+  freccetta per aprirla e chiuderla — la scelta si ricorda — e il **+** per
+  un quaderno nuovo. Sotto, **l'albero di OneNote**: i quaderni col loro
+  quaderno disegnato e la freccetta; dentro, le **sezioni** con la
+  linguetta colorata e i **gruppi di sezioni**, che si aprono e si
+  chiudono come i toggle e possono contenere altre sezioni e altri gruppi
+  (come "Languages" → "Deutsch" → "General" nella foto). In fondo a ogni
+  quaderno aperto, "+ New section". La sezione aperta è evidenziata
+- **[Nuova funzionalità]** **Un quaderno nuovo**: nome e colore (i dodici
+  di OneNote), e nasce con la sua prima sezione "New Section 1", come in
+  OneNote. **L'icona**: il quaderno disegnato nel colore scelto, oppure
+  **un'immagine a scelta dalla galleria** — per esempio un'icona scaricata
+  da Flaticon — da "Notebook icon" nel suo menu. Scaricarle da Flaticon
+  non lo posso fare io: l'app non va in rete (e le icone hanno la loro
+  licenza); se l'utente me le manda, le metto fra quelle pronte
+- **[Nuova funzionalità]** **Tenendo premuta una voce** si apre il suo menu,
+  le voci del tasto destro di OneNote che hanno senso qui:
+  - quaderno: Rename, Notebook color, Notebook icon, New section, New
+    section group, Move up, Move down, Delete
+  - sezione: Rename, Section color, **Password protect this section**
+    (con la password dell'app o l'impronta, come le pagine), New section,
+    New section group (nascono accanto a lei), Move up, Move down, Delete
+  - gruppo: Rename, New section e New section group (nascono dentro),
+    Move up, Move down, Delete
+  Il nome nuovo si propone già scritto e selezionato ("New Section 2",
+  "New Section Group 1"…). Una sezione nuova prende il colore dopo quello
+  dell'ultima, e si apre subito
+- **[Nuova funzionalità]** **Una sezione aperta**: in alto dove sta
+  ("Prova quaderni › Languages"), il nome con la linguetta, **"Add page"**
+  come in OneNote, e le pagine nel loro ordine, col giorno in cui sono
+  nate. Toccando una pagina la si apre; tenendola premuta, Move up, Move
+  down, Delete page. I tre puntini aprono il menu della sezione. Su un
+  telefono le tre colonne di OneNote non ci stanno: la colonna delle
+  sezioni è la barra laterale, quella delle pagine è questa schermata
+- **[Nuova funzionalità]** **Le pagine dei quaderni** usano lo stesso
+  editor delle altre, quindi **scorrono senza fine**: all'inizio c'è solo
+  quello che si vede, e si allungano man mano che si scrive. In cima,
+  **come in OneNote**: il titolo ("Untitled page" in grigio finché è
+  vuoto), una riga sottile e sotto **il giorno, la data e l'ora** in cui
+  la pagina è nata (nel formato di data scelto nelle impostazioni). Niente
+  icona né copertina. Si disegna, si blocca, si protegge con la password,
+  si guarda la cronologia come nelle altre pagine
+- **[Nuova funzionalità]** **Due mondi separati**, come chiesto. Le pagine
+  dei quaderni non compaiono mai nel menu principale: né nell'albero delle
+  pagine, né nella ricerca, né fra le pagine da cui far partire l'app, né
+  fra i database da mostrare in una vista collegata. E dal quaderno non si
+  arriva al menu principale: nei menu "/" e "+" delle pagine dei quaderni
+  non ci sono Page, Link to page e i database; nei tre puntini non ci sono
+  preferiti, ricerca, Duplicate e Move to. **Eliminare** (una pagina, una
+  sezione, un gruppo, un quaderno) è **per sempre**, perché il cestino è
+  del menu principale: prima lo chiede, dicendo quante pagine se ne vanno.
+  Una sezione protetta, o un gruppo o un quaderno che ne contiene una,
+  chiede prima impronta o password
+- **[Progetto]** **Database alla versione 35**: le tabelle `notebooks` e
+  `notebook_sections` (sezioni e gruppi insieme, perché formano un unico
+  albero con un ordine solo), e `pages.notebookSectionId`. Le pagine sono
+  pagine vere, così hanno tutto l'editor gratis; `orderIndex` è il loro
+  ordine nella sezione. `NotebookRepository`, `NotebooksViewModel`,
+  `NotebookSectionViewModel`, `Notebooks.kt` (barra, menu, schermata della
+  sezione), `NotebookStrings` nelle otto lingue. `lockingPageOf` ora sa
+  delle sezioni protette; "Remove password" nelle impostazioni conta anche
+  quelle. Test `NotebookRepositoryTest` (5) e `MigrationTest` 34→35, col
+  file `v34.sql`
+- **Fuori, per ora** (dal menu di OneNote nella foto): Export, Move or
+  Copy, Merge into Another Section, Copy Link to Section (e Copilot, che
+  non interessa). Neanche l'ordinamento delle pagine, le sottopagine
+  rientrate e un cestino dei quaderni. Si aggiungono se servono
+- Verificato sul telefono (con un quaderno di prova, poi eliminato): prima
+  di installare, copia del database del telefono; migrazione alla 35 sul
+  posto (la colonna nuova in fondo a `pages`), le 10 pagine dell'utente
+  tutte lì. "Notebooks" acceso nella barra, "+ New notebook" con nome
+  selezionato e colori → "Prova quaderni" col quaderno blu e "New Section
+  1"; tenuto premuto → il menu del quaderno → New section group
+  "Languages" → dentro, New section "Deutsch" (rossa) → **si apre da
+  sola**, con "Prova quaderni › Languages"; "Add page" → la pagina con
+  "Untitled page", la riga e "Saturday, 2026年09月26日 08:47"; titolo
+  "Esempio" e una riga di testo; nel menu "/" niente Page, e "/data" →
+  "Nothing with that name"; i tre puntini con Draw, Delete page, Lock page,
+  Lock with password, Updates, 2 words. Indietro → "Esempio" nell'elenco.
+  Nella barra l'albero come nella foto, "Deutsch" evidenziata. "Password
+  protect this section" → la sezione si chiude subito (lucchetto accanto
+  al nome, "This section is locked", l'impronta chiesta da sola; annullata,
+  non l'ho aperta). Delete del quaderno → "Everything inside goes with it,
+  1 page included" → eliminato: nel database zero quaderni, zero sezioni,
+  zero pagine di quaderni, le 10 pagine dell'utente intatte
+- **[Bug fix]** (trovato provando) Il blu del quaderno nuovo non era uno
+  dei dodici colori, e nella scelta nessuno aveva la spunta: ora è il
+  primo. Verificato: la spunta sul blu
+- **Non provato sul telefono**: l'impronta chiesta prima di eliminare una
+  sezione protetta (per chiudere la prova sarebbe servita l'impronta
+  dell'utente), l'immagine come icona di un quaderno, i colori cambiati
+  dopo, Rename e Move up/down dai menu (su e giù li prova il test)
 
 **26/09/2026 — la freccetta del toggle, un pelino più su**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; commit solo
@@ -6309,7 +6441,9 @@ le finestre che apre. Chi lo usa passa solo l'id del blocco.
 
 ## Nota tecnica
 
-Lo schema è alla **versione 34** (la 34, del 26/09/2026, aggiunge
+Lo schema è alla **versione 35** (la 35, del 26/09/2026, aggiunge i
+quaderni: le tabelle `notebooks` e `notebook_sections` e
+`pages.notebookSectionId`; la 34, dello stesso giorno, aggiunge
 `pages.isProtected`, le pagine bloccate con la password; la 33, del
 25/09/2026, aggiunge la tabella `ink_strokes` dei disegni a mano; la 32, dello stesso giorno,
 aggiunge `blocks.notifyAt`, l'ora delle righe "/notification"; la 31, dello

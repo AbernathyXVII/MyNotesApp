@@ -377,7 +377,10 @@ private fun LockPasswordSettings(onDismiss: () -> Unit) {
                     TextButton(onClick = {
                         scope.launch {
                             val locked = withContext(Dispatchers.IO) {
-                                AppDatabase.getInstance(context).pageDao().countProtected()
+                                // Anche le sezioni dei quaderni: senza password resterebbero chiuse.
+                                AppDatabase.getInstance(context).let {
+                                    it.pageDao().countProtected() + it.notebookDao().countProtectedSections()
+                                }
                             }
                             if (locked > 0) {
                                 Toast.makeText(context, LockStrings.removePasswordBlocked, Toast.LENGTH_LONG).show()

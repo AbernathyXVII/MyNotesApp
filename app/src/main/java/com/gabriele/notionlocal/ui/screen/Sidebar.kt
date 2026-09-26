@@ -90,7 +90,9 @@ internal fun SidebarContent(
     currentPageId: String?,
     actions: SidebarActions,
     /** La barra è aperta: solo allora gli orologi dei widget si aggiornano ogni secondo. */
-    widgetsActive: Boolean = true
+    widgetsActive: Boolean = true,
+    /** La voce "Notebooks" coi quaderni: vedi `NotebooksSidebarSection`. */
+    notebooks: @Composable () -> Unit = {}
 ) {
     Column(
         modifier = Modifier
@@ -106,20 +108,10 @@ internal fun SidebarContent(
         WidgetsSection(active = widgetsActive)
         Spacer(modifier = Modifier.height(6.dp))
 
-        // 2. Il Quaderno: una fascia di un altro colore, staccata dal resto.
-        Row(
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(10.dp))
-                .background(NotebookBand)
-                .padding(horizontal = 12.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(Icons.Filled.MenuBook, contentDescription = null, tint = DisabledTint, modifier = Modifier.size(ITEM_ICON))
-            Spacer(modifier = Modifier.width(14.dp))
-            Text(Strings.notebook, color = DisabledTint, style = MaterialTheme.typography.bodyLarge)
-        }
+        // 2. I quaderni (dal 26/09/2026, prima era una fascia grigia ferma):
+        // la stessa fascia di un altro colore, staccata dal resto, e sotto
+        // i quaderni come in OneNote. Un mondo a parte dal menu principale.
+        notebooks()
         Spacer(modifier = Modifier.height(10.dp))
 
         // 3. Menu principale, e sotto un divisore semplice.

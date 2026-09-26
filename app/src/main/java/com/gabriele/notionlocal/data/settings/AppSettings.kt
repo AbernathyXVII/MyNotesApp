@@ -98,6 +98,7 @@ object AppSettings {
         favoritesSortState.value = enumOr(KEY_FAVORITES_SORT, FavoritesSort.DATE_ADDED)
         favoritesDescendingState.value = prefs.getBoolean(KEY_FAVORITES_DESC, false)
         searchContentState.value = prefs.getBoolean(KEY_SEARCH_CONTENT, true)
+        notebooksCollapsedState.value = prefs.getBoolean(KEY_NOTEBOOKS_COLLAPSED, false)
         searchTrashState.value = prefs.getBoolean(KEY_SEARCH_TRASH, false)
         notificationSoundUriState.value = prefs.getString(KEY_SOUND_URI, null)
         notificationSoundNameState.value = prefs.getString(KEY_SOUND_NAME, null)
@@ -223,6 +224,17 @@ object AppSettings {
             prefs.edit().putBoolean(KEY_SEARCH_TRASH, value).apply()
         }
 
+    // --- Quaderni ---
+
+    /** La voce "Notebooks" della barra laterale chiusa con la sua freccetta. */
+    private val notebooksCollapsedState = mutableStateOf(false)
+    var notebooksCollapsed: Boolean
+        get() = notebooksCollapsedState.value
+        set(value) {
+            notebooksCollapsedState.value = value
+            prefs.edit().putBoolean(KEY_NOTEBOOKS_COLLAPSED, value).apply()
+        }
+
     // --- Suoni e notifiche ---
     //
     // Le notifiche vere non esistono ancora: queste scelte si salvano già,
@@ -282,6 +294,7 @@ object AppSettings {
     private const val KEY_FAVORITES_SORT = "favorites_sort"
     private const val KEY_FAVORITES_DESC = "favorites_desc"
     private const val KEY_SEARCH_CONTENT = "search_content"
+    private const val KEY_NOTEBOOKS_COLLAPSED = "notebooks_collapsed"
     private const val KEY_SEARCH_TRASH = "search_trash"
     private const val KEY_SOUND_URI = "notification_sound_uri"
     private const val KEY_SOUND_NAME = "notification_sound_name"

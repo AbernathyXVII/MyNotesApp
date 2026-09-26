@@ -22,9 +22,13 @@ object Routes {
     const val STARTUP = "startup"
     const val SETTINGS = "settings"
 
+    /** Una sezione di un quaderno, con le sue pagine (vedi `NotebookSectionScreen`). */
+    const val NOTEBOOK_SECTION = "notebookSection/{sectionId}"
+
     fun pageEditor(pageId: String) = "page/$pageId"
     fun databaseView(pageId: String) = "database/$pageId"
     fun updates(pageId: String) = "updates/$pageId"
+    fun notebookSection(sectionId: String) = "notebookSection/$sectionId"
 
     /** La rotta di una pagina, che sia testo o database. */
     fun forPage(pageId: String, isDatabase: Boolean) =

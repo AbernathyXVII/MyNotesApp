@@ -62,6 +62,7 @@ import com.gabriele.notionlocal.data.settings.AppSettings
 import com.gabriele.notionlocal.data.settings.TrashPolicy
 import com.gabriele.notionlocal.ui.i18n.InkStrings
 import com.gabriele.notionlocal.ui.i18n.LockStrings
+import com.gabriele.notionlocal.ui.i18n.NotebookStrings
 import com.gabriele.notionlocal.ui.i18n.Strings
 import com.gabriele.notionlocal.ui.theme.DarkSheet
 import com.gabriele.notionlocal.ui.theme.DarkSurface
@@ -119,7 +120,13 @@ fun PageOptionsSheet(
      * si contano — e per il breve istante in cui il conteggio si sta
      * facendo: la voce compare quando c'è il numero.
      */
-    textStats: TextStats? = null
+    textStats: TextStats? = null,
+    /**
+     * **Una pagina di un quaderno** (dal 26/09/2026): niente preferiti,
+     * ricerca, duplica e sposta, che sono del menu principale, e al posto di
+     * "Move to trash" "Delete page", per sempre.
+     */
+    inNotebook: Boolean = false
 ) {
     val isRoot = page.id == PageEntity.ROOT_PAGE_ID
 
@@ -147,7 +154,7 @@ fun PageOptionsSheet(
             OptionsGroup {
                 // La pagina principale non si mette fra i preferiti: è
                 // quella da cui si parte sempre.
-                if (!isRoot) {
+                if (!isRoot && !inNotebook) {
                     OptionRow(
                         icon = if (page.isFavorite) Icons.Filled.Star else Icons.Filled.StarBorder,
                         label = Strings.favorite,
@@ -157,13 +164,15 @@ fun PageOptionsSheet(
                     )
                     HorizontalDivider()
                 }
-                OptionRow(
-                    icon = Icons.Filled.Search,
-                    label = Strings.search,
-                    onClick = onSearch
-                )
+                if (!inNotebook) {
+                    OptionRow(
+                        icon = Icons.Filled.Search,
+                        label = Strings.search,
+                        onClick = onSearch
+                    )
+                }
                 if (onDraw != null) {
-                    HorizontalDivider()
+                    if (!inNotebook) HorizontalDivider()
                     // Bloccata, la pagina non si scrive e non si disegna.
                     OptionRow(
                         icon = Icons.Filled.Draw,
@@ -175,7 +184,7 @@ fun PageOptionsSheet(
                 // Duplicare la pagina principale vorrebbe dire copiare
                 // l'archivio intero, sottopagine comprese, dentro sé
                 // stesso. Buttarla non si può comunque.
-                if (!isRoot) {
+                if (!isRoot && !inNotebook) {
                     HorizontalDivider()
                     OptionRow(
                         icon = Icons.Filled.ContentCopy,
@@ -188,13 +197,15 @@ fun PageOptionsSheet(
                 // sparire come le altre: l'utente ha chiesto di vederla,
                 // e grigia dice "non qui" senza bisogno di un messaggio
                 // (24/09/2026).
-                HorizontalDivider()
-                OptionRow(
-                    icon = Icons.Filled.DriveFileMove,
-                    label = Strings.moveTo,
-                    enabled = !isRoot,
-                    onClick = onMoveTo
-                )
+                if (!inNotebook) {
+                    HorizontalDivider()
+                    OptionRow(
+                        icon = Icons.Filled.DriveFileMove,
+                        label = Strings.moveTo,
+                        enabled = !isRoot,
+                        onClick = onMoveTo
+                    )
+                }
                 if (!isRoot) {
                     if (onTurnIntoDatabase != null) {
                         HorizontalDivider()
@@ -207,7 +218,7 @@ fun PageOptionsSheet(
                     HorizontalDivider()
                     OptionRow(
                         icon = Icons.Filled.Delete,
-                        label = Strings.moveToTrash,
+                        label = if (inNotebook) NotebookStrings.deletePage else Strings.moveToTrash,
                         tint = MaterialTheme.colorScheme.error,
                         onClick = onMoveToTrash
                     )

@@ -9,6 +9,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.gabriele.notionlocal.data.dao.BlockDao
 import com.gabriele.notionlocal.data.dao.DatabaseDao
 import com.gabriele.notionlocal.data.dao.InkDao
+import com.gabriele.notionlocal.data.dao.NotebookDao
 import com.gabriele.notionlocal.data.dao.PageDao
 import com.gabriele.notionlocal.data.dao.PageEditDao
 import com.gabriele.notionlocal.data.dao.TableCellDao
@@ -17,6 +18,8 @@ import com.gabriele.notionlocal.data.entity.DatabaseCellEntity
 import com.gabriele.notionlocal.data.entity.DatabaseColumnEntity
 import com.gabriele.notionlocal.data.entity.DatabaseRowEntity
 import com.gabriele.notionlocal.data.entity.InkStrokeEntity
+import com.gabriele.notionlocal.data.entity.NotebookEntity
+import com.gabriele.notionlocal.data.entity.NotebookSectionEntity
 import com.gabriele.notionlocal.data.entity.PageEditEntity
 import com.gabriele.notionlocal.data.entity.PageEntity
 import com.gabriele.notionlocal.data.entity.RichTextSpan
@@ -48,9 +51,11 @@ import kotlinx.serialization.json.Json
         DatabaseCellEntity::class,
         TableCellEntity::class,
         PageEditEntity::class,
-        InkStrokeEntity::class
+        InkStrokeEntity::class,
+        NotebookEntity::class,
+        NotebookSectionEntity::class
     ],
-    version = 34,
+    version = 35,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -61,6 +66,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun databaseDao(): DatabaseDao
     abstract fun tableCellDao(): TableCellDao
     abstract fun inkDao(): InkDao
+    abstract fun notebookDao(): NotebookDao
 
     companion object {
         @Volatile
@@ -532,6 +538,33 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /**
+         * **I quaderni** (26/09/2026), come quelli di OneNote: le tabelle dei
+         * quaderni e delle loro sezioni, vuote, e per le pagine la sezione in
+         * cui stanno — null per tutte quelle che c'erano, che restano del
+         * menu principale.
+         */
+        private val MIGRATION_34_35 = object : Migration(34, 35) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `notebooks` (`id` TEXT NOT NULL, `title` TEXT NOT NULL, " +
+                        "`color` INTEGER NOT NULL, `iconImage` TEXT, `orderIndex` INTEGER NOT NULL, " +
+                        "`isExpanded` INTEGER NOT NULL, `createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`))"
+                )
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `notebook_sections` (`id` TEXT NOT NULL, `notebookId` TEXT NOT NULL, " +
+                        "`parentId` TEXT, `isGroup` INTEGER NOT NULL, `title` TEXT NOT NULL, `color` INTEGER NOT NULL, " +
+                        "`orderIndex` INTEGER NOT NULL, `isExpanded` INTEGER NOT NULL, `isProtected` INTEGER NOT NULL, " +
+                        "`createdAt` INTEGER NOT NULL, PRIMARY KEY(`id`), FOREIGN KEY(`notebookId`) REFERENCES " +
+                        "`notebooks`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )"
+                )
+                db.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_notebook_sections_notebookId` ON `notebook_sections` (`notebookId`)"
+                )
+                db.execSQL("ALTER TABLE pages ADD COLUMN notebookSectionId TEXT")
+            }
+        }
+
+        /**
          * Solo per i test: chiude il database e lo dimentica, così il
          * `getInstance` dopo riapre il file da capo (e ne esegue le
          * migrazioni). Senza, il secondo test troverebbe il database del
@@ -578,7 +611,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_30_31,
                         MIGRATION_31_32,
                         MIGRATION_32_33,
-                        MIGRATION_33_34
+                        MIGRATION_33_34,
+                        MIGRATION_34_35
                     )
                     .build()
                 INSTANCE = instance

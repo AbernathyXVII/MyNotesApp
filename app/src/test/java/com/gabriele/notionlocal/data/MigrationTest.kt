@@ -68,7 +68,7 @@ class MigrationTest {
         assertNull(page.sourceDatabaseId)
         assertNull(page.viewHiddenColumnIds)
         assertNull(page.cardCoverScale)
-        assertEquals(34, db.openHelper.readableDatabase.version)
+        assertEquals(35, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -84,7 +84,7 @@ class MigrationTest {
         assertNull(yahei.cardCoverScale)
         assertNull(yahei.cardCoverOffsetX)
         assertNull(yahei.cardCoverOffsetY)
-        assertEquals(34, db.openHelper.readableDatabase.version)
+        assertEquals(35, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -112,7 +112,7 @@ class MigrationTest {
         assertEquals(listOf(RichTextSpan(text = "", color = "#E03E3E")), spans("b2"))
         // Una pagina senza font resta com'era.
         assertEquals(listOf(RichTextSpan(text = "Normale")), spans("b3"))
-        assertEquals(34, db.openHelper.readableDatabase.version)
+        assertEquals(35, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -124,7 +124,7 @@ class MigrationTest {
         assertNull(block.notifyAt)
         assertTrue(db.blockDao().getNotificationRows().isEmpty())
         assertTrue(db.databaseDao().getNotifyingDateCells().isEmpty())
-        assertEquals(34, db.openHelper.readableDatabase.version)
+        assertEquals(35, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -144,7 +144,7 @@ class MigrationTest {
             )
         )
         assertEquals("b1", db.inkDao().getForPageOnce("p1").single().anchor)
-        assertEquals(34, db.openHelper.readableDatabase.version)
+        assertEquals(35, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -154,6 +154,17 @@ class MigrationTest {
         assertEquals("Pagina alla 33", page.title)
         assertFalse(page.isProtected)
         assertEquals(0, db.pageDao().countProtected())
-        assertEquals(34, db.openHelper.readableDatabase.version)
+        assertEquals(35, db.openHelper.readableDatabase.version)
+    }
+
+    @Test
+    fun from34ThePagesStayInTheMainMenuAndTheNotebooksAreEmpty() = runBlocking<Unit> {
+        val db = AppDatabase.getInstance(databaseAtVersion(34))
+        val page = db.pageDao().getById("p1")!!
+        assertEquals("Pagina alla 34", page.title)
+        assertNull(page.notebookSectionId)
+        assertTrue(db.notebookDao().getNotebooksOnce().isEmpty())
+        assertEquals(0, db.notebookDao().countProtectedSections())
+        assertEquals(35, db.openHelper.readableDatabase.version)
     }
 }

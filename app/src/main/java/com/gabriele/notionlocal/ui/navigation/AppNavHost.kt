@@ -38,6 +38,11 @@ import com.gabriele.notionlocal.data.settings.StartupMode
 import com.gabriele.notionlocal.data.settings.TrashPolicy
 import com.gabriele.notionlocal.ui.screen.DatabaseViewScreen
 import com.gabriele.notionlocal.ui.screen.LockGate
+import com.gabriele.notionlocal.ui.screen.NotebookSectionScreen
+import com.gabriele.notionlocal.ui.screen.NotebooksSidebarSection
+import com.gabriele.notionlocal.ui.i18n.NotebookStrings
+import com.gabriele.notionlocal.viewmodel.NotebooksViewModel
+import androidx.compose.runtime.produceState
 import com.gabriele.notionlocal.ui.screen.FavoritesScreen
 import com.gabriele.notionlocal.ui.screen.NoInsets
 import com.gabriele.notionlocal.ui.screen.PageEditorScreen
@@ -77,12 +82,22 @@ fun AppNavHost(factory: ViewModelFactory) {
     val treeExpanded by sidebar.expanded.collectAsStateWithLifecycle()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val animations = AppSettings.animations
+    val notebooks: NotebooksViewModel = viewModel(factory = factory)
 
     // La pagina aperta adesso, per evidenziarla nell'albero.
     val currentPageId = when (backStackEntry?.destination?.route) {
         Routes.HOME -> PageEntity.ROOT_PAGE_ID
         Routes.PAGE_EDITOR, Routes.DATABASE_VIEW -> backStackEntry?.arguments?.getString("pageId")
         else -> null
+    }
+    // La sezione di un quaderno aperta adesso, o quella della pagina aperta:
+    // la barra laterale la evidenzia fra i quaderni.
+    val currentSectionId by produceState<String?>(null, backStackEntry) {
+        value = when (backStackEntry?.destination?.route) {
+            Routes.NOTEBOOK_SECTION -> backStackEntry?.arguments?.getString("sectionId")
+            Routes.PAGE_EDITOR -> currentPageId?.let { factory.pageRepository.getPage(it)?.notebookSectionId }
+            else -> null
+        }
     }
 
     fun openSidebar() {
@@ -231,7 +246,18 @@ fun AppNavHost(factory: ViewModelFactory) {
                     // Aperta o mentre si apre: da chiusa la barra resta
                     // disegnata dietro alla pagina, e gli orologi non
                     // devono ridisegnarsi ogni secondo per nessuno.
-                    widgetsActive = drawerState.isOpen || drawerState.targetValue == DrawerValue.Open
+                    widgetsActive = drawerState.isOpen || drawerState.targetValue == DrawerValue.Open,
+                    notebooks = {
+                        NotebooksSidebarSection(
+                            viewModel = notebooks,
+                            store = factory.imageStore,
+                            currentSectionId = currentSectionId,
+                            onOpenSection = { sectionId ->
+                                closeSidebar()
+                                jumpTo(Routes.notebookSection(sectionId))
+                            }
+                        )
+                    }
                 )
             }
         }
@@ -389,6 +415,36 @@ private fun AppRoutes(
                 onBack = { navController.popBackStack() },
                 onOpenPage = { page -> navController.navigate(Routes.forPage(page.id, page.isDatabase)) }
             )
+        }
+
+        // **Una sezione di un quaderno** (dal 26/09/2026): le sue pagine. Se
+        // la sezione è protetta con la password, prima si chiede quella.
+        composable(
+            route = Routes.NOTEBOOK_SECTION,
+            arguments = listOf(navArgument("sectionId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val sectionId = backStackEntry.arguments?.getString("sectionId") ?: return@composable
+            LockGate(
+                sectionId,
+                factory.pageRepository,
+                fullScreen = true,
+                lockedTitle = NotebookStrings.lockedSection,
+                onBack = { navController.popBackStack() }
+            ) {
+            NotebookSectionScreen(
+                sectionId = sectionId,
+                factory = factory,
+                onBack = { navController.popBackStack() },
+                onOpenSidebar = onOpenSidebar,
+                onOpenPage = { pageId -> navController.navigate(Routes.pageEditor(pageId)) },
+                onOpenSection = { id ->
+                    navController.navigate(Routes.notebookSection(id)) {
+                        popUpTo(Routes.HOME)
+                        launchSingleTop = true
+                    }
+                }
+            )
+            }
         }
 
         composable(Routes.STARTUP) {

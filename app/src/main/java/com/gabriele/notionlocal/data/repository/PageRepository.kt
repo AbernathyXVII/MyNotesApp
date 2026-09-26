@@ -419,7 +419,9 @@ class PageRepository(private val db: AppDatabase) {
         if (needle.isEmpty()) return emptyList()
         val hits = LinkedHashMap<String, SearchHit>()
 
-        fun allowed(page: PageEntity) = page.trashedAt == null || inTrash
+        // Le pagine dei quaderni non si cercano da qui: sono un mondo a parte
+        // (vedi `NotebookEntity`).
+        fun allowed(page: PageEntity) = (page.trashedAt == null || inTrash) && page.notebookSectionId == null
 
         fun hitFor(page: PageEntity, snippet: Snippet?) = SearchHit(
             pageId = page.id,
@@ -1709,7 +1711,8 @@ class PageRepository(private val db: AppDatabase) {
         AppLock.protectionChanged()
     }
 
-    suspend fun countProtectedPages(): Int = pageDao.countProtected()
+    /** Pagine e sezioni dei quaderni bloccate con la password. */
+    suspend fun countProtectedPages(): Int = pageDao.countProtected() + db.notebookDao().countProtectedSections()
 
     /**
      * **La pagina bloccata che chiude questa**: lei stessa, o una che la
@@ -1725,8 +1728,15 @@ class PageRepository(private val db: AppDatabase) {
             val next = mutableListOf<String>()
             for (id in frontier) {
                 if (!seen.add(id)) continue
-                val page = pageDao.getById(id) ?: continue
+                val page = pageDao.getById(id)
+                if (page == null) {
+                    // **Una sezione di un quaderno**, protetta con la password
+                    // come in OneNote: chiude le sue pagine.
+                    if (db.notebookDao().getSection(id)?.isProtected == true) return id
+                    continue
+                }
                 if (page.isProtected) return id
+                page.notebookSectionId?.let { next += it }
                 blockDao.getBlocksLinkingTo(id).forEach { next += it.pageId }
                 databaseDao.getRowsLinkingTo(id).forEach { next += it.pageId }
                 page.sourceDatabaseId?.let { next += it }

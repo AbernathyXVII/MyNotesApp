@@ -141,6 +141,8 @@ fun LockGate(
     fullScreen: Boolean,
     isDatabase: Boolean = false,
     onBack: (() -> Unit)? = null,
+    /** Il titolo al posto di "This page is locked": una sezione di un quaderno dice la sua. */
+    lockedTitle: String? = null,
     content: @Composable () -> Unit
 ) {
     val version = AppLock.protectionVersion
@@ -158,6 +160,7 @@ fun LockGate(
         else -> LockedView(
             fullScreen = fullScreen,
             isDatabase = isDatabase,
+            lockedTitle = lockedTitle,
             onBack = onBack,
             onUnlocked = { AppLock.unlock(closedBy) }
         )
@@ -168,6 +171,7 @@ fun LockGate(
 private fun LockedView(
     fullScreen: Boolean,
     isDatabase: Boolean,
+    lockedTitle: String?,
     onBack: (() -> Unit)?,
     onUnlocked: () -> Unit
 ) {
@@ -189,7 +193,7 @@ private fun LockedView(
         }
     }
     val withFingerprint = AppLock.biometricEnabled && Biometrics.available(context)
-    val title = if (isDatabase) LockStrings.lockedDatabase else LockStrings.lockedTitle
+    val title = lockedTitle ?: if (isDatabase) LockStrings.lockedDatabase else LockStrings.lockedTitle
 
     if (fullScreen) {
         Box(

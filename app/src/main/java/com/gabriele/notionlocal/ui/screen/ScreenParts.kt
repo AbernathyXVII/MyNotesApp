@@ -158,12 +158,19 @@ internal fun TrashBanner(
 
 /** La conferma prima di cancellare per sempre: è l'unica azione del cestino che non si torna indietro. */
 @Composable
-internal fun DeleteForeverDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
+internal fun DeleteForeverDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+    // Le altre domande prima di cancellare per sempre (i quaderni, dal
+    // 26/09/2026) usano la stessa finestra con le loro parole.
+    title: String = Strings.deleteForeverTitle,
+    text: String = Strings.deleteForeverText
+) {
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = DarkSheet,
-        title = { Text(Strings.deleteForeverTitle, color = NotionWhite) },
-        text = { Text(Strings.deleteForeverText, color = NotionGray400) },
+        title = { Text(title, color = NotionWhite) },
+        text = { Text(text, color = NotionGray400) },
         confirmButton = {
             TextButton(onClick = onConfirm) { Text(Strings.delete, color = DangerRed) }
         },
