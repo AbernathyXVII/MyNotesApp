@@ -2022,6 +2022,33 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**26/09/2026 — "To-do list" dal "+" sulla prima riga di una pagina nuova**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 174 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Non mi fa mettere le checkbox nei template»
+
+- **[Bug fix]** In un template appena creato — e in ogni pagina nuova,
+  comprese quelle delle righe dei database — **scegliere un tipo dal "+"
+  sulla prima riga, prima di scriverci, non faceva niente**: "To-do list"
+  non metteva la casella, e quello che si scriveva dopo restava testo
+  normale. La prima riga di una pagina senza righe si vede ma nel database
+  non c'è finché non ci si scrive (vedi `placeholder`), e il cambio di tipo
+  scrive **una colonna sola** di una riga che deve già esserci: non la
+  trovava e si perdeva. Con "/" funzionava, perché la barra scritta salvava
+  prima la riga. Ora le modifiche di una colonna sola (tipo, testo,
+  rientro, numero di partenza, notifica, tabella, vista collegata)
+  passano da `blocksDb`, che prima salva quella riga **solo se manca**:
+  se intanto è stata scritta, resta com'è
+- **[Progetto]** `BlockDao.insertIfAbsent`, `PageRepository.saveBlockIfAbsent`.
+  Test in `EmptyPageTest`
+- Verificato sul telefono: riprodotto prima della correzione (template
+  nuovo, "+" → To-do list, "ciao": nel database un paragrafo "ciao").
+  Dopo: la casella compare subito, "ciao", Invio, "due" → due caselle nel
+  database. I template di prova sono nel cestino; "SaaS" e "SuduS"
+  dell'utente non sono stati toccati
+
 **26/09/2026 — i template delle pagine, e le proprietà in cima alla pagina di una riga**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 173 test
 passati; commit solo in locale)*

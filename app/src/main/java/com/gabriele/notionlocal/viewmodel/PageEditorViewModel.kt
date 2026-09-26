@@ -203,6 +203,60 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
     private fun unsavedPlaceholderIn(blocks: List<BlockEntity>): BlockEntity? =
         placeholder?.takeIf { p -> blocks.any { it.id == p.id } && lastLoadedBlocks.none { it.id == p.id } }
 
+    /**
+     * **Le modifiche di una colonna sola passano da qui** (dal 26/09/2026).
+     *
+     * Cambiare il tipo, il testo, il rientro, il numero di partenza, l'ora
+     * della notifica… scrive nel database *solo quella colonna* di un blocco
+     * che c'è già. La riga vuota di una pagina nuova (`placeholder`) invece
+     * non c'è ancora: la modifica non trovava niente e andava persa. Così
+     * "To-do list" dal "+" sulla prima riga di un template appena creato non
+     * faceva la casella, e quello che si scriveva dopo restava testo normale
+     * (trovato dall'utente). Qui prima si salva quella riga, **solo se
+     * manca**: se nel frattempo è stata scritta, resta com'è.
+     */
+    private val blocksDb = object {
+        private suspend fun saved(blockId: String) {
+            placeholder?.takeIf { it.id == blockId }?.let { repository.saveBlockIfAbsent(it) }
+        }
+
+        suspend fun setBlockText(blockId: String, textJson: String) {
+            saved(blockId); repository.setBlockText(blockId, textJson)
+        }
+
+        suspend fun setBlockType(blockId: String, type: BlockType) {
+            saved(blockId); repository.setBlockType(blockId, type)
+        }
+
+        suspend fun setBlockExpanded(blockId: String, expanded: Boolean) {
+            saved(blockId); repository.setBlockExpanded(blockId, expanded)
+        }
+
+        suspend fun setNumberStart(blockId: String, startsAt: Int?) {
+            saved(blockId); repository.setNumberStart(blockId, startsAt)
+        }
+
+        suspend fun setNotifyAt(blockId: String, at: Long) {
+            saved(blockId); repository.setNotifyAt(blockId, at)
+        }
+
+        suspend fun setIndentLevel(blockId: String, level: Int) {
+            saved(blockId); repository.setIndentLevel(blockId, level)
+        }
+
+        suspend fun setBlockTypeAndLink(blockId: String, type: BlockType, linkedPageId: String) {
+            saved(blockId); repository.setBlockTypeAndLink(blockId, type, linkedPageId)
+        }
+
+        suspend fun unnestAndConvert(blockId: String, newType: BlockType) {
+            saved(blockId); repository.unnestAndConvert(blockId, newType)
+        }
+
+        suspend fun setTableCellText(blockId: String, row: Int, col: Int, text: String) {
+            saved(blockId); repository.setTableCellText(blockId, row, col, text)
+        }
+    }
+
     /** Mostra subito una riga nuova che il database deve ancora scrivere. */
     private fun showBeforeSaved(newBlockId: String, applyTo: (List<BlockEntity>) -> List<BlockEntity>) {
         pendingInserts += PendingInsert(newBlockId, applyTo)
@@ -1022,7 +1076,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
     fun updateBlockSpans(block: BlockEntity, spans: List<RichTextSpan>) {
         snapshotForTextEdit(block.id)
         val textJson = json.encodeToString(spans)
-        viewModelScope.launch { repository.setBlockText(block.id, textJson) }
+        viewModelScope.launch { blocksDb.setBlockText(block.id, textJson) }
     }
 
     /**
@@ -1046,9 +1100,9 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
             // che non le fa vedere, e sparivano. Escono subito sotto, come
             // quando il toggle si toglie col backspace.
             if (liftChildren) {
-                repository.unnestAndConvert(block.id, newType)
+                blocksDb.unnestAndConvert(block.id, newType)
             } else {
-                repository.setBlockType(block.id, newType)
+                blocksDb.setBlockType(block.id, newType)
             }
             // **Un toggle nuovo nasce aperto.** Lo stato aperto/chiuso sta
             // nel blocco e ci resta anche quando il blocco cambia tipo:
@@ -1057,7 +1111,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
             // dentro, creava un secondo toggle sotto. Chi crea un toggle
             // ci vuole scrivere dentro subito.
             if (newType == BlockType.TOGGLE && block.type != BlockType.TOGGLE) {
-                repository.setBlockExpanded(block.id, true)
+                blocksDb.setBlockExpanded(block.id, true)
             }
             // **Diventato toggle, si continua a scriverne il titolo.** Il
             // toggle è una riga a sé, fuori dal testo condiviso: il campo
@@ -1104,7 +1158,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         }
         viewModelScope.launch {
             val inserted = structuralEdits.withLock {
-                repository.setBlockText(current.id, titleJson)
+                blocksDb.setBlockText(current.id, titleJson)
                 if (current.isExpanded) {
                     repository.insertFirstChild(current, newBlockId, newSpansJson)
                     true
@@ -1171,21 +1225,21 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
     fun beginNewListHere(blockId: String) {
         if (_blocks.value.none { it.id == blockId }) return
         snapshotForStructuralChange()
-        viewModelScope.launch { repository.setNumberStart(blockId, 1) }
+        viewModelScope.launch { blocksDb.setNumberStart(blockId, 1) }
     }
 
     /** Toglie il "riparti da qui": il conteggio riprende da quello di prima. */
     fun continuePreviousList(blockId: String) {
         if (_blocks.value.none { it.id == blockId }) return
         snapshotForStructuralChange()
-        viewModelScope.launch { repository.setNumberStart(blockId, null) }
+        viewModelScope.launch { blocksDb.setNumberStart(blockId, null) }
     }
 
     /** Toglie il numero: la riga resta, ma come paragrafo normale. */
     fun removeNumber(blockId: String) {
         if (_blocks.value.none { it.id == blockId }) return
         snapshotForStructuralChange()
-        viewModelScope.launch { repository.setBlockType(blockId, BlockType.PARAGRAPH) }
+        viewModelScope.launch { blocksDb.setBlockType(blockId, BlockType.PARAGRAPH) }
     }
 
     /**
@@ -1204,7 +1258,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
     fun changeToBullet(blockId: String) {
         if (_blocks.value.none { it.id == blockId }) return
         snapshotForStructuralChange()
-        viewModelScope.launch { repository.setBlockType(blockId, BlockType.BULLET_LIST_ITEM) }
+        viewModelScope.launch { blocksDb.setBlockType(blockId, BlockType.BULLET_LIST_ITEM) }
     }
 
     /**
@@ -1262,7 +1316,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         // riporterebbe indietro il titolo scritto nel frattempo.
         val current = _blocks.value.find { it.id == block.id } ?: block
         viewModelScope.launch {
-            repository.setBlockExpanded(current.id, !current.isExpanded)
+            blocksDb.setBlockExpanded(current.id, !current.isExpanded)
         }
     }
 
@@ -1547,7 +1601,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
     fun setNotificationTime(block: BlockEntity, at: Long) {
         snapshotForStructuralChange()
         viewModelScope.launch {
-            repository.setNotifyAt(block.id, at)
+            blocksDb.setNotifyAt(block.id, at)
             NoteAlarms.reschedule()
         }
     }
@@ -1963,13 +2017,13 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
             isListItem -> {
                 snapshotForStructuralChange()
                 viewModelScope.launch {
-                    repository.setBlockType(block.id, BlockType.PARAGRAPH)
+                    blocksDb.setBlockType(block.id, BlockType.PARAGRAPH)
                 }
             }
             block.indentLevel > 0 -> {
                 snapshotForStructuralChange()
                 viewModelScope.launch {
-                    repository.setIndentLevel(block.id, block.indentLevel - 1)
+                    blocksDb.setIndentLevel(block.id, block.indentLevel - 1)
                 }
             }
             // Prima riga del gruppo, e sopra c'è un blocco che vive per
@@ -2055,7 +2109,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         viewModelScope.launch {
             // Solo la colonna del tipo: il testo resta quello che c'è
             // adesso nel database, non la copia che ha in mano la UI.
-            repository.setBlockType(block.id, BlockType.PARAGRAPH)
+            blocksDb.setBlockType(block.id, BlockType.PARAGRAPH)
             // **Senza attesa.** Qui il campo muore per forza: il blocco
             // passa da riga a sé a testo scorrevole, che è un'altra
             // composable. L'unica cosa che si può fare è far riprendere
@@ -2087,7 +2141,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         snapshotForStructuralChange()
         viewModelScope.launch {
             structuralEdits.withLock {
-                repository.unnestAndConvert(current.id, BlockType.PARAGRAPH)
+                blocksDb.unnestAndConvert(current.id, BlockType.PARAGRAPH)
             }
             // Il cursore resta **a inizio riga**, dov'era quando si è
             // premuto: così il backspace successivo unisce la riga a
@@ -2253,7 +2307,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
             // Solo la colonna del testo: qui non cambia nient'altro del
             // blocco, e riscriverlo tutto rischierebbe di riportare
             // indietro un tipo o un rientro cambiati nel frattempo.
-            repository.setBlockText(block.id, json.encodeToString(spans))
+            blocksDb.setBlockText(block.id, json.encodeToString(spans))
         }
         return true
     }
@@ -2484,7 +2538,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
     fun setTableCell(blockId: String, row: Int, col: Int, text: String) {
         // Il contenuto delle celle vive in una tabella separata dai
         // blocchi: non è coperto dalla cronologia annulla/ripristina.
-        viewModelScope.launch { repository.setTableCellText(blockId, row, col, text) }
+        viewModelScope.launch { blocksDb.setTableCellText(blockId, row, col, text) }
     }
 
     fun resizeTable(block: BlockEntity, newRows: Int, newCols: Int) {
@@ -2585,10 +2639,10 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         viewModelScope.launch {
             structuralEdits.withLock {
                 if (liftChildren) repository.unnestChildren(block.id)
-                repository.setBlockType(block.id, BlockType.TABLE)
+                blocksDb.setBlockType(block.id, BlockType.TABLE)
                 if (text.isNotEmpty()) {
-                    repository.setTableCellText(block.id, 0, 0, text)
-                    repository.setBlockText(block.id, EMPTY_TEXT_JSON)
+                    blocksDb.setTableCellText(block.id, 0, 0, text)
+                    blocksDb.setBlockText(block.id, EMPTY_TEXT_JSON)
                 }
             }
         }
@@ -2614,7 +2668,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
                 current.copy(text = "", color = hex)
             }
             snapshotForStructuralChange()
-            viewModelScope.launch { repository.setBlockText(block.id, json.encodeToString(listOf(colored))) }
+            viewModelScope.launch { blocksDb.setBlockText(block.id, json.encodeToString(listOf(colored))) }
             return
         }
         applyColorToRun(listOf(block.id), 0, plainTextOf(block).length, background, hex)
@@ -2770,7 +2824,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
                 } else {
                     // Vedi `updateBlockType`: i figli di un toggle escono prima.
                     if (liftChildren) repository.unnestChildren(block.id)
-                    repository.setBlockTypeAndLink(block.id, BlockType.DATABASE_LINK, viewId)
+                    blocksDb.setBlockTypeAndLink(block.id, BlockType.DATABASE_LINK, viewId)
                 }
             }
         }

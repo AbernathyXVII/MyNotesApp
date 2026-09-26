@@ -5,6 +5,7 @@ import android.os.Looper
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.gabriele.notionlocal.data.AppDatabase
+import com.gabriele.notionlocal.data.entity.BlockType
 import com.gabriele.notionlocal.data.entity.PageEntity
 import com.gabriele.notionlocal.data.repository.PageRepository
 import kotlinx.coroutines.runBlocking
@@ -79,5 +80,21 @@ class EmptyPageTest {
         viewModel.updateRun(listOf(first), listOf("Ciao"), listOf(""), caretLine = 0)
         waitFor("la riga scritta") { viewModel.blocks.value.singleOrNull()?.textJson?.contains("Ciao") == true }
         assertEquals(first, viewModel.blocks.value.single().id)
+    }
+
+    @Test
+    fun theEmptyLineTurnsIntoAToDoFromThePlusMenu() {
+        // "To-do list" dal "+" prima di scrivere niente: la riga non era nel
+        // database, il cambio di tipo non la trovava e si perdeva (trovato
+        // dall'utente il 26/09/2026, in un template nuovo).
+        val first = viewModel.blocks.value.single()
+        viewModel.updateBlockType(first, BlockType.CHECKBOX)
+        waitFor("la casella") { viewModel.blocks.value.singleOrNull()?.type == BlockType.CHECKBOX }
+
+        viewModel.updateRun(listOf(first.id), listOf("ciao"), listOf(""), caretLine = 0)
+        waitFor("la casella scritta") { viewModel.blocks.value.singleOrNull()?.textJson?.contains("ciao") == true }
+        val saved = runBlocking { db.blockDao().getBlocksForPageOnce(page.id) }.single()
+        assertEquals(first.id, saved.id)
+        assertEquals(BlockType.CHECKBOX, saved.type)
     }
 }

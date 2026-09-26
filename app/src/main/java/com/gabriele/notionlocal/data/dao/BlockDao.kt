@@ -39,6 +39,10 @@ interface BlockDao {
     @Upsert
     suspend fun insertAll(blocks: List<BlockEntity>)
 
+    /** Lo crea **solo se non c'è**: se c'è già, lo lascia com'è. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertIfAbsent(block: BlockEntity)
+
     @Update
     suspend fun update(block: BlockEntity)
 

@@ -1348,6 +1348,9 @@ class PageRepository(private val db: AppDatabase) {
 
     suspend fun saveBlock(block: BlockEntity) = blockDao.insert(block)
 
+    /** Salva il blocco solo se nel database non c'è ancora (vedi `PageEditorViewModel.placeholder`). */
+    suspend fun saveBlockIfAbsent(block: BlockEntity) = blockDao.insertIfAbsent(block)
+
     /**
      * "Fai posto da qui in poi": sposta avanti di `by` la numerazione
      * dei blocchi fratelli da `fromIndex` compreso. Vedi
