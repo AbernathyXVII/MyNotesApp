@@ -99,4 +99,15 @@ class NumberFormatTest {
         assertEquals(null, encodeViewCalculations(emptyMap()))
         assertEquals(emptyMap<String, Calculation>(), parseViewCalculations("c1=NON_ESISTE"))
     }
+
+    @Test
+    fun whereEachResultStandsIsSavedNextToTheCalculations() {
+        val calcs = mapOf("c1" to Calculation.SUM)
+        val aligns = mapOf("c1" to CellAlignment.CENTER, NAME_CALCULATION_KEY to CellAlignment.LEFT)
+        val text = encodeViewCalculations(calcs, aligns)
+        assertEquals(calcs, parseViewCalculations(text))
+        assertEquals(aligns, parseCalculationAlignments(text))
+        // I calcoli salvati prima non hanno allineamenti: stanno a destra.
+        assertEquals(emptyMap<String, CellAlignment>(), parseCalculationAlignments("c1=SUM"))
+    }
 }

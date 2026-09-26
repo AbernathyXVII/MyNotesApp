@@ -19,6 +19,8 @@ import com.gabriele.notionlocal.data.entity.Calculation
 import com.gabriele.notionlocal.data.entity.NumberSettings
 import com.gabriele.notionlocal.data.entity.encodeViewCalculations
 import com.gabriele.notionlocal.data.entity.parseViewCalculations
+import com.gabriele.notionlocal.data.entity.parseCalculationAlignments
+import com.gabriele.notionlocal.data.entity.CellAlignment
 import com.gabriele.notionlocal.data.entity.withNumberSettings
 import com.gabriele.notionlocal.data.security.AppLock
 import com.gabriele.notionlocal.data.entity.SORT_BY_NAME
@@ -1143,13 +1145,6 @@ class DatabaseViewModel(
         viewModelScope.launch { pageRepository.setViewHiddenColumns(page.id, ids) }
     }
 
-    /** Mette il contenuto della colonna al centro, o lo rimanda a sinistra. */
-    fun setColumnCentered(columnId: String, centered: Boolean) {
-        val column = rawColumn(columnId) ?: return
-        if (column.centerContent == centered) return
-        viewModelScope.launch { repository.updateColumn(column.copy(centerContent = centered)) }
-    }
-
     /** Nasconde o rimostra tutte le colonne in un colpo solo. */
     fun setAllColumnsHidden(hidden: Boolean) {
         if (_page.value?.sourceDatabaseId != null) {
@@ -1196,9 +1191,39 @@ class DatabaseViewModel(
         val current = _page.value ?: return
         val calcs = parseViewCalculations(current.viewCalculations).toMutableMap()
         if (calculation == null) calcs.remove(key) else calcs[key] = calculation
-        val updated = current.copy(viewCalculations = encodeViewCalculations(calcs))
+        val alignments = parseCalculationAlignments(current.viewCalculations)
+        val updated = current.copy(viewCalculations = encodeViewCalculations(calcs, alignments))
         _page.value = updated
         viewModelScope.launch { pageRepository.updatePage(updated) }
+    }
+
+    /** Dove sta il risultato del calcolo di una colonna (dal 26/09/2026): tenendo premuto il calcolo. */
+    fun setCalculationAlignment(key: String, alignment: CellAlignment) {
+        val current = _page.value ?: return
+        val calcs = parseViewCalculations(current.viewCalculations)
+        val alignments = parseCalculationAlignments(current.viewCalculations).toMutableMap()
+        // A destra è come stanno di suo: non serve scriverlo.
+        if (alignment == CellAlignment.RIGHT) alignments.remove(key) else alignments[key] = alignment
+        val updated = current.copy(viewCalculations = encodeViewCalculations(calcs, alignments))
+        _page.value = updated
+        viewModelScope.launch { pageRepository.updatePage(updated) }
+    }
+
+    /**
+     * **Dove sta il contenuto delle celle di una colonna** (dal 26/09/2026): a
+     * sinistra, al centro o a destra. `centerContent` segue, così le versioni
+     * di prima della 37 leggono ancora il centro.
+     */
+    fun setColumnAlignment(columnId: String, alignment: CellAlignment) {
+        val column = rawColumn(columnId) ?: return
+        viewModelScope.launch {
+            repository.updateColumn(
+                column.copy(
+                    contentAlignment = alignment.name,
+                    centerContent = alignment == CellAlignment.CENTER
+                )
+            )
+        }
     }
 
     /**

@@ -1,5 +1,7 @@
 package com.gabriele.notionlocal.data
 
+import com.gabriele.notionlocal.data.entity.CellAlignment
+import com.gabriele.notionlocal.data.entity.cellAlignment
 import android.app.Application
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
@@ -68,7 +70,7 @@ class MigrationTest {
         assertNull(page.sourceDatabaseId)
         assertNull(page.viewHiddenColumnIds)
         assertNull(page.cardCoverScale)
-        assertEquals(36, db.openHelper.readableDatabase.version)
+        assertEquals(37, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -84,7 +86,7 @@ class MigrationTest {
         assertNull(yahei.cardCoverScale)
         assertNull(yahei.cardCoverOffsetX)
         assertNull(yahei.cardCoverOffsetY)
-        assertEquals(36, db.openHelper.readableDatabase.version)
+        assertEquals(37, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -112,7 +114,7 @@ class MigrationTest {
         assertEquals(listOf(RichTextSpan(text = "", color = "#E03E3E")), spans("b2"))
         // Una pagina senza font resta com'era.
         assertEquals(listOf(RichTextSpan(text = "Normale")), spans("b3"))
-        assertEquals(36, db.openHelper.readableDatabase.version)
+        assertEquals(37, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -124,7 +126,7 @@ class MigrationTest {
         assertNull(block.notifyAt)
         assertTrue(db.blockDao().getNotificationRows().isEmpty())
         assertTrue(db.databaseDao().getNotifyingDateCells().isEmpty())
-        assertEquals(36, db.openHelper.readableDatabase.version)
+        assertEquals(37, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -144,7 +146,7 @@ class MigrationTest {
             )
         )
         assertEquals("b1", db.inkDao().getForPageOnce("p1").single().anchor)
-        assertEquals(36, db.openHelper.readableDatabase.version)
+        assertEquals(37, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -154,7 +156,7 @@ class MigrationTest {
         assertEquals("Pagina alla 33", page.title)
         assertFalse(page.isProtected)
         assertEquals(0, db.pageDao().countProtected())
-        assertEquals(36, db.openHelper.readableDatabase.version)
+        assertEquals(37, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -165,7 +167,7 @@ class MigrationTest {
         assertNull(page.notebookSectionId)
         assertTrue(db.notebookDao().getNotebooksOnce().isEmpty())
         assertEquals(0, db.notebookDao().countProtectedSections())
-        assertEquals(36, db.openHelper.readableDatabase.version)
+        assertEquals(37, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -179,6 +181,16 @@ class MigrationTest {
         assertTrue(column.showNumber)
         assertFalse(column.ringCentered)
         assertNull(db.pageDao().getById("db1")!!.viewCalculations)
-        assertEquals(36, db.openHelper.readableDatabase.version)
+        assertEquals(37, db.openHelper.readableDatabase.version)
+    }
+
+    @Test
+    fun from36TheCheckboxCenteredBeforeStaysCentered() = runBlocking<Unit> {
+        val db = AppDatabase.getInstance(databaseAtVersion(36))
+        val columns = db.databaseDao().getColumnsForPageOnce("db1").associateBy { it.id }
+        assertNull(columns.getValue("c1").contentAlignment)
+        assertEquals(CellAlignment.LEFT, columns.getValue("c1").cellAlignment)
+        assertEquals(CellAlignment.CENTER, columns.getValue("c2").cellAlignment)
+        assertEquals(37, db.openHelper.readableDatabase.version)
     }
 }

@@ -1,5 +1,9 @@
 package com.gabriele.notionlocal.ui.screen
 
+import androidx.compose.material.icons.filled.FormatAlignRight
+import com.gabriele.notionlocal.data.entity.parseCalculationAlignments
+import com.gabriele.notionlocal.data.entity.cellAlignment
+import com.gabriele.notionlocal.data.entity.CellAlignment
 import androidx.compose.ui.draw.alpha
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Functions
@@ -953,8 +957,8 @@ fun DatabaseContent(
                     },
                     onMoveProperty = { column, delta -> viewModel.moveColumn(column.id, delta) },
                     onHideProperty = { viewModel.setColumnHidden(it.id, true) },
-                    onToggleCenterProperty = {
-                        viewModel.setColumnCentered(it.id, !it.centerContent)
+                    onToggleCenterProperty = { column, alignment ->
+                        viewModel.setColumnAlignment(column.id, alignment)
                     },
                     onAddProperty = {
                         focusManager.clearFocus()
@@ -971,6 +975,8 @@ fun DatabaseContent(
                         focusManager.clearFocus()
                         calculateTarget = it
                     },
+                    calculationAlignments = parseCalculationAlignments(page?.viewCalculations),
+                    onCalculationAlign = { key, alignment -> viewModel.setCalculationAlignment(key, alignment) },
                     onOpenRow = openRow,
                     onRowLongPress = { row ->
                         focusManager.clearFocus()
@@ -1403,7 +1409,7 @@ private fun TableLayout(
     onEditProperty: (DatabaseColumnEntity) -> Unit,
     onMoveProperty: (DatabaseColumnEntity, Int) -> Unit,
     onHideProperty: (DatabaseColumnEntity) -> Unit,
-    onToggleCenterProperty: (DatabaseColumnEntity) -> Unit,
+    onToggleCenterProperty: (DatabaseColumnEntity, CellAlignment) -> Unit,
     onAddProperty: () -> Unit,
     onTitleChange: (DatabaseRowEntity, String) -> Unit,
     onOpenRow: (DatabaseRowEntity) -> Unit,
@@ -1420,7 +1426,9 @@ private fun TableLayout(
     onChangeTypeProperty: (DatabaseColumnEntity) -> Unit = {},
     /** I calcoli di questa vista, per colonna (vedi `CalculationFooter`). */
     calculations: Map<String, Calculation> = emptyMap(),
-    onCalculate: (CalculateTarget) -> Unit = {}
+    onCalculate: (CalculateTarget) -> Unit = {},
+    calculationAlignments: Map<String, CellAlignment> = emptyMap(),
+    onCalculationAlign: (String, CellAlignment) -> Unit = { _, _ -> }
 ) {
     // Dentro un contenitore che scorre in orizzontale la larghezza
     // disponibile è illimitata: una linea che chiede "tutta la
@@ -1478,7 +1486,7 @@ private fun TableLayout(
                 HorizontalDivider(modifier = Modifier.width(tableWidth))
                 }
             }
-            CalculationFooter(state.rows, state, shownColumns, calculations, onCalculate)
+            CalculationFooter(state.rows, state, shownColumns, calculations, onCalculate, calculationAlignments, onCalculationAlign)
             return@Column
         }
 
@@ -1524,7 +1532,7 @@ private fun TableLayout(
                     }
                 }
                 // I calcoli di questo gruppo, sotto le sue righe.
-                CalculationFooter(group.rows, state, shownColumns, calculations, onCalculate)
+                CalculationFooter(group.rows, state, shownColumns, calculations, onCalculate, calculationAlignments, onCalculationAlign)
                 // Una pagina creata da dentro un gruppo nasce già con
                 // quel valore: altrimenti comparirebbe nel gruppo
                 // "senza valore", cioè da tutt'altra parte rispetto a
@@ -1563,7 +1571,7 @@ private fun TableHeaderRow(
     onEditProperty: (DatabaseColumnEntity) -> Unit,
     onMoveProperty: (DatabaseColumnEntity, Int) -> Unit,
     onHideProperty: (DatabaseColumnEntity) -> Unit,
-    onToggleCenterProperty: (DatabaseColumnEntity) -> Unit,
+    onToggleCenterProperty: (DatabaseColumnEntity, CellAlignment) -> Unit,
     onAddProperty: () -> Unit,
     onChangeTypeProperty: (DatabaseColumnEntity) -> Unit = {},
     onCalculate: (CalculateTarget) -> Unit = {}
@@ -1580,7 +1588,7 @@ private fun TableHeaderRow(
                 onEdit = { onEditProperty(column) },
                 onMove = { delta -> onMoveProperty(column, delta) },
                 onHide = { onHideProperty(column) },
-                onToggleCenter = { onToggleCenterProperty(column) },
+                onAlign = { alignment -> onToggleCenterProperty(column, alignment) },
                 onChangeType = { onChangeTypeProperty(column) },
                 onCalculate = { onCalculate(CalculateTarget(column.id, column.type, DbStrings.columnName(column.name))) }
             )
@@ -1603,7 +1611,9 @@ private fun CalculationFooter(
     state: DatabaseTableState,
     columns: List<DatabaseColumnEntity>,
     calculations: Map<String, Calculation>,
-    onCalculate: (CalculateTarget) -> Unit
+    onCalculate: (CalculateTarget) -> Unit,
+    alignments: Map<String, CellAlignment> = emptyMap(),
+    onAlign: (String, CellAlignment) -> Unit = { _, _ -> }
 ) {
     // Un calcolo che il tipo della colonna non ha più (cambiato dopo) non si mostra.
     fun valid(key: String, type: ColumnType?): Calculation? =
@@ -1613,13 +1623,11 @@ private fun CalculationFooter(
     if (nameCalc == null && columnCalcs.values.all { it == null }) return
 
     Row {
-        Box(
-            modifier = Modifier
-                .width(NAME_COLUMN_WIDTH)
-                .height(ROW_HEIGHT)
-                .clickable { onCalculate(CalculateTarget(NAME_CALCULATION_KEY, null, DbStrings.name)) }
-                .padding(horizontal = 12.dp),
-            contentAlignment = Alignment.CenterEnd
+        CalculationCell(
+            width = NAME_COLUMN_WIDTH,
+            alignment = alignments[NAME_CALCULATION_KEY] ?: CellAlignment.RIGHT,
+            onClick = { onCalculate(CalculateTarget(NAME_CALCULATION_KEY, null, DbStrings.name)) },
+            onAlign = { onAlign(NAME_CALCULATION_KEY, it) }
         ) {
             if (nameCalc != null) {
                 CalculationLabel(nameCalc, calculationText(calculate(nameCalc, null, rows.map { it.title }), null))
@@ -1628,13 +1636,11 @@ private fun CalculationFooter(
         Spacer(modifier = Modifier.width(SEPARATOR_WIDTH))
         columns.forEach { column ->
             val calc = columnCalcs[column.id]
-            Box(
-                modifier = Modifier
-                    .width(COLUMN_WIDTH)
-                    .height(ROW_HEIGHT)
-                    .clickable { onCalculate(CalculateTarget(column.id, column.type, DbStrings.columnName(column.name))) }
-                    .padding(horizontal = 12.dp),
-                contentAlignment = Alignment.CenterEnd
+            CalculationCell(
+                width = COLUMN_WIDTH,
+                alignment = alignments[column.id] ?: CellAlignment.RIGHT,
+                onClick = { onCalculate(CalculateTarget(column.id, column.type, DbStrings.columnName(column.name))) },
+                onAlign = { onAlign(column.id, it) }
             ) {
                 if (calc != null) {
                     val values = rows.map { row ->
@@ -1653,6 +1659,60 @@ private fun CalculationFooter(
             Spacer(modifier = Modifier.width(SEPARATOR_WIDTH))
         }
         Box(modifier = Modifier.width(ADD_PROPERTY_WIDTH).height(ROW_HEIGHT))
+    }
+}
+
+/**
+ * Una casella della riga dei calcoli: toccandola si sceglie il calcolo,
+ * **tenendola premuta** (dal 26/09/2026) dove sta il risultato — a
+ * sinistra, al centro o a destra (di suo a destra, come su Notion).
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun CalculationCell(
+    width: Dp,
+    alignment: CellAlignment,
+    onClick: () -> Unit,
+    onAlign: (CellAlignment) -> Unit,
+    content: @Composable () -> Unit
+) {
+    var menuOpen by remember { mutableStateOf(false) }
+    Box {
+        Box(
+            modifier = Modifier
+                .width(width)
+                .height(ROW_HEIGHT)
+                .combinedClickable(onClick = onClick, onLongClick = { menuOpen = true })
+                .padding(horizontal = 12.dp),
+            contentAlignment = alignment.box
+        ) {
+            content()
+        }
+        DropdownMenu(
+            expanded = menuOpen,
+            onDismissRequest = { menuOpen = false },
+            modifier = Modifier.background(DarkSheet)
+        ) {
+            listOf(
+                Triple(CellAlignment.LEFT, DbStrings.alignLeft, Icons.Filled.FormatAlignLeft),
+                Triple(CellAlignment.CENTER, DbStrings.center, Icons.Filled.FormatAlignCenter),
+                Triple(CellAlignment.RIGHT, DbStrings.alignRight, Icons.Filled.FormatAlignRight)
+            ).forEach { (option, label, icon) ->
+                DropdownMenuItem(
+                    text = { Text(label) },
+                    leadingIcon = { Icon(icon, contentDescription = null) },
+                    trailingIcon = if (option == alignment) {
+                        { Icon(Icons.Filled.Check, contentDescription = DbStrings.selected) }
+                    } else {
+                        null
+                    },
+                    onClick = {
+                        menuOpen = false
+                        onAlign(option)
+                    }
+                )
+            }
+        }
     }
 }
 
@@ -4490,7 +4550,7 @@ private fun PropertyHeaderCell(
     onEdit: () -> Unit,
     onMove: (Int) -> Unit,
     onHide: () -> Unit,
-    onToggleCenter: () -> Unit,
+    onAlign: (CellAlignment) -> Unit,
     onChangeType: () -> Unit = {},
     onCalculate: () -> Unit = {}
 ) {
@@ -4577,29 +4637,25 @@ private fun PropertyHeaderCell(
                     onChangeType()
                 }
             )
-            // Solo per le caselle da spuntare: è l'unico contenuto di
-            // cella che è un segno solo, dove l'allineamento si nota.
-            // Un testo o una data centrati renderebbero la colonna
-            // illeggibile, perché le righe non partirebbero più tutte
-            // dallo stesso punto.
-            if (column.type == ColumnType.CHECKBOX) {
+            // **Dove sta il contenuto delle celle** (dal 26/09/2026, per ogni
+            // tipo; prima solo le caselle si centravano): a sinistra, al
+            // centro o a destra. L'intestazione resta sempre a sinistra.
+            listOf(
+                Triple(CellAlignment.LEFT, DbStrings.alignLeft, Icons.Filled.FormatAlignLeft),
+                Triple(CellAlignment.CENTER, DbStrings.center, Icons.Filled.FormatAlignCenter),
+                Triple(CellAlignment.RIGHT, DbStrings.alignRight, Icons.Filled.FormatAlignRight)
+            ).forEach { (alignment, label, icon) ->
                 DropdownMenuItem(
-                    text = {
-                        Text(if (column.centerContent) DbStrings.alignLeft else DbStrings.center)
-                    },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = if (column.centerContent) {
-                                Icons.Filled.FormatAlignLeft
-                            } else {
-                                Icons.Filled.FormatAlignCenter
-                            },
-                            contentDescription = null
-                        )
+                    text = { Text(label) },
+                    leadingIcon = { Icon(icon, contentDescription = null) },
+                    trailingIcon = if (column.cellAlignment == alignment) {
+                        { Icon(Icons.Filled.Check, contentDescription = DbStrings.selected) }
+                    } else {
+                        null
                     },
                     onClick = {
                         menuOpen = false
-                        onToggleCenter()
+                        onAlign(alignment)
                     }
                 )
             }
@@ -4854,16 +4910,15 @@ private fun CellEditor(
                     Modifier
                 }
             ),
-        contentAlignment = if (column.centerContent) {
-            Alignment.Center
-        } else {
-            Alignment.CenterStart
-        }
+        contentAlignment = column.cellAlignment.box
     ) {
         // Il margine laterale lo mette il contenuto, non questo
         // riquadro: per la data deve stare **dentro** la zona toccabile
         // (vedi CellContent), altrimenti i dodici punti ai lati non
         // aprono il calendario.
+        // Dove sta il contenuto: lo sanno anche i pezzi larghi quanto la
+        // cella (il testo, i tag, la data), che si allineano da sé.
+        CompositionLocalProvider(LocalCellAlignment provides column.cellAlignment) {
         CellContent(
             row = row,
             column = column,
@@ -4875,6 +4930,7 @@ private fun CellEditor(
             onSetOptionColor = onSetOptionColor,
             onDeleteOption = onDeleteOption
         )
+        }
     }
 }
 
@@ -5006,7 +5062,7 @@ private fun CellContent(
                         if (column.type == ColumnType.NUMBER && !editing &&
                             column.numberDisplayKind != NumberDisplay.NUMBER && localValue.isNotBlank()
                         ) {
-                            Box(contentAlignment = Alignment.CenterStart) {
+                            Box(contentAlignment = LocalCellAlignment.current.box) {
                                 Box(modifier = Modifier.alpha(0f)) { field() }
                                 NumberVisual(column, localValue)
                             }
@@ -5025,7 +5081,8 @@ private fun CellContent(
                         imeAction = ImeAction.Done
                     ),
                     textStyle = MaterialTheme.typography.bodyMedium.copy(
-                        color = MaterialTheme.colorScheme.onBackground
+                        color = MaterialTheme.colorScheme.onBackground,
+                        textAlign = LocalCellAlignment.current.textAlign
                     ),
                     cursorBrush = SolidColor(MaterialTheme.colorScheme.onBackground),
                     modifier = Modifier
@@ -5093,6 +5150,7 @@ private fun TagCell(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { showSheet = true },
+        horizontalArrangement = LocalCellAlignment.current.arrangement,
         verticalAlignment = Alignment.CenterVertically
     ) {
         selected.forEach { label ->
@@ -5418,9 +5476,12 @@ private fun DateCell(
             .fillMaxHeight()
             .clickable { showPicker = true }
             .padding(horizontal = contentPadding),
-        contentAlignment = Alignment.CenterStart
+        contentAlignment = LocalCellAlignment.current.box
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        // La data col suo nome sta dove chiede la colonna: la riga è larga
+        // quanto la cella (il testo si restringe se non ci sta), e a
+        // spostarla dentro è la disposizione, non il riquadro intorno.
+        Row(horizontalArrangement = LocalCellAlignment.current.arrangement, verticalAlignment = Alignment.CenterVertically) {
             Text(
                 text = range?.label() ?: "—",
                 style = MaterialTheme.typography.bodyMedium,
@@ -5509,7 +5570,7 @@ private fun ColorCell(
             )
             .clickable(enabled = !locked) { editing = true }
             .padding(horizontal = if (inTable) contentPadding else 10.dp),
-        contentAlignment = Alignment.CenterStart
+        contentAlignment = LocalCellAlignment.current.box
     ) {
         Text(
             // Una cella vuota mostra il trattino, come le altre.

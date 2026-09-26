@@ -171,8 +171,29 @@ fun parseViewCalculations(text: String?): Map<String, Calculation> =
         part.substring(0, i) to calc
     }.toMap()
 
-fun encodeViewCalculations(calcs: Map<String, Calculation>): String? =
-    calcs.entries.joinToString(";") { "${it.key}=${it.value.name}" }.ifEmpty { null }
+fun encodeViewCalculations(
+    calcs: Map<String, Calculation>,
+    alignments: Map<String, CellAlignment> = emptyMap()
+): String? = (
+    calcs.entries.map { "${it.key}=${it.value.name}" } +
+        alignments.entries.map { "$ALIGN_PREFIX${it.key}=${it.value.name}" }
+    ).joinToString(";").ifEmpty { null }
+
+/**
+ * **Dove sta il risultato di ogni calcolo** sotto la tabella (dal
+ * 26/09/2026): nella stessa stringa dei calcoli, con le chiavi
+ * "align:colonna". Chi manca sta a destra, come su Notion.
+ */
+fun parseCalculationAlignments(text: String?): Map<String, CellAlignment> =
+    text.orEmpty().split(";").mapNotNull { part ->
+        if (!part.startsWith(ALIGN_PREFIX)) return@mapNotNull null
+        val i = part.indexOf('=')
+        if (i <= ALIGN_PREFIX.length) return@mapNotNull null
+        val align = CellAlignment.of(part.substring(i + 1)) ?: return@mapNotNull null
+        part.substring(ALIGN_PREFIX.length, i) to align
+    }.toMap()
+
+private const val ALIGN_PREFIX = "align:"
 
 /**
  * Il risultato di un calcolo, prima di essere scritto: un numero di pagine,

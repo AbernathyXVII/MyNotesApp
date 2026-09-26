@@ -2022,6 +2022,54 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**26/09/2026 — a sinistra, al centro o a destra: le celle e i calcoli**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 163 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Due piccole feature:
+> 1) dammi la possibilità di allineare a sinistra, a destra o perfettamente
+> al centro tutto quello che viene fuori dal Calculate, tenendo premuto su
+> ogni cella del Calculate;
+> 2) dammi la possibilità di allineare a sinistra, perfettamente al centro
+> (queste già ci sono) o a destra tutto quello che viene scritto in una
+> cella, che sia Select, Date, Number, o tutto il resto, sempre tenendo
+> premuto su ogni cella della Property, ma MAI la scritta delle Property:
+> quelle sempre a sinistra, lasciale così come sono.»
+
+- **[Nuova funzionalità]** **Le celle di ogni colonna a sinistra, al centro
+  o a destra**: tenendo premuta l'intestazione, tre voci — **Align left**,
+  **Center**, **Align right** — con la spunta su quella attuale, per
+  **ogni tipo** (prima si centravano solo le caselle). Si spostano il
+  testo, i numeri (anche barra e anello: l'anello al centro o a destra
+  segue la colonna, a sinistra comanda la sua "Position"), i tag, le date,
+  il testo delle celle colorate, le caselle, le date di creazione e
+  modifica. **Le intestazioni restano sempre a sinistra.** Vale in tutte
+  le viste che mostrano la colonna; la colonna del nome non cambia
+- **[Nuova funzionalità]** **Il risultato di ogni calcolo** sotto la
+  tabella a sinistra, al centro o a destra, **tenendolo premuto** (toccato
+  si cambia il calcolo, come prima). Di suo a destra, come su Notion. Vale
+  per quella vista, come i calcoli
+- **[Progetto]** **Database alla versione 37**: `database_columns.contentAlignment`
+  (LEFT, CENTER, RIGHT; vuoto = come prima, al centro solo le caselle
+  centrate col vecchio interruttore, vedi `cellAlignment`). Gli
+  allineamenti dei calcoli stanno nella stessa stringa dei calcoli della
+  vista, con le chiavi "align:colonna" (`parseCalculationAlignments`),
+  senza colonne nuove. Il contenuto della cella sa dove stare da
+  `LocalCellAlignment`; `setColumnCentered` non serve più. Test in
+  `NumberFormatTest` e `MigrationTest` 36→37 (una casella centrata prima
+  resta al centro), col file `v36.sql`
+- Verificato sul telefono (copia del database prima; migrazione alla 37, le
+  10 pagine tutte lì), su "SuduS al contrario", dove intanto l'utente aveva
+  scritto dei numeri (25, 81, 9, 71) e messo "Sum": tenuta premuta
+  l'intestazione di Number → Align left spuntato, Center, Align right →
+  Align right → i numeri a destra; Date → Center → i trattini al centro (la
+  data della prima riga ha l'ora e riempie la cella, quindi non ha spazio
+  per spostarsi); "SUM 186" tenuto premuto → Align left → a sinistra. Alla
+  fine rimesso com'era: Number e Date a sinistra, "SUM 186" a destra, il
+  calcolo dell'utente al suo posto (nel database la stringa dei calcoli è
+  tornata identica)
+
 **26/09/2026 — la proprietà Number: formato, cifre, barra e anello; "Calculate" sotto la tabella**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno, tranne quello
 elencato in fondo; 161 test passati; commit solo in locale)*
@@ -6716,7 +6764,8 @@ le finestre che apre. Chi lo usa passa solo l'id del blocco.
 
 ## Nota tecnica
 
-Lo schema è alla **versione 36** (la 36, del 26/09/2026, aggiunge le
+Lo schema è alla **versione 37** (la 37, del 26/09/2026, aggiunge
+l'allineamento delle celle; la 36, dello stesso giorno, aggiunge le
 impostazioni delle colonne Number e i calcoli delle viste; la 35, dello
 stesso giorno, aggiunge i
 quaderni: le tabelle `notebooks` e `notebook_sections` e

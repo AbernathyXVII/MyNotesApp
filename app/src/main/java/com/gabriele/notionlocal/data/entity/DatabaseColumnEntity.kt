@@ -137,5 +137,27 @@ data class DatabaseColumnEntity(
     /** Accanto alla barra o all'anello si vede anche il numero. */
     var showNumber: Boolean = true,
     /** L'anello in mezzo alla cella invece che a sinistra. */
-    var ringCentered: Boolean = false
+    var ringCentered: Boolean = false,
+    /**
+     * **Dove sta il contenuto delle celle** (dal 26/09/2026): a sinistra, al
+     * centro o a destra, per ogni tipo; le intestazioni restano sempre a
+     * sinistra. Null = come prima: al centro se `centerContent`, se no a
+     * sinistra. Letto con `cellAlignment`.
+     */
+    var contentAlignment: String? = null
 )
+
+/** A sinistra, al centro o a destra: le celle di una colonna, e i calcoli sotto la tabella. */
+enum class CellAlignment {
+    LEFT,
+    CENTER,
+    RIGHT;
+
+    companion object {
+        fun of(name: String?): CellAlignment? = entries.find { it.name == name }
+    }
+}
+
+/** Dove sta il contenuto delle celle di questa colonna. */
+val DatabaseColumnEntity.cellAlignment: CellAlignment
+    get() = CellAlignment.of(contentAlignment) ?: if (centerContent) CellAlignment.CENTER else CellAlignment.LEFT

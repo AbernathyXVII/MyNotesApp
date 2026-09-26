@@ -1,5 +1,8 @@
 package com.gabriele.notionlocal.ui.screen
 
+import com.gabriele.notionlocal.data.entity.CellAlignment
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -90,6 +93,32 @@ fun formatNumberValue(raw: String, settings: NumberSettings): String {
 
 fun formatNumberValue(raw: String, column: DatabaseColumnEntity): String = formatNumberValue(raw, column.numberSettings())
 
+// --- A sinistra, al centro, a destra (dal 26/09/2026) ---
+
+/** Dove sta il contenuto della cella che si sta disegnando: lo dà la tabella, altrove è a sinistra. */
+internal val LocalCellAlignment = staticCompositionLocalOf { CellAlignment.LEFT }
+
+internal val CellAlignment.box: Alignment
+    get() = when (this) {
+        CellAlignment.LEFT -> Alignment.CenterStart
+        CellAlignment.CENTER -> Alignment.Center
+        CellAlignment.RIGHT -> Alignment.CenterEnd
+    }
+
+internal val CellAlignment.arrangement: Arrangement.Horizontal
+    get() = when (this) {
+        CellAlignment.LEFT -> Arrangement.Start
+        CellAlignment.CENTER -> Arrangement.Center
+        CellAlignment.RIGHT -> Arrangement.End
+    }
+
+internal val CellAlignment.textAlign: TextAlign
+    get() = when (this) {
+        CellAlignment.LEFT -> TextAlign.Start
+        CellAlignment.CENTER -> TextAlign.Center
+        CellAlignment.RIGHT -> TextAlign.End
+    }
+
 private fun hexColor(hex: String?): Color =
     runCatching { Color(android.graphics.Color.parseColor(hex ?: DEFAULT_NUMBER_COLOR)) }
         .getOrDefault(Color(android.graphics.Color.parseColor(DEFAULT_NUMBER_COLOR)))
@@ -137,14 +166,26 @@ private fun NumberRing(fill: Float, color: Color, size: Dp = 20.dp) {
  * cella vuota resta vuota.
  */
 @Composable
-fun NumberVisual(column: DatabaseColumnEntity, raw: String, modifier: Modifier = Modifier) {
+fun NumberVisual(
+    column: DatabaseColumnEntity,
+    raw: String,
+    modifier: Modifier = Modifier,
+    /** Dove sta nella cella: la barra la riempie comunque; l'anello a destra o al centro se la colonna lo chiede. */
+    alignment: CellAlignment = LocalCellAlignment.current
+) {
     if (raw.isBlank()) return
     val settings = column.numberSettings()
     val color = hexColor(settings.color)
     val fill = numberFill(raw)
     val text = formatNumberValue(raw, settings)
     when (settings.display) {
-        NumberDisplay.NUMBER -> Text(text, style = MaterialTheme.typography.bodyMedium, maxLines = 1, modifier = modifier)
+        NumberDisplay.NUMBER -> Text(
+            text,
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = 1,
+            textAlign = alignment.textAlign,
+            modifier = modifier.fillMaxWidth()
+        )
         NumberDisplay.BAR -> Row(modifier = modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             if (settings.showNumber) {
                 Text(
@@ -159,7 +200,12 @@ fun NumberVisual(column: DatabaseColumnEntity, raw: String, modifier: Modifier =
         }
         NumberDisplay.RING -> Row(
             modifier = modifier.fillMaxWidth(),
-            horizontalArrangement = if (settings.ringCentered) Arrangement.Center else Arrangement.Start,
+            // A sinistra comanda "Position" dell'anello; al centro o a destra,
+            // l'allineamento della colonna.
+            horizontalArrangement = when (alignment) {
+                CellAlignment.LEFT -> if (settings.ringCentered) Arrangement.Center else Arrangement.Start
+                else -> alignment.arrangement
+            },
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (settings.showNumber) {

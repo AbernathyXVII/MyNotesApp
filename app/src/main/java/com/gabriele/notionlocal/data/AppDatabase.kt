@@ -55,7 +55,7 @@ import kotlinx.serialization.json.Json
         NotebookEntity::class,
         NotebookSectionEntity::class
     ],
-    version = 36,
+    version = 37,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -583,6 +583,18 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /**
+         * **Le celle a sinistra, al centro o a destra** (26/09/2026): la
+         * colonna `contentAlignment`, vuota per tutte. Le caselle già
+         * centrate col vecchio interruttore restano al centro (vedi
+         * `cellAlignment`).
+         */
+        private val MIGRATION_36_37 = object : Migration(36, 37) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE database_columns ADD COLUMN contentAlignment TEXT")
+            }
+        }
+
+        /**
          * Solo per i test: chiude il database e lo dimentica, così il
          * `getInstance` dopo riapre il file da capo (e ne esegue le
          * migrazioni). Senza, il secondo test troverebbe il database del
@@ -631,7 +643,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_32_33,
                         MIGRATION_33_34,
                         MIGRATION_34_35,
-                        MIGRATION_35_36
+                        MIGRATION_35_36,
+                        MIGRATION_36_37
                     )
                     .build()
                 INSTANCE = instance
