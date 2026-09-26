@@ -1,5 +1,9 @@
 package com.gabriele.notionlocal.ui.screen
 
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.TextRange
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.key
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.material.icons.filled.Lock
 import com.gabriele.notionlocal.ui.i18n.LockStrings
@@ -934,6 +938,7 @@ fun DatabaseContent(
                         propertyTarget = PropertyTarget.New()
                     },
                     onTitleChange = { row, title -> viewModel.updateRowTitle(row, title) },
+                    onTitleEditing = { editing -> if (editing) viewModel.startTitleEdit() else viewModel.endTitleEdit() },
                     onOpenRow = openRow,
                     onRowLongPress = { row ->
                         focusManager.clearFocus()
@@ -1364,7 +1369,9 @@ private fun TableLayout(
     onSetOptionColor: (String, String, String) -> Unit,
     onDeleteOption: (String, String) -> Unit,
     /** Crea una pagina già dentro il gruppo: riceve il valore del gruppo. */
-    onAddRowInGroup: (String) -> Unit
+    onAddRowInGroup: (String) -> Unit,
+    /** Si scrive il nome di una riga (true) o si è finito (false): l'ordine resta fermo intanto. */
+    onTitleEditing: (Boolean) -> Unit = {}
 ) {
     // Dentro un contenitore che scorre in orizzontale la larghezza
     // disponibile è illimitata: una linea che chiede "tutta la
@@ -1397,7 +1404,12 @@ private fun TableLayout(
                 onAddProperty = onAddProperty
             )
             HorizontalDivider(modifier = Modifier.width(tableWidth))
+            // **Ogni riga col suo id** (dal 26/09/2026): con un ordinamento
+            // una riga cambia posto, e senza l'id il campo in cui si stava
+            // scrivendo finiva su un'altra riga, si chiudeva e la tastiera
+            // spariva.
             state.rows.forEach { row ->
+                key(row.id) {
                 TableBodyRow(
                     row = row,
                     state = state,
@@ -1409,9 +1421,11 @@ private fun TableLayout(
                     onAddOption = onAddOption,
                     onRenameOption = onRenameOption,
                     onSetOptionColor = onSetOptionColor,
-                    onDeleteOption = onDeleteOption
+                    onDeleteOption = onDeleteOption,
+                    onTitleEditing = onTitleEditing
                 )
                 HorizontalDivider(modifier = Modifier.width(tableWidth))
+                }
             }
             return@Column
         }
@@ -1437,6 +1451,7 @@ private fun TableLayout(
                 )
                 HorizontalDivider(modifier = Modifier.width(tableWidth))
                 group.rows.forEach { row ->
+                    key(row.id) {
                     TableBodyRow(
                         row = row,
                         state = state,
@@ -1448,9 +1463,11 @@ private fun TableLayout(
                         onAddOption = onAddOption,
                         onRenameOption = onRenameOption,
                         onSetOptionColor = onSetOptionColor,
-                        onDeleteOption = onDeleteOption
+                        onDeleteOption = onDeleteOption,
+                        onTitleEditing = onTitleEditing
                     )
                     HorizontalDivider(modifier = Modifier.width(tableWidth))
+                    }
                 }
                 // Una pagina creata da dentro un gruppo nasce già con
                 // quel valore: altrimenti comparirebbe nel gruppo
@@ -1527,14 +1544,16 @@ private fun TableBodyRow(
     onAddOption: (DatabaseColumnEntity, String) -> Unit,
     onRenameOption: (String, String, String) -> Unit,
     onSetOptionColor: (String, String, String) -> Unit,
-    onDeleteOption: (String, String) -> Unit
+    onDeleteOption: (String, String) -> Unit,
+    onTitleEditing: (Boolean) -> Unit = {}
 ) {
     Row(modifier = Modifier.foundInside(row.id)) {
         NameCell(
             row = row,
             onTitleChange = { onTitleChange(row, it) },
             onOpen = { onOpenRow(row) },
-            onLongPress = { onRowLongPress(row) }
+            onLongPress = { onRowLongPress(row) },
+            onEditingChange = onTitleEditing
         )
         CellSeparator()
         columns.forEach { column ->
@@ -4455,10 +4474,23 @@ private fun NameCell(
     row: DatabaseRowEntity,
     onTitleChange: (String) -> Unit,
     onOpen: () -> Unit,
-    onLongPress: () -> Unit
+    onLongPress: () -> Unit,
+    /** Si comincia (true) o si finisce (false) di scrivere il nome: vedi `DatabaseViewModel.startTitleEdit`. */
+    onEditingChange: (Boolean) -> Unit = {}
 ) {
     var editing by remember(row.id) { mutableStateOf(false) }
     var localTitle by remember(row.id) { mutableStateOf(row.title) }
+    // **Il cursore in fondo al nome** (dal 26/09/2026, chiesto
+    // dall'utente): toccando la cella si continua o si cancella il nome, e
+    // il campo apriva col cursore all'inizio.
+    var fieldValue by remember(row.id) { mutableStateOf(TextFieldValue(row.title, TextRange(row.title.length))) }
+    DisposableEffect(editing) {
+        // Il valore di adesso: quando l'effetto si chiude `editing` è già
+        // cambiato, e leggerlo lì direbbe sempre "non si scrive più".
+        val active = editing
+        if (active) onEditingChange(true)
+        onDispose { if (active) onEditingChange(false) }
+    }
     val focusRequester = remember { FocusRequester() }
     // Il campo appena creato non ha ancora il fuoco, e `onFocusChanged`
     // scatta subito dicendo proprio quello: senza questa memoria la
@@ -4497,15 +4529,23 @@ private fun NameCell(
             ) {
                 if (editing) {
                     BasicTextField(
-                        value = localTitle,
-                        onValueChange = { newTitle ->
+                        value = fieldValue,
+                        onValueChange = { newValue ->
                             // Niente a capo nei nomi delle righe. `singleLine`
                             // fa già mostrare alla tastiera "fine" al posto di
                             // invio, ma non copre l'incolla di un testo che
                             // contiene a capo: quelli li togliamo qui.
-                            val singleLineTitle = newTitle.replace("\n", "")
-                            localTitle = singleLineTitle
-                            onTitleChange(singleLineTitle)
+                            val singleLineTitle = newValue.text.replace("\n", "")
+                            fieldValue = if (singleLineTitle == newValue.text) {
+                                newValue
+                            } else {
+                                TextFieldValue(singleLineTitle, TextRange(singleLineTitle.length))
+                            }
+                            // Spostare il cursore non cambia il nome: si scrive solo se cambia.
+                            if (singleLineTitle != localTitle) {
+                                localTitle = singleLineTitle
+                                onTitleChange(singleLineTitle)
+                            }
                         },
                         singleLine = true,
                         // Database bloccato: il nome della riga si legge e
@@ -4541,7 +4581,16 @@ private fun NameCell(
                             .fillMaxSize()
                             .pointerInput(row.id) {
                                 detectTapGestures(
-                                    onTap = { editing = true },
+                                    onTap = {
+                                        fieldValue = TextFieldValue(localTitle, TextRange(localTitle.length))
+                                        // **Da capo anche la seconda volta** (26/09/2026): il
+                                        // "ha già avuto il fuoco" della volta prima restava
+                                        // acceso, e il campo si richiudeva nell'istante in cui
+                                        // si riapriva — il nome di una riga si riscriveva una
+                                        // volta sola. Trovato provando l'ordinamento.
+                                        everFocused = false
+                                        editing = true
+                                    },
                                     onLongPress = { onLongPress() }
                                 )
                             },

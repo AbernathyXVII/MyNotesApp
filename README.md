@@ -2022,6 +2022,45 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**26/09/2026 — il nome di una riga: il cursore in fondo, e la tastiera che resta con l'ordinamento**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 152 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Ci sono due piccoli bug nei database:
+> 1) quando tocco su una cella per modificare il nome nella colonna Name,
+> il text cursor mi va a sinistra del titolo, ma io lo vorrei a destra per
+> modificare o cancellare il titolo;
+> 2) quando c'è un sort attivato, se cancello il titolo di una pagina, la
+> tastiera mi scompare.»
+
+- **[Bug fix]** **Il cursore in fondo al nome.** Il campo del nome si
+  apriva col cursore all'inizio (un campo di solo testo parte da lì); ora
+  parte in fondo, pronto per continuare o cancellare
+- **[Bug fix]** **Con un ordinamento, cancellando il nome la tastiera
+  spariva.** Le righe della tabella non avevano il loro id: con l'ordine
+  per nome, un nome vuoto va in fondo, la riga cambiava posto e il campo
+  in cui si scriveva finiva su un'altra riga, che lo chiudeva. Ora ogni
+  riga ha il suo id (`key(row.id)`), anche nei gruppi. In più, **mentre si
+  scrive il nome l'ordine resta fermo** (`DatabaseViewModel.startTitleEdit`
+  / `endTitleEdit`): la riga non salta a ogni lettera, e va al suo posto
+  quando si preme "Done" o si esce dal campo
+- **[Bug fix]** (trovato provando) **Il nome di una riga si riscriveva una
+  volta sola**: la seconda volta la cella si apriva e si richiudeva
+  nell'istante, perché si ricordava di aver già avuto il fuoco la volta
+  prima. Ora si riparte da capo a ogni tocco
+- Verificato sul telefono, sul database ordinato per nome dell'utente
+  (righe "1", "2", "4", "5" e una senza nome), e su "Esempio" dell'altro:
+  toccando "Esempio" il cursore sta dopo la "o"; "2" → cancellato → la
+  tastiera resta, la riga resta seconda (vuota); "2" riscritto e "Done";
+  di nuovo "2" (la seconda volta si apre) → "9" → resta seconda mentre si
+  scrive → "Done" → va dopo "5"; poi "9" → "2" → resta quarta mentre si
+  scrive → "Done" → torna seconda. I nomi sono di nuovo quelli di prima
+- Notato: in un tentativo le coordinate erano vecchie (la pagina si era
+  spostata chiudendo la tastiera) e un tocco è finito sulla riga "Riga
+  dentro il toggle"; controllato col confronto sulla copia di stamattina:
+  i 28 blocchi di My Space sono identici, niente cambiato
+
 **26/09/2026 — la pagina di un quaderno, e un divisore sotto i quaderni**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 152 test
 passati; commit solo in locale)*

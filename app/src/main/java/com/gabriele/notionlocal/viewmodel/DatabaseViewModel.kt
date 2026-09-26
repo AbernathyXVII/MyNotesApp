@@ -263,6 +263,15 @@ class DatabaseViewModel(
     /** Le righe create mentre si cerca: vedi `searchRows`. */
     private val _addedWhileSearching = MutableStateFlow<Set<String>>(emptySet())
 
+    /**
+     * **L'ordine delle righe mentre se ne scrive il nome** (dal 26/09/2026):
+     * con un ordinamento acceso, cancellando o cambiando il nome la riga
+     * sarebbe saltata al suo nuovo posto a ogni lettera — con l'ordine per
+     * nome, un nome vuoto va in fondo. Così resta dov'è finché non si
+     * finisce di scrivere, e solo allora va al suo posto.
+     */
+    private val _frozenOrder = MutableStateFlow<List<String>?>(null)
+
     private fun keepVisibleWhileSearching(rowId: String) {
         if (_searchQuery.value.isNotBlank()) _addedWhileSearching.value = _addedWhileSearching.value + rowId
     }
@@ -405,10 +414,10 @@ class DatabaseViewModel(
                 // l'ordinamento: senza, cambiarlo non farebbe
                 // ricalcolare niente e la tabella resterebbe com'era.
                 _page,
-                combine(_searchQuery, _searchIndex, _addedWhileSearching) { query, index, added ->
-                    Triple(query, index, added)
+                combine(_searchQuery, _searchIndex, _addedWhileSearching, _frozenOrder) { query, index, added, frozen ->
+                    SearchAndOrder(query, index, added, frozen)
                 }
-            ) { (sourceColumns, rows, cells), page, (query, index, added) ->
+            ) { (sourceColumns, rows, cells), page, (query, index, added, frozen) ->
                 rawColumns = sourceColumns
                 lastRowOrderIndex = rows.maxOfOrNull { it.orderIndex } ?: -1
                 // In una vista collegata si vede quello che nasconde la
@@ -426,9 +435,10 @@ class DatabaseViewModel(
                 // a quello scelto nelle impostazioni.
                 val filtered = filterRows(rows, columns, cellValues, page)
                 val (kept, search) = searchRows(filtered, columns, cellValues, query, index, added)
+                val sorted = sortRows(kept, columns, cellValues, page)
                 DatabaseTableState(
                     columns = columns,
-                    rows = sortRows(kept, columns, cellValues, page),
+                    rows = frozen?.let { order -> keepOrder(sorted, order) } ?: sorted,
                     cellValues = cellValues,
                     search = search
                 )
@@ -614,6 +624,22 @@ class DatabaseViewModel(
      * una svista: invertendo l'ordine ci si aspetta di vedere in cima
      * l'ultimo valore, non una fila di righe senza niente scritto.
      */
+    /**
+     * Le righe nell'ordine di `order`; quelle che lì non c'erano (nate nel
+     * frattempo) vengono dopo, nell'ordine in cui sono arrivate.
+     */
+    private fun keepOrder(rows: List<DatabaseRowEntity>, order: List<String>): List<DatabaseRowEntity> {
+        val position = order.withIndex().associate { it.value to it.index }
+        return rows.sortedBy { position[it.id] ?: Int.MAX_VALUE }
+    }
+
+    private data class SearchAndOrder(
+        val query: String,
+        val index: Map<String, String>,
+        val added: Set<String>,
+        val frozen: List<String>?
+    )
+
     private fun sortRows(
         rows: List<DatabaseRowEntity>,
         columns: List<DatabaseColumnEntity>,
@@ -1307,6 +1333,16 @@ class DatabaseViewModel(
     // riga nuova poteva prendere il numero di una nascosta, e due righe
     // con lo stesso numero non hanno un ordine sicuro fra loro.
     private fun nextRowIndex(): Int = lastRowOrderIndex + 1
+
+    /** Si comincia a scrivere il nome di una riga: l'ordine si ferma com'è adesso. */
+    fun startTitleEdit() {
+        if (_frozenOrder.value == null) _frozenOrder.value = _tableState.value.rows.map { it.id }
+    }
+
+    /** Finito di scrivere: le righe tornano al loro ordine. */
+    fun endTitleEdit() {
+        _frozenOrder.value = null
+    }
 
     fun updateRowTitle(row: DatabaseRowEntity, newTitle: String) {
         viewModelScope.launch { repository.setRowTitle(row.id, newTitle) }
