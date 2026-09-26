@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+      L'unica cosa per cui l'app va in rete: scaricare **una volta**
+      l'immagine di un collegamento incollato dall'utente, per poi
+      tenerla sul telefono come tutto il resto. Nessun account, nessuna
+      sincronizzazione, nessuna chiamata che parta da sola.
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.NotionLocal"
+        tools:targetApi="31">
+
+        <!--
+          **Come si comporta la finestra quando si apre la tastiera.**
+
+          Senza questa riga Android sceglie da sé, e sceglieva di far
+          **scorrere su tutta la finestra** per tenere in vista il punto
+          in cui si scrive: il titolo della pagina usciva dallo schermo
+          in alto. Il guaio è che il codice aggiunge *già* lo spazio per
+          la tastiera (`imePadding`), quindi i due effetti si sommavano
+          e la barra della formattazione finiva a mezz'aria, staccata
+          dalla tastiera. È il difetto che tornava da giorni.
+
+          Con `adjustResize` la finestra resta ferma e a fare spazio
+          pensa solo `imePadding`, che sa dov'è davvero la tastiera.
+        -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.NotionLocal">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+
+</manifest>

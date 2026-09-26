@@ -1,0 +1,22 @@
+<resources>
+    <!--
+      Lo sfondo della finestra è anche lo sfondo della schermata di
+      avvio che Android disegna da sé prima che l'app sia pronta: gli
+      diamo lo stesso grigio delle pagine, così quel momento non si
+      distingue dall'app.
+
+      Una variante sola, scura: l'app non segue più il tema di sistema
+      (vedi Theme.kt), quindi non avrebbe senso una finestra chiara
+      sotto un contenuto sempre scuro.
+
+      Il tema è diviso in due perché da Android 12 va aggiunta la
+      voce per l'icona della schermata di avvio (vedi
+      values-v31/themes.xml): tenendo i colori nel tema di base, quel
+      file aggiunge solo ciò che gli serve invece di ricopiarli.
+    -->
+    <style name="NotionLocalBaseTheme" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/page_background</item>
+    </style>
+
+    <style name="Theme.NotionLocal" parent="NotionLocalBaseTheme" />
+</resources>
