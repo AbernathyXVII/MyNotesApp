@@ -2062,10 +2062,11 @@ L'utente, parola per parola:
   prova…" senza font e "acqua H2O energia mc2" senza pedice e apice fino
   alla fine della registrazione, e nel database quattro righe nuove invece
   di tre. **Dopo**: in tutti i 23 fotogrammi le due righe restano
-  formattate, e nel database le righe nuove sono esattamente tre. **Da
-  fare**: le righe vuote aggiunte dalle prove (dieci, in cima alla pagina
-  principale, sopra le cinque che c'erano) non sono state ancora tolte: il
-  telefono si è scollegato prima
+  formattate, e nel database le righe nuove sono esattamente tre. Le
+  dieci righe vuote aggiunte dalle prove in cima alla pagina principale
+  non ho fatto in tempo a toglierle (il telefono si è scollegato); al
+  28/09/2026, ricollegato, non c'erano più: in cima ci sono quattro righe
+  vuote, e il resto della pagina, formattazione compresa, è intatto
 
 **26/09/2026 — "To-do list" dal "+" sulla prima riga di una pagina nuova**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 174 test
