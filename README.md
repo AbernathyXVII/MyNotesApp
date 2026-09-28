@@ -2022,6 +2022,33 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**28/09/2026 — Lo scorrimento non si ferma più un istante prima di partire**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 185 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Ho provato, adesso lo scorrimento funziona, anche se per un millisecondo
+> si blocca prima di farmi scorrere»
+
+- **[Bug fix]** Risalendo dal fondo della pagina, il primo fotogramma
+  dello scorrimento durava 29 millisecondi invece di 8: la lista della
+  pagina rifaceva da capo il database di sopra ("SuduS al contrario"),
+  che aveva smontato quando era uscito dallo schermo. Poco dopo c'era un
+  altro fotogramma da 35 millisecondi, per le righe di testo sopra. Ora
+  ogni voce della pagina, una volta fatta, resta pronta anche fuori dallo
+  schermo finché si resta sulla pagina (`KeepComposed`, con
+  `LocalPinnableContainer`, lo stesso modo in cui la lista tiene vivo un
+  campo col cursore); quelle mai viste si fanno quando arrivano, come
+  prima. Una finestra per preparare in anticipo le voci vicine ci sarebbe
+  solo in una versione più nuova di Compose (qui la 1.6.8), da aggiornare
+  a parte
+- Verificato sul telefono misurando i fotogrammi (`dumpsys gfxinfo`) con
+  lo stesso scorrimento dal fondo della pagina principale, partito da una
+  cella di "Videogiochi". **Prima**: il primo fotogramma 29 ms (27 di
+  preparazione), uno da 35 ms a metà corsa. **Dopo**: il primo 14 ms (6
+  di preparazione), nessuno sopra i 16 ms su 84. La scrittura funziona
+  come prima: toccata "Primo punto", cursore in fondo e tastiera aperta
+
 **28/09/2026 — Risalendo una pagina, i database non fanno più saltare tutto**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 185 test
 passati; commit solo in locale)*

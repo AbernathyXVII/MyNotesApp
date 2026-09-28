@@ -242,6 +242,8 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.LocalPinnableContainer
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.foundation.shape.CircleShape
 import com.gabriele.notionlocal.ui.theme.NotionGray400
@@ -911,6 +913,27 @@ internal sealed class RenderItem {
     data class Island(val block: BlockEntity) : RenderItem()
 }
 
+/**
+ * **Una voce della lista della pagina, una volta fatta, resta pronta anche
+ * fuori dallo schermo** (dal 28/09/2026). La lista smonta quello che esce
+ * dallo schermo e lo rifà quando rientra; un database ci mette più di un
+ * fotogramma a rifarsi da capo, e risalendo dal fondo lo si rifaceva al
+ * primo millimetro di scorrimento: la pagina si fermava un istante prima di
+ * muoversi (trovato dall'utente), e poco dopo un altro scatto per le righe
+ * di testo sopra. "Appuntata" alla lista (`LocalPinnableContainer`, lo
+ * stesso modo in cui la lista tiene vivo un campo col cursore), la voce non
+ * si smonta finché si resta sulla pagina, e rientrando è già lì. Le voci
+ * non ancora viste si fanno quando arrivano, come prima.
+ */
+@Composable
+private fun KeepComposed() {
+    val pinnable = LocalPinnableContainer.current
+    DisposableEffect(pinnable) {
+        val handle = pinnable?.pin()
+        onDispose { handle?.release() }
+    }
+}
+
 /** La chiave della testata (copertina, icona, titolo) nella lista della pagina. */
 private const val PAGE_HEADER_KEY = "page-header"
 
@@ -1563,6 +1586,7 @@ private fun PageEditorContent(
                 // di uno e' molto piu' facile da tenere giusto di
                 // uno variabile.
                 item(key = PAGE_HEADER_KEY) {
+                    KeepComposed()
                     Column {
                 // La copertina sta sopra a tutto, a tutta larghezza, e si
                 // tocca per cambiarla. Senza copertina non occupa spazio:
@@ -1818,6 +1842,7 @@ private fun PageEditorContent(
                 }
 
                 items(renderItems, key = { item -> renderItemKey(item) }) { item ->
+                    KeepComposed()
                     when (item) {
                         is RenderItem.Run -> MergedTextRunField(
                             runBlocks = item.blocks,
