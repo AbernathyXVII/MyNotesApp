@@ -2023,8 +2023,8 @@ telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
 **28/09/2026 — Nei calendari per scegliere la data, solo i giorni del mese**
-*(Claude Code sul PC; 182 test passati; commit solo in locale; **da
-verificare sul telefono**: si è scollegato prima dell'installazione)*
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno, appena
+ricollegato; 182 test passati; commit solo in locale)*
 
 L'utente, parola per parola:
 > «Nei calendari di selezione della data, toglimi i giorni in grigio del
@@ -2037,6 +2037,11 @@ L'utente, parola per parola:
   vedono più**: al loro posto le caselle restano vuote, senza numero, senza
   pallino della ripetizione e senza tocco. Le settimane restano sei, così
   il calendario non cambia altezza passando da un mese all'altro
+- Verificato sul telefono: aperta la data "2025年12月08日" della riga
+  "Esempio" di "SuduS al contrario". Dicembre 2025 comincia lunedì 1 con
+  la domenica prima vuota, e dopo il 31 le caselle sono vuote; col ">"
+  gennaio 2026 comincia giovedì 1, prima niente. Chiuso con Cancel: le date
+  nel database sono rimaste quelle di prima
 
 **28/09/2026 — Notebooks in cima alla barra laterale**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 182 test
