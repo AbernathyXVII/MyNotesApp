@@ -2022,6 +2022,36 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**28/09/2026 — Risalendo una pagina, i database non fanno più saltare tutto**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 185 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Se io sto in fondo, e scorro verso il basso per andare in alto, ma lo
+> scorrimento lo faccio toccando le celle del database Videogiochi, accade
+> che fa un grande scatto in alto e mi skippa direttamente tutto il
+> database. Usa anche il database sul menu per controllare questo bug.»
+
+- **[Bug fix]** Risalendo una pagina con dei database dentro, quando il
+  database di sopra rientrava nello schermo la pagina **saltava in alto**
+  di colpo e lo scavalcava tutto. Non dipendeva dalle celle: capitava anche
+  partendo dal testo sotto. Ogni database dentro una pagina passa dal
+  cancello della password (`LockGate`), che finché non aveva chiesto al
+  database se la pagina è bloccata **non disegnava niente**; un database
+  uscito dallo schermo veniva smontato, e al rientro per un attimo era
+  alto zero, poi alto quanto la sua tabella. La pagina tiene fermo il suo
+  bordo di sopra, e l'allungamento spingeva giù tutto il resto. Ora il
+  cancello si ricorda l'ultima risposta per pagina, finché le protezioni
+  non cambiano (`AppLock.protectionVersion`), e il database torna subito
+  alto com'è; la domanda si rifà comunque ogni volta
+- Verificato sul telefono registrando lo schermo sulla pagina principale,
+  in fondo, con uno scorrimento verso il basso di mezzo schermo partito da
+  una cella Select di "Videogiochi". **Prima**: per quattro fotogrammi
+  quasi fermo, poi un salto di circa il doppio della strada del dito, fino
+  a "SuduS al contrario" e oltre; lo stesso partendo dal testo sotto la
+  tabella. **Dopo**: la tabella scende piano col dito, e da sopra compare
+  un po' alla volta il fondo di "SuduS al contrario"
+
 **28/09/2026 — Pomodoro: la durata dello studio dal riquadro grande, "Study sound" e "Break sound"**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 185 test
 passati; commit solo in locale)*

@@ -128,6 +128,22 @@ object Biometrics {
 private object Checking
 
 /**
+ * **L'ultima risposta del cancello, pagina per pagina** (dal 28/09/2026),
+ * con la versione delle protezioni a cui valeva (`AppLock.protectionVersion`).
+ *
+ * Dentro una pagina ogni database passa dal cancello, e finché la domanda
+ * al database non tornava il cancello non disegnava niente. Scorrendo la
+ * pagina un database che usciva dallo schermo veniva smontato, e al
+ * rientro per un attimo era alto zero, poi di colpo alto quanto la sua
+ * tabella: la pagina teneva fermo il suo bordo di sopra e tutto il resto
+ * saltava giù — risalendo si scavalcava un database intero (trovato
+ * dall'utente). Con la risposta di prima il database torna subito alto
+ * com'è. Se nel frattempo una protezione è cambiata, la versione non torna
+ * e si richiede da capo, come prima: niente si vede che non debba.
+ */
+private val knownLocks = mutableMapOf<String, Pair<Int, String?>>()
+
+/**
  * **Il cancello**: se la pagina (o chi la contiene) è bloccata con la
  * password e non è aperta, al posto del contenuto c'è la richiesta di
  * sbloccarla. `fullScreen` per una schermata intera — che fa anche
@@ -146,8 +162,9 @@ fun LockGate(
     content: @Composable () -> Unit
 ) {
     val version = AppLock.protectionVersion
-    val lockingId by produceState<Any?>(Checking, pageId, version) {
-        value = repository.lockingPageOf(pageId)
+    val known = knownLocks[pageId]?.takeIf { it.first == version }
+    val lockingId by produceState<Any?>(if (known != null) known.second else Checking, pageId, version) {
+        value = repository.lockingPageOf(pageId).also { knownLocks[pageId] = version to it }
     }
     LaunchedEffect(lockingId) {
         if (fullScreen && lockingId !== Checking) AppLock.keepOnlyUnlocked(lockingId as String?)
