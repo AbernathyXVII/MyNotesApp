@@ -78,9 +78,9 @@ internal class SidebarActions(
 )
 
 /**
- * La barra laterale, nell'ordine chiesto: i widget, il Quaderno a parte,
- * il menu principale, i preferiti, l'albero delle pagine e poi le voci
- * di servizio. Scorre tutta insieme: con l'albero aperto le voci sotto
+ * La barra laterale, nell'ordine chiesto: i quaderni in cima (dal
+ * 28/09/2026, prima stavano sotto i widget), i widget, il menu principale,
+ * i preferiti, l'albero delle pagine e poi le voci di servizio. Scorre tutta insieme: con l'albero aperto le voci sotto
  * scendono, come nella barra di Notion.
  *
  * Le voci ancora da costruire ci sono già, grigie e ferme: dicono cosa
@@ -107,18 +107,26 @@ internal fun SidebarContent(
             .verticalScroll(rememberScrollState())
             .padding(bottom = 16.dp)
     ) {
-        // 1. Widget: fusi orari, avanzamento, contatore, pomodoro, con la
-        // freccetta per nasconderli tutti. Vedi `WidgetsSection`.
-        WidgetsSection(active = widgetsActive)
-        Spacer(modifier = Modifier.height(6.dp))
-
-        // 2. I quaderni (dal 26/09/2026, prima era una fascia grigia ferma):
+        // 1. I quaderni (dal 26/09/2026, prima era una fascia grigia ferma):
         // la stessa fascia di un altro colore, staccata dal resto, e sotto
         // i quaderni come in OneNote. Un mondo a parte dal menu principale.
+        // **In cima a tutto**, sopra i widget: chiesto dall'utente il
+        // 28/09/2026.
+        Spacer(modifier = Modifier.height(8.dp))
         notebooks()
         // Un divisore sotto i quaderni (chiesto dall'utente il 26/09/2026):
-        // senza, l'ultima riga dei quaderni e "Main menu" sembravano la
-        // stessa lista.
+        // senza, l'ultima riga dei quaderni e quello che segue sembravano
+        // la stessa lista.
+        HorizontalDivider(
+            color = NotionGray900,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+        )
+
+        // 2. Widget: fusi orari, avanzamento, contatore, pomodoro, con la
+        // freccetta per nasconderli tutti. Vedi `WidgetsSection`.
+        WidgetsSection(active = widgetsActive)
+        // Lo stesso divisore sotto i widget: prima lo spazio fra loro e
+        // "Main menu" lo facevano i quaderni, che adesso stanno sopra.
         HorizontalDivider(
             color = NotionGray900,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)

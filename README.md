@@ -2022,6 +2022,22 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**28/09/2026 — Notebooks in cima alla barra laterale**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 182 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Ho provato, lo scatto non c'è più. Mettimi Notebooks sopra tutto lo
+> spazio degli Widget»
+
+- **[Nuova funzionalità]** Il riquadro **Notebooks** coi suoi quaderni
+  sta ora **in cima alla barra laterale**, sopra i widget; sotto di lui
+  resta la linea chiesta il 26/09. Fra i widget e "Main menu" c'è adesso
+  la stessa linea: prima a separarli c'erano i quaderni
+- Verificato sul telefono: aperta la barra, in cima Notebooks, la linea,
+  poi "Widgets" coi fusi orari e gli altri; in fondo ai widget "Add
+  widget", la linea, "Main menu"
+
 **26/09/2026 — Invio in fretta: niente righe in più, e i font non scattano**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 182 test
 passati; commit solo in locale il 28/09/2026)*
