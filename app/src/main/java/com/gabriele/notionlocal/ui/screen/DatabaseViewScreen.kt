@@ -987,6 +987,7 @@ fun DatabaseContent(
                     },
                     calculationAlignments = parseCalculationAlignments(page?.viewCalculations),
                     onCalculationAlign = { key, alignment -> viewModel.setCalculationAlignment(key, alignment) },
+                    onSetAllChecked = { column, checked -> viewModel.setAllChecked(column, checked) },
                     onOpenRow = openRow,
                     onRowLongPress = { row ->
                         focusManager.clearFocus()
@@ -1460,7 +1461,9 @@ private fun TableLayout(
     calculations: Map<String, Calculation> = emptyMap(),
     onCalculate: (CalculateTarget) -> Unit = {},
     calculationAlignments: Map<String, CellAlignment> = emptyMap(),
-    onCalculationAlign: (String, CellAlignment) -> Unit = { _, _ -> }
+    onCalculationAlign: (String, CellAlignment) -> Unit = { _, _ -> },
+    /** "Activate all" / "Deactivate all" di una colonna Checkbox. */
+    onSetAllChecked: (DatabaseColumnEntity, Boolean) -> Unit = { _, _ -> }
 ) {
     // Dentro un contenitore che scorre in orizzontale la larghezza
     // disponibile è illimitata: una linea che chiede "tutta la
@@ -1492,7 +1495,8 @@ private fun TableLayout(
                 onToggleCenterProperty = onToggleCenterProperty,
                 onAddProperty = onAddProperty,
                 onChangeTypeProperty = onChangeTypeProperty,
-                onCalculate = onCalculate
+                onCalculate = onCalculate,
+                onSetAllChecked = onSetAllChecked
             )
             HorizontalDivider(modifier = Modifier.width(tableWidth))
             // **Ogni riga col suo id** (dal 26/09/2026): con un ordinamento
@@ -1541,7 +1545,8 @@ private fun TableLayout(
                     onToggleCenterProperty = onToggleCenterProperty,
                     onAddProperty = onAddProperty,
                     onChangeTypeProperty = onChangeTypeProperty,
-                    onCalculate = onCalculate
+                    onCalculate = onCalculate,
+                    onSetAllChecked = onSetAllChecked
                 )
                 HorizontalDivider(modifier = Modifier.width(tableWidth))
                 group.rows.forEach { row ->
@@ -1606,7 +1611,8 @@ private fun TableHeaderRow(
     onToggleCenterProperty: (DatabaseColumnEntity, CellAlignment) -> Unit,
     onAddProperty: () -> Unit,
     onChangeTypeProperty: (DatabaseColumnEntity) -> Unit = {},
-    onCalculate: (CalculateTarget) -> Unit = {}
+    onCalculate: (CalculateTarget) -> Unit = {},
+    onSetAllChecked: (DatabaseColumnEntity, Boolean) -> Unit = { _, _ -> }
 ) {
     Row {
         NameHeaderCell(onCalculate = { onCalculate(CalculateTarget(NAME_CALCULATION_KEY, null, DbStrings.name)) })
@@ -1622,7 +1628,8 @@ private fun TableHeaderRow(
                 onHide = { onHideProperty(column) },
                 onAlign = { alignment -> onToggleCenterProperty(column, alignment) },
                 onChangeType = { onChangeTypeProperty(column) },
-                onCalculate = { onCalculate(CalculateTarget(column.id, column.type, DbStrings.columnName(column.name))) }
+                onCalculate = { onCalculate(CalculateTarget(column.id, column.type, DbStrings.columnName(column.name))) },
+                onSetAllChecked = { checked -> onSetAllChecked(column, checked) }
             )
             CellSeparator()
         }
@@ -4589,9 +4596,12 @@ private fun PropertyHeaderCell(
     onHide: () -> Unit,
     onAlign: (CellAlignment) -> Unit,
     onChangeType: () -> Unit = {},
-    onCalculate: () -> Unit = {}
+    onCalculate: () -> Unit = {},
+    /** Solo per le caselle: "Activate all" (true) e "Deactivate all" (false). */
+    onSetAllChecked: (Boolean) -> Unit = {}
 ) {
     var menuOpen by remember(column.id) { mutableStateOf(false) }
+    val dataLocked = LocalDatabaseLocked.current
 
     Box {
         Row(
@@ -4674,6 +4684,29 @@ private fun PropertyHeaderCell(
                     onChangeType()
                 }
             )
+            // **Solo per le caselle** (dal 29/09/2026, chiesto dall'utente):
+            // spuntarle o toglierle tutte in un colpo, sulle righe che si
+            // vedono. Con il database bloccato restano grigie, come le celle.
+            if (column.type == ColumnType.CHECKBOX) {
+                DropdownMenuItem(
+                    text = { Text(DbStrings.activateAll) },
+                    leadingIcon = { Icon(Icons.Filled.CheckBox, contentDescription = null) },
+                    enabled = !dataLocked,
+                    onClick = {
+                        menuOpen = false
+                        onSetAllChecked(true)
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text(DbStrings.deactivateAll) },
+                    leadingIcon = { Icon(Icons.Filled.CheckBoxOutlineBlank, contentDescription = null) },
+                    enabled = !dataLocked,
+                    onClick = {
+                        menuOpen = false
+                        onSetAllChecked(false)
+                    }
+                )
+            }
             // **Dove sta il contenuto delle celle** (dal 26/09/2026, per ogni
             // tipo; prima solo le caselle si centravano): a sinistra, al
             // centro o a destra. L'intestazione resta sempre a sinistra.

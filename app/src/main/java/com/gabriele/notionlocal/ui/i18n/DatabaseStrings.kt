@@ -310,6 +310,8 @@ object DbStrings {
     val center get() = t("Center", "Centra", "Zentrieren", "Centrer", "Centrar", "居中", "가운데 정렬", "中央揃え")
     val alignRight get() = t("Align right", "Allinea a destra", "Rechtsbündig", "Aligner à droite", "Alinear a la derecha", "右对齐", "오른쪽 정렬", "右揃え")
     val hide get() = t("Hide", "Nascondi", "Ausblenden", "Masquer", "Ocultar", "隐藏", "숨기기", "非表示")
+    val activateAll get() = t("Activate all", "Attiva tutte", "Alle aktivieren", "Tout activer", "Activar todas", "全部勾选", "모두 선택", "すべてオン")
+    val deactivateAll get() = t("Deactivate all", "Disattiva tutte", "Alle deaktivieren", "Tout désactiver", "Desactivar todas", "全部取消勾选", "모두 해제", "すべてオフ")
     val addProperty get() = t("Add property", "Aggiungi proprietà", "Eigenschaft hinzufügen", "Ajouter une propriété", "Añadir propiedad", "添加属性", "속성 추가", "プロパティを追加")
     val newProperty get() = t("New property", "Nuova proprietà", "Neue Eigenschaft", "Nouvelle propriété", "Nueva propiedad", "新属性", "새 속성", "新しいプロパティ")
     val add get() = t("Add", "Aggiungi", "Hinzufügen", "Ajouter", "Añadir", "添加", "추가", "追加")

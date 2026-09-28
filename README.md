@@ -2022,6 +2022,33 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**29/09/2026 — Colonne Checkbox: "Activate all" e "Deactivate all"**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 204 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Ho provato, adesso funziona.
+> Tenendo premuto sulla proprietà Checkbox, ci sono due opzioni ad essa
+> esclusive che mi consentono di attivare o disattivare le checkbox di tutte
+> le celle, chiamate "Activate all" e "Deactivate all"»
+
+- **[Nuova funzionalità]** Tenendo premuta l'intestazione di una colonna
+  **Checkbox**, sotto "Change type" ci sono "**Activate all**" e
+  "**Deactivate all**": spuntano o tolgono la spunta a tutte le caselle
+  della colonna, sulle righe che la vista mostra (col filtro o la ricerca,
+  quelle rimaste). Solo per le caselle: le altre colonne non le hanno. Con
+  il database bloccato restano grigie, come le celle
+- Tutto in una scrittura sola, e le caselle che sono già così non si
+  toccano: la loro riga non risulta modificata adesso ("Last edited time")
+- **[Progetto]** `DatabaseRepository.setAllChecked`,
+  `DatabaseViewModel.setAllChecked`; test in `CheckAllTest`
+- Verificato sul telefono su un database di prova creato nella pagina
+  "Titolo tre H3" (una colonna Checkbox, tre righe, quella in mezzo
+  spuntata): nel menu le due voci sotto "Change type"; "Activate all" le
+  spunta tutte e tre, e la riga già spuntata tiene la sua ora; "Deactivate
+  all" le toglie tutte. Poi il database di prova messo nel cestino e la
+  pagina rimessa com'era (confrontata con la copia fatta prima)
+
 **29/09/2026 — Le frecce della barra spostano davvero la riga, e il cursore la segue**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 201 test
 passati; commit solo in locale)*

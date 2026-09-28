@@ -1429,6 +1429,16 @@ class DatabaseViewModel(
     }
 
     /**
+     * "Activate all" / "Deactivate all" di una colonna Checkbox: le righe che
+     * la vista mostra adesso (filtro e ricerca compresi), quelle che si
+     * vedono sotto l'intestazione tenuta premuta.
+     */
+    fun setAllChecked(column: DatabaseColumnEntity, checked: Boolean) {
+        val rowIds = _tableState.value.rows.map { it.id }
+        viewModelScope.launch { repository.setAllChecked(rowIds, column.id, checked) }
+    }
+
+    /**
      * Apre una riga come pagina vera e propria: crea la pagina collegata
      * al volo se non esiste ancora (isRowPage = true, così non compare
      * mai come pagina radice indipendente nella Home), altrimenti riusa

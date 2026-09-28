@@ -232,6 +232,27 @@ class DatabaseRepository(private val db: AppDatabase) {
         }
     }
 
+    /**
+     * **"Activate all" e "Deactivate all"** di una colonna Checkbox (dal
+     * 29/09/2026): spunta o toglie la spunta a tutte le righe date, in una
+     * transazione sola, così la tabella si ridisegna una volta. Le caselle che
+     * sono già così non si toccano, e la loro riga non risulta modificata
+     * adesso: una cella mai toccata vale già "non spuntata".
+     */
+    suspend fun setAllChecked(rowIds: List<String>, columnId: String, checked: Boolean) = db.withTransaction {
+        val now = System.currentTimeMillis()
+        rowIds.forEach { rowId ->
+            val existing = dao.getCell(rowId, columnId)
+            if ((existing?.value == "true") == checked) return@forEach
+            if (existing != null) {
+                dao.updateCell(existing.copy(value = checked.toString()))
+            } else {
+                dao.insertCell(DatabaseCellEntity(rowId = rowId, columnId = columnId, value = checked.toString()))
+            }
+            dao.touchRow(rowId, now)
+        }
+    }
+
     private companion object {
         val NOTIFY_SUFFIX = MULTI_VALUE_SEPARATOR + DATE_NOTIFY_FLAG
     }
