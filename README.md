@@ -2022,6 +2022,51 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**26/09/2026 — Invio in fretta: niente righe in più, e i font non scattano**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 182 test
+passati; commit solo in locale il 28/09/2026)*
+
+L'utente, parola per parola:
+> «C'è un bug grafico stranissimo nella home: quando seleziono con il text
+> cursor la primissima riga vuota, e faccio invio velocemente, è come se i
+> due blocchi dove c'è testo con font diverso e testo sia sub che
+> superscripted scattassero, come se si ingrandissero e diminuissero di
+> scatto. Riesci a vederlo?»
+
+- **[Bug fix]** **Invio premuti in fretta creavano una riga in più.** Il
+  secondo Invio arrivava prima che il database avesse scritto il primo:
+  il campo aveva una riga più dei blocchi, `updateRun` tornava a
+  confrontare coi testi salvati e da lì sembravano nate due righe. Tre
+  Invio facevano quattro righe, e da quel momento campo e blocchi non si
+  corrispondevano più: "Paragrafo di prova…" restava senza i suoi font e
+  "acqua H₂O energia mc²" senza pedice e apice, finché non si riapriva la
+  pagina. Ora ogni modifica aspetta la precedente e rilegge i blocchi dal
+  database (`structuralEdits`), dove la precedente c'è già; delle righe
+  che c'erano si riscrive solo il testo, così un cambio di tipo arrivato
+  un istante prima (il menu "/") non viene riportato indietro
+- **[Bug fix]** **Lo "scatto"** anche con un Invio solo: per un
+  fotogramma, finché il database non scriveva, ogni riga prendeva font,
+  colori, pedici e apici dal blocco della riga accanto, e le righe
+  formattate si vedevano cambiare e tornare. Ora righe e blocchi si
+  abbinano contando dal fondo e dall'inizio (`blocksOfLines`), come già
+  facevano i pallini degli elenchi — e ora anche col backspace e con più
+  righe di differenza; la riga divisa in due o le due righe unite tengono
+  la formattazione prevista
+- **[Progetto]** `updateRun` → `runDiff` e `writeRunChange`;
+  `PageRepository.getBlocksOnce`, `applyBlockChanges` con `ensured` e
+  `texts`. Test in `FastEnterTest` (con la versione di prima il test dei
+  tre Invio falliva: quattro righe) e `LineBlocksTest`
+- Verificato sul telefono registrando lo schermo sulla pagina principale,
+  cursore sulla prima riga vuota e tre Invio di fila col tasto della
+  tastiera. **Prima**: nei fotogrammi dopo il terzo Invio "Paragrafo di
+  prova…" senza font e "acqua H2O energia mc2" senza pedice e apice fino
+  alla fine della registrazione, e nel database quattro righe nuove invece
+  di tre. **Dopo**: in tutti i 23 fotogrammi le due righe restano
+  formattate, e nel database le righe nuove sono esattamente tre. **Da
+  fare**: le righe vuote aggiunte dalle prove (dieci, in cima alla pagina
+  principale, sopra le cinque che c'erano) non sono state ancora tolte: il
+  telefono si è scollegato prima
+
 **26/09/2026 — "To-do list" dal "+" sulla prima riga di una pagina nuova**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 174 test
 passati; commit solo in locale)*

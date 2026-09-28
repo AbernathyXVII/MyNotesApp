@@ -187,7 +187,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
      * nasceva una nuova, con un id nuovo, a ogni lettura del database, e il
      * campo di testo — che si riconosce dall'id della sua prima riga — con
      * lei. E va salvata **insieme** alla prima modifica, anche quando la
-     * modifica non la tocca (vedi `unsavedPlaceholderIn` in `updateRun`):
+     * modifica non la tocca (vedi `placeholderToSave` in `updateRun`):
      * con l'Invio su una pagina vuota si salvava la sola riga nuova, la riga
      * vuota spariva, il campo rinasceva e il cursore restava a nessuno —
      * tastiera aperta, barra sparita, e quello che si scriveva non andava da
@@ -198,10 +198,6 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
     private fun placeholderFor(pageId: String): BlockEntity =
         placeholder?.takeIf { it.pageId == pageId }
             ?: BlockEntity(pageId = pageId, orderIndex = 0).also { placeholder = it }
-
-    /** La riga vuota di cortesia, se è fra queste e nel database non c'è ancora. */
-    private fun unsavedPlaceholderIn(blocks: List<BlockEntity>): BlockEntity? =
-        placeholder?.takeIf { p -> blocks.any { it.id == p.id } && lastLoadedBlocks.none { it.id == p.id } }
 
     /**
      * **Le modifiche di una colonna sola passano da qui** (dal 26/09/2026).
@@ -1953,8 +1949,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
      * scorrevole che contiene il primo blocco ancora esistente tra
      * quelli indicati.
      */
-    private fun resolveRun(runBlockIds: List<String>): List<BlockEntity>? {
-        val all = _blocks.value
+    private fun resolveRun(runBlockIds: List<String>, all: List<BlockEntity> = _blocks.value): List<BlockEntity>? {
         val anchor = runBlockIds.firstNotNullOfOrNull { id -> all.find { it.id == id } } ?: return null
         val siblings = all
             .filter { it.parentBlockId == anchor.parentBlockId }
@@ -2327,6 +2322,18 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
      * continuarla. Se il campo e i blocchi non hanno nemmeno lo stesso
      * numero di righe, la UI è indietro di una struttura intera e non
      * ci si può fidare: lì si torna ai testi salvati.
+     *
+     * **Il confronto si fa col database di adesso, una modifica alla
+     * volta** (dal 26/09/2026). Prima si faceva subito, coi blocchi che il
+     * ViewModel aveva in mano: premendo Invio in fretta il secondo arrivava
+     * prima che il database avesse scritto il primo, le righe del campo
+     * erano una più dei blocchi, si tornava ai testi salvati e da lì
+     * sembravano nate **due** righe — il database ne aggiungeva una di
+     * troppo. Da quel momento campo e blocchi non si corrispondevano più, e
+     * le righe con font diversi, pedici e apici si vedevano senza (trovato
+     * dall'utente: "scattano"). Adesso ogni modifica aspetta la precedente
+     * (`structuralEdits`) e rilegge i blocchi dal database: lì la
+     * precedente c'è già, e il confronto con `linesBefore` è esatto.
      */
     fun updateRun(
         runBlockIds: List<String>,
@@ -2334,17 +2341,42 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         linesBefore: List<String>? = null,
         caretLine: Int? = null
     ) {
-        val runBlocks = resolveRun(runBlockIds) ?: return
-
-        val stored = runBlocks.map { plainTextOf(it) }
-        val oldTexts = if (linesBefore != null && linesBefore.size == runBlocks.size) {
+        // Qui, subito, solo quello che serve ad Annulla e alla cronologia:
+        // guardano la modifica così come l'ha fatta l'utente.
+        val shownRun = resolveRun(runBlockIds) ?: return
+        val shownOld = if (linesBefore != null && linesBefore.size == shownRun.size) {
             linesBefore
         } else {
-            stored
+            shownRun.map { plainTextOf(it) }
         }
-        if (stored == newLines) return
-        if (oldTexts == newLines) return
+        if (shownOld == newLines) return
+        val (shownPrefix, shownSuffix) = runDiff(shownOld, newLines, caretLine)
+        val shownMiddle = shownRun.subList(shownPrefix, shownOld.size - shownSuffix)
+        val shownNewMiddle = newLines.size - shownSuffix - shownPrefix
+        if (shownMiddle.isEmpty() && shownNewMiddle == 0) return
+        if (shownMiddle.size == 1 && shownNewMiddle == 1) {
+            snapshotForTextEdit(shownMiddle[0].id)
+        } else {
+            snapshotForStructuralChange()
+        }
 
+        val pageId = currentPageId ?: return
+        viewModelScope.launch {
+            structuralEdits.withLock {
+                val fresh = repository.getBlocksOnce(pageId)
+                // La riga vuota di una pagina nuova non è ancora nel database.
+                val unsaved = placeholder?.takeIf { p -> p.pageId == pageId && fresh.none { it.id == p.id } }
+                val runBlocks = resolveRun(runBlockIds, fresh + listOfNotNull(unsaved)) ?: return@withLock
+                writeRunChange(pageId, runBlocks, unsaved, newLines, linesBefore, caretLine)
+            }
+        }
+    }
+
+    /**
+     * Quante righe in cima (`first`) e in fondo (`second`) sono rimaste
+     * uguali fra `oldTexts` e `newLines`: in mezzo c'è la modifica.
+     */
+    private fun runDiff(oldTexts: List<String>, newLines: List<String>, caretLine: Int?): Pair<Int, Int> {
         var prefixCount = 0
         val minCount = minOf(oldTexts.size, newLines.size)
         while (prefixCount < minCount && oldTexts[prefixCount] == newLines[prefixCount]) prefixCount++
@@ -2380,6 +2412,27 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         while (suffixCount < maxSuffix &&
             oldTexts[oldTexts.size - 1 - suffixCount] == newLines[newLines.size - 1 - suffixCount]
         ) suffixCount++
+        return prefixCount to suffixCount
+    }
+
+    /** La scrittura di `updateRun`, coi blocchi letti adesso dal database. */
+    private suspend fun writeRunChange(
+        pageId: String,
+        runBlocks: List<BlockEntity>,
+        unsaved: BlockEntity?,
+        newLines: List<String>,
+        linesBefore: List<String>?,
+        caretLine: Int?
+    ) {
+        val stored = runBlocks.map { plainTextOf(it) }
+        if (stored == newLines) return
+        val oldTexts = if (linesBefore != null && linesBefore.size == runBlocks.size) {
+            linesBefore
+        } else {
+            stored
+        }
+        if (oldTexts == newLines) return
+        val (prefixCount, suffixCount) = runDiff(oldTexts, newLines, caretLine)
 
         val oldMiddleStart = prefixCount
         val oldMiddleEnd = oldTexts.size - suffixCount
@@ -2388,14 +2441,6 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
 
         if (oldMiddleBlocks.isEmpty() && newMiddleLines.isEmpty()) return
 
-        val isPureTextEdit = oldMiddleBlocks.size == 1 && newMiddleLines.size == 1
-        if (isPureTextEdit) {
-            snapshotForTextEdit(oldMiddleBlocks[0].id)
-        } else {
-            snapshotForStructuralChange()
-        }
-
-        val pageId = currentPageId ?: return
         val parentBlockId = runBlocks.first().parentBlockId
 
         // Il blocco da cui i nuovi ereditano tipo e rientro è sempre
@@ -2453,22 +2498,21 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         // La riga vuota di una pagina appena aperta va scritta anche se la
         // modifica non la tocca (l'Invio aggiunge solo quella sotto): vedi
         // `placeholder`. Nella stessa transazione, così non c'è un attimo
-        // in cui il database ha la riga nuova e non quella di prima.
-        val placeholderToSave = unsavedPlaceholderIn(runBlocks)
-            ?.takeIf { p -> oldMiddleBlocks.none { it.id == p.id } }
+        // in cui il database ha la riga nuova e non quella di prima. Se è
+        // lei a cambiare testo, prima la si crea e poi le si scrive il testo.
+        val placeholderToSave = unsaved?.takeIf { p -> runBlocks.any { it.id == p.id } }
 
         // Una transazione sola per tutto il cambiamento, righe
         // riscritte e righe nuove insieme: vedi
         // `PageRepository.applyBlockChanges`. Scritte una alla volta
         // facevano ridisegnare la pagina una volta per riga, proprio
-        // mentre l'utente stava scrivendo.
-        viewModelScope.launch {
+        // mentre l'utente stava scrivendo. Delle righe che c'erano già si
+        // riscrive **solo il testo** (`texts`).
+        run {
             if (newMiddleLines.size >= oldMiddleBlocks.size) {
                 val rewritten = oldMiddleBlocks.mapIndexed { i, block ->
-                    block.copy(
-                        textJson = json.encodeToString(spansForLine(i, newMiddleLines[i]))
-                    )
-                }
+                    block.id to json.encodeToString(spansForLine(i, newMiddleLines[i]))
+                }.toMap()
                 val extraLines = newMiddleLines.drop(oldMiddleBlocks.size)
                 // Senza un blocco prima (Invio a inizio della prima riga)
                 // le righe nuove vanno al posto di quella prima riga, non
@@ -2489,7 +2533,9 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
                             extraLines.size
                         )
                     },
-                    saved = listOfNotNull(placeholderToSave) + rewritten + extraLines.mapIndexed { i, line ->
+                    ensured = listOfNotNull(placeholderToSave),
+                    texts = rewritten,
+                    saved = extraLines.mapIndexed { i, line ->
                         BlockEntity(
                             pageId = pageId,
                             parentBlockId = parentBlockId,
@@ -2504,11 +2550,10 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
                 )
             } else {
                 repository.applyBlockChanges(
-                    saved = listOfNotNull(placeholderToSave) + newMiddleLines.mapIndexed { i, line ->
-                        oldMiddleBlocks[i].copy(
-                            textJson = json.encodeToString(spansForLine(i, line))
-                        )
-                    },
+                    ensured = listOfNotNull(placeholderToSave),
+                    texts = newMiddleLines.mapIndexed { i, line ->
+                        oldMiddleBlocks[i].id to json.encodeToString(spansForLine(i, line))
+                    }.toMap(),
                     deleted = oldMiddleBlocks.drop(newMiddleLines.size)
                 )
             }

@@ -221,6 +221,7 @@ import com.gabriele.notionlocal.data.entity.PageEntity
 import com.gabriele.notionlocal.data.entity.RichTextSpan
 import com.gabriele.notionlocal.data.entity.applyTextEdit
 import com.gabriele.notionlocal.data.entity.plainText
+import com.gabriele.notionlocal.data.entity.splitLines
 import com.gabriele.notionlocal.data.entity.setColorInRange
 import com.gabriele.notionlocal.data.entity.setFormatInRange
 import com.gabriele.notionlocal.data.entity.toggleFormatInRange
@@ -3614,6 +3615,95 @@ private fun displayedCaretOffset(
     return displayPos
 }
 
+/**
+ * Quale blocco ha ogni riga del campo. `insertedAt` è la riga appena nata
+ * con un Invio, `removedAt` il blocco della riga appena sparita col
+ * backspace (-1 se non c'è).
+ */
+internal class LineBlocks(val blocks: List<BlockEntity?>, val insertedAt: Int, val removedAt: Int)
+
+/**
+ * **Il blocco di ogni riga del campo, anche quando il database è indietro.**
+ *
+ * Subito dopo un Invio il campo ha una riga in più dei blocchi, subito dopo
+ * un backspace che unisce due righe una in meno, e per un istante — finché
+ * il database non ha scritto — "il blocco numero i" è quello della riga
+ * accanto. Chi disegnava in base a quello (il pallino degli elenchi, i font,
+ * i colori, pedici e apici) mostrava per un fotogramma le righe sotto senza
+ * la loro formattazione, e si vedevano **scattare** (trovato dall'utente il
+ * 26/09/2026, andando a capo in cima alla pagina principale).
+ *
+ * Si cerca **prima dalla fine**: le righe in fondo che combaciano ancora
+ * coi loro blocchi dicono quante ce ne sono dopo quelle nate o sparite.
+ * Dall'inizio da solo non funziona, perché andando a capo anche la riga
+ * divisa cambia testo. Poi dall'inizio, fin dove si può; in mezzo restano
+ * le righe cambiate, che prendono i blocchi di mezzo nell'ordine, e quelle
+ * in più sono nuove. Vale anche con più righe di differenza — Invio premuti
+ * in fretta, che il database scrive uno alla volta.
+ */
+internal fun blocksOfLines(
+    lines: List<String>,
+    runBlocks: List<BlockEntity>,
+    textOf: (BlockEntity) -> String
+): LineBlocks {
+    val n = lines.size
+    val m = runBlocks.size
+    if (n == m) return LineBlocks(runBlocks, -1, -1)
+    var tail = 0
+    while (tail < n && tail < m && lines[n - 1 - tail] == textOf(runBlocks[m - 1 - tail])) tail++
+    var head = 0
+    val maxHead = minOf(n, m) - tail
+    while (head < maxHead && lines[head] == textOf(runBlocks[head])) head++
+    val blocks = lines.indices.map { i ->
+        when {
+            i < head -> runBlocks[i]
+            // Sotto le righe nuove tutto è sceso (o salito) di tante righe.
+            i >= n - tail -> runBlocks[i - n + m]
+            // In mezzo: i blocchi di mezzo nell'ordine, poi righe nuove.
+            i < m - tail -> runBlocks[i]
+            else -> null
+        }
+    }
+    return LineBlocks(
+        blocks,
+        insertedAt = if (n == m + 1) blocks.indexOfFirst { it == null } else -1,
+        // Il primo blocco di mezzo rimasto senza riga.
+        removedAt = if (m == n + 1) n - tail else -1
+    )
+}
+
+/**
+ * La formattazione **prevista** delle righe toccate da un Invio o da un
+ * backspace che il database non ha ancora scritto: la riga divisa in due
+ * tiene i suoi font nelle due metà, le due righe unite li tengono tutti e
+ * due. È quello che il database scriverà (`applyTextEdit` e `splitLines`,
+ * come in `updateRun`); se il conto non torna, niente previsione.
+ */
+private fun predictedLineSpans(
+    lines: List<String>,
+    runBlocks: List<BlockEntity>,
+    aligned: LineBlocks,
+    viewModel: PageEditorViewModel
+): Map<Int, List<RichTextSpan>> {
+    val at = aligned.insertedAt
+    if (at > 0) {
+        val above = aligned.blocks[at - 1] ?: return emptyMap()
+        val storedText = viewModel.plainTextOf(above)
+        if (storedText == lines[at - 1]) return emptyMap()
+        val parts = applyTextEdit(viewModel.spansOf(above), storedText, lines[at - 1] + "\n" + lines[at]).splitLines()
+        if (parts.size != 2 || parts[0].plainText() != lines[at - 1] || parts[1].plainText() != lines[at]) return emptyMap()
+        return mapOf(at - 1 to parts[0], at to parts[1])
+    }
+    val removed = aligned.removedAt
+    if (removed > 0) {
+        val first = runBlocks[removed - 1]
+        val second = runBlocks[removed]
+        if (viewModel.plainTextOf(first) + viewModel.plainTextOf(second) != lines[removed - 1]) return emptyMap()
+        return mapOf(removed - 1 to viewModel.spansOf(first) + viewModel.spansOf(second))
+    }
+    return emptyMap()
+}
+
 private fun runPrefixes(
     lines: List<String>,
     runBlocks: List<BlockEntity>,
@@ -3624,41 +3714,13 @@ private fun runPrefixes(
     var carriedIndent = 0
     var carriedOrdinal: Int? = null
 
-    // **Dove è appena comparsa una riga che non ha ancora un blocco.**
-    //
-    // Subito dopo un Invio il campo ha una riga in più del database, e
-    // da quel punto in giù righe e blocchi non si corrispondono più:
-    // chiedendo "il blocco numero i" si otteneva il blocco della riga
-    // *successiva*. Se quello era un paragrafo — il caso normale, un
-    // elenco finisce quasi sempre con una riga vuota sotto — la riga
-    // nuova veniva disegnata senza pallino, e il cursore si vedeva
-    // scattare a inizio riga per poi tornare al suo posto appena il
-    // database arrivava.
-    //
-    // Il punto d'inserimento si trova **dalla fine**: le righe in fondo
-    // che combaciano ancora con i loro blocchi dicono quante ce ne sono
-    // dopo quella nuova. Cercarlo dall'inizio non funziona, perché
-    // andando a capo anche la riga divisa cambia testo.
-    val insertedAt = if (lines.size == runBlocks.size + 1) {
-        var matching = 0
-        while (matching < runBlocks.size &&
-            lines[lines.size - 1 - matching] ==
-            viewModel.plainTextOf(runBlocks[runBlocks.size - 1 - matching])
-        ) matching++
-        lines.size - 1 - matching
-    } else {
-        -1
-    }
+    // Il blocco di ogni riga, anche nell'istante in cui il database è
+    // indietro di un Invio o di un backspace: vedi `blocksOfLines`. La
+    // riga appena nata non ne ha, e il suo prefisso si prevede.
+    val lineBlocks = blocksOfLines(lines, runBlocks) { viewModel.plainTextOf(it) }.blocks
 
     return lines.indices.map { i ->
-        val block = when {
-            insertedAt < 0 -> runBlocks.getOrNull(i)
-            // La riga nuova: nessun blocco, il prefisso si prevede.
-            i == insertedAt -> null
-            // Sotto di lei tutto è sceso di uno.
-            i > insertedAt -> runBlocks.getOrNull(i - 1)
-            else -> runBlocks.getOrNull(i)
-        }
+        val block = lineBlocks[i]
         val type = block?.type ?: inheritedListType(carriedType)
         val indent = (block?.indentLevel ?: carriedIndent).coerceAtLeast(0)
         // A che numero è arrivata questa riga. Per una riga che il
@@ -3716,6 +3778,11 @@ private class MergedRunVisualTransformation(
         val hasLead = text.text.startsWith(RUN_LEAD)
         val lines = bodyOf(text.text).split('\n')
         val prefixes = runPrefixes(lines, runBlocks, allBlocks, viewModel)
+        // Il blocco di ogni riga anche mentre il database è indietro, e la
+        // formattazione prevista delle righe appena divise o unite: vedi
+        // `blocksOfLines`.
+        val aligned = blocksOfLines(lines, runBlocks) { viewModel.plainTextOf(it) }
+        val predicted = predictedLineSpans(lines, runBlocks, aligned, viewModel)
         val builder = AnnotatedString.Builder()
         val lineLengths = mutableListOf<Int>()
         val prefixLengths = mutableListOf<Int>()
@@ -3724,7 +3791,7 @@ private class MergedRunVisualTransformation(
         var lineBodyStart = 0
 
         lines.forEachIndexed { i, line ->
-            val block = runBlocks.getOrNull(i)
+            val block = aligned.blocks[i]
             val prefix = prefixes[i]
             val lineStart = builder.length
             builder.append(prefix.text)
@@ -3795,13 +3862,19 @@ private class MergedRunVisualTransformation(
             // appena nata o appena sparita una riga, la corrispondenza
             // riga-blocco non è più affidabile, e uno stile preso dal
             // blocco sbagliato sarebbe peggio di nessuno stile.
-            if (block != null) {
-                val stored = viewModel.spansOf(block)
-                val storedText = stored.plainText()
-                val blockSpans = when {
-                    storedText == line -> stored
-                    lines.size != runBlocks.size -> null
-                    else -> applyTextEdit(stored, storedText, line)
+            // Mentre il database è indietro di una riga, i blocchi sono già
+            // abbinati alle righe giuste (`aligned`): quelle rimaste uguali
+            // tengono i loro span, e le righe appena divise o unite quelli
+            // previsti.
+            run {
+                val blockSpans = predicted[i] ?: block?.let {
+                    val stored = viewModel.spansOf(it)
+                    val storedText = stored.plainText()
+                    when {
+                        storedText == line -> stored
+                        lines.size != runBlocks.size -> null
+                        else -> applyTextEdit(stored, storedText, line)
+                    }
                 }
                 if (blockSpans != null) {
                     var spanPos = 0
@@ -4663,9 +4736,10 @@ private fun MergedTextRunField(
         val density = LocalDensity.current
         val lines = bodyOf(fieldValue.text).split('\n')
         val prefixes = runPrefixes(lines, runBlocks, allBlocks, viewModel)
+        val lineBlocks = blocksOfLines(lines, runBlocks) { viewModel.plainTextOf(it) }.blocks
         var displayStart = 0
         lines.forEachIndexed { i, line ->
-            val block = runBlocks.getOrNull(i)
+            val block = lineBlocks[i]
             val prefix = prefixes[i]
             val markerStart = displayStart + prefix.indent.length
             val markerEnd = displayStart + prefix.text.length

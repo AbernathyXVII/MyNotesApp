@@ -1381,7 +1381,16 @@ class PageRepository(private val db: AppDatabase) {
     suspend fun applyBlockChanges(
         shift: BlockShift? = null,
         saved: List<BlockEntity> = emptyList(),
-        deleted: List<BlockEntity> = emptyList()
+        deleted: List<BlockEntity> = emptyList(),
+        /** Da creare **solo se mancano**: la riga vuota di una pagina nuova (vedi `saveBlockIfAbsent`). */
+        ensured: List<BlockEntity> = emptyList(),
+        /**
+         * Il **solo testo** di blocchi che ci sono già, per id. Tipo, spunta,
+         * rientro e il resto restano quelli del database: un cambio di tipo
+         * arrivato un istante prima (il menu "/" salva il testo e poi cambia
+         * il tipo) non viene riscritto con la copia di prima.
+         */
+        texts: Map<String, String> = emptyMap()
     ) = db.withTransaction {
         if (shift != null && shift.by != 0) {
             blockDao.shiftOrderIndexes(
@@ -1391,9 +1400,14 @@ class PageRepository(private val db: AppDatabase) {
                 shift.by
             )
         }
+        ensured.forEach { blockDao.insertIfAbsent(it) }
         if (saved.isNotEmpty()) blockDao.insertAll(saved)
+        texts.forEach { (blockId, textJson) -> blockDao.setText(blockId, textJson) }
         deleted.forEach { blockDao.delete(it) }
     }
+
+    /** I blocchi di una pagina come sono **adesso** nel database, letti una volta. */
+    suspend fun getBlocksOnce(pageId: String): List<BlockEntity> = blockDao.getBlocksForPageOnce(pageId)
 
     /**
      * Divide un blocco mettendo la parte prima del cursore in un blocco
