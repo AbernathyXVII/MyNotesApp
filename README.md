@@ -2022,6 +2022,50 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**29/09/2026 — Le frecce della barra spostano davvero la riga, e il cursore la segue**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 201 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Se io utilizzo il pulsante Sposta sopra nella toolbar, sembra che
+> cancelli una riga in basso. Adesso sto spostando una riga verso l'altro
+> sopra il database e sembra che non sposta niente. Cerca di fare tutte le
+> prove necessarie per fixare questi problemi»
+
+e poi, ancora con la versione di prima sul telefono:
+> «Adesso le due freccette che permettono alle righe di essere spostate non
+> spostano nulla, proprio niente, né in basso né in alto»
+
+- **[Bug fix]** Le frecce su e giù scambiavano due righe **intere**, prese
+  dalla copia della schermata, con due salvataggi separati: se il testo
+  appena scritto o la riga appena nata con l'Invio non erano ancora nel
+  database, lo scambio rimetteva il testo e le posizioni di prima. E il
+  campo di testo, se aveva una sua scrittura in viaggio, ignorava il nuovo
+  ordine: restava con quello vecchio, e la lettera dopo finiva nella riga
+  sbagliata, cancellandone il testo. Ora lo spostamento aspetta in fila le
+  scritture di prima e cambia nel database **solo la posizione**
+  (`PageRepository.moveBlock`, `BlockDao.setOrderIndex`); il campo prende
+  sempre il nuovo ordine, come per Annulla
+- **[Bug fix]** **Il cursore segue la riga spostata**, nello stesso punto.
+  Prima restava alla stessa altezza, cioè sulla riga scambiata: su righe
+  vuote non si vedeva muoversi niente, e sopra un database la riga saliva
+  ma il cursore restava sotto, così il tocco seguente spostava un'altra
+  riga. Se la riga finisce in cima allo schermo, la pagina lascia sopra lo
+  spazio dei pulsanti sospesi: prima ci finiva dietro
+- **[Progetto]** Test in `MoveBlockTest`; due di loro (il cursore sopra il
+  database, due righe con la stessa posizione) falliscono col codice di
+  prima
+- Verificato sul telefono (copia del database prima) sulla pagina di prova
+  "Titolo tre H3", col database "Videogiochi" in cima: scritte "Uno",
+  "Due", "Tre"; ↑ porta "Tre" sopra "Due" col cursore; altri due ↑ la
+  portano sopra il database, e una lettera scritta subito finisce in lei;
+  ↓ la riporta sotto; una lettera e subito ↑, un Invio e subito ↑, tre ↓ di
+  fila veloci: nessuna riga persa, nessuna posizione doppia, il testo
+  sempre nella riga giusta; Annulla rimette la riga dov'era. Poi la pagina
+  rimessa com'era (il database e 22 righe vuote) e il database confrontato
+  con la copia: uguale, tranne 11 voci di "Updates" di "Titolo tre H3" con
+  le lettere delle prove
+
 **28/09/2026 — Database: la vista Chart, con barre, linea e ciambella**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 196 test
 passati; commit solo in locale)*

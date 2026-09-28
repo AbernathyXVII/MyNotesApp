@@ -103,6 +103,10 @@ interface BlockDao {
     @Query("UPDATE blocks SET indentLevel = :level WHERE id = :blockId")
     suspend fun setIndentLevel(blockId: String, level: Int)
 
+    /** Come setNumberStart: sposta la riga senza riscriverne il testo (vedi `PageRepository.moveBlock`). */
+    @Query("UPDATE blocks SET orderIndex = :orderIndex WHERE id = :blockId")
+    suspend fun setOrderIndex(blockId: String, orderIndex: Int)
+
     /**
      * Cambia **solo** il testo di un blocco.
      *

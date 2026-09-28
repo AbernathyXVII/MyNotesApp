@@ -1410,6 +1410,38 @@ class PageRepository(private val db: AppDatabase) {
     suspend fun getBlocksOnce(pageId: String): List<BlockEntity> = blockDao.getBlocksForPageOnce(pageId)
 
     /**
+     * **Sposta un blocco di un posto** fra i suoi fratelli, su (`up`) o giù:
+     * i pulsanti con le frecce della barra. Restituisce l'id del fratello
+     * scavalcato, o null se non c'era dove andare.
+     *
+     * Prima si scambiavano due blocchi **interi** presi dalla copia della
+     * schermata, con due salvataggi separati: se il testo appena scritto o
+     * la riga appena creata con l'Invio non erano ancora nel database, lo
+     * scambio rimetteva il testo di prima e le posizioni di prima (trovato
+     * dall'utente il 28/09/2026: "sembra che cancelli una riga in basso").
+     * Qui le posizioni si leggono dal database dentro la transazione e si
+     * cambia **solo l'indice**.
+     *
+     * I fratelli nell'ordine della pagina (`getBlocksForPageOnce`, la stessa
+     * lettura della schermata). Due con lo stesso indice non si potrebbero
+     * scambiare: in quel caso prima si rimettono in fila, 0, 1, 2…
+     */
+    suspend fun moveBlock(blockId: String, up: Boolean): String? = db.withTransaction {
+        val block = blockDao.getById(blockId) ?: return@withTransaction null
+        val siblings = blockDao.getBlocksForPageOnce(block.pageId).filter { it.parentBlockId == block.parentBlockId }
+        val from = siblings.indexOfFirst { it.id == blockId }
+        val to = if (up) from - 1 else from + 1
+        if (from < 0 || to !in siblings.indices) return@withTransaction null
+        val passed = siblings[to]
+        val order = siblings.toMutableList().apply { add(to, removeAt(from)) }
+        val slots = siblings.map { it.orderIndex }.let { if (it.distinct().size == it.size) it else it.indices.toList() }
+        order.forEachIndexed { i, sibling ->
+            if (sibling.orderIndex != slots[i]) blockDao.setOrderIndex(sibling.id, slots[i])
+        }
+        passed.id
+    }
+
+    /**
      * Divide un blocco mettendo la parte prima del cursore in un blocco
      * **nuovo sopra**, e lasciando a quello di partenza la parte dopo.
      *

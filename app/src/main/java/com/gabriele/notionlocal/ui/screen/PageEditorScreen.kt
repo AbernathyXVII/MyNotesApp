@@ -4312,6 +4312,12 @@ private fun MergedTextRunField(
     // Si chiede di mostrare il rettangolo del cursore, non l'intero
     // campo: quando il campo è più alto dello schermo, "mostra il
     // campo" non vuol dire niente.
+    //
+    // **Col posto dei pulsanti sospesi sopra** (dal 29/09/2026): portato
+    // proprio al bordo dello schermo, il cursore finiva dietro indietro e
+    // barra laterale. Succedeva con la freccia su che porta una riga sopra
+    // un database: la pagina la seguiva, ma la lasciava lì sotto.
+    val barClearancePx = with(LocalDensity.current) { FLOATING_BAR_CLEARANCE.toPx() }
     LaunchedEffect(fieldValue.selection, textLayout, imeVisible) {
         val layout = textLayout ?: return@LaunchedEffect
         // lastLineBlockId è valorizzato solo mentre questo campo ha il
@@ -4324,7 +4330,8 @@ private fun MergedTextRunField(
         val prefixes = runPrefixes(body.split('\n'), runBlocks, allBlocks, viewModel)
         val displayed = displayedCaretOffset(body, caretInBody, prefixes)
             .coerceIn(0, layout.layoutInput.text.length)
-        caretIntoView.bringIntoView(layout.getCursorRect(displayed))
+        val caret = layout.getCursorRect(displayed)
+        caretIntoView.bringIntoView(caret.copy(top = caret.top - barClearancePx))
     }
 
     LaunchedEffect(focusRequestBlockId) {

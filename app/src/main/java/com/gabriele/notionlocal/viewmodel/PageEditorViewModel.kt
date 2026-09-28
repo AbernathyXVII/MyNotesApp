@@ -1706,35 +1706,59 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
     }
 
     /** Scambia la posizione di un blocco con il fratello immediatamente precedente. */
-    fun moveBlockUp(block: BlockEntity) {
-        val siblings = _blocks.value
-            .filter { it.parentBlockId == block.parentBlockId }
-            .sortedBy { it.orderIndex }
-        val currentPos = siblings.indexOfFirst { it.id == block.id }
-        if (currentPos <= 0) return
-        val previous = siblings[currentPos - 1]
+    fun moveBlockUp(block: BlockEntity) = moveBlock(block, up = true)
+
+    /** Scambia la posizione di un blocco con il fratello immediatamente successivo. */
+    fun moveBlockDown(block: BlockEntity) = moveBlock(block, up = false)
+
+    /**
+     * **Le frecce della barra** (rifatte il 28/09/2026, dopo due bug trovati
+     * dall'utente: "sembra che cancelli una riga in basso", e sopra un
+     * database "sembra che non sposta niente").
+     *
+     * - Lo spostamento aspetta in fila le scritture di prima
+     *   (`structuralEdits`, come l'Invio) e cambia nel database **solo le
+     *   posizioni**: vedi `PageRepository.moveBlock`.
+     * - Il campo di testo condiviso deve prendere il nuovo ordine anche se
+     *   ha una sua scrittura in viaggio (`externalChangeTick`, come per
+     *   Annulla): altrimenti restava col vecchio, e la lettera dopo finiva
+     *   nella riga sbagliata, cancellandone il testo.
+     * - **Il cursore segue la riga**, nello stesso punto. Prima restava
+     *   all'altezza di prima, cioè sulla riga scambiata: sopra un database la
+     *   riga saliva ma il cursore restava sotto, e il tocco seguente spostava
+     *   un'altra riga. Il fuoco si chiede quando la lista mostrata ha già il
+     *   nuovo ordine, se no lo prenderebbe il campo di prima.
+     */
+    private fun moveBlock(block: BlockEntity, up: Boolean) {
+        val siblings = _blocks.value.filter { it.parentBlockId == block.parentBlockId }
+        val position = siblings.indexOfFirst { it.id == block.id }
+        if (position < 0 || (up && position == 0) || (!up && position == siblings.lastIndex)) return
+        val caret = caretInLine(block.id)
 
         snapshotForStructuralChange()
         viewModelScope.launch {
-            repository.saveBlock(block.copy(orderIndex = previous.orderIndex))
-            repository.saveBlock(previous.copy(orderIndex = block.orderIndex))
+            val passedId = structuralEdits.withLock { repository.moveBlock(block.id, up) } ?: return@launch
+            _externalChangeTick.value += 1
+            withTimeoutOrNull(FOCUS_HANDOFF_TIMEOUT_MS) {
+                _blocks.first { shown ->
+                    val at = shown.indexOfFirst { it.id == block.id }
+                    val passedAt = shown.indexOfFirst { it.id == passedId }
+                    at >= 0 && passedAt >= 0 && (at < passedAt) == up
+                }
+            }
+            if (caret != null) _pendingCaret.value = block.id to caret
+            _focusRequestBlockId.value = block.id
         }
     }
 
-    /** Scambia la posizione di un blocco con il fratello immediatamente successivo. */
-    fun moveBlockDown(block: BlockEntity) {
-        val siblings = _blocks.value
-            .filter { it.parentBlockId == block.parentBlockId }
-            .sortedBy { it.orderIndex }
-        val currentPos = siblings.indexOfFirst { it.id == block.id }
-        if (currentPos < 0 || currentPos >= siblings.size - 1) return
-        val next = siblings[currentPos + 1]
-
-        snapshotForStructuralChange()
-        viewModelScope.launch {
-            repository.saveBlock(block.copy(orderIndex = next.orderIndex))
-            repository.saveBlock(next.copy(orderIndex = block.orderIndex))
-        }
+    /** Dove sta il cursore dentro la riga `blockId`, se è lì che si sta scrivendo. */
+    private fun caretInLine(blockId: String): Int? {
+        val selection = liveSelection ?: return null
+        val line = selection.blockIds.indexOf(blockId)
+        if (line < 0) return null
+        val byId = _blocks.value.associateBy { it.id }
+        val lineStart = selection.blockIds.take(line).sumOf { id -> (byId[id]?.let { plainTextOf(it).length } ?: 0) + 1 }
+        return (selection.end - lineStart).coerceAtLeast(0)
     }
 
     fun deleteBlock(block: BlockEntity) {
