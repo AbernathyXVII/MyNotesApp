@@ -43,6 +43,8 @@ import com.gabriele.notionlocal.data.settings.AppSettings
 import com.gabriele.notionlocal.ui.format.Formats
 import com.gabriele.notionlocal.ui.i18n.Strings
 import com.gabriele.notionlocal.ui.i18n.TemplateStrings
+import com.gabriele.notionlocal.data.entity.ChartSettings
+import com.gabriele.notionlocal.data.entity.parseChartSettings
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.foundation.layout.statusBarsPadding
 import android.widget.Toast
@@ -89,6 +91,7 @@ import androidx.compose.material.icons.filled.AlternateEmail
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDropDownCircle
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.CheckBox
@@ -699,6 +702,8 @@ fun DatabaseContent(
     var editingIcon by remember { mutableStateOf(false) }
 
     var propertyTarget by remember { mutableStateOf<PropertyTarget?>(null) }
+    // La finestrella dei quattro grafici della vista Chart (dal 28/09/2026).
+    var choosingChartType by remember { mutableStateOf(false) }
     // "Calculate" (dal 26/09/2026): di quale colonna si sceglie il calcolo.
     var calculateTarget by remember { mutableStateOf<CalculateTarget?>(null) }
     val calculations = parseViewCalculations(page?.viewCalculations)
@@ -875,6 +880,7 @@ fun DatabaseContent(
         }
 
         val layout = page?.databaseLayout ?: DatabaseLayout.TABLE
+        val chartSettings = parseChartSettings(page?.chartSettings)
 
         // **Toccata la lente, la barra della ricerca prende il posto di
         // questa riga**, lì dov'era, come su Notion: si scrive subito, e
@@ -1077,6 +1083,8 @@ fun DatabaseContent(
                     }
                 )
 
+                DatabaseLayout.CHART -> ChartLayout(state = state, settings = chartSettings)
+
                 DatabaseLayout.GALLERY -> GalleryLayout(
                     state = state,
                     // Copertina e testo sono della pagina della riga: in
@@ -1203,6 +1211,14 @@ fun DatabaseContent(
             onSetLayout = {
                 viewModel.setLayout(it)
                 showSettings = false
+                // Scelto "Chart", la finestrella dei quattro grafici.
+                if (it == DatabaseLayout.CHART) choosingChartType = true
+            },
+            chartSettings = parseChartSettings(page?.chartSettings),
+            onSetChartSettings = { viewModel.setChartSettings(it) },
+            onPickChartType = {
+                showSettings = false
+                choosingChartType = true
             },
             onSetGroupColumn = { viewModel.setBoardGroupColumn(it.id) },
             onSetDateColumn = { viewModel.setCalendarDateColumn(it.id) },
@@ -1246,6 +1262,18 @@ fun DatabaseContent(
                     it()
                 }
             }
+        )
+    }
+
+    if (choosingChartType) {
+        val current = parseChartSettings(page?.chartSettings)
+        ChartTypeDialog(
+            current = current.type,
+            onPick = {
+                viewModel.setChartSettings(current.copy(type = it))
+                choosingChartType = false
+            },
+            onDismiss = { choosingChartType = false }
         )
     }
 
@@ -3917,7 +3945,7 @@ private fun ViewToolbar(
 
 /** Una riga delle impostazioni che accende e spegne invece di aprire qualcosa. */
 @Composable
-private fun SettingsToggleRow(
+internal fun SettingsToggleRow(
     icon: ImageVector,
     label: String,
     checked: Boolean,
@@ -6780,7 +6808,9 @@ private enum class SettingsPage {
     /** Cosa mostra la parte alta delle schede della galleria. */
     CARD_PREVIEW,
     /** Quanto sono grandi le schede della galleria. */
-    CARD_SIZE
+    CARD_SIZE,
+    /** Una delle voci del grafico: quale, lo dice `ChartSettingsPage`. */
+    CHART
 }
 
 /** Le schermate dentro la finestra delle azioni di una riga. */
@@ -7277,9 +7307,15 @@ private fun SettingsSheet(
      * **dentro una pagina**, e aperto da solo è già una pagina.
      */
     onTurnIntoPage: (() -> Unit)? = null,
-    onDelete: (() -> Unit)? = null
+    onDelete: (() -> Unit)? = null,
+    /** La vista Chart: le sue impostazioni, e la finestrella dei tipi. */
+    chartSettings: ChartSettings = ChartSettings(),
+    onSetChartSettings: (ChartSettings) -> Unit = {},
+    onPickChartType: () -> Unit = {}
 ) {
     var page by remember(initialPage) { mutableStateOf(initialPage) }
+    var chartPage by remember { mutableStateOf(ChartSettingsPage.GROUP) }
+    var editingChartRange by remember { mutableStateOf(false) }
 
     NoteBottomSheet(
         onDismissRequest = onDismiss,
@@ -7310,6 +7346,7 @@ private fun SettingsSheet(
                         SettingsPage.DATE_PROPERTY -> DbStrings.dateProperty
                         SettingsPage.CARD_PREVIEW -> DbStrings.cardPreview
                         SettingsPage.CARD_SIZE -> DbStrings.cardSize
+                        SettingsPage.CHART -> chartPageTitle(chartPage, chartSettings)
                     },
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
@@ -7319,19 +7356,47 @@ private fun SettingsSheet(
 
             when (page) {
                 SettingsPage.ROOT -> {
-                    SheetGroup {
-                        SettingsRow(
-                            icon = layout.icon(),
-                            label = DbStrings.layout,
+                    // **Il grafico** (dal 28/09/2026): sotto "Layout" il tipo,
+                    // gli assi e lo stile, come su Notion; il resto dopo.
+                    if (layout == DatabaseLayout.CHART) {
+                        SheetGroup {
+                            SettingsRow(
+                                icon = layout.icon(),
+                                label = DbStrings.layout,
+                                enabled = !viewLocked,
+                                value = layout.displayName(),
+                                onClick = { page = SettingsPage.LAYOUT }
+                            )
+                        }
+                        Spacer(modifier = Modifier.size(12.dp))
+                        ChartSettingsSection(
+                            settings = chartSettings,
+                            columns = columns,
                             enabled = !viewLocked,
-                            value = layout.displayName(),
-                            onClick = { page = SettingsPage.LAYOUT }
+                            onChange = onSetChartSettings,
+                            onOpenPage = {
+                                chartPage = it
+                                page = SettingsPage.CHART
+                            },
+                            onPickType = onPickChartType,
+                            onEditRange = { editingChartRange = true }
                         )
+                    }
+                    SheetGroup {
+                        if (layout != DatabaseLayout.CHART) {
+                            SettingsRow(
+                                icon = layout.icon(),
+                                label = DbStrings.layout,
+                                enabled = !viewLocked,
+                                value = layout.displayName(),
+                                onClick = { page = SettingsPage.LAYOUT }
+                            )
+                            HorizontalDivider()
+                        }
                         // Il filtro non è una schermata dentro le
                         // impostazioni ma **la stessa finestra**
                         // dell'icona nella barra: due copie si
                         // sarebbero separate al primo cambiamento.
-                        HorizontalDivider()
                         SettingsRow(
                             icon = Icons.Filled.FilterList,
                             label = DbStrings.filter,
@@ -7524,6 +7589,13 @@ private fun SettingsSheet(
                         }
                     }
                 }
+
+                SettingsPage.CHART -> ChartSettingsDetail(
+                    page = chartPage,
+                    settings = chartSettings,
+                    columns = columns,
+                    onChange = onSetChartSettings
+                )
 
                 SettingsPage.DATE_PROPERTY -> {
                     val dateColumns = columns.filter { it.type == ColumnType.DATE }
@@ -7753,6 +7825,17 @@ private fun SettingsSheet(
             Spacer(modifier = Modifier.size(24.dp))
         }
     }
+
+    if (editingChartRange) {
+        ChartRangeDialog(
+            settings = chartSettings,
+            onConfirm = { min, max ->
+                editingChartRange = false
+                onSetChartSettings(chartSettings.copy(rangeMin = min, rangeMax = max))
+            },
+            onDismiss = { editingChartRange = false }
+        )
+    }
 }
 
 /** Un riquadro del selettore di visualizzazione, come su Notion. */
@@ -7881,7 +7964,7 @@ private fun PropertyVisibilityRow(
  * più chiaro di quello della finestra, separate da linee sottili.
  */
 @Composable
-private fun SheetGroup(content: @Composable () -> Unit) {
+internal fun SheetGroup(content: @Composable () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -7893,7 +7976,7 @@ private fun SheetGroup(content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun SettingsRow(
+internal fun SettingsRow(
     icon: ImageVector,
     label: String,
     value: String?,
@@ -8210,6 +8293,7 @@ private fun DatabaseLayout.icon(): ImageVector = when (this) {
     DatabaseLayout.LIST -> Icons.Filled.FormatListBulleted
     // La stessa icona della voce "Gallery view" nel menu "/".
     DatabaseLayout.GALLERY -> Icons.Filled.GridView
+    DatabaseLayout.CHART -> Icons.Filled.PieChart
 }
 
 private fun GalleryCardPreview.icon(): ImageVector = when (this) {
@@ -8227,7 +8311,7 @@ private fun GalleryCardSize.icon(): ImageVector = when (this) {
 /** Il nome del tipo nella lingua dell'app. Per il nome che si salva vedi `DbStrings.englishTypeName`. */
 private fun ColumnType.displayName(): String = DbStrings.typeName(this)
 
-private fun ColumnType.icon(): ImageVector = when (this) {
+internal fun ColumnType.icon(): ImageVector = when (this) {
     ColumnType.TEXT -> Icons.Filled.Notes
     ColumnType.NUMBER -> Icons.Filled.Tag
     ColumnType.SELECT -> Icons.Filled.ArrowDropDownCircle

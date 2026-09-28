@@ -55,7 +55,7 @@ import kotlinx.serialization.json.Json
         NotebookEntity::class,
         NotebookSectionEntity::class
     ],
-    version = 39,
+    version = 40,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -616,6 +616,17 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /**
+         * 39 → 40 (28/09/2026): la vista Chart dei database, con le sue
+         * impostazioni (`PageEntity.chartSettings`). Nessuna vista di prima
+         * è un grafico.
+         */
+        private val MIGRATION_39_40 = object : Migration(39, 40) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE pages ADD COLUMN chartSettings TEXT")
+            }
+        }
+
+        /**
          * Solo per i test: chiude il database e lo dimentica, così il
          * `getInstance` dopo riapre il file da capo (e ne esegue le
          * migrazioni). Senza, il secondo test troverebbe il database del
@@ -667,7 +678,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_35_36,
                         MIGRATION_36_37,
                         MIGRATION_37_38,
-                        MIGRATION_38_39
+                        MIGRATION_38_39,
+                        MIGRATION_39_40
                     )
                     .build()
                 INSTANCE = instance

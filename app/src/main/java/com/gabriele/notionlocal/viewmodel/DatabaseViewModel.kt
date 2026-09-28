@@ -9,6 +9,8 @@ import com.gabriele.notionlocal.data.dao.RowCover
 import com.gabriele.notionlocal.data.entity.CalendarMode
 import com.gabriele.notionlocal.data.entity.ColumnType
 import com.gabriele.notionlocal.data.entity.DatabaseLayout
+import com.gabriele.notionlocal.data.entity.ChartSettings
+import com.gabriele.notionlocal.data.entity.encodeChartSettings
 import com.gabriele.notionlocal.data.entity.DatabaseColumnEntity
 import com.gabriele.notionlocal.data.entity.DatabaseRowEntity
 import com.gabriele.notionlocal.data.entity.GALLERY_DEFAULT_PREVIEW
@@ -1073,6 +1075,14 @@ class DatabaseViewModel(
     fun setLayout(layout: DatabaseLayout) {
         val current = _page.value ?: return
         val updated = current.copy(databaseLayout = layout)
+        _page.value = updated
+        viewModelScope.launch { pageRepository.updatePage(updated) }
+    }
+
+    /** Le impostazioni del grafico di questa vista (la vista Chart, dal 28/09/2026). */
+    fun setChartSettings(settings: ChartSettings) {
+        val current = _page.value ?: return
+        val updated = current.copy(chartSettings = encodeChartSettings(settings))
         _page.value = updated
         viewModelScope.launch { pageRepository.updatePage(updated) }
     }

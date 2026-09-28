@@ -101,6 +101,7 @@ import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.PieChart
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.AttachFile
@@ -3295,6 +3296,12 @@ internal val SLASH_ENTRIES: List<SlashEntry> = listOf(
         SlashCategory.DATABASE,
         SlashAction.Database(DatabaseLayout.TIMELINE),
         Icons.Filled.ViewTimeline
+    ),
+    SlashEntry(
+        "Chart view",
+        SlashCategory.DATABASE,
+        SlashAction.Database(DatabaseLayout.CHART),
+        Icons.Filled.PieChart
     ),
     SlashEntry(
         "Database - Inline",

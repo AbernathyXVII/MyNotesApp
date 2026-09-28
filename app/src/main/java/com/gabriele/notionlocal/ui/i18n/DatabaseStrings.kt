@@ -77,6 +77,7 @@ object DbStrings {
         DatabaseLayout.TIMELINE -> t("Timeline", "Linea temporale", "Zeitleiste", "Chronologie", "Cronograma", "时间线", "타임라인", "タイムライン")
         DatabaseLayout.LIST -> t("List", "Elenco", "Liste", "Liste", "Lista", "列表", "목록", "リスト")
         DatabaseLayout.GALLERY -> t("Gallery", "Galleria", "Galerie", "Galerie", "Galería", "画廊", "갤러리", "ギャラリー")
+        DatabaseLayout.CHART -> t("Chart", "Grafico", "Diagramm", "Graphique", "Gráfico", "图表", "차트", "グラフ")
     }
 
     fun galleryPreviewName(preview: GalleryCardPreview): String = when (preview) {

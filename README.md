@@ -2022,6 +2022,75 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**28/09/2026 — Database: la vista Chart, con barre, linea e ciambella**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 196 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola, con sette foto di Notion:
+> «Ho provato, ora scorre bene. Nuova vista dei database, la vista Chart:
+> di base appariranno le barre verticali, ma quando tocco su Chart nelle
+> opzioni del database, sotto Layout ci sarà scritto "Chart" e mi si aprirà
+> un'altra piccola finestra per scegliere le quattro visualizzazioni, ossia
+> Vertical, Horizontal, Line e Donut (vedi le foto). Mettici poi le varie
+> opzioni che vedi sempre in foto.»
+
+- **[Nuova funzionalità]** **"Chart" fra i layout dei database**, dopo
+  Gallery (e "Chart view" nel menu "/"). Scelto, si apre la finestrella
+  "**Chart type**" con i quattro grafici: **Vertical**, **Horizontal**,
+  **Line** e **Donut**; di base sono le barre verticali, una per pagina,
+  alte quanto il conteggio. Nelle impostazioni, sotto "Layout: Chart", la
+  voce "Chart type" riapre la stessa finestrella
+- **[Nuova funzionalità]** **Le voci delle foto**, sotto Layout:
+  - **X axis**: *What to show* (Name, cioè una barra per pagina, oppure una
+    proprietà: i tag contano una volta per tag, le caselle Checked e
+    Unchecked, le date un giorno per gruppo nel formato della colonna, i
+    vuoti tutti insieme in "Empty"); *Sort by* (Name A → Z, Z → A, e il
+    valore dal più basso o dal più alto); *Omit zero values*
+  - **Y axis**: *What to show* (Count, oppure una colonna Number con
+    Values, Sum, Average, Min, Max, Median o Distinct values); *Decimal
+    places* (Default, 1, 1.0, 1.00…); *Cumulative*; *Range* (minimo e
+    massimo dell'asse, vuoti = li sceglie il grafico); *Reference line*
+    (linee arancioni tratteggiate, col loro nome)
+  - con **Horizontal** gli assi si scambiano; con **Donut** c'è "**Data**"
+    (What to show, Slice by, Sort by), come nella foto: al centro il
+    totale ("186 Total Number"), accanto alle fette "81 (44%)", sotto la
+    legenda
+  - **Style**: *Color* (Auto, cioè un colore per gruppo, o uno dei dieci);
+    *More style options*: Height, Grid lines, Data labels, Smooth line,
+    Show legend, Show total, ognuna solo dove serve
+- Come su Notion, **ogni gruppo tiene il suo colore** anche cambiando
+  l'ordine o togliendo gli zeri (nella foto la "3" resta verde anche per
+  prima); la ciambella con un colore solo usa sue sfumature, se no le
+  fette non si distinguerebbero. L'asse lascia un po' d'aria sopra (400
+  arriva a 480, come nella foto). Con tanti gruppi le barre scorrono di
+  lato
+- **Non fatte**, delle voci nelle foto: il quinto tipo "#" (la richiesta
+  era di quattro), l'ordine "Advanced", e *Source*, *Save chart as…*,
+  *Copy link to view*, *Manage data sources*, *Learn about charts*, che su
+  Notion servono al sito e ai link; Filter e il blocco della vista ci
+  sono già, uguali per tutti i layout
+- **[Progetto]** **Database alla versione 40**: `pages.chartSettings`, le
+  impostazioni in JSON; tutte di base non si salvano (`null`). I conti in
+  `data/entity/Chart.kt` (`chartPoints`, `chartAxis`, `chartTicks`,
+  `compactNumber`), il disegno in `DatabaseChart.kt`, le impostazioni in
+  `ChartSettingsUi.kt`, le scritte in `ChartStrings`. Test in `ChartTest`
+  e `MigrationTest` 39→40, col file `v39.sql`
+- Verificato sul telefono (copia del database prima; migrazione alla 40,
+  le 19 pagine tutte lì) su "SuduS al contrario": Layout → Chart apre la
+  finestrella; barre da 1; col Number 81, 25, 9, 71 sull'asse 0–100;
+  Horizontal, Line con l'area sotto e la legenda "Number", Donut; ordine
+  dal più alto; colore Green; senza totale e senza etichette, Large;
+  Cumulative (81, 152, 177, 186, asse 0–240); due decimali ("0,00");
+  Range fino a 200; linea "Media" a 100; asse X per Date (tre gruppi con
+  "Empty"); Smooth line; anche aperto a tutta pagina. Corretti durante la
+  prova: i numeri tagliati dalla griglia e dalla linea (ora hanno attorno
+  un bordino del colore dello sfondo), i colori che seguivano il posto,
+  l'asse fino a 300 per un massimo di 186, "Decimal places" che diceva
+  "2" invece di "1.00". Poi tutto rimesso com'era dall'app (Table,
+  impostazioni del grafico di nuovo `null`): il database è uguale alla
+  copia, tranne l'ora di ultima modifica della pagina "SuduS al
+  contrario". "1 line" al singolare non è stato riprovato sul telefono
+
 **28/09/2026 — Lo scorrimento non si ferma più un istante prima di partire**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 185 test
 passati; commit solo in locale)*
@@ -7164,7 +7233,9 @@ le finestre che apre. Chi lo usa passa solo l'id del blocco.
 
 ## Nota tecnica
 
-Lo schema è alla **versione 39** (la 39, del 26/09/2026, aggiunge i
+Lo schema è alla **versione 40** (la 40, del 28/09/2026, aggiunge
+`pages.chartSettings`, le impostazioni della vista Chart; la 39, del
+26/09/2026, aggiunge i
 template delle pagine; la 38, dello stesso giorno, aggiunge il
 formato della data e dell'ora delle colonne Date; la 37, dello stesso
 giorno, aggiunge l'allineamento delle celle; la 36, dello stesso giorno, aggiunge le

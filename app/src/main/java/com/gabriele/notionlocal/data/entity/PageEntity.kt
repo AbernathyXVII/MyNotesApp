@@ -23,7 +23,9 @@ enum class DatabaseLayout {
     CALENDAR,
     TIMELINE,
     LIST,
-    GALLERY
+    GALLERY,
+    /** Il grafico (dal 28/09/2026): vedi `ChartSettings`. */
+    CHART
 }
 
 /**
@@ -329,6 +331,11 @@ data class PageEntity(
     // colonna del nome. Per vista, come su Notion: una vista collegata ha i
     // suoi. Vedi `parseViewCalculations`.
     var viewCalculations: String? = null,
+    // **Le impostazioni del grafico di questa vista** (dal 28/09/2026, la
+    // vista Chart): tipo, cosa mostrare sui due assi, ordine, stile. JSON di
+    // `ChartSettings`; null = quelle di base (barre verticali, una per riga,
+    // quante righe). Per vista, come il resto: una vista collegata ha le sue.
+    var chartSettings: String? = null,
     // **Un template** (dal 26/09/2026, come su Notion): una pagina da cui
     // copiare il contenuto nelle pagine nuove dei database, per non
     // riscrivere ogni volta la stessa base (le stesse caselle da spuntare,

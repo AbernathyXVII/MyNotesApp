@@ -93,6 +93,7 @@ object EditorStrings {
         "List view" -> t("List view", "Vista elenco", "Listenansicht", "Vue liste", "Vista de lista", "列表视图", "목록 보기", "リストビュー")
         "Calendar view" -> t("Calendar view", "Vista calendario", "Kalenderansicht", "Vue calendrier", "Vista de calendario", "日历视图", "캘린더 보기", "カレンダービュー")
         "Timeline view" -> t("Timeline view", "Vista linea temporale", "Zeitleistenansicht", "Vue chronologie", "Vista de cronograma", "时间线视图", "타임라인 보기", "タイムラインビュー")
+        "Chart view" -> t("Chart view", "Vista grafico", "Diagrammansicht", "Vue graphique", "Vista de gráfico", "图表视图", "차트 보기", "グラフビュー")
         "Database - Inline" -> t("Database - Inline", "Database - In linea", "Datenbank – Inline", "Base de données – Intégrée", "Base de datos – En línea", "数据库 - 内嵌", "데이터베이스 - 인라인", "データベース - インライン")
         "Database - Full page" -> t("Database - Full page", "Database - Pagina intera", "Datenbank – Ganze Seite", "Base de données – Pleine page", "Base de datos – Página completa", "数据库 - 整页", "데이터베이스 - 전체 페이지", "データベース - フルページ")
         "Simple database" -> t("Simple database", "Database semplice", "Einfache Datenbank", "Base de données simple", "Base de datos simple", "简单数据库", "간단한 데이터베이스", "シンプルなデータベース")
