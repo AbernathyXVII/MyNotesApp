@@ -132,6 +132,14 @@ data class PomodoroWidget(
     /** Il nome della sessione di studio; vuoto = "Sessione". */
     val sessionName: String = "",
     val sessionMinutes: Int = 25,
+    /**
+     * **Quanto dura la sessione di studio, scritto nel riquadro grande**
+     * (dal 28/09/2026): la sua voce non è più nell'ingranaggio, e il tempo
+     * scritto toccando il timer durante la sessione vale anche per le
+     * sessioni dopo, secondi compresi. Null = `sessionMinutes`, per i
+     * pomodori di prima.
+     */
+    val sessionMs: Long? = null,
     val breakMinutes: Int = 5,
     val phase: PomodoroPhase = PomodoroPhase.SESSION,
     val running: Boolean = false,
@@ -143,17 +151,38 @@ data class PomodoroWidget(
     /** Quando finirà la fase, a timer che corre. */
     val endsAt: Long? = null,
     /**
-     * Il suono di fine fase **di questo pomodoro**, scelto fra le suonerie
-     * del telefono dall'ingranaggio (dal 25/09/2026, chiesto dall'utente).
-     * Null = il suono delle notifiche dell'app, com'era prima. Il nome è
-     * quello da far leggere, perché dall'indirizzo non si capisce.
+     * **"Break sound"**: il suono di quando comincia la pausa, scelto fra le
+     * suonerie del telefono dall'ingranaggio. Fino al 28/09/2026 era il
+     * suono unico di fine fase, e si salva ancora col suo nome di allora.
+     * Null = il suono delle notifiche dell'app. Il nome è quello da far
+     * leggere, perché dall'indirizzo non si capisce.
      */
-    val soundUri: String? = null,
-    val soundName: String? = null
+    @SerialName("soundUri") val breakSoundUri: String? = null,
+    @SerialName("soundName") val breakSoundName: String? = null,
+    /** **"Study sound"** (dal 28/09/2026): il suono di quando ricomincia la sessione di studio. */
+    val studySoundUri: String? = null,
+    val studySoundName: String? = null
 ) : Widget() {
     fun lengthOf(phase: PomodoroPhase): Long = when (phase) {
-        PomodoroPhase.SESSION -> sessionMinutes * MINUTE_MS
+        PomodoroPhase.SESSION -> sessionMs ?: (sessionMinutes * MINUTE_MS)
         PomodoroPhase.BREAK -> breakMinutes * MINUTE_MS
+    }
+
+    /** Il suono di quando comincia `phase`: la pausa col suo, lo studio col suo. */
+    fun soundFor(phase: PomodoroPhase): String? = when (phase) {
+        PomodoroPhase.SESSION -> studySoundUri
+        PomodoroPhase.BREAK -> breakSoundUri
+    }
+
+    /**
+     * Il tempo scritto toccando il timer: vale per la fase in corso, che corra
+     * o no. Durante la sessione di studio è anche **la durata delle sessioni
+     * dopo** (vedi `sessionMs`).
+     */
+    fun withTimeWritten(ms: Long, now: Long): PomodoroWidget {
+        val left = ms.coerceAtLeast(0)
+        val lengths = if (phase == PomodoroPhase.SESSION && left > 0) copy(sessionMs = left) else this
+        return if (running) lengths.copy(endsAt = now + left, remainingMs = left) else lengths.copy(remainingMs = left)
     }
 
     /**

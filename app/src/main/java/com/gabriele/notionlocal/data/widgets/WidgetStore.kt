@@ -197,30 +197,38 @@ object WidgetStore {
         p.copy(running = false, endsAt = null, phase = PomodoroPhase.SESSION, remainingMs = p.lengthOf(PomodoroPhase.SESSION))
     }
 
-    /** Il tempo scritto a mano toccando il timer: vale per la fase in corso, che corra o no. */
+    /** Il tempo scritto a mano toccando il timer: vedi `PomodoroWidget.withTimeWritten`. */
     fun pomodoroSetRemaining(widgetId: String, ms: Long) = updateWidget<PomodoroWidget>(widgetId) { p ->
-        val left = ms.coerceAtLeast(0)
-        if (p.running) p.copy(endsAt = System.currentTimeMillis() + left, remainingMs = left) else p.copy(remainingMs = left)
+        p.withTimeWritten(ms, System.currentTimeMillis())
     }
 
     /**
-     * Le durate dall'ingranaggio. A timer fermo e intatto (all'inizio della
-     * sua fase) il tempo mostrato si adegua; a metà, o mentre corre, resta
-     * quello che c'è — le durate nuove valgono dal turno dopo.
+     * La durata della pausa dall'ingranaggio (quella della sessione di studio
+     * si scrive nel riquadro grande, dal 28/09/2026). In pausa, a timer fermo
+     * e intatto, il tempo mostrato si adegua; a metà, o mentre corre, resta
+     * quello che c'è — la durata nuova vale dalla pausa dopo.
      */
-    fun pomodoroSetLengths(widgetId: String, sessionMinutes: Int, breakMinutes: Int) = updateWidget<PomodoroWidget>(widgetId) { p ->
-        val updated = p.copy(
-            sessionMinutes = sessionMinutes.coerceIn(1, MAX_POMODORO_MINUTES),
-            breakMinutes = breakMinutes.coerceIn(1, MAX_POMODORO_MINUTES)
-        )
+    fun pomodoroSetBreakLength(widgetId: String, breakMinutes: Int) = updateWidget<PomodoroWidget>(widgetId) { p ->
+        val updated = p.copy(breakMinutes = breakMinutes.coerceIn(1, MAX_POMODORO_MINUTES))
         if (!p.running && p.remainingMs == p.lengthOf(p.phase)) updated.copy(remainingMs = updated.lengthOf(p.phase)) else updated
     }
 
     fun pomodoroRename(widgetId: String, name: String) = updateWidget<PomodoroWidget>(widgetId) { it.copy(sessionName = name) }
 
-    /** Il suono di fine fase di un pomodoro; null = quello delle notifiche dell'app. */
-    fun pomodoroSetSound(widgetId: String, uri: String?, name: String?) = updateWidget<PomodoroWidget>(widgetId) {
-        it.copy(soundUri = uri, soundName = name?.takeIf { uri != null })
+    /** "Study sound" e "Break sound" di un pomodoro; null = il suono delle notifiche dell'app. */
+    fun pomodoroSetSounds(
+        widgetId: String,
+        studyUri: String?,
+        studyName: String?,
+        breakUri: String?,
+        breakName: String?
+    ) = updateWidget<PomodoroWidget>(widgetId) {
+        it.copy(
+            studySoundUri = studyUri,
+            studySoundName = studyName?.takeIf { studyUri != null },
+            breakSoundUri = breakUri,
+            breakSoundName = breakName?.takeIf { breakUri != null }
+        )
     }
 
     // --- Cronometro ---
@@ -277,12 +285,15 @@ object WidgetStore {
                     is PomodoroWidget -> {
                         val (next, ended) = w.advancedTo(now)
                         if (ended != null && now - ended < window) {
-                            if (events.none { it is WidgetEvent.PomodoroPhaseEnded }) sound = w.soundUri
+                            // Il suono della fase che comincia: "Break sound" per
+                            // la pausa, "Study sound" per lo studio.
+                            if (events.none { it is WidgetEvent.PomodoroPhaseEnded }) sound = w.soundFor(next.phase)
                             events += WidgetEvent.PomodoroPhaseEnded(
                                 widgetId = w.id,
                                 sessionName = w.sessionName,
                                 nowIn = next.phase,
-                                nextMinutes = (next.lengthOf(next.phase) / MINUTE_MS).toInt()
+                                // Per eccesso: una sessione di 1:30 si annuncia di 2 minuti, non di 1.
+                                nextMinutes = ((next.lengthOf(next.phase) + MINUTE_MS - 1) / MINUTE_MS).toInt()
                             )
                         }
                         next

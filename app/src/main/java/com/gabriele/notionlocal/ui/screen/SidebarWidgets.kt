@@ -926,9 +926,10 @@ private val BreakAccent = Color(0xFF7FC49A)
 
 /**
  * Il pomodoro, nel riquadro arrotondato della foto: il tempo grande (lo si
- * tocca per scriverlo a mano), il nome della fase (lo si tocca per
- * rinominare la sessione), e i tre pulsanti — avvia/pausa, da capo,
- * ingranaggio per le durate di sessione e pausa.
+ * tocca per scriverlo a mano: durante lo studio è anche la durata delle
+ * sessioni dopo), il nome della fase (lo si tocca per rinominare la
+ * sessione), e i tre pulsanti — avvia/pausa, da capo, ingranaggio per la
+ * pausa e i due suoni.
  */
 @Composable
 private fun PomodoroView(widget: PomodoroWidget, active: Boolean) {
@@ -1021,15 +1022,14 @@ private fun PomodoroView(widget: PomodoroWidget, active: Boolean) {
     }
     if (settings) {
         PomodoroSettingsDialog(
-            sessionMinutes = widget.sessionMinutes,
             breakMinutes = widget.breakMinutes,
-            soundUri = widget.soundUri,
-            soundName = widget.soundName,
+            studySound = widget.studySoundUri to widget.studySoundName,
+            breakSound = widget.breakSoundUri to widget.breakSoundName,
             onDismiss = { settings = false },
-            onConfirm = { s, b, uri, name ->
+            onConfirm = { b, study, pause ->
                 settings = false
-                WidgetStore.pomodoroSetLengths(widget.id, s, b)
-                WidgetStore.pomodoroSetSound(widget.id, uri, name)
+                WidgetStore.pomodoroSetBreakLength(widget.id, b)
+                WidgetStore.pomodoroSetSounds(widget.id, study.first, study.second, pause.first, pause.second)
             }
         )
     }
@@ -1099,82 +1099,97 @@ private fun NumberField(value: String, label: String, modifier: Modifier, onChan
 }
 
 /**
- * L'ingranaggio: quanto dura la sessione di studio e quanto la pausa, coi
- * pulsanti − e +, e **il suono di fine fase** (dal 25/09/2026), scelto
- * nell'elenco delle suonerie del telefono — la schermata di sistema, con
- * l'anteprima di ogni suono. Come le durate, vale solo con "Fatto".
+ * L'ingranaggio (dal 28/09/2026): quanto dura la pausa, coi pulsanti − e +,
+ * e i due suoni — **"Study sound"**, quando ricomincia la sessione di
+ * studio, e **"Break sound"**, quando comincia la pausa — ognuno scelto
+ * nell'elenco delle suonerie del telefono, la schermata di sistema con
+ * l'anteprima di ogni suono. La durata della sessione non c'è più: si
+ * scrive nel riquadro grande. Tutto vale solo con "Fatto".
  */
 @Composable
 private fun PomodoroSettingsDialog(
-    sessionMinutes: Int,
     breakMinutes: Int,
-    soundUri: String?,
-    soundName: String?,
+    /** Indirizzo e nome del suono; null = quello delle notifiche dell'app. */
+    studySound: Pair<String?, String?>,
+    breakSound: Pair<String?, String?>,
     onDismiss: () -> Unit,
-    onConfirm: (Int, Int, String?, String?) -> Unit
+    onConfirm: (Int, Pair<String?, String?>, Pair<String?, String?>) -> Unit
 ) {
-    val context = LocalContext.current
-    var session by remember { mutableStateOf(sessionMinutes) }
     var pause by remember { mutableStateOf(breakMinutes) }
-    var sound by remember { mutableStateOf(soundUri) }
-    var soundLabel by remember { mutableStateOf(soundName) }
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        val picked = result.data?.let {
-            IntentCompat.getParcelableExtra(it, RingtoneManager.EXTRA_RINGTONE_PICKED_URI, Uri::class.java)
-        } ?: return@rememberLauncherForActivityResult
-        sound = picked.toString()
-        soundLabel = runCatching { RingtoneManager.getRingtone(context, picked)?.getTitle(context) }.getOrNull()
-    }
+    var study by remember { mutableStateOf(studySound) }
+    var rest by remember { mutableStateOf(breakSound) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(WidgetStrings.timerSettings) },
         text = {
             Column {
-                LengthStepper(WidgetStrings.sessionLength, session) { session = it }
-                Spacer(modifier = Modifier.height(12.dp))
                 LengthStepper(WidgetStrings.breakLength, pause) { pause = it }
                 Spacer(modifier = Modifier.height(16.dp))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(10.dp))
-                        .clickable {
-                            picker.launch(
-                                Intent(RingtoneManager.ACTION_RINGTONE_PICKER)
-                                    .putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_ALL)
-                                    .putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, WidgetStrings.sound)
-                                    // "Predefinito" e "Nessuno" dell'elenco di
-                                    // sistema non servono: il predefinito
-                                    // dell'app è la voce qui sotto, e un
-                                    // pomodoro muto non l'ha chiesto nessuno.
-                                    .putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, false)
-                                    .putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, false)
-                                    .putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, sound?.let(Uri::parse))
-                            )
-                        }
-                        .padding(vertical = 10.dp, horizontal = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Filled.MusicNote, contentDescription = null, modifier = Modifier.size(20.dp))
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(WidgetStrings.sound, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-                    Text(
-                        text = if (sound == null) Strings.defaultSound else soundLabel ?: WidgetStrings.sound,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.widthIn(max = 140.dp)
-                    )
-                }
-                if (sound != null) {
-                    TextButton(onClick = { sound = null; soundLabel = null }) { Text(Strings.useDefaultSound) }
-                }
+                PomodoroSoundRow(WidgetStrings.studySound, study) { study = it }
+                Spacer(modifier = Modifier.height(4.dp))
+                PomodoroSoundRow(WidgetStrings.breakSound, rest) { rest = it }
             }
         },
-        confirmButton = { TextButton(onClick = { onConfirm(session, pause, sound, soundLabel) }) { Text(Strings.done) } },
+        confirmButton = { TextButton(onClick = { onConfirm(pause, study, rest) }) { Text(Strings.done) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text(Strings.cancel) } }
     )
+}
+
+/**
+ * Una riga dei suoni del pomodoro: il nome della voce, il suono scelto (o
+ * quello dell'app), e sotto, se ce n'è uno scelto, "usa il suono
+ * predefinito". Toccata, apre l'elenco delle suonerie del telefono.
+ */
+@Composable
+private fun PomodoroSoundRow(
+    label: String,
+    sound: Pair<String?, String?>,
+    onChange: (Pair<String?, String?>) -> Unit
+) {
+    val context = LocalContext.current
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        val picked = result.data?.let {
+            IntentCompat.getParcelableExtra(it, RingtoneManager.EXTRA_RINGTONE_PICKED_URI, Uri::class.java)
+        } ?: return@rememberLauncherForActivityResult
+        onChange(picked.toString() to runCatching { RingtoneManager.getRingtone(context, picked)?.getTitle(context) }.getOrNull())
+    }
+    val (uri, name) = sound
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .clickable {
+                picker.launch(
+                    Intent(RingtoneManager.ACTION_RINGTONE_PICKER)
+                        .putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_ALL)
+                        .putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, label)
+                        // "Predefinito" e "Nessuno" dell'elenco di sistema
+                        // non servono: il predefinito dell'app è la voce
+                        // qui sotto, e un pomodoro muto non l'ha chiesto
+                        // nessuno.
+                        .putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, false)
+                        .putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, false)
+                        .putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, uri?.let(Uri::parse))
+                )
+            }
+            .padding(vertical = 10.dp, horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(Icons.Filled.MusicNote, contentDescription = null, modifier = Modifier.size(20.dp))
+        Spacer(modifier = Modifier.width(10.dp))
+        Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        Text(
+            text = if (uri == null) Strings.defaultSound else name ?: WidgetStrings.sound,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.widthIn(max = 140.dp)
+        )
+    }
+    if (uri != null) {
+        TextButton(onClick = { onChange(null to null) }) { Text(Strings.useDefaultSound) }
+    }
 }
 
 @Composable

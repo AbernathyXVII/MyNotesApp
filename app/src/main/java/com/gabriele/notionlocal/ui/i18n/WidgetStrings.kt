@@ -82,7 +82,6 @@ object WidgetStrings {
 
     val session get() = t("Session", "Sessione", "Sitzung", "Session", "Sesión", "专注", "세션", "セッション")
     val breakTime get() = t("Break", "Pausa", "Pause", "Pause", "Descanso", "休息", "휴식", "休憩")
-    val sessionLength get() = t("Session length", "Durata della sessione", "Sitzungsdauer", "Durée de la session", "Duración de la sesión", "专注时长", "세션 길이", "セッションの長さ")
     val breakLength get() = t("Break length", "Durata della pausa", "Pausendauer", "Durée de la pause", "Duración del descanso", "休息时长", "휴식 길이", "休憩の長さ")
     val minutesShort get() = t("min", "min", "Min.", "min", "min", "分钟", "분", "分")
     val minutes get() = t("Minutes", "Minuti", "Minuten", "Minutes", "Minutos", "分钟", "분", "分")
@@ -93,6 +92,10 @@ object WidgetStrings {
 
     /** Il suono di fine fase del pomodoro, nell'ingranaggio. */
     val sound get() = t("Sound", "Suono", "Ton", "Son", "Sonido", "声音", "소리", "サウンド")
+    /** Il suono di quando ricomincia la sessione di studio (dal 28/09/2026). */
+    val studySound get() = t("Study sound", "Suono dello studio", "Lernton", "Son de l'étude", "Sonido del estudio", "学习提示音", "공부 알림음", "勉強のサウンド")
+    /** Il suono di quando comincia la pausa (dal 28/09/2026). */
+    val breakSound get() = t("Break sound", "Suono della pausa", "Pausenton", "Son de la pause", "Sonido del descanso", "休息提示音", "휴식 알림음", "休憩のサウンド")
     val setTime get() = t("Set the time", "Imposta il tempo", "Zeit einstellen", "Régler le temps", "Ajustar el tiempo", "设置时间", "시간 설정", "時間を設定")
     val sessionName get() = t("Session name", "Nome della sessione", "Name der Sitzung", "Nom de la session", "Nombre de la sesión", "专注名称", "세션 이름", "セッション名")
 

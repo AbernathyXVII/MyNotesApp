@@ -2022,6 +2022,44 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**28/09/2026 — Pomodoro: la durata dello studio dal riquadro grande, "Study sound" e "Break sound"**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 185 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Nel Pomodoro, togli la possibilità di modificare il tempo della sessione
+> di studio. Già la modifico nel riquadro principale. Nelle impostazioni
+> lascia solo la lunghezza della pausa e la selezione del suono.
+> Aggiungimi, però, anche la selezione del suono per quando riinizia la
+> sessione di studio. Mi scriverai quindi "Study sound" e "Break sound",
+> con il primo che è un suono che mi dice quando riinizia la sessione di
+> studio e il secondo che è un suono che mi dice quando inizia la pausa»
+
+- **[Rimosso]** Dall'ingranaggio del Pomodoro la durata della sessione di
+  studio. Restano la durata della pausa e i suoni
+- **[Nuova funzionalità]** **Il tempo scritto nel riquadro grande durante
+  lo studio è la durata della sessione**, anche per le sessioni dopo e per
+  "da capo", secondi compresi. Senza, tolta la sua voce dall'ingranaggio,
+  le sessioni seguenti sarebbero tornate alla durata vecchia. Durante la
+  pausa il tempo scritto vale solo per quella pausa
+- **[Nuova funzionalità]** Due suoni al posto di uno: **"Study sound"**,
+  quando ricomincia la sessione di studio, e **"Break sound"**, quando
+  comincia la pausa, ognuno scelto fra le suonerie del telefono e ognuno
+  col suo "usa il suono predefinito". Il suono unico di prima diventa il
+  "Break sound" (si salva ancora col suo nome di allora, `soundUri`)
+- **[Progetto]** `PomodoroWidget`: `sessionMs`, `breakSoundUri` /
+  `breakSoundName` (salvati come `soundUri` / `soundName`),
+  `studySoundUri` / `studySoundName`, `soundFor`, `withTimeWritten`.
+  `WidgetStore.pomodoroSetBreakLength` e `pomodoroSetSounds`. Test in
+  `WidgetsTest`, anche un pomodoro salvato prima che si rilegge col suo
+  suono come "Break sound"
+- Verificato sul telefono: l'ingranaggio ha "Break length", "Study sound"
+  e "Break sound" (tutti e due "Default"), niente durata dello studio;
+  "Study sound" apre l'elenco delle suonerie col suo nome in cima (scelto
+  il selettore di Samsung con "Just once"), e tornando indietro non è
+  cambiato niente. Chiuso con Cancel: il pomodoro è rimasto com'era (1
+  minuto di studio, 5 di pausa, nessun suono scelto)
+
 **28/09/2026 — Nei calendari per scegliere la data, solo i giorni del mese**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno, appena
 ricollegato; 182 test passati; commit solo in locale)*

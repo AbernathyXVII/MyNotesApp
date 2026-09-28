@@ -1,5 +1,6 @@
 package com.gabriele.notionlocal.data.widgets
 
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
@@ -158,6 +159,37 @@ class WidgetsTest {
             )
         )
         assertEquals(state, json.decodeFromString<WidgetsState>(json.encodeToString(state)))
+    }
+
+    // --- Pomodoro: la durata dello studio e i due suoni (dal 28/09/2026) ---
+
+    @Test
+    fun theTimeWrittenDuringStudyIsAlsoTheLengthOfTheNextSessions() {
+        val written = PomodoroWidget(sessionMinutes = 25).withTimeWritten(90_000, now = 0)
+        assertEquals(90_000, written.remainingMs)
+        assertEquals(90_000, written.lengthOf(PomodoroPhase.SESSION))
+        // Durante la pausa il tempo scritto vale solo per quella pausa.
+        val inBreak = PomodoroWidget(sessionMinutes = 25, phase = PomodoroPhase.BREAK).withTimeWritten(60_000, now = 0)
+        assertEquals(25 * MINUTE_MS, inBreak.lengthOf(PomodoroPhase.SESSION))
+        assertEquals(5 * MINUTE_MS, inBreak.lengthOf(PomodoroPhase.BREAK))
+    }
+
+    @Test
+    fun theBreakHasBreakSoundAndStudyHasStudySound() {
+        val pomodoro = PomodoroWidget(studySoundUri = "studio", breakSoundUri = "pausa")
+        assertEquals("pausa", pomodoro.soundFor(PomodoroPhase.BREAK))
+        assertEquals("studio", pomodoro.soundFor(PomodoroPhase.SESSION))
+    }
+
+    @Test
+    fun aPomodoroSavedBeforeKeepsItsSoundAsTheBreakSound() {
+        val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
+        val old = """{"widgets":[{"type":"pomodoro","id":"p","sessionMinutes":1,"soundUri":"content://suono","soundName":"Campanella"}]}"""
+        val pomodoro = json.decodeFromString<WidgetsState>(old).widgets.single() as PomodoroWidget
+        assertEquals("content://suono", pomodoro.breakSoundUri)
+        assertEquals("Campanella", pomodoro.breakSoundName)
+        assertNull(pomodoro.studySoundUri)
+        assertEquals(MINUTE_MS, pomodoro.lengthOf(PomodoroPhase.SESSION))
     }
 
     // --- Cronometro ---
