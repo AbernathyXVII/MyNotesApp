@@ -2022,6 +2022,22 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**28/09/2026 — Nei calendari per scegliere la data, solo i giorni del mese**
+*(Claude Code sul PC; 182 test passati; commit solo in locale; **da
+verificare sul telefono**: si è scollegato prima dell'installazione)*
+
+L'utente, parola per parola:
+> «Nei calendari di selezione della data, toglimi i giorni in grigio del
+> mese precedente in alto e i giorni del mese successivo in basso. Mi
+> confondono troppo se uso il Repeat e vedo troppi pallini»
+
+- **[Rimosso]** Nel calendario che si apre per scegliere una data (le
+  date dei database, con Repeat, e le notifiche: è lo stesso,
+  `SamsungCalendar`) **i giorni del mese prima e del mese dopo non si
+  vedono più**: al loro posto le caselle restano vuote, senza numero, senza
+  pallino della ripetizione e senza tocco. Le settimane restano sei, così
+  il calendario non cambia altezza passando da un mese all'altro
+
 **28/09/2026 — Notebooks in cima alla barra laterale**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 182 test
 passati; commit solo in locale)*

@@ -349,7 +349,13 @@ private fun WeekdayHeader() {
     }
 }
 
-/** Sei settimane, dalla prima che tocca il mese: i giorni degli altri mesi sono spenti, ma si possono scegliere. */
+/**
+ * Sei settimane, dalla prima che tocca il mese. **I giorni degli altri mesi
+ * non ci sono** (dal 28/09/2026, chiesto dall'utente): prima si vedevano in
+ * grigio in cima e in fondo, e con una ripetizione anche i loro pallini, e
+ * confondevano. Le loro caselle restano vuote, così la griglia ha sempre la
+ * stessa altezza passando da un mese all'altro.
+ */
 @Composable
 private fun MonthGrid(
     month: YearMonth,
@@ -373,9 +379,12 @@ private fun MonthGrid(
             Row(modifier = Modifier.fillMaxWidth()) {
                 (0 until 7).forEach { weekday ->
                     val date = gridStart.plusDays((week * 7 + weekday).toLong())
+                    if (date.month != month.month) {
+                        Spacer(modifier = Modifier.weight(1f).height(DAY_CELL_HEIGHT))
+                        return@forEach
+                    }
                     DayCell(
                         date = date,
-                        inMonth = date.month == month.month,
                         today = date == today,
                         start = start,
                         end = end,
@@ -393,7 +402,6 @@ private fun MonthGrid(
 @Composable
 private fun DayCell(
     date: LocalDate,
-    inMonth: Boolean,
     today: Boolean,
     start: LocalDate?,
     end: LocalDate?,
@@ -433,7 +441,7 @@ private fun DayCell(
             }
             Text(
                 text = date.dayOfMonth.toString(),
-                color = if (inMonth || selected) base else base.copy(alpha = 0.35f),
+                color = base,
                 fontSize = 17.sp,
                 fontWeight = if (today || selected) FontWeight.Bold else FontWeight.Normal
             )
