@@ -33,6 +33,12 @@ enum class ColumnType {
      * Il valore è l'id della pagina. Vedi `PageLinkCell.kt`.
      */
     PAGE_LINK,
+    /**
+     * **"Image"** (dal 29/09/2026): una cella quadrata con un'immagine
+     * intera, scelta come l'icona di una pagina. Il valore è il nome del
+     * file (`PageImageStore`). Vedi `ImageCell.kt`.
+     */
+    IMAGE,
     CREATED_TIME,
     LAST_EDITED_TIME
 }

@@ -253,7 +253,7 @@ internal fun ChartSettingsDetail(
                 onChange(settings.copy(groupColumnId = null))
             }
             // "Page link" no: le barre si chiamerebbero con l'id della pagina.
-            columns.filter { it.type != ColumnType.PAGE_LINK }.forEach { column ->
+            columns.filter { it.type != ColumnType.PAGE_LINK && it.type != ColumnType.IMAGE }.forEach { column ->
                 HorizontalDivider()
                 ChoiceRow(column.type.icon(), DbStrings.columnName(column.name), settings.groupColumnId == column.id) {
                     onChange(settings.copy(groupColumnId = column.id))

@@ -1339,9 +1339,10 @@ class DatabaseViewModel(
     fun setColumnWidth(key: String, widthDp: Int) {
         val current = _page.value ?: return
         // Tornata alla larghezza di sempre, non c'è niente da ricordare.
-        val width = snapColumnWidth(key, widthDp)
+        val default = defaultColumnWidth(key, rawColumn(key)?.type)
+        val width = snapColumnWidth(key, widthDp, default)
         val widths = parseColumnWidths(current.columnWidths).let {
-            if (width == defaultColumnWidth(key)) it - key else it + (key to width)
+            if (width == default) it - key else it + (key to width)
         }
         val fit = parseFitColumns(current.fitColumns) - key
         val updated = current.copy(columnWidths = encodeColumnWidths(widths), fitColumns = encodeFitColumns(fit))

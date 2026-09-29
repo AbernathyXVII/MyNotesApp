@@ -2022,6 +2022,47 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**29/09/2026 — Nuova proprietà "Image": una cella quadrata con un'immagine**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 278 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola (con la foto del Pokédex di Notion, dove la
+seconda colonna ha le figure dei Pokémon):
+> «Nuova proprietà: anche se si vedrano piccole, questa nuova proprietà
+> chiamata Image sarà una cella a forma di quadrato dove si vedrà
+> un'immagine che metto come icona ma con la grandezza di immagine normale
+> (guarda l'esempio del database dei Pokémon nella foto, ossia la seconda
+> proprietà da sinistra, ossia le immagini nella colonna con il quadratino
+> e il pennello dentro)»
+
+- **[Nuova funzionalità]** Fra i tipi di proprietà c'è "**Image**". La
+  colonna nasce **quadrata**, larga quanto è alta una riga; la cella mostra
+  l'immagine **intera**, piccola, senza ritagliarla (una figura più alta
+  che larga si vede tutta, col suo fondo). Toccando la cella si apre la
+  stessa finestra dell'icona di una pagina: "**Upload**" dalla galleria e,
+  se c'è già, "**Remove**". L'immagine si salva **com'è**, non rimpicciolita
+- La colonna si allarga col segnalino come le altre (e vicino al quadrato
+  ci si riaggancia); "Fit to content" la tiene quadrata. Nelle proprietà in
+  cima alla pagina di una riga c'è lo stesso riquadro, e nelle schede di
+  bacheca, galleria e lista una miniatura. Non si raggruppa e non va nel
+  grafico
+- **[Progetto]** `ColumnType.IMAGE`, il valore è il nome del file in
+  `page-images`; `ImageCell.kt`; `PageImage` ora sa anche mostrare
+  un'immagine intera (`ContentScale.Fit`). Ogni cella ha il suo file:
+  copiando una riga o un database il file si copia, così togliendo
+  l'immagine da una riga non sparisce dall'altra; "Remove" cancella il
+  file. Test in `ImageColumnTest`
+- Verificato sul telefono sulla pagina di prova "Titolo tre H3" (copia del
+  database prima), con un'immagine di prova creata apposta (200×300, una
+  Poké Ball su fondo blu) messa in una cartella a parte del telefono: la
+  colonna "Image" nasce quadrata; "Upload", scelta dall'album di prova, la
+  mostra intera nella cella; il file salvato è identico all'originale.
+  "Remove" la toglie e cancella il file (la cartella delle immagini è
+  tornata com'era). Poi la proprietà cancellata e l'immagine di prova tolta
+  dal telefono: il database è uguale a prima, tranne "Last edited" della
+  riga "1". (Durante la prova il mio script ha creato per sbaglio una
+  proprietà Text vuota, subito cancellata)
+
 **29/09/2026 — Life progress: le barre riempiono il widget**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 273 test
 passati; commit solo in locale)*

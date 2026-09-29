@@ -46,11 +46,16 @@ const val DEFAULT_NAME_COLUMN_WIDTH_DP = 200
  */
 const val SNAP_TO_DEFAULT_DP = 4
 
-fun defaultColumnWidth(key: String): Int =
-    if (key == NAME_COLUMN_KEY) DEFAULT_NAME_COLUMN_WIDTH_DP else DEFAULT_COLUMN_WIDTH_DP
+/** Una colonna "Image" è un quadrato: larga quanto è alta una riga. */
+const val DEFAULT_IMAGE_COLUMN_WIDTH_DP = 44
+
+fun defaultColumnWidth(key: String, type: ColumnType? = null): Int = when {
+    key == NAME_COLUMN_KEY -> DEFAULT_NAME_COLUMN_WIDTH_DP
+    type == ColumnType.IMAGE -> DEFAULT_IMAGE_COLUMN_WIDTH_DP
+    else -> DEFAULT_COLUMN_WIDTH_DP
+}
 
 /** Dentro i limiti, e agganciata alla larghezza di sempre se ci è vicina. */
-fun snapColumnWidth(key: String, widthDp: Int): Int {
-    val default = defaultColumnWidth(key)
+fun snapColumnWidth(key: String, widthDp: Int, default: Int = defaultColumnWidth(key)): Int {
     return if (kotlin.math.abs(widthDp - default) <= SNAP_TO_DEFAULT_DP) default else clampColumnWidth(widthDp)
 }

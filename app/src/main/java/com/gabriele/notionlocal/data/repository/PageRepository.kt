@@ -1007,8 +1007,17 @@ class PageRepository(private val db: AppDatabase) {
                     )
                     // Le proprietà vengono con lei: una riga duplicata
                     // senza i suoi valori sarebbe solo una riga nuova.
+                    // Un'immagine ("Image") ha il suo file: la copia ne ha uno suo,
+                    // o cambiandola in una riga sparirebbe anche dall'altra.
+                    val imageColumns = databaseDao.getColumnsForPageOnce(sourceRow.pageId)
+                        .filter { it.type == ColumnType.IMAGE }.mapTo(HashSet()) { it.id }
                     databaseDao.getCellsForRowOnce(sourceRow.id).forEach { cell ->
-                        databaseDao.insertCell(cell.copy(id = UUID.randomUUID().toString(), rowId = rowId))
+                        val value = if (cell.columnId in imageColumns && cell.value.isNotEmpty()) {
+                            copyImage(cell.value) ?: cell.value
+                        } else {
+                            cell.value
+                        }
+                        databaseDao.insertCell(cell.copy(id = UUID.randomUUID().toString(), rowId = rowId, value = value))
                     }
                 }
                 sourceLink != null -> {
@@ -1221,12 +1230,18 @@ class PageRepository(private val db: AppDatabase) {
                 )
             }
             val pageLinkColumns = columns.filter { it.type == ColumnType.PAGE_LINK }.mapTo(HashSet()) { it.id }
+            val imageColumns = columns.filter { it.type == ColumnType.IMAGE }.mapTo(HashSet()) { it.id }
             databaseDao.getAllCellsForPageOnce(pageId).forEach { cell ->
                 val rowId = newRowIds[cell.rowId] ?: return@forEach
                 val columnId = newColumnIds[cell.columnId] ?: return@forEach
                 // "Page link" verso una pagina copiata insieme (di solito la
                 // pagina di un'altra riga): la copia punta alla copia.
-                val value = if (cell.columnId in pageLinkColumns) copies[cell.value] ?: cell.value else cell.value
+                val value = when {
+                    cell.columnId in pageLinkColumns -> copies[cell.value] ?: cell.value
+                    // "Image": ogni copia col suo file (vedi sopra, riga duplicata).
+                    cell.columnId in imageColumns && cell.value.isNotEmpty() -> copyImage(cell.value) ?: cell.value
+                    else -> cell.value
+                }
                 databaseDao.insertCell(cell.copy(id = UUID.randomUUID().toString(), rowId = rowId, columnId = columnId, value = value))
             }
         }

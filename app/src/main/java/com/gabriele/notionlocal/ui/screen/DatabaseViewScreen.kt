@@ -175,6 +175,8 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import com.gabriele.notionlocal.data.entity.defaultColumnWidth
+import androidx.compose.ui.layout.ContentScale
 import com.gabriele.notionlocal.data.entity.rowTree
 import com.gabriele.notionlocal.data.entity.hasSubRows
 import com.gabriele.notionlocal.data.entity.rowsForCalculation
@@ -303,7 +305,7 @@ private val NAME_COLUMN_WIDTH = DEFAULT_NAME_COLUMN_WIDTH_DP.dp
  */
 @Immutable
 private class TableWidths(val name: Dp, private val byKey: Map<String, Dp>) {
-    fun of(column: DatabaseColumnEntity): Dp = byKey[column.id] ?: COLUMN_WIDTH
+    fun of(column: DatabaseColumnEntity): Dp = byKey[column.id] ?: defaultColumnWidth(column.id, column.type).dp
     fun of(key: String): Dp = if (key == NAME_COLUMN_KEY) name else byKey[key] ?: COLUMN_WIDTH
 }
 
@@ -1829,7 +1831,7 @@ private fun TableLayout(
             ?: default
     val widths = TableWidths(
         name = widthOf(NAME_COLUMN_KEY, NAME_COLUMN_WIDTH),
-        byKey = shownColumns.associate { it.id to widthOf(it.id, COLUMN_WIDTH) }
+        byKey = shownColumns.associate { it.id to widthOf(it.id, defaultColumnWidth(it.id, it.type).dp) }
     )
     val tableWidth = widths.name + SEPARATOR_WIDTH +
         shownColumns.fold(0.dp) { sum, column -> sum + widths.of(column) + SEPARATOR_WIDTH } +
@@ -2111,6 +2113,8 @@ internal fun cellFitWidth(
     pageTitle: (String) -> String? = { null }
 ): Dp = when (column.type) {
     ColumnType.CHECKBOX -> 24.dp
+    // Il quadrato dell'immagine, senza i 12 punti per lato delle altre celle.
+    ColumnType.IMAGE -> IMAGE_CELL_SIZE - 24.dp
     // L'icona, 6 punti, il titolo (o "Page not found").
     ColumnType.PAGE_LINK -> if (value.isEmpty()) {
         0.dp
@@ -2170,6 +2174,8 @@ private fun ColumnResizeHandle(
     key: String,
     center: Dp,
     current: Dp,
+    /** La larghezza di partenza della colonna, a cui ci si aggancia (vedi `snapColumnWidth`). */
+    defaultWidth: Int,
     onCommit: (Int) -> Unit
 ) {
     val density = LocalDensity.current
@@ -2198,7 +2204,7 @@ private fun ColumnResizeHandle(
                         change.consume()
                         resize.raw += with(density) { amount.toDp() }
                         // Vicino alla larghezza di sempre si aggancia lì, e lo si vede subito.
-                        resize.draft = snapColumnWidth(key, resize.raw.value.roundToInt()).dp
+                        resize.draft = snapColumnWidth(key, resize.raw.value.roundToInt(), defaultWidth).dp
                     }
                 )
             }
@@ -2303,6 +2309,7 @@ private fun TableHeaderRow(
                 key = key,
                 center = edge + SEPARATOR_WIDTH / 2,
                 current = widths.of(key),
+                defaultWidth = defaultColumnWidth(key, columns.getOrNull(index)?.type),
                 onCommit = { onSetColumnWidth(key, it) }
             )
         }
@@ -5883,7 +5890,9 @@ private fun CellContent(
     Box(
         // La data e la cella colorata se lo mettono da sé, dentro la
         // propria zona toccabile.
-        modifier = if (column.type == ColumnType.DATE || column.type == ColumnType.COLOR || column.type == ColumnType.PAGE_LINK) {
+        modifier = if (column.type == ColumnType.DATE || column.type == ColumnType.COLOR ||
+            column.type == ColumnType.PAGE_LINK || column.type == ColumnType.IMAGE
+        ) {
             Modifier
         } else {
             Modifier.padding(horizontal = cellPadding)
@@ -5933,6 +5942,13 @@ private fun CellContent(
                 onValueChange = onValueChange,
                 contentPadding = cellPadding,
                 alignment = LocalCellAlignment.current.box
+            )
+
+            ColumnType.IMAGE -> ImageCell(
+                value = value,
+                onValueChange = onValueChange,
+                title = DbStrings.columnName(column.name),
+                inTable = cellPadding > 0.dp
             )
 
             ColumnType.COLOR -> ColorCell(
@@ -6670,6 +6686,20 @@ private fun CardPropertyValue(
     value: String,
     overflow: TextOverflow = TextOverflow.Clip
 ) {
+    // "Image": la miniatura, intera.
+    if (column.type == ColumnType.IMAGE) {
+        val context = LocalContext.current
+        val store = remember(context) { PageImageStore(context) }
+        PageImage(
+            fileName = value,
+            store = store,
+            contentDescription = DbStrings.columnName(column.name),
+            contentScale = ContentScale.Fit,
+            placeholder = false,
+            modifier = Modifier.size(28.dp)
+        )
+        return
+    }
     // "Page link": la freccia e il titolo di adesso della pagina collegata.
     if (column.type == ColumnType.PAGE_LINK) {
         val page = LocalLinkedPages.current[value]
@@ -8667,7 +8697,8 @@ private fun SettingsSheet(
                             // codice ("#E03E3E"): non si legge. Lo stesso
                             // "Page link", che salva l'id della pagina.
                             it.type != ColumnType.COLOR &&
-                            it.type != ColumnType.PAGE_LINK
+                            it.type != ColumnType.PAGE_LINK &&
+                            it.type != ColumnType.IMAGE
                     }
                     SheetGroup {
                         SettingsRow(
@@ -8705,6 +8736,7 @@ private fun SettingsSheet(
                             it.type != ColumnType.LAST_EDITED_TIME &&
                             it.type != ColumnType.COLOR &&
                             it.type != ColumnType.PAGE_LINK &&
+                            it.type != ColumnType.IMAGE &&
                             it.id != tableGroupColumn?.id
                     }
                     SheetGroup {
@@ -9368,6 +9400,7 @@ internal fun ColumnType.icon(): ImageVector = when (this) {
     ColumnType.EMAIL -> Icons.Filled.AlternateEmail
     ColumnType.PHONE -> Icons.Filled.Call
     ColumnType.PAGE_LINK -> Icons.Filled.NorthEast
+    ColumnType.IMAGE -> Icons.Filled.Image
     ColumnType.CREATED_TIME -> Icons.Filled.Schedule
     ColumnType.LAST_EDITED_TIME -> Icons.Filled.Update
 }

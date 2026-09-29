@@ -2536,6 +2536,8 @@ internal enum class PageImageTarget { ICON, COVER }
 @Composable
 internal fun PageImageSheet(
     target: PageImageTarget,
+    /** Il titolo della finestra, se non è "Icon" o "Cover" (la proprietà "Image"). */
+    title: String? = null,
     hasImage: Boolean,
     store: PageImageStore,
     onPicked: (String?) -> String?,
@@ -2582,7 +2584,7 @@ internal fun PageImageSheet(
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
             Text(
-                text = if (target == PageImageTarget.ICON) EditorStrings.icon else EditorStrings.cover,
+                text = title ?: if (target == PageImageTarget.ICON) EditorStrings.icon else EditorStrings.cover,
                 style = MaterialTheme.typography.titleMedium,
                 color = NotionWhite,
                 modifier = Modifier.padding(bottom = 16.dp)
@@ -2834,7 +2836,11 @@ internal fun PageImage(
     fileName: String,
     store: PageImageStore,
     contentDescription: String?,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** Crop per icone e copertine; Fit per la proprietà "Image", che si vede intera. */
+    contentScale: ContentScale = ContentScale.Crop,
+    /** Il riquadro scuro finché l'immagine si carica. */
+    placeholder: Boolean = true
 ) {
     var widthPx by remember(fileName) { mutableStateOf(0) }
     var bitmap by remember(fileName) { mutableStateOf<ImageBitmap?>(null) }
@@ -2850,10 +2856,10 @@ internal fun PageImage(
             Image(
                 bitmap = image,
                 contentDescription = contentDescription,
-                contentScale = ContentScale.Crop,
+                contentScale = contentScale,
                 modifier = Modifier.matchParentSize()
             )
-        } else {
+        } else if (placeholder) {
             // Finché l'immagine si carica, il posto resta suo: senza,
             // il titolo salterebbe su e giù ad ogni apertura.
             Box(modifier = Modifier.matchParentSize().background(DarkSurface))
