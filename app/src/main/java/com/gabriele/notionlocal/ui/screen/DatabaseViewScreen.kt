@@ -432,14 +432,14 @@ fun DatabaseViewScreen(
     // quindi il segnale è la tastiera che si chiude. Vedi il commento
     // in `PageEditorScreen`.
     val focusManager = LocalFocusManager.current
-    val imeVisible = WindowInsets.isImeVisible
     var anythingFocused by remember { mutableStateOf(false) }
-    LaunchedEffect(imeVisible, anythingFocused) {
-        if (!imeVisible && anythingFocused) {
-            delay(IME_CLOSE_SETTLE_MS)
-            focusManager.clearFocus()
-        }
-    }
+    val keyboardWatch = remember { KeyboardCloseWatch() }
+    ClearFocusWhenKeyboardCloses(
+        watch = keyboardWatch,
+        anythingFocused = anythingFocused,
+        focusInFlight = false,
+        settleDelayMs = IME_CLOSE_SETTLE_MS
+    )
     BackHandler(enabled = anythingFocused) { focusManager.clearFocus() }
 
     // Aperto dal cestino: si guarda e basta, e al posto della barra in
@@ -501,6 +501,7 @@ fun DatabaseViewScreen(
             }
         }
     ) { padding ->
+        CompositionLocalProvider(LocalKeyboardCloseWatch provides keyboardWatch) {
         DatabaseContent(
             pageId = pageId,
             factory = factory,
@@ -512,6 +513,7 @@ fun DatabaseViewScreen(
                 .padding(padding)
                 .onFocusChanged { anythingFocused = it.hasFocus }
         )
+        }
     }
 
     menuPage?.let { current ->
@@ -874,6 +876,7 @@ fun DatabaseContent(
                 modifier = Modifier
                     .weight(1f)
                     .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .markFocusChanges()
                     .onFocusChanged { titleFocused = it.isFocused }
             )
 
@@ -3757,6 +3760,7 @@ private fun DatabaseSearchBar(
                         modifier = Modifier
                             .fillMaxWidth()
                             .focusRequester(focusRequester)
+                            .markFocusChanges()
                     )
                 }
             }
@@ -4936,6 +4940,7 @@ private fun NameCell(
                         modifier = Modifier
                             .fillMaxWidth()
                             .focusRequester(focusRequester)
+                            .markFocusChanges()
                             .onFocusChanged { focusState ->
                                 if (focusState.isFocused) {
                                     everFocused = true
@@ -5216,6 +5221,7 @@ private fun CellContent(
                     cursorBrush = SolidColor(MaterialTheme.colorScheme.onBackground),
                     modifier = Modifier
                         .fillMaxWidth()
+                        .markFocusChanges()
                         .onFocusChanged { editing = it.isFocused }
                 )
             }

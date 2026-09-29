@@ -1004,7 +1004,11 @@ fun PageEditorScreen(
     // menu principale — sottopagine, database, collegamenti — e in cima ha
     // l'intestazione di OneNote invece di icona e copertina.
     val page by viewModel.page.collectAsStateWithLifecycle()
-    CompositionLocalProvider(LocalInNotebook provides (page?.notebookSectionId != null)) {
+    val keyboardWatch = remember { KeyboardCloseWatch() }
+    CompositionLocalProvider(
+        LocalInNotebook provides (page?.notebookSectionId != null),
+        LocalKeyboardCloseWatch provides keyboardWatch
+    ) {
         PageEditorContent(
             pageId = pageId,
             factory = factory,
@@ -1242,18 +1246,20 @@ private fun PageEditorContent(
     var coverImageSize by remember { mutableStateOf(IntSize.Zero) }
 
     var anythingFocused by remember { mutableStateOf(false) }
-    LaunchedEffect(imeVisible, anythingFocused, focusRequestBlockId) {
-        // Se il cursore lo stiamo spostando noi — c'è una richiesta di
-        // fuoco in viaggio — la tastiera chiusa non vuol dire che
-        // l'utente ha finito di scrivere: vuol dire che è in mezzo a un
-        // cambio di campo. Spegnere lì il cursore era uno dei modi in
-        // cui la tastiera spariva da sola.
-        if (focusRequestBlockId != null) return@LaunchedEffect
-        if (!imeVisible && anythingFocused) {
-            delay(IME_CLOSE_SETTLE_MS)
-            focusManager.clearFocus()
-        }
-    }
+    // Il cursore che passa da una riga all'altra è un cambio di campo:
+    // vedi `KeyboardCloseWatch`. E se il cursore lo stiamo spostando noi —
+    // c'è una richiesta di fuoco in viaggio — la tastiera chiusa non vuol
+    // dire che l'utente ha finito di scrivere: vuol dire che è in mezzo a
+    // un cambio di campo. Spegnere lì il cursore era uno dei modi in cui
+    // la tastiera spariva da sola.
+    val keyboardWatch = LocalKeyboardCloseWatch.current ?: remember { KeyboardCloseWatch() }
+    LaunchedEffect(focusedBlockId) { keyboardWatch.markFocusChange() }
+    ClearFocusWhenKeyboardCloses(
+        watch = keyboardWatch,
+        anythingFocused = anythingFocused,
+        focusInFlight = focusRequestBlockId != null,
+        settleDelayMs = IME_CLOSE_SETTLE_MS
+    )
     // Resta per il caso in cui il cursore è acceso ma la tastiera è
     // già chiusa: lì il gesto indietro arriva davvero.
     BackHandler(enabled = anythingFocused) { focusManager.clearFocus() }
@@ -1474,6 +1480,7 @@ private fun PageEditorContent(
                     .size(1.dp)
                     .alpha(0f)
                     .focusRequester(focusPark)
+                    .markFocusChanges()
             )
 
             // **Col menu del "+" aperto, la pagina sotto non si tocca.**
@@ -1802,6 +1809,7 @@ private fun PageEditorContent(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 20.dp, vertical = 4.dp)
+                        .markFocusChanges()
                         .onFocusChanged {
                             titleFocused = it.isFocused
                             // Uscendo dal titolo la sua modifica si
@@ -5961,6 +5969,7 @@ private fun TableBlockContent(
                                 .weight(1f)
                                 .border(0.5.dp, MaterialTheme.colorScheme.outline)
                                 .padding(8.dp)
+                                .markFocusChanges()
                         )
                     }
                 }

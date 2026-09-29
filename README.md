@@ -2022,6 +2022,39 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**29/09/2026 — Col gesto indietro il cursore si spegne subito**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 216 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Quando c'è il text cursor attivato da qualsiasi parte e faccio la gesture
+> per andare indietro, ci mette almeno un secondo per sparire»
+
+- **[Bug fix]** Il gesto indietro con la tastiera aperta se lo prende la
+  tastiera, e l'app spegneva il cursore quando se ne accorgeva: a tastiera
+  **scesa del tutto** e poi dopo altri 450 ms (250 nel database a tutta
+  pagina), l'attesa messa per la tastiera Samsung che sparisce e riappare
+  nei cambi di campo. Misurato sul telefono con un registro dei tempi:
+  la tastiera ci mette 290 ms a scendere, e il cursore si spegneva **750 ms**
+  dopo che aveva cominciato. Ora, se il cursore è fermo nello stesso campo
+  da più di 600 ms, la tastiera che **comincia** a scendere
+  (`imeAnimationTarget`) vuol dire che l'ha chiusa l'utente: il cursore si
+  spegne subito, insieme a lei. Subito dopo un cambio di campo, o con un
+  cambio chiesto dall'app in viaggio, resta l'attesa di prima
+- **[Progetto]** `KeyboardClose.kt`: `ClearFocusWhenKeyboardCloses`, usato
+  dall'editor e dal database a tutta pagina, e `KeyboardCloseWatch`, che
+  sa quando il cursore ha cambiato campo: lo segnano i campi di scrittura
+  (`markFocusChanges`: titolo, campo di parcheggio, celle delle tabelle,
+  titolo, celle e ricerca dei database) e l'editor a ogni cambio di riga.
+  Contare invece i tocchi sullo schermo non andava: con la navigazione a
+  gesti lo scorrimento dal bordo arriva all'app come un tocco
+- Verificato sul telefono sulla pagina di prova "Titolo tre H3": dopo, il
+  cursore si spegne ancora prima che la tastiera cominci a muoversi (prima
+  750 ms dopo); lo stesso da una cella del database; titolo → cella "1" →
+  cella "2" senza che la tastiera si chiuda; "/divider" col cursore che
+  passa alla riga sotto e la tastiera sempre aperta. Poi le prove annullate
+  e la pagina uguale a prima
+
 **29/09/2026 — Sottogruppi: "Hide empty sub groups", separato dai gruppi**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 216 test
 passati; commit solo in locale)*
