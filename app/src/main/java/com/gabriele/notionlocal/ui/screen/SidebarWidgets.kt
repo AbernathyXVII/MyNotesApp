@@ -637,14 +637,16 @@ private fun ZonePickerSheet(onDismiss: () -> Unit, onPick: (String) -> Unit) {
                 Spacer(modifier = Modifier.width(10.dp))
                 Box(modifier = Modifier.weight(1f)) {
                     if (query.isEmpty()) Text(WidgetStrings.searchCity, color = NotionGray400, style = MaterialTheme.typography.bodyLarge)
-                    BasicTextField(
-                        value = query,
-                        onValueChange = { query = it.replace("\n", "") },
-                        singleLine = true,
-                        textStyle = MaterialTheme.typography.bodyLarge.copy(color = NotionWhite),
-                        cursorBrush = SolidColor(NotionWhite),
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    AutoCaps {
+                        BasicTextField(
+                            value = query,
+                            onValueChange = { query = it.replace("\n", "") },
+                            singleLine = true,
+                            textStyle = MaterialTheme.typography.bodyLarge.copy(color = NotionWhite),
+                            cursorBrush = SolidColor(NotionWhite),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
@@ -830,13 +832,15 @@ private fun DateBarDialog(
         title = { Text(if (initial == null) WidgetStrings.addDate else WidgetStrings.editDate) },
         text = {
             Column {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it.replace("\n", "") },
-                    singleLine = true,
-                    label = { Text(WidgetStrings.name) },
-                    modifier = Modifier.fillMaxWidth()
-                )
+                AutoCaps {
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = { name = it.replace("\n", "") },
+                        singleLine = true,
+                        label = { Text(WidgetStrings.name) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
                 Spacer(modifier = Modifier.height(12.dp))
                 DateField(WidgetStrings.from, start) { pickingStart = true }
                 DateField(WidgetStrings.to, end) { pickingEnd = true }
@@ -1088,14 +1092,16 @@ private fun TimeInputDialog(initialMs: Long, onDismiss: () -> Unit, onConfirm: (
 
 @Composable
 private fun NumberField(value: String, label: String, modifier: Modifier, onChange: (String) -> Unit) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = { onChange(it.filter(Char::isDigit).take(3)) },
-        singleLine = true,
-        label = { Text(label) },
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        modifier = modifier
-    )
+    AutoCaps {
+        OutlinedTextField(
+            value = value,
+            onValueChange = { onChange(it.filter(Char::isDigit).take(3)) },
+            singleLine = true,
+            label = { Text(label) },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = modifier
+        )
+    }
 }
 
 /**
@@ -1220,12 +1226,14 @@ private fun TextInputDialog(title: String, initial: String, onDismiss: () -> Uni
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
-            OutlinedTextField(
-                value = value,
-                onValueChange = { value = it.replace("\n", "") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth()
-            )
+            AutoCaps {
+                OutlinedTextField(
+                    value = value,
+                    onValueChange = { value = it.replace("\n", "") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         },
         confirmButton = { TextButton(onClick = { onConfirm(value.trim()) }) { Text(Strings.done) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text(Strings.cancel) } }

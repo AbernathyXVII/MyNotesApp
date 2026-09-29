@@ -363,14 +363,16 @@ private fun SearchField(
             if (value.isEmpty()) {
                 Text(Strings.searchPages, color = NotionGray400, style = MaterialTheme.typography.bodyLarge)
             }
-            BasicTextField(
-                value = value,
-                onValueChange = onValueChange,
-                singleLine = true,
-                textStyle = MaterialTheme.typography.bodyLarge.copy(color = NotionWhite),
-                cursorBrush = SolidColor(NotionWhite),
-                modifier = Modifier.fillMaxWidth()
-            )
+            AutoCaps {
+                BasicTextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = NotionWhite),
+                    cursorBrush = SolidColor(NotionWhite),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
     }
 }

@@ -674,20 +674,22 @@ private fun RenamePageDialog(
         onDismissRequest = onDismiss,
         title = { Text(EditorStrings.rename) },
         text = {
-            OutlinedTextField(
-                value = value,
-                onValueChange = { value = it.copy(text = it.text.replace("\n", "")) },
-                singleLine = true,
-                placeholder = { Text(Strings.untitled) },
-                keyboardOptions = KeyboardOptions(
-                    capitalization = KeyboardCapitalization.Sentences,
-                    imeAction = ImeAction.Done
-                ),
-                keyboardActions = KeyboardActions(onDone = { confirm() }),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .focusRequester(focusRequester)
-            )
+            AutoCaps {
+                OutlinedTextField(
+                    value = value,
+                    onValueChange = { value = it.copy(text = it.text.replace("\n", "")) },
+                    singleLine = true,
+                    placeholder = { Text(Strings.untitled) },
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Sentences,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(onDone = { confirm() }),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(focusRequester)
+                )
+            }
         },
         confirmButton = { TextButton(onClick = confirm) { Text(Strings.done) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text(Strings.cancel) } }

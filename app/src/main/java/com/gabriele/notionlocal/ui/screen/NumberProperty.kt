@@ -475,14 +475,16 @@ private fun NumberFormatSheet(current: NumberFormatKind, onPick: (NumberFormatKi
                     if (query.isEmpty()) {
                         Text(DbStrings.filterFormats, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
-                    BasicTextField(
-                        value = query,
-                        onValueChange = { query = it },
-                        singleLine = true,
-                        textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onBackground),
-                        cursorBrush = SolidColor(MaterialTheme.colorScheme.onBackground),
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    AutoCaps {
+                        BasicTextField(
+                            value = query,
+                            onValueChange = { query = it },
+                            singleLine = true,
+                            textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onBackground),
+                            cursorBrush = SolidColor(MaterialTheme.colorScheme.onBackground),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))

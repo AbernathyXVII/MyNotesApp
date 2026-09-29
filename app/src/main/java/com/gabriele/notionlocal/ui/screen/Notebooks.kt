@@ -905,20 +905,22 @@ private fun NameDialog(
         title = { Text(title, color = NotionWhite) },
         text = {
             Column {
-                OutlinedTextField(
-                    value = value,
-                    onValueChange = { value = it.copy(text = it.text.replace("\n", "")) },
-                    label = { Text(NotebookStrings.name) },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(
-                        capitalization = KeyboardCapitalization.Sentences,
-                        imeAction = ImeAction.Done
-                    ),
-                    keyboardActions = KeyboardActions(onDone = { if (canConfirm) onConfirm(value.text) }),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .focusRequester(focus)
-                )
+                AutoCaps {
+                    OutlinedTextField(
+                        value = value,
+                        onValueChange = { value = it.copy(text = it.text.replace("\n", "")) },
+                        label = { Text(NotebookStrings.name) },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(
+                            capitalization = KeyboardCapitalization.Sentences,
+                            imeAction = ImeAction.Done
+                        ),
+                        keyboardActions = KeyboardActions(onDone = { if (canConfirm) onConfirm(value.text) }),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .focusRequester(focus)
+                    )
+                }
                 extra()
             }
         },

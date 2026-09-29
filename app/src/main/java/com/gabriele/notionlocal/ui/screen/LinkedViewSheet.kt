@@ -98,14 +98,16 @@ internal fun LinkedSourcePickerSheet(
                     if (query.isEmpty()) {
                         Text(Strings.search, color = NotionGray400, style = MaterialTheme.typography.bodyLarge)
                     }
-                    BasicTextField(
-                        value = query,
-                        onValueChange = { query = it.replace("\n", "") },
-                        singleLine = true,
-                        textStyle = MaterialTheme.typography.bodyLarge.copy(color = NotionWhite),
-                        cursorBrush = SolidColor(NotionWhite),
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    AutoCaps {
+                        BasicTextField(
+                            value = query,
+                            onValueChange = { query = it.replace("\n", "") },
+                            singleLine = true,
+                            textStyle = MaterialTheme.typography.bodyLarge.copy(color = NotionWhite),
+                            cursorBrush = SolidColor(NotionWhite),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
             }
             Spacer(modifier = Modifier.size(8.dp))

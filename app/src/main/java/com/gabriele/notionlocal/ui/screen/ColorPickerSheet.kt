@@ -238,27 +238,29 @@ fun ColorPickerSheet(
             Column {
                 Text("Hex", style = MaterialTheme.typography.labelMedium, color = NotionGray400)
                 Spacer(modifier = Modifier.size(4.dp))
-                BasicTextField(
-                    value = hexText,
-                    onValueChange = { typed ->
-                        // Si scrive liberamente — il codice arriva da
-                        // fuori, incollato o copiato a mano — e il
-                        // colore si muove solo quando quello che c'è
-                        // scritto è un colore vero. Così a metà di
-                        // "#FF00" non salta niente.
-                        hexText = typed.take(7)
-                        hexToHsl(typed)?.let { hsl = it }
-                    },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii),
-                    textStyle = MaterialTheme.typography.bodyLarge.copy(color = NotionWhite),
-                    cursorBrush = SolidColor(NotionWhite),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(DarkSurface)
-                        .padding(horizontal = 12.dp, vertical = 10.dp)
-                )
+                AutoCaps {
+                    BasicTextField(
+                        value = hexText,
+                        onValueChange = { typed ->
+                            // Si scrive liberamente — il codice arriva da
+                            // fuori, incollato o copiato a mano — e il
+                            // colore si muove solo quando quello che c'è
+                            // scritto è un colore vero. Così a metà di
+                            // "#FF00" non salta niente.
+                            hexText = typed.take(7)
+                            hexToHsl(typed)?.let { hsl = it }
+                        },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii),
+                        textStyle = MaterialTheme.typography.bodyLarge.copy(color = NotionWhite),
+                        cursorBrush = SolidColor(NotionWhite),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(DarkSurface)
+                            .padding(horizontal = 12.dp, vertical = 10.dp)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.size(8.dp))
@@ -443,25 +445,27 @@ private fun ChannelField(
     Column(modifier = modifier) {
         Text(label, style = MaterialTheme.typography.labelMedium, color = NotionGray400)
         Spacer(modifier = Modifier.size(4.dp))
-        BasicTextField(
-            value = value.toString(),
-            onValueChange = { typed ->
-                // Solo cifre, e mai oltre 255: un canale non ha altri
-                // valori possibili, e lasciarne scrivere di sbagliati
-                // vorrebbe dire doverli poi rifiutare.
-                val cleaned = typed.filter { it.isDigit() }.take(3)
-                onValue(cleaned.toIntOrNull()?.coerceIn(0, 255) ?: 0)
-            },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            textStyle = MaterialTheme.typography.bodyLarge.copy(color = NotionWhite),
-            cursorBrush = SolidColor(NotionWhite),
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(8.dp))
-                .background(DarkSurface)
-                .padding(horizontal = 10.dp, vertical = 10.dp)
-        )
+        AutoCaps {
+            BasicTextField(
+                value = value.toString(),
+                onValueChange = { typed ->
+                    // Solo cifre, e mai oltre 255: un canale non ha altri
+                    // valori possibili, e lasciarne scrivere di sbagliati
+                    // vorrebbe dire doverli poi rifiutare.
+                    val cleaned = typed.filter { it.isDigit() }.take(3)
+                    onValue(cleaned.toIntOrNull()?.coerceIn(0, 255) ?: 0)
+                },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                textStyle = MaterialTheme.typography.bodyLarge.copy(color = NotionWhite),
+                cursorBrush = SolidColor(NotionWhite),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(DarkSurface)
+                    .padding(horizontal = 10.dp, vertical = 10.dp)
+            )
+        }
     }
 }
 

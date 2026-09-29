@@ -100,14 +100,16 @@ fun SearchScreen(
                         if (query.isEmpty()) {
                             Text(Strings.searchHint, color = NotionGray400, style = MaterialTheme.typography.bodyLarge)
                         }
-                        BasicTextField(
-                            value = query,
-                            onValueChange = { viewModel.onQueryChange(it) },
-                            singleLine = true,
-                            textStyle = MaterialTheme.typography.bodyLarge.copy(color = NotionWhite),
-                            cursorBrush = SolidColor(NotionWhite),
-                            modifier = Modifier.fillMaxWidth().focusRequester(focusRequester)
-                        )
+                        AutoCaps {
+                            BasicTextField(
+                                value = query,
+                                onValueChange = { viewModel.onQueryChange(it) },
+                                singleLine = true,
+                                textStyle = MaterialTheme.typography.bodyLarge.copy(color = NotionWhite),
+                                cursorBrush = SolidColor(NotionWhite),
+                                modifier = Modifier.fillMaxWidth().focusRequester(focusRequester)
+                            )
+                        }
                     }
                 },
                 navigationIcon = {

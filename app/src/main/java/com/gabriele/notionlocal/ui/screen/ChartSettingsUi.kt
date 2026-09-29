@@ -473,13 +473,15 @@ private fun ReferenceLineDialog(onConfirm: (ChartReferenceLine) -> Unit, onDismi
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 NumberInput(value, ChartStrings.value, Modifier.fillMaxWidth()) { value = it }
-                OutlinedTextField(
-                    value = label,
-                    onValueChange = { label = it.replace("\n", "") },
-                    singleLine = true,
-                    label = { Text(ChartStrings.labelOptional) },
-                    modifier = Modifier.fillMaxWidth()
-                )
+                AutoCaps {
+                    OutlinedTextField(
+                        value = label,
+                        onValueChange = { label = it.replace("\n", "") },
+                        singleLine = true,
+                        label = { Text(ChartStrings.labelOptional) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
         },
         confirmButton = {
@@ -491,12 +493,14 @@ private fun ReferenceLineDialog(onConfirm: (ChartReferenceLine) -> Unit, onDismi
 
 @Composable
 private fun NumberInput(value: String, label: String, modifier: Modifier, onChange: (String) -> Unit) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = { typed -> onChange(typed.filter { it.isDigit() || it == '.' || it == ',' || it == '-' }) },
-        singleLine = true,
-        label = { Text(label) },
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-        modifier = modifier
-    )
+    AutoCaps {
+        OutlinedTextField(
+            value = value,
+            onValueChange = { typed -> onChange(typed.filter { it.isDigit() || it == '.' || it == ',' || it == '-' }) },
+            singleLine = true,
+            label = { Text(label) },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            modifier = modifier
+        )
+    }
 }

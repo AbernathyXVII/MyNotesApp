@@ -675,30 +675,32 @@ private fun FontSizeDialog(
         title = { Text(EditorStrings.fontSize, color = NotionWhite) },
         text = {
             Column {
-                OutlinedTextField(
-                    value = field,
-                    onValueChange = { typed ->
-                        val digits = typed.text.filter { it.isDigit() }.take(2)
-                        field = if (digits == typed.text) {
-                            typed
-                        } else {
-                            TextFieldValue(digits, TextRange(digits.length))
-                        }
-                    },
-                    singleLine = true,
-                    textStyle = MaterialTheme.typography.titleLarge.copy(color = NotionWhite),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Number,
-                        imeAction = ImeAction.Done
-                    ),
-                    keyboardActions = KeyboardActions(onDone = {
-                        if (valid) onConfirm(value!!)
-                    }),
-                    isError = field.text.isNotEmpty() && !valid,
-                    modifier = Modifier
-                        .width(96.dp)
-                        .focusRequester(focus)
-                )
+                AutoCaps {
+                    OutlinedTextField(
+                        value = field,
+                        onValueChange = { typed ->
+                            val digits = typed.text.filter { it.isDigit() }.take(2)
+                            field = if (digits == typed.text) {
+                                typed
+                            } else {
+                                TextFieldValue(digits, TextRange(digits.length))
+                            }
+                        },
+                        singleLine = true,
+                        textStyle = MaterialTheme.typography.titleLarge.copy(color = NotionWhite),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Number,
+                            imeAction = ImeAction.Done
+                        ),
+                        keyboardActions = KeyboardActions(onDone = {
+                            if (valid) onConfirm(value!!)
+                        }),
+                        isError = field.text.isNotEmpty() && !valid,
+                        modifier = Modifier
+                            .width(96.dp)
+                            .focusRequester(focus)
+                    )
+                }
                 Spacer(modifier = Modifier.size(8.dp))
                 Text(
                     text = EditorStrings.fontSizeRange(MIN_PAGE_FONT_SIZE, MAX_PAGE_FONT_SIZE),
@@ -1481,15 +1483,17 @@ private fun PageEditorContent(
             // invece il fuoco si posa un istante su questo campo: la
             // tastiera resta aperta perché sotto di sé ha sempre un
             // campo vero, e riparte sul blocco nuovo appena esiste.
-            BasicTextField(
-                value = "",
-                onValueChange = { },
-                modifier = Modifier
-                    .size(1.dp)
-                    .alpha(0f)
-                    .focusRequester(focusPark)
-                    .markFocusChanges()
-            )
+            AutoCaps {
+                BasicTextField(
+                    value = "",
+                    onValueChange = { },
+                    modifier = Modifier
+                        .size(1.dp)
+                        .alpha(0f)
+                        .focusRequester(focusPark)
+                        .markFocusChanges()
+                )
+            }
 
             // **Col menu del "+" aperto, la pagina sotto non si tocca.**
             //
@@ -1779,52 +1783,54 @@ private fun PageEditorContent(
                 LaunchedEffect(page?.title, titleFocused) {
                     if (!titleFocused) titleText = page?.title.orEmpty()
                 }
-                BasicTextField(
-                    value = titleText,
-                    // Un titolo sta su una riga sola: l'a capo digitato non
-                    // ha senso e l'incolla di un testo che ne contiene va
-                    // ripulito. La tastiera offre "fine" e basta: per
-                    // scrivere nel corpo si tocca il corpo.
-                    onValueChange = {
-                        val singleLine = it.replace("\n", "")
-                        titleText = singleLine
-                        viewModel.updateTitle(singleLine)
-                    },
-                    singleLine = true,
-                    // Pagina bloccata (o nel cestino): nemmeno il titolo si tocca.
-                    readOnly = readOnlyPage,
-                    keyboardOptions = KeyboardOptions(
-                        capitalization = KeyboardCapitalization.Sentences,
-                        imeAction = ImeAction.Done
-                    ),
-                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                    textStyle = MaterialTheme.typography.titleLarge.copy(color = NotionWhite),
-                    cursorBrush = SolidColor(NotionWhite),
-                    // Una pagina di un quaderno nasce senza titolo: al suo
-                    // posto, grigio, "Untitled page", come in OneNote.
-                    decorationBox = { field ->
-                        Box {
-                            if ((inNotebook || page?.isTemplate == true) && titleText.isEmpty()) {
-                                Text(
-                                    if (inNotebook) NotebookStrings.untitledPage else TemplateStrings.untitledTemplate,
-                                    style = MaterialTheme.typography.titleLarge,
-                                    color = NotionGray400
-                                )
+                AutoCaps {
+                    BasicTextField(
+                        value = titleText,
+                        // Un titolo sta su una riga sola: l'a capo digitato non
+                        // ha senso e l'incolla di un testo che ne contiene va
+                        // ripulito. La tastiera offre "fine" e basta: per
+                        // scrivere nel corpo si tocca il corpo.
+                        onValueChange = {
+                            val singleLine = it.replace("\n", "")
+                            titleText = singleLine
+                            viewModel.updateTitle(singleLine)
+                        },
+                        singleLine = true,
+                        // Pagina bloccata (o nel cestino): nemmeno il titolo si tocca.
+                        readOnly = readOnlyPage,
+                        keyboardOptions = KeyboardOptions(
+                            capitalization = KeyboardCapitalization.Sentences,
+                            imeAction = ImeAction.Done
+                        ),
+                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                        textStyle = MaterialTheme.typography.titleLarge.copy(color = NotionWhite),
+                        cursorBrush = SolidColor(NotionWhite),
+                        // Una pagina di un quaderno nasce senza titolo: al suo
+                        // posto, grigio, "Untitled page", come in OneNote.
+                        decorationBox = { field ->
+                            Box {
+                                if ((inNotebook || page?.isTemplate == true) && titleText.isEmpty()) {
+                                    Text(
+                                        if (inNotebook) NotebookStrings.untitledPage else TemplateStrings.untitledTemplate,
+                                        style = MaterialTheme.typography.titleLarge,
+                                        color = NotionGray400
+                                    )
+                                }
+                                field()
                             }
-                            field()
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 4.dp)
-                        .markFocusChanges()
-                        .onFocusChanged {
-                            titleFocused = it.isFocused
-                            // Uscendo dal titolo la sua modifica si
-                            // chiude, come per una riga qualsiasi.
-                            if (!it.isFocused) viewModel.closeEditSession()
-                        }
-                )
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp, vertical = 4.dp)
+                            .markFocusChanges()
+                            .onFocusChanged {
+                                titleFocused = it.isFocused
+                                // Uscendo dal titolo la sua modifica si
+                                // chiude, come per una riga qualsiasi.
+                                if (!it.isFocused) viewModel.closeEditSession()
+                            }
+                    )
+                }
                 if (inNotebook) {
                     page?.let { NotebookPageStamp(it.createdAt) }
                 }
@@ -4467,333 +4473,335 @@ private fun MergedTextRunField(
             .fillMaxWidth()
             .padding(horizontal = PAGE_SIDE_PADDING, vertical = 4.dp)
     ) {
-    BasicTextField(
-        value = fieldValue,
-        onTextLayout = { textLayout = it },
-        onValueChange = { newValue ->
-            val oldText = fieldValue.text
-            val oldBody = bodyOf(oldText)
-            val newText = newValue.text
-            val caretRaw = newValue.selection.end
+    AutoCaps {
+        BasicTextField(
+            value = fieldValue,
+            onTextLayout = { textLayout = it },
+            onValueChange = { newValue ->
+                val oldText = fieldValue.text
+                val oldBody = bodyOf(oldText)
+                val newText = newValue.text
+                val caretRaw = newValue.selection.end
 
-            // Backspace a inizio della PRIMA riga. L'unico carattere che
-            // può essere sparito è l'a-capo nascosto in testa, e il
-            // cursore resta a zero — posizione che nessun'altra azione
-            // può produrre, perché la mappatura non ci porta mai il
-            // cursore. Il testo dei blocchi non è cambiato: rimettiamo
-            // l'a-capo e togliamo il marcatore, se c'è.
-            val atFirstLineStart = newValue.selection.collapsed &&
-                caretRaw == 0 &&
-                oldText.startsWith(RUN_LEAD) &&
-                newText == oldBody
+                // Backspace a inizio della PRIMA riga. L'unico carattere che
+                // può essere sparito è l'a-capo nascosto in testa, e il
+                // cursore resta a zero — posizione che nessun'altra azione
+                // può produrre, perché la mappatura non ci porta mai il
+                // cursore. Il testo dei blocchi non è cambiato: rimettiamo
+                // l'a-capo e togliamo il marcatore, se c'è.
+                val atFirstLineStart = newValue.selection.collapsed &&
+                    caretRaw == 0 &&
+                    oldText.startsWith(RUN_LEAD) &&
+                    newText == oldBody
 
-            if (atFirstLineStart) {
-                val outcome = viewModel.backspaceAtLineStartDetailed(runBlocks.map { it.id }, 0)
-                if (outcome == BackspaceOutcome.MERGED_INTO_ISLAND) {
-                    // Questa riga è appena finita dentro la casella di
-                    // sopra: sparisce, e con lei questo campo. Il fuoco
-                    // si posa sul campo invisibile prima che succeda,
-                    // altrimenti l'app si chiude (`LayoutCoordinate ...
-                    // isAttached`). Era il caso più facile da incontrare:
-                    // riga vuota sotto una casella, backspace.
-                    focusPark?.requestFocus()
-                }
-                fieldValue = TextFieldValue(oldText, TextRange(1))
-            } else {
-                // L'a-capo iniziale dev'esserci sempre. Nei casi normali
-                // c'è già e passiamo oltre il valore della tastiera così
-                // com'è, senza toccarlo — importante per non disturbare
-                // la composizione dell'IME.
-                val normalizedText = if (newText.startsWith(RUN_LEAD)) newText else RUN_LEAD + newText
-                val shift = normalizedText.length - newText.length
-                val newBody = bodyOf(normalizedText)
-                val caret = (caretRaw + shift - 1).coerceIn(0, newBody.length)
-
-                // **"/notification 22.10.2026 17:41 Buttare l'immondizia"
-                // e Invio**: la riga diventa una notifica con quel testo, e
-                // si continua a scrivere nella riga nuova sotto. Il comando
-                // sparisce e l'a-capo non entra nel testo: la riga nuova la
-                // fa `makeNotification`. Come per il menu "/", prima il
-                // testo scritto, poi il cambio di tipo.
-                val notification = notificationOnEnter(oldBody, newBody, caret)
-                val notificationBlock = notification?.let { runBlocks.getOrNull(it.first) }
-                if (notification != null && notificationBlock != null) {
-                    val (lineIndex, command) = notification
-                    val oldLines = oldBody.split('\n')
-                    val cleanedLines = oldLines.toMutableList().also { it[lineIndex] = command.text }
-                    val lineStart = cleanedLines.take(lineIndex).sumOf { it.length + 1 }
-                    val cleanedText = RUN_LEAD + cleanedLines.joinToString("\n")
-                    fieldValue = TextFieldValue(cleanedText, TextRange(RUN_LEAD.length + lineStart + command.text.length))
-                    pendingText = cleanedText
-                    slashAnchor = null
-                    slashQuery = ""
-                    viewModel.updateRun(runBlocks.map { it.id }, cleanedLines, oldLines, lineIndex)
-                    focusPark?.requestFocus()
-                    viewModel.makeNotification(notificationBlock, command)
-                    NotificationPermission.request()
-                    return@BasicTextField
-                }
-
-                // Il menu "/": si apre appena si scrive la barra, e da
-                // lì in poi quello che si continua a scrivere filtra la
-                // lista. Si chiude quando la barra non c'è più, quando
-                // il cursore torna prima di lei o quando arriva uno
-                // spazio: a quel punto non si sta più scegliendo un
-                // blocco, si sta scrivendo una frase che contiene "/".
-                val justTypedSlash = newBody.length == oldBody.length + 1 &&
-                    caret >= 1 && caret <= newBody.length && newBody[caret - 1] == '/'
-                if (justTypedSlash) {
-                    slashAnchor = caret - 1
-                    slashQuery = ""
-                } else {
-                    val anchor = slashAnchor
-                    if (anchor != null) {
-                        val stillOpen = anchor < newBody.length &&
-                            newBody[anchor] == '/' &&
-                            caret > anchor
-                        val typed = if (stillOpen) {
-                            newBody.substring(anchor + 1, caret.coerceAtMost(newBody.length))
-                        } else {
-                            ""
-                        }
-                        if (!stillOpen || typed.any { it == ' ' || it == '\n' }) {
-                            slashAnchor = null
-                            slashQuery = ""
-                        } else {
-                            slashQuery = typed
-                        }
+                if (atFirstLineStart) {
+                    val outcome = viewModel.backspaceAtLineStartDetailed(runBlocks.map { it.id }, 0)
+                    if (outcome == BackspaceOutcome.MERGED_INTO_ISLAND) {
+                        // Questa riga è appena finita dentro la casella di
+                        // sopra: sparisce, e con lei questo campo. Il fuoco
+                        // si posa sul campo invisibile prima che succeda,
+                        // altrimenti l'app si chiude (`LayoutCoordinate ...
+                        // isAttached`). Era il caso più facile da incontrare:
+                        // riga vuota sotto una casella, backspace.
+                        focusPark?.requestFocus()
                     }
-                }
-
-                // "5." scritto da solo a inizio blocco: diventa un elenco
-                // numerato che parte da quel numero, e il testo digitato
-                // sparisce perché da lì in poi il numero lo disegna la
-                // lista.
-                // `||coperto||`: chiusa la seconda coppia di barre, le
-                // quattro barre spariscono — erano un comando, non roba
-                // scritta — e quello che stava in mezzo resta coperto.
-                // Il cursore si ferma subito dopo, in chiaro.
-                val spoiler = spoilerJustClosed(oldBody, newBody, caret)
-                var spoilerBody: String? = null
-                var spoilerCaret = 0
-                if (spoiler != null) {
-                    // Prima la coppia di chiusura, poi quella di
-                    // apertura: togliendo l'apertura per prima, tutte le
-                    // posizioni più avanti scalerebbero di due.
-                    val stripped = newBody
-                        .removeRange(spoiler.contentEnd, spoiler.contentEnd + 2)
-                        .removeRange(spoiler.open, spoiler.open + 2)
-                    val from = spoiler.open
-                    val to = spoiler.contentEnd - 2
-                    val lineStart = stripped.lastIndexOf('\n', from - 1) + 1
-                    val lineEnd = stripped.indexOf('\n', from)
-                        .let { if (it < 0) stripped.length else it }
-                    val applied = viewModel.applySpoilerAtLine(
-                        runBlocks.map { it.id },
-                        stripped.take(lineStart).count { it == '\n' },
-                        stripped.substring(lineStart, lineEnd),
-                        from - lineStart,
-                        to - lineStart
-                    )
-                    if (applied) {
-                        spoilerBody = stripped
-                        spoilerCaret = to
-                    }
-                }
-
-                val listPrefix = numberedListPrefixJustTyped(oldBody, newBody, caret)
-                val listStarted = listPrefix != null &&
-                    viewModel.startNumberedListAtLine(
-                        runBlocks.map { it.id },
-                        listPrefix.lineIndex,
-                        listPrefix.startNumber
-                    )
-
-                // Backspace a inizio di una riga successiva: lì il testo
-                // cambia davvero (sparisce l'a-capo sopra). Se la riga ha
-                // ancora un marcatore o un rientro da perdere, la fusione
-                // va rifiutata in favore di quello.
-                val backspacedLine = backspacedLineStart(oldBody, newBody, caret)
-                val stepUndone = backspacedLine > 0 &&
-                    viewModel.backspaceAtLineStartDetailed(
-                        runBlocks.map { it.id },
-                        backspacedLine
-                    ) != BackspaceOutcome.NOTHING
-
-                if (spoilerBody != null) {
-                    val spoilerText = RUN_LEAD + spoilerBody
-                    fieldValue = TextFieldValue(
-                        spoilerText,
-                        TextRange(RUN_LEAD.length + spoilerCaret)
-                    )
-                    pendingText = spoilerText
-                } else if (listStarted && listPrefix != null) {
-                    val strippedBody = newBody.removeRange(listPrefix.lineStart, caret)
-                    val strippedText = RUN_LEAD + strippedBody
-                    fieldValue = TextFieldValue(strippedText, TextRange(listPrefix.lineStart + 1))
-                    pendingText = strippedText
-                } else if (stepUndone) {
-                    val oldLines = oldBody.split('\n')
-                    var caretAtLineStart = 1
-                    for (i in 0 until backspacedLine) caretAtLineStart += oldLines[i].length + 1
-                    fieldValue = TextFieldValue(oldText, TextRange(caretAtLineStart))
+                    fieldValue = TextFieldValue(oldText, TextRange(1))
                 } else {
-                    fieldValue = if (shift == 0) {
-                        newValue
+                    // L'a-capo iniziale dev'esserci sempre. Nei casi normali
+                    // c'è già e passiamo oltre il valore della tastiera così
+                    // com'è, senza toccarlo — importante per non disturbare
+                    // la composizione dell'IME.
+                    val normalizedText = if (newText.startsWith(RUN_LEAD)) newText else RUN_LEAD + newText
+                    val shift = normalizedText.length - newText.length
+                    val newBody = bodyOf(normalizedText)
+                    val caret = (caretRaw + shift - 1).coerceIn(0, newBody.length)
+
+                    // **"/notification 22.10.2026 17:41 Buttare l'immondizia"
+                    // e Invio**: la riga diventa una notifica con quel testo, e
+                    // si continua a scrivere nella riga nuova sotto. Il comando
+                    // sparisce e l'a-capo non entra nel testo: la riga nuova la
+                    // fa `makeNotification`. Come per il menu "/", prima il
+                    // testo scritto, poi il cambio di tipo.
+                    val notification = notificationOnEnter(oldBody, newBody, caret)
+                    val notificationBlock = notification?.let { runBlocks.getOrNull(it.first) }
+                    if (notification != null && notificationBlock != null) {
+                        val (lineIndex, command) = notification
+                        val oldLines = oldBody.split('\n')
+                        val cleanedLines = oldLines.toMutableList().also { it[lineIndex] = command.text }
+                        val lineStart = cleanedLines.take(lineIndex).sumOf { it.length + 1 }
+                        val cleanedText = RUN_LEAD + cleanedLines.joinToString("\n")
+                        fieldValue = TextFieldValue(cleanedText, TextRange(RUN_LEAD.length + lineStart + command.text.length))
+                        pendingText = cleanedText
+                        slashAnchor = null
+                        slashQuery = ""
+                        viewModel.updateRun(runBlocks.map { it.id }, cleanedLines, oldLines, lineIndex)
+                        focusPark?.requestFocus()
+                        viewModel.makeNotification(notificationBlock, command)
+                        NotificationPermission.request()
+                        return@BasicTextField
+                    }
+
+                    // Il menu "/": si apre appena si scrive la barra, e da
+                    // lì in poi quello che si continua a scrivere filtra la
+                    // lista. Si chiude quando la barra non c'è più, quando
+                    // il cursore torna prima di lei o quando arriva uno
+                    // spazio: a quel punto non si sta più scegliendo un
+                    // blocco, si sta scrivendo una frase che contiene "/".
+                    val justTypedSlash = newBody.length == oldBody.length + 1 &&
+                        caret >= 1 && caret <= newBody.length && newBody[caret - 1] == '/'
+                    if (justTypedSlash) {
+                        slashAnchor = caret - 1
+                        slashQuery = ""
                     } else {
-                        TextFieldValue(
-                            normalizedText,
-                            TextRange(newValue.selection.start + 1, caretRaw + 1)
+                        val anchor = slashAnchor
+                        if (anchor != null) {
+                            val stillOpen = anchor < newBody.length &&
+                                newBody[anchor] == '/' &&
+                                caret > anchor
+                            val typed = if (stillOpen) {
+                                newBody.substring(anchor + 1, caret.coerceAtMost(newBody.length))
+                            } else {
+                                ""
+                            }
+                            if (!stillOpen || typed.any { it == ' ' || it == '\n' }) {
+                                slashAnchor = null
+                                slashQuery = ""
+                            } else {
+                                slashQuery = typed
+                            }
+                        }
+                    }
+
+                    // "5." scritto da solo a inizio blocco: diventa un elenco
+                    // numerato che parte da quel numero, e il testo digitato
+                    // sparisce perché da lì in poi il numero lo disegna la
+                    // lista.
+                    // `||coperto||`: chiusa la seconda coppia di barre, le
+                    // quattro barre spariscono — erano un comando, non roba
+                    // scritta — e quello che stava in mezzo resta coperto.
+                    // Il cursore si ferma subito dopo, in chiaro.
+                    val spoiler = spoilerJustClosed(oldBody, newBody, caret)
+                    var spoilerBody: String? = null
+                    var spoilerCaret = 0
+                    if (spoiler != null) {
+                        // Prima la coppia di chiusura, poi quella di
+                        // apertura: togliendo l'apertura per prima, tutte le
+                        // posizioni più avanti scalerebbero di due.
+                        val stripped = newBody
+                            .removeRange(spoiler.contentEnd, spoiler.contentEnd + 2)
+                            .removeRange(spoiler.open, spoiler.open + 2)
+                        val from = spoiler.open
+                        val to = spoiler.contentEnd - 2
+                        val lineStart = stripped.lastIndexOf('\n', from - 1) + 1
+                        val lineEnd = stripped.indexOf('\n', from)
+                            .let { if (it < 0) stripped.length else it }
+                        val applied = viewModel.applySpoilerAtLine(
+                            runBlocks.map { it.id },
+                            stripped.take(lineStart).count { it == '\n' },
+                            stripped.substring(lineStart, lineEnd),
+                            from - lineStart,
+                            to - lineStart
                         )
+                        if (applied) {
+                            spoilerBody = stripped
+                            spoilerCaret = to
+                        }
                     }
-                    // **"In sospeso" solo se il testo è cambiato davvero.**
-                    // Questo ramo scatta anche quando si sposta soltanto il
-                    // cursore o si seleziona: lì non parte nessun
-                    // salvataggio (`updateRun` esce subito), quindi dal
-                    // database non torna niente che azzeri `pendingText`, e
-                    // il campo restava convinto per sempre di avere una
-                    // modifica in viaggio. Da quel momento ignorava ogni
-                    // cambiamento arrivato da fuori: dopo "Duplicate" dal
-                    // menu del blocco mostrava ancora le righe di prima coi
-                    // segni degli elenchi scalati di una, e la lettera
-                    // successiva faceva sparire la copia dal database.
-                    // Trovato sul telefono il 24/09/2026.
-                    if (normalizedText != oldText) pendingText = normalizedText
-                    // L'indice riga si calcola sul testo appena digitato,
-                    // non sulle lunghezze salvate nel database tramite
-                    // runBlocks — altrimenti, mentre si scrive
-                    // velocemente, "su quale riga è il cursore" può
-                    // risultare sbagliato per una frazione di secondo,
-                    // prima che il giro di andata e ritorno dal database
-                    // si allinei di nuovo.
-                    val lineIndex = lineIndexAt(newBody, caret)
 
-                    viewModel.updateRun(
-                        runBlocks.map { it.id },
-                        newBody.split('\n'),
-                        // Quello che c'era nel campo un attimo fa: è la
-                        // sola versione che corrisponde a ciò che
-                        // l'utente vedeva quando ha premuto il tasto.
-                        oldBody.split('\n'),
-                        // E dov'è il cursore: senza, una riga vuota
-                        // inserita in mezzo ad altre righe vuote è
-                        // indistinguibile da una aggiunta in fondo.
-                        lineIndex
-                    )
+                    val listPrefix = numberedListPrefixJustTyped(oldBody, newBody, caret)
+                    val listStarted = listPrefix != null &&
+                        viewModel.startNumberedListAtLine(
+                            runBlocks.map { it.id },
+                            listPrefix.lineIndex,
+                            listPrefix.startNumber
+                        )
 
-                    val currentLineId = runBlocks.getOrNull(lineIndex)?.id
-                    if (currentLineId != null && currentLineId != lastLineBlockId) {
-                        lastLineBlockId?.let { onFocusChanged(it, false) }
-                        onFocusChanged(currentLineId, true)
-                        lastLineBlockId = currentLineId
+                    // Backspace a inizio di una riga successiva: lì il testo
+                    // cambia davvero (sparisce l'a-capo sopra). Se la riga ha
+                    // ancora un marcatore o un rientro da perdere, la fusione
+                    // va rifiutata in favore di quello.
+                    val backspacedLine = backspacedLineStart(oldBody, newBody, caret)
+                    val stepUndone = backspacedLine > 0 &&
+                        viewModel.backspaceAtLineStartDetailed(
+                            runBlocks.map { it.id },
+                            backspacedLine
+                        ) != BackspaceOutcome.NOTHING
+
+                    if (spoilerBody != null) {
+                        val spoilerText = RUN_LEAD + spoilerBody
+                        fieldValue = TextFieldValue(
+                            spoilerText,
+                            TextRange(RUN_LEAD.length + spoilerCaret)
+                        )
+                        pendingText = spoilerText
+                    } else if (listStarted && listPrefix != null) {
+                        val strippedBody = newBody.removeRange(listPrefix.lineStart, caret)
+                        val strippedText = RUN_LEAD + strippedBody
+                        fieldValue = TextFieldValue(strippedText, TextRange(listPrefix.lineStart + 1))
+                        pendingText = strippedText
+                    } else if (stepUndone) {
+                        val oldLines = oldBody.split('\n')
+                        var caretAtLineStart = 1
+                        for (i in 0 until backspacedLine) caretAtLineStart += oldLines[i].length + 1
+                        fieldValue = TextFieldValue(oldText, TextRange(caretAtLineStart))
+                    } else {
+                        fieldValue = if (shift == 0) {
+                            newValue
+                        } else {
+                            TextFieldValue(
+                                normalizedText,
+                                TextRange(newValue.selection.start + 1, caretRaw + 1)
+                            )
+                        }
+                        // **"In sospeso" solo se il testo è cambiato davvero.**
+                        // Questo ramo scatta anche quando si sposta soltanto il
+                        // cursore o si seleziona: lì non parte nessun
+                        // salvataggio (`updateRun` esce subito), quindi dal
+                        // database non torna niente che azzeri `pendingText`, e
+                        // il campo restava convinto per sempre di avere una
+                        // modifica in viaggio. Da quel momento ignorava ogni
+                        // cambiamento arrivato da fuori: dopo "Duplicate" dal
+                        // menu del blocco mostrava ancora le righe di prima coi
+                        // segni degli elenchi scalati di una, e la lettera
+                        // successiva faceva sparire la copia dal database.
+                        // Trovato sul telefono il 24/09/2026.
+                        if (normalizedText != oldText) pendingText = normalizedText
+                        // L'indice riga si calcola sul testo appena digitato,
+                        // non sulle lunghezze salvate nel database tramite
+                        // runBlocks — altrimenti, mentre si scrive
+                        // velocemente, "su quale riga è il cursore" può
+                        // risultare sbagliato per una frazione di secondo,
+                        // prima che il giro di andata e ritorno dal database
+                        // si allinei di nuovo.
+                        val lineIndex = lineIndexAt(newBody, caret)
+
+                        viewModel.updateRun(
+                            runBlocks.map { it.id },
+                            newBody.split('\n'),
+                            // Quello che c'era nel campo un attimo fa: è la
+                            // sola versione che corrisponde a ciò che
+                            // l'utente vedeva quando ha premuto il tasto.
+                            oldBody.split('\n'),
+                            // E dov'è il cursore: senza, una riga vuota
+                            // inserita in mezzo ad altre righe vuote è
+                            // indistinguibile da una aggiunta in fondo.
+                            lineIndex
+                        )
+
+                        val currentLineId = runBlocks.getOrNull(lineIndex)?.id
+                        if (currentLineId != null && currentLineId != lastLineBlockId) {
+                            lastLineBlockId?.let { onFocusChanged(it, false) }
+                            onFocusChanged(currentLineId, true)
+                            lastLineBlockId = currentLineId
+                        }
                     }
                 }
-            }
-        },
-        // Se nel gruppo c'è anche una sola casella da spuntare, le
-        // righe stanno più larghe: il quadratino è piccolo e attaccate
-        // è facile spuntare quella sbagliata. Vale per tutto il campo,
-        // non riga per riga — vedi `CHECKBOX_LINE_HEIGHT` per il
-        // perché.
-        // Il testo più grande scelto con la barra Aa allunga qui le righe
-        // (`lineScale`): il `textStyle` dell'intero campo è il posto dove
-        // il README dice che le misure si possono toccare senza rischi.
-        // Font e corpo, invece, stanno sui pezzi di testo (`fontStyleOf`).
-        textStyle = MaterialTheme.typography.bodyLarge.copy(
-            color = NotionWhite,
-            // **L'altezza della riga è sempre fissata.**
-            //
-            // Lasciandola decidere al carattere, ogni riga diventava
-            // alta quanto il segno più grande che conteneva: le righe
-            // coi pallini (scritti a 20) erano più alte di quelle coi
-            // rombi (scritti a 13), e l'elenco veniva a passo
-            // irregolare — i segni sembravano storti, ma a essere
-            // storte erano le righe. Fissandola, tutte le righe sono
-            // alte uguale e i segni si appoggiano tutti allo stesso
-            // modo, qualunque corpo abbiano.
-            lineHeight = if (runBlocks.any { it.type == BlockType.CHECKBOX }) {
-                CHECKBOX_LINE_HEIGHT
-            } else {
-                RUN_LINE_HEIGHT
-            } * lineScale,
-            // **Il testo si centra nella riga alta.** Di suo Compose
-            // spartisce lo spazio in più in proporzione a quanto le
-            // lettere salgono e scendono, e il risultato è che il testo
-            // non sta in mezzo: i quadratini, che invece stanno in
-            // mezzo, risultavano disallineati. Chiedendo il centro,
-            // testo e quadratino coincidono per costruzione, qualunque
-            // sia l'altezza di riga.
-            lineHeightStyle = LineHeightStyle(
-                alignment = LineHeightStyle.Alignment.Center,
-                trim = LineHeightStyle.Trim.None
-            )
-        ),
-        cursorBrush = SolidColor(NotionWhite),
-        // Pagina bloccata: si legge e si seleziona, non si scrive.
-        // `readOnly` e non `enabled = false` di proposito — disabilitato
-        // il testo non si potrebbe nemmeno selezionare per copiarlo, e
-        // bloccare una pagina serve a non rovinarla, non a non usarla.
-        readOnly = LocalPageLocked.current,
-        // Vedi il commento gemello sui blocchi isola: la maiuscola a
-        // inizio frase va chiesta, altrimenti non arriva.
-        keyboardOptions = KeyboardOptions(
-            capitalization = KeyboardCapitalization.Sentences
-        ),
-        visualTransformation = MergedRunVisualTransformation(
-            runBlocks,
-            allBlocks,
-            viewModel,
-            // Il cursore serve solo a scoprire gli spoiler che tocca, e
-            // senza fuoco non c'è nessun cursore da guardare.
-            caret = if (fieldFocused) {
-                (fieldValue.selection.min - 1).coerceAtLeast(0)..
-                    (fieldValue.selection.max - 1).coerceAtLeast(0)
-            } else {
-                null
-            }
-        ),
-        modifier = Modifier
-            .fillMaxWidth()
-            .drawBehind {
-                val strength = moveFlash.value
-                val movedId = movedBlock?.blockId
-                val layout = textLayout
-                if (strength <= 0f || movedId == null || layout == null) return@drawBehind
-                val line = runBlocks.indexOfFirst { it.id == movedId }
-                if (line < 0) return@drawBehind
-                // Da dove a dove sta la riga nel testo **mostrato**, coi
-                // prefissi: lo stesso conto di `displayedCaretOffset`.
-                val lines = bodyOf(fieldValue.text).split('\n')
-                val prefixes = runPrefixes(lines, runBlocks, allBlocks, viewModel)
-                fun shownLength(i: Int) = (prefixes.getOrNull(i)?.text?.length ?: 0) + (lines.getOrNull(i)?.length ?: 0)
-                val start = (0 until line).sumOf { shownLength(it) + 1 }
-                val last = layout.layoutInput.text.length
-                val top = layout.getLineTop(layout.getLineForOffset(start.coerceIn(0, last)))
-                val bottom = layout.getLineBottom(layout.getLineForOffset((start + shownLength(line)).coerceIn(0, last)))
-                drawRoundRect(
-                    color = moveFlashColor.copy(alpha = 0.3f * strength),
-                    topLeft = Offset(-6.dp.toPx(), top),
-                    size = Size(size.width + 12.dp.toPx(), bottom - top),
-                    cornerRadius = CornerRadius(4.dp.toPx())
-                )
-            }
-            .bringIntoViewRequester(caretIntoView)
-            .focusRequester(focusRequester)
-            .onFocusChanged { state ->
-                fieldFocused = state.isFocused
-                if (state.isFocused) {
-                    val lineIndex = lineIndexAt(bodyOf(fieldValue.text), fieldValue.selection.end - 1)
-                    val id = runBlocks.getOrNull(lineIndex)?.id ?: runBlocks.first().id
-                    lastLineBlockId = id
-                    onFocusChanged(id, true)
+            },
+            // Se nel gruppo c'è anche una sola casella da spuntare, le
+            // righe stanno più larghe: il quadratino è piccolo e attaccate
+            // è facile spuntare quella sbagliata. Vale per tutto il campo,
+            // non riga per riga — vedi `CHECKBOX_LINE_HEIGHT` per il
+            // perché.
+            // Il testo più grande scelto con la barra Aa allunga qui le righe
+            // (`lineScale`): il `textStyle` dell'intero campo è il posto dove
+            // il README dice che le misure si possono toccare senza rischi.
+            // Font e corpo, invece, stanno sui pezzi di testo (`fontStyleOf`).
+            textStyle = MaterialTheme.typography.bodyLarge.copy(
+                color = NotionWhite,
+                // **L'altezza della riga è sempre fissata.**
+                //
+                // Lasciandola decidere al carattere, ogni riga diventava
+                // alta quanto il segno più grande che conteneva: le righe
+                // coi pallini (scritti a 20) erano più alte di quelle coi
+                // rombi (scritti a 13), e l'elenco veniva a passo
+                // irregolare — i segni sembravano storti, ma a essere
+                // storte erano le righe. Fissandola, tutte le righe sono
+                // alte uguale e i segni si appoggiano tutti allo stesso
+                // modo, qualunque corpo abbiano.
+                lineHeight = if (runBlocks.any { it.type == BlockType.CHECKBOX }) {
+                    CHECKBOX_LINE_HEIGHT
                 } else {
-                    lastLineBlockId?.let { onFocusChanged(it, false) }
-                    lastLineBlockId = null
-                    // Perso il fuoco non si sta più scegliendo niente.
-                    slashAnchor = null
+                    RUN_LINE_HEIGHT
+                } * lineScale,
+                // **Il testo si centra nella riga alta.** Di suo Compose
+                // spartisce lo spazio in più in proporzione a quanto le
+                // lettere salgono e scendono, e il risultato è che il testo
+                // non sta in mezzo: i quadratini, che invece stanno in
+                // mezzo, risultavano disallineati. Chiedendo il centro,
+                // testo e quadratino coincidono per costruzione, qualunque
+                // sia l'altezza di riga.
+                lineHeightStyle = LineHeightStyle(
+                    alignment = LineHeightStyle.Alignment.Center,
+                    trim = LineHeightStyle.Trim.None
+                )
+            ),
+            cursorBrush = SolidColor(NotionWhite),
+            // Pagina bloccata: si legge e si seleziona, non si scrive.
+            // `readOnly` e non `enabled = false` di proposito — disabilitato
+            // il testo non si potrebbe nemmeno selezionare per copiarlo, e
+            // bloccare una pagina serve a non rovinarla, non a non usarla.
+            readOnly = LocalPageLocked.current,
+            // Vedi il commento gemello sui blocchi isola: la maiuscola a
+            // inizio frase va chiesta, altrimenti non arriva.
+            keyboardOptions = KeyboardOptions(
+                capitalization = KeyboardCapitalization.Sentences
+            ),
+            visualTransformation = MergedRunVisualTransformation(
+                runBlocks,
+                allBlocks,
+                viewModel,
+                // Il cursore serve solo a scoprire gli spoiler che tocca, e
+                // senza fuoco non c'è nessun cursore da guardare.
+                caret = if (fieldFocused) {
+                    (fieldValue.selection.min - 1).coerceAtLeast(0)..
+                        (fieldValue.selection.max - 1).coerceAtLeast(0)
+                } else {
+                    null
                 }
-            }
-    )
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .drawBehind {
+                    val strength = moveFlash.value
+                    val movedId = movedBlock?.blockId
+                    val layout = textLayout
+                    if (strength <= 0f || movedId == null || layout == null) return@drawBehind
+                    val line = runBlocks.indexOfFirst { it.id == movedId }
+                    if (line < 0) return@drawBehind
+                    // Da dove a dove sta la riga nel testo **mostrato**, coi
+                    // prefissi: lo stesso conto di `displayedCaretOffset`.
+                    val lines = bodyOf(fieldValue.text).split('\n')
+                    val prefixes = runPrefixes(lines, runBlocks, allBlocks, viewModel)
+                    fun shownLength(i: Int) = (prefixes.getOrNull(i)?.text?.length ?: 0) + (lines.getOrNull(i)?.length ?: 0)
+                    val start = (0 until line).sumOf { shownLength(it) + 1 }
+                    val last = layout.layoutInput.text.length
+                    val top = layout.getLineTop(layout.getLineForOffset(start.coerceIn(0, last)))
+                    val bottom = layout.getLineBottom(layout.getLineForOffset((start + shownLength(line)).coerceIn(0, last)))
+                    drawRoundRect(
+                        color = moveFlashColor.copy(alpha = 0.3f * strength),
+                        topLeft = Offset(-6.dp.toPx(), top),
+                        size = Size(size.width + 12.dp.toPx(), bottom - top),
+                        cornerRadius = CornerRadius(4.dp.toPx())
+                    )
+                }
+                .bringIntoViewRequester(caretIntoView)
+                .focusRequester(focusRequester)
+                .onFocusChanged { state ->
+                    fieldFocused = state.isFocused
+                    if (state.isFocused) {
+                        val lineIndex = lineIndexAt(bodyOf(fieldValue.text), fieldValue.selection.end - 1)
+                        val id = runBlocks.getOrNull(lineIndex)?.id ?: runBlocks.first().id
+                        lastLineBlockId = id
+                        onFocusChanged(id, true)
+                    } else {
+                        lastLineBlockId?.let { onFocusChanged(it, false) }
+                        lastLineBlockId = null
+                        // Perso il fuoco non si sta più scegliendo niente.
+                        slashAnchor = null
+                    }
+                }
+        )
+    }
 
     // **Dopo** il campo, non prima: dentro un `Box` i tocchi li riceve
     // per primo l'ultimo figlio, e messi prima i quadratini non
@@ -5312,281 +5320,283 @@ private fun BlockRow(
             else -> { /* PARAGRAPH has no prefix */ }
         }
 
-        BasicTextField(
-            value = editState.fieldValue,
-            onValueChange = { newFieldValue ->
-                val oldText = bodyOf(editState.fieldValue.text)
-                noteLog(
-                    "casella ${block.id.takeLast(4)} scrive: " +
-                        "'${oldText.forLog()}' -> '${bodyOf(newFieldValue.text).forLog()}' " +
-                        "cursore=${newFieldValue.selection.start}..${newFieldValue.selection.end} " +
-                        "composizione=${newFieldValue.composition} fuoco=$fieldFocused"
-                )
-
-                if (!newFieldValue.text.startsWith(RUN_LEAD)) {
-                    // È sparito l'a-capo nascosto: significa backspace a
-                    // inizio riga, l'unica cosa che può mangiarselo.
-                    // Sulla casella da spuntare toglie la casella e
-                    // lascia il testo; da lì in poi la riga è testo
-                    // normale e si fonde con quella sopra come tutte.
-                    val unmade = viewModel.backspaceAtIslandStart(block)
-                    editState = editState.copy(
-                        fieldValue = TextFieldValue(
-                            RUN_LEAD + oldText,
-                            TextRange(RUN_LEAD.length)
-                        )
+        AutoCaps {
+            BasicTextField(
+                value = editState.fieldValue,
+                onValueChange = { newFieldValue ->
+                    val oldText = bodyOf(editState.fieldValue.text)
+                    noteLog(
+                        "casella ${block.id.takeLast(4)} scrive: " +
+                            "'${oldText.forLog()}' -> '${bodyOf(newFieldValue.text).forLog()}' " +
+                            "cursore=${newFieldValue.selection.start}..${newFieldValue.selection.end} " +
+                            "composizione=${newFieldValue.composition} fuoco=$fieldFocused"
                     )
-                    if (unmade) {
-                        // Il blocco cambia specie e questa casella di
-                        // scrittura sparisce. Distruggerla mentre ha il
-                        // fuoco fa chiudere l'app, quindi il fuoco va
-                        // tolto — ma **non staccando la tastiera**:
-                        // `clearFocus()` la chiude e la si vede sparire
-                        // e tornare. Si posa invece sul campo
-                        // invisibile, che non muore mai, e riparte da lì
-                        // sul blocco nuovo.
-                        focusPark?.requestFocus()
-                    }
-                    return@BasicTextField
-                }
 
-                val newText = bodyOf(newFieldValue.text)
-                if (newText.contains('\n')) {
-                    val lines = newText.split('\n')
-                    val movedAway = lines.drop(1).joinToString("\n")
-                    val now = System.currentTimeMillis()
-                    val echo = lastSplit
-                    // L'eco della tastiera. Appena diviso il blocco gli
-                    // togliamo da sotto il testo che è passato alla riga
-                    // nuova; la tastiera Samsung, che aveva ancora quel
-                    // testo in mano, a volte lo rimanda indietro con
-                    // dentro lo stesso a-capo. Preso alla lettera è un
-                    // secondo Invio, e lasciava una riga vuota di troppo.
-                    //
-                    // Due modi di riconoscerlo, misurati sul telefono:
-                    // torna **lo stesso pezzo** da spostare (un Invio
-                    // vero non se lo riporterebbe dietro, quel testo è
-                    // già altrove), oppure torna **la stessa identica
-                    // modifica** a distanza di pochi millisecondi, che
-                    // è meno di quanto ci metta un dito a premere due
-                    // volte.
-                    val transition = oldText to newText
-                    val samePayload = movedAway.isNotEmpty() &&
-                        echo?.payload == movedAway &&
-                        now - echo.at < SPLIT_ECHO_MS
-                    val sameEditTwice = echo?.transition == transition &&
-                        now - echo.at < DUPLICATE_EDIT_MS
-                    if (samePayload || sameEditTwice) {
-                        val current = editState.spans.plainText()
+                    if (!newFieldValue.text.startsWith(RUN_LEAD)) {
+                        // È sparito l'a-capo nascosto: significa backspace a
+                        // inizio riga, l'unica cosa che può mangiarselo.
+                        // Sulla casella da spuntare toglie la casella e
+                        // lascia il testo; da lì in poi la riga è testo
+                        // normale e si fonde con quella sopra come tutte.
+                        val unmade = viewModel.backspaceAtIslandStart(block)
                         editState = editState.copy(
                             fieldValue = TextFieldValue(
-                                RUN_LEAD + current,
-                                TextRange(RUN_LEAD.length + current.length)
+                                RUN_LEAD + oldText,
+                                TextRange(RUN_LEAD.length)
                             )
                         )
+                        if (unmade) {
+                            // Il blocco cambia specie e questa casella di
+                            // scrittura sparisce. Distruggerla mentre ha il
+                            // fuoco fa chiudere l'app, quindi il fuoco va
+                            // tolto — ma **non staccando la tastiera**:
+                            // `clearFocus()` la chiude e la si vede sparire
+                            // e tornare. Si posa invece sul campo
+                            // invisibile, che non muore mai, e riparte da lì
+                            // sul blocco nuovo.
+                            focusPark?.requestFocus()
+                        }
                         return@BasicTextField
                     }
-                    lastSplit = SplitEcho(movedAway, transition, now)
-                    val firstLine = lines.first()
-                    val spansForFirstLine = applyTextEdit(editState.spans, oldText, firstLine)
-                    if (block.type == BlockType.TOGGLE && lines.size == 2) {
-                        // **Invio nel titolo di un toggle**: la riga nuova
-                        // va dentro (toggle aperto) o sotto (chiuso), e il
-                        // titolo resta dov'è. Trattato come un paragrafo
-                        // qualsiasi, il titolo finiva in una riga nuova
-                        // sopra e il toggle restava vuoto. Vedi
-                        // `enterInToggle`.
-                        editState = BlockEditState(
-                            spansForFirstLine,
-                            TextFieldValue(
-                                RUN_LEAD + firstLine,
-                                TextRange(RUN_LEAD.length + firstLine.length)
-                            )
-                        )
-                        viewModel.enterInToggle(block, spansForFirstLine, lines[1])
-                    } else if (lines.size == 2 && block.type in FLOWING_TYPES &&
-                        notificationOnEnter(oldText, newText, (newFieldValue.selection.end - RUN_LEAD.length).coerceAtLeast(0)) != null
-                    ) {
-                        // "/notification …" e Invio, come nel testo
-                        // condiviso: qui la riga resta in questa casella,
-                        // che cambia solo aspetto.
-                        val command = NotificationCommands.parse(oldText, LocalDateTime.now(AppSettings.zoneId))!!
-                        lastSplit = null
-                        editState = BlockEditState(
-                            listOf(RichTextSpan(text = command.text)),
-                            TextFieldValue(RUN_LEAD + command.text, TextRange(RUN_LEAD.length + command.text.length))
-                        )
-                        viewModel.makeNotification(block, command)
-                        NotificationPermission.request()
-                    } else if (lines.size == 2) {
-                        val outcome = viewModel.splitBlockAt(block, spansForFirstLine, lines[1])
-                        // La riga nuova è finita sopra e questo campo
-                        // resta vivo col fuoco: deve mostrare il testo
-                        // dopo il cursore, col cursore all'inizio. È
-                        // quello che si vede quando si va a capo.
-                        noteLog(
-                            "casella ${block.id.takeLast(4)} a-capo: esito=$outcome " +
-                                "prima='${firstLine.forLog()}' dopo='${lines[1].forLog()}'"
-                        )
-                        editState = if (outcome == SplitOutcome.NOTHING) {
-                            // Il ViewModel ha rifiutato la divisione
-                            // perché il campo si credeva vuoto mentre nel
-                            // database c'era del testo. Si rimette il
-                            // campo com'è davvero, invece di lasciarlo
-                            // vuoto: era così che il testo "spariva".
-                            val real = viewModel.spansOf(block)
-                            val realText = real.plainText()
-                            BlockEditState(
-                                real,
-                                TextFieldValue(
-                                    RUN_LEAD + realText,
-                                    TextRange(RUN_LEAD.length + realText.length)
+
+                    val newText = bodyOf(newFieldValue.text)
+                    if (newText.contains('\n')) {
+                        val lines = newText.split('\n')
+                        val movedAway = lines.drop(1).joinToString("\n")
+                        val now = System.currentTimeMillis()
+                        val echo = lastSplit
+                        // L'eco della tastiera. Appena diviso il blocco gli
+                        // togliamo da sotto il testo che è passato alla riga
+                        // nuova; la tastiera Samsung, che aveva ancora quel
+                        // testo in mano, a volte lo rimanda indietro con
+                        // dentro lo stesso a-capo. Preso alla lettera è un
+                        // secondo Invio, e lasciava una riga vuota di troppo.
+                        //
+                        // Due modi di riconoscerlo, misurati sul telefono:
+                        // torna **lo stesso pezzo** da spostare (un Invio
+                        // vero non se lo riporterebbe dietro, quel testo è
+                        // già altrove), oppure torna **la stessa identica
+                        // modifica** a distanza di pochi millisecondi, che
+                        // è meno di quanto ci metta un dito a premere due
+                        // volte.
+                        val transition = oldText to newText
+                        val samePayload = movedAway.isNotEmpty() &&
+                            echo?.payload == movedAway &&
+                            now - echo.at < SPLIT_ECHO_MS
+                        val sameEditTwice = echo?.transition == transition &&
+                            now - echo.at < DUPLICATE_EDIT_MS
+                        if (samePayload || sameEditTwice) {
+                            val current = editState.spans.plainText()
+                            editState = editState.copy(
+                                fieldValue = TextFieldValue(
+                                    RUN_LEAD + current,
+                                    TextRange(RUN_LEAD.length + current.length)
                                 )
                             )
-                        } else if (outcome == SplitOutcome.SPLIT_ABOVE) {
-                            BlockEditState(
-                                listOf(RichTextSpan(text = lines[1])),
-                                TextFieldValue(RUN_LEAD + lines[1], TextRange(RUN_LEAD.length))
-                            )
-                        } else {
-                            BlockEditState(
+                            return@BasicTextField
+                        }
+                        lastSplit = SplitEcho(movedAway, transition, now)
+                        val firstLine = lines.first()
+                        val spansForFirstLine = applyTextEdit(editState.spans, oldText, firstLine)
+                        if (block.type == BlockType.TOGGLE && lines.size == 2) {
+                            // **Invio nel titolo di un toggle**: la riga nuova
+                            // va dentro (toggle aperto) o sotto (chiuso), e il
+                            // titolo resta dov'è. Trattato come un paragrafo
+                            // qualsiasi, il titolo finiva in una riga nuova
+                            // sopra e il toggle restava vuoto. Vedi
+                            // `enterInToggle`.
+                            editState = BlockEditState(
                                 spansForFirstLine,
                                 TextFieldValue(
                                     RUN_LEAD + firstLine,
                                     TextRange(RUN_LEAD.length + firstLine.length)
                                 )
                             )
-                        }
-                        if (outcome == SplitOutcome.BECAME_PARAGRAPH) {
-                            // Invio su una casella vuota: il blocco
-                            // diventa un paragrafo e questa riga viene
-                            // distrutta, esattamente come col backspace
-                            // a inizio casella. Stesso rimedio: il fuoco
-                            // si posa sul campo invisibile invece di
-                            // staccare la tastiera.
-                            focusPark?.requestFocus()
-                        }
-                    } else {
-                        // Più righe in un colpo solo (un incolla): le
-                        // altre diventano blocchi sotto e questo tiene
-                        // la prima, come sempre.
-                        editState = BlockEditState(
-                            spansForFirstLine,
-                            TextFieldValue(
-                                RUN_LEAD + firstLine,
-                                TextRange(RUN_LEAD.length + firstLine.length)
+                            viewModel.enterInToggle(block, spansForFirstLine, lines[1])
+                        } else if (lines.size == 2 && block.type in FLOWING_TYPES &&
+                            notificationOnEnter(oldText, newText, (newFieldValue.selection.end - RUN_LEAD.length).coerceAtLeast(0)) != null
+                        ) {
+                            // "/notification …" e Invio, come nel testo
+                            // condiviso: qui la riga resta in questa casella,
+                            // che cambia solo aspetto.
+                            val command = NotificationCommands.parse(oldText, LocalDateTime.now(AppSettings.zoneId))!!
+                            lastSplit = null
+                            editState = BlockEditState(
+                                listOf(RichTextSpan(text = command.text)),
+                                TextFieldValue(RUN_LEAD + command.text, TextRange(RUN_LEAD.length + command.text.length))
                             )
+                            viewModel.makeNotification(block, command)
+                            NotificationPermission.request()
+                        } else if (lines.size == 2) {
+                            val outcome = viewModel.splitBlockAt(block, spansForFirstLine, lines[1])
+                            // La riga nuova è finita sopra e questo campo
+                            // resta vivo col fuoco: deve mostrare il testo
+                            // dopo il cursore, col cursore all'inizio. È
+                            // quello che si vede quando si va a capo.
+                            noteLog(
+                                "casella ${block.id.takeLast(4)} a-capo: esito=$outcome " +
+                                    "prima='${firstLine.forLog()}' dopo='${lines[1].forLog()}'"
+                            )
+                            editState = if (outcome == SplitOutcome.NOTHING) {
+                                // Il ViewModel ha rifiutato la divisione
+                                // perché il campo si credeva vuoto mentre nel
+                                // database c'era del testo. Si rimette il
+                                // campo com'è davvero, invece di lasciarlo
+                                // vuoto: era così che il testo "spariva".
+                                val real = viewModel.spansOf(block)
+                                val realText = real.plainText()
+                                BlockEditState(
+                                    real,
+                                    TextFieldValue(
+                                        RUN_LEAD + realText,
+                                        TextRange(RUN_LEAD.length + realText.length)
+                                    )
+                                )
+                            } else if (outcome == SplitOutcome.SPLIT_ABOVE) {
+                                BlockEditState(
+                                    listOf(RichTextSpan(text = lines[1])),
+                                    TextFieldValue(RUN_LEAD + lines[1], TextRange(RUN_LEAD.length))
+                                )
+                            } else {
+                                BlockEditState(
+                                    spansForFirstLine,
+                                    TextFieldValue(
+                                        RUN_LEAD + firstLine,
+                                        TextRange(RUN_LEAD.length + firstLine.length)
+                                    )
+                                )
+                            }
+                            if (outcome == SplitOutcome.BECAME_PARAGRAPH) {
+                                // Invio su una casella vuota: il blocco
+                                // diventa un paragrafo e questa riga viene
+                                // distrutta, esattamente come col backspace
+                                // a inizio casella. Stesso rimedio: il fuoco
+                                // si posa sul campo invisibile invece di
+                                // staccare la tastiera.
+                                focusPark?.requestFocus()
+                            }
+                        } else {
+                            // Più righe in un colpo solo (un incolla): le
+                            // altre diventano blocchi sotto e questo tiene
+                            // la prima, come sempre.
+                            editState = BlockEditState(
+                                spansForFirstLine,
+                                TextFieldValue(
+                                    RUN_LEAD + firstLine,
+                                    TextRange(RUN_LEAD.length + firstLine.length)
+                                )
+                            )
+                            viewModel.splitBlockAtMultiple(block, lines)
+                        }
+                    } else if (newText == oldText) {
+                        editState = editState.copy(fieldValue = newFieldValue)
+                    } else {
+                        // **Da qui in poi non c'è più nessuna eco da
+                        // aspettarsi.** L'eco della tastiera, se arriva,
+                        // arriva subito dopo la divisione e senza niente in
+                        // mezzo: appena viene battuto un carattere vero, la
+                        // divisione di prima è acqua passata.
+                        //
+                        // Senza questa riga il riconoscimento restava armato
+                        // sul campo, che adesso sopravvive a tutte le
+                        // divisioni di fila (prima il fuoco se ne andava su
+                        // un campo nuovo e la memoria ripartiva da zero).
+                        // Scrivendo in fretta due righe che finiscono con lo
+                        // stesso testo, il secondo Invio veniva scambiato
+                        // per un'eco e **non andava a capo**.
+                        lastSplit = null
+                        // Stessa scorciatoia del testo condiviso: "5." scritto
+                        // da solo in una riga di testo la fa diventare un
+                        // elenco numerato che parte da 5, e il "5." sparisce
+                        // perché il numero da lì in poi lo disegna la lista.
+                        val caretInBody = (newFieldValue.selection.end - RUN_LEAD.length).coerceAtLeast(0)
+                        val listPrefix = if (block.type == BlockType.PARAGRAPH) {
+                            numberedListPrefixJustTyped(oldText, newText, caretInBody)
+                        } else {
+                            null
+                        }
+                        if (listPrefix != null &&
+                            viewModel.startNumberedListInBlock(block.id, listPrefix.startNumber)
+                        ) {
+                            val stripped = newText.removeRange(listPrefix.lineStart, caretInBody)
+                            editState = BlockEditState(
+                                listOf(RichTextSpan(text = stripped)),
+                                TextFieldValue(RUN_LEAD + stripped, TextRange(RUN_LEAD.length + listPrefix.lineStart))
+                            )
+                            return@BasicTextField
+                        }
+                        // Stessa scorciatoia del testo condiviso: `||x||`
+                        // toglie le barre e copre quello che c'era in mezzo.
+                        val spoiler = spoilerJustClosed(
+                            oldText,
+                            newText,
+                            (newFieldValue.selection.end - RUN_LEAD.length).coerceAtLeast(0)
                         )
-                        viewModel.splitBlockAtMultiple(block, lines)
+                        if (spoiler != null) {
+                            val stripped = newText
+                                .removeRange(spoiler.contentEnd, spoiler.contentEnd + 2)
+                                .removeRange(spoiler.open, spoiler.open + 2)
+                            val to = spoiler.contentEnd - 2
+                            val newSpans = setFormatInRange(
+                                applyTextEdit(editState.spans, oldText, stripped),
+                                spoiler.open,
+                                to
+                            ) { s, _ -> s.copy(spoiler = true) }
+                            editState = BlockEditState(
+                                newSpans,
+                                TextFieldValue(RUN_LEAD + stripped, TextRange(RUN_LEAD.length + to))
+                            )
+                            viewModel.updateBlockSpans(block, newSpans)
+                        } else {
+                            val newSpans = applyTextEdit(editState.spans, oldText, newText)
+                            editState = BlockEditState(newSpans, newFieldValue)
+                            viewModel.updateBlockSpans(block, newSpans)
+                        }
                     }
-                } else if (newText == oldText) {
-                    editState = editState.copy(fieldValue = newFieldValue)
-                } else {
-                    // **Da qui in poi non c'è più nessuna eco da
-                    // aspettarsi.** L'eco della tastiera, se arriva,
-                    // arriva subito dopo la divisione e senza niente in
-                    // mezzo: appena viene battuto un carattere vero, la
-                    // divisione di prima è acqua passata.
-                    //
-                    // Senza questa riga il riconoscimento restava armato
-                    // sul campo, che adesso sopravvive a tutte le
-                    // divisioni di fila (prima il fuoco se ne andava su
-                    // un campo nuovo e la memoria ripartiva da zero).
-                    // Scrivendo in fretta due righe che finiscono con lo
-                    // stesso testo, il secondo Invio veniva scambiato
-                    // per un'eco e **non andava a capo**.
-                    lastSplit = null
-                    // Stessa scorciatoia del testo condiviso: "5." scritto
-                    // da solo in una riga di testo la fa diventare un
-                    // elenco numerato che parte da 5, e il "5." sparisce
-                    // perché il numero da lì in poi lo disegna la lista.
-                    val caretInBody = (newFieldValue.selection.end - RUN_LEAD.length).coerceAtLeast(0)
-                    val listPrefix = if (block.type == BlockType.PARAGRAPH) {
-                        numberedListPrefixJustTyped(oldText, newText, caretInBody)
+                },
+                textStyle = textStyle.copy(color = NotionWhite),
+                cursorBrush = SolidColor(NotionWhite),
+                // Vedi il gemello nel campo unito: bloccata si legge, non si
+                // scrive.
+                readOnly = LocalPageLocked.current,
+                // La maiuscola a inizio frase la mette la tastiera, ma solo
+                // se glielo si chiede: senza, ogni casella da spuntare
+                // cominciava minuscola mentre nel resto del telefono no.
+                keyboardOptions = KeyboardOptions(
+                    capitalization = KeyboardCapitalization.Sentences
+                ),
+                visualTransformation = RichTextVisualTransformation(
+                    editState.spans,
+                    caret = if (fieldFocused) {
+                        (editState.fieldValue.selection.min - RUN_LEAD.length).coerceAtLeast(0)..
+                            (editState.fieldValue.selection.max - RUN_LEAD.length).coerceAtLeast(0)
                     } else {
                         null
                     }
-                    if (listPrefix != null &&
-                        viewModel.startNumberedListInBlock(block.id, listPrefix.startNumber)
-                    ) {
-                        val stripped = newText.removeRange(listPrefix.lineStart, caretInBody)
-                        editState = BlockEditState(
-                            listOf(RichTextSpan(text = stripped)),
-                            TextFieldValue(RUN_LEAD + stripped, TextRange(RUN_LEAD.length + listPrefix.lineStart))
+                ),
+                // Una notifica senza testo mostrerà il nome della pagina: il
+                // suggerimento lo dice, finché non si scrive niente.
+                decorationBox = { inner ->
+                    Box {
+                        if (block.type == BlockType.NOTIFICATION && bodyOf(editState.fieldValue.text).isEmpty()) {
+                            Text(NotifyStrings.textHint, style = textStyle, color = NotionGray400, maxLines = 1)
+                        }
+                        inner()
+                    }
+                },
+                modifier = Modifier
+                    .weight(1f)
+                    .focusRequester(focusRequester)
+                    .onFocusChanged { state ->
+                        noteLog(
+                            "casella ${block.id.takeLast(4)} fuoco -> ${state.isFocused} " +
+                                "(cursore ora a ${editState.fieldValue.selection.start})"
                         )
-                        return@BasicTextField
+                        fieldFocused = state.isFocused
+                        onFocusChanged(block.id, state.isFocused)
                     }
-                    // Stessa scorciatoia del testo condiviso: `||x||`
-                    // toglie le barre e copre quello che c'era in mezzo.
-                    val spoiler = spoilerJustClosed(
-                        oldText,
-                        newText,
-                        (newFieldValue.selection.end - RUN_LEAD.length).coerceAtLeast(0)
-                    )
-                    if (spoiler != null) {
-                        val stripped = newText
-                            .removeRange(spoiler.contentEnd, spoiler.contentEnd + 2)
-                            .removeRange(spoiler.open, spoiler.open + 2)
-                        val to = spoiler.contentEnd - 2
-                        val newSpans = setFormatInRange(
-                            applyTextEdit(editState.spans, oldText, stripped),
-                            spoiler.open,
-                            to
-                        ) { s, _ -> s.copy(spoiler = true) }
-                        editState = BlockEditState(
-                            newSpans,
-                            TextFieldValue(RUN_LEAD + stripped, TextRange(RUN_LEAD.length + to))
-                        )
-                        viewModel.updateBlockSpans(block, newSpans)
-                    } else {
-                        val newSpans = applyTextEdit(editState.spans, oldText, newText)
-                        editState = BlockEditState(newSpans, newFieldValue)
-                        viewModel.updateBlockSpans(block, newSpans)
-                    }
-                }
-            },
-            textStyle = textStyle.copy(color = NotionWhite),
-            cursorBrush = SolidColor(NotionWhite),
-            // Vedi il gemello nel campo unito: bloccata si legge, non si
-            // scrive.
-            readOnly = LocalPageLocked.current,
-            // La maiuscola a inizio frase la mette la tastiera, ma solo
-            // se glielo si chiede: senza, ogni casella da spuntare
-            // cominciava minuscola mentre nel resto del telefono no.
-            keyboardOptions = KeyboardOptions(
-                capitalization = KeyboardCapitalization.Sentences
-            ),
-            visualTransformation = RichTextVisualTransformation(
-                editState.spans,
-                caret = if (fieldFocused) {
-                    (editState.fieldValue.selection.min - RUN_LEAD.length).coerceAtLeast(0)..
-                        (editState.fieldValue.selection.max - RUN_LEAD.length).coerceAtLeast(0)
-                } else {
-                    null
-                }
-            ),
-            // Una notifica senza testo mostrerà il nome della pagina: il
-            // suggerimento lo dice, finché non si scrive niente.
-            decorationBox = { inner ->
-                Box {
-                    if (block.type == BlockType.NOTIFICATION && bodyOf(editState.fieldValue.text).isEmpty()) {
-                        Text(NotifyStrings.textHint, style = textStyle, color = NotionGray400, maxLines = 1)
-                    }
-                    inner()
-                }
-            },
-            modifier = Modifier
-                .weight(1f)
-                .focusRequester(focusRequester)
-                .onFocusChanged { state ->
-                    noteLog(
-                        "casella ${block.id.takeLast(4)} fuoco -> ${state.isFocused} " +
-                            "(cursore ora a ${editState.fieldValue.selection.start})"
-                    )
-                    fieldFocused = state.isFocused
-                    onFocusChanged(block.id, state.isFocused)
-                }
-        )
+            )
+        }
 
         if (block.type == BlockType.NOTIFICATION) NotificationTimeChip(block, viewModel)
     }
@@ -6000,20 +6010,22 @@ private fun TableBlockContent(
                         val cellText = cellMap[r to c] ?: ""
                         var localCellText by remember { mutableStateOf(cellText) }
 
-                        BasicTextField(
-                            value = localCellText,
-                            onValueChange = { newText ->
-                                localCellText = newText
-                                viewModel.setTableCell(block.id, r, c, newText)
-                            },
-                            textStyle = MaterialTheme.typography.bodyLarge.copy(color = NotionWhite),
-                            cursorBrush = SolidColor(NotionWhite),
-                            modifier = Modifier
-                                .weight(1f)
-                                .border(0.5.dp, MaterialTheme.colorScheme.outline)
-                                .padding(8.dp)
-                                .markFocusChanges()
-                        )
+                        AutoCaps {
+                            BasicTextField(
+                                value = localCellText,
+                                onValueChange = { newText ->
+                                    localCellText = newText
+                                    viewModel.setTableCell(block.id, r, c, newText)
+                                },
+                                textStyle = MaterialTheme.typography.bodyLarge.copy(color = NotionWhite),
+                                cursorBrush = SolidColor(NotionWhite),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .border(0.5.dp, MaterialTheme.colorScheme.outline)
+                                    .padding(8.dp)
+                                    .markFocusChanges()
+                            )
+                        }
                     }
                 }
             }

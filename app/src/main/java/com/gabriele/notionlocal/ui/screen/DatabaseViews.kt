@@ -255,14 +255,16 @@ internal fun NewViewSheet(
                 TextButton(onClick = { onCreate(name, layout) }) { Text(Strings.done) }
             }
             Spacer(modifier = Modifier.size(8.dp))
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it.replace("\n", "") },
-                singleLine = true,
-                placeholder = { Text(DbStrings.viewName) },
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
-                modifier = Modifier.fillMaxWidth()
-            )
+            AutoCaps {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it.replace("\n", "") },
+                    singleLine = true,
+                    placeholder = { Text(DbStrings.viewName) },
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
             Spacer(modifier = Modifier.size(12.dp))
             // Gli stessi riquadri di "Layout" nelle impostazioni.
             DatabaseLayout.entries.chunked(3).forEach { rowLayouts ->
@@ -302,17 +304,19 @@ internal fun RenameViewDialog(
         onDismissRequest = onDismiss,
         title = { Text(EditorStrings.rename) },
         text = {
-            OutlinedTextField(
-                value = value,
-                onValueChange = { value = it.copy(text = it.text.replace("\n", "")) },
-                singleLine = true,
-                placeholder = { Text(DbStrings.viewName) },
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = { confirm() }),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .focusRequester(focusRequester)
-            )
+            AutoCaps {
+                OutlinedTextField(
+                    value = value,
+                    onValueChange = { value = it.copy(text = it.text.replace("\n", "")) },
+                    singleLine = true,
+                    placeholder = { Text(DbStrings.viewName) },
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { confirm() }),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(focusRequester)
+                )
+            }
         },
         confirmButton = { TextButton(onClick = confirm) { Text(Strings.done) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text(Strings.cancel) } }

@@ -992,41 +992,43 @@ private fun DatabaseViewBody(
             // Il titolo sta nel contenuto e non nella barra in alto,
             // come su Notion; incorporato è più contenuto, perché lì
             // il titolo della pagina è un altro.
-            BasicTextField(
-                value = titleText,
-                onValueChange = {
-                    val singleLine = it.replace("\n", "")
-                    titleText = singleLine
-                    hostViewModel.updateTitle(singleLine)
-                },
-                singleLine = true,
-                // Pagina bloccata: nemmeno il titolo si tocca.
-                readOnly = hostPage?.isLocked == true,
-                // Un titolo non ha righe: la tastiera deve offrire
-                // "fine", non un invio che non farebbe niente.
-                keyboardOptions = KeyboardOptions(
-                        capitalization = KeyboardCapitalization.Sentences,
-                        imeAction = ImeAction.Done
-                    ),
-                keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                textStyle = if (embedded) {
-                    MaterialTheme.typography.titleMedium.copy(
-                        color = MaterialTheme.colorScheme.onBackground,
-                        fontWeight = FontWeight.Bold
-                    )
-                } else {
-                    MaterialTheme.typography.headlineMedium.copy(
-                        color = MaterialTheme.colorScheme.onBackground,
-                        fontWeight = FontWeight.Bold
-                    )
-                },
-                cursorBrush = SolidColor(MaterialTheme.colorScheme.onBackground),
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
-                    .markFocusChanges()
-                    .onFocusChanged { titleFocused = it.isFocused }
-            )
+            AutoCaps {
+                BasicTextField(
+                    value = titleText,
+                    onValueChange = {
+                        val singleLine = it.replace("\n", "")
+                        titleText = singleLine
+                        hostViewModel.updateTitle(singleLine)
+                    },
+                    singleLine = true,
+                    // Pagina bloccata: nemmeno il titolo si tocca.
+                    readOnly = hostPage?.isLocked == true,
+                    // Un titolo non ha righe: la tastiera deve offrire
+                    // "fine", non un invio che non farebbe niente.
+                    keyboardOptions = KeyboardOptions(
+                            capitalization = KeyboardCapitalization.Sentences,
+                            imeAction = ImeAction.Done
+                        ),
+                    keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                    textStyle = if (embedded) {
+                        MaterialTheme.typography.titleMedium.copy(
+                            color = MaterialTheme.colorScheme.onBackground,
+                            fontWeight = FontWeight.Bold
+                        )
+                    } else {
+                        MaterialTheme.typography.headlineMedium.copy(
+                            color = MaterialTheme.colorScheme.onBackground,
+                            fontWeight = FontWeight.Bold
+                        )
+                    },
+                    cursorBrush = SolidColor(MaterialTheme.colorScheme.onBackground),
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .markFocusChanges()
+                        .onFocusChanged { titleFocused = it.isFocused }
+                )
+            }
 
         }
         }
@@ -3887,23 +3889,25 @@ private fun DatabaseSearchBar(
                             maxLines = 1
                         )
                     }
-                    BasicTextField(
-                        value = query,
-                        onValueChange = { onQueryChange(it.replace("\n", "")) },
-                        singleLine = true,
-                        // "Cerca" sulla tastiera la chiude e basta: la
-                        // ricerca si fa già mentre si scrive.
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                        keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
-                        textStyle = MaterialTheme.typography.bodyMedium.copy(
-                            color = MaterialTheme.colorScheme.onBackground
-                        ),
-                        cursorBrush = SolidColor(MaterialTheme.colorScheme.onBackground),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .focusRequester(focusRequester)
-                            .markFocusChanges()
-                    )
+                    AutoCaps {
+                        BasicTextField(
+                            value = query,
+                            onValueChange = { onQueryChange(it.replace("\n", "")) },
+                            singleLine = true,
+                            // "Cerca" sulla tastiera la chiude e basta: la
+                            // ricerca si fa già mentre si scrive.
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                            keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
+                            textStyle = MaterialTheme.typography.bodyMedium.copy(
+                                color = MaterialTheme.colorScheme.onBackground
+                            ),
+                            cursorBrush = SolidColor(MaterialTheme.colorScheme.onBackground),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .focusRequester(focusRequester)
+                                .markFocusChanges()
+                        )
+                    }
                 }
             }
             ToolbarIconButton(
@@ -4555,23 +4559,27 @@ private fun NumberFilterEditor(
     Spacer(modifier = Modifier.size(8.dp))
 
     Row(verticalAlignment = Alignment.CenterVertically) {
-        OutlinedTextField(
-            value = min,
-            onValueChange = { onChange(it.filterNumeric() + MULTI_VALUE_SEPARATOR + max) },
-            label = { Text(DbStrings.from) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.weight(1f)
-        )
+        AutoCaps {
+            OutlinedTextField(
+                value = min,
+                onValueChange = { onChange(it.filterNumeric() + MULTI_VALUE_SEPARATOR + max) },
+                label = { Text(DbStrings.from) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.weight(1f)
+            )
+        }
         Spacer(modifier = Modifier.size(12.dp))
-        OutlinedTextField(
-            value = max,
-            onValueChange = { onChange(min + MULTI_VALUE_SEPARATOR + it.filterNumeric()) },
-            label = { Text(DbStrings.to) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.weight(1f)
-        )
+        AutoCaps {
+            OutlinedTextField(
+                value = max,
+                onValueChange = { onChange(min + MULTI_VALUE_SEPARATOR + it.filterNumeric()) },
+                label = { Text(DbStrings.to) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.weight(1f)
+            )
+        }
     }
 
     Spacer(modifier = Modifier.size(8.dp))
@@ -5066,50 +5074,52 @@ private fun NameCell(
                 contentAlignment = Alignment.CenterStart
             ) {
                 if (editing) {
-                    BasicTextField(
-                        value = fieldValue,
-                        onValueChange = { newValue ->
-                            // Niente a capo nei nomi delle righe. `singleLine`
-                            // fa già mostrare alla tastiera "fine" al posto di
-                            // invio, ma non copre l'incolla di un testo che
-                            // contiene a capo: quelli li togliamo qui.
-                            val singleLineTitle = newValue.text.replace("\n", "")
-                            fieldValue = if (singleLineTitle == newValue.text) {
-                                newValue
-                            } else {
-                                TextFieldValue(singleLineTitle, TextRange(singleLineTitle.length))
-                            }
-                            // Spostare il cursore non cambia il nome: si scrive solo se cambia.
-                            if (singleLineTitle != localTitle) {
-                                localTitle = singleLineTitle
-                                onTitleChange(singleLineTitle)
-                            }
-                        },
-                        singleLine = true,
-                        // Database bloccato: il nome della riga si legge e
-                        // si seleziona, non si riscrive.
-                        readOnly = LocalDatabaseLocked.current,
-                        keyboardOptions = KeyboardOptions(
-                            capitalization = KeyboardCapitalization.Sentences,
-                            imeAction = ImeAction.Done
-                        ),
-                        keyboardActions = KeyboardActions(onDone = { editing = false }),
-                        textStyle = MaterialTheme.typography.bodyMedium.copy(
-                            color = MaterialTheme.colorScheme.onBackground
-                        ),
-                        cursorBrush = SolidColor(MaterialTheme.colorScheme.onBackground),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .focusRequester(focusRequester)
-                            .markFocusChanges()
-                            .onFocusChanged { focusState ->
-                                if (focusState.isFocused) {
-                                    everFocused = true
-                                } else if (everFocused) {
-                                    editing = false
+                    AutoCaps {
+                        BasicTextField(
+                            value = fieldValue,
+                            onValueChange = { newValue ->
+                                // Niente a capo nei nomi delle righe. `singleLine`
+                                // fa già mostrare alla tastiera "fine" al posto di
+                                // invio, ma non copre l'incolla di un testo che
+                                // contiene a capo: quelli li togliamo qui.
+                                val singleLineTitle = newValue.text.replace("\n", "")
+                                fieldValue = if (singleLineTitle == newValue.text) {
+                                    newValue
+                                } else {
+                                    TextFieldValue(singleLineTitle, TextRange(singleLineTitle.length))
                                 }
-                            }
-                    )
+                                // Spostare il cursore non cambia il nome: si scrive solo se cambia.
+                                if (singleLineTitle != localTitle) {
+                                    localTitle = singleLineTitle
+                                    onTitleChange(singleLineTitle)
+                                }
+                            },
+                            singleLine = true,
+                            // Database bloccato: il nome della riga si legge e
+                            // si seleziona, non si riscrive.
+                            readOnly = LocalDatabaseLocked.current,
+                            keyboardOptions = KeyboardOptions(
+                                capitalization = KeyboardCapitalization.Sentences,
+                                imeAction = ImeAction.Done
+                            ),
+                            keyboardActions = KeyboardActions(onDone = { editing = false }),
+                            textStyle = MaterialTheme.typography.bodyMedium.copy(
+                                color = MaterialTheme.colorScheme.onBackground
+                            ),
+                            cursorBrush = SolidColor(MaterialTheme.colorScheme.onBackground),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .focusRequester(focusRequester)
+                                .markFocusChanges()
+                                .onFocusChanged { focusState ->
+                                    if (focusState.isFocused) {
+                                        everFocused = true
+                                    } else if (everFocused) {
+                                        editing = false
+                                    }
+                                }
+                        )
+                    }
                     LaunchedEffect(Unit) {
                         everFocused = false
                         focusRequester.requestFocus()
@@ -5333,58 +5343,60 @@ private fun CellContent(
                 // cambia solo il tipo di tastiera proposta.
                 var localValue by remember(cellKey) { mutableStateOf(value) }
                 var editing by remember(cellKey) { mutableStateOf(false) }
-                BasicTextField(
-                    value = localValue,
-                    onValueChange = { newValue ->
-                        localValue = newValue
-                        onValueChange(newValue)
-                    },
-                    singleLine = true,
-                    // Un numero si legge nel formato delle impostazioni e della colonna
-                    // (1.000.000 o 1,000,000), ma **si scrive grezzo**:
-                    // mentre la cella ha il cursore il formato sparisce,
-                    // altrimenti i separatori comparirebbero e si
-                    // sposterebbero sotto le dita a ogni cifra.
-                    visualTransformation = if (column.type == ColumnType.NUMBER && !editing) {
-                        NumberDisplayTransformation(column.numberSettings())
-                    } else {
-                        VisualTransformation.None
-                    },
-                    // **Barra o anello** (dal 26/09/2026): finché non la si tocca,
-                    // la cella di un numero li disegna al posto del testo; il campo
-                    // resta lì sotto, invisibile, e al tocco si scrive il numero.
-                    decorationBox = { field ->
-                        if (column.type == ColumnType.NUMBER && !editing &&
-                            column.numberDisplayKind != NumberDisplay.NUMBER && localValue.isNotBlank()
-                        ) {
-                            Box(contentAlignment = LocalCellAlignment.current.box) {
-                                Box(modifier = Modifier.alpha(0f)) { field() }
-                                NumberVisual(column, localValue)
-                            }
+                AutoCaps {
+                    BasicTextField(
+                        value = localValue,
+                        onValueChange = { newValue ->
+                            localValue = newValue
+                            onValueChange(newValue)
+                        },
+                        singleLine = true,
+                        // Un numero si legge nel formato delle impostazioni e della colonna
+                        // (1.000.000 o 1,000,000), ma **si scrive grezzo**:
+                        // mentre la cella ha il cursore il formato sparisce,
+                        // altrimenti i separatori comparirebbero e si
+                        // sposterebbero sotto le dita a ogni cifra.
+                        visualTransformation = if (column.type == ColumnType.NUMBER && !editing) {
+                            NumberDisplayTransformation(column.numberSettings())
                         } else {
-                            field()
-                        }
-                    },
-                    // Database bloccato: la cella si legge, non si
-                    // riscrive.
-                    readOnly = LocalDatabaseLocked.current,
-                    // Anche qui l'invio non avrebbe niente da fare: una
-                    // cella sta su una riga sola.
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = column.type.keyboardType(),
-                        capitalization = column.type.capitalization(),
-                        imeAction = ImeAction.Done
-                    ),
-                    textStyle = MaterialTheme.typography.bodyMedium.copy(
-                        color = MaterialTheme.colorScheme.onBackground,
-                        textAlign = LocalCellAlignment.current.textAlign
-                    ),
-                    cursorBrush = SolidColor(MaterialTheme.colorScheme.onBackground),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .markFocusChanges()
-                        .onFocusChanged { editing = it.isFocused }
-                )
+                            VisualTransformation.None
+                        },
+                        // **Barra o anello** (dal 26/09/2026): finché non la si tocca,
+                        // la cella di un numero li disegna al posto del testo; il campo
+                        // resta lì sotto, invisibile, e al tocco si scrive il numero.
+                        decorationBox = { field ->
+                            if (column.type == ColumnType.NUMBER && !editing &&
+                                column.numberDisplayKind != NumberDisplay.NUMBER && localValue.isNotBlank()
+                            ) {
+                                Box(contentAlignment = LocalCellAlignment.current.box) {
+                                    Box(modifier = Modifier.alpha(0f)) { field() }
+                                    NumberVisual(column, localValue)
+                                }
+                            } else {
+                                field()
+                            }
+                        },
+                        // Database bloccato: la cella si legge, non si
+                        // riscrive.
+                        readOnly = LocalDatabaseLocked.current,
+                        // Anche qui l'invio non avrebbe niente da fare: una
+                        // cella sta su una riga sola.
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = column.type.keyboardType(),
+                            capitalization = column.type.capitalization(),
+                            imeAction = ImeAction.Done
+                        ),
+                        textStyle = MaterialTheme.typography.bodyMedium.copy(
+                            color = MaterialTheme.colorScheme.onBackground,
+                            textAlign = LocalCellAlignment.current.textAlign
+                        ),
+                        cursorBrush = SolidColor(MaterialTheme.colorScheme.onBackground),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .markFocusChanges()
+                            .onFocusChanged { editing = it.isFocused }
+                    )
+                }
             }
         }
     }
@@ -6669,15 +6681,17 @@ private fun CustomRecurrenceDialog(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(DbStrings.repeatEvery, style = MaterialTheme.typography.bodyLarge)
                     Spacer(modifier = Modifier.size(12.dp))
-                    OutlinedTextField(
-                        value = interval,
-                        onValueChange = { typed ->
-                            interval = typed.filter { it.isDigit() }.take(3)
-                        },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.width(80.dp)
-                    )
+                    AutoCaps {
+                        OutlinedTextField(
+                            value = interval,
+                            onValueChange = { typed ->
+                                interval = typed.filter { it.isDigit() }.take(3)
+                            },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.width(80.dp)
+                        )
+                    }
                     Spacer(modifier = Modifier.size(12.dp))
                     Box {
                         Row(
@@ -6741,16 +6755,18 @@ private fun CustomRecurrenceDialog(
                         )
                         Text(DbStrings.on, style = MaterialTheme.typography.bodyLarge)
                         Spacer(modifier = Modifier.size(12.dp))
-                        OutlinedTextField(
-                            value = monthDay,
-                            onValueChange = { typed ->
-                                monthDay = typed.filter { it.isDigit() }.take(2)
-                                monthlyMode = MonthlyMode.DAY_OF_MONTH
-                            },
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.width(80.dp)
-                        )
+                        AutoCaps {
+                            OutlinedTextField(
+                                value = monthDay,
+                                onValueChange = { typed ->
+                                    monthDay = typed.filter { it.isDigit() }.take(2)
+                                    monthlyMode = MonthlyMode.DAY_OF_MONTH
+                                },
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                modifier = Modifier.width(80.dp)
+                            )
+                        }
                     }
                     // "L'ultima domenica": quale settimana dal menu, il giorno
                     // dai pallini qui sotto.
@@ -6836,16 +6852,18 @@ private fun CustomRecurrenceDialog(
                     RadioButton(selected = endKind == 2, onClick = { endKind = 2 })
                     Text(DbStrings.after, style = MaterialTheme.typography.bodyLarge)
                     Spacer(modifier = Modifier.size(12.dp))
-                    OutlinedTextField(
-                        value = endCount,
-                        onValueChange = { typed ->
-                            endCount = typed.filter { it.isDigit() }.take(3)
-                            endKind = 2
-                        },
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.width(90.dp)
-                    )
+                    AutoCaps {
+                        OutlinedTextField(
+                            value = endCount,
+                            onValueChange = { typed ->
+                                endCount = typed.filter { it.isDigit() }.take(3)
+                                endKind = 2
+                            },
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            modifier = Modifier.width(90.dp)
+                        )
+                    }
                     Spacer(modifier = Modifier.size(8.dp))
                     Text(DbStrings.times, style = MaterialTheme.typography.bodyMedium)
                 }
@@ -7477,26 +7495,28 @@ private fun SimpleRowNameField(
 ) {
     var name by remember(row.id) { mutableStateOf(row.title) }
     val focusManager = LocalFocusManager.current
-    OutlinedTextField(
-        value = name,
-        onValueChange = { typed ->
-            // Niente a capo nel nome, come nella cella della tabella:
-            // l'Invio chiude, e un a capo incollato si toglie qui.
-            val singleLine = typed.replace("\n", "")
-            name = singleLine
-            onTitleChange(singleLine)
-        },
-        label = { Text(DbStrings.name) },
-        placeholder = { Text(Strings.untitled) },
-        singleLine = true,
-        readOnly = !editable,
-        keyboardOptions = KeyboardOptions(
-            capitalization = KeyboardCapitalization.Sentences,
-            imeAction = ImeAction.Done
-        ),
-        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-        modifier = Modifier.fillMaxWidth()
-    )
+    AutoCaps {
+        OutlinedTextField(
+            value = name,
+            onValueChange = { typed ->
+                // Niente a capo nel nome, come nella cella della tabella:
+                // l'Invio chiude, e un a capo incollato si toglie qui.
+                val singleLine = typed.replace("\n", "")
+                name = singleLine
+                onTitleChange(singleLine)
+            },
+            label = { Text(DbStrings.name) },
+            placeholder = { Text(Strings.untitled) },
+            singleLine = true,
+            readOnly = !editable,
+            keyboardOptions = KeyboardOptions(
+                capitalization = KeyboardCapitalization.Sentences,
+                imeAction = ImeAction.Done
+            ),
+            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
 }
 
 /**
@@ -8571,16 +8591,18 @@ private fun SheetTextField(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            BasicTextField(
-                value = value,
-                onValueChange = onValueChange,
-                singleLine = true,
-                textStyle = MaterialTheme.typography.bodyLarge.copy(
-                    color = MaterialTheme.colorScheme.onSurface
-                ),
-                cursorBrush = SolidColor(MaterialTheme.colorScheme.onSurface),
-                modifier = Modifier.fillMaxWidth()
-            )
+            AutoCaps {
+                BasicTextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(
+                        color = MaterialTheme.colorScheme.onSurface
+                    ),
+                    cursorBrush = SolidColor(MaterialTheme.colorScheme.onSurface),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
     }
 }

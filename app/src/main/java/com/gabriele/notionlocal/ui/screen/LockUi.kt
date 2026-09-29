@@ -354,24 +354,26 @@ private fun PasswordDialog(
         title = { Text(LockStrings.unlock) },
         text = {
             Column {
-                OutlinedTextField(
-                    value = password,
-                    onValueChange = {
-                        password = it
-                        wrong = false
-                    },
-                    label = { Text(LockStrings.password) },
-                    singleLine = true,
-                    isError = wrong,
-                    supportingText = if (wrong) {
-                        { Text(LockStrings.wrongPassword) }
-                    } else {
-                        null
-                    },
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    modifier = Modifier.fillMaxWidth()
-                )
+                AutoCaps {
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = {
+                            password = it
+                            wrong = false
+                        },
+                        label = { Text(LockStrings.password) },
+                        singleLine = true,
+                        isError = wrong,
+                        supportingText = if (wrong) {
+                            { Text(LockStrings.wrongPassword) }
+                        } else {
+                            null
+                        },
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
                 if (onUseFingerprint != null) {
                     TextButton(onClick = onUseFingerprint) {
                         Icon(Icons.Filled.Fingerprint, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -416,37 +418,41 @@ fun SetPasswordDialog(
             Column {
                 Text(subtitle ?: LockStrings.setPasswordText, style = MaterialTheme.typography.bodyMedium)
                 Spacer(Modifier.height(12.dp))
-                OutlinedTextField(
-                    value = first,
-                    onValueChange = { first = it },
-                    label = { Text(LockStrings.password) },
-                    singleLine = true,
-                    isError = tried && tooShort,
-                    supportingText = if (tried && tooShort) {
-                        { Text(LockStrings.passwordTooShort) }
-                    } else {
-                        null
-                    },
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    modifier = Modifier.fillMaxWidth()
-                )
+                AutoCaps {
+                    OutlinedTextField(
+                        value = first,
+                        onValueChange = { first = it },
+                        label = { Text(LockStrings.password) },
+                        singleLine = true,
+                        isError = tried && tooShort,
+                        supportingText = if (tried && tooShort) {
+                            { Text(LockStrings.passwordTooShort) }
+                        } else {
+                            null
+                        },
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
                 Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = second,
-                    onValueChange = { second = it },
-                    label = { Text(LockStrings.repeatPassword) },
-                    singleLine = true,
-                    isError = tried && !tooShort && differ,
-                    supportingText = if (tried && !tooShort && differ) {
-                        { Text(LockStrings.passwordsDiffer) }
-                    } else {
-                        null
-                    },
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    modifier = Modifier.fillMaxWidth()
-                )
+                AutoCaps {
+                    OutlinedTextField(
+                        value = second,
+                        onValueChange = { second = it },
+                        label = { Text(LockStrings.repeatPassword) },
+                        singleLine = true,
+                        isError = tried && !tooShort && differ,
+                        supportingText = if (tried && !tooShort && differ) {
+                            { Text(LockStrings.passwordsDiffer) }
+                        } else {
+                            null
+                        },
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
                 if (fingerprintAvailable) {
                     Spacer(Modifier.height(8.dp))
                     Row(

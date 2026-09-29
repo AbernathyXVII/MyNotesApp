@@ -302,14 +302,16 @@ private fun DeleteAllDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(Strings.typeToConfirm(word), color = NotionGray400, style = MaterialTheme.typography.bodyMedium)
                 Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = typed,
-                    onValueChange = { typed = it },
-                    singleLine = true,
-                    enabled = !working,
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters),
-                    modifier = Modifier.fillMaxWidth()
-                )
+                AutoCaps {
+                    OutlinedTextField(
+                        value = typed,
+                        onValueChange = { typed = it },
+                        singleLine = true,
+                        enabled = !working,
+                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
         },
         confirmButton = {
@@ -623,14 +625,16 @@ private fun TimeZoneDialog(onDismiss: () -> Unit) {
                     if (filter.isEmpty()) {
                         Text(Strings.searchTimeZones, color = NotionGray400, style = MaterialTheme.typography.bodyLarge)
                     }
-                    BasicTextField(
-                        value = filter,
-                        onValueChange = { filter = it },
-                        singleLine = true,
-                        textStyle = MaterialTheme.typography.bodyLarge.copy(color = NotionWhite),
-                        cursorBrush = SolidColor(NotionWhite),
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    AutoCaps {
+                        BasicTextField(
+                            value = filter,
+                            onValueChange = { filter = it },
+                            singleLine = true,
+                            textStyle = MaterialTheme.typography.bodyLarge.copy(color = NotionWhite),
+                            cursorBrush = SolidColor(NotionWhite),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
                 HorizontalDivider(color = NotionGray900)
                 LazyColumn(modifier = Modifier.heightIn(max = 380.dp)) {

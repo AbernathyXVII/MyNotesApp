@@ -2022,6 +2022,51 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**29/09/2026 — La maiuscola automatica, ovunque si scriva, solo a campo vuoto**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 240 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Quando tocco una cella e premo su Create tag nelle colonne Select, mi fa
+> scrivere in minuscolo. Fai sì che io possa scrivere automaticamente
+> scriverci in maiuscolo. Anzi, una cosa, in tutte le situazioni in tutta
+> l'app che proccano l'attivazione della tastiera (quindi ovunque io
+> scriva), metti la possibilità che in automatico io debba scrivere in
+> maiuscolo se la cella è vuota. Se già c'è scritto qualcosa, anche uno
+> spazio vuoto che io manualmente ho scritto o qualsiasi cosa, allora no.
+> Stessa cosa anche quando rinomimo il nome do una proprietà di una
+> colonna»
+
+- **[Nuova funzionalità]** **In ogni campo di testo dell'app** (38: "Create
+  a tag", il nome delle proprietà, celle, titoli, nomi, ricerche, il testo
+  delle pagine…) **a campo vuoto la tastiera parte in maiuscolo**; se c'è
+  già qualcosa, anche solo uno spazio, no — nemmeno dopo ". ", dove la
+  tastiera di solito la rimette. Nel testo di una pagina conta la riga:
+  andando a capo, la riga nuova parte in maiuscolo. Restano come sono i
+  campi di numeri, password, email, indirizzi e codici colore, e quello
+  che chiede "DELETE" tutto maiuscolo
+- **[Progetto]** `AutoCaps.kt`: la tastiera legge la richiesta di
+  maiuscola solo quando parte, quindi la si cambia mentre si scrive e la
+  si riavvia, **solo nei punti in cui lei metterebbe la maiuscola** (riga
+  vuota, dopo uno spazio o un a capo): lì non c'è una parola a metà da
+  perdere. Ogni campo sta dentro un `AutoCaps { }`: finestre, fogli e menu
+  hanno ognuno la sua tastiera, e un'impostazione sola per la schermata
+  non li raggiungerebbe. `AutoCapsTest` controlla la regola e che **ogni**
+  campo dell'app sia avvolto: uno nuovo lasciato fuori fa fallire i test
+- Verificato sul telefono, leggendo dal sistema cosa l'app chiede alla
+  tastiera (maiuscola sì/no) e guardando la tastiera Samsung:
+  "Create a tag" vuoto → maiuscolo; uno spazio → minuscolo; cancellato →
+  di nuovo maiuscolo; "Ab. " → minuscolo (poi svuotato e chiuso senza
+  creare nessun tag). Nome della proprietà "Select": pieno → minuscolo,
+  svuotato → maiuscolo, poi "Cancel" (il nome è rimasto "Select"). Nella
+  pagina di prova: riga vuota → maiuscolo, "Ab. " → minuscolo, a capo →
+  maiuscolo. Poi tutto cancellato: il database è uguale a prima, tranne
+  2 voci di "Updates" della pagina di prova e il numero d'ordine interno
+  delle 16 righe vuote in fondo, spostato di uno (l'ordine che si vede è
+  lo stesso). Le lettere sono state scritte via adb, che non passa dalle
+  parole "in composizione" della tastiera: com'è quando si scrive col
+  dito lo si vede usandola
+
 **29/09/2026 — Le viste di un database: il "+" accanto a "Table" e l'elenco delle viste**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 230 test
 passati; commit solo in locale)*
