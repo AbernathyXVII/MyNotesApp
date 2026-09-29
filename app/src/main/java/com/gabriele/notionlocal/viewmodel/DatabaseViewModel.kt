@@ -2,6 +2,9 @@ package com.gabriele.notionlocal.viewmodel
 
 import com.gabriele.notionlocal.data.entity.withDateSettings
 import com.gabriele.notionlocal.data.entity.DateSettings
+import com.gabriele.notionlocal.data.entity.NAME_COLUMN_KEY
+import com.gabriele.notionlocal.data.entity.nameOrderAt
+import com.gabriele.notionlocal.data.entity.tableKeys
 import com.gabriele.notionlocal.data.entity.defaultColumnWidth
 import com.gabriele.notionlocal.data.entity.snapColumnWidth
 import com.gabriele.notionlocal.data.entity.encodeColumnWidths
@@ -118,22 +121,27 @@ data class DatabaseTableState(
     val visibleColumns: List<DatabaseColumnEntity> get() = columns.filterNot { it.hidden }
 
     /**
-     * La colonna con cui si scambierebbe il posto spostandone una a
-     * sinistra (`delta` -1) o a destra (+1), o null se da quella parte non
-     * c'è niente.
+     * L'ordine della tabella, da sinistra a destra, dopo aver spostato `key`
+     * — una colonna, o Name con [NAME_COLUMN_KEY] (dal 29/09/2026) — di un
+     * posto a sinistra (`delta` -1) o a destra (+1), oltre la vicina. Null
+     * se da quella parte non c'è niente. `nameOrder` è dove sta Name adesso
+     * (vedi `namePosition`).
      *
-     * Si conta **fra quelle che si vedono**: nella tabella la vicina è la
+     * La vicina si cerca **fra quelle che si vedono**: nella tabella è la
      * colonna accanto, e scambiarsi con una nascosta in mezzo non
-     * sposterebbe niente di visibile. Una colonna nascosta invece si
-     * muove fra tutte, perché fra le visibili non c'è. A sinistra della
-     * prima non si va mai: lì c'è Name, che non è una proprietà e resta
-     * sempre la prima.
+     * sposterebbe niente di visibile. Name si vede sempre. Una colonna
+     * nascosta invece si muove fra tutte, perché fra le visibili non c'è.
      */
-    fun neighbourForMove(columnId: String, delta: Int): DatabaseColumnEntity? {
-        val column = columns.find { it.id == columnId } ?: return null
-        val lane = if (column.hidden) columns else visibleColumns
-        val position = lane.indexOfFirst { it.id == columnId }
-        return lane.getOrNull(position + delta)
+    fun orderAfterMove(key: String, delta: Int, nameOrder: Int): List<String>? {
+        val keys = tableKeys(columns, nameOrder).toMutableList()
+        if (key !in keys) return null
+        val hidden = columns.filter { it.hidden }.map { it.id }.toSet()
+        val lane = if (key in hidden) keys else keys.filterNot { it in hidden }
+        val neighbour = lane.getOrNull(lane.indexOf(key) + delta) ?: return null
+        keys.remove(key)
+        val at = keys.indexOf(neighbour)
+        keys.add(if (delta < 0) at else at + 1, key)
+        return keys
     }
 }
 
@@ -1131,7 +1139,7 @@ class DatabaseViewModel(
         }
         // Stesso criterio di addColumn per l'indice: uno più del
         // massimo, non il numero di colonne.
-        val nextIndex = (_tableState.value.columns.maxOfOrNull { it.orderIndex } ?: -1) + 1
+        val nextIndex = nextColumnIndex()
         val column = DatabaseColumnEntity(
             pageId = pageId,
             name = "Date",
@@ -1209,11 +1217,7 @@ class DatabaseViewModel(
 
     fun addColumn(name: String, type: ColumnType, optionsJson: String = "[]") {
         val pageId = dataPageId ?: return
-        // Uno più del massimo, non il numero di colonne: dopo aver
-        // eliminato una colonna in mezzo, contarle darebbe un indice già
-        // occupato, e due colonne con lo stesso indice non si possono
-        // riordinare (lo scambio non cambierebbe nulla).
-        val nextIndex = (_tableState.value.columns.maxOfOrNull { it.orderIndex } ?: -1) + 1
+        val nextIndex = nextColumnIndex()
         viewModelScope.launch {
             repository.addColumn(
                 DatabaseColumnEntity(
@@ -1226,6 +1230,22 @@ class DatabaseViewModel(
             )
         }
     }
+
+    /**
+     * Il numero d'ordine di una colonna nuova. Uno più del massimo, non il
+     * numero di colonne: dopo aver eliminato una colonna in mezzo, contarle
+     * darebbe un indice già occupato, e due colonne con lo stesso indice non
+     * si possono riordinare (lo scambio non cambierebbe nulla).
+     *
+     * Conta anche Name (dal 29/09/2026): spostata in fondo, la proprietà
+     * nuova nasce lo stesso all'estrema destra, accanto al "+" che si è
+     * toccato.
+     */
+    private fun nextColumnIndex(): Int =
+        maxOf(
+            _tableState.value.columns.maxOfOrNull { it.orderIndex } ?: -1,
+            _dataPage.value?.nameColumnOrder ?: -1
+        ) + 1
 
     fun deleteColumn(column: DatabaseColumnEntity) {
         viewModelScope.launch { repository.deleteColumn(column) }
@@ -1487,27 +1507,34 @@ class DatabaseViewModel(
 
     /**
      * Sposta una colonna di un posto a sinistra (delta -1) o a destra
-     * (delta +1), oltre la vicina che si vede (`neighbourForMove`).
+     * (delta +1), oltre la vicina che si vede (`orderAfterMove`). Anche
+     * Name, con [NAME_COLUMN_KEY] (dal 29/09/2026: "permettimi di spostare
+     * ovunque io voglia anche la colonna Name").
      *
      * Le colonne si rinumerano tutte da capo invece di scambiare i due
      * indici: con una colonna nascosta in mezzo lo scambio farebbe
      * saltare la vicina dall'altra parte di quella, e due colonne con lo stesso
-     * numero si scambierebbero il posto senza muoversi. Il salvataggio è
-     * uno solo, così la tabella si ridisegna una volta e non a metà strada.
+     * numero si scambierebbero il posto senza muoversi. Name prende il
+     * numero della colonna che le resta a destra (vedi `namePosition`). Il
+     * salvataggio è uno solo, così la tabella si ridisegna una volta e non a
+     * metà strada.
      */
-    fun moveColumn(columnId: String, delta: Int) {
+    fun moveColumn(key: String, delta: Int) {
         val state = _tableState.value
-        val column = state.columns.find { it.id == columnId } ?: return
-        val neighbour = state.neighbourForMove(columnId, delta) ?: return
-        val reordered = state.columns.filterNot { it.id == columnId }.toMutableList()
-        val at = reordered.indexOfFirst { it.id == neighbour.id }
-        reordered.add(if (delta < 0) at else at + 1, column)
+        val data = _dataPage.value ?: return
+        val order = state.orderAfterMove(key, delta, data.nameColumnOrder) ?: return
+        val columnIds = order.filterNot { it == NAME_COLUMN_KEY }
         // Dalle colonne vere: quelle dello stato, in una vista collegata,
         // hanno il "nascosto" della vista (vedi `rawColumns`).
-        val changed = reordered.mapIndexedNotNull { index, c ->
-            if (c.orderIndex != index) rawColumn(c.id)?.copy(orderIndex = index) else null
+        val changed = columnIds.mapIndexedNotNull { index, id ->
+            rawColumn(id)?.takeIf { it.orderIndex != index }?.copy(orderIndex = index)
         }
-        viewModelScope.launch { repository.updateColumns(changed) }
+        val nameOrder = nameOrderAt(order.indexOf(NAME_COLUMN_KEY)).takeIf { it != data.nameColumnOrder }
+        // Qui non si tocca la copia della pagina: la tabella si ridisegna da
+        // quello che è salvato, colonne e Name insieme. Aggiornarla prima
+        // faceva tornare indietro Name quando arrivava la risposta di uno
+        // spostamento precedente.
+        viewModelScope.launch { repository.reorderColumns(changed, data.id, nameOrder) }
     }
 
     fun addRow(title: String = "") {

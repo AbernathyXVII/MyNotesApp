@@ -260,6 +260,10 @@ data class PageEntity(
     // Le colonne che si allargano quanto il loro contenuto ("Fit to
     // content"), separate da virgole.
     var fitColumns: String? = null,
+    // **Dove sta la colonna Name** (dal 29/09/2026), sul database che ha i
+    // dati: subito prima della prima colonna con `orderIndex` uguale o più
+    // alto. -1 = la prima, com'è sempre stata. Vedi `NameColumn.kt`.
+    var nameColumnOrder: Int = -1,
     // Quale proprietà data colloca le righe nel calendario. null = non
     // scelta: si usa la prima proprietà di tipo data che c'è.
     var calendarDateColumnId: String? = null,

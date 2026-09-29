@@ -84,6 +84,19 @@ class DatabaseRepository(private val db: AppDatabase) {
         db.withTransaction { columns.forEach { dao.updateColumn(it) } }
     }
 
+    /**
+     * Il nuovo ordine della tabella dopo uno spostamento: le colonne
+     * rinumerate e, se è cambiato, il posto di Name (vedi `namePosition`).
+     * Insieme, così la tabella si ridisegna una volta sola.
+     */
+    suspend fun reorderColumns(columns: List<DatabaseColumnEntity>, pageId: String, nameColumnOrder: Int?) {
+        if (columns.isEmpty() && nameColumnOrder == null) return
+        db.withTransaction {
+            columns.forEach { dao.updateColumn(it) }
+            if (nameColumnOrder != null) db.pageDao().setNameColumnOrder(pageId, nameColumnOrder)
+        }
+    }
+
     suspend fun deleteColumn(column: DatabaseColumnEntity) = dao.deleteColumn(column)
 
     fun getRows(pageId: String): Flow<List<DatabaseRowEntity>> =

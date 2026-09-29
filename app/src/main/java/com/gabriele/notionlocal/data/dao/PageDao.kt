@@ -99,6 +99,10 @@ interface PageDao {
     @Query("UPDATE pages SET activeViewId = :viewId WHERE id = :hostId")
     suspend fun setActiveView(hostId: String, viewId: String?)
 
+    /** Dove sta la colonna Name del database: vedi `PageEntity.nameColumnOrder`. */
+    @Query("UPDATE pages SET nameColumnOrder = :order WHERE id = :pageId")
+    suspend fun setNameColumnOrder(pageId: String, order: Int)
+
     @Query("UPDATE pages SET viewName = :name WHERE id = :pageId")
     suspend fun setViewName(pageId: String, name: String?)
 

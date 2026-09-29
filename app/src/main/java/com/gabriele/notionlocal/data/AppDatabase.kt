@@ -55,7 +55,7 @@ import kotlinx.serialization.json.Json
         NotebookEntity::class,
         NotebookSectionEntity::class
     ],
-    version = 45,
+    version = 46,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -686,6 +686,17 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /**
+         * 45 → 46 (29/09/2026): la colonna Name si sposta
+         * (`PageEntity.nameColumnOrder`). Tutti i database la tengono dov'era,
+         * la prima.
+         */
+        private val MIGRATION_45_46 = object : Migration(45, 46) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE pages ADD COLUMN nameColumnOrder INTEGER NOT NULL DEFAULT -1")
+            }
+        }
+
+        /**
          * Solo per i test: chiude il database e lo dimentica, così il
          * `getInstance` dopo riapre il file da capo (e ne esegue le
          * migrazioni). Senza, il secondo test troverebbe il database del
@@ -743,7 +754,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_41_42,
                         MIGRATION_42_43,
                         MIGRATION_43_44,
-                        MIGRATION_44_45
+                        MIGRATION_44_45,
+                        MIGRATION_45_46
                     )
                     .build()
                 INSTANCE = instance

@@ -2022,6 +2022,49 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**29/09/2026 — La colonna Name si sposta dove si vuole**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 291 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Permettimi di spostare ovunque io voglia anche la colonna Name, ossia
+> quella dove sono presenti le pagine (dei database complessi) o le voci
+> (dei database semplici)»
+
+- **[Nuova funzionalità]** Tenendo premuta l'intestazione **Name**, in cima
+  al menu ci sono "**Move to left**" e "**Move to right**", come nelle altre
+  colonne. Name si sposta di un posto alla volta, con le sue celle, i
+  pulsanti OPEN, le sotto-righe e il suo calcolo; le altre colonne le
+  passano accanto con i loro "Move to left/right". Le voci sono grigie
+  quando Name è già la prima o l'ultima, e con "Lock view"
+- **[Nuova funzionalità]** Il posto di Name vale per **tutte le viste** del
+  database, come l'ordine delle colonne: spostata da una vista collegata,
+  si sposta anche nel database. Le colonne nascoste non contano (Name salta
+  quelle che non si vedono). Una proprietà nuova nasce sempre all'estrema
+  destra, accanto al "+", anche con Name in fondo. "Resize column" su Name
+  mette il segnalino sul suo bordo destro, dovunque stia. Copiando il
+  database, Name resta dov'è
+- **[Progetto]** **Database alla versione 46**: `pages.nameColumnOrder`, sul
+  database che ha i dati: Name sta subito prima della prima colonna con
+  `orderIndex` uguale o più alto; -1 (tutti i database di prima) = la
+  prima. Così spostando Name le colonne non cambiano numero
+  (`NameColumn.kt`: `namePosition`, `tableKeys`, `nameOrderAt`).
+  `DatabaseTableState.orderAfterMove` prende il posto di
+  `neighbourForMove`; `moveColumn` accetta `NAME_COLUMN_KEY` e salva
+  colonne e Name insieme (`DatabaseRepository.reorderColumns`). Nella
+  tabella intestazione, righe e calcoli mettono Name al suo posto con
+  `TableSlots`. Test in `NameColumnMoveTest` e `MigrationTest` 45→46, col
+  file `v45.sql`
+- Verificato sul telefono (copia del database prima; migrazione alla 46
+  senza errori) sulla vista collegata "Videogiochi" della pagina di prova
+  "Titolo tre H3": nel menu di Name "Move to left" è grigio; "Move to
+  right" la porta dopo Select, poi dopo Text (il calcolo "NOT EMPTY" resta
+  sotto Text), poi in fondo dopo Date, dove "Move to right" diventa grigio.
+  "Resize column" lì mette il segnalino sul bordo destro di Name; il gesto
+  indietro lo chiude. Tre "Move to left" la riportano prima. Il database è
+  uguale alla copia, tranne la colonna nuova `nameColumnOrder` (-1) su ogni
+  pagina
+
 **29/09/2026 — Divisori: cancellando le righe vuote sotto, il divisore resta**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 281 test
 passati; commit solo in locale)*
@@ -7927,7 +7970,8 @@ le finestre che apre. Chi lo usa passa solo l'id del blocco.
 
 ## Nota tecnica
 
-Lo schema è alla **versione 45** (la 45, del 29/09/2026, aggiunge
+Lo schema è alla **versione 46** (la 46, del 29/09/2026, aggiunge
+`pages.nameColumnOrder`, il posto della colonna Name; la 45, dello stesso giorno, aggiunge
 `database_rows.parentRowId` e `subRowsCollapsed`, le sotto-righe; la 44, dello stesso giorno, aggiunge
 `pages.columnWidths` e `fitColumns`, la larghezza delle colonne della tabella; la 43, dello stesso giorno, aggiunge
 `pages.viewHostId`, `viewName` e `activeViewId`, le viste di un database; la 42, dello stesso giorno, aggiunge

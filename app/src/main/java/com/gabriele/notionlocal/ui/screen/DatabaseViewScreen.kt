@@ -202,6 +202,7 @@ import com.gabriele.notionlocal.data.entity.DEFAULT_NAME_COLUMN_WIDTH_DP
 import com.gabriele.notionlocal.data.entity.MAX_COLUMN_WIDTH_DP
 import com.gabriele.notionlocal.data.entity.snapColumnWidth
 import com.gabriele.notionlocal.data.entity.MIN_COLUMN_WIDTH_DP
+import com.gabriele.notionlocal.data.entity.namePosition
 import com.gabriele.notionlocal.data.entity.NAME_COLUMN_KEY
 import com.gabriele.notionlocal.data.entity.parseColumnWidths
 import com.gabriele.notionlocal.data.entity.parseFitColumns
@@ -1209,6 +1210,8 @@ private fun DatabaseViewBody(
                         propertyTarget = PropertyTarget.Existing(it)
                     },
                     onMoveProperty = { column, delta -> viewModel.moveColumn(column.id, delta) },
+                    nameColumnOrder = dataPage?.nameColumnOrder ?: -1,
+                    onMoveName = { delta -> viewModel.moveColumn(NAME_COLUMN_KEY, delta) },
                     onHideProperty = { viewModel.setColumnHidden(it.id, true) },
                     onToggleCenterProperty = { column, alignment ->
                         viewModel.setColumnAlignment(column.id, alignment)
@@ -1768,6 +1771,10 @@ private fun TableLayout(
     viewLocked: Boolean,
     onEditProperty: (DatabaseColumnEntity) -> Unit,
     onMoveProperty: (DatabaseColumnEntity, Int) -> Unit,
+    /** Dove sta Name fra le colonne (`PageEntity.nameColumnOrder`, vedi `namePosition`). */
+    nameColumnOrder: Int = -1,
+    /** "Move to left" (-1) / "Move to right" (+1) di Name. */
+    onMoveName: (Int) -> Unit = {},
     onHideProperty: (DatabaseColumnEntity) -> Unit,
     onToggleCenterProperty: (DatabaseColumnEntity, CellAlignment) -> Unit,
     onAddProperty: () -> Unit,
@@ -1815,6 +1822,8 @@ private fun TableLayout(
     // su quelle che si vedono, altrimenti la tabella resterebbe larga
     // com'era e nasconderne una non servirebbe a niente.
     val shownColumns = state.visibleColumns
+    // Name al suo posto fra quelle che si vedono (dal 29/09/2026 si sposta).
+    val namePlace = namePosition(shownColumns, nameColumnOrder)
     val resize = remember { ColumnResize() }
     // Con "Lock view" le colonne non cambiano misura: via il segnalino.
     LaunchedEffect(viewLocked) { if (viewLocked) resize.stop() }
@@ -1872,6 +1881,8 @@ private fun TableLayout(
                 viewLocked = viewLocked,
                 onEditProperty = onEditProperty,
                 onMoveProperty = onMoveProperty,
+                namePlace = namePlace,
+                onMoveName = onMoveName,
                 onHideProperty = onHideProperty,
                 onToggleCenterProperty = onToggleCenterProperty,
                 onAddProperty = onAddProperty,
@@ -1906,12 +1917,13 @@ private fun TableLayout(
                     onRenameOption = onRenameOption,
                     onSetOptionColor = onSetOptionColor,
                     onDeleteOption = onDeleteOption,
-                    onTitleEditing = onTitleEditing
+                    onTitleEditing = onTitleEditing,
+                    namePlace = namePlace
                 )
                 HorizontalDivider(modifier = Modifier.width(tableWidth))
                 }
             }
-            CalculationFooter(state.rows, state, shownColumns, calculations, onCalculate, calculationAlignments, onCalculationAlign, calculationSubRows)
+            CalculationFooter(state.rows, state, shownColumns, calculations, onCalculate, calculationAlignments, onCalculationAlign, calculationSubRows, namePlace = namePlace)
             return@Column
         }
 
@@ -1924,6 +1936,8 @@ private fun TableLayout(
                 viewLocked = viewLocked,
                 onEditProperty = onEditProperty,
                 onMoveProperty = onMoveProperty,
+                namePlace = namePlace,
+                onMoveName = onMoveName,
                 onHideProperty = onHideProperty,
                 onToggleCenterProperty = onToggleCenterProperty,
                 onAddProperty = onAddProperty,
@@ -1954,13 +1968,14 @@ private fun TableLayout(
                     onRenameOption = onRenameOption,
                     onSetOptionColor = onSetOptionColor,
                     onDeleteOption = onDeleteOption,
-                    onTitleEditing = onTitleEditing
+                    onTitleEditing = onTitleEditing,
+                    namePlace = namePlace
                 )
                 HorizontalDivider(modifier = Modifier.width(tableWidth))
                 }
             }
             // I calcoli di questo gruppo, sotto le sue righe.
-            CalculationFooter(rows, state, shownColumns, calculations, onCalculate, calculationAlignments, onCalculationAlign, calculationSubRows)
+            CalculationFooter(rows, state, shownColumns, calculations, onCalculate, calculationAlignments, onCalculationAlign, calculationSubRows, namePlace = namePlace)
             // Una pagina creata da dentro un gruppo nasce già con
             // quel valore: altrimenti comparirebbe nel gruppo
             // "senza valore", cioè da tutt'altra parte rispetto a
@@ -2242,9 +2257,9 @@ private val SUB_GROUP_INDENT = 20.dp
 
 /**
  * L'intestazione delle colonne, ripetuta sopra ogni gruppo come su Notion.
- * `columns` sono quelle che si vedono, quindi la posizione in questa lista
- * è la posizione nella tabella: la prima non va a sinistra, l'ultima non
- * va a destra.
+ * `columns` sono quelle che si vedono, e con Name al suo posto (`namePlace`)
+ * sono la tabella da sinistra a destra: la prima non va a sinistra,
+ * l'ultima non va a destra.
  */
 @Composable
 private fun TableHeaderRow(
@@ -2252,6 +2267,9 @@ private fun TableHeaderRow(
     viewLocked: Boolean,
     onEditProperty: (DatabaseColumnEntity) -> Unit,
     onMoveProperty: (DatabaseColumnEntity, Int) -> Unit,
+    /** Dove sta Name fra `columns`: 0 = prima di tutte, `columns.size` = in fondo. */
+    namePlace: Int = 0,
+    onMoveName: (Int) -> Unit = {},
     onHideProperty: (DatabaseColumnEntity) -> Unit,
     onToggleCenterProperty: (DatabaseColumnEntity, CellAlignment) -> Unit,
     onAddProperty: () -> Unit,
@@ -2264,21 +2282,31 @@ private fun TableHeaderRow(
 ) {
     val resize = LocalColumnResize.current
     val widths = LocalTableWidths.current
+    // Il posto di ogni colonna nella tabella, Name compresa.
+    fun place(index: Int) = if (index < namePlace) index else index + 1
     Box {
     Row {
-        NameHeaderCell(
-            onCalculate = { onCalculate(CalculateTarget(NAME_CALCULATION_KEY, null, DbStrings.name)) },
-            canResize = !viewLocked,
-            fit = NAME_COLUMN_KEY in fitColumns,
-            onResize = { resize?.start(NAME_COLUMN_KEY) },
-            onFitChange = { onSetFitToContent(NAME_COLUMN_KEY, it) }
-        )
-        CellSeparator(NAME_COLUMN_KEY)
-        columns.forEachIndexed { index, column ->
+        TableSlots(
+            columns = columns,
+            namePlace = namePlace,
+            name = {
+                NameHeaderCell(
+                    onCalculate = { onCalculate(CalculateTarget(NAME_CALCULATION_KEY, null, DbStrings.name)) },
+                    canMoveLeft = !viewLocked && namePlace > 0,
+                    canMoveRight = !viewLocked && namePlace < columns.size,
+                    onMove = onMoveName,
+                    canResize = !viewLocked,
+                    fit = NAME_COLUMN_KEY in fitColumns,
+                    onResize = { resize?.start(NAME_COLUMN_KEY) },
+                    onFitChange = { onSetFitToContent(NAME_COLUMN_KEY, it) }
+                )
+                CellSeparator(NAME_COLUMN_KEY)
+            }
+        ) { index, column ->
             PropertyHeaderCell(
                 column = column,
-                canMoveLeft = !viewLocked && index > 0,
-                canMoveRight = !viewLocked && index < columns.lastIndex,
+                canMoveLeft = !viewLocked && place(index) > 0,
+                canMoveRight = !viewLocked && place(index) < columns.size,
                 onClick = { onEditProperty(column) },
                 onEdit = { onEditProperty(column) },
                 onMove = { delta -> onMoveProperty(column, delta) },
@@ -2296,16 +2324,16 @@ private fun TableHeaderRow(
         }
         AddPropertyCell(onClick = onAddProperty)
     }
-    // Il segnalino, sopra il bordo destro della colonna che si allarga.
+    // Il segnalino, sopra il bordo destro della colonna che si allarga:
+    // dopo tutte quelle alla sua sinistra, Name compresa, e lei.
     val key = resize?.key
     if (resize != null && key != null) {
-        val index = columns.indexOfFirst { it.id == key }
-        val edge = when {
-            key == NAME_COLUMN_KEY -> widths.name
-            index < 0 -> null
-            else -> widths.name + SEPARATOR_WIDTH +
-                columns.take(index).fold(0.dp) { sum, column -> sum + widths.of(column) + SEPARATOR_WIDTH } +
-                widths.of(columns[index])
+        val keys = columns.map { it.id }.toMutableList().apply { add(namePlace, NAME_COLUMN_KEY) }
+        val index = keys.indexOf(key)
+        val edge = if (index < 0) {
+            null
+        } else {
+            keys.take(index + 1).fold(0.dp) { sum, k -> sum + widths.of(k) } + SEPARATOR_WIDTH * index
         }
         if (edge != null) {
             ColumnResizeHandle(
@@ -2313,7 +2341,7 @@ private fun TableHeaderRow(
                 key = key,
                 center = edge + SEPARATOR_WIDTH / 2,
                 current = widths.of(key),
-                defaultWidth = defaultColumnWidth(key, columns.getOrNull(index)?.type),
+                defaultWidth = defaultColumnWidth(key, columns.find { it.id == key }?.type),
                 onCommit = { onSetColumnWidth(key, it) }
             )
         }
@@ -2338,7 +2366,9 @@ private fun CalculationFooter(
     alignments: Map<String, CellAlignment> = emptyMap(),
     onAlign: (String, CellAlignment) -> Unit = { _, _ -> },
     /** I calcoli che contano anche le sotto-righe; gli altri solo le righe principali. */
-    subRowKeys: Set<String> = emptySet()
+    subRowKeys: Set<String> = emptySet(),
+    /** Dove sta Name fra `columns` (vedi `TableHeaderRow`). */
+    namePlace: Int = 0
 ) {
     val nameCalc = validCalculation(calculations, NAME_CALCULATION_KEY, null)
     val columnCalcs = columns.associate { it.id to validCalculation(calculations, it.id, it.type) }
@@ -2346,18 +2376,23 @@ private fun CalculationFooter(
     val widths = LocalTableWidths.current
 
     Row {
-        CalculationCell(
-            width = widths.name,
-            alignment = alignments[NAME_CALCULATION_KEY] ?: CellAlignment.RIGHT,
-            onClick = { onCalculate(CalculateTarget(NAME_CALCULATION_KEY, null, DbStrings.name)) },
-            onAlign = { onAlign(NAME_CALCULATION_KEY, it) }
-        ) {
-            if (nameCalc != null) {
-                CalculationLabel(nameCalc, nameCalculationText(nameCalc, rowsForCalculation(rows, NAME_CALCULATION_KEY in subRowKeys)))
+        TableSlots(
+            columns = columns,
+            namePlace = namePlace,
+            name = {
+                CalculationCell(
+                    width = widths.name,
+                    alignment = alignments[NAME_CALCULATION_KEY] ?: CellAlignment.RIGHT,
+                    onClick = { onCalculate(CalculateTarget(NAME_CALCULATION_KEY, null, DbStrings.name)) },
+                    onAlign = { onAlign(NAME_CALCULATION_KEY, it) }
+                ) {
+                    if (nameCalc != null) {
+                        CalculationLabel(nameCalc, nameCalculationText(nameCalc, rowsForCalculation(rows, NAME_CALCULATION_KEY in subRowKeys)))
+                    }
+                }
+                Spacer(modifier = Modifier.width(SEPARATOR_WIDTH))
             }
-        }
-        Spacer(modifier = Modifier.width(SEPARATOR_WIDTH))
-        columns.forEach { column ->
+        ) { _, column ->
             val calc = columnCalcs[column.id]
             CalculationCell(
                 width = widths.of(column),
@@ -2474,6 +2509,27 @@ private fun CalculationLabel(calc: Calculation, value: String) {
     }
 }
 
+/**
+ * **Name al suo posto fra le colonne** (dal 29/09/2026 si sposta): per
+ * intestazione, righe e calcoli, da sinistra a destra, `name` quando tocca
+ * a Name e `column` per ogni colonna (con la sua posizione in `columns`).
+ * Ognuna col suo `key`: spostandosi, una cella si porta dietro quello che
+ * ha dentro.
+ */
+@Composable
+private fun TableSlots(
+    columns: List<DatabaseColumnEntity>,
+    namePlace: Int,
+    name: @Composable () -> Unit,
+    column: @Composable (Int, DatabaseColumnEntity) -> Unit
+) {
+    columns.forEachIndexed { index, c ->
+        if (index == namePlace) key(NAME_COLUMN_KEY) { name() }
+        key(c.id) { column(index, c) }
+    }
+    if (namePlace >= columns.size) key(NAME_COLUMN_KEY) { name() }
+}
+
 /** Una riga della tabella: nome, celle, e lo spazio sotto la colonna "+". */
 @Composable
 private fun TableBodyRow(
@@ -2496,22 +2552,29 @@ private fun TableBodyRow(
     onRenameOption: (String, String, String) -> Unit,
     onSetOptionColor: (String, String, String) -> Unit,
     onDeleteOption: (String, String) -> Unit,
-    onTitleEditing: (Boolean) -> Unit = {}
+    onTitleEditing: (Boolean) -> Unit = {},
+    /** Dove sta Name fra `columns` (vedi `TableHeaderRow`). */
+    namePlace: Int = 0
 ) {
     Row(modifier = Modifier.foundInside(row.id)) {
-        NameCell(
-            row = row,
-            onTitleChange = { onTitleChange(row, it) },
-            onOpen = { onOpenRow(row) },
-            onLongPress = { onRowLongPress(row) },
-            onEditingChange = onTitleEditing,
-            depth = depth,
-            hasSubRows = hasSubRows,
-            toggleSlot = toggleSlot,
-            onToggleSubRows = onToggleSubRows
-        )
-        CellSeparator(NAME_COLUMN_KEY)
-        columns.forEach { column ->
+        TableSlots(
+            columns = columns,
+            namePlace = namePlace,
+            name = {
+                NameCell(
+                    row = row,
+                    onTitleChange = { onTitleChange(row, it) },
+                    onOpen = { onOpenRow(row) },
+                    onLongPress = { onRowLongPress(row) },
+                    onEditingChange = onTitleEditing,
+                    depth = depth,
+                    hasSubRows = hasSubRows,
+                    toggleSlot = toggleSlot,
+                    onToggleSubRows = onToggleSubRows
+                )
+                CellSeparator(NAME_COLUMN_KEY)
+            }
+        ) { _, column ->
             CellEditor(
                 row = row,
                 column = column,
@@ -5277,6 +5340,10 @@ private fun CellSeparator(afterKey: String? = null) {
 @Composable
 private fun NameHeaderCell(
     onCalculate: () -> Unit = {},
+    /** Name si sposta anche lei (dal 29/09/2026); grigie in fondo, in testa e con "Lock view". */
+    canMoveLeft: Boolean = false,
+    canMoveRight: Boolean = false,
+    onMove: (Int) -> Unit = {},
     /** Con "Lock view" le due voci della larghezza restano grigie. */
     canResize: Boolean = true,
     fit: Boolean = false,
@@ -5311,6 +5378,27 @@ private fun NameHeaderCell(
         onDismissRequest = { menuOpen = false },
         modifier = Modifier.background(DarkSheet)
     ) {
+        // **Name si sposta** (dal 29/09/2026: "permettimi di spostare
+        // ovunque io voglia anche la colonna Name"): in cima, come nel menu
+        // delle altre colonne.
+        DropdownMenuItem(
+            text = { Text(DbStrings.moveLeft) },
+            leadingIcon = { Icon(Icons.Filled.KeyboardArrowLeft, contentDescription = null) },
+            enabled = canMoveLeft,
+            onClick = {
+                menuOpen = false
+                onMove(-1)
+            }
+        )
+        DropdownMenuItem(
+            text = { Text(DbStrings.moveRight) },
+            leadingIcon = { Icon(Icons.Filled.KeyboardArrowRight, contentDescription = null) },
+            enabled = canMoveRight,
+            onClick = {
+                menuOpen = false
+                onMove(1)
+            }
+        )
         DropdownMenuItem(
             text = { Text(DbStrings.calculate) },
             leadingIcon = { Icon(Icons.Filled.Functions, contentDescription = null) },
@@ -5378,8 +5466,9 @@ private fun ColumnWidthMenuItems(
  * colonna senza cancellarla.
  *
  * Gli spostamenti che non si possono fare restano **grigi** invece di
- * sparire: la prima colonna dopo Name non va più a sinistra, l'ultima non
- * va più a destra, e con "Lock view" non si sposta niente. Una voce che
+ * sparire: la prima colonna non va più a sinistra, l'ultima non va più a
+ * destra, e con "Lock view" non si sposta niente. Name conta come le altre:
+ * dal 29/09/2026 si sposta anche lei, e le colonne le passano accanto. Una voce che
  * sparisce e ricompare a seconda della colonna farebbe cambiare posto
  * alle altre sotto il dito.
  *
