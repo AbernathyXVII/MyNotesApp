@@ -175,6 +175,30 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.rotate
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.TextStyle as ComposeTextStyle
+import androidx.compose.material3.Typography
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.material3.DividerDefaults
+import kotlin.math.roundToInt
+import androidx.compose.material.icons.filled.UnfoldMore
+import androidx.compose.material.icons.filled.FitScreen
+import androidx.compose.material.icons.filled.SettingsEthernet
+import com.gabriele.notionlocal.data.entity.DEFAULT_COLUMN_WIDTH_DP
+import com.gabriele.notionlocal.data.entity.DEFAULT_NAME_COLUMN_WIDTH_DP
+import com.gabriele.notionlocal.data.entity.MAX_COLUMN_WIDTH_DP
+import com.gabriele.notionlocal.data.entity.snapColumnWidth
+import com.gabriele.notionlocal.data.entity.MIN_COLUMN_WIDTH_DP
+import com.gabriele.notionlocal.data.entity.NAME_COLUMN_KEY
+import com.gabriele.notionlocal.data.entity.parseColumnWidths
+import com.gabriele.notionlocal.data.entity.parseFitColumns
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
@@ -264,8 +288,52 @@ import java.time.temporal.ChronoUnit
 import java.time.temporal.WeekFields
 import java.util.Locale
 
-private val COLUMN_WIDTH = 150.dp
-private val NAME_COLUMN_WIDTH = 200.dp
+private val COLUMN_WIDTH = DEFAULT_COLUMN_WIDTH_DP.dp
+private val NAME_COLUMN_WIDTH = DEFAULT_NAME_COLUMN_WIDTH_DP.dp
+
+/**
+ * **Quanto è larga ogni colonna della tabella** in questa vista (dal
+ * 29/09/2026): quella scelta col segnalino, quella adattata al contenuto
+ * ("Fit to content") o quella di sempre. La leggono intestazioni, celle e
+ * calcoli, così restano in colonna.
+ */
+@Immutable
+private class TableWidths(val name: Dp, private val byKey: Map<String, Dp>) {
+    fun of(column: DatabaseColumnEntity): Dp = byKey[column.id] ?: COLUMN_WIDTH
+    fun of(key: String): Dp = if (key == NAME_COLUMN_KEY) name else byKey[key] ?: COLUMN_WIDTH
+}
+
+private val LocalTableWidths = compositionLocalOf { TableWidths(NAME_COLUMN_WIDTH, emptyMap()) }
+
+/**
+ * **Il segnalino per allargare una colonna** ("Resize column" tenendo
+ * premuta l'intestazione): di quale colonna è, e la misura mentre lo si
+ * trascina. Resta finché non si tocca la tabella da un'altra parte.
+ */
+@Stable
+private class ColumnResize {
+    var key by mutableStateOf<String?>(null)
+    var draft by mutableStateOf<Dp?>(null)
+    /** Dove porterebbe il dito, prima di agganciarsi alla larghezza di sempre. */
+    var raw = 0.dp
+    /** Il dito è appena sceso sul segnalino: quel tocco non lo chiude. */
+    var handleTouched = false
+
+    fun start(column: String) {
+        key = column
+        draft = null
+    }
+
+    fun stop() {
+        key = null
+        draft = null
+    }
+}
+
+private val LocalColumnResize = compositionLocalOf<ColumnResize?> { null }
+
+private val RESIZE_HANDLE_WIDTH = 24.dp
+private val RESIZE_HANDLE_HEIGHT = 40.dp
 private val ADD_PROPERTY_WIDTH = 52.dp
 private val BOARD_COLUMN_WIDTH = 260.dp
 
@@ -1136,6 +1204,10 @@ private fun DatabaseViewBody(
                     calculationAlignments = parseCalculationAlignments(page?.viewCalculations),
                     onCalculationAlign = { key, alignment -> viewModel.setCalculationAlignment(key, alignment) },
                     onSetAllChecked = { column, checked -> viewModel.setAllChecked(column, checked) },
+                    columnWidths = parseColumnWidths(page?.columnWidths),
+                    fitColumns = parseFitColumns(page?.fitColumns),
+                    onSetColumnWidth = { key, width -> viewModel.setColumnWidth(key, width) },
+                    onSetFitToContent = { key, fit -> viewModel.setFitToContent(key, fit) },
                     onOpenRow = openRow,
                     onRowLongPress = { row ->
                         focusManager.clearFocus()
@@ -1631,7 +1703,13 @@ private fun TableLayout(
     calculationAlignments: Map<String, CellAlignment> = emptyMap(),
     onCalculationAlign: (String, CellAlignment) -> Unit = { _, _ -> },
     /** "Activate all" / "Deactivate all" di una colonna Checkbox. */
-    onSetAllChecked: (DatabaseColumnEntity, Boolean) -> Unit = { _, _ -> }
+    onSetAllChecked: (DatabaseColumnEntity, Boolean) -> Unit = { _, _ -> },
+    /** Le larghezze di questa vista, in dp per chiave (vedi `ColumnWidths.kt`). */
+    columnWidths: Map<String, Int> = emptyMap(),
+    /** Le colonne larghe quanto il loro contenuto ("Fit to content"). */
+    fitColumns: Set<String> = emptySet(),
+    onSetColumnWidth: (String, Int) -> Unit = { _, _ -> },
+    onSetFitToContent: (String, Boolean) -> Unit = { _, _ -> }
 ) {
     // Dentro un contenitore che scorre in orizzontale la larghezza
     // disponibile è illimitata: una linea che chiede "tutta la
@@ -1641,8 +1719,23 @@ private fun TableLayout(
     // su quelle che si vedono, altrimenti la tabella resterebbe larga
     // com'era e nasconderne una non servirebbe a niente.
     val shownColumns = state.visibleColumns
-    val tableWidth = NAME_COLUMN_WIDTH + SEPARATOR_WIDTH +
-        (COLUMN_WIDTH + SEPARATOR_WIDTH) * shownColumns.size +
+    val resize = remember { ColumnResize() }
+    // Con "Lock view" le colonne non cambiano misura: via il segnalino.
+    LaunchedEffect(viewLocked) { if (viewLocked) resize.stop() }
+    val fitted = fitWidths(state, shownColumns, fitColumns, calculations)
+    // Mentre si trascina comanda il dito; poi "Fit to content", se acceso;
+    // poi la misura scelta; se no quella di sempre.
+    fun widthOf(key: String, default: Dp): Dp =
+        resize.draft?.takeIf { key == resize.key }
+            ?: fitted[key]
+            ?: columnWidths[key]?.dp
+            ?: default
+    val widths = TableWidths(
+        name = widthOf(NAME_COLUMN_KEY, NAME_COLUMN_WIDTH),
+        byKey = shownColumns.associate { it.id to widthOf(it.id, COLUMN_WIDTH) }
+    )
+    val tableWidth = widths.name + SEPARATOR_WIDTH +
+        shownColumns.fold(0.dp) { sum, column -> sum + widths.of(column) + SEPARATOR_WIDTH } +
         ADD_PROPERTY_WIDTH
 
     // Quali gruppi sono chiusi. Sta qui e non nel database perché è
@@ -1652,7 +1745,24 @@ private fun TableLayout(
 
     // Intestazione e righe scorrono insieme in orizzontale, così le
     // colonne restano allineate.
-    Column(modifier = Modifier.horizontalScroll(rememberScrollState())) {
+    CompositionLocalProvider(LocalTableWidths provides widths, LocalColumnResize provides resize) {
+    Column(
+        modifier = Modifier
+            // Toccando la tabella fuori dal segnalino, il segnalino se ne va.
+            // Guarda soltanto: il tocco arriva comunque a chi lo aspetta.
+            .pointerInput(resize) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent()
+                        if (event.type == PointerEventType.Press) {
+                            if (!resize.handleTouched && resize.key != null) resize.stop()
+                            resize.handleTouched = false
+                        }
+                    }
+                }
+            }
+            .horizontalScroll(rememberScrollState())
+    ) {
         if (groupColumn == null) {
             TableHeaderRow(
                 columns = shownColumns,
@@ -1664,7 +1774,10 @@ private fun TableLayout(
                 onAddProperty = onAddProperty,
                 onChangeTypeProperty = onChangeTypeProperty,
                 onCalculate = onCalculate,
-                onSetAllChecked = onSetAllChecked
+                onSetAllChecked = onSetAllChecked,
+                fitColumns = fitColumns,
+                onSetColumnWidth = onSetColumnWidth,
+                onSetFitToContent = onSetFitToContent
             )
             HorizontalDivider(modifier = Modifier.width(tableWidth))
             // **Ogni riga col suo id** (dal 26/09/2026): con un ordinamento
@@ -1708,7 +1821,10 @@ private fun TableLayout(
                 onAddProperty = onAddProperty,
                 onChangeTypeProperty = onChangeTypeProperty,
                 onCalculate = onCalculate,
-                onSetAllChecked = onSetAllChecked
+                onSetAllChecked = onSetAllChecked,
+                fitColumns = fitColumns,
+                onSetColumnWidth = onSetColumnWidth,
+                onSetFitToContent = onSetFitToContent
             )
             HorizontalDivider(modifier = Modifier.width(tableWidth))
             rows.forEach { row ->
@@ -1788,6 +1904,187 @@ private fun TableLayout(
             Spacer(modifier = Modifier.size(12.dp))
         }
     }
+    }
+}
+
+/**
+ * **"Fit to content"**: quanto dev'essere larga ogni colonna in `keys`
+ * perché si legga tutto — l'intestazione e ogni cella delle righe
+ * mostrate, su una riga sola, coi margini della cella. Come il doppio
+ * tocco sul bordo in Excel, ma resta acceso: scrivendo, la colonna segue.
+ */
+@Composable
+private fun fitWidths(
+    state: DatabaseTableState,
+    columns: List<DatabaseColumnEntity>,
+    keys: Set<String>,
+    /** Anche il calcolo in fondo alla colonna sta nella colonna: si legge tutto anche lui. */
+    calculations: Map<String, Calculation> = emptyMap()
+): Map<String, Dp> {
+    val measurer = rememberTextMeasurer()
+    val typography = MaterialTheme.typography
+    val density = LocalDensity.current
+    val simple = LocalSimpleDatabase.current
+    val icons = LocalRowIcons.current
+    return remember(state, columns, keys, calculations, typography, density, simple, icons) {
+        if (keys.isEmpty()) return@remember emptyMap()
+        val measure: (String, ComposeTextStyle) -> Dp = { text, style ->
+            if (text.isEmpty()) {
+                0.dp
+            } else {
+                with(density) {
+                    measurer.measure(AnnotatedString(text), style, maxLines = 1, softWrap = false).size.width.toDp()
+                }
+            }
+        }
+        // "SUM  309": la parola piccola, 6 punti, il risultato, e i margini della casella.
+        fun calculationWidth(calc: Calculation, value: String): Dp =
+            12.dp + measure(DbStrings.calcShortName(calc).uppercase(AppSettings.language.locale), typography.labelSmall) +
+                6.dp + measure(value, typography.bodyMedium) + 12.dp
+        buildMap {
+            if (NAME_COLUMN_KEY in keys) {
+                val calc = validCalculation(calculations, NAME_CALCULATION_KEY, null)
+                    ?.let { fitClamp(calculationWidth(it, nameCalculationText(it, state.rows))) } ?: 0.dp
+                put(NAME_COLUMN_KEY, maxOf(nameFitWidth(state.rows, simple, icons.keys, typography, measure), calc))
+            }
+            columns.filter { it.id in keys }.forEach { column ->
+                val header = 12.dp + 16.dp + 8.dp + measure(DbStrings.columnName(column.name), typography.labelLarge) + 12.dp
+                val cells = state.rows.maxOfOrNull { row ->
+                    cellFitWidth(column, row, state.cellValues[row.id to column.id].orEmpty(), typography, measure) + 24.dp
+                } ?: 0.dp
+                val calc = validCalculation(calculations, column.id, column.type)
+                    ?.let { calculationWidth(it, columnCalculationText(it, column, state.rows, state)) } ?: 0.dp
+                put(column.id, fitClamp(maxOf(header, cells, calc)))
+            }
+        }
+    }
+}
+
+/** Un po' di margine per gli arrotondamenti e il cursore, e dentro i limiti di sempre. */
+internal fun fitClamp(width: Dp): Dp = (width + 4.dp).coerceIn(MIN_COLUMN_WIDTH_DP.dp, MAX_COLUMN_WIDTH_DP.dp)
+
+/** La colonna Name: "Aa Name" in cima; sotto icona, nome e OPEN (vedi `NameCell`). */
+internal fun nameFitWidth(
+    rows: List<DatabaseRowEntity>,
+    simple: Boolean,
+    withIcon: Set<String>,
+    typography: Typography,
+    measure: (String, ComposeTextStyle) -> Dp
+): Dp {
+    val header = 12.dp + measure("Aa", typography.labelLarge) + 8.dp + measure(DbStrings.name, typography.labelLarge) + 12.dp
+    val open = if (simple) 0.dp else measure(DbStrings.open, typography.labelSmall) + 16.dp + 8.dp
+    val cells = rows.maxOfOrNull { row ->
+        12.dp + (if (row.id in withIcon) ROW_ICON_SIZE + 6.dp else 0.dp) +
+            measure(row.title, typography.bodyMedium) + 12.dp + open
+    } ?: 0.dp
+    return fitClamp(maxOf(header, cells))
+}
+
+/** Quanto occupa il contenuto di una cella, senza i margini: come lo disegna `CellContent`. */
+internal fun cellFitWidth(
+    column: DatabaseColumnEntity,
+    row: DatabaseRowEntity,
+    value: String,
+    typography: Typography,
+    measure: (String, ComposeTextStyle) -> Dp
+): Dp = when (column.type) {
+    ColumnType.CHECKBOX -> 24.dp
+    ColumnType.SELECT, ColumnType.MULTI_SELECT -> {
+        val labels = if (column.type == ColumnType.MULTI_SELECT) {
+            value.split(MULTI_VALUE_SEPARATOR).filter { it.isNotBlank() }
+        } else {
+            listOfNotNull(value.takeIf { it.isNotBlank() })
+        }
+        // Ogni tag: il nome, 8 punti per lato e 4 fra un tag e l'altro (`TagChip`).
+        labels.fold(0.dp) { sum, label -> sum + measure(label, typography.labelMedium) + 16.dp + 4.dp }
+    }
+    ColumnType.DATE -> {
+        val range = parseDateRange(value)
+        measure(range?.label(column.dateSettings()) ?: "\u2014", typography.bodyMedium) +
+            (if (range?.recurrence != null) 18.dp else 0.dp) +
+            (if (range?.notify == true) 18.dp else 0.dp)
+    }
+    ColumnType.COLOR -> {
+        val cell = parseColorCell(value)
+        measure(cell.text.ifEmpty { if (hexToColor(cell.color) == null) "\u2014" else "" }, typography.bodyMedium)
+    }
+    ColumnType.CREATED_TIME, ColumnType.LAST_EDITED_TIME -> {
+        val instant = if (column.type == ColumnType.CREATED_TIME) row.createdAt else row.updatedAt ?: row.createdAt
+        measure(Instant.ofEpochMilli(instant).atZone(AppSettings.zoneId).format(DATE_TIME_FORMAT), typography.bodyMedium)
+    }
+    ColumnType.NUMBER -> if (value.isBlank()) {
+        0.dp
+    } else {
+        val settings = column.numberSettings()
+        val text = measure(formatNumberValue(value, settings), typography.bodyMedium)
+        val number = if (settings.showNumber) text + 8.dp else 0.dp
+        when (settings.display) {
+            NumberDisplay.NUMBER -> text
+            // La barra si stende quanto c'è posto: le si lascia una misura che si veda.
+            NumberDisplay.BAR -> number + 64.dp
+            NumberDisplay.RING -> number + 20.dp
+        }
+    }
+    // Testo, link, email, telefono: tutto su una riga, più il cursore.
+    else -> measure(value, typography.bodyMedium) + 2.dp
+}
+
+/**
+ * **Il segnalino** fra la fine della colonna e l'inizio di quella a
+ * destra, come il bordo delle colonne in Excel: trascinato verso destra la
+ * allarga, verso sinistra la stringe. `center` è dove sta il bordo, dal
+ * lato sinistro della tabella.
+ */
+@Composable
+private fun ColumnResizeHandle(
+    resize: ColumnResize,
+    key: String,
+    center: Dp,
+    current: Dp,
+    onCommit: (Int) -> Unit
+) {
+    val density = LocalDensity.current
+    val latestCurrent by rememberUpdatedState(current)
+    val commit = { resize.draft?.let { onCommit(it.value.roundToInt()) } }
+    Box(
+        modifier = Modifier
+            .offset(x = center - RESIZE_HANDLE_WIDTH / 2, y = (ROW_HEIGHT - RESIZE_HANDLE_HEIGHT) / 2)
+            .size(RESIZE_HANDLE_WIDTH, RESIZE_HANDLE_HEIGHT)
+            // Il tocco è sul segnalino: la tabella non lo deve chiudere.
+            .pointerInput(Unit) {
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false)
+                    resize.handleTouched = true
+                }
+            }
+            .pointerInput(key) {
+                detectHorizontalDragGestures(
+                    onDragStart = {
+                        resize.raw = latestCurrent
+                        resize.draft = latestCurrent
+                    },
+                    onDragEnd = { commit() },
+                    onDragCancel = { commit() },
+                    onHorizontalDrag = { change, amount ->
+                        change.consume()
+                        resize.raw += with(density) { amount.toDp() }
+                        // Vicino alla larghezza di sempre si aggancia lì, e lo si vede subito.
+                        resize.draft = snapColumnWidth(key, resize.raw.value.roundToInt()).dp
+                    }
+                )
+            }
+            .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(RESIZE_HANDLE_WIDTH / 2)),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            Icons.Filled.UnfoldMore,
+            contentDescription = DbStrings.resizeColumn,
+            tint = MaterialTheme.colorScheme.onPrimary,
+            modifier = Modifier
+                .size(18.dp)
+                .rotate(90f)
+        )
+    }
 }
 
 /** Fra la chiave del gruppo e quella del sottogruppo, nell'elenco di quelli chiusi. */
@@ -1813,11 +2110,23 @@ private fun TableHeaderRow(
     onAddProperty: () -> Unit,
     onChangeTypeProperty: (DatabaseColumnEntity) -> Unit = {},
     onCalculate: (CalculateTarget) -> Unit = {},
-    onSetAllChecked: (DatabaseColumnEntity, Boolean) -> Unit = { _, _ -> }
+    onSetAllChecked: (DatabaseColumnEntity, Boolean) -> Unit = { _, _ -> },
+    fitColumns: Set<String> = emptySet(),
+    onSetColumnWidth: (String, Int) -> Unit = { _, _ -> },
+    onSetFitToContent: (String, Boolean) -> Unit = { _, _ -> }
 ) {
+    val resize = LocalColumnResize.current
+    val widths = LocalTableWidths.current
+    Box {
     Row {
-        NameHeaderCell(onCalculate = { onCalculate(CalculateTarget(NAME_CALCULATION_KEY, null, DbStrings.name)) })
-        CellSeparator()
+        NameHeaderCell(
+            onCalculate = { onCalculate(CalculateTarget(NAME_CALCULATION_KEY, null, DbStrings.name)) },
+            canResize = !viewLocked,
+            fit = NAME_COLUMN_KEY in fitColumns,
+            onResize = { resize?.start(NAME_COLUMN_KEY) },
+            onFitChange = { onSetFitToContent(NAME_COLUMN_KEY, it) }
+        )
+        CellSeparator(NAME_COLUMN_KEY)
         columns.forEachIndexed { index, column ->
             PropertyHeaderCell(
                 column = column,
@@ -1830,11 +2139,37 @@ private fun TableHeaderRow(
                 onAlign = { alignment -> onToggleCenterProperty(column, alignment) },
                 onChangeType = { onChangeTypeProperty(column) },
                 onCalculate = { onCalculate(CalculateTarget(column.id, column.type, DbStrings.columnName(column.name))) },
-                onSetAllChecked = { checked -> onSetAllChecked(column, checked) }
+                onSetAllChecked = { checked -> onSetAllChecked(column, checked) },
+                canResize = !viewLocked,
+                fit = column.id in fitColumns,
+                onResize = { resize?.start(column.id) },
+                onFitChange = { onSetFitToContent(column.id, it) }
             )
-            CellSeparator()
+            CellSeparator(column.id)
         }
         AddPropertyCell(onClick = onAddProperty)
+    }
+    // Il segnalino, sopra il bordo destro della colonna che si allarga.
+    val key = resize?.key
+    if (resize != null && key != null) {
+        val index = columns.indexOfFirst { it.id == key }
+        val edge = when {
+            key == NAME_COLUMN_KEY -> widths.name
+            index < 0 -> null
+            else -> widths.name + SEPARATOR_WIDTH +
+                columns.take(index).fold(0.dp) { sum, column -> sum + widths.of(column) + SEPARATOR_WIDTH } +
+                widths.of(columns[index])
+        }
+        if (edge != null) {
+            ColumnResizeHandle(
+                resize = resize,
+                key = key,
+                center = edge + SEPARATOR_WIDTH / 2,
+                current = widths.of(key),
+                onCommit = { onSetColumnWidth(key, it) }
+            )
+        }
+    }
     }
 }
 
@@ -1855,51 +2190,67 @@ private fun CalculationFooter(
     alignments: Map<String, CellAlignment> = emptyMap(),
     onAlign: (String, CellAlignment) -> Unit = { _, _ -> }
 ) {
-    // Un calcolo che il tipo della colonna non ha più (cambiato dopo) non si mostra.
-    fun valid(key: String, type: ColumnType?): Calculation? =
-        calculations[key]?.takeIf { calc -> calculationsFor(type).values.any { calc in it } }
-    val nameCalc = valid(NAME_CALCULATION_KEY, null)
-    val columnCalcs = columns.associate { it.id to valid(it.id, it.type) }
+    val nameCalc = validCalculation(calculations, NAME_CALCULATION_KEY, null)
+    val columnCalcs = columns.associate { it.id to validCalculation(calculations, it.id, it.type) }
     if (nameCalc == null && columnCalcs.values.all { it == null }) return
+    val widths = LocalTableWidths.current
 
     Row {
         CalculationCell(
-            width = NAME_COLUMN_WIDTH,
+            width = widths.name,
             alignment = alignments[NAME_CALCULATION_KEY] ?: CellAlignment.RIGHT,
             onClick = { onCalculate(CalculateTarget(NAME_CALCULATION_KEY, null, DbStrings.name)) },
             onAlign = { onAlign(NAME_CALCULATION_KEY, it) }
         ) {
             if (nameCalc != null) {
-                CalculationLabel(nameCalc, calculationText(calculate(nameCalc, null, rows.map { it.title }), null))
+                CalculationLabel(nameCalc, nameCalculationText(nameCalc, rows))
             }
         }
         Spacer(modifier = Modifier.width(SEPARATOR_WIDTH))
         columns.forEach { column ->
             val calc = columnCalcs[column.id]
             CalculationCell(
-                width = COLUMN_WIDTH,
+                width = widths.of(column),
                 alignment = alignments[column.id] ?: CellAlignment.RIGHT,
                 onClick = { onCalculate(CalculateTarget(column.id, column.type, DbStrings.columnName(column.name))) },
                 onAlign = { onAlign(column.id, it) }
             ) {
                 if (calc != null) {
-                    val values = rows.map { row ->
-                        when (column.type) {
-                            ColumnType.CREATED_TIME -> row.createdAt.toString()
-                            ColumnType.LAST_EDITED_TIME -> (row.updatedAt ?: row.createdAt).toString()
-                            ColumnType.COLOR -> parseColorCell(state.cellValues[row.id to column.id].orEmpty())
-                                .let { if (it.isEmpty) "" else state.cellValues[row.id to column.id].orEmpty() }
-                            else -> state.cellValues[row.id to column.id].orEmpty()
-                        }
-                    }
-                    val result = calculate(calc, column.type, values, startOfDate = { parseDateRange(it)?.start })
-                    CalculationLabel(calc, calculationText(result, column))
+                    CalculationLabel(calc, columnCalculationText(calc, column, rows, state))
                 }
             }
             Spacer(modifier = Modifier.width(SEPARATOR_WIDTH))
         }
         Box(modifier = Modifier.width(ADD_PROPERTY_WIDTH).height(ROW_HEIGHT))
     }
+}
+
+/** Il calcolo di una colonna, se il suo tipo ce l'ha ancora: cambiato dopo, non si mostra. */
+private fun validCalculation(calculations: Map<String, Calculation>, key: String, type: ColumnType?): Calculation? =
+    calculations[key]?.takeIf { calc -> calculationsFor(type).values.any { calc in it } }
+
+/** Il risultato del calcolo di Name sulle righe date, come si legge in fondo alla tabella. */
+private fun nameCalculationText(calc: Calculation, rows: List<DatabaseRowEntity>): String =
+    calculationText(calculate(calc, null, rows.map { it.title }), null)
+
+/** Il risultato del calcolo di una colonna sulle righe date, come si legge in fondo alla tabella. */
+private fun columnCalculationText(
+    calc: Calculation,
+    column: DatabaseColumnEntity,
+    rows: List<DatabaseRowEntity>,
+    state: DatabaseTableState
+): String {
+    val values = rows.map { row ->
+        when (column.type) {
+            ColumnType.CREATED_TIME -> row.createdAt.toString()
+            ColumnType.LAST_EDITED_TIME -> (row.updatedAt ?: row.createdAt).toString()
+            ColumnType.COLOR -> parseColorCell(state.cellValues[row.id to column.id].orEmpty())
+                .let { if (it.isEmpty) "" else state.cellValues[row.id to column.id].orEmpty() }
+            else -> state.cellValues[row.id to column.id].orEmpty()
+        }
+    }
+    val result = calculate(calc, column.type, values, startOfDate = { parseDateRange(it)?.start })
+    return calculationText(result, column)
 }
 
 /**
@@ -1998,7 +2349,7 @@ private fun TableBodyRow(
             onLongPress = { onRowLongPress(row) },
             onEditingChange = onTitleEditing
         )
-        CellSeparator()
+        CellSeparator(NAME_COLUMN_KEY)
         columns.forEach { column ->
             CellEditor(
                 row = row,
@@ -2010,7 +2361,7 @@ private fun TableBodyRow(
                 onSetOptionColor = onSetOptionColor,
                 onDeleteOption = onDeleteOption
             )
-            CellSeparator()
+            CellSeparator(column.id)
         }
         Box(modifier = Modifier.width(ADD_PROPERTY_WIDTH).height(ROW_HEIGHT))
     }
@@ -4747,20 +5098,35 @@ private fun DateFilterEditor(
 /** Quale dei due estremi del filtro per data si sta scegliendo. */
 private enum class DateFilterEdge { START, END }
 
-/** La linea verticale fra due celle della tabella. */
+/**
+ * La linea verticale fra due celle della tabella. Quella dopo la colonna
+ * che si sta allargando (`afterKey`) è colorata, dall'intestazione
+ * all'ultima riga: si vede dove finisce la colonna.
+ */
 @Composable
-private fun CellSeparator() {
-    VerticalDivider(modifier = Modifier.height(ROW_HEIGHT))
+private fun CellSeparator(afterKey: String? = null) {
+    val resizing = afterKey != null && LocalColumnResize.current?.key == afterKey
+    VerticalDivider(
+        modifier = Modifier.height(ROW_HEIGHT),
+        color = if (resizing) MaterialTheme.colorScheme.primary else DividerDefaults.color
+    )
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun NameHeaderCell(onCalculate: () -> Unit = {}) {
+private fun NameHeaderCell(
+    onCalculate: () -> Unit = {},
+    /** Con "Lock view" le due voci della larghezza restano grigie. */
+    canResize: Boolean = true,
+    fit: Boolean = false,
+    onResize: () -> Unit = {},
+    onFitChange: (Boolean) -> Unit = {}
+) {
     var menuOpen by remember { mutableStateOf(false) }
     Box {
     Row(
         modifier = Modifier
-            .width(NAME_COLUMN_WIDTH)
+            .width(LocalTableWidths.current.name)
             .height(ROW_HEIGHT)
             .combinedClickable(onClick = {}, onLongClick = { menuOpen = true })
             .padding(horizontal = 12.dp),
@@ -4792,8 +5158,55 @@ private fun NameHeaderCell(onCalculate: () -> Unit = {}) {
                 onCalculate()
             }
         )
+        ColumnWidthMenuItems(
+            canResize = canResize,
+            fit = fit,
+            onResize = {
+                menuOpen = false
+                onResize()
+            },
+            onFitChange = {
+                menuOpen = false
+                onFitChange(it)
+            }
+        )
     }
     }
+}
+
+/**
+ * **La larghezza di una colonna**, nel menu della sua intestazione (dal
+ * 29/09/2026): "Resize column" fa comparire il segnalino sul bordo destro
+ * della colonna, da trascinare; "Fit to content", acceso, la tiene larga
+ * quanto il suo contenuto.
+ */
+@Composable
+private fun ColumnWidthMenuItems(
+    canResize: Boolean,
+    fit: Boolean,
+    onResize: () -> Unit,
+    onFitChange: (Boolean) -> Unit
+) {
+    DropdownMenuItem(
+        text = { Text(DbStrings.resizeColumn) },
+        leadingIcon = { Icon(Icons.Filled.SettingsEthernet, contentDescription = null) },
+        enabled = canResize,
+        onClick = onResize
+    )
+    DropdownMenuItem(
+        text = { Text(DbStrings.fitToContent) },
+        leadingIcon = { Icon(Icons.Filled.FitScreen, contentDescription = null) },
+        trailingIcon = {
+            Switch(
+                checked = fit,
+                onCheckedChange = null,
+                enabled = canResize,
+                modifier = Modifier.scale(0.75f)
+            )
+        },
+        enabled = canResize,
+        onClick = { onFitChange(!fit) }
+    )
 }
 
 /**
@@ -4829,7 +5242,12 @@ private fun PropertyHeaderCell(
     onChangeType: () -> Unit = {},
     onCalculate: () -> Unit = {},
     /** Solo per le caselle: "Activate all" (true) e "Deactivate all" (false). */
-    onSetAllChecked: (Boolean) -> Unit = {}
+    onSetAllChecked: (Boolean) -> Unit = {},
+    /** Con "Lock view" le due voci della larghezza restano grigie. */
+    canResize: Boolean = true,
+    fit: Boolean = false,
+    onResize: () -> Unit = {},
+    onFitChange: (Boolean) -> Unit = {}
 ) {
     var menuOpen by remember(column.id) { mutableStateOf(false) }
     val dataLocked = LocalDatabaseLocked.current
@@ -4837,7 +5255,7 @@ private fun PropertyHeaderCell(
     Box {
         Row(
             modifier = Modifier
-                .width(COLUMN_WIDTH)
+                .width(LocalTableWidths.current.of(column))
                 .height(ROW_HEIGHT)
                 .combinedClickable(
                     onClick = onClick,
@@ -4960,6 +5378,18 @@ private fun PropertyHeaderCell(
                     }
                 )
             }
+            ColumnWidthMenuItems(
+                canResize = canResize,
+                fit = fit,
+                onResize = {
+                    menuOpen = false
+                    onResize()
+                },
+                onFitChange = {
+                    menuOpen = false
+                    onFitChange(it)
+                }
+            )
             DropdownMenuItem(
                 text = { Text(DbStrings.hide) },
                 leadingIcon = {
@@ -5052,7 +5482,7 @@ private fun NameCell(
 
     Row(
         modifier = Modifier
-            .width(NAME_COLUMN_WIDTH)
+            .width(LocalTableWidths.current.name)
             .height(ROW_HEIGHT),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -5195,7 +5625,7 @@ private fun CellEditor(
 ) {
     Box(
         modifier = Modifier
-            .width(COLUMN_WIDTH)
+            .width(LocalTableWidths.current.of(column))
             .height(ROW_HEIGHT)
             // **La cella si mangia i tocchi che non colpiscono niente.**
             // Senza, il tocco sullo spazio vuoto accanto a una casella

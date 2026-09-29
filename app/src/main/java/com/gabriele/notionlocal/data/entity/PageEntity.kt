@@ -253,6 +253,13 @@ data class PageEntity(
     var viewName: String? = null,
     // Sul database: quale delle sue viste si vede adesso. null = la sua.
     var activeViewId: String? = null,
+    // **Le larghezze delle colonne della tabella** (dal 29/09/2026), di
+    // questa vista: JSON {"idColonna": dp}, Name con "__name__". Vedi
+    // `ColumnWidths.kt`.
+    var columnWidths: String? = null,
+    // Le colonne che si allargano quanto il loro contenuto ("Fit to
+    // content"), separate da virgole.
+    var fitColumns: String? = null,
     // Quale proprietà data colloca le righe nel calendario. null = non
     // scelta: si usa la prima proprietà di tipo data che c'è.
     var calendarDateColumnId: String? = null,

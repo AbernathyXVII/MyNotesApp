@@ -55,7 +55,7 @@ import kotlinx.serialization.json.Json
         NotebookEntity::class,
         NotebookSectionEntity::class
     ],
-    version = 43,
+    version = 44,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -663,6 +663,18 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /**
+         * 43 → 44 (29/09/2026): le larghezze delle colonne della tabella
+         * (`PageEntity.columnWidths`, `fitColumns`). Nessuna colonna ne ha
+         * una sua: tutte restano larghe com'erano.
+         */
+        private val MIGRATION_43_44 = object : Migration(43, 44) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE pages ADD COLUMN columnWidths TEXT")
+                db.execSQL("ALTER TABLE pages ADD COLUMN fitColumns TEXT")
+            }
+        }
+
+        /**
          * Solo per i test: chiude il database e lo dimentica, così il
          * `getInstance` dopo riapre il file da capo (e ne esegue le
          * migrazioni). Senza, il secondo test troverebbe il database del
@@ -718,7 +730,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_39_40,
                         MIGRATION_40_41,
                         MIGRATION_41_42,
-                        MIGRATION_42_43
+                        MIGRATION_42_43,
+                        MIGRATION_43_44
                     )
                     .build()
                 INSTANCE = instance

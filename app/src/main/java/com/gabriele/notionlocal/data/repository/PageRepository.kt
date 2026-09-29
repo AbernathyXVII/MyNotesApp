@@ -5,6 +5,10 @@ import com.gabriele.notionlocal.data.AppDatabase
 import com.gabriele.notionlocal.data.TextStats
 import com.gabriele.notionlocal.data.textStatsOf
 import com.gabriele.notionlocal.data.entity.BlockEntity
+import com.gabriele.notionlocal.data.entity.encodeColumnWidths
+import com.gabriele.notionlocal.data.entity.encodeFitColumns
+import com.gabriele.notionlocal.data.entity.parseColumnWidths
+import com.gabriele.notionlocal.data.entity.parseFitColumns
 import com.gabriele.notionlocal.data.entity.BlockType
 import com.gabriele.notionlocal.data.entity.DatabaseLayout
 import com.gabriele.notionlocal.data.entity.DatabaseCellEntity
@@ -1130,6 +1134,11 @@ class PageRepository(private val db: AppDatabase) {
                     calendarDateColumnId = column(original.calendarDateColumnId),
                     sortColumnId = column(original.sortColumnId),
                     filterColumnId = column(original.filterColumnId),
+                    // Anche le larghezze delle colonne sono per id.
+                    columnWidths = encodeColumnWidths(
+                        parseColumnWidths(original.columnWidths).mapKeys { (key, _) -> column(key) ?: key }
+                    ),
+                    fitColumns = encodeFitColumns(parseFitColumns(original.fitColumns).map { column(it) ?: it }.toSet()),
                     // Le viste in più non si copiano: la copia mostra la sua.
                     activeViewId = null,
                     isFavorite = false,

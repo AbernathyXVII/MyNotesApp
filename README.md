@@ -2022,6 +2022,57 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**29/09/2026 — Tabelle: la larghezza delle colonne, col segnalino o adattata al contenuto**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 250 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Permettimi di allargare o rimpicciolire la larghezza delle colonne,
+> magari con un'opzione che mi fa attivare un segnalino che viene fuori
+> tra la fine della colonna che voglio allargare/ rimpicciolire e l'inizo
+> di quella a destra, come si fain Excel che mi permette di spostare verso
+> destra per allargare la colonna o verso sinstra per rimpicciolirla.
+> Mettimi anche un'opzione attivabile e disattivabile quando tengo premuto
+> su una proprietà che mi consente di allargare fino a che nella colonna
+> si vede tutto quello che c'è scritto, classica cosa che (anche se si fa
+> manualmente) fa Excel quando faccio doppio click sul bordino di una
+> colonna»
+
+- **[Nuova funzionalità]** Tenendo premuta l'intestazione di una colonna
+  (anche **Name**) c'è "**Resize column**": compare un **segnalino** blu
+  sul bordo fra quella colonna e la successiva, e la linea del bordo si
+  colora dall'intestazione all'ultima riga. Trascinato **a destra allarga**
+  la colonna, **a sinistra la stringe**, dal vivo; lasciato, la misura
+  resta. Il segnalino resta lì per altri ritocchi e se ne va toccando la
+  tabella da un'altra parte. Vicino alla larghezza di partenza (150, Name
+  200) si aggancia lì: si torna precisi a com'era
+- **[Nuova funzionalità]** Nello stesso menu "**Fit to content**", con
+  l'interruttore: acceso, la colonna è **larga quanto serve perché si legga
+  tutto**, su una riga sola: l'intestazione, ogni cella delle righe mostrate
+  (testo, tag, date, numeri, colori…) e il calcolo in fondo. Resta acceso:
+  scrivendo, la colonna segue. Spento, torna la larghezza di prima;
+  trascinare il segnalino lo spegne
+- Le larghezze sono **di ogni vista**, come su Notion: una vista collegata
+  o una vista in più hanno le loro. Con "Lock view" le due voci sono grigie
+- **[Progetto]** **Database alla versione 44**: `pages.columnWidths`
+  (JSON, dp per colonna; Name è "__name__") e `pages.fitColumns`. Vedi
+  `ColumnWidths.kt`; nella tabella le larghezze le leggono intestazioni,
+  celle e calcoli da `LocalTableWidths`. Copiando un database le larghezze
+  passano alle colonne nuove. Test in `ColumnWidthTest` (il primo giro ha
+  trovato un errore vero: salvare una larghezza avrebbe chiuso l'app) e
+  `MigrationTest` 43→44, col file `v43.sql`
+- Verificato sul telefono (copia del database prima; migrazione alla 44
+  senza errori) sulla pagina di prova "Titolo tre H3", vista collegata
+  "Videogiochi": "Resize column" su Select fa comparire il segnalino fra
+  Select e Text con la linea blu su tutte le righe; trascinato a sinistra
+  la colonna si stringe (salvata a 78) e il segnalino la segue; toccando
+  l'intestazione Name se ne va. "Fit to content" su Text la adatta a
+  "Esempio 1" e, dopo la correzione, anche a "NOT EMPTY 100%" del calcolo,
+  che prima si tagliava; su Name la stringe a "Esempio nuovo" + OPEN.
+  Trascinando Select di nuovo a destra si è agganciata a 150. Poi tutto
+  spento: il database è uguale alla copia, tranne la data di ultima
+  modifica della vista collegata
+
 **29/09/2026 — La maiuscola automatica, ovunque si scriva, solo a campo vuoto**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 240 test
 passati; commit solo in locale)*
@@ -7568,7 +7619,8 @@ le finestre che apre. Chi lo usa passa solo l'id del blocco.
 
 ## Nota tecnica
 
-Lo schema è alla **versione 43** (la 43, del 29/09/2026, aggiunge
+Lo schema è alla **versione 44** (la 44, del 29/09/2026, aggiunge
+`pages.columnWidths` e `fitColumns`, la larghezza delle colonne della tabella; la 43, dello stesso giorno, aggiunge
 `pages.viewHostId`, `viewName` e `activeViewId`, le viste di un database; la 42, dello stesso giorno, aggiunge
 `pages.hideEmptySubGroups`, l'interruttore dei sottogruppi vuoti; la 41, dello stesso giorno, aggiunge
 `pages.tableSubGroupColumnId`, i sottogruppi della tabella; la 40, del 28/09/2026, aggiunge

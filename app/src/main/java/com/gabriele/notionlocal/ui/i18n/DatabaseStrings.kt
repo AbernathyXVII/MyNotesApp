@@ -590,6 +590,11 @@ object DbStrings {
 
     /** Nelle azioni di una scheda della galleria: l'inquadratura della copertina, solo nella scheda. */
     val repositionCover get() = t("Reposition cover", "Riposiziona copertina", "Titelbild neu positionieren", "Repositionner la couverture", "Reposicionar portada", "调整封面位置", "커버 위치 조정", "カバーの位置を調整")
+    // --- La larghezza delle colonne (dal 29/09/2026) ---
+
+    val resizeColumn get() = t("Resize column", "Ridimensiona la colonna", "Spaltenbreite ändern", "Redimensionner la colonne", "Cambiar ancho de columna", "调整列宽", "열 너비 조정", "列幅を変更")
+    val fitToContent get() = t("Fit to content", "Adatta al contenuto", "An Inhalt anpassen", "Ajuster au contenu", "Ajustar al contenido", "适应内容", "내용에 맞추기", "内容に合わせる")
+
     // --- Le viste (dal 29/09/2026) ---
 
     val views get() = t("Views", "Viste", "Ansichten", "Vues", "Vistas", "视图", "보기", "ビュー")

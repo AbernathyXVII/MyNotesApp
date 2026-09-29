@@ -2,6 +2,12 @@ package com.gabriele.notionlocal.viewmodel
 
 import com.gabriele.notionlocal.data.entity.withDateSettings
 import com.gabriele.notionlocal.data.entity.DateSettings
+import com.gabriele.notionlocal.data.entity.defaultColumnWidth
+import com.gabriele.notionlocal.data.entity.snapColumnWidth
+import com.gabriele.notionlocal.data.entity.encodeColumnWidths
+import com.gabriele.notionlocal.data.entity.encodeFitColumns
+import com.gabriele.notionlocal.data.entity.parseColumnWidths
+import com.gabriele.notionlocal.data.entity.parseFitColumns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gabriele.notionlocal.data.PageImageStore
@@ -1284,6 +1290,36 @@ class DatabaseViewModel(
     }
 
     /** Dove sta il risultato del calcolo di una colonna (dal 26/09/2026): tenendo premuto il calcolo. */
+    /**
+     * **La larghezza di una colonna** (dal 29/09/2026), trascinando il suo
+     * segnalino: vale per questa vista. Allargarla o stringerla a mano
+     * spegne "Fit to content" su quella colonna — si è scelta una misura.
+     */
+    fun setColumnWidth(key: String, widthDp: Int) {
+        val current = _page.value ?: return
+        // Tornata alla larghezza di sempre, non c'è niente da ricordare.
+        val width = snapColumnWidth(key, widthDp)
+        val widths = parseColumnWidths(current.columnWidths).let {
+            if (width == defaultColumnWidth(key)) it - key else it + (key to width)
+        }
+        val fit = parseFitColumns(current.fitColumns) - key
+        val updated = current.copy(columnWidths = encodeColumnWidths(widths), fitColumns = encodeFitColumns(fit))
+        _page.value = updated
+        viewModelScope.launch { pageRepository.updatePage(updated) }
+    }
+
+    /**
+     * "Fit to content" acceso o spento su una colonna: acceso, la colonna è
+     * larga quanto quello che c'è scritto; spento, torna la sua larghezza.
+     */
+    fun setFitToContent(key: String, fit: Boolean) {
+        val current = _page.value ?: return
+        val keys = parseFitColumns(current.fitColumns).let { if (fit) it + key else it - key }
+        val updated = current.copy(fitColumns = encodeFitColumns(keys))
+        _page.value = updated
+        viewModelScope.launch { pageRepository.updatePage(updated) }
+    }
+
     fun setCalculationAlignment(key: String, alignment: CellAlignment) {
         val current = _page.value ?: return
         val calcs = parseViewCalculations(current.viewCalculations)
