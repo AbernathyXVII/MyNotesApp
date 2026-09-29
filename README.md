@@ -2022,6 +2022,28 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**29/09/2026 — Life progress: le barre riempiono il widget**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 273 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Allargami le barre della Life progress bar fino a che riempiono la loro
+> sezione dedicata (ovviamente fai rispettare il limite se attivo i
+> decimali)»
+
+- **[Nuova funzionalità]** La scritta accanto alle barre non ha più una
+  larghezza fissa (112, più del necessario, con uno spazio vuoto a
+  destra): è **larga quanto la più lunga del widget**, e tutto il resto va
+  alle barre, che ora arrivano fin lì. La si misura **al 100%**
+  ("Month: 100%"), il caso peggiore, così non cambia mentre le percentuali
+  salgono: le barre non si spostano e restano lunghe uguali
+- **Col decimale** la misura è "100,0%": le barre si accorciano di quel
+  tanto, e il numero ci sta sempre. Un nome lunghissimo di una data si
+  ferma a 140 e si accorcia coi puntini
+- Verificato sul telefono: le barre passano da circa 540 a 690 pixel,
+  subito prima di "Year: 74%"; col decimale 660, tutte uguali, con
+  "Month: 96,0%" intero. Il decimale lasciato spento, com'era
+
 **29/09/2026 — Life progress: il decimale sulle percentuali, da accendere e spegnere**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 273 test
 passati; commit solo in locale)*

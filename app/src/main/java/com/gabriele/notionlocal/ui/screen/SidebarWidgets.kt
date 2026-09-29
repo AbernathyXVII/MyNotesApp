@@ -702,15 +702,18 @@ private fun LifeProgressView(widget: LifeProgressWidget, now: Long) {
     var adding by remember(widget.id) { mutableStateOf(false) }
     var coloring by remember(widget.id) { mutableStateOf<ProgressBarSetting?>(null) }
     val instant = Instant.ofEpochMilli(now)
-    // Col decimale le scritte si allungano di ",0": le barre si accorciano
-    // tutte di quel tanto, così restano lunghe uguali.
+    // **Le barre riempiono il widget** (dal 29/09/2026): la scritta accanto è
+    // larga quanto la più lunga delle sue, misurata al 100% ("100,0%" col
+    // decimale) — il caso peggiore, così non cambia mentre le percentuali
+    // salgono e le barre restano ferme e lunghe uguali. Tutto il resto va
+    // alle barre. Un nome lunghissimo di una data si accorcia coi puntini.
     val measurer = rememberTextMeasurer()
     val style = MaterialTheme.typography.bodyMedium
     val density = LocalDensity.current
-    val labelWidth = if (widget.decimals) {
-        PROGRESS_LABEL_WIDTH + with(density) { measurer.measure(",0", style).size.width.toDp() } + 2.dp
-    } else {
-        PROGRESS_LABEL_WIDTH
+    val labels = widget.bars.map { "${it.label()}: ${progressPercentText(1.0, widget.decimals, Formats::number)}" }
+    val labelWidth = remember(labels, style, density) {
+        val widest = labels.maxOfOrNull { measurer.measure(it, style, maxLines = 1, softWrap = false).size.width } ?: 0
+        (with(density) { widest.toDp() } + 2.dp).coerceAtMost(PROGRESS_LABEL_MAX_WIDTH)
     }
 
     widget.bars.forEach { bar ->
@@ -841,6 +844,9 @@ private fun ProgressRow(
 }
 
 private val PROGRESS_LABEL_WIDTH = 112.dp
+
+/** Più larga di così la scritta non va: le barre devono restare barre. */
+private val PROGRESS_LABEL_MAX_WIDTH = 140.dp
 
 /** Una data dell'utente: nome, da quando e fino a quando. Si parte da oggi e da fra un mese. */
 @Composable
