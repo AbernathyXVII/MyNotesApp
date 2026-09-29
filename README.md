@@ -2022,6 +2022,54 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**29/09/2026 — Nuova proprietà "Page link": il collegamento a un'altra pagina**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 271 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Nuova proprietà: collegamento ad un'altra pagina. In un database, quando
+> seleziono la nuova proprietà chiamata "Page link", posso cercare tramite
+> una ricerca gerarchica nel Workspace (con la possibilità di ricercare
+> all'interno di esso il nome della pagina scrivendo nella barra di
+> ricerca) la pagina che potrà essere aperta se la tocco, e all'interno di
+> quella cella ci sarà il collegamento a quella pagina (può anche essere
+> all'interno dello stesso database dove sono contenuti sia la pagina da
+> collegare sia la pagina a cui devo collegare la pagina originale)»
+
+- **[Nuova funzionalità]** Fra i tipi di proprietà c'è "**Page link**"
+  (icona ↗). Toccando la cella si apre "**Page link**": l'**albero del
+  Workspace**, con le pagine che si aprono come nella barra laterale e i
+  database che mostrano le loro righe, e in cima la **barra di ricerca**
+  per trovare la pagina per nome (sotto ogni risultato, dove sta). Si
+  sceglie qualsiasi pagina, **anche quella di un'altra riga dello stesso
+  database**; una riga mai aperta si sceglie lo stesso, e la sua pagina
+  nasce allora
+- Nella cella si vede la pagina collegata, con la sua icona e il **titolo
+  di adesso** (sottolineato): rinominata altrove, qui si aggiorna da sola.
+  **Toccandola la si apre.** Toccando il resto della cella si cambia
+  pagina, o la si toglie con "**Remove link**" in cima. Se la pagina non
+  c'è più, "Page not found"
+- Vale anche nelle **proprietà in cima alla pagina di una riga**, e nelle
+  schede di bacheca, galleria e lista ("↗ titolo"). Si ordina per titolo;
+  "Fit to content" misura il titolo. Non si filtra e non si raggruppa (i
+  gruppi e le barre del grafico si chiamerebbero con un codice)
+- **[Progetto]** `ColumnType.PAGE_LINK`, il valore è l'id della pagina;
+  `PageLinkCell.kt` (`PageLinkHost` per aprire e scegliere,
+  `LocalLinkedPages` per i titoli, che il ViewModel segue con
+  `PageDao.observeByIds`). La scelta è quella di "Duplicate"/"Move to"
+  (`DestinationPickerSheet`, ora con una voce per togliere). Copiando un
+  database, un collegamento alla pagina di una sua riga passa alla copia di
+  quella pagina. Nessun cambio di schema. Test in `PageLinkTest`
+- Verificato sul telefono sulla pagina di prova "Titolo tre H3" (copia del
+  database prima): aggiunta la proprietà "Page link" a "Videogiochi"; la
+  cella di "1" apre l'albero, "Videogiochi" aperto mostra le sue righe,
+  scelta "2": nella cella "2" sottolineato, e toccandolo si apre la pagina
+  "2". Lì, nelle proprietà in cima, "Page link" cercando "Esempio" trova
+  "Esempio nuovo — In Videogiochi", e la sceglie; toccando la cella fuori
+  dal titolo "Remove link" la toglie. Poi la proprietà cancellata: il
+  database è uguale a prima, tranne "Last edited" delle righe "1" e "2",
+  che sono state scritte durante la prova
+
 **29/09/2026 — Sotto-righe: "Move up" e "Move down" solo sotto la loro riga (verifica)**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; nessuna
 modifica al codice; commit solo in locale)*

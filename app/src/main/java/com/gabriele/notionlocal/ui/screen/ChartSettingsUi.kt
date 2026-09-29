@@ -252,7 +252,8 @@ internal fun ChartSettingsDetail(
             ChoiceRow(Icons.Filled.TextFields, DbStrings.name, settings.groupColumnId == null) {
                 onChange(settings.copy(groupColumnId = null))
             }
-            columns.forEach { column ->
+            // "Page link" no: le barre si chiamerebbero con l'id della pagina.
+            columns.filter { it.type != ColumnType.PAGE_LINK }.forEach { column ->
                 HorizontalDivider()
                 ChoiceRow(column.type.icon(), DbStrings.columnName(column.name), settings.groupColumnId == column.id) {
                     onChange(settings.copy(groupColumnId = column.id))

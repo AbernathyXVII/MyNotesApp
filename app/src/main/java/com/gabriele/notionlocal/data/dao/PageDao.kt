@@ -202,6 +202,10 @@ interface PageDao {
     @Query("SELECT * FROM pages WHERE id IN (:ids)")
     suspend fun getByIds(ids: List<String>): List<PageEntity>
 
+    /** Le pagine collegate dalle celle "Page link", seguite: rinominate altrove, qui si vede subito. */
+    @Query("SELECT * FROM pages WHERE id IN (:ids)")
+    fun observeByIds(ids: List<String>): Flow<List<PageEntity>>
+
     /** I template (`PageEntity.isTemplate`) fuori dal cestino, per nome. */
     @Query("SELECT * FROM pages WHERE isTemplate = 1 AND trashedAt IS NULL ORDER BY title COLLATE NOCASE ASC, createdAt ASC")
     fun observeTemplates(): Flow<List<PageEntity>>

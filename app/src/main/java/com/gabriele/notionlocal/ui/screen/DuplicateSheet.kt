@@ -28,6 +28,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.material.icons.filled.LinkOff
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -220,7 +221,10 @@ internal fun DestinationPickerSheet(
     viewModelKey: String,
     onDismiss: () -> Unit,
     onPick: (PageTreeNode) -> Unit,
-    excluded: MoveExclusions? = null
+    excluded: MoveExclusions? = null,
+    /** Una voce in cima per togliere quello che c'è ("Remove link" di "Page link"); null = niente. */
+    onClear: (() -> Unit)? = null,
+    clearLabel: String = ""
 ) {
     val picker: PagePickerViewModel = viewModel(factory = factory, key = viewModelKey)
     LaunchedEffect(Unit) { picker.reset() }
@@ -254,6 +258,20 @@ internal fun DestinationPickerSheet(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 12.dp)
             )
+            if (onClear != null) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onClear)
+                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Filled.LinkOff, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.size(12.dp))
+                    Text(clearLabel, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodyLarge)
+                }
+                Spacer(modifier = Modifier.size(4.dp))
+            }
             SearchField(
                 value = query,
                 onValueChange = picker::setQuery,

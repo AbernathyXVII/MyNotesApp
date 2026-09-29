@@ -1842,7 +1842,8 @@ private fun PageEditorContent(
                         pageId = pageId,
                         factory = factory,
                         editable = !readOnlyPage,
-                        modifier = Modifier.padding(top = 8.dp)
+                        modifier = Modifier.padding(top = 8.dp),
+                        onOpenPage = onNavigateToPage
                     )
                 }
                 if (showTemplatePicker) {

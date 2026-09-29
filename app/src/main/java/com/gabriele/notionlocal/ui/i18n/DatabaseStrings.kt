@@ -39,6 +39,7 @@ object DbStrings {
         ColumnType.URL -> "URL"
         ColumnType.EMAIL -> "Email"
         ColumnType.PHONE -> "Phone"
+        ColumnType.PAGE_LINK -> "Page link"
         ColumnType.CREATED_TIME -> "Created time"
         ColumnType.LAST_EDITED_TIME -> "Last edited time"
     }
@@ -54,6 +55,7 @@ object DbStrings {
         ColumnType.URL -> t("URL", "URL", "URL", "URL", "URL", "网址", "URL", "URL")
         ColumnType.EMAIL -> t("Email", "Email", "E-Mail", "E-mail", "Correo", "电子邮件", "이메일", "メール")
         ColumnType.PHONE -> t("Phone", "Telefono", "Telefon", "Téléphone", "Teléfono", "电话", "전화", "電話")
+        ColumnType.PAGE_LINK -> t("Page link", "Collegamento a pagina", "Seitenlink", "Lien de page", "Enlace a página", "页面链接", "페이지 링크", "ページリンク")
         ColumnType.CREATED_TIME -> t("Created time", "Data di creazione", "Erstellt am", "Date de création", "Fecha de creación", "创建时间", "생성 일시", "作成日時")
         ColumnType.LAST_EDITED_TIME -> t("Last edited time", "Ultima modifica", "Zuletzt bearbeitet", "Dernière modification", "Última edición", "上次编辑时间", "마지막 편집 일시", "最終更新日時")
     }
@@ -600,6 +602,21 @@ object DbStrings {
 
     /** Nelle azioni di una scheda della galleria: l'inquadratura della copertina, solo nella scheda. */
     val repositionCover get() = t("Reposition cover", "Riposiziona copertina", "Titelbild neu positionieren", "Repositionner la couverture", "Reposicionar portada", "调整封面位置", "커버 위치 조정", "カバーの位置を調整")
+    // --- "Page link" (dal 29/09/2026) ---
+
+    val pageLinkHint get() = t(
+        "Choose the page to link: search it by name, or open the pages to find it.",
+        "Scegli la pagina da collegare: cercala per nome, o apri le pagine per trovarla.",
+        "Wähle die Seite, die verknüpft werden soll: suche sie nach Namen oder öffne die Seiten.",
+        "Choisissez la page à lier : cherchez-la par son nom ou ouvrez les pages pour la trouver.",
+        "Elige la página que enlazar: búscala por su nombre o abre las páginas para encontrarla.",
+        "选择要链接的页面：按名称搜索，或展开页面查找。",
+        "연결할 페이지를 고르세요. 이름으로 검색하거나 페이지를 펼쳐 찾으세요.",
+        "リンクするページを選んでください。名前で検索するか、ページを開いて探します。"
+    )
+    val removeLink get() = t("Remove link", "Togli il collegamento", "Link entfernen", "Retirer le lien", "Quitar enlace", "移除链接", "링크 제거", "リンクを外す")
+    val pageNotFound get() = t("Page not found", "Pagina non trovata", "Seite nicht gefunden", "Page introuvable", "Página no encontrada", "找不到页面", "페이지를 찾을 수 없음", "ページが見つかりません")
+
     // --- Le sotto-righe (dal 29/09/2026) ---
 
     val createSubRow get() = t("Create sub row", "Crea una sotto-riga", "Unterzeile erstellen", "Créer une sous-ligne", "Crear subfila", "创建子行", "하위 행 만들기", "サブ行を作成")

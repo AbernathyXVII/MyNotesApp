@@ -773,6 +773,10 @@ fun DatabaseContent(
     var chartTypeForView by remember { mutableStateOf<String?>(null) }
     val focusManager = LocalFocusManager.current
 
+    // "Page link": le pagine collegate e la scelta, per tutte le viste (le
+    // celle sono le stesse) e per le finestre che le mostrano.
+    val linkedPages by hostViewModel.linkedPages.collectAsStateWithLifecycle()
+    PageLinkHost(factory = factory, linkedPages = linkedPages, onOpenPage = onOpenRowPage) {
     // Una vista, un ViewModel e un pezzo di schermo nuovi: niente di
     // quello che era aperto su una resta appeso all'altra.
     key(activeId) {
@@ -804,6 +808,7 @@ fun DatabaseContent(
             onChartTypeStarted = { chartTypeForView = null },
             modifier = modifier
         )
+    }
     }
 
     val host = hostPage
@@ -2029,7 +2034,8 @@ private fun fitWidths(
     val density = LocalDensity.current
     val simple = LocalSimpleDatabase.current
     val icons = LocalRowIcons.current
-    return remember(state, columns, keys, calculations, subRowKeys, typography, density, simple, icons) {
+    val linkedPages = LocalLinkedPages.current
+    return remember(state, columns, keys, calculations, subRowKeys, typography, density, simple, icons, linkedPages) {
         if (keys.isEmpty()) return@remember emptyMap()
         val measure: (String, ComposeTextStyle) -> Dp = { text, style ->
             if (text.isEmpty()) {
@@ -2061,7 +2067,7 @@ private fun fitWidths(
             columns.filter { it.id in keys }.forEach { column ->
                 val header = 12.dp + 16.dp + 8.dp + measure(DbStrings.columnName(column.name), typography.labelLarge) + 12.dp
                 val cells = state.rows.maxOfOrNull { row ->
-                    cellFitWidth(column, row, state.cellValues[row.id to column.id].orEmpty(), typography, measure) + 24.dp
+                    cellFitWidth(column, row, state.cellValues[row.id to column.id].orEmpty(), typography, measure) { linkedPages[it]?.title } + 24.dp
                 } ?: 0.dp
                 val calc = validCalculation(calculations, column.id, column.type)?.let {
                     calculationWidth(it, columnCalculationText(it, column, rowsForCalculation(state.rows, column.id in subRowKeys), state))
@@ -2100,9 +2106,18 @@ internal fun cellFitWidth(
     row: DatabaseRowEntity,
     value: String,
     typography: Typography,
-    measure: (String, ComposeTextStyle) -> Dp
+    measure: (String, ComposeTextStyle) -> Dp,
+    /** Il titolo della pagina di una cella "Page link", o null se non c'è più. */
+    pageTitle: (String) -> String? = { null }
 ): Dp = when (column.type) {
     ColumnType.CHECKBOX -> 24.dp
+    // L'icona, 6 punti, il titolo (o "Page not found").
+    ColumnType.PAGE_LINK -> if (value.isEmpty()) {
+        0.dp
+    } else {
+        pageTitle(value)?.let { 16.dp + 6.dp + measure(it.ifBlank { Strings.untitled }, typography.bodyMedium) }
+            ?: measure(DbStrings.pageNotFound, typography.bodyMedium)
+    }
     ColumnType.SELECT, ColumnType.MULTI_SELECT -> {
         val labels = if (column.type == ColumnType.MULTI_SELECT) {
             value.split(MULTI_VALUE_SEPARATOR).filter { it.isNotBlank() }
@@ -5868,7 +5883,7 @@ private fun CellContent(
     Box(
         // La data e la cella colorata se lo mettono da sé, dentro la
         // propria zona toccabile.
-        modifier = if (column.type == ColumnType.DATE || column.type == ColumnType.COLOR) {
+        modifier = if (column.type == ColumnType.DATE || column.type == ColumnType.COLOR || column.type == ColumnType.PAGE_LINK) {
             Modifier
         } else {
             Modifier.padding(horizontal = cellPadding)
@@ -5911,6 +5926,13 @@ private fun CellContent(
                 onValueChange = onValueChange,
                 contentPadding = cellPadding,
                 settings = column.dateSettings()
+            )
+
+            ColumnType.PAGE_LINK -> PageLinkCell(
+                value = value,
+                onValueChange = onValueChange,
+                contentPadding = cellPadding,
+                alignment = LocalCellAlignment.current.box
             )
 
             ColumnType.COLOR -> ColorCell(
@@ -6648,6 +6670,18 @@ private fun CardPropertyValue(
     value: String,
     overflow: TextOverflow = TextOverflow.Clip
 ) {
+    // "Page link": la freccia e il titolo di adesso della pagina collegata.
+    if (column.type == ColumnType.PAGE_LINK) {
+        val page = LocalLinkedPages.current[value]
+        Text(
+            text = page?.let { "↗ " + it.title.ifBlank { Strings.untitled } } ?: DbStrings.pageNotFound,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = overflow
+        )
+        return
+    }
     if (column.type != ColumnType.COLOR) {
         Text(
             text = listCellLabel(column, value),
@@ -7633,7 +7667,7 @@ private fun DateEditorTimeRow(label: String, time: LocalTime, onClick: () -> Uni
  * cella, editor — e infilare lo stesso `Boolean` in tutte le firme è un
  * modo sicuro di dimenticarselo in una.
  */
-private val LocalDatabaseLocked = staticCompositionLocalOf { false }
+internal val LocalDatabaseLocked = staticCompositionLocalOf { false }
 
 /**
  * Se il database aperto è **semplice** (`PageEntity.isSimpleDatabase`):
@@ -7998,7 +8032,9 @@ internal fun RowPageProperties(
     factory: ViewModelFactory,
     /** Falso con la pagina bloccata o nel cestino: le proprietà si leggono e basta. */
     editable: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** "Page link": apre la pagina collegata. */
+    onOpenPage: (String) -> Unit = {}
 ) {
     val row by remember(pageId) { factory.pageRepository.observeRowOfPage(pageId) }
         .collectAsStateWithLifecycle(initialValue = null)
@@ -8014,7 +8050,9 @@ internal fun RowPageProperties(
     // Il database bloccato blocca anche le sue proprietà, come nella tabella.
     val canEdit = editable && dataPage?.isLocked != true
     var addingProperty by remember { mutableStateOf(false) }
+    val linkedPages by viewModel.linkedPages.collectAsStateWithLifecycle()
 
+    PageLinkHost(factory = factory, linkedPages = linkedPages, onOpenPage = onOpenPage) {
     CompositionLocalProvider(LocalDatabaseLocked provides !canEdit) {
         Column(
             modifier = modifier
@@ -8114,6 +8152,7 @@ internal fun RowPageProperties(
             Spacer(modifier = Modifier.size(8.dp))
             HorizontalDivider()
         }
+    }
     }
 
     if (addingProperty) {
@@ -8625,8 +8664,10 @@ private fun SettingsSheet(
                         it.type != ColumnType.CREATED_TIME &&
                             it.type != ColumnType.LAST_EDITED_TIME &&
                             // Un gruppo per colore avrebbe per nome un
-                            // codice ("#E03E3E"): non si legge.
-                            it.type != ColumnType.COLOR
+                            // codice ("#E03E3E"): non si legge. Lo stesso
+                            // "Page link", che salva l'id della pagina.
+                            it.type != ColumnType.COLOR &&
+                            it.type != ColumnType.PAGE_LINK
                     }
                     SheetGroup {
                         SettingsRow(
@@ -8663,6 +8704,7 @@ private fun SettingsSheet(
                         it.type != ColumnType.CREATED_TIME &&
                             it.type != ColumnType.LAST_EDITED_TIME &&
                             it.type != ColumnType.COLOR &&
+                            it.type != ColumnType.PAGE_LINK &&
                             it.id != tableGroupColumn?.id
                     }
                     SheetGroup {
@@ -9325,6 +9367,7 @@ internal fun ColumnType.icon(): ImageVector = when (this) {
     ColumnType.URL -> Icons.Filled.Link
     ColumnType.EMAIL -> Icons.Filled.AlternateEmail
     ColumnType.PHONE -> Icons.Filled.Call
+    ColumnType.PAGE_LINK -> Icons.Filled.NorthEast
     ColumnType.CREATED_TIME -> Icons.Filled.Schedule
     ColumnType.LAST_EDITED_TIME -> Icons.Filled.Update
 }

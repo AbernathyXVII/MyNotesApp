@@ -226,6 +226,13 @@ class DatabaseViewModel(
     private val _dataPage = MutableStateFlow<PageEntity?>(null)
     val dataPage: StateFlow<PageEntity?> = _dataPage
 
+    // --- "Page link" (dal 29/09/2026) ---
+
+    private val _linkedPages = MutableStateFlow<Map<String, PageEntity>>(emptyMap())
+
+    /** Le pagine collegate dalle celle "Page link", per id: il titolo e l'icona di adesso. */
+    val linkedPages: StateFlow<Map<String, PageEntity>> = _linkedPages
+
     // --- Le viste del database (dal 29/09/2026, come su Notion) ---
 
     private val _views = MutableStateFlow<List<PageEntity>>(emptyList())
@@ -368,6 +375,22 @@ class DatabaseViewModel(
             pageRepository.observePage(pageId)
                 .distinctUntilChanged()
                 .collect { fromDb -> if (fromDb != null) _page.value = fromDb }
+        }
+
+        // Le pagine collegate dalle celle "Page link", seguite nel tempo.
+        viewModelScope.launch {
+            _tableState
+                .map { state ->
+                    val linkColumns = state.columns.filter { it.type == ColumnType.PAGE_LINK }.mapTo(HashSet()) { it.id }
+                    if (linkColumns.isEmpty()) {
+                        emptySet()
+                    } else {
+                        state.cellValues.filter { (key, value) -> key.second in linkColumns && value.isNotEmpty() }.values.toSet()
+                    }
+                }
+                .distinctUntilChanged()
+                .flatMapLatest { ids -> if (ids.isEmpty()) flowOf(emptyList()) else pageRepository.observePages(ids.toList()) }
+                .collect { pages -> _linkedPages.value = pages.associateBy { it.id } }
         }
 
         // Le viste in più di questo database (vedi `PageEntity.viewHostId`).
@@ -744,6 +767,8 @@ class DatabaseViewModel(
                 raw
             )
             ColumnType.CHECKBOX -> SortValue(if (raw == "true") 1.0 else 0.0, raw)
+            // Per il titolo della pagina collegata, non per il suo id.
+            ColumnType.PAGE_LINK -> SortValue(null, if (raw.isEmpty()) "" else _linkedPages.value[raw]?.title ?: raw)
             // Per il testo che c'è scritto sopra, non per il colore.
             ColumnType.COLOR -> SortValue(null, parseColorCell(raw).text)
             ColumnType.CREATED_TIME -> SortValue(row.createdAt.toDouble(), "x")

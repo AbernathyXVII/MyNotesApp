@@ -27,6 +27,12 @@ enum class ColumnType {
     URL,
     EMAIL,
     PHONE,
+    /**
+     * **"Page link"** (dal 29/09/2026): il collegamento a un'altra pagina
+     * del Workspace, anche quella di un'altra riga dello stesso database.
+     * Il valore è l'id della pagina. Vedi `PageLinkCell.kt`.
+     */
+    PAGE_LINK,
     CREATED_TIME,
     LAST_EDITED_TIME
 }

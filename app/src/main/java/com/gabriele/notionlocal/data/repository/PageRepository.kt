@@ -5,6 +5,7 @@ import com.gabriele.notionlocal.data.AppDatabase
 import com.gabriele.notionlocal.data.TextStats
 import com.gabriele.notionlocal.data.textStatsOf
 import com.gabriele.notionlocal.data.entity.BlockEntity
+import com.gabriele.notionlocal.data.entity.ColumnType
 import com.gabriele.notionlocal.data.entity.encodeColumnWidths
 import com.gabriele.notionlocal.data.entity.encodeFitColumns
 import com.gabriele.notionlocal.data.entity.parseColumnWidths
@@ -200,6 +201,8 @@ class PageRepository(private val db: AppDatabase) {
 
     /** La pagina seguita nel tempo: vedi `PageDao.observeById`. */
     fun observePage(pageId: String): Flow<PageEntity?> = pageDao.observeById(pageId)
+
+    fun observePages(pageIds: List<String>): Flow<List<PageEntity>> = pageDao.observeByIds(pageIds)
 
     /** Le pagine e i database messi fra i preferiti, tranne quelli nel cestino. */
     fun observeFavorites(): Flow<List<PageEntity>> = pageDao.observeFavorites()
@@ -1217,10 +1220,14 @@ class PageRepository(private val db: AppDatabase) {
                     )
                 )
             }
+            val pageLinkColumns = columns.filter { it.type == ColumnType.PAGE_LINK }.mapTo(HashSet()) { it.id }
             databaseDao.getAllCellsForPageOnce(pageId).forEach { cell ->
                 val rowId = newRowIds[cell.rowId] ?: return@forEach
                 val columnId = newColumnIds[cell.columnId] ?: return@forEach
-                databaseDao.insertCell(cell.copy(id = UUID.randomUUID().toString(), rowId = rowId, columnId = columnId))
+                // "Page link" verso una pagina copiata insieme (di solito la
+                // pagina di un'altra riga): la copia punta alla copia.
+                val value = if (cell.columnId in pageLinkColumns) copies[cell.value] ?: cell.value else cell.value
+                databaseDao.insertCell(cell.copy(id = UUID.randomUUID().toString(), rowId = rowId, columnId = columnId, value = value))
             }
         }
         return copyId
