@@ -72,19 +72,68 @@ class DividerBackspaceTest {
     private fun saved() = runBlocking { db.blockDao().getBlocksForPageOnce(page.id) }.sortedBy { it.orderIndex }
 
     @Test
-    fun backspaceUnderADividerRemovesTheDividerAndKeepsTheLine() {
+    fun underADividerTheFirstBackspaceTakesItAndTheSecondRemovesIt() {
         val sopra = line("Sopra", 0)
         val divider = BlockEntity(pageId = page.id, type = BlockType.DIVIDER, orderIndex = 1)
         val sotto = line("Sotto", 2)
         val ultima = line("Ultima", 3)
         open(sopra, divider, sotto, ultima)
-        val outcome = viewModel.backspaceAtLineStartDetailed(listOf(sotto.id, ultima.id), 0)
-        assertEquals(BackspaceOutcome.MERGED_INTO_ISLAND, outcome)
+        // Il primo lo "prende" (si accende) e non toglie niente.
+        assertEquals(BackspaceOutcome.STEP_UNDONE, viewModel.backspaceAtLineStartDetailed(listOf(sotto.id, ultima.id), 0))
+        assertEquals(divider.id, viewModel.armedDivider.value)
+        repeat(20) { shadowOf(Looper.getMainLooper()).idle(); Thread.sleep(10) }
+        assertEquals(4, saved().size)
+        // Il secondo lo toglie: la riga resta col suo testo, il cursore all'inizio.
+        assertEquals(BackspaceOutcome.MERGED_INTO_ISLAND, viewModel.backspaceAtLineStartDetailed(listOf(sotto.id, ultima.id), 0))
         waitFor("il divisore tolto") { saved().map { it.id } == listOf(sopra.id, sotto.id, ultima.id) }
-        // Il testo resta, e il cursore torna all'inizio della riga.
         assertEquals("Sotto", viewModel.plainTextOf(saved()[1]))
         waitFor("il cursore sulla riga") { viewModel.focusRequestBlockId.value == sotto.id }
         assertEquals(sotto.id to 0, viewModel.pendingCaret.value)
+        assertEquals(null, viewModel.armedDivider.value)
+    }
+
+    /**
+     * **Il bug del 29/09/2026**: cancellando le righe vuote fino al divisore,
+     * all'ultima spariva il divisore e la riga vuota restava.
+     */
+    @Test
+    fun anEmptyLineUnderADividerGoesAwayAndTheDividerStays() {
+        val sopra = line("Sopra", 0)
+        val divider = BlockEntity(pageId = page.id, type = BlockType.DIVIDER, orderIndex = 1)
+        val vuota = line("", 2)
+        val titolo = line("Titolo uno H1", 3)
+        open(sopra, divider, vuota, titolo)
+        assertEquals(BackspaceOutcome.MERGED_INTO_ISLAND, viewModel.backspaceAtLineStartDetailed(listOf(vuota.id, titolo.id), 0))
+        waitFor("la riga vuota tolta") { saved().map { it.id } == listOf(sopra.id, divider.id, titolo.id) }
+        // Il cursore all'inizio della riga salita al suo posto.
+        waitFor("il cursore sul titolo") { viewModel.focusRequestBlockId.value == titolo.id }
+        assertEquals(titolo.id to 0, viewModel.pendingCaret.value)
+        // E il backspace dopo non lo toglie subito: prima lo prende.
+        assertEquals(BackspaceOutcome.STEP_UNDONE, viewModel.backspaceAtLineStartDetailed(listOf(titolo.id), 0))
+        assertEquals(3, saved().size)
+    }
+
+    @Test
+    fun anEmptyLastLineUnderADividerStays() {
+        val divider = BlockEntity(pageId = page.id, type = BlockType.DIVIDER, orderIndex = 0)
+        val vuota = line("", 1)
+        open(divider, vuota)
+        assertEquals(BackspaceOutcome.NOTHING, viewModel.backspaceAtLineStartDetailed(listOf(vuota.id), 0))
+        repeat(20) { shadowOf(Looper.getMainLooper()).idle(); Thread.sleep(10) }
+        assertEquals(listOf(divider.id, vuota.id), saved().map { it.id })
+    }
+
+    @Test
+    fun aTakenDividerLetsGoByItself() {
+        val divider = BlockEntity(pageId = page.id, type = BlockType.DIVIDER, orderIndex = 0)
+        val sotto = line("Sotto", 1)
+        open(divider, sotto)
+        viewModel.backspaceAtLineStartDetailed(listOf(sotto.id), 0)
+        assertEquals(divider.id, viewModel.armedDivider.value)
+        // Il tempo del test va avanti solo a mano.
+        shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(PageEditorViewModel.ARMED_DIVIDER_MS + 100))
+        waitFor("si spegne da solo") { viewModel.armedDivider.value == null }
+        assertEquals(2, saved().size)
     }
 
     @Test

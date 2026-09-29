@@ -5972,11 +5972,20 @@ private fun DividerBlockContent(
     viewModel: PageEditorViewModel
 ) {
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    // "Preso" dal primo backspace sotto di lui (dal 29/09/2026): si accende
+    // d'azzurro, e il secondo backspace lo toglie. Vedi
+    // `PageEditorViewModel.backspaceUnderDivider`.
+    val armedDivider by viewModel.armedDivider.collectAsStateWithLifecycle()
+    val armed = armedDivider == block.id
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = PAGE_SIDE_PADDING + (depth * 20).dp, end = PAGE_SIDE_PADDING)
+            .background(
+                if (armed) MaterialTheme.colorScheme.primary.copy(alpha = 0.18f) else Color.Transparent,
+                RoundedCornerShape(4.dp)
+            )
             .padding(vertical = 12.dp)
             .pointerInput(Unit) {
                 detectTapGestures(onLongPress = { showDeleteConfirm = true })
@@ -5987,7 +5996,7 @@ private fun DividerBlockContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(1.dp)
-                .background(MaterialTheme.colorScheme.outline)
+                .background(if (armed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline)
         )
     }
 

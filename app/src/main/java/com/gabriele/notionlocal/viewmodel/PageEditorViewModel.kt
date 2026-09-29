@@ -100,6 +100,9 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         // fotogramma; mezzo secondo è largo apposta.
         private const val FOCUS_HANDOFF_TIMEOUT_MS = 500L
 
+        /** Quanto resta "preso" un divisore dopo il primo backspace sotto di lui. */
+        const val ARMED_DIVIDER_MS = 3_000L
+
         // Tetto ai passaggi di annulla ricordati, per non far crescere
         // la memoria senza limite su una sessione di modifica lunga.
         private const val MAX_UNDO_STEPS = 50
@@ -2089,11 +2092,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
             // dentro il campo di testo condiviso. Senza questo ramo il
             // backspace lì non faceva niente — sembrava di essere in
             // cima alla pagina mentre sopra c'era ancora roba.
-            lineIndex == 0 -> return if (mergeIntoIslandAbove(block)) {
-                BackspaceOutcome.MERGED_INTO_ISLAND
-            } else {
-                BackspaceOutcome.NOTHING
-            }
+            lineIndex == 0 -> return mergeIntoIslandAbove(block)
             else -> return BackspaceOutcome.NOTHING
         }
         return BackspaceOutcome.STEP_UNDONE
@@ -2110,23 +2109,18 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
      * attraversa il confine, così si può cancellare all'indietro senza
      * trovare muri.
      */
-    private fun mergeIntoIslandAbove(block: BlockEntity): Boolean {
+    private fun mergeIntoIslandAbove(block: BlockEntity): BackspaceOutcome {
         val siblings = _blocks.value
             .filter { it.parentBlockId == block.parentBlockId }
             .sortedBy { it.orderIndex }
         val position = siblings.indexOfFirst { it.id == block.id }
-        if (position <= 0) return false
+        if (position <= 0) return BackspaceOutcome.NOTHING
         val above = siblings[position - 1]
-        // **Sotto un divisore il backspace toglie il divisore** (dal
-        // 29/09/2026; prima non faceva niente, "sotto un divider non posso
-        // cancellare nulla"): come una riga orizzontale in un documento. La
-        // riga resta col suo testo e il cursore all'inizio; un altro
-        // backspace la unisce a quella di sopra.
-        if (above.type == BlockType.DIVIDER) return removeDividerAbove(above, block)
+        if (above.type == BlockType.DIVIDER) return backspaceUnderDivider(above, block, siblings.getOrNull(position + 1))
         // Le isole "contenitore" (tabelle, link, database) non hanno un
         // testo in cui fondersi, e dentro hanno roba da non buttare: lì
         // non si fa niente, come prima.
-        if (above.type != BlockType.CHECKBOX && above.type != BlockType.TOGGLE) return false
+        if (above.type != BlockType.CHECKBOX && above.type != BlockType.TOGGLE) return BackspaceOutcome.NOTHING
 
         val aboveSpans = spansOf(above)
         val joinAt = aboveSpans.plainText().length
@@ -2146,7 +2140,69 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
             _pendingCaret.value = above.id to joinAt
             _focusRequestBlockId.value = above.id
         }
-        return true
+        return BackspaceOutcome.MERGED_INTO_ISLAND
+    }
+
+    // --- Il backspace sotto un divisore (corretto il 29/09/2026) ---
+
+    private val _armedDivider = MutableStateFlow<String?>(null)
+
+    /**
+     * Il divisore "preso" dal backspace, che si accende: il prossimo
+     * backspace a inizio della riga sotto lo toglie. Si spegne da solo dopo
+     * `ARMED_DIVIDER_MS`.
+     */
+    val armedDivider: StateFlow<String?> = _armedDivider
+    private var armedDividerJob: Job? = null
+
+    /**
+     * **Backspace a inizio della riga subito sotto un divisore.**
+     *
+     * Il 29/09/2026 il backspace lì toglieva il divisore ("sotto un divider
+     * non posso cancellare nulla"), ma l'utente voleva cancellare **le righe
+     * vuote** fra il divisore e il testo: arrivato all'ultima, spariva il
+     * divisore e la riga vuota restava ("cancellando lo spazio vuoto fino al
+     * divider me lo cancella"). Ora:
+     *  - **riga vuota**: se ne va lei, il divisore resta, e il cursore va
+     *    all'inizio della riga che sale al suo posto;
+     *  - **riga col testo**: come su Notion, il primo backspace "prende" il
+     *    divisore (si accende), il secondo lo toglie. Così continuando a
+     *    premere non sparisce senza avvisare.
+     */
+    private fun backspaceUnderDivider(divider: BlockEntity, line: BlockEntity, next: BlockEntity?): BackspaceOutcome {
+        if (spansOf(line).plainText().isEmpty()) {
+            // Senza una riga di testo sotto non c'è dove mettere il cursore:
+            // la riga vuota resta, e il divisore con lei.
+            if (next == null || !isFlowingTextType(next.type)) return BackspaceOutcome.NOTHING
+            disarmDivider()
+            snapshotForStructuralChange()
+            viewModelScope.launch {
+                structuralEdits.withLock { repository.applyBlockChanges(deleted = listOf(line)) }
+                withTimeoutOrNull(FOCUS_HANDOFF_TIMEOUT_MS) {
+                    _blocks.first { shown -> shown.none { it.id == line.id } }
+                }
+                _pendingCaret.value = next.id to 0
+                _focusRequestBlockId.value = next.id
+            }
+            return BackspaceOutcome.MERGED_INTO_ISLAND
+        }
+        if (_armedDivider.value == divider.id) {
+            disarmDivider()
+            removeDividerAbove(divider, line)
+            return BackspaceOutcome.MERGED_INTO_ISLAND
+        }
+        _armedDivider.value = divider.id
+        armedDividerJob?.cancel()
+        armedDividerJob = viewModelScope.launch {
+            delay(ARMED_DIVIDER_MS)
+            _armedDivider.compareAndSet(divider.id, null)
+        }
+        return BackspaceOutcome.STEP_UNDONE
+    }
+
+    private fun disarmDivider() {
+        armedDividerJob?.cancel()
+        _armedDivider.value = null
     }
 
     /**

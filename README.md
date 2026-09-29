@@ -2022,6 +2022,39 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**29/09/2026 — Divisori: cancellando le righe vuote sotto, il divisore resta**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 281 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Ho scoperto un bug: stavo sulla riga sopra Titolo uno H1 e cancellando
+> lo spazio vuoto fino al divider accade che me lo cancella. Prova a
+> simularlo tu per capire, e risolvimi questo bug»
+
+- **[Bug fix]** Riprodotto sulla pagina di prova: divisore, riga vuota,
+  "Titolo"; col cursore sulla riga vuota, il backspace **toglieva il
+  divisore** e la riga vuota restava (la regola messa per "sotto un divider
+  non posso cancellare nulla", letta male: si volevano cancellare le righe
+  vuote, non il divisore). Ora sulla **riga vuota** subito sotto un
+  divisore il backspace **toglie la riga**: il divisore resta, la riga di
+  sotto sale al suo posto col cursore all'inizio, la tastiera resta aperta
+- **[Bug fix]** Su una **riga col testo** subito sotto un divisore, come su
+  Notion: il primo backspace "**prende**" il divisore, che si **accende
+  d'azzurro**, e solo il secondo lo toglie. Così continuando a premere il
+  divisore non sparisce senza avvisare. Dopo 3 secondi senza il secondo
+  backspace si spegne da solo. Una riga vuota che è l'ultima della pagina
+  sotto un divisore resta dov'è
+- **[Progetto]** `PageEditorViewModel.backspaceUnderDivider`,
+  `armedDivider` (acceso per `ARMED_DIVIDER_MS`), `DividerBlockContent` lo
+  disegna acceso; test in `DividerBackspaceTest`
+- Verificato sul telefono, sulla pagina di prova (My Space non toccata):
+  prima della correzione il bug si ripete uguale. Dopo: la riga vuota se
+  ne va e il divisore resta; una "K" scritta finisce all'inizio di
+  "Titolo"; il backspace lì accende il divisore senza toglierlo; dopo 3
+  secondi è di nuovo normale; due backspace di fila lo tolgono. Poi la
+  pagina rimessa com'era (database e 22 righe vuote): uguale, tranne una
+  riga vuota rifatta e 2 voci di "Updates"
+
 **29/09/2026 — "Image" a tutto schermo, e il gesto indietro chiude il segnalino delle colonne**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 278 test
 passati; commit solo in locale)*
