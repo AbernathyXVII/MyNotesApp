@@ -114,6 +114,8 @@ object EditorStrings {
     val indent get() = t("Indent", "Aumenta rientro", "Einzug vergrößern", "Augmenter le retrait", "Aumentar sangría", "增加缩进", "들여쓰기", "インデントを増やす")
     val moveUp get() = t("Move up", "Sposta su", "Nach oben", "Monter", "Subir", "上移", "위로 이동", "上へ移動")
     val moveDown get() = t("Move down", "Sposta giù", "Nach unten", "Descendre", "Bajar", "下移", "아래로 이동", "下へ移動")
+    val addAbove get() = t("Add above", "Aggiungi sopra", "Oberhalb hinzufügen", "Ajouter au-dessus", "Añadir arriba", "在上方添加", "위에 추가", "上に追加")
+    val addBelow get() = t("Add below", "Aggiungi sotto", "Unterhalb hinzufügen", "Ajouter en dessous", "Añadir abajo", "在下方添加", "아래에 추가", "下に追加")
     val addOrChangeBlock get() = t("Add or change block type", "Aggiungi o cambia tipo di blocco", "Blocktyp hinzufügen oder ändern", "Ajouter ou changer le type de bloc", "Añadir o cambiar el tipo de bloque", "添加或更改块类型", "블록 유형 추가 또는 변경", "ブロックの種類を追加・変更")
     val textAndBackgroundColor get() = t("Text and background color", "Colore del testo e dello sfondo", "Text- und Hintergrundfarbe", "Couleur du texte et du fond", "Color del texto y del fondo", "文字和背景颜色", "글자 및 배경 색상", "文字と背景の色")
     val undo get() = t("Undo", "Annulla", "Rückgängig", "Annuler", "Deshacer", "撤销", "실행 취소", "元に戻す")

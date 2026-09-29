@@ -2022,6 +2022,33 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**29/09/2026 — Sei puntini: "Add above" e "Add below"**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 209 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Premendo i sei puntini (tre in due colonne verticali) di ogni campo
+> (campo testo, pagina, database, eccetera), aggiungi due voci, ossia "Add
+> above" e "Add below" per aggiungere sopra o sotto una riga»
+
+- **[Nuova funzionalità]** Nel menu dei sei puntini, **in cima**, per ogni
+  blocco (riga di testo, pagina, database, vista collegata): "**Add
+  above**" e "**Add below**". Aggiungono una riga vuota sopra o sotto il
+  blocco, allo stesso livello (dentro un toggle resta dentro) e col suo
+  rientro, e ci mettono il cursore con la tastiera aperta
+- Il posto si legge dal database in fila dopo le scritture di prima, come
+  per l'Invio; sulla riga vuota di una pagina nuova quella si salva prima
+- **[Progetto]** `PageRepository.insertLineNextTo`,
+  `PageEditorViewModel.addLineNextTo`, `AddLineGroup` in
+  `BlockActionsSheet.kt`; test in `AddLineTest`
+- Verificato sul telefono sulla pagina di prova "Titolo tre H3" (copia del
+  database prima): dalla barra, su una riga "Riga", "Add above" e "Add
+  below" (le lettere scritte subito finiscono nelle righe nuove); dai sei
+  puntini della vista "Videogiochi", le due voci in cima e una riga nuova
+  sopra e sotto il database, col cursore dentro. Poi la pagina rimessa
+  com'era e il database confrontato con la copia: uguale, tranne 10 voci
+  di "Updates" di "Titolo tre H3" con le lettere delle prove
+
 **29/09/2026 — Colonne Checkbox: "Activate all" e "Deactivate all"**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 204 test
 passati; commit solo in locale)*

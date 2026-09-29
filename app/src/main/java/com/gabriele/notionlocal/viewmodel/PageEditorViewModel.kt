@@ -1751,6 +1751,31 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         }
     }
 
+    /**
+     * **"Add above" e "Add below"** del menu dei sei puntini (dal 29/09/2026,
+     * chiesto dall'utente): una riga vuota sopra o sotto qualunque blocco —
+     * testo, pagina, database — e il cursore dentro, pronto a scrivere. In
+     * fila dopo le scritture di prima, come l'Invio; il fuoco si chiede
+     * quando la riga c'è già nella lista mostrata, se no nessun campo la
+     * troverebbe.
+     */
+    fun addLineNextTo(block: BlockEntity, below: Boolean) {
+        snapshotForStructuralChange()
+        val newBlockId = java.util.UUID.randomUUID().toString()
+        viewModelScope.launch {
+            val added = structuralEdits.withLock {
+                // La riga vuota di una pagina nuova non è ancora nel database.
+                placeholder?.takeIf { it.id == block.id }?.let { repository.saveBlockIfAbsent(it) }
+                repository.insertLineNextTo(block.id, newBlockId, below, EMPTY_TEXT_JSON)
+            }
+            if (!added) return@launch
+            withTimeoutOrNull(FOCUS_HANDOFF_TIMEOUT_MS) {
+                _blocks.first { shown -> shown.any { it.id == newBlockId } }
+            }
+            _focusRequestBlockId.value = newBlockId
+        }
+    }
+
     /** Dove sta il cursore dentro la riga `blockId`, se è lì che si sta scrivendo. */
     private fun caretInLine(blockId: String): Int? {
         val selection = liveSelection ?: return null

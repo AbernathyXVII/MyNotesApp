@@ -1442,6 +1442,32 @@ class PageRepository(private val db: AppDatabase) {
     }
 
     /**
+     * **Una riga vuota sopra o sotto un blocco** (`below`), fra i suoi
+     * fratelli: "Add above" e "Add below" del menu dei sei puntini (dal
+     * 29/09/2026). Come per l'Invio, il posto si legge dal database dentro la
+     * transazione e si fa spazio spostando avanti di uno quelli dopo.
+     * La riga nuova è un paragrafo col rientro del blocco. Falso se il
+     * blocco non c'è più.
+     */
+    suspend fun insertLineNextTo(blockId: String, newBlockId: String, below: Boolean, textJson: String): Boolean =
+        db.withTransaction {
+            val block = blockDao.getById(blockId) ?: return@withTransaction false
+            val at = if (below) block.orderIndex + 1 else block.orderIndex
+            blockDao.shiftOrderIndexes(block.pageId, block.parentBlockId, at, 1)
+            blockDao.insert(
+                BlockEntity(
+                    id = newBlockId,
+                    pageId = block.pageId,
+                    parentBlockId = block.parentBlockId,
+                    textJson = textJson,
+                    indentLevel = block.indentLevel,
+                    orderIndex = at
+                )
+            )
+            true
+        }
+
+    /**
      * Divide un blocco mettendo la parte prima del cursore in un blocco
      * **nuovo sopra**, e lasciando a quello di partenza la parte dopo.
      *

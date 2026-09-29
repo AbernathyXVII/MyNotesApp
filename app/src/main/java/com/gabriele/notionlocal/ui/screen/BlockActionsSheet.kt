@@ -31,6 +31,8 @@ import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.filled.TableChart
+import androidx.compose.material.icons.filled.VerticalAlignBottom
+import androidx.compose.material.icons.filled.VerticalAlignTop
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -100,6 +102,9 @@ import kotlinx.coroutines.flow.map
  * - **un database**: in alto Turn into page, Turn into simple database,
  *   Turn into complex database, Lock database, Open as page; sotto le
  *   voci della pagina.
+ *
+ * In cima a tutti, "Add above" e "Add below" (dal 29/09/2026, chiesto
+ * dall'utente): una riga vuota sopra o sotto il blocco, col cursore dentro.
  *
  * Una voce che per quel blocco non è ancora costruita si vede **grigia**
  * (Turn into per pagine e database, Color per i database), come nei menu
@@ -195,6 +200,10 @@ internal fun BlockActionsHost(
                     TextBlockMenu(
                         title = viewModel.plainTextOf(block).lineSequence().firstOrNull().orEmpty()
                             .ifBlank { EditorStrings.blockType(blockTypeLabel(block.type)) },
+                        onAddLine = { below ->
+                            onDismiss()
+                            viewModel.addLineNextTo(block, below)
+                        },
                         onTurnInto = { step = BlockMenuStep.TURN_INTO },
                         onColor = { step = BlockMenuStep.COLOR },
                         onDuplicate = {
@@ -207,6 +216,10 @@ internal fun BlockActionsHost(
                         block = block,
                         page = page,
                         data = dataPage ?: page,
+                        onAddLine = { below ->
+                            onDismiss()
+                            viewModel.addLineNextTo(block, below)
+                        },
                         onTurnIntoPage = {
                             onDismiss()
                             // Come dalle impostazioni del database: il
@@ -434,15 +447,28 @@ private fun CurrentMark() {
     )
 }
 
-/** Il menu per una riga di testo: tre voci, come ha chiesto l'utente. */
+/** "Add above" e "Add below": una riga vuota sopra (false) o sotto (true) il blocco. */
+@Composable
+private fun AddLineGroup(onAddLine: (Boolean) -> Unit) {
+    OptionsGroup {
+        OptionRow(icon = Icons.Filled.VerticalAlignTop, label = EditorStrings.addAbove, onClick = { onAddLine(false) })
+        HorizontalDivider()
+        OptionRow(icon = Icons.Filled.VerticalAlignBottom, label = EditorStrings.addBelow, onClick = { onAddLine(true) })
+    }
+    Spacer(modifier = Modifier.size(12.dp))
+}
+
+/** Il menu per una riga di testo: le righe sopra e sotto, poi tre voci, come ha chiesto l'utente. */
 @Composable
 private fun TextBlockMenu(
     title: String,
+    onAddLine: (Boolean) -> Unit,
     onTurnInto: () -> Unit,
     onColor: () -> Unit,
     onDuplicate: () -> Unit
 ) {
     MenuTitle(title)
+    AddLineGroup(onAddLine)
     OptionsGroup {
         OptionRow(icon = Icons.Filled.Autorenew, label = EditorStrings.turnInto, trailing = { Chevron() }, onClick = onTurnInto)
         HorizontalDivider()
@@ -465,6 +491,7 @@ private fun PageBlockMenu(
     page: PageEntity,
     /** Chi ha i dati: il database di origine per una vista collegata, altrimenti `page`. */
     data: PageEntity,
+    onAddLine: (Boolean) -> Unit,
     onTurnIntoPage: () -> Unit,
     onTurnIntoDatabase: () -> Unit,
     onTurnIntoSimple: () -> Unit,
@@ -483,6 +510,7 @@ private fun PageBlockMenu(
     // Una vista collegata si presenta come "↗ Nome del database", come nel
     // suo titolo dentro la pagina.
     MenuTitle((if (linked) "↗ " else "") + data.title.ifBlank { Strings.untitled })
+    AddLineGroup(onAddLine)
 
     if (page.isDatabase) {
         OptionsGroup {
