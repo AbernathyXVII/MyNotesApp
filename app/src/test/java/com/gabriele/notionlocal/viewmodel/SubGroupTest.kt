@@ -96,6 +96,14 @@ class SubGroupTest {
     }
 
     @Test
+    fun theTwoEmptySwitchesAreSeparate() {
+        viewModel.setTableGroupColumn(shop.id)
+        viewModel.setTableSubGroupColumn(kind.id)
+        viewModel.setHideEmptySubGroups(false)
+        waitFor("salvato") { saved().let { !it.hideEmptySubGroups && it.hideEmptyGroups } }
+    }
+
+    @Test
     fun aRowAddedInASubGroupGetsBothValues() {
         viewModel.setTableGroupColumn(shop.id)
         viewModel.setTableSubGroupColumn(kind.id)

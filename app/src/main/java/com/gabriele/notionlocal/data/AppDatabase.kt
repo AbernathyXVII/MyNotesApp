@@ -55,7 +55,7 @@ import kotlinx.serialization.json.Json
         NotebookEntity::class,
         NotebookSectionEntity::class
     ],
-    version = 41,
+    version = 42,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -637,6 +637,19 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /**
+         * 41 → 42 (29/09/2026): "Hide empty sub groups", separato da "Hide
+         * empty groups" (`PageEntity.hideEmptySubGroups`). Parte uguale a
+         * quello dei gruppi, che fino a qui valeva per tutti e due: nessuna
+         * tabella cambia aspetto da sola.
+         */
+        private val MIGRATION_41_42 = object : Migration(41, 42) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE pages ADD COLUMN hideEmptySubGroups INTEGER NOT NULL DEFAULT 1")
+                db.execSQL("UPDATE pages SET hideEmptySubGroups = hideEmptyGroups")
+            }
+        }
+
+        /**
          * Solo per i test: chiude il database e lo dimentica, così il
          * `getInstance` dopo riapre il file da capo (e ne esegue le
          * migrazioni). Senza, il secondo test troverebbe il database del
@@ -690,7 +703,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_37_38,
                         MIGRATION_38_39,
                         MIGRATION_39_40,
-                        MIGRATION_40_41
+                        MIGRATION_40_41,
+                        MIGRATION_41_42
                     )
                     .build()
                 INSTANCE = instance

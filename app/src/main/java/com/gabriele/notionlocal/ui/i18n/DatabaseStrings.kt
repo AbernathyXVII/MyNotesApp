@@ -569,6 +569,7 @@ object DbStrings {
     val layout get() = t("Layout", "Vista", "Layout", "Disposition", "Diseño", "布局", "레이아웃", "レイアウト")
     val groupBy get() = t("Group by", "Raggruppa per", "Gruppieren nach", "Regrouper par", "Agrupar por", "分组依据", "그룹화 기준", "グループ化")
     val group get() = t("Group", "Gruppo", "Gruppe", "Groupe", "Grupo", "分组", "그룹", "グループ")
+    val hideEmptySubGroups get() = t("Hide empty sub groups", "Nascondi i sottogruppi vuoti", "Leere Untergruppen ausblenden", "Masquer les sous-groupes vides", "Ocultar subgrupos vacíos", "隐藏空子分组", "빈 하위 그룹 숨기기", "空のサブグループを非表示")
     val subGroups get() = t("Sub groups", "Sottogruppi", "Untergruppen", "Sous-groupes", "Subgrupos", "子分组", "하위 그룹", "サブグループ")
     val subGroupsNeedProperty get() = t(
         "Add another property to make sub groups.",

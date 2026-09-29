@@ -237,6 +237,11 @@ data class PageEntity(
     // i gruppi di una seconda proprietà. null = niente sottogruppi; senza
     // `tableGroupColumnId` non vale.
     var tableSubGroupColumnId: String? = null,
+    // Se i sottogruppi senza nemmeno una pagina si nascondono: un
+    // interruttore a sé da "Hide empty groups" (dal 29/09/2026, chiesto
+    // dall'utente), per vedere per esempio tutte le piattaforme sotto ogni
+    // genere, anche quelle senza giochi, senza per questo mostrare i generi vuoti.
+    var hideEmptySubGroups: Boolean = true,
     // Quale proprietà data colloca le righe nel calendario. null = non
     // scelta: si usa la prima proprietà di tipo data che c'è.
     var calendarDateColumnId: String? = null,

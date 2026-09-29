@@ -1011,6 +1011,7 @@ fun DatabaseContent(
                     },
                     groupColumn = viewModel.tableGroupColumn(),
                     hideEmptyGroups = page?.hideEmptyGroups != false,
+                    hideEmptySubGroups = page?.hideEmptySubGroups != false,
                     onAddRowInGroup = { value ->
                         viewModel.tableGroupColumn()?.let { column ->
                             viewModel.addRowInGroup(column.id, value)
@@ -1207,6 +1208,8 @@ fun DatabaseContent(
             onSetHideEmptyGroups = { viewModel.setHideEmptyGroups(it) },
             tableSubGroupColumn = viewModel.tableSubGroupColumn(),
             onSetTableSubGroupColumn = { viewModel.setTableSubGroupColumn(it) },
+            hideEmptySubGroups = page?.hideEmptySubGroups != false,
+            onSetHideEmptySubGroups = { viewModel.setHideEmptySubGroups(it) },
             onSetColumnHidden = { columnId, hidden ->
                 viewModel.setColumnHidden(columnId, hidden)
             },
@@ -1449,6 +1452,8 @@ private fun TableLayout(
     /** Null quando non si raggruppa: la tabella piatta di sempre. */
     groupColumn: DatabaseColumnEntity?,
     hideEmptyGroups: Boolean,
+    /** Se i sottogruppi vuoti si nascondono: un interruttore a sé. */
+    hideEmptySubGroups: Boolean = true,
     /** "Lock view": le colonne non si spostano, e le due voci restano grigie. */
     viewLocked: Boolean,
     onEditProperty: (DatabaseColumnEntity) -> Unit,
@@ -1616,7 +1621,7 @@ private fun TableLayout(
                 } else {
                     // **I sottogruppi**: dentro il gruppo, le sue righe
                     // divise secondo la seconda proprietà, un po' rientrate.
-                    buildRowGroups(state, subGroupColumn, hideEmptyGroups, group.rows).forEach { sub ->
+                    buildRowGroups(state, subGroupColumn, hideEmptySubGroups, group.rows).forEach { sub ->
                         val subKey = group.key + SUB_GROUP_KEY_SEPARATOR + sub.key
                         val subCollapsed = collapsed[subKey] == true
                         GroupHeaderRow(
@@ -7354,6 +7359,8 @@ private fun SettingsSheet(
     /** I sottogruppi della tabella: la proprietà scelta, e come cambiarla. */
     tableSubGroupColumn: DatabaseColumnEntity? = null,
     onSetTableSubGroupColumn: ((String?) -> Unit)? = null,
+    hideEmptySubGroups: Boolean = true,
+    onSetHideEmptySubGroups: ((Boolean) -> Unit)? = null,
     /** Nasconde o rimostra una colonna, e tutte insieme. */
     onSetColumnHidden: (String, Boolean) -> Unit,
     onSetAllColumnsHidden: (Boolean) -> Unit,
@@ -7544,6 +7551,17 @@ private fun SettingsSheet(
                                     label = DbStrings.hideEmptyGroups,
                                     checked = hideEmptyGroups,
                                     onCheckedChange = onSetHideEmptyGroups
+                                )
+                            }
+                            // E quello dei sottogruppi, a sé (dal 29/09/2026):
+                            // solo quando i sottogruppi ci sono.
+                            if (tableGroupColumn != null && tableSubGroupColumn != null && onSetHideEmptySubGroups != null) {
+                                HorizontalDivider()
+                                SettingsToggleRow(
+                                    icon = Icons.Filled.VisibilityOff,
+                                    label = DbStrings.hideEmptySubGroups,
+                                    checked = hideEmptySubGroups,
+                                    onCheckedChange = onSetHideEmptySubGroups
                                 )
                             }
                         }

@@ -1001,6 +1001,14 @@ class DatabaseViewModel(
         viewModelScope.launch { pageRepository.updatePage(updated) }
     }
 
+    /** Se i sottogruppi senza nemmeno una pagina si nascondono, a sé dai gruppi. */
+    fun setHideEmptySubGroups(hide: Boolean) {
+        val current = _page.value ?: return
+        val updated = current.copy(hideEmptySubGroups = hide)
+        _page.value = updated
+        viewModelScope.launch { pageRepository.updatePage(updated) }
+    }
+
     /**
      * La proprietà data che colloca le righe nel calendario. Stessa
      * logica di ripiego della bacheca: se non è stata scelta, o se

@@ -2022,6 +2022,33 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**29/09/2026 — Sottogruppi: "Hide empty sub groups", separato dai gruppi**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 216 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola, dopo aver descritto con un esempio i generi
+come gruppi e le piattaforme come sottogruppi (con le piattaforme vuote
+mostrate), alla proposta di separare l'interruttore:
+> «Sì, separalo in due interruttori»
+
+- **[Nuova funzionalità]** Sotto "Hide empty groups" c'è "**Hide empty sub
+  groups**", solo quando i sottogruppi ci sono: nasconde (o mostra) i
+  sottogruppi vuoti, a prescindere dai gruppi. Così sotto ogni genere si
+  vedono tutte le piattaforme, anche quelle senza giochi (con lo 0 e il
+  loro "New page"), senza per questo mostrare i generi vuoti
+- **[Progetto]** **Database alla versione 42**: `pages.hideEmptySubGroups`.
+  La migrazione gli dà il valore di "Hide empty groups", che fino a qui
+  valeva per tutti e due: nessuna tabella cambia aspetto da sola. Test in
+  `SubGroupTest` e `MigrationTest` 41→42, col file `v41.sql`
+- Verificato sul telefono (copia del database prima; migrazione alla 42,
+  le 26 pagine tutte lì, e in tutte il nuovo interruttore uguale a quello
+  dei gruppi) sulla vista "Videogiochi" di "Titolo tre H3": Group: Text,
+  Sub groups: Select, e i due interruttori uno sotto l'altro; spento solo
+  quello dei sottogruppi, sotto "Esempio 1" ci sono PS5 (1) e poi PC,
+  SWITCH e XBOX con 0. Poi la vista rimessa com'era e il database
+  confrontato con la copia: uguale, tranne l'ora di ultima modifica della
+  vista
+
 **29/09/2026 — Tabelle: i sottogruppi, gruppi dentro i gruppi**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 214 test
 passati; commit solo in locale)*
@@ -7370,7 +7397,8 @@ le finestre che apre. Chi lo usa passa solo l'id del blocco.
 
 ## Nota tecnica
 
-Lo schema è alla **versione 41** (la 41, del 29/09/2026, aggiunge
+Lo schema è alla **versione 42** (la 42, del 29/09/2026, aggiunge
+`pages.hideEmptySubGroups`, l'interruttore dei sottogruppi vuoti; la 41, dello stesso giorno, aggiunge
 `pages.tableSubGroupColumnId`, i sottogruppi della tabella; la 40, del 28/09/2026, aggiunge
 `pages.chartSettings`, le impostazioni della vista Chart; la 39, del
 26/09/2026, aggiunge i
