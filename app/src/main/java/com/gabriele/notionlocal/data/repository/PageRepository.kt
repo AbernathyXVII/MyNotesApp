@@ -1210,6 +1210,8 @@ class PageRepository(private val db: AppDatabase) {
                         linkedPageId = row.linkedPageId
                             ?.takeIf { pageDao.getById(it)?.trashedAt == null }
                             ?.let { copyPageDeep(it, copies, copyImage) },
+                        // La sotto-riga della copia sta sotto la riga copiata, non sotto l'originale.
+                        parentRowId = row.parentRowId?.let { newRowIds[it] },
                         createdAt = now,
                         updatedAt = now
                     )

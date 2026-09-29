@@ -2022,6 +2022,62 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**29/09/2026 — Tabelle: le sotto-righe ("Create sub row")**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 266 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Un'idea: saresti in grado di fare le Sub-rows? Ti spiego con un esempio:
+> se tengo premuto sulla riga dove scrivo marmellata, ho la possibilità di
+> creare altre righe dove metterò i vari gusti, quindi albicocca, pesca,
+> fragola, eccetera. Queste sub rows saranno attivate tenendo premuto su
+> una riga e toccando "Create sub row". Ovviamente le sub row create devono
+> essere correlate alla row principale dalla quale sono nate, e saranno
+> apribili e chiudibili con una freccetta stile Toggle sulla riga
+> principale, e saranno di per sé pagine a parte con le loro proprietà
+> perfettamente funzionanti. Nella voce "Calculate" mettimi anche
+> un'opzione che mi consente di calcolare o meno anche i dati delle sub
+> rows, di default disattivata»
+
+- **[Nuova funzionalità]** Tenendo premuto il nome di una riga della
+  tabella, in cima alle azioni, "**Create sub row**": nasce una riga nuova
+  **sotto quella**, rientrata, e il suo nome si apre subito per scriverlo.
+  Si può fare anche su una sotto-riga (un livello più in là)
+- Le sotto-righe sono **righe del database come le altre**: OPEN apre la
+  loro pagina, le proprietà si scrivono nelle celle, compaiono anche nelle
+  altre viste. Nascono coi valori dei gruppi della riga (per starle sotto
+  anche in una tabella raggruppata) e col valore del filtro, come ogni riga
+  nuova
+- Sul nome della riga principale c'è la **freccia** (▾ / ▸) che apre e
+  chiude le sue sotto-righe; resta com'era anche riaprendo l'app. Quando
+  nella tabella c'è almeno una sotto-riga, ogni nome lascia il posto della
+  freccia, così i nomi restano in colonna
+- **"Move up" / "Move down"** spostano una sotto-riga fra le sue sorelle,
+  una riga principale fra le principali (con le sue sotto-righe dietro)
+- Cancellando una riga **le sue sotto-righe restano**, un livello più su:
+  il messaggio di conferma lo dice
+- **[Nuova funzionalità]** Nella finestra di **Calculate**, sotto i
+  calcoli, l'interruttore "**Include sub rows**", **spento di suo**: i
+  calcoli contano solo le righe principali; acceso, anche le sotto-righe.
+  Vale per il calcolo di quella colonna
+- **[Progetto]** **Database alla versione 45**: `database_rows.parentRowId`
+  e `subRowsCollapsed`. L'albero lo fa `rowTree` (`SubRows.kt`): segue
+  l'ordine della vista (filtro, ricerca, ordinamento, gruppi); una
+  sotto-riga la cui riga non si vede (filtrata o in un altro gruppo) sta
+  in cima, invece di sparire. Copiando un database le sotto-righe restano
+  sotto le righe copiate. "Include sub rows" sta con gli altri calcoli
+  della vista ("subrows:colonna"). Test in `SubRowsTest` e `MigrationTest`
+  44→45, col file `v44.sql`
+- Verificato sul telefono (copia del database prima; migrazione alla 45
+  senza errori) sulla pagina di prova "Titolo tre H3": "Create sub row" su
+  "1" fa nascere la riga sotto, rientrata, col cursore e la tastiera in
+  maiuscolo; scritto "Sotto". La freccia su "1" la chiude e la riapre. In
+  fondo a Text, "NOT EMPTY" resta 100% (la sotto-riga, con Text vuoto, non
+  conta); acceso "Include sub rows" diventa 75%. Il messaggio per
+  cancellare "1" avvisa delle sotto-righe (annullato). Poi la sotto-riga
+  cancellata e l'interruttore spento: il database è uguale alla copia,
+  tranne la data di ultima modifica della vista collegata
+
 **29/09/2026 — Tabelle: "Move up" e "Move down" tenendo premuto il nome di una riga**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 254 test
 passati; commit solo in locale)*
@@ -7654,7 +7710,8 @@ le finestre che apre. Chi lo usa passa solo l'id del blocco.
 
 ## Nota tecnica
 
-Lo schema è alla **versione 44** (la 44, del 29/09/2026, aggiunge
+Lo schema è alla **versione 45** (la 45, del 29/09/2026, aggiunge
+`database_rows.parentRowId` e `subRowsCollapsed`, le sotto-righe; la 44, dello stesso giorno, aggiunge
 `pages.columnWidths` e `fitColumns`, la larghezza delle colonne della tabella; la 43, dello stesso giorno, aggiunge
 `pages.viewHostId`, `viewName` e `activeViewId`, le viste di un database; la 42, dello stesso giorno, aggiunge
 `pages.hideEmptySubGroups`, l'interruttore dei sottogruppi vuoti; la 41, dello stesso giorno, aggiunge

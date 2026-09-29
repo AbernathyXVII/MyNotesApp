@@ -665,7 +665,13 @@ fun CalculateSheet(
     type: ColumnType?,
     current: Calculation?,
     onPick: (Calculation?) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    /**
+     * **"Include sub rows"** (dal 29/09/2026): se il calcolo conta anche le
+     * sotto-righe. Di suo spento: contano solo le righe principali.
+     */
+    includeSubRows: Boolean = false,
+    onIncludeSubRows: ((Boolean) -> Unit)? = null
 ) {
     val groups = calculationsFor(type)
     var open by remember { mutableStateOf(current?.let { c -> groups.entries.firstOrNull { c in it.value }?.key }) }
@@ -706,6 +712,21 @@ fun CalculateSheet(
                         calcs.forEach { calc ->
                             CalcLine(DbStrings.calcName(calc), checked = calc == current, indent = true) { onPick(calc) }
                         }
+                    }
+                }
+            }
+            if (onIncludeSubRows != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                OptionsGroup {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onIncludeSubRows(!includeSubRows) }
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(DbStrings.includeSubRows, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                        Switch(checked = includeSubRows, onCheckedChange = { onIncludeSubRows(it) })
                     }
                 }
             }

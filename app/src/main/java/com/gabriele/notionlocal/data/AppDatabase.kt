@@ -55,7 +55,7 @@ import kotlinx.serialization.json.Json
         NotebookEntity::class,
         NotebookSectionEntity::class
     ],
-    version = 44,
+    version = 45,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -675,6 +675,17 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /**
+         * 44 → 45 (29/09/2026): le sotto-righe (`DatabaseRowEntity.parentRowId`,
+         * `subRowsCollapsed`). Nessuna riga ne ha: tutte restano principali.
+         */
+        private val MIGRATION_44_45 = object : Migration(44, 45) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE database_rows ADD COLUMN parentRowId TEXT")
+                db.execSQL("ALTER TABLE database_rows ADD COLUMN subRowsCollapsed INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        /**
          * Solo per i test: chiude il database e lo dimentica, così il
          * `getInstance` dopo riapre il file da capo (e ne esegue le
          * migrazioni). Senza, il secondo test troverebbe il database del
@@ -731,7 +742,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_40_41,
                         MIGRATION_41_42,
                         MIGRATION_42_43,
-                        MIGRATION_43_44
+                        MIGRATION_43_44,
+                        MIGRATION_44_45
                     )
                     .build()
                 INSTANCE = instance

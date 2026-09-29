@@ -175,6 +175,10 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import com.gabriele.notionlocal.data.entity.rowTree
+import com.gabriele.notionlocal.data.entity.hasSubRows
+import com.gabriele.notionlocal.data.entity.rowsForCalculation
+import com.gabriele.notionlocal.data.entity.parseCalculationSubRows
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.rotate
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -331,6 +335,16 @@ private class ColumnResize {
 }
 
 private val LocalColumnResize = compositionLocalOf<ColumnResize?> { null }
+
+/** Quanto rientra ogni livello di sotto-righe, e il posto della freccia che le apre. */
+private val SUB_ROW_INDENT = 20.dp
+private val SUB_ROW_ARROW_SLOT = 24.dp
+
+/** Il nome di quale riga aprire subito per scriverlo (una sotto-riga appena nata), e come dire "fatto". */
+@Immutable
+private class TitleEditRequest(val rowId: String?, val consume: () -> Unit)
+
+private val LocalTitleEditRequest = compositionLocalOf { TitleEditRequest(null) {} }
 
 private val RESIZE_HANDLE_WIDTH = 24.dp
 private val RESIZE_HANDLE_HEIGHT = 40.dp
@@ -975,6 +989,7 @@ private fun DatabaseViewBody(
     // aprendo una pagina trovata e tornando indietro è ancora lì. Tornando,
     // si rilegge il testo delle pagine, che nel frattempo può essere
     // cambiato.
+    val editTitleOf by viewModel.editTitleOf.collectAsStateWithLifecycle()
     val searchOpen by viewModel.searchOpen.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     var focusSearchField by remember { mutableStateOf(false) }
@@ -999,7 +1014,8 @@ private fun DatabaseViewBody(
         LocalDatabaseLocked provides contentLocked,
         LocalRowIcons provides rowIcons,
         LocalSimpleDatabase provides simple,
-        LocalRowSearch provides state.search
+        LocalRowSearch provides state.search,
+        LocalTitleEditRequest provides TitleEditRequest(editTitleOf, viewModel::consumeEditTitle)
     ) {
     Column(
         modifier = modifier
@@ -1212,6 +1228,8 @@ private fun DatabaseViewBody(
                     fitColumns = parseFitColumns(page?.fitColumns),
                     onSetColumnWidth = { key, width -> viewModel.setColumnWidth(key, width) },
                     onSetFitToContent = { key, fit -> viewModel.setFitToContent(key, fit) },
+                    onToggleSubRows = { row -> viewModel.setSubRowsCollapsed(row, !row.subRowsCollapsed) },
+                    calculationSubRows = parseCalculationSubRows(page?.viewCalculations),
                     onOpenRow = openRow,
                     onRowLongPress = { row, place ->
                         focusManager.clearFocus()
@@ -1579,7 +1597,10 @@ private fun DatabaseViewBody(
                 viewModel.setCalculation(target.key, it)
                 calculateTarget = null
             },
-            onDismiss = { calculateTarget = null }
+            onDismiss = { calculateTarget = null },
+            // Solo la tabella ha le righe dei calcoli, e le sotto-righe.
+            includeSubRows = target.key in parseCalculationSubRows(page?.viewCalculations),
+            onIncludeSubRows = { viewModel.setCalculationSubRows(target.key, it) }
         )
     }
 
@@ -1607,25 +1628,43 @@ private fun DatabaseViewBody(
                     }.orEmpty()
             }
         }
-        val index = siblings?.indexOfFirst { it.id == live.id } ?: -1
+        // Solo fra le righe dello stesso livello: una sotto-riga si sposta fra
+        // le sorelle, sotto la sua riga; una principale fra le principali.
+        val level = siblings?.let { list ->
+            val shownIds = list.mapTo(HashSet()) { it.id }
+            fun parentOf(r: DatabaseRowEntity) = r.parentRowId?.takeIf { it in shownIds && it != r.id }
+            list.filter { parentOf(it) == parentOf(live) }
+        }
+        val index = level?.indexOfFirst { it.id == live.id } ?: -1
         // Con un ordinamento le righe stanno dove dice lui: spostarle a mano
         // non si vedrebbe. Con il database bloccato non si spostano.
         val sorted = page?.sortColumnId != null
         val canMove = !sorted && !contentLocked && index >= 0
-        val move = siblings?.let {
+        val move = level?.let {
             RowMoveActions(
-                onUp = siblings.getOrNull(index - 1)?.takeIf { canMove }?.let { above ->
+                onUp = level.getOrNull(index - 1)?.takeIf { canMove }?.let { above ->
                     { viewModel.moveRowNextTo(live, above, before = true) }
                 },
-                onDown = siblings.getOrNull(index + 1)?.takeIf { canMove && index >= 0 }?.let { below ->
+                onDown = level.getOrNull(index + 1)?.takeIf { canMove }?.let { below ->
                     { viewModel.moveRowNextTo(live, below, before = false) }
                 },
                 hint = if (sorted) DbStrings.rowsFollowSort else null
             )
         }
+        // "Create sub row": dalla tabella, col database non bloccato. La
+        // sotto-riga prende i valori dei gruppi della riga, per starle sotto.
+        val onCreateSubRow: (() -> Unit)? = if (place != null && !contentLocked) {
+            {
+                rowActionsFor = null
+                viewModel.addSubRow(live, inherit = listOfNotNull(viewModel.tableGroupColumn()?.id, viewModel.tableSubGroupColumn()?.id))
+            }
+        } else {
+            null
+        }
         RowActionsSheet(
             row = live,
             move = move,
+            onCreateSubRow = onCreateSubRow,
             columns = state.columns,
             cellValues = state.cellValues,
             onDismiss = { rowActionsFor = null },
@@ -1688,7 +1727,11 @@ private fun DatabaseViewBody(
         AlertDialog(
             onDismissRequest = { rowPendingDeletion = null },
             title = { Text(DbStrings.deletePageTitle) },
-            text = { Text(DbStrings.deleteRowText) },
+            text = {
+                // Le sotto-righe non se ne vanno con lei: lo si dice prima.
+                val withSubRows = state.rows.any { it.parentRowId == row.id }
+                Text(if (withSubRows) DbStrings.deleteRowText + "\n\n" + DbStrings.subRowsStay else DbStrings.deleteRowText)
+            },
             confirmButton = {
                 TextButton(onClick = {
                     viewModel.deleteRow(row)
@@ -1751,7 +1794,11 @@ private fun TableLayout(
     /** Le colonne larghe quanto il loro contenuto ("Fit to content"). */
     fitColumns: Set<String> = emptySet(),
     onSetColumnWidth: (String, Int) -> Unit = { _, _ -> },
-    onSetFitToContent: (String, Boolean) -> Unit = { _, _ -> }
+    onSetFitToContent: (String, Boolean) -> Unit = { _, _ -> },
+    /** La freccia sul nome di una riga con sotto-righe: le apre o le chiude. */
+    onToggleSubRows: (DatabaseRowEntity) -> Unit = {},
+    /** I calcoli che contano anche le sotto-righe ("Include sub rows"). */
+    calculationSubRows: Set<String> = emptySet()
 ) {
     // Dentro un contenitore che scorre in orizzontale la larghezza
     // disponibile è illimitata: una linea che chiede "tutta la
@@ -1764,7 +1811,10 @@ private fun TableLayout(
     val resize = remember { ColumnResize() }
     // Con "Lock view" le colonne non cambiano misura: via il segnalino.
     LaunchedEffect(viewLocked) { if (viewLocked) resize.stop() }
-    val fitted = fitWidths(state, shownColumns, fitColumns, calculations)
+    val fitted = fitWidths(state, shownColumns, fitColumns, calculations, calculationSubRows)
+    // Se c'è almeno una sotto-riga, ogni nome lascia il posto della freccia:
+    // così i nomi restano in colonna, con o senza sotto-righe.
+    val treeShown = hasSubRows(state.rows)
     // Mentre si trascina comanda il dito; poi "Fit to content", se acceso;
     // poi la misura scelta; se no quella di sempre.
     fun widthOf(key: String, default: Dp): Dp =
@@ -1826,10 +1876,15 @@ private fun TableLayout(
             // una riga cambia posto, e senza l'id il campo in cui si stava
             // scrivendo finiva su un'altra riga, si chiudeva e la tastiera
             // spariva.
-            state.rows.forEach { row ->
+            rowTree(state.rows).forEach { item ->
+                val row = item.row
                 key(row.id) {
                 TableBodyRow(
                     row = row,
+                    depth = item.depth,
+                    hasSubRows = item.hasChildren,
+                    toggleSlot = treeShown,
+                    onToggleSubRows = { onToggleSubRows(row) },
                     state = state,
                     columns = shownColumns,
                     onTitleChange = onTitleChange,
@@ -1845,7 +1900,7 @@ private fun TableLayout(
                 HorizontalDivider(modifier = Modifier.width(tableWidth))
                 }
             }
-            CalculationFooter(state.rows, state, shownColumns, calculations, onCalculate, calculationAlignments, onCalculationAlign)
+            CalculationFooter(state.rows, state, shownColumns, calculations, onCalculate, calculationAlignments, onCalculationAlign, calculationSubRows)
             return@Column
         }
 
@@ -1869,10 +1924,15 @@ private fun TableLayout(
                 onSetFitToContent = onSetFitToContent
             )
             HorizontalDivider(modifier = Modifier.width(tableWidth))
-            rows.forEach { row ->
+            rowTree(rows).forEach { item ->
+                val row = item.row
                 key(row.id) {
                 TableBodyRow(
                     row = row,
+                    depth = item.depth,
+                    hasSubRows = item.hasChildren,
+                    toggleSlot = treeShown,
+                    onToggleSubRows = { onToggleSubRows(row) },
                     state = state,
                     columns = shownColumns,
                     onTitleChange = onTitleChange,
@@ -1889,7 +1949,7 @@ private fun TableLayout(
                 }
             }
             // I calcoli di questo gruppo, sotto le sue righe.
-            CalculationFooter(rows, state, shownColumns, calculations, onCalculate, calculationAlignments, onCalculationAlign)
+            CalculationFooter(rows, state, shownColumns, calculations, onCalculate, calculationAlignments, onCalculationAlign, calculationSubRows)
             // Una pagina creata da dentro un gruppo nasce già con
             // quel valore: altrimenti comparirebbe nel gruppo
             // "senza valore", cioè da tutt'altra parte rispetto a
@@ -1961,14 +2021,15 @@ private fun fitWidths(
     columns: List<DatabaseColumnEntity>,
     keys: Set<String>,
     /** Anche il calcolo in fondo alla colonna sta nella colonna: si legge tutto anche lui. */
-    calculations: Map<String, Calculation> = emptyMap()
+    calculations: Map<String, Calculation> = emptyMap(),
+    subRowKeys: Set<String> = emptySet()
 ): Map<String, Dp> {
     val measurer = rememberTextMeasurer()
     val typography = MaterialTheme.typography
     val density = LocalDensity.current
     val simple = LocalSimpleDatabase.current
     val icons = LocalRowIcons.current
-    return remember(state, columns, keys, calculations, typography, density, simple, icons) {
+    return remember(state, columns, keys, calculations, subRowKeys, typography, density, simple, icons) {
         if (keys.isEmpty()) return@remember emptyMap()
         val measure: (String, ComposeTextStyle) -> Dp = { text, style ->
             if (text.isEmpty()) {
@@ -1985,17 +2046,26 @@ private fun fitWidths(
                 6.dp + measure(value, typography.bodyMedium) + 12.dp
         buildMap {
             if (NAME_COLUMN_KEY in keys) {
-                val calc = validCalculation(calculations, NAME_CALCULATION_KEY, null)
-                    ?.let { fitClamp(calculationWidth(it, nameCalculationText(it, state.rows))) } ?: 0.dp
-                put(NAME_COLUMN_KEY, maxOf(nameFitWidth(state.rows, simple, icons.keys, typography, measure), calc))
+                val calc = validCalculation(calculations, NAME_CALCULATION_KEY, null)?.let {
+                    fitClamp(calculationWidth(it, nameCalculationText(it, rowsForCalculation(state.rows, NAME_CALCULATION_KEY in subRowKeys))))
+                } ?: 0.dp
+                // Le sotto-righe rientrano, e con l'albero ogni nome ha il posto della freccia.
+                val tree = rowTree(state.rows)
+                val depths = tree.associate { it.row.id to it.depth }
+                val slot = if (hasSubRows(state.rows)) SUB_ROW_ARROW_SLOT + 4.dp else 0.dp
+                val names = nameFitWidth(tree.map { it.row }, simple, icons.keys, typography, measure) { row ->
+                    SUB_ROW_INDENT * (depths[row.id] ?: 0) + slot
+                }
+                put(NAME_COLUMN_KEY, maxOf(names, calc))
             }
             columns.filter { it.id in keys }.forEach { column ->
                 val header = 12.dp + 16.dp + 8.dp + measure(DbStrings.columnName(column.name), typography.labelLarge) + 12.dp
                 val cells = state.rows.maxOfOrNull { row ->
                     cellFitWidth(column, row, state.cellValues[row.id to column.id].orEmpty(), typography, measure) + 24.dp
                 } ?: 0.dp
-                val calc = validCalculation(calculations, column.id, column.type)
-                    ?.let { calculationWidth(it, columnCalculationText(it, column, state.rows, state)) } ?: 0.dp
+                val calc = validCalculation(calculations, column.id, column.type)?.let {
+                    calculationWidth(it, columnCalculationText(it, column, rowsForCalculation(state.rows, column.id in subRowKeys), state))
+                } ?: 0.dp
                 put(column.id, fitClamp(maxOf(header, cells, calc)))
             }
         }
@@ -2011,12 +2081,14 @@ internal fun nameFitWidth(
     simple: Boolean,
     withIcon: Set<String>,
     typography: Typography,
-    measure: (String, ComposeTextStyle) -> Dp
+    measure: (String, ComposeTextStyle) -> Dp,
+    /** Quanto rientra il nome di una riga: le sotto-righe, e il posto della freccia. */
+    extraStart: (DatabaseRowEntity) -> Dp = { 0.dp }
 ): Dp {
     val header = 12.dp + measure("Aa", typography.labelLarge) + 8.dp + measure(DbStrings.name, typography.labelLarge) + 12.dp
     val open = if (simple) 0.dp else measure(DbStrings.open, typography.labelSmall) + 16.dp + 8.dp
     val cells = rows.maxOfOrNull { row ->
-        12.dp + (if (row.id in withIcon) ROW_ICON_SIZE + 6.dp else 0.dp) +
+        12.dp + extraStart(row) + (if (row.id in withIcon) ROW_ICON_SIZE + 6.dp else 0.dp) +
             measure(row.title, typography.bodyMedium) + 12.dp + open
     } ?: 0.dp
     return fitClamp(maxOf(header, cells))
@@ -2238,7 +2310,9 @@ private fun CalculationFooter(
     calculations: Map<String, Calculation>,
     onCalculate: (CalculateTarget) -> Unit,
     alignments: Map<String, CellAlignment> = emptyMap(),
-    onAlign: (String, CellAlignment) -> Unit = { _, _ -> }
+    onAlign: (String, CellAlignment) -> Unit = { _, _ -> },
+    /** I calcoli che contano anche le sotto-righe; gli altri solo le righe principali. */
+    subRowKeys: Set<String> = emptySet()
 ) {
     val nameCalc = validCalculation(calculations, NAME_CALCULATION_KEY, null)
     val columnCalcs = columns.associate { it.id to validCalculation(calculations, it.id, it.type) }
@@ -2253,7 +2327,7 @@ private fun CalculationFooter(
             onAlign = { onAlign(NAME_CALCULATION_KEY, it) }
         ) {
             if (nameCalc != null) {
-                CalculationLabel(nameCalc, nameCalculationText(nameCalc, rows))
+                CalculationLabel(nameCalc, nameCalculationText(nameCalc, rowsForCalculation(rows, NAME_CALCULATION_KEY in subRowKeys)))
             }
         }
         Spacer(modifier = Modifier.width(SEPARATOR_WIDTH))
@@ -2266,7 +2340,7 @@ private fun CalculationFooter(
                 onAlign = { onAlign(column.id, it) }
             ) {
                 if (calc != null) {
-                    CalculationLabel(calc, columnCalculationText(calc, column, rows, state))
+                    CalculationLabel(calc, columnCalculationText(calc, column, rowsForCalculation(rows, column.id in subRowKeys), state))
                 }
             }
             Spacer(modifier = Modifier.width(SEPARATOR_WIDTH))
@@ -2378,6 +2452,13 @@ private fun CalculationLabel(calc: Calculation, value: String) {
 @Composable
 private fun TableBodyRow(
     row: DatabaseRowEntity,
+    /** Quanto è rientrata: le sotto-righe stanno sotto la loro riga, un gradino più in là. */
+    depth: Int = 0,
+    /** Ha sotto-righe: sul nome c'è la freccia per aprirle e chiuderle. */
+    hasSubRows: Boolean = false,
+    /** Nella tabella c'è l'albero: ogni nome lascia il posto della freccia. */
+    toggleSlot: Boolean = false,
+    onToggleSubRows: () -> Unit = {},
     state: DatabaseTableState,
     /** Solo le colonne che si vedono: le stesse dell'intestazione. */
     columns: List<DatabaseColumnEntity>,
@@ -2397,7 +2478,11 @@ private fun TableBodyRow(
             onTitleChange = { onTitleChange(row, it) },
             onOpen = { onOpenRow(row) },
             onLongPress = { onRowLongPress(row) },
-            onEditingChange = onTitleEditing
+            onEditingChange = onTitleEditing,
+            depth = depth,
+            hasSubRows = hasSubRows,
+            toggleSlot = toggleSlot,
+            onToggleSubRows = onToggleSubRows
         )
         CellSeparator(NAME_COLUMN_KEY)
         columns.forEach { column ->
@@ -5502,7 +5587,12 @@ private fun NameCell(
     onOpen: () -> Unit,
     onLongPress: () -> Unit,
     /** Si comincia (true) o si finisce (false) di scrivere il nome: vedi `DatabaseViewModel.startTitleEdit`. */
-    onEditingChange: (Boolean) -> Unit = {}
+    onEditingChange: (Boolean) -> Unit = {},
+    /** Le sotto-righe (dal 29/09/2026): vedi `TableBodyRow`. */
+    depth: Int = 0,
+    hasSubRows: Boolean = false,
+    toggleSlot: Boolean = false,
+    onToggleSubRows: () -> Unit = {}
 ) {
     var editing by remember(row.id) { mutableStateOf(false) }
     var localTitle by remember(row.id) { mutableStateOf(row.title) }
@@ -5523,6 +5613,17 @@ private fun NameCell(
     // cella si richiuderebbe nell'istante in cui la si apre, e il tocco
     // sembrerebbe non fare niente.
     var everFocused by remember(row.id) { mutableStateOf(false) }
+
+    // Una sotto-riga appena creata: il nome si apre da solo per scriverlo.
+    val editRequest = LocalTitleEditRequest.current
+    LaunchedEffect(editRequest.rowId) {
+        if (editRequest.rowId == row.id) {
+            fieldValue = TextFieldValue(localTitle, TextRange(localTitle.length))
+            everFocused = false
+            editing = true
+            editRequest.consume()
+        }
+    }
 
     // Se il titolo cambia da fuori (un'altra schermata, Annulla) mentre
     // non lo stiamo scrivendo noi, adeguiamoci.
@@ -5545,6 +5646,30 @@ private fun NameCell(
                 .padding(start = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // **Le sotto-righe**: rientrate di un gradino per livello; la
+            // freccia, sulle righe che ne hanno, le apre e le chiude. Il
+            // posto della freccia c'è su ogni riga, così i nomi restano in
+            // colonna.
+            if (toggleSlot) {
+                Spacer(modifier = Modifier.width(SUB_ROW_INDENT * depth))
+                Box(
+                    modifier = Modifier
+                        .width(SUB_ROW_ARROW_SLOT)
+                        .fillMaxHeight()
+                        .let { base -> if (hasSubRows) base.clickable { onToggleSubRows() } else base },
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (hasSubRows) {
+                        Icon(
+                            if (row.subRowsCollapsed) Icons.Filled.KeyboardArrowRight else Icons.Filled.KeyboardArrowDown,
+                            contentDescription = if (row.subRowsCollapsed) DbStrings.showSubRows else DbStrings.hideSubRows,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.width(4.dp))
+            }
             RowIconBadge(row.id, ROW_ICON_SIZE)
             Box(
                 modifier = Modifier
@@ -7599,6 +7724,8 @@ private fun RowActionsSheet(
     row: DatabaseRowEntity,
     /** Solo dalla tabella, dove l'ordine delle righe si vede: altrove null e le voci non ci sono. */
     move: RowMoveActions? = null,
+    /** "Create sub row": solo dalla tabella, dove le sotto-righe si vedono. */
+    onCreateSubRow: (() -> Unit)? = null,
     columns: List<DatabaseColumnEntity>,
     cellValues: Map<Pair<String, String>, String>,
     onDismiss: () -> Unit,
@@ -7679,7 +7806,7 @@ private fun RowActionsSheet(
                     )
                     Spacer(modifier = Modifier.size(16.dp))
                     if (move != null) {
-                        RowMoveGroup(move)
+                        RowMoveGroup(move, onCreateSubRow)
                         Spacer(modifier = Modifier.size(12.dp))
                     }
                     SheetGroup {
@@ -7700,7 +7827,7 @@ private fun RowActionsSheet(
                     )
                 } else {
                     if (move != null) {
-                        RowMoveGroup(move)
+                        RowMoveGroup(move, onCreateSubRow)
                         Spacer(modifier = Modifier.size(12.dp))
                     }
                     SheetGroup {
@@ -7764,8 +7891,13 @@ private fun RowActionsSheet(
 
 /** "Move up" e "Move down", in cima alle azioni della riga; la finestra resta aperta per spostarla ancora. */
 @Composable
-private fun RowMoveGroup(move: RowMoveActions) {
+private fun RowMoveGroup(move: RowMoveActions, onCreateSubRow: (() -> Unit)? = null) {
     SheetGroup {
+        // **"Create sub row"** (dal 29/09/2026): una riga nuova sotto questa.
+        if (onCreateSubRow != null) {
+            SheetAction(Icons.Filled.SubdirectoryArrowRight, DbStrings.createSubRow) { onCreateSubRow() }
+            HorizontalDivider()
+        }
         SheetAction(Icons.Filled.ArrowUpward, EditorStrings.moveUp, enabled = move.onUp != null) {
             move.onUp?.invoke()
         }

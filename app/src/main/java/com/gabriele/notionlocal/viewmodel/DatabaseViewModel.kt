@@ -30,6 +30,7 @@ import com.gabriele.notionlocal.data.entity.NumberSettings
 import com.gabriele.notionlocal.data.entity.encodeViewCalculations
 import com.gabriele.notionlocal.data.entity.parseViewCalculations
 import com.gabriele.notionlocal.data.entity.parseCalculationAlignments
+import com.gabriele.notionlocal.data.entity.parseCalculationSubRows
 import com.gabriele.notionlocal.data.entity.CellAlignment
 import com.gabriele.notionlocal.data.entity.withNumberSettings
 import com.gabriele.notionlocal.data.security.AppLock
@@ -1284,7 +1285,22 @@ class DatabaseViewModel(
         val calcs = parseViewCalculations(current.viewCalculations).toMutableMap()
         if (calculation == null) calcs.remove(key) else calcs[key] = calculation
         val alignments = parseCalculationAlignments(current.viewCalculations)
-        val updated = current.copy(viewCalculations = encodeViewCalculations(calcs, alignments))
+        val subRows = parseCalculationSubRows(current.viewCalculations)
+        val updated = current.copy(viewCalculations = encodeViewCalculations(calcs, alignments, subRows))
+        _page.value = updated
+        viewModelScope.launch { pageRepository.updatePage(updated) }
+    }
+
+    /**
+     * "Include sub rows" nella finestra di "Calculate" (dal 29/09/2026): se il
+     * calcolo di questa colonna conta anche le sotto-righe. Di suo no.
+     */
+    fun setCalculationSubRows(key: String, include: Boolean) {
+        val current = _page.value ?: return
+        val calcs = parseViewCalculations(current.viewCalculations)
+        val alignments = parseCalculationAlignments(current.viewCalculations)
+        val subRows = parseCalculationSubRows(current.viewCalculations).let { if (include) it + key else it - key }
+        val updated = current.copy(viewCalculations = encodeViewCalculations(calcs, alignments, subRows))
         _page.value = updated
         viewModelScope.launch { pageRepository.updatePage(updated) }
     }
@@ -1326,7 +1342,8 @@ class DatabaseViewModel(
         val alignments = parseCalculationAlignments(current.viewCalculations).toMutableMap()
         // A destra è come stanno di suo: non serve scriverlo.
         if (alignment == CellAlignment.RIGHT) alignments.remove(key) else alignments[key] = alignment
-        val updated = current.copy(viewCalculations = encodeViewCalculations(calcs, alignments))
+        val subRows = parseCalculationSubRows(current.viewCalculations)
+        val updated = current.copy(viewCalculations = encodeViewCalculations(calcs, alignments, subRows))
         _page.value = updated
         viewModelScope.launch { pageRepository.updatePage(updated) }
     }
@@ -1539,6 +1556,45 @@ class DatabaseViewModel(
 
     fun deleteRow(row: DatabaseRowEntity) {
         viewModelScope.launch { repository.deleteRow(row) }
+    }
+
+    // --- Le sotto-righe (dal 29/09/2026) ---
+
+    private val _editTitleOf = MutableStateFlow<String?>(null)
+
+    /** Una riga appena nata il cui nome va scritto subito: la cella del nome si apre da sola. */
+    val editTitleOf: StateFlow<String?> = _editTitleOf
+
+    fun consumeEditTitle() {
+        _editTitleOf.value = null
+    }
+
+    /**
+     * **"Create sub row"**: una riga nuova sotto `parent`, in fondo alle sue
+     * sotto-righe, che si aprono se erano chiuse. Prende da lei i valori di
+     * `inherit` — le proprietà dei gruppi della tabella —, così compare lì
+     * sotto e non in un altro gruppo; e il valore del filtro, come ogni riga
+     * nuova. Poi il suo nome si apre per scriverlo.
+     */
+    fun addSubRow(parent: DatabaseRowEntity, inherit: List<String> = emptyList()) {
+        val pageId = dataPageId ?: return
+        val values = _tableState.value.cellValues
+        viewModelScope.launch {
+            val row = DatabaseRowEntity(pageId = pageId, parentRowId = parent.id, orderIndex = nextRowIndex())
+            keepVisibleWhileSearching(row.id)
+            repository.addRow(row)
+            if (parent.subRowsCollapsed) repository.setSubRowsCollapsed(parent.id, false)
+            inherit.forEach { columnId ->
+                values[parent.id to columnId]?.takeIf { it.isNotEmpty() }?.let { repository.setCellValue(row.id, columnId, it) }
+            }
+            if (_page.value?.filterColumnId !in inherit) fillFilterValue(row.id)
+            _editTitleOf.value = row.id
+        }
+    }
+
+    /** La freccia sul nome: apre o chiude le sotto-righe. */
+    fun setSubRowsCollapsed(row: DatabaseRowEntity, collapsed: Boolean) {
+        viewModelScope.launch { repository.setSubRowsCollapsed(row.id, collapsed) }
     }
 
     /** "Move up" / "Move down": la riga subito prima o subito dopo `target`. Vedi `DatabaseRepository.moveRowNextTo`. */

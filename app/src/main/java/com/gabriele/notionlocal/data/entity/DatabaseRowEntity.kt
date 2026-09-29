@@ -46,7 +46,12 @@ data class DatabaseRowEntity(
     // della riga. Ammette null perché le righe già esistenti quando la
     // colonna è stata introdotta (migrazione 6→7) non hanno una storia
     // da cui ricavarlo: per quelle si mostra la data di creazione.
-    var updatedAt: Long? = null
+    var updatedAt: Long? = null,
+    // **Sotto-riga** (dal 29/09/2026, "Create sub row"): la riga da cui è
+    // nata, o null per una riga principale. Vedi `SubRows.kt`.
+    var parentRowId: String? = null,
+    // Le sue sotto-righe sono chiuse: la freccia sul nome le riapre.
+    var subRowsCollapsed: Boolean = false
 )
 
 /**

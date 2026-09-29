@@ -125,6 +125,14 @@ interface DatabaseDao {
     @Query("UPDATE database_rows SET orderIndex = :index WHERE id = :rowId")
     suspend fun setRowOrderIndex(rowId: String, index: Int)
 
+    /** Le sotto-righe di `oldParent` passano sotto `newParent` (null = diventano principali). */
+    @Query("UPDATE database_rows SET parentRowId = :newParent WHERE parentRowId = :oldParent")
+    suspend fun reparentRows(oldParent: String, newParent: String?)
+
+    /** Apre o chiude le sotto-righe di una riga: solo quello, "Last edited" resta com'era. */
+    @Query("UPDATE database_rows SET subRowsCollapsed = :collapsed WHERE id = :rowId")
+    suspend fun setSubRowsCollapsed(rowId: String, collapsed: Boolean)
+
     /** Le celle di una riga, una volta sola: servono a duplicarla. */
     @Query("SELECT * FROM database_cells WHERE rowId = :rowId")
     suspend fun getCellsForRowOnce(rowId: String): List<DatabaseCellEntity>

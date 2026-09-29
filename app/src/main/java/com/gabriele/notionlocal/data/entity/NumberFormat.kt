@@ -173,11 +173,28 @@ fun parseViewCalculations(text: String?): Map<String, Calculation> =
 
 fun encodeViewCalculations(
     calcs: Map<String, Calculation>,
-    alignments: Map<String, CellAlignment> = emptyMap()
+    alignments: Map<String, CellAlignment> = emptyMap(),
+    subRows: Set<String> = emptySet()
 ): String? = (
     calcs.entries.map { "${it.key}=${it.value.name}" } +
-        alignments.entries.map { "$ALIGN_PREFIX${it.key}=${it.value.name}" }
+        alignments.entries.map { "$ALIGN_PREFIX${it.key}=${it.value.name}" } +
+        subRows.sorted().map { "$SUB_ROWS_PREFIX$it=1" }
     ).joinToString(";").ifEmpty { null }
+
+/**
+ * **I calcoli che contano anche le sotto-righe** (dal 29/09/2026, "Include
+ * sub rows" nella finestra di "Calculate"): nella stessa stringa, con le
+ * chiavi "subrows:colonna". Chi manca conta solo le righe principali.
+ */
+fun parseCalculationSubRows(text: String?): Set<String> =
+    text.orEmpty().split(";").mapNotNull { part ->
+        if (!part.startsWith(SUB_ROWS_PREFIX)) return@mapNotNull null
+        val i = part.indexOf('=')
+        if (i <= SUB_ROWS_PREFIX.length) return@mapNotNull null
+        part.substring(SUB_ROWS_PREFIX.length, i)
+    }.toSet()
+
+private const val SUB_ROWS_PREFIX = "subrows:"
 
 /**
  * **Dove sta il risultato di ogni calcolo** sotto la tabella (dal

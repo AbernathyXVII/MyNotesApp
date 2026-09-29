@@ -221,7 +221,18 @@ class DatabaseRepository(private val db: AppDatabase) {
         db.pageDao().update(page.copy(title = title, updatedAt = System.currentTimeMillis()))
     }
 
-    suspend fun deleteRow(row: DatabaseRowEntity) = dao.deleteRow(row)
+    /**
+     * Cancella una riga. **Le sue sotto-righe restano** (dal 29/09/2026):
+     * salgono di un livello, sotto la riga da cui era nata lei — o fra le
+     * principali. Buttarle insieme a lei vorrebbe dire perdere righe con le
+     * loro pagine senza averle mai guardate.
+     */
+    suspend fun deleteRow(row: DatabaseRowEntity) = db.withTransaction {
+        dao.reparentRows(row.id, row.parentRowId)
+        dao.deleteRow(row)
+    }
+
+    suspend fun setSubRowsCollapsed(rowId: String, collapsed: Boolean) = dao.setSubRowsCollapsed(rowId, collapsed)
 
     fun getAllCells(pageId: String): Flow<List<DatabaseCellEntity>> =
         dao.getAllCellsForPage(pageId)

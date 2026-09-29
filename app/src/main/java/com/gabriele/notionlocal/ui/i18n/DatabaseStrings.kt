@@ -600,6 +600,23 @@ object DbStrings {
 
     /** Nelle azioni di una scheda della galleria: l'inquadratura della copertina, solo nella scheda. */
     val repositionCover get() = t("Reposition cover", "Riposiziona copertina", "Titelbild neu positionieren", "Repositionner la couverture", "Reposicionar portada", "调整封面位置", "커버 위치 조정", "カバーの位置を調整")
+    // --- Le sotto-righe (dal 29/09/2026) ---
+
+    val createSubRow get() = t("Create sub row", "Crea una sotto-riga", "Unterzeile erstellen", "Créer une sous-ligne", "Crear subfila", "创建子行", "하위 행 만들기", "サブ行を作成")
+    val includeSubRows get() = t("Include sub rows", "Includi le sotto-righe", "Unterzeilen einbeziehen", "Inclure les sous-lignes", "Incluir subfilas", "包括子行", "하위 행 포함", "サブ行も含める")
+    val showSubRows get() = t("Show sub rows", "Mostra le sotto-righe", "Unterzeilen zeigen", "Afficher les sous-lignes", "Mostrar subfilas", "显示子行", "하위 행 표시", "サブ行を表示")
+    val hideSubRows get() = t("Hide sub rows", "Nascondi le sotto-righe", "Unterzeilen ausblenden", "Masquer les sous-lignes", "Ocultar subfilas", "隐藏子行", "하위 행 숨기기", "サブ行を隠す")
+    val subRowsStay get() = t(
+        "Its sub rows stay, one level up.",
+        "Le sue sotto-righe restano, un livello più su.",
+        "Ihre Unterzeilen bleiben, eine Ebene höher.",
+        "Ses sous-lignes restent, un niveau plus haut.",
+        "Sus subfilas se quedan, un nivel más arriba.",
+        "它的子行会保留，并上移一级。",
+        "하위 행은 한 단계 위로 올라가 남습니다.",
+        "サブ行は1段上に移って残ります。"
+    )
+
     // --- La larghezza delle colonne (dal 29/09/2026) ---
 
     val resizeColumn get() = t("Resize column", "Ridimensiona la colonna", "Spaltenbreite ändern", "Redimensionner la colonne", "Cambiar ancho de columna", "调整列宽", "열 너비 조정", "列幅を変更")
