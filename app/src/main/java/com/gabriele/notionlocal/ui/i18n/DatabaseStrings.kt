@@ -569,6 +569,17 @@ object DbStrings {
     val layout get() = t("Layout", "Vista", "Layout", "Disposition", "Diseño", "布局", "레이아웃", "レイアウト")
     val groupBy get() = t("Group by", "Raggruppa per", "Gruppieren nach", "Regrouper par", "Agrupar por", "分组依据", "그룹화 기준", "グループ化")
     val group get() = t("Group", "Gruppo", "Gruppe", "Groupe", "Grupo", "分组", "그룹", "グループ")
+    val subGroups get() = t("Sub groups", "Sottogruppi", "Untergruppen", "Sous-groupes", "Subgrupos", "子分组", "하위 그룹", "サブグループ")
+    val subGroupsNeedProperty get() = t(
+        "Add another property to make sub groups.",
+        "Aggiungi un'altra proprietà per fare i sottogruppi.",
+        "Füge eine weitere Eigenschaft hinzu, um Untergruppen zu bilden.",
+        "Ajoutez une autre propriété pour créer des sous-groupes.",
+        "Añade otra propiedad para crear subgrupos.",
+        "请再添加一个属性来创建子分组。",
+        "하위 그룹을 만들려면 속성을 하나 더 추가하세요.",
+        "サブグループを作るには、別のプロパティを追加してください。"
+    )
     val propertyVisibility get() = t("Property visibility", "Visibilità delle proprietà", "Sichtbarkeit der Eigenschaften", "Visibilité des propriétés", "Visibilidad de propiedades", "属性可见性", "속성 표시", "プロパティの表示")
     val dateProperty get() = t("Date property", "Proprietà data", "Datumseigenschaft", "Propriété de date", "Propiedad de fecha", "日期属性", "날짜 속성", "日付プロパティ")
     val hideEmptyGroups get() = t("Hide empty groups", "Nascondi i gruppi vuoti", "Leere Gruppen ausblenden", "Masquer les groupes vides", "Ocultar grupos vacíos", "隐藏空分组", "빈 그룹 숨기기", "空のグループを非表示")

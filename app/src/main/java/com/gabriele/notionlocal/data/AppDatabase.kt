@@ -55,7 +55,7 @@ import kotlinx.serialization.json.Json
         NotebookEntity::class,
         NotebookSectionEntity::class
     ],
-    version = 40,
+    version = 41,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -627,6 +627,16 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /**
+         * 40 → 41 (29/09/2026): i sottogruppi della tabella
+         * (`PageEntity.tableSubGroupColumnId`). Nessuna vista di prima li ha.
+         */
+        private val MIGRATION_40_41 = object : Migration(40, 41) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE pages ADD COLUMN tableSubGroupColumnId TEXT")
+            }
+        }
+
+        /**
          * Solo per i test: chiude il database e lo dimentica, così il
          * `getInstance` dopo riapre il file da capo (e ne esegue le
          * migrazioni). Senza, il secondo test troverebbe il database del
@@ -679,7 +689,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_36_37,
                         MIGRATION_37_38,
                         MIGRATION_38_39,
-                        MIGRATION_39_40
+                        MIGRATION_39_40,
+                        MIGRATION_40_41
                     )
                     .build()
                 INSTANCE = instance

@@ -962,10 +962,33 @@ class DatabaseViewModel(
         return _tableState.value.columns.find { it.id == id }
     }
 
-    /** Sceglie la proprietà su cui raggruppare, o null per togliere i gruppi. */
+    /**
+     * Sceglie la proprietà su cui raggruppare, o null per togliere i gruppi.
+     * Senza gruppi i sottogruppi se ne vanno con loro; e se il gruppo diventa
+     * la proprietà dei sottogruppi, quelli non avrebbero più niente da dividere.
+     */
     fun setTableGroupColumn(columnId: String?) {
         val current = _page.value ?: return
-        val updated = current.copy(tableGroupColumnId = columnId)
+        val sub = current.tableSubGroupColumnId?.takeIf { columnId != null && it != columnId }
+        val updated = current.copy(tableGroupColumnId = columnId, tableSubGroupColumnId = sub)
+        _page.value = updated
+        viewModelScope.launch { pageRepository.updatePage(updated) }
+    }
+
+    /**
+     * **La proprietà dei sottogruppi** (dal 29/09/2026), o null se non ce ne
+     * sono: vale solo con un raggruppamento, e mai uguale al gruppo.
+     */
+    fun tableSubGroupColumn(): DatabaseColumnEntity? {
+        val group = tableGroupColumn() ?: return null
+        val id = _page.value?.tableSubGroupColumnId?.takeIf { it != group.id } ?: return null
+        return _tableState.value.columns.find { it.id == id }
+    }
+
+    /** Sceglie la proprietà dei sottogruppi, o null per toglierli. */
+    fun setTableSubGroupColumn(columnId: String?) {
+        val current = _page.value ?: return
+        val updated = current.copy(tableSubGroupColumnId = columnId)
         _page.value = updated
         viewModelScope.launch { pageRepository.updatePage(updated) }
     }
@@ -1391,6 +1414,24 @@ class DatabaseViewModel(
                 repository.setCellValue(row.id, columnId, value)
             }
             fillFilterValue(row.id, skipColumnId = columnId)
+        }
+    }
+
+    /**
+     * Una riga nata dentro un sottogruppo: col valore del gruppo **e** quello
+     * del sottogruppo, così compare lì dove la si è chiesta.
+     */
+    fun addRowInSubGroup(groupColumnId: String, groupValue: String, subColumnId: String, subValue: String) {
+        val pageId = dataPageId ?: return
+        viewModelScope.launch {
+            val row = DatabaseRowEntity(pageId = pageId, orderIndex = nextRowIndex())
+            keepVisibleWhileSearching(row.id)
+            repository.addRow(row)
+            if (groupValue.isNotEmpty()) repository.setCellValue(row.id, groupColumnId, groupValue)
+            if (subValue.isNotEmpty()) repository.setCellValue(row.id, subColumnId, subValue)
+            // Il valore del filtro non deve coprire quello del gruppo o del sottogruppo.
+            val skip = if (_page.value?.filterColumnId == subColumnId) subColumnId else groupColumnId
+            fillFilterValue(row.id, skipColumnId = skip)
         }
     }
 

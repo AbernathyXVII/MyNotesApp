@@ -233,6 +233,10 @@ data class PageEntity(
     // Se i gruppi senza nemmeno una pagina si nascondono. Acceso come
     // su Notion: un elenco di intestazioni vuote è rumore.
     var hideEmptyGroups: Boolean = true,
+    // **I sottogruppi** (dal 29/09/2026): dentro ogni gruppo della tabella,
+    // i gruppi di una seconda proprietà. null = niente sottogruppi; senza
+    // `tableGroupColumnId` non vale.
+    var tableSubGroupColumnId: String? = null,
     // Quale proprietà data colloca le righe nel calendario. null = non
     // scelta: si usa la prima proprietà di tipo data che c'è.
     var calendarDateColumnId: String? = null,

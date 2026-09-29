@@ -1123,6 +1123,7 @@ class PageRepository(private val db: AppDatabase) {
                     coverImage = original.coverImage?.let { copyImage(it) },
                     boardGroupColumnId = column(original.boardGroupColumnId),
                     tableGroupColumnId = column(original.tableGroupColumnId),
+                    tableSubGroupColumnId = column(original.tableSubGroupColumnId),
                     calendarDateColumnId = column(original.calendarDateColumnId),
                     sortColumnId = column(original.sortColumnId),
                     filterColumnId = column(original.filterColumnId),

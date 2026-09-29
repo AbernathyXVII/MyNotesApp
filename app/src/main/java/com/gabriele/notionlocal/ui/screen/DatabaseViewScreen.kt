@@ -116,6 +116,7 @@ import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Segment
+import androidx.compose.material.icons.filled.SubdirectoryArrowRight
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.ui.platform.LocalContext
@@ -1015,6 +1016,15 @@ fun DatabaseContent(
                             viewModel.addRowInGroup(column.id, value)
                         }
                         newRowTick++
+                    },
+                    subGroupColumn = viewModel.tableSubGroupColumn(),
+                    onAddRowInSubGroup = { groupValue, subValue ->
+                        val group = viewModel.tableGroupColumn()
+                        val sub = viewModel.tableSubGroupColumn()
+                        if (group != null && sub != null) {
+                            viewModel.addRowInSubGroup(group.id, groupValue, sub.id, subValue)
+                        }
+                        newRowTick++
                     }
                 )
 
@@ -1195,6 +1205,8 @@ fun DatabaseContent(
             hideEmptyGroups = page?.hideEmptyGroups != false,
             onSetTableGroupColumn = { viewModel.setTableGroupColumn(it) },
             onSetHideEmptyGroups = { viewModel.setHideEmptyGroups(it) },
+            tableSubGroupColumn = viewModel.tableSubGroupColumn(),
+            onSetTableSubGroupColumn = { viewModel.setTableSubGroupColumn(it) },
             onSetColumnHidden = { columnId, hidden ->
                 viewModel.setColumnHidden(columnId, hidden)
             },
@@ -1454,6 +1466,10 @@ private fun TableLayout(
     onDeleteOption: (String, String) -> Unit,
     /** Crea una pagina già dentro il gruppo: riceve il valore del gruppo. */
     onAddRowInGroup: (String) -> Unit,
+    /** I sottogruppi dentro ogni gruppo (dal 29/09/2026); null se non ce ne sono. */
+    subGroupColumn: DatabaseColumnEntity? = null,
+    /** Crea una pagina dentro un sottogruppo: valore del gruppo e del sottogruppo. */
+    onAddRowInSubGroup: (String, String) -> Unit = { _, _ -> },
     /** Si scrive il nome di una riga (true) o si è finito (false): l'ordine resta fermo intanto. */
     onTitleEditing: (Boolean) -> Unit = {},
     onChangeTypeProperty: (DatabaseColumnEntity) -> Unit = {},
@@ -1480,7 +1496,7 @@ private fun TableLayout(
     // Quali gruppi sono chiusi. Sta qui e non nel database perché è
     // come si sta guardando la tabella adesso, non una proprietà del
     // database: riaprendo la pagina si riparte con tutto aperto.
-    val collapsed = remember(groupColumn?.id) { mutableStateMapOf<String, Boolean>() }
+    val collapsed = remember(groupColumn?.id, subGroupColumn?.id) { mutableStateMapOf<String, Boolean>() }
 
     // Intestazione e righe scorrono insieme in orizzontale, così le
     // colonne restano allineate.
@@ -1526,6 +1542,65 @@ private fun TableLayout(
             return@Column
         }
 
+        // Il corpo di un gruppo o di un sottogruppo: intestazione delle
+        // colonne, righe, calcoli e "New page".
+        @Composable
+        fun GroupBody(rows: List<DatabaseRowEntity>, onAddRow: () -> Unit) {
+            TableHeaderRow(
+                columns = shownColumns,
+                viewLocked = viewLocked,
+                onEditProperty = onEditProperty,
+                onMoveProperty = onMoveProperty,
+                onHideProperty = onHideProperty,
+                onToggleCenterProperty = onToggleCenterProperty,
+                onAddProperty = onAddProperty,
+                onChangeTypeProperty = onChangeTypeProperty,
+                onCalculate = onCalculate,
+                onSetAllChecked = onSetAllChecked
+            )
+            HorizontalDivider(modifier = Modifier.width(tableWidth))
+            rows.forEach { row ->
+                key(row.id) {
+                TableBodyRow(
+                    row = row,
+                    state = state,
+                    columns = shownColumns,
+                    onTitleChange = onTitleChange,
+                    onOpenRow = onOpenRow,
+                    onRowLongPress = onRowLongPress,
+                    onSetCellValue = onSetCellValue,
+                    onAddOption = onAddOption,
+                    onRenameOption = onRenameOption,
+                    onSetOptionColor = onSetOptionColor,
+                    onDeleteOption = onDeleteOption,
+                    onTitleEditing = onTitleEditing
+                )
+                HorizontalDivider(modifier = Modifier.width(tableWidth))
+                }
+            }
+            // I calcoli di questo gruppo, sotto le sue righe.
+            CalculationFooter(rows, state, shownColumns, calculations, onCalculate, calculationAlignments, onCalculationAlign)
+            // Una pagina creata da dentro un gruppo nasce già con
+            // quel valore: altrimenti comparirebbe nel gruppo
+            // "senza valore", cioè da tutt'altra parte rispetto a
+            // dove la si è chiesta.
+            TextButton(
+                onClick = onAddRow,
+                modifier = Modifier.padding(start = 8.dp)
+            ) {
+                Icon(
+                    Icons.Filled.Add,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.size(8.dp))
+                Text(
+                    if (LocalSimpleDatabase.current) DbStrings.newRow else DbStrings.newPage,
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+        }
+
         val groups = buildRowGroups(state, groupColumn, hideEmptyGroups)
         groups.forEach { group ->
             val isCollapsed = collapsed[group.key] == true
@@ -1536,64 +1611,38 @@ private fun TableLayout(
                 onToggle = { collapsed[group.key] = !isCollapsed }
             )
             if (!isCollapsed) {
-                TableHeaderRow(
-                    columns = shownColumns,
-                    viewLocked = viewLocked,
-                    onEditProperty = onEditProperty,
-                    onMoveProperty = onMoveProperty,
-                    onHideProperty = onHideProperty,
-                    onToggleCenterProperty = onToggleCenterProperty,
-                    onAddProperty = onAddProperty,
-                    onChangeTypeProperty = onChangeTypeProperty,
-                    onCalculate = onCalculate,
-                    onSetAllChecked = onSetAllChecked
-                )
-                HorizontalDivider(modifier = Modifier.width(tableWidth))
-                group.rows.forEach { row ->
-                    key(row.id) {
-                    TableBodyRow(
-                        row = row,
-                        state = state,
-                        columns = shownColumns,
-                        onTitleChange = onTitleChange,
-                        onOpenRow = onOpenRow,
-                        onRowLongPress = onRowLongPress,
-                        onSetCellValue = onSetCellValue,
-                        onAddOption = onAddOption,
-                        onRenameOption = onRenameOption,
-                        onSetOptionColor = onSetOptionColor,
-                        onDeleteOption = onDeleteOption,
-                        onTitleEditing = onTitleEditing
-                    )
-                    HorizontalDivider(modifier = Modifier.width(tableWidth))
+                if (subGroupColumn == null) {
+                    GroupBody(group.rows) { onAddRowInGroup(group.key) }
+                } else {
+                    // **I sottogruppi**: dentro il gruppo, le sue righe
+                    // divise secondo la seconda proprietà, un po' rientrate.
+                    buildRowGroups(state, subGroupColumn, hideEmptyGroups, group.rows).forEach { sub ->
+                        val subKey = group.key + SUB_GROUP_KEY_SEPARATOR + sub.key
+                        val subCollapsed = collapsed[subKey] == true
+                        GroupHeaderRow(
+                            group = sub,
+                            collapsed = subCollapsed,
+                            width = tableWidth,
+                            indent = SUB_GROUP_INDENT,
+                            onToggle = { collapsed[subKey] = !subCollapsed }
+                        )
+                        if (!subCollapsed) {
+                            GroupBody(sub.rows) { onAddRowInSubGroup(group.key, sub.key) }
+                        }
+                        Spacer(modifier = Modifier.size(8.dp))
                     }
-                }
-                // I calcoli di questo gruppo, sotto le sue righe.
-                CalculationFooter(group.rows, state, shownColumns, calculations, onCalculate, calculationAlignments, onCalculationAlign)
-                // Una pagina creata da dentro un gruppo nasce già con
-                // quel valore: altrimenti comparirebbe nel gruppo
-                // "senza valore", cioè da tutt'altra parte rispetto a
-                // dove la si è chiesta.
-                TextButton(
-                    onClick = { onAddRowInGroup(group.key) },
-                    modifier = Modifier.padding(start = 8.dp)
-                ) {
-                    Icon(
-                        Icons.Filled.Add,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.size(8.dp))
-                    Text(
-                        if (LocalSimpleDatabase.current) DbStrings.newRow else DbStrings.newPage,
-                        style = MaterialTheme.typography.labelLarge
-                    )
                 }
             }
             Spacer(modifier = Modifier.size(12.dp))
         }
     }
 }
+
+/** Fra la chiave del gruppo e quella del sottogruppo, nell'elenco di quelli chiusi. */
+private const val SUB_GROUP_KEY_SEPARATOR = "\u0000"
+
+/** Quanto rientrano le intestazioni dei sottogruppi. */
+private val SUB_GROUP_INDENT = 20.dp
 
 /**
  * L'intestazione delle colonne, ripetuta sopra ogni gruppo come su Notion.
@@ -1824,13 +1873,15 @@ private fun GroupHeaderRow(
     group: RowGroup,
     collapsed: Boolean,
     width: Dp,
+    /** Per i sottogruppi, un po' più a destra del loro gruppo. */
+    indent: Dp = 0.dp,
     onToggle: () -> Unit
 ) {
     Row(
         modifier = Modifier
             .width(width)
             .clickable { onToggle() }
-            .padding(vertical = 10.dp),
+            .padding(start = indent, top = 10.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
@@ -1895,7 +1946,9 @@ private data class RowGroup(
 private fun buildRowGroups(
     state: DatabaseTableState,
     column: DatabaseColumnEntity,
-    hideEmpty: Boolean
+    hideEmpty: Boolean,
+    /** Le righe da dividere: tutte, o quelle di un gruppo per farne i sottogruppi. */
+    rows: List<DatabaseRowEntity> = state.rows
 ): List<RowGroup> {
     fun valueOf(row: DatabaseRowEntity) = state.cellValues[row.id to column.id].orEmpty()
 
@@ -1918,16 +1971,16 @@ private fun buildRowGroups(
             // Un valore rimasto nelle celle dopo che l'opzione è stata
             // cancellata non deve far sparire le sue righe: gli si dà
             // comunque un gruppo, in fondo a quelli dichiarati.
-            val orphans = state.rows.flatMap { tagsOf(it) }.distinct().filter { it !in declared }
+            val orphans = rows.flatMap { tagsOf(it) }.distinct().filter { it !in declared }
             (declared + orphans).forEach { label ->
                 groups += RowGroup(
                     key = label,
                     label = label,
                     color = colorOf(label),
-                    rows = state.rows.filter { label in tagsOf(it) }
+                    rows = rows.filter { label in tagsOf(it) }
                 )
             }
-            groups += RowGroup("", emptyLabel, null, state.rows.filter { tagsOf(it).isEmpty() })
+            groups += RowGroup("", emptyLabel, null, rows.filter { tagsOf(it).isEmpty() })
         }
 
         ColumnType.CHECKBOX -> {
@@ -1937,20 +1990,20 @@ private fun buildRowGroups(
                 "true",
                 DbStrings.checked,
                 null,
-                state.rows.filter { valueOf(it) == "true" }
+                rows.filter { valueOf(it) == "true" }
             )
             groups += RowGroup(
                 "false",
                 DbStrings.unchecked,
                 null,
-                state.rows.filter { valueOf(it) != "true" }
+                rows.filter { valueOf(it) != "true" }
             )
         }
 
         ColumnType.DATE -> {
             // Un gruppo per giorno: raggruppare per istante esatto
             // darebbe un gruppo per riga.
-            val byDay = state.rows.groupBy { row ->
+            val byDay = rows.groupBy { row ->
                 parseDateRange(valueOf(row))?.start?.toLocalDate()
             }
             byDay.keys.filterNotNull().sorted().forEach { day ->
@@ -1965,7 +2018,7 @@ private fun buildRowGroups(
         }
 
         else -> {
-            val byValue = state.rows.groupBy { valueOf(it) }
+            val byValue = rows.groupBy { valueOf(it) }
             val comparator = if (column.type == ColumnType.NUMBER) {
                 compareBy<String> { it.toDoubleOrNull() ?: Double.MAX_VALUE }
             } else {
@@ -6835,6 +6888,8 @@ private enum class SettingsPage {
     GROUP_BY,
     /** Su quale proprietà raggruppa la **tabella**: `GROUP_BY` è della bacheca. */
     TABLE_GROUP,
+    /** I sottogruppi della tabella, dentro ogni gruppo (dal 29/09/2026). */
+    TABLE_SUB_GROUP,
     /** Quali colonne si vedono nella tabella e quali no. */
     PROPERTY_VISIBILITY,
     DATE_PROPERTY,
@@ -7296,6 +7351,9 @@ private fun SettingsSheet(
     hideEmptyGroups: Boolean = true,
     onSetTableGroupColumn: ((String?) -> Unit)? = null,
     onSetHideEmptyGroups: ((Boolean) -> Unit)? = null,
+    /** I sottogruppi della tabella: la proprietà scelta, e come cambiarla. */
+    tableSubGroupColumn: DatabaseColumnEntity? = null,
+    onSetTableSubGroupColumn: ((String?) -> Unit)? = null,
     /** Nasconde o rimostra una colonna, e tutte insieme. */
     onSetColumnHidden: (String, Boolean) -> Unit,
     onSetAllColumnsHidden: (Boolean) -> Unit,
@@ -7375,6 +7433,7 @@ private fun SettingsSheet(
                         SettingsPage.LAYOUT -> DbStrings.layout
                         SettingsPage.GROUP_BY -> DbStrings.groupBy
                         SettingsPage.TABLE_GROUP -> DbStrings.group
+                        SettingsPage.TABLE_SUB_GROUP -> DbStrings.subGroups
                         SettingsPage.PROPERTY_VISIBILITY -> DbStrings.propertyVisibility
                         SettingsPage.DATE_PROPERTY -> DbStrings.dateProperty
                         SettingsPage.CARD_PREVIEW -> DbStrings.cardPreview
@@ -7462,6 +7521,19 @@ private fun SettingsSheet(
                                 value = tableGroupColumn?.name?.let(DbStrings::columnName) ?: DbStrings.none,
                                 onClick = { page = SettingsPage.TABLE_GROUP }
                             )
+                            // **"Sub groups"**, la quarta voce (dal 29/09/2026,
+                            // chiesto dall'utente): compare appena c'è un
+                            // raggruppamento, e fa gruppi dentro i gruppi.
+                            if (tableGroupColumn != null && onSetTableSubGroupColumn != null) {
+                                HorizontalDivider()
+                                SettingsRow(
+                                    icon = Icons.Filled.SubdirectoryArrowRight,
+                                    label = DbStrings.subGroups,
+                                    enabled = !viewLocked,
+                                    value = tableSubGroupColumn?.name?.let(DbStrings::columnName) ?: DbStrings.none,
+                                    onClick = { page = SettingsPage.TABLE_SUB_GROUP }
+                                )
+                            }
                             // L'interruttore compare solo quando i
                             // gruppi ci sono: senza raggruppamento non
                             // avrebbe niente da nascondere.
@@ -7719,6 +7791,43 @@ private fun SettingsSheet(
                     if (groupable.isEmpty()) {
                         Text(
                             text = DbStrings.groupingNeedsProperty,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 12.dp)
+                        )
+                    }
+                }
+
+                SettingsPage.TABLE_SUB_GROUP -> {
+                    // Le stesse proprietà del raggruppamento, tranne quella
+                    // che fa già i gruppi: dividere per lo stesso valore non
+                    // darebbe niente.
+                    val groupable = columns.filter {
+                        it.type != ColumnType.CREATED_TIME &&
+                            it.type != ColumnType.LAST_EDITED_TIME &&
+                            it.type != ColumnType.COLOR &&
+                            it.id != tableGroupColumn?.id
+                    }
+                    SheetGroup {
+                        SettingsRow(
+                            icon = Icons.Filled.Block,
+                            label = DbStrings.none,
+                            value = if (tableSubGroupColumn == null) "✓" else null,
+                            onClick = { onSetTableSubGroupColumn?.invoke(null) }
+                        )
+                        groupable.forEach { column ->
+                            HorizontalDivider()
+                            SettingsRow(
+                                icon = column.type.icon(),
+                                label = DbStrings.columnName(column.name),
+                                value = if (column.id == tableSubGroupColumn?.id) "✓" else null,
+                                onClick = { onSetTableSubGroupColumn?.invoke(column.id) }
+                            )
+                        }
+                    }
+                    if (groupable.isEmpty()) {
+                        Text(
+                            text = DbStrings.subGroupsNeedProperty,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(vertical = 12.dp)

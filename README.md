@@ -2022,6 +2022,45 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**29/09/2026 — Tabelle: i sottogruppi, gruppi dentro i gruppi**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 214 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Consentimi di creare i Sub groups: appena creo il Grouping, apparirà come
+> quarta opzione nelle impostazioni delle pagine proprio Sub groups, che mi
+> consentirà di creare gruppi nei gruppi»
+
+- **[Nuova funzionalità]** Nelle impostazioni di una vista a tabella, appena
+  "Group" ha una proprietà, compare come **quarta voce "Sub groups"**
+  (dopo Layout, Filter e Group). Si sceglie None o una proprietà, le stesse
+  che si possono usare per i gruppi tranne quella che fa già i gruppi.
+  Dentro ogni gruppo le sue righe si dividono nei sottogruppi, un po'
+  rientrati: ognuno si chiude e si riapre toccandone l'intestazione, e ha
+  le sue intestazioni delle colonne, i suoi calcoli e il suo "New page".
+  Una pagina creata dentro un sottogruppo nasce coi valori del gruppo e
+  del sottogruppo. "Hide empty groups" vale per tutti e due i livelli
+- Togliendo il raggruppamento (Group: None) se ne vanno anche i
+  sottogruppi; raggruppando per la proprietà dei sottogruppi, anche
+- Solo nella tabella: la bacheca ha il suo "Group by", che fa le colonne,
+  e lì i sottogruppi non ci sono
+- **[Progetto]** **Database alla versione 41**: `pages.tableSubGroupColumnId`
+  (copiato anche da "Duplicate"). `DatabaseViewModel.tableSubGroupColumn`,
+  `setTableSubGroupColumn`, `addRowInSubGroup`; in `DatabaseViewScreen.kt`
+  `GroupBody` fa il corpo di un gruppo e di un sottogruppo, e
+  `buildRowGroups` divide anche le sole righe di un gruppo. Test in
+  `SubGroupTest` e `MigrationTest` 40→41, col file `v40.sql`
+- Verificato sul telefono (copia del database prima; migrazione alla 41, le
+  26 pagine tutte lì) sulla vista collegata "Videogiochi" della pagina di
+  prova "Titolo tre H3": senza gruppi niente "Sub groups"; Group: Select e
+  la voce compare quarta; nella sua scelta "Select" non c'è; Sub groups:
+  Text, e dentro il gruppo "PS5" (3) i sottogruppi "Esempio 1", "Esempio 2"
+  e "Sdrogo", ognuno con la sua tabella; "Esempio 1" si chiude da solo.
+  Poi Group: None e il database confrontato con la copia: uguale, tranne
+  l'ora di ultima modifica della vista. "New page" dentro un sottogruppo
+  non è stato provato sul telefono, per non aggiungere righe al database
+  "Videogiochi" (c'è il test)
+
 **29/09/2026 — Sei puntini: "Add above" e "Add below"**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 209 test
 passati; commit solo in locale)*
@@ -7331,7 +7370,8 @@ le finestre che apre. Chi lo usa passa solo l'id del blocco.
 
 ## Nota tecnica
 
-Lo schema è alla **versione 40** (la 40, del 28/09/2026, aggiunge
+Lo schema è alla **versione 41** (la 41, del 29/09/2026, aggiunge
+`pages.tableSubGroupColumnId`, i sottogruppi della tabella; la 40, del 28/09/2026, aggiunge
 `pages.chartSettings`, le impostazioni della vista Chart; la 39, del
 26/09/2026, aggiunge i
 template delle pagine; la 38, dello stesso giorno, aggiunge il
