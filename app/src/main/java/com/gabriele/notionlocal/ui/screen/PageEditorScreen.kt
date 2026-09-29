@@ -180,6 +180,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.focus.FocusRequester
@@ -766,6 +771,9 @@ private val LocalPageLocked = staticCompositionLocalOf { false }
  * tastiera a mano, il cursore resta acceso due decimi in più.
  */
 private const val IME_CLOSE_SETTLE_MS = 450L
+
+/** Quanto dura il velo sulla riga appena spostata con le frecce. */
+private const val MOVE_FLASH_MS = 700
 
 /**
  * Quanto la barra sopra la tastiera aspetta, perso il fuoco, prima di
@@ -4298,6 +4306,18 @@ private fun MergedTextRunField(
     // Su quale numero è stato tenuto premuto: apre il menu della lista.
     var numberMenuFor by remember(runKey) { mutableStateOf<String?>(null) }
 
+    // **La riga appena spostata con le frecce si illumina** e il velo
+    // svanisce: vedi `PageEditorViewModel.movedBlock`.
+    val movedBlock by viewModel.movedBlock.collectAsStateWithLifecycle()
+    val moveFlash = remember { Animatable(0f) }
+    val moveFlashColor = MaterialTheme.colorScheme.primary
+    LaunchedEffect(movedBlock) {
+        val moved = movedBlock ?: return@LaunchedEffect
+        if (runBlocks.none { it.id == moved.blockId }) return@LaunchedEffect
+        moveFlash.snapTo(1f)
+        moveFlash.animateTo(0f, tween(MOVE_FLASH_MS))
+    }
+
     // Il menu "/". `slashAnchor` è dove sta la barra dentro il testo:
     // finché c'è, quello che si scrive dopo filtra la lista. Si chiude
     // da solo quando la barra sparisce, quando il cursore va prima di
@@ -4734,6 +4754,29 @@ private fun MergedTextRunField(
         ),
         modifier = Modifier
             .fillMaxWidth()
+            .drawBehind {
+                val strength = moveFlash.value
+                val movedId = movedBlock?.blockId
+                val layout = textLayout
+                if (strength <= 0f || movedId == null || layout == null) return@drawBehind
+                val line = runBlocks.indexOfFirst { it.id == movedId }
+                if (line < 0) return@drawBehind
+                // Da dove a dove sta la riga nel testo **mostrato**, coi
+                // prefissi: lo stesso conto di `displayedCaretOffset`.
+                val lines = bodyOf(fieldValue.text).split('\n')
+                val prefixes = runPrefixes(lines, runBlocks, allBlocks, viewModel)
+                fun shownLength(i: Int) = (prefixes.getOrNull(i)?.text?.length ?: 0) + (lines.getOrNull(i)?.length ?: 0)
+                val start = (0 until line).sumOf { shownLength(it) + 1 }
+                val last = layout.layoutInput.text.length
+                val top = layout.getLineTop(layout.getLineForOffset(start.coerceIn(0, last)))
+                val bottom = layout.getLineBottom(layout.getLineForOffset((start + shownLength(line)).coerceIn(0, last)))
+                drawRoundRect(
+                    color = moveFlashColor.copy(alpha = 0.3f * strength),
+                    topLeft = Offset(-6.dp.toPx(), top),
+                    size = Size(size.width + 12.dp.toPx(), bottom - top),
+                    cornerRadius = CornerRadius(4.dp.toPx())
+                )
+            }
             .bringIntoViewRequester(caretIntoView)
             .focusRequester(focusRequester)
             .onFocusChanged { state ->

@@ -1748,8 +1748,21 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
             }
             if (caret != null) _pendingCaret.value = block.id to caret
             _focusRequestBlockId.value = block.id
+            _movedBlock.value = MovedBlock(block.id, android.os.SystemClock.uptimeMillis())
         }
     }
+
+    /**
+     * **La riga appena spostata con le frecce, che si illumina un attimo**
+     * (dal 29/09/2026). Una riga vuota spostata non si vede: fra righe
+     * vuote sembrava che non succedesse niente, e passando un divisore che
+     * fosse il divisore a salire mangiandosi una riga (l'utente). Il
+     * momento distingue due spostamenti di fila della stessa riga.
+     */
+    data class MovedBlock(val blockId: String, val at: Long)
+
+    private val _movedBlock = MutableStateFlow<MovedBlock?>(null)
+    val movedBlock: StateFlow<MovedBlock?> = _movedBlock
 
     /**
      * **"Add above" e "Add below"** del menu dei sei puntini (dal 29/09/2026,
@@ -2104,9 +2117,15 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         val position = siblings.indexOfFirst { it.id == block.id }
         if (position <= 0) return false
         val above = siblings[position - 1]
-        // Le isole "contenitore" (tabelle, divisori, link, database) non
-        // hanno un testo in cui fondersi: lì non si fa niente, come
-        // prima.
+        // **Sotto un divisore il backspace toglie il divisore** (dal
+        // 29/09/2026; prima non faceva niente, "sotto un divider non posso
+        // cancellare nulla"): come una riga orizzontale in un documento. La
+        // riga resta col suo testo e il cursore all'inizio; un altro
+        // backspace la unisce a quella di sopra.
+        if (above.type == BlockType.DIVIDER) return removeDividerAbove(above, block)
+        // Le isole "contenitore" (tabelle, link, database) non hanno un
+        // testo in cui fondersi, e dentro hanno roba da non buttare: lì
+        // non si fa niente, come prima.
         if (above.type != BlockType.CHECKBOX && above.type != BlockType.TOGGLE) return false
 
         val aboveSpans = spansOf(above)
@@ -2126,6 +2145,26 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
             // all'altra prima che si chiuda.
             _pendingCaret.value = above.id to joinAt
             _focusRequestBlockId.value = above.id
+        }
+        return true
+    }
+
+    /**
+     * Toglie il divisore sopra `line`. La riga di solito cambia campo di
+     * testo (il suo gruppo si unisce a quello sopra il divisore): chi
+     * chiama posa prima il fuoco sul campo invisibile, e qui il cursore
+     * torna sulla riga, all'inizio, quando la lista mostrata è già quella
+     * senza divisore.
+     */
+    private fun removeDividerAbove(divider: BlockEntity, line: BlockEntity): Boolean {
+        snapshotForStructuralChange()
+        viewModelScope.launch {
+            structuralEdits.withLock { repository.applyBlockChanges(deleted = listOf(divider)) }
+            withTimeoutOrNull(FOCUS_HANDOFF_TIMEOUT_MS) {
+                _blocks.first { shown -> shown.none { it.id == divider.id } }
+            }
+            _pendingCaret.value = line.id to 0
+            _focusRequestBlockId.value = line.id
         }
         return true
     }

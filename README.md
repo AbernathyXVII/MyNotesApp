@@ -2022,6 +2022,42 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**29/09/2026 — Divisori: il backspace sotto li toglie, e la riga spostata si illumina**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 219 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Sotto un divider, non posso cancellare nulla. Se sono sopra un diveder,
+> e sposto verso il basso, non solo non mi sposta verso il basso, ma il
+> divider cancella una riga e si sposta da sola verso l'alto»
+
+- **[Bug fix]** Il backspace a inizio della riga subito sotto un divisore
+  non faceva niente (riprodotto sul telefono: nel database non cambiava
+  nulla). Ora **toglie il divisore**, come una riga orizzontale in un
+  documento: la riga resta col suo testo e il cursore all'inizio, e un
+  altro backspace la unisce a quella di sopra. Sotto un database, una
+  tabella o un collegamento a una pagina resta com'era: lì dentro c'è roba
+  da non buttare
+- **[Bug fix]** Spostare con ↓ una riga oltre un divisore la spostava
+  davvero (controllato nel database, anche su My Space: nessuna riga
+  sparita), ma con le righe vuote non si vedeva: fra cinque righe vuote i
+  primi tocchi sembravano non fare niente, e passando il divisore
+  sembrava il divisore a salire mangiandosi una riga. Ora **la riga
+  spostata si illumina** di azzurro per un attimo (0,7 s), vuota o no:
+  si vede dov'è andata
+- **[Progetto]** `PageEditorViewModel.removeDividerAbove` (da
+  `mergeIntoIslandAbove`), `movedBlock` e il velo disegnato dal campo di
+  testo condiviso (`MOVE_FLASH_MS`); test in `DividerBackspaceTest`
+- Verificato sul telefono sulla pagina di prova "Titolo tre H3" (copia del
+  database prima): "Sopra", divisore, "Sotto"; le lettere si cancellavano,
+  a inizio riga il backspace no. Dopo: il divisore se ne va, il cursore
+  resta sulla riga (una "K" scritta finisce lì) e la tastiera non si
+  chiude. Registrato lo schermo spostando una riga vuota oltre il
+  divisore: dal fotogramma dopo il tocco la riga è sotto, col cursore,
+  in una fascia azzurra che svanisce; la pagina non salta. Poi la pagina
+  rimessa com'era e il database confrontato con la copia: uguale, tranne
+  3 voci di "Updates" della pagina di prova
+
 **29/09/2026 — Col gesto indietro il cursore si spegne subito**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 216 test
 passati; commit solo in locale)*
