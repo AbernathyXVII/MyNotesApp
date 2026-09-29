@@ -310,6 +310,16 @@ object DbStrings {
     val center get() = t("Center", "Centra", "Zentrieren", "Centrer", "Centrar", "居中", "가운데 정렬", "中央揃え")
     val alignRight get() = t("Align right", "Allinea a destra", "Rechtsbündig", "Aligner à droite", "Alinear a la derecha", "右对齐", "오른쪽 정렬", "右揃え")
     val hide get() = t("Hide", "Nascondi", "Ausblenden", "Masquer", "Ocultar", "隐藏", "숨기기", "非表示")
+    val rowsFollowSort get() = t(
+        "The rows follow the sort: remove it to move them by hand.",
+        "Le righe seguono l'ordinamento: toglilo per spostarle a mano.",
+        "Die Zeilen folgen der Sortierung: entferne sie, um sie von Hand zu verschieben.",
+        "Les lignes suivent le tri : retirez-le pour les déplacer à la main.",
+        "Las filas siguen el orden: quítalo para moverlas a mano.",
+        "行按排序排列：取消排序后才能手动移动。",
+        "행이 정렬을 따릅니다. 직접 옮기려면 정렬을 해제하세요.",
+        "行は並べ替えに従います。手で動かすには並べ替えを外してください。"
+    )
     val activateAll get() = t("Activate all", "Attiva tutte", "Alle aktivieren", "Tout activer", "Activar todas", "全部勾选", "모두 선택", "すべてオン")
     val deactivateAll get() = t("Deactivate all", "Disattiva tutte", "Alle deaktivieren", "Tout désactiver", "Desactivar todas", "全部取消勾选", "모두 해제", "すべてオフ")
     val addProperty get() = t("Add property", "Aggiungi proprietà", "Eigenschaft hinzufügen", "Ajouter une propriété", "Añadir propiedad", "添加属性", "속성 추가", "プロパティを追加")

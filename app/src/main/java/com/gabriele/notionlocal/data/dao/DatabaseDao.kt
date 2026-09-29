@@ -118,6 +118,13 @@ interface DatabaseDao {
     )
     suspend fun shiftRowOrder(pageId: String, fromIndex: Int, by: Int)
 
+    /**
+     * Il posto di una riga, e basta: spostarla non la cambia, quindi
+     * "Last edited" resta com'era.
+     */
+    @Query("UPDATE database_rows SET orderIndex = :index WHERE id = :rowId")
+    suspend fun setRowOrderIndex(rowId: String, index: Int)
+
     /** Le celle di una riga, una volta sola: servono a duplicarla. */
     @Query("SELECT * FROM database_cells WHERE rowId = :rowId")
     suspend fun getCellsForRowOnce(rowId: String): List<DatabaseCellEntity>

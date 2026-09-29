@@ -190,6 +190,25 @@ class DatabaseRepository(private val db: AppDatabase) {
     suspend fun updateRow(row: DatabaseRowEntity) = dao.updateRow(row)
 
     /**
+     * **Sposta una riga** (dal 29/09/2026, "Move up" / "Move down" tenendo
+     * premuto il nome): subito prima (`before`) o subito dopo `targetId`,
+     * nell'ordine di tutto il database. È il vicino che si vede, anche con
+     * un filtro o dentro un gruppo, dove quello vero può essere nascosto o
+     * in un altro gruppo. Poi le righe si rinumerano da 0: due a pari merito
+     * non si saprebbe mai dove mostrarle.
+     */
+    suspend fun moveRowNextTo(pageId: String, rowId: String, targetId: String, before: Boolean) = db.withTransaction {
+        if (rowId == targetId) return@withTransaction
+        val rows = dao.getRowsForPageOnce(pageId).toMutableList()
+        val moving = rows.find { it.id == rowId } ?: return@withTransaction
+        rows.remove(moving)
+        val target = rows.indexOfFirst { it.id == targetId }
+        if (target < 0) return@withTransaction
+        rows.add(if (before) target else target + 1, moving)
+        rows.forEachIndexed { index, row -> if (row.orderIndex != index) dao.setRowOrderIndex(row.id, index) }
+    }
+
+    /**
      * Cambia il titolo di una riga, segnandola come modificata adesso.
      * Se la riga è già stata aperta come pagina, rinomina anche quella:
      * per l'utente è un oggetto solo, e vedere due nomi diversi a

@@ -2022,6 +2022,41 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**29/09/2026 — Tabelle: "Move up" e "Move down" tenendo premuto il nome di una riga**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 254 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Se tengo premuto su una cella della colonna Name, fai sì che ci sia
+> un'opzione che mi consenti di spostare l'intera riga sopra o sotto»
+
+- **[Nuova funzionalità]** Nelle azioni che si aprono tenendo premuto il
+  nome di una riga della tabella, in cima, "**Move up**" e "**Move
+  down**": la riga passa sopra quella che le sta sopra, o sotto quella che
+  le sta sotto, **come la si vede** — con un filtro o una ricerca salta le
+  righe nascoste, dentro un gruppo o un sottogruppo resta fra le righe di
+  quel gruppo. La finestra resta aperta per spostarla ancora; in cima
+  "Move up" è grigio, in fondo "Move down". Anche nel database semplice
+- **Con un ordinamento** le due voci sono grigie, e sotto c'è scritto
+  perché: le righe stanno dove dice l'ordinamento, spostarle a mano non si
+  vedrebbe. Grigie anche col database bloccato
+- Spostare una riga non cambia il suo "Last edited". L'ordine è quello del
+  database, lo stesso in tutte le sue viste
+- **[Progetto]** `DatabaseRepository.moveRowNextTo` (subito prima o subito
+  dopo il vicino, poi le righe si rinumerano da 0 così non ci sono pari
+  merito), `DatabaseDao.setRowOrderIndex`; la tabella dice in quale gruppo
+  si è toccata la riga (`RowPlace`). Test in `RowMoveTest`
+- Verificato sul telefono sulla pagina di prova "Titolo tre H3" (copia del
+  database prima): nella vista "Videogiochi", ordinata per nome, le due
+  voci sono grigie con la spiegazione. In una vista "Prova" creata apposta
+  senza ordinamento: "2" con "Move down" finisce sotto "6" (la finestra
+  resta aperta, "Last edited" non cambia) e con "Move up" torna su; sulla
+  prima riga "Move up" è grigio. Raggruppata per Select, "Esempio nuovo"
+  nel gruppo PS5 sale sopra "2" saltando le sei righe degli altri gruppi
+  che nel database stanno in mezzo. Poi l'ordine rimesso com'era con "Move
+  down" (in fondo la voce diventa grigia) e la vista tolta: il database è
+  identico alla copia
+
 **29/09/2026 — Tabelle: la larghezza delle colonne, col segnalino o adattata al contenuto**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 250 test
 passati; commit solo in locale)*

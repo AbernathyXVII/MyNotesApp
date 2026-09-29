@@ -1541,6 +1541,12 @@ class DatabaseViewModel(
         viewModelScope.launch { repository.deleteRow(row) }
     }
 
+    /** "Move up" / "Move down": la riga subito prima o subito dopo `target`. Vedi `DatabaseRepository.moveRowNextTo`. */
+    fun moveRowNextTo(row: DatabaseRowEntity, target: DatabaseRowEntity, before: Boolean) {
+        val pageId = dataPageId ?: return
+        viewModelScope.launch { repository.moveRowNextTo(pageId, row.id, target.id, before) }
+    }
+
     fun setCellValue(row: DatabaseRowEntity, column: DatabaseColumnEntity, value: String) {
         viewModelScope.launch {
             repository.setCellValue(row.id, column.id, value)

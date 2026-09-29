@@ -922,6 +922,10 @@ private fun DatabaseViewBody(
     var calculateTarget by remember { mutableStateOf<CalculateTarget?>(null) }
     val calculations = parseViewCalculations(page?.viewCalculations)
     var rowActionsFor by remember { mutableStateOf<DatabaseRowEntity?>(null) }
+    // Dove la si è toccata, se è una riga della tabella: "Move up" e "Move
+    // down" ci sono solo lì, dove l'ordine delle righe si vede.
+    var rowPlace by remember { mutableStateOf<RowPlace?>(null) }
+    LaunchedEffect(rowActionsFor == null) { if (rowActionsFor == null) rowPlace = null }
     // La scheda della galleria di cui si sta spostando la copertina
     // ("Reposition cover" nelle azioni della riga): quella scheda smette
     // di rispondere ai tocchi e segue il dito, finché Save o Cancel.
@@ -1209,8 +1213,9 @@ private fun DatabaseViewBody(
                     onSetColumnWidth = { key, width -> viewModel.setColumnWidth(key, width) },
                     onSetFitToContent = { key, fit -> viewModel.setFitToContent(key, fit) },
                     onOpenRow = openRow,
-                    onRowLongPress = { row ->
+                    onRowLongPress = { row, place ->
                         focusManager.clearFocus()
+                        rowPlace = place
                         rowActionsFor = row
                     },
                     onSetCellValue = { row, column, value ->
@@ -1583,8 +1588,44 @@ private fun DatabaseViewBody(
         // catturata al momento del tocco: altrimenti le date in fondo
         // e i valori delle proprietà resterebbero quelli di allora.
         val live = state.rows.find { it.id == row.id } ?: row
+        // Le righe accanto, come si vedono adesso: nella tabella intera, nel
+        // gruppo o nel sottogruppo dove la si è toccata.
+        val place = rowPlace
+        val siblings = place?.let {
+            val group = viewModel.tableGroupColumn()
+            val sub = viewModel.tableSubGroupColumn()
+            when {
+                it.groupKey == null || group == null -> state.rows
+                else -> buildRowGroups(state, group, page?.hideEmptyGroups != false)
+                    .find { g -> g.key == it.groupKey }?.rows?.let { groupRows ->
+                        if (it.subKey == null || sub == null) {
+                            groupRows
+                        } else {
+                            buildRowGroups(state, sub, page?.hideEmptySubGroups != false, groupRows)
+                                .find { s -> s.key == it.subKey }?.rows
+                        }
+                    }.orEmpty()
+            }
+        }
+        val index = siblings?.indexOfFirst { it.id == live.id } ?: -1
+        // Con un ordinamento le righe stanno dove dice lui: spostarle a mano
+        // non si vedrebbe. Con il database bloccato non si spostano.
+        val sorted = page?.sortColumnId != null
+        val canMove = !sorted && !contentLocked && index >= 0
+        val move = siblings?.let {
+            RowMoveActions(
+                onUp = siblings.getOrNull(index - 1)?.takeIf { canMove }?.let { above ->
+                    { viewModel.moveRowNextTo(live, above, before = true) }
+                },
+                onDown = siblings.getOrNull(index + 1)?.takeIf { canMove && index >= 0 }?.let { below ->
+                    { viewModel.moveRowNextTo(live, below, before = false) }
+                },
+                hint = if (sorted) DbStrings.rowsFollowSort else null
+            )
+        }
         RowActionsSheet(
             row = live,
+            move = move,
             columns = state.columns,
             cellValues = state.cellValues,
             onDismiss = { rowActionsFor = null },
@@ -1682,7 +1723,8 @@ private fun TableLayout(
     onAddProperty: () -> Unit,
     onTitleChange: (DatabaseRowEntity, String) -> Unit,
     onOpenRow: (DatabaseRowEntity) -> Unit,
-    onRowLongPress: (DatabaseRowEntity) -> Unit,
+    /** Tenendo premuto il nome: la riga, e in quale gruppo la si è toccata. */
+    onRowLongPress: (DatabaseRowEntity, RowPlace) -> Unit,
     onSetCellValue: (DatabaseRowEntity, DatabaseColumnEntity, String) -> Unit,
     onAddOption: (DatabaseColumnEntity, String) -> Unit,
     onRenameOption: (String, String, String) -> Unit,
@@ -1792,7 +1834,7 @@ private fun TableLayout(
                     columns = shownColumns,
                     onTitleChange = onTitleChange,
                     onOpenRow = onOpenRow,
-                    onRowLongPress = onRowLongPress,
+                    onRowLongPress = { onRowLongPress(it, RowPlace()) },
                     onSetCellValue = onSetCellValue,
                     onAddOption = onAddOption,
                     onRenameOption = onRenameOption,
@@ -1810,7 +1852,7 @@ private fun TableLayout(
         // Il corpo di un gruppo o di un sottogruppo: intestazione delle
         // colonne, righe, calcoli e "New page".
         @Composable
-        fun GroupBody(rows: List<DatabaseRowEntity>, onAddRow: () -> Unit) {
+        fun GroupBody(rows: List<DatabaseRowEntity>, place: RowPlace, onAddRow: () -> Unit) {
             TableHeaderRow(
                 columns = shownColumns,
                 viewLocked = viewLocked,
@@ -1835,7 +1877,7 @@ private fun TableLayout(
                     columns = shownColumns,
                     onTitleChange = onTitleChange,
                     onOpenRow = onOpenRow,
-                    onRowLongPress = onRowLongPress,
+                    onRowLongPress = { onRowLongPress(it, place) },
                     onSetCellValue = onSetCellValue,
                     onAddOption = onAddOption,
                     onRenameOption = onRenameOption,
@@ -1880,7 +1922,7 @@ private fun TableLayout(
             )
             if (!isCollapsed) {
                 if (subGroupColumn == null) {
-                    GroupBody(group.rows) { onAddRowInGroup(group.key) }
+                    GroupBody(group.rows, RowPlace(group.key)) { onAddRowInGroup(group.key) }
                 } else {
                     // **I sottogruppi**: dentro il gruppo, le sue righe
                     // divise secondo la seconda proprietà, un po' rientrate.
@@ -1895,7 +1937,7 @@ private fun TableLayout(
                             onToggle = { collapsed[subKey] = !subCollapsed }
                         )
                         if (!subCollapsed) {
-                            GroupBody(sub.rows) { onAddRowInSubGroup(group.key, sub.key) }
+                            GroupBody(sub.rows, RowPlace(group.key, sub.key)) { onAddRowInSubGroup(group.key, sub.key) }
                         }
                         Spacer(modifier = Modifier.size(8.dp))
                     }
@@ -2086,6 +2128,14 @@ private fun ColumnResizeHandle(
         )
     }
 }
+
+/**
+ * **Dove sta una riga nella tabella**: in nessun gruppo, in un gruppo o in
+ * un suo sottogruppo. Serve a "Move up" / "Move down" per sapere quali sono
+ * le righe accanto — con la selezione multipla una riga sta in più gruppi,
+ * e conta quello in cui la si è toccata.
+ */
+private data class RowPlace(val groupKey: String? = null, val subKey: String? = null)
 
 /** Fra la chiave del gruppo e quella del sottogruppo, nell'elenco di quelli chiusi. */
 private const val SUB_GROUP_KEY_SEPARATOR = "\u0000"
@@ -7525,6 +7575,14 @@ private enum class SettingsPage {
 private enum class RowActionsPage { ROOT, PROPERTIES }
 
 /**
+ * **"Move up" e "Move down"** (dal 29/09/2026): la riga sopra quella che
+ * le sta sopra, o sotto quella che le sta sotto. Null = grigia (è già in
+ * cima o in fondo, c'è un ordinamento o il database è bloccato); `hint`
+ * dice perché, quando non si capisce da solo.
+ */
+private class RowMoveActions(val onUp: (() -> Unit)?, val onDown: (() -> Unit)?, val hint: String?)
+
+/**
  * Le azioni su una singola riga, tenendo premuto sul suo nome.
  *
  * C'è l'icona della pagina, come l'"Edit icon" di Notion. Su Notion
@@ -7539,6 +7597,8 @@ private enum class RowActionsPage { ROOT, PROPERTIES }
 @Composable
 private fun RowActionsSheet(
     row: DatabaseRowEntity,
+    /** Solo dalla tabella, dove l'ordine delle righe si vede: altrove null e le voci non ci sono. */
+    move: RowMoveActions? = null,
     columns: List<DatabaseColumnEntity>,
     cellValues: Map<Pair<String, String>, String>,
     onDismiss: () -> Unit,
@@ -7618,6 +7678,10 @@ private fun RowActionsSheet(
                         onDeleteOption = onDeleteOption
                     )
                     Spacer(modifier = Modifier.size(16.dp))
+                    if (move != null) {
+                        RowMoveGroup(move)
+                        Spacer(modifier = Modifier.size(12.dp))
+                    }
                     SheetGroup {
                         SheetAction(Icons.Filled.Delete, Strings.delete, isDestructive = true) {
                             onDelete()
@@ -7635,6 +7699,10 @@ private fun RowActionsSheet(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 } else {
+                    if (move != null) {
+                        RowMoveGroup(move)
+                        Spacer(modifier = Modifier.size(12.dp))
+                    }
                     SheetGroup {
                         // Come l'"Edit icon" delle azioni di una riga su
                         // Notion: l'icona della pagina senza doverla aprire.
@@ -7691,6 +7759,28 @@ private fun RowActionsSheet(
 
             Spacer(modifier = Modifier.size(24.dp))
         }
+    }
+}
+
+/** "Move up" e "Move down", in cima alle azioni della riga; la finestra resta aperta per spostarla ancora. */
+@Composable
+private fun RowMoveGroup(move: RowMoveActions) {
+    SheetGroup {
+        SheetAction(Icons.Filled.ArrowUpward, EditorStrings.moveUp, enabled = move.onUp != null) {
+            move.onUp?.invoke()
+        }
+        HorizontalDivider()
+        SheetAction(Icons.Filled.ArrowDownward, EditorStrings.moveDown, enabled = move.onDown != null) {
+            move.onDown?.invoke()
+        }
+    }
+    move.hint?.let {
+        Text(
+            it,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 4.dp, top = 6.dp)
+        )
     }
 }
 
@@ -9042,17 +9132,19 @@ private fun SheetAction(
     icon: ImageVector,
     label: String,
     isDestructive: Boolean = false,
+    /** Spenta: si vede, grigia, e non risponde. */
+    enabled: Boolean = true,
     onClick: () -> Unit
 ) {
-    val tint = if (isDestructive) {
-        MaterialTheme.colorScheme.error
-    } else {
-        MaterialTheme.colorScheme.onSurface
+    val tint = when {
+        !enabled -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)
+        isDestructive -> MaterialTheme.colorScheme.error
+        else -> MaterialTheme.colorScheme.onSurface
     }
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() }
+            .clickable(enabled = enabled) { onClick() }
             .padding(vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
