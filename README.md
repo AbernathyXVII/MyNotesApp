@@ -2022,6 +2022,37 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**29/09/2026 — "Image" a tutto schermo, e il gesto indietro chiude il segnalino delle colonne**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 278 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Sì, fai che toccandola mi permetta di decidere se vederla a tutto
+> schermo o cambiarla.
+> Un'altra cosa: quando modifico la larghezza di una colonna, permettimi di
+> usare la gesture per andare indietro per far sì che io possa finire le
+> modifiche»
+
+- **[Nuova funzionalità]** Toccando un'immagine di una cella "Image" si
+  sceglie: "**View full screen**", "Upload" per cambiarla, "Remove". A
+  tutto schermo l'immagine si vede intera sul nero; con due dita la si
+  ingrandisce e la si sposta, con due tocchi torna com'era; si chiude con
+  la X o col gesto indietro. Una cella vuota apre direttamente "Upload"
+- **[Nuova funzionalità]** Col segnalino di "Resize column" acceso, il
+  **gesto indietro** lo chiude e lascia la tabella com'è, invece di uscire
+  dalla pagina. Senza segnalino il gesto fa quello di sempre
+- **[Progetto]** `PageImageSheet` ha la voce facoltativa `onView`;
+  `FullScreenImage` in `ImageCell.kt`; `BackHandler` in `TableLayout`
+  finché il segnalino c'è
+- Verificato sul telefono sulla pagina di prova "Titolo tre H3" (copia del
+  database prima): col segnalino su Select, il gesto indietro lo toglie e
+  si resta sulla pagina. Con un'immagine di prova in una colonna "Image"
+  creata apposta: il tocco apre "View full screen" / "Upload" / "Remove";
+  a tutto schermo si vede intera; si chiude col gesto indietro e con la X.
+  L'ingrandimento a due dita non si può fare dal PC: da provare col dito.
+  Poi immagine tolta, proprietà cancellata, immagine di prova tolta dal
+  telefono: database uguale a prima tranne "Last edited" della riga "1"
+
 **29/09/2026 — Nuova proprietà "Image": una cella quadrata con un'immagine**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 278 test
 passati; commit solo in locale)*

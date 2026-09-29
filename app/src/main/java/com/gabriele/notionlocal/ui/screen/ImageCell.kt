@@ -1,6 +1,23 @@
 package com.gabriele.notionlocal.ui.screen
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import com.gabriele.notionlocal.ui.i18n.EditorStrings
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -38,6 +55,7 @@ internal fun ImageCell(
     val store = remember(context) { PageImageStore(context) }
     val locked = LocalDatabaseLocked.current
     var picking by remember { mutableStateOf(false) }
+    var viewing by remember { mutableStateOf(false) }
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -71,8 +89,70 @@ internal fun ImageCell(
                 previous
             },
             onReposition = null,
-            onDismiss = { picking = false }
+            onDismiss = { picking = false },
+            onView = { viewing = true }
         )
+    }
+    if (viewing && value.isNotEmpty()) {
+        FullScreenImage(fileName = value, store = store, title = title, onDismiss = { viewing = false })
+    }
+}
+
+/**
+ * **L'immagine a tutto schermo** (dal 29/09/2026), intera sul nero: con due
+ * dita la si ingrandisce e la si sposta, con due tocchi si torna com'era.
+ * Si chiude con la X o col gesto indietro.
+ */
+@Composable
+private fun FullScreenImage(fileName: String, store: PageImageStore, title: String, onDismiss: () -> Unit) {
+    var scale by remember { mutableFloatStateOf(1f) }
+    var offset by remember { mutableStateOf(Offset.Zero) }
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+                .pointerInput(Unit) {
+                    detectTransformGestures { _, pan, zoom, _ ->
+                        scale = (scale * zoom).coerceIn(1f, 6f)
+                        offset = if (scale == 1f) Offset.Zero else offset + pan
+                    }
+                }
+                .pointerInput(Unit) {
+                    detectTapGestures(onDoubleTap = {
+                        scale = 1f
+                        offset = Offset.Zero
+                    })
+                }
+        ) {
+            PageImage(
+                fileName = fileName,
+                store = store,
+                contentDescription = title,
+                contentScale = ContentScale.Fit,
+                placeholder = false,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                        translationX = offset.x
+                        translationY = offset.y
+                    }
+            )
+            IconButton(
+                onClick = onDismiss,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .statusBarsPadding()
+                    .padding(8.dp)
+            ) {
+                Icon(Icons.Filled.Close, contentDescription = EditorStrings.close, tint = Color.White)
+            }
+        }
     }
 }
 

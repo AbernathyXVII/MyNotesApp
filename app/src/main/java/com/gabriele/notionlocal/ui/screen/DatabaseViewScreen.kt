@@ -1818,6 +1818,10 @@ private fun TableLayout(
     val resize = remember { ColumnResize() }
     // Con "Lock view" le colonne non cambiano misura: via il segnalino.
     LaunchedEffect(viewLocked) { if (viewLocked) resize.stop() }
+    // **Il gesto indietro chiude il segnalino** (dal 29/09/2026): finite le
+    // modifiche alla larghezza si torna alla tabella, invece di uscire dalla
+    // pagina. Senza segnalino il gesto fa quello di sempre.
+    BackHandler(enabled = resize.key != null) { resize.stop() }
     val fitted = fitWidths(state, shownColumns, fitColumns, calculations, calculationSubRows)
     // Se c'è almeno una sotto-riga, ogni nome lascia il posto della freccia:
     // così i nomi restano in colonna, con o senza sotto-righe.

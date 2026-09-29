@@ -128,6 +128,8 @@ object EditorStrings {
     val cover get() = t("Cover", "Copertina", "Titelbild", "Couverture", "Portada", "封面", "커버", "カバー")
     val addCover get() = t("Add cover", "Aggiungi copertina", "Titelbild hinzufügen", "Ajouter une couverture", "Añadir portada", "添加封面", "커버 추가", "カバーを追加")
     val addIcon get() = t("Add icon", "Aggiungi icona", "Symbol hinzufügen", "Ajouter une icône", "Añadir icono", "添加图标", "아이콘 추가", "アイコンを追加")
+    val viewFullScreen get() = t("View full screen", "Vedi a tutto schermo", "Im Vollbild ansehen", "Voir en plein écran", "Ver en pantalla completa", "全屏查看", "전체 화면으로 보기", "全画面で見る")
+    val close get() = t("Close", "Chiudi", "Schließen", "Fermer", "Cerrar", "关闭", "닫기", "閉じる")
     val upload get() = t("Upload", "Carica", "Hochladen", "Importer", "Subir", "上传", "업로드", "アップロード")
     val reposition get() = t("Reposition", "Riposiziona", "Neu positionieren", "Repositionner", "Reposicionar", "调整位置", "위치 조정", "位置を調整")
     val remove get() = t("Remove", "Rimuovi", "Entfernen", "Retirer", "Quitar", "移除", "제거", "削除")

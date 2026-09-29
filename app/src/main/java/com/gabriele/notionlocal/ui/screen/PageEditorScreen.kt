@@ -2543,7 +2543,9 @@ internal fun PageImageSheet(
     onPicked: (String?) -> String?,
     /** Null per l'icona: lì non c'è niente da inquadrare, è un quadratino. */
     onReposition: (() -> Unit)?,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    /** "View full screen", in cima quando c'è già un'immagine (la proprietà "Image"); null = niente. */
+    onView: (() -> Unit)? = null
 ) {
     val scope = rememberCoroutineScope()
     var busy by remember { mutableStateOf(false) }
@@ -2589,6 +2591,25 @@ internal fun PageImageSheet(
                 color = NotionWhite,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
+
+            // **Vederla o cambiarla** (dal 29/09/2026): toccando l'immagine di
+            // una cella "Image" si sceglie qui — in grande, o "Upload" per
+            // metterne un'altra.
+            if (hasImage && onView != null) {
+                Text(
+                    text = EditorStrings.viewFullScreen,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = NotionWhite,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(enabled = !busy) {
+                            onDismiss()
+                            onView()
+                        }
+                        .padding(vertical = 14.dp)
+                )
+                Spacer(modifier = Modifier.size(8.dp))
+            }
 
             PageImageAction(
                 label = EditorStrings.upload,
