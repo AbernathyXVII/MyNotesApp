@@ -2022,6 +2022,25 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**29/09/2026 — Sotto-righe: "Move up" e "Move down" solo sotto la loro riga (verifica)**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; nessuna
+modifica al codice; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Ovviamente concedimi di spostare sopra e sotto anche le sub row, ma solo
+> all'interno della principale riga alla quale appartengono le sub row (a
+> patto che tu non lo abbia già fatto)»
+
+- Era già così dalla voce precedente: una sotto-riga si sposta solo fra le
+  sorelle, sotto la sua riga principale; sulla prima "Move up" è grigio,
+  sull'ultima "Move down"
+- Verificato sul telefono sulla pagina di prova "Titolo tre H3", in una
+  vista "Prova" senza ordinamento creata apposta: "Alfa" e "Beta" sotto
+  "1"; su "Alfa" (la prima) "Move up" grigio; "Move down" la porta sotto
+  "Beta", sempre sotto "1", e le righe principali non si muovono; lì
+  "Move down" diventa grigio (non passa sotto "2"). Poi rimessa su, le due
+  sotto-righe cancellate e la vista tolta: il database è identico a prima
+
 **29/09/2026 — Tabelle: le sotto-righe ("Create sub row")**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 266 test
 passati; commit solo in locale)*
