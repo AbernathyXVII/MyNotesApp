@@ -88,6 +88,24 @@ interface PageDao {
     @Query("SELECT * FROM pages WHERE trashedAt IS NOT NULL ORDER BY trashedAt DESC")
     fun observeTrash(): Flow<List<PageEntity>>
 
+    /** Le viste in più di un database, nell'ordine in cui sono nate: vedi `PageEntity.viewHostId`. */
+    @Query("SELECT * FROM pages WHERE viewHostId = :hostId ORDER BY orderIndex ASC")
+    fun observeViews(hostId: String): Flow<List<PageEntity>>
+
+    @Query("SELECT * FROM pages WHERE viewHostId = :hostId ORDER BY orderIndex ASC")
+    suspend fun getViewsOnce(hostId: String): List<PageEntity>
+
+    /** Quale vista si vede adesso di un database: null = la sua. */
+    @Query("UPDATE pages SET activeViewId = :viewId WHERE id = :hostId")
+    suspend fun setActiveView(hostId: String, viewId: String?)
+
+    @Query("UPDATE pages SET viewName = :name WHERE id = :pageId")
+    suspend fun setViewName(pageId: String, name: String?)
+
+    /** Le viste di un database che se ne va: senza di lui non si vedrebbero da nessuna parte. */
+    @Query("DELETE FROM pages WHERE viewHostId = :hostId")
+    suspend fun deleteViewsOf(hostId: String)
+
     /** Le pagine nel cestino da prima di un certo momento: quelle da togliere per sempre. */
     @Query("SELECT id FROM pages WHERE trashedAt IS NOT NULL AND trashedAt < :before")
     suspend fun getTrashedBefore(before: Long): List<String>

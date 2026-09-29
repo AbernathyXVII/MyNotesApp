@@ -667,8 +667,145 @@ fun DatabaseContent(
     onOpenSource: ((String) -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    // Un ViewModel per database: la chiave li tiene distinti quando in
-    // una stessa pagina ce n'è più di uno.
+    // **Le viste** (dal 29/09/2026, come su Notion): il database è la sua
+    // vista di partenza, e può averne altre (`PageEntity.viewHostId`). Qui
+    // si sceglie quale mostrare; nome, icona, preferito e blocchi restano
+    // quelli del database, di qualunque vista si tratti.
+    val hostViewModel: DatabaseViewModel = viewModel(factory = factory, key = "database-$pageId")
+    LaunchedEffect(pageId) { hostViewModel.load(pageId) }
+    val hostPage by hostViewModel.page.collectAsStateWithLifecycle()
+    val extraViews by hostViewModel.views.collectAsStateWithLifecycle()
+    // Una vista che non c'è più (tolta, o di un database da cui questo è
+    // stato copiato) non vale: si torna a quella del database.
+    val activeId = hostPage?.activeViewId?.takeIf { id -> extraViews.any { it.id == id } } ?: pageId
+    // Come il resto dell'impaginazione: col database bloccato o con "Lock
+    // view" le viste si guardano e si scelgono, ma non si aggiungono, non
+    // si rinominano e non si tolgono.
+    val canEditViews = hostPage?.let { !it.isLocked && !it.isViewLocked && it.trashedAt == null } == true
+    var showViews by remember { mutableStateOf(false) }
+    var showNewView by remember { mutableStateOf(false) }
+    var renamingView by remember { mutableStateOf<DatabaseView?>(null) }
+    var deletingView by remember { mutableStateOf<DatabaseView?>(null) }
+    // Una vista nuova col layout Chart: appena si vede, la finestrella
+    // dei quattro grafici, come scegliendo "Chart" dalle impostazioni.
+    var chartTypeForView by remember { mutableStateOf<String?>(null) }
+    val focusManager = LocalFocusManager.current
+
+    // Una vista, un ViewModel e un pezzo di schermo nuovi: niente di
+    // quello che era aperto su una resta appeso all'altra.
+    key(activeId) {
+        DatabaseViewBody(
+            pageId = activeId,
+            hostViewModel = hostViewModel,
+            hostPage = hostPage,
+            factory = factory,
+            embedded = embedded,
+            onOpenRowPage = onOpenRowPage,
+            onOpenFullPage = onOpenFullPage,
+            onDelete = onDelete,
+            onTurnIntoPage = onTurnIntoPage,
+            onOpenBlockMenu = onOpenBlockMenu,
+            onOpenSource = onOpenSource,
+            onOpenViews = {
+                focusManager.clearFocus()
+                showViews = true
+            },
+            onAddView = if (canEditViews) {
+                {
+                    focusManager.clearFocus()
+                    showNewView = true
+                }
+            } else {
+                null
+            },
+            startWithChartType = chartTypeForView == activeId,
+            onChartTypeStarted = { chartTypeForView = null },
+            modifier = modifier
+        )
+    }
+
+    val host = hostPage
+    if (showViews && host != null) {
+        ViewsSheet(
+            views = databaseViews(host, extraViews),
+            activeId = activeId,
+            canEdit = canEditViews,
+            onPick = { id ->
+                showViews = false
+                if (id != activeId) hostViewModel.setActiveView(id)
+            },
+            onRename = { renamingView = it },
+            onDelete = { deletingView = it },
+            onAdd = {
+                showViews = false
+                showNewView = true
+            },
+            onDismiss = { showViews = false }
+        )
+    }
+    if (showNewView) {
+        NewViewSheet(
+            onCreate = { name, layout ->
+                showNewView = false
+                hostViewModel.createView(name, layout) { id ->
+                    if (layout == DatabaseLayout.CHART) chartTypeForView = id
+                }
+            },
+            onDismiss = { showNewView = false }
+        )
+    }
+    renamingView?.let { view ->
+        RenameViewDialog(
+            current = view.name,
+            onConfirm = { name ->
+                renamingView = null
+                if (view.named || name.trim() != view.name) hostViewModel.renameView(view.id, name)
+            },
+            onDismiss = { renamingView = null }
+        )
+    }
+    deletingView?.let { view ->
+        DeleteViewDialog(
+            name = view.name,
+            onConfirm = {
+                deletingView = null
+                hostViewModel.deleteView(view.id)
+            },
+            onDismiss = { deletingView = null }
+        )
+    }
+}
+
+/**
+ * Una vista del database: titolo, barra della vista, contenuto. `pageId` è
+ * la vista (il database stesso, o una delle sue viste in più); il titolo,
+ * il preferito e i blocchi li prende da `hostPage`, il database.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DatabaseViewBody(
+    pageId: String,
+    hostViewModel: DatabaseViewModel,
+    hostPage: PageEntity?,
+    factory: ViewModelFactory,
+    embedded: Boolean,
+    onOpenRowPage: (String) -> Unit,
+    onOpenFullPage: (() -> Unit)?,
+    onDelete: (() -> Unit)?,
+    onTurnIntoPage: (() -> Unit)?,
+    onOpenBlockMenu: (() -> Unit)?,
+    onOpenSource: ((String) -> Unit)?,
+    /** Il nome della vista: l'elenco delle viste. */
+    onOpenViews: () -> Unit,
+    /** Il "+" accanto: una vista nuova. Null = spento (database o vista bloccati). */
+    onAddView: (() -> Unit)?,
+    startWithChartType: Boolean,
+    onChartTypeStarted: () -> Unit,
+    modifier: Modifier
+) {
+    // Un ViewModel per vista: la chiave li tiene distinti quando in una
+    // stessa pagina c'è più di un database. Per la vista di partenza è
+    // quello del database.
     val viewModel: DatabaseViewModel = viewModel(factory = factory, key = "database-$pageId")
 
     LaunchedEffect(pageId) { viewModel.load(pageId) }
@@ -695,7 +832,7 @@ fun DatabaseContent(
     // proteggere come è messo insieme il database, non i suoi dati.
     // Serve sia alla barra della vista sia alla finestra delle
     // impostazioni, quindi sta qui in cima e non dentro una delle due.
-    val viewLocked = page?.isViewLocked == true
+    val viewLocked = page?.isViewLocked == true || hostPage?.isViewLocked == true
 
     // L'icona del database: dove stanno i file delle immagini, e se la
     // finestra per sceglierla è aperta. È la stessa finestra delle
@@ -707,6 +844,12 @@ fun DatabaseContent(
     var propertyTarget by remember { mutableStateOf<PropertyTarget?>(null) }
     // La finestrella dei quattro grafici della vista Chart (dal 28/09/2026).
     var choosingChartType by remember { mutableStateOf(false) }
+    LaunchedEffect(startWithChartType) {
+        if (startWithChartType) {
+            choosingChartType = true
+            onChartTypeStarted()
+        }
+    }
     // "Calculate" (dal 26/09/2026): di quale colonna si sceglie il calcolo.
     var calculateTarget by remember { mutableStateOf<CalculateTarget?>(null) }
     val calculations = parseViewCalculations(page?.viewCalculations)
@@ -740,8 +883,13 @@ fun DatabaseContent(
     val simple = dataPage?.isSimpleDatabase == true
     // Bloccato il database (o solo questa vista, se è collegata): righe e
     // celle si leggono ma non si scrivono.
-    val contentLocked = page?.isLocked == true || dataPage?.isLocked == true || page?.trashedAt != null
-    val linkedSourceId = page?.sourceDatabaseId
+    // Una vista in più segue il database su cui è nata: bloccato o
+    // buttato lui, bloccata anche lei.
+    val contentLocked = page?.isLocked == true || dataPage?.isLocked == true || page?.trashedAt != null ||
+        hostPage?.isLocked == true || hostPage?.trashedAt != null
+    // Una vista in più ha i dati del database su cui è nata, ma non è una
+    // vista collegata: il titolo è quello del database, da scrivere qui.
+    val linkedSourceId = hostPage?.sourceDatabaseId
     val openRow: (DatabaseRowEntity) -> Unit = if (simple) {
         { row ->
             focusManager.clearFocus()
@@ -791,7 +939,7 @@ fun DatabaseContent(
         // chiama "Untitled" sopra al contenuto è solo una riga di
         // rumore. A schermo intero il titolo c'è sempre, perché è
         // l'unica cosa che dice dove si è finiti.
-        val showTitle = !embedded || page?.showEmbeddedTitle != false
+        val showTitle = !embedded || hostPage?.showEmbeddedTitle != false
         // Mentre si scrive comanda il testo locale, non quello che
         // torna dal database: il salvataggio è immediato ma il giro di
         // ritorno no, e se nel frattempo è stato battuto un altro tasto
@@ -800,9 +948,9 @@ fun DatabaseContent(
         // una rinomina fatta nell'altra schermata si vede appena si
         // torna qui.
         var titleFocused by remember { mutableStateOf(false) }
-        var titleText by remember { mutableStateOf(page?.title.orEmpty()) }
-        LaunchedEffect(page?.title, titleFocused) {
-            if (!titleFocused) titleText = page?.title.orEmpty()
+        var titleText by remember { mutableStateOf(hostPage?.title.orEmpty()) }
+        LaunchedEffect(hostPage?.title, titleFocused) {
+            if (!titleFocused) titleText = hostPage?.title.orEmpty()
         }
         if (showTitle) {
         Row(
@@ -849,11 +997,11 @@ fun DatabaseContent(
                 onValueChange = {
                     val singleLine = it.replace("\n", "")
                     titleText = singleLine
-                    viewModel.updateTitle(singleLine)
+                    hostViewModel.updateTitle(singleLine)
                 },
                 singleLine = true,
                 // Pagina bloccata: nemmeno il titolo si tocca.
-                readOnly = page?.isLocked == true,
+                readOnly = hostPage?.isLocked == true,
                 // Un titolo non ha righe: la tastiera deve offrire
                 // "fine", non un invio che non farebbe niente.
                 keyboardOptions = KeyboardOptions(
@@ -903,6 +1051,7 @@ fun DatabaseContent(
             )
         } else ViewToolbar(
             layout = layout,
+            viewName = page?.viewName,
             sortActive = page?.sortColumnId != null,
             filterActive = viewModel.filterColumn() != null,
             // Cercare non cambia niente di come è fatto il database: c'è
@@ -934,15 +1083,8 @@ fun DatabaseContent(
                     showSort = true
                 }
             },
-            onOpenLayoutPicker = if (viewLocked) {
-                null
-            } else {
-                {
-                    focusManager.clearFocus()
-                    settingsInitialPage = SettingsPage.LAYOUT
-                    showSettings = true
-                }
-            },
+            onOpenViews = onOpenViews,
+            onAddView = onAddView,
             onOpenSettings = {
                 focusManager.clearFocus()
                 settingsInitialPage = SettingsPage.ROOT
@@ -1258,13 +1400,13 @@ fun DatabaseContent(
             // dentro una pagina: `embedded` è la stessa condizione per
             // cui il titolo si può nascondere.
             onSetShowTitle = if (embedded) {
-                { show -> viewModel.setShowEmbeddedTitle(show) }
+                { show -> hostViewModel.setShowEmbeddedTitle(show) }
             } else {
                 null
             },
-            showTitle = page?.showEmbeddedTitle != false,
-            isFavorite = page?.isFavorite == true,
-            onSetFavorite = { viewModel.setFavorite(it) },
+            showTitle = hostPage?.showEmbeddedTitle != false,
+            isFavorite = hostPage?.isFavorite == true,
+            onSetFavorite = { hostViewModel.setFavorite(it) },
             viewLocked = viewLocked,
             onTurnIntoPage = onTurnIntoPage?.let {
                 {
@@ -3834,7 +3976,9 @@ private fun Modifier.foundInside(rowId: String, shape: Shape = RectangleShape): 
 
 /**
  * Quanto sono grandi le icone della barra della vista: 20dp invece dei
- * 24 di serie, dentro un bottone da 40 invece che da 48. Sono numeri
+ * 24 di serie, dentro un bottone da 36 invece che da 48 (40 fino al
+ * 29/09/2026: col "+" delle viste, dentro una pagina il nome "Table" non
+ * ci stava più e diventava "Tab…"). Sono numeri
  * unici apposta — le icone lì sopra devono restare tutte della stessa
  * misura, comprese quelle che si aggiungeranno (ricerca, filtri), e
  * scriverle ogni volta a mano è il modo sicuro perché prima o poi una
@@ -3842,7 +3986,7 @@ private fun Modifier.foundInside(rowId: String, shape: Shape = RectangleShape): 
  * `ToolbarIconButton`, non un `IconButton` nudo.
  */
 private val TOOLBAR_ICON_SIZE = 20.dp
-private val TOOLBAR_BUTTON_SIZE = 40.dp
+private val TOOLBAR_BUTTON_SIZE = 36.dp
 
 /** Un'icona della barra della vista. Vedi `TOOLBAR_ICON_SIZE`. */
 @Composable
@@ -3863,7 +4007,8 @@ private fun ToolbarIconButton(
 }
 
 /**
- * La riga sotto al titolo: a sinistra la vista attiva, a destra filtro,
+ * La riga sotto al titolo: a sinistra la vista attiva (toccata, l'elenco
+ * delle viste) e il "+" per aggiungerne una, a destra filtro,
  * ordinamento e impostazioni del database. Su Notion qui c'è anche la
  * ricerca, che manca perché non è ancora stata costruita, e un pulsante
  * blu per aggiungere una pagina, tolto perché faceva la stessa identica
@@ -3892,7 +4037,17 @@ private fun ViewToolbar(
      */
     onOpenFilter: (() -> Unit)?,
     onOpenSort: (() -> Unit)?,
-    onOpenLayoutPicker: (() -> Unit)?,
+    /** Il nome della vista; null = quello del layout. */
+    viewName: String?,
+    /**
+     * Il nome della vista: l'elenco delle viste, per passare dall'una
+     * all'altra. C'è anche con "Lock view": guardare un'altra vista non
+     * cambia com'è fatta nessuna. Il layout di quella di adesso si cambia
+     * dalle impostazioni ("Layout").
+     */
+    onOpenViews: () -> Unit,
+    /** Il "+" accanto al nome: una vista nuova. Null = spento. */
+    onAddView: (() -> Unit)?,
     onOpenSettings: () -> Unit
 ) {
     val lockedTint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)
@@ -3903,7 +4058,9 @@ private fun ViewToolbar(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        // A sinistra lo spazio che resta: un nome di vista lungo si accorcia
+        // coi puntini invece di spingere fuori le icone di destra.
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
         if (onOpenBlockMenu != null) {
             ToolbarIconButton(
                 icon = Icons.Filled.DragIndicator,
@@ -3913,44 +4070,48 @@ private fun ViewToolbar(
         }
         Row(
             modifier = Modifier
+                .weight(1f, fill = false)
                 .background(
                     MaterialTheme.colorScheme.surfaceVariant,
                     RoundedCornerShape(percent = 50)
                 )
-                .let { base ->
-                    if (onOpenLayoutPicker == null) base else base.clickable { onOpenLayoutPicker() }
-                }
-                .padding(horizontal = 14.dp, vertical = 8.dp),
+                .clickable { onOpenViews() }
+                .padding(horizontal = 10.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            val chipTint = if (onOpenLayoutPicker == null) {
-                lockedTint
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            }
+            val chipTint = MaterialTheme.colorScheme.onSurfaceVariant
             Icon(
                 layout.icon(),
                 contentDescription = null,
                 modifier = Modifier.size(18.dp),
                 tint = chipTint
             )
-            Spacer(modifier = Modifier.size(8.dp))
+            Spacer(modifier = Modifier.size(6.dp))
             Text(
-                layout.displayName(),
+                viewName ?: layout.displayName(),
                 style = MaterialTheme.typography.labelLarge,
-                color = chipTint
+                color = chipTint,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
             )
             // La freccia dice che si può toccare: prima sembrava
-            // un'etichetta e infatti non faceva niente. Con la vista
-            // bloccata resta, spenta come il resto: sparendo cambierebbe
-            // la larghezza del riquadro a ogni giro di chiave.
+            // un'etichetta e infatti non faceva niente.
             Icon(
                 Icons.Filled.KeyboardArrowDown,
-                contentDescription = DbStrings.changeLayout,
+                contentDescription = DbStrings.views,
                 modifier = Modifier.size(18.dp),
                 tint = chipTint
             )
         }
+        // **"+": una vista nuova**, subito a destra del nome, come su
+        // Notion. Spento, non sparito, col database o la vista bloccati.
+        ToolbarIconButton(
+            icon = Icons.Filled.Add,
+            contentDescription = DbStrings.addView,
+            onClick = onAddView ?: {},
+            tint = if (onAddView == null) lockedTint else MaterialTheme.colorScheme.onSurfaceVariant
+        )
         }
 
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -8006,7 +8167,7 @@ private fun SettingsSheet(
 
 /** Un riquadro del selettore di visualizzazione, come su Notion. */
 @Composable
-private fun LayoutChoice(
+internal fun LayoutChoice(
     layout: DatabaseLayout,
     isSelected: Boolean,
     onClick: () -> Unit,
@@ -8449,9 +8610,9 @@ private fun SheetAction(
     }
 }
 
-private fun DatabaseLayout.displayName(): String = DbStrings.layoutName(this)
+internal fun DatabaseLayout.displayName(): String = DbStrings.layoutName(this)
 
-private fun DatabaseLayout.icon(): ImageVector = when (this) {
+internal fun DatabaseLayout.icon(): ImageVector = when (this) {
     DatabaseLayout.TABLE -> Icons.Filled.TableChart
     DatabaseLayout.BOARD -> Icons.Filled.ViewColumn
     DatabaseLayout.CALENDAR -> Icons.Filled.CalendarToday

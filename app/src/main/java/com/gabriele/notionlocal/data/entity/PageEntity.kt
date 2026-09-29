@@ -242,6 +242,17 @@ data class PageEntity(
     // dall'utente), per vedere per esempio tutte le piattaforme sotto ogni
     // genere, anche quelle senza giochi, senza per questo mostrare i generi vuoti.
     var hideEmptySubGroups: Boolean = true,
+    // **Le viste di un database** (dal 29/09/2026, come su Notion): una
+    // vista in più è una pagina come una vista collegata (i dati sono quelli
+    // di `sourceDatabaseId`, le impostazioni sue), che appartiene al
+    // database su cui la si è creata: `viewHostId`. Non sta nell'albero né
+    // in un blocco; si sceglie dalla vista col suo nome.
+    var viewHostId: String? = null,
+    // Il nome di una vista, anche di quella di partenza del database. null =
+    // il nome del suo layout ("Table", "Board"…).
+    var viewName: String? = null,
+    // Sul database: quale delle sue viste si vede adesso. null = la sua.
+    var activeViewId: String? = null,
     // Quale proprietà data colloca le righe nel calendario. null = non
     // scelta: si usa la prima proprietà di tipo data che c'è.
     var calendarDateColumnId: String? = null,

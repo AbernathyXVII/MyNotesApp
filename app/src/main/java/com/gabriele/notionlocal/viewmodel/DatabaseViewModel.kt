@@ -219,6 +219,33 @@ class DatabaseViewModel(
     private val _dataPage = MutableStateFlow<PageEntity?>(null)
     val dataPage: StateFlow<PageEntity?> = _dataPage
 
+    // --- Le viste del database (dal 29/09/2026, come su Notion) ---
+
+    private val _views = MutableStateFlow<List<PageEntity>>(emptyList())
+
+    /** Le viste in più di questo database; la sua è `page`. */
+    val views: StateFlow<List<PageEntity>> = _views
+
+    /** Una vista nuova, subito davanti; `onCreated` riceve il suo id. */
+    fun createView(name: String?, layout: DatabaseLayout, onCreated: (String) -> Unit = {}) {
+        val hostId = currentPageId ?: return
+        viewModelScope.launch { pageRepository.createView(hostId, name, layout)?.let(onCreated) }
+    }
+
+    /** La vista da mostrare: `viewId` uguale al database, la sua. */
+    fun setActiveView(viewId: String) {
+        val hostId = currentPageId ?: return
+        viewModelScope.launch { pageRepository.setActiveView(hostId, viewId) }
+    }
+
+    fun renameView(viewId: String, name: String?) {
+        viewModelScope.launch { pageRepository.renameView(viewId, name) }
+    }
+
+    fun deleteView(viewId: String) {
+        viewModelScope.launch { pageRepository.deleteView(viewId) }
+    }
+
     /** Una vista collegata il cui database non c'è più, o è nel cestino. */
     private val _sourceMissing = MutableStateFlow(false)
     val sourceMissing: StateFlow<Boolean> = _sourceMissing
@@ -334,6 +361,13 @@ class DatabaseViewModel(
             pageRepository.observePage(pageId)
                 .distinctUntilChanged()
                 .collect { fromDb -> if (fromDb != null) _page.value = fromDb }
+        }
+
+        // Le viste in più di questo database (vedi `PageEntity.viewHostId`).
+        if (!light) {
+            viewModelScope.launch {
+                pageRepository.observeViews(pageId).distinctUntilChanged().collect { _views.value = it }
+            }
         }
 
         // L'origine di una vista collegata, seguita anche lei: rinominata o

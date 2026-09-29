@@ -2022,6 +2022,63 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**29/09/2026 — Le viste di un database: il "+" accanto a "Table" e l'elenco delle viste**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 230 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola (con due foto di Notion: il "+" accanto alla
+scheda "Table" e la finestra "New view"):
+> «A destra del pulsante Table (o sulla vista usata in quel momento) in
+> ogni database che abbia come default la vista Table (o sulla vista usata
+> in quel momento) mettimi un + che mi consente di aggiungere
+> visualizzazioni al database. Al posto di farmi vedere le varie
+> visualizzazioni disponibili, quando tocco su Table (o sulla vista usata
+> in quel momento) , mi fa vedere la lista di tutte le visualizzazioni
+> create da me. Tanto la modifica della vista in quel momento è già
+> presente in Settings (del database) e in Layout come prima opzione»
+
+- **[Nuova funzionalità]** **Un database può avere più viste**, come su
+  Notion: stesse pagine, ognuna con layout, filtro, ordinamento, gruppi,
+  proprietà nascoste e grafico suoi. Vale per ogni database, dentro una
+  pagina e a schermo intero, e per le viste collegate
+- **[Nuova funzionalità]** **"+" subito a destra del nome della vista**:
+  apre "**New view**" — il nome (vuoto = quello del layout) e i sette
+  layout, gli stessi riquadri di "Layout" nelle impostazioni; "Done" crea
+  la vista e la mette davanti. Parte da zero, come su Notion: niente
+  filtro né ordinamento, tutte le proprietà in vista. Scelto "Chart", si
+  apre subito la scelta del grafico
+- **[Nuova funzionalità]** **Toccando il nome della vista** non si apre più
+  la scelta del layout ma l'**elenco delle viste** ("Views"): la spunta su
+  quella che si vede, un tocco per passare a un'altra, "Add view" in fondo.
+  Dai tre puntini di ogni vista: "**Rename**" (anche quella di partenza) e
+  "**Delete view**" (solo quelle aggiunte, con una conferma: le pagine
+  restano nel database). Il layout della vista di adesso si cambia da
+  Settings → Layout, come prima. La vista scelta resta scelta anche
+  chiudendo l'app
+- Col database bloccato o con "Lock view" le viste si guardano e si
+  scelgono, ma il "+", Rename e Delete view sono spenti
+- **[Progetto]** Per far stare il "+" dentro una pagina, i pulsanti della
+  barra della vista sono passati da 40 a 36 dp e il riquadro del nome è
+  un po' più stretto: prima "Table" diventava "Tab…". Un nome lungo si
+  accorcia coi puntini senza spingere fuori le icone di destra
+- **[Progetto]** **Database alla versione 43**: `pages.viewHostId`
+  (la vista in più è una pagina fatta come una vista collegata, legata al
+  database su cui è nata), `pages.viewName` e `pages.activeViewId`.
+  Cancellando per sempre un database se ne vanno anche le sue viste;
+  copiandolo, la copia ha solo la sua (le viste in più non si copiano).
+  `DatabaseContent` ora sceglie la vista e disegna `DatabaseViewBody`;
+  titolo, icona, preferito e "Show title" restano quelli del database.
+  Test in `DatabaseViewsTest` e `MigrationTest` 42→43, col file `v42.sql`
+- Verificato sul telefono (copia del database prima; migrazione alla 43
+  senza errori, 26 pagine) sulla pagina di prova "Titolo tre H3", vista
+  collegata "Videogiochi" (Table, filtro PS5): il "+" accanto a "Table";
+  "Prova vista" in Board, subito davanti con tutte le righe (anche le PC);
+  l'elenco con la spunta; tornando a "Table" filtro e ordinamento erano
+  intatti; rinominata in "Rinominata" e tolta; una vista Chart apre la
+  scelta del grafico, e a schermo intero si vede la stessa vista. Per la
+  vista di partenza c'è solo "Rename". Alla fine il database è identico
+  alla copia di prima
+
 **29/09/2026 — Divisori: il backspace sotto li toglie, e la riga spostata si illumina**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 219 test
 passati; commit solo in locale)*
@@ -7466,7 +7523,8 @@ le finestre che apre. Chi lo usa passa solo l'id del blocco.
 
 ## Nota tecnica
 
-Lo schema è alla **versione 42** (la 42, del 29/09/2026, aggiunge
+Lo schema è alla **versione 43** (la 43, del 29/09/2026, aggiunge
+`pages.viewHostId`, `viewName` e `activeViewId`, le viste di un database; la 42, dello stesso giorno, aggiunge
 `pages.hideEmptySubGroups`, l'interruttore dei sottogruppi vuoti; la 41, dello stesso giorno, aggiunge
 `pages.tableSubGroupColumnId`, i sottogruppi della tabella; la 40, del 28/09/2026, aggiunge
 `pages.chartSettings`, le impostazioni della vista Chart; la 39, del

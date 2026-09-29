@@ -55,7 +55,7 @@ import kotlinx.serialization.json.Json
         NotebookEntity::class,
         NotebookSectionEntity::class
     ],
-    version = 42,
+    version = 43,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -650,6 +650,19 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /**
+         * 42 → 43 (29/09/2026): le viste di un database, come su Notion
+         * (`PageEntity.viewHostId`, `viewName`, `activeViewId`). Nessun
+         * database ne ha ancora: ognuno ha la sua, quella di sempre.
+         */
+        private val MIGRATION_42_43 = object : Migration(42, 43) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE pages ADD COLUMN viewHostId TEXT")
+                db.execSQL("ALTER TABLE pages ADD COLUMN viewName TEXT")
+                db.execSQL("ALTER TABLE pages ADD COLUMN activeViewId TEXT")
+            }
+        }
+
+        /**
          * Solo per i test: chiude il database e lo dimentica, così il
          * `getInstance` dopo riapre il file da capo (e ne esegue le
          * migrazioni). Senza, il secondo test troverebbe il database del
@@ -704,7 +717,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_38_39,
                         MIGRATION_39_40,
                         MIGRATION_40_41,
-                        MIGRATION_41_42
+                        MIGRATION_41_42,
+                        MIGRATION_42_43
                     )
                     .build()
                 INSTANCE = instance

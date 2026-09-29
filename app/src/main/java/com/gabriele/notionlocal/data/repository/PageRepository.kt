@@ -6,6 +6,7 @@ import com.gabriele.notionlocal.data.TextStats
 import com.gabriele.notionlocal.data.textStatsOf
 import com.gabriele.notionlocal.data.entity.BlockEntity
 import com.gabriele.notionlocal.data.entity.BlockType
+import com.gabriele.notionlocal.data.entity.DatabaseLayout
 import com.gabriele.notionlocal.data.entity.DatabaseCellEntity
 import com.gabriele.notionlocal.data.entity.DatabaseRowEntity
 import com.gabriele.notionlocal.data.entity.PageEditEntity
@@ -316,6 +317,8 @@ class PageRepository(private val db: AppDatabase) {
                     }
                 }
             }
+            // Le viste in più dei database che se ne vanno, con loro.
+            doomed.toList().forEach { id -> pageDao.getViewsOnce(id).forEach { doomed += it.id } }
             val pages = pageDao.getByIds(doomed.toList())
             // Se la pagina non era nel cestino, qualcuno la richiama
             // ancora: quei collegamenti porterebbero a una pagina che non
@@ -414,7 +417,7 @@ class PageRepository(private val db: AppDatabase) {
     }
 
     /** Le pagine fra cui scegliere quella da aprire all'avvio: tutte, tranne il cestino e la principale. */
-    suspend fun startupCandidates(): List<PageEntity> = pageDao.getAllLivePages()
+    suspend fun startupCandidates(): List<PageEntity> = pageDao.getAllLivePages().filter { it.viewHostId == null }
 
     /** Crea la pagina di una riga che non l'ha ancora, come fa il pulsante OPEN. */
     suspend fun ensureRowPage(rowId: String): String? {
@@ -1127,6 +1130,8 @@ class PageRepository(private val db: AppDatabase) {
                     calendarDateColumnId = column(original.calendarDateColumnId),
                     sortColumnId = column(original.sortColumnId),
                     filterColumnId = column(original.filterColumnId),
+                    // Le viste in più non si copiano: la copia mostra la sua.
+                    activeViewId = null,
                     isFavorite = false,
                     favoritedAt = null,
                     trashedAt = null,
@@ -1342,7 +1347,10 @@ class PageRepository(private val db: AppDatabase) {
         db.databaseDao().setRowTitleByLinkedPage(page.id, page.title, now)
     }
 
-    suspend fun deletePage(page: PageEntity) = pageDao.delete(page)
+    suspend fun deletePage(page: PageEntity) = db.withTransaction {
+        pageDao.deleteViewsOf(page.id)
+        pageDao.delete(page)
+    }
 
     fun getBlocks(pageId: String): Flow<List<BlockEntity>> =
         blockDao.getBlocksForPage(pageId)
@@ -1794,6 +1802,8 @@ class PageRepository(private val db: AppDatabase) {
             isSimpleDatabase = false,
             sourceDatabaseId = realSource.id,
             viewHiddenColumnIds = hidden.joinToString(",").ifEmpty { null },
+            // Le viste in più del database restano sue.
+            activeViewId = null,
             isRowPage = false,
             isFavorite = false,
             favoritedAt = null,
@@ -1805,6 +1815,53 @@ class PageRepository(private val db: AppDatabase) {
         )
         pageDao.insert(view)
         return view.id
+    }
+
+    // --- Le viste di un database (dal 29/09/2026) ---
+
+    fun observeViews(hostId: String): Flow<List<PageEntity>> = pageDao.observeViews(hostId)
+
+    /**
+     * **Una vista nuova** del database `hostId`, col suo nome e il suo
+     * layout, e la si mette davanti. È fatta come una vista collegata: i dati
+     * sono quelli del database vero (per una vista collegata, del suo
+     * originale), le impostazioni tutte sue e **da zero**, come su Notion —
+     * niente filtro, ordinamento o raggruppamento, tutte le proprietà in
+     * vista. Restituisce l'id, o null se il database non c'è più.
+     */
+    suspend fun createView(hostId: String, name: String?, layout: DatabaseLayout): String? = db.withTransaction {
+        val host = pageDao.getById(hostId)?.takeIf { it.isDatabase } ?: return@withTransaction null
+        val order = (pageDao.getViewsOnce(hostId).maxOfOrNull { it.orderIndex } ?: -1) + 1
+        val now = System.currentTimeMillis()
+        val view = PageEntity(
+            title = host.title,
+            isDatabase = true,
+            sourceDatabaseId = host.sourceDatabaseId ?: host.id,
+            viewHostId = host.id,
+            viewName = name?.trim()?.ifEmpty { null },
+            databaseLayout = layout,
+            orderIndex = order,
+            createdAt = now,
+            updatedAt = now
+        )
+        pageDao.insert(view)
+        pageDao.setActiveView(host.id, view.id)
+        view.id
+    }
+
+    /** Quale vista di un database si vede: null (o il database stesso) = la sua. */
+    suspend fun setActiveView(hostId: String, viewId: String?) =
+        pageDao.setActiveView(hostId, viewId?.takeIf { it != hostId })
+
+    suspend fun renameView(pageId: String, name: String?) =
+        pageDao.setViewName(pageId, name?.trim()?.ifEmpty { null })
+
+    /** Toglie una vista in più; se era davanti, torna quella del database. */
+    suspend fun deleteView(viewId: String) = db.withTransaction {
+        val view = pageDao.getById(viewId)?.takeIf { it.viewHostId != null } ?: return@withTransaction
+        val host = view.viewHostId?.let { pageDao.getById(it) }
+        if (host?.activeViewId == viewId) pageDao.setActiveView(host.id, null)
+        pageDao.delete(view)
     }
 
     /** Vedi `BlockDao.setTypeAndLink`. */

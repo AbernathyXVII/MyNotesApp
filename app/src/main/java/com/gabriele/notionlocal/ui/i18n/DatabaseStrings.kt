@@ -590,6 +590,24 @@ object DbStrings {
 
     /** Nelle azioni di una scheda della galleria: l'inquadratura della copertina, solo nella scheda. */
     val repositionCover get() = t("Reposition cover", "Riposiziona copertina", "Titelbild neu positionieren", "Repositionner la couverture", "Reposicionar portada", "调整封面位置", "커버 위치 조정", "カバーの位置を調整")
+    // --- Le viste (dal 29/09/2026) ---
+
+    val views get() = t("Views", "Viste", "Ansichten", "Vues", "Vistas", "视图", "보기", "ビュー")
+    val newView get() = t("New view", "Nuova vista", "Neue Ansicht", "Nouvelle vue", "Nueva vista", "新建视图", "새 보기", "新しいビュー")
+    val addView get() = t("Add view", "Aggiungi una vista", "Ansicht hinzufügen", "Ajouter une vue", "Añadir vista", "添加视图", "보기 추가", "ビューを追加")
+    val viewName get() = t("View name", "Nome della vista", "Name der Ansicht", "Nom de la vue", "Nombre de la vista", "视图名称", "보기 이름", "ビュー名")
+    val viewOptions get() = t("View options", "Opzioni della vista", "Ansichtsoptionen", "Options de la vue", "Opciones de la vista", "视图选项", "보기 옵션", "ビューのオプション")
+    val deleteView get() = t("Delete view", "Elimina la vista", "Ansicht löschen", "Supprimer la vue", "Eliminar vista", "删除视图", "보기 삭제", "ビューを削除")
+    val deleteViewMessage get() = t(
+        "The view goes away with its settings. The pages stay in the database.",
+        "La vista se ne va con le sue impostazioni. Le pagine restano nel database.",
+        "Die Ansicht verschwindet mit ihren Einstellungen. Die Seiten bleiben in der Datenbank.",
+        "La vue disparaît avec ses réglages. Les pages restent dans la base de données.",
+        "La vista desaparece con sus ajustes. Las páginas se quedan en la base de datos.",
+        "视图及其设置将被删除，页面仍保留在数据库中。",
+        "보기와 설정이 삭제됩니다. 페이지는 데이터베이스에 남습니다.",
+        "ビューと設定が削除されます。ページはデータベースに残ります。"
+    )
     val showTitle get() = t("Show title", "Mostra il titolo", "Titel anzeigen", "Afficher le titre", "Mostrar título", "显示标题", "제목 표시", "タイトルを表示")
     val cardPreview get() = t("Card preview", "Anteprima della scheda", "Kartenvorschau", "Aperçu de la carte", "Vista previa de la tarjeta", "卡片预览", "카드 미리보기", "カードプレビュー")
     val cardSize get() = t("Card size", "Dimensione della scheda", "Kartengröße", "Taille de la carte", "Tamaño de la tarjeta", "卡片大小", "카드 크기", "カードサイズ")
