@@ -105,6 +105,11 @@ import com.gabriele.notionlocal.data.widgets.selectableZoneIds
 import com.gabriele.notionlocal.data.widgets.sortedWestToEast
 import com.gabriele.notionlocal.data.settings.AppSettings
 import com.gabriele.notionlocal.ui.format.Formats
+import androidx.compose.material3.Switch
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.platform.LocalDensity
+import com.gabriele.notionlocal.data.widgets.progressPercentText
 import com.gabriele.notionlocal.ui.i18n.Strings
 import com.gabriele.notionlocal.ui.i18n.WidgetStrings
 import com.gabriele.notionlocal.ui.theme.DarkSheet
@@ -268,6 +273,16 @@ private fun WidgetCard(widget: Widget, index: Int, count: Int, now: Long, active
                         DropdownMenuItem(
                             text = { Text(WidgetStrings.rename) },
                             onClick = { menuOpen = false; renaming = true }
+                        )
+                    }
+                    // **Il decimale sulle percentuali** (dal 29/09/2026).
+                    if (widget is LifeProgressWidget) {
+                        DropdownMenuItem(
+                            text = { Text(WidgetStrings.showDecimals) },
+                            trailingIcon = {
+                                Switch(checked = widget.decimals, onCheckedChange = null, modifier = Modifier.scale(0.75f))
+                            },
+                            onClick = { menuOpen = false; WidgetStore.setProgressDecimals(widget.id, !widget.decimals) }
                         )
                     }
                     DropdownMenuItem(
@@ -687,10 +702,22 @@ private fun LifeProgressView(widget: LifeProgressWidget, now: Long) {
     var adding by remember(widget.id) { mutableStateOf(false) }
     var coloring by remember(widget.id) { mutableStateOf<ProgressBarSetting?>(null) }
     val instant = Instant.ofEpochMilli(now)
+    // Col decimale le scritte si allungano di ",0": le barre si accorciano
+    // tutte di quel tanto, così restano lunghe uguali.
+    val measurer = rememberTextMeasurer()
+    val style = MaterialTheme.typography.bodyMedium
+    val density = LocalDensity.current
+    val labelWidth = if (widget.decimals) {
+        PROGRESS_LABEL_WIDTH + with(density) { measurer.measure(",0", style).size.width.toDp() } + 2.dp
+    } else {
+        PROGRESS_LABEL_WIDTH
+    }
 
     widget.bars.forEach { bar ->
         ProgressRow(
             bar = bar,
+            decimals = widget.decimals,
+            labelWidth = labelWidth,
             fraction = bar.fractionAt(instant, WidgetStore.zone),
             onColor = { coloring = bar },
             onEdit = if (bar.kind == ProgressKind.CUSTOM) { { editing = bar } } else null,
@@ -752,6 +779,9 @@ private fun ProgressBarSetting.label(): String = when (kind) {
 @Composable
 private fun ProgressRow(
     bar: ProgressBarSetting,
+    /** "Show decimals": la percentuale con un decimale. */
+    decimals: Boolean = false,
+    labelWidth: Dp = PROGRESS_LABEL_WIDTH,
     fraction: Double?,
     onColor: () -> Unit,
     onEdit: (() -> Unit)?,
@@ -759,7 +789,7 @@ private fun ProgressRow(
 ) {
     var menuOpen by remember(bar.id) { mutableStateOf(false) }
     val color = hexToColor(bar.colorHex) ?: hexToColor(DEFAULT_BAR_COLOR) ?: Color.Green
-    val percent = fraction?.let { floor(it * 100).toInt() }
+    val percent = fraction?.let { progressPercentText(it, decimals, Formats::number) }
     Box {
         Row(
             modifier = Modifier
@@ -784,7 +814,7 @@ private fun ProgressRow(
             }
             Spacer(modifier = Modifier.width(10.dp))
             Text(
-                text = "${bar.label()}: ${percent?.let { "$it%" } ?: "—"}",
+                text = "${bar.label()}: ${percent ?: "—"}",
                 color = color,
                 style = MaterialTheme.typography.bodyMedium,
                 maxLines = 1,
@@ -792,7 +822,7 @@ private fun ProgressRow(
                 // Larghezza fissa: con l'etichetta che si allarga e si
                 // stringe ("Anno" e "Settimana") le barre venivano lunghe
                 // ognuna a modo suo, mentre nella foto sono tutte uguali.
-                modifier = Modifier.width(PROGRESS_LABEL_WIDTH)
+                modifier = Modifier.width(labelWidth)
             )
         }
         DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {

@@ -168,6 +168,11 @@ object WidgetStore {
         it.copy(bars = it.bars + bar)
     }
 
+    /** "Show decimals": il decimale sulle percentuali del widget. */
+    fun setProgressDecimals(widgetId: String, on: Boolean) = updateWidget<LifeProgressWidget>(widgetId) {
+        it.copy(decimals = on)
+    }
+
     fun removeBar(widgetId: String, barId: String) = updateWidget<LifeProgressWidget>(widgetId) { w ->
         w.copy(bars = w.bars.filterNot { it.id == barId && it.kind == ProgressKind.CUSTOM })
     }

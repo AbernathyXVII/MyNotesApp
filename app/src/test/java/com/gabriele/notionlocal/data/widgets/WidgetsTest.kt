@@ -281,4 +281,30 @@ class WidgetsTest {
         // Un id che non c'è non cambia niente.
         assertEquals(widget, widget.withoutTimer("nessuno"))
     }
+
+    // --- Il decimale sulle percentuali (29/09/2026) ---
+
+    @Test
+    fun percentagesWithAndWithoutTheDecimal() {
+        val asIs: (String) -> String = { it }
+        assertEquals("74%", progressPercentText(0.7469, decimals = false, formatNumber = asIs))
+        // Per difetto anche col decimale: 74,69 è ancora 74,6.
+        assertEquals("74.6%", progressPercentText(0.7469, decimals = true, formatNumber = asIs))
+        assertEquals("0.0%", progressPercentText(0.0004, decimals = true, formatNumber = asIs))
+        assertEquals("100.0%", progressPercentText(1.0, decimals = true, formatNumber = asIs))
+        assertEquals("100%", progressPercentText(1.0, decimals = false, formatNumber = asIs))
+        // Il separatore lo decide chi scrive i numeri (le impostazioni).
+        assertEquals("74,6%", progressPercentText(0.7461, decimals = true) { it.replace('.', ',') })
+    }
+
+    @Test
+    fun theDecimalSwitchIsSavedAndOldWidgetsStartWithoutIt() {
+        val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
+        val state = WidgetsState(widgets = listOf(LifeProgressWidget(decimals = true)))
+        val again = json.decodeFromString<WidgetsState>(json.encodeToString(state)).widgets.single() as LifeProgressWidget
+        assertTrue(again.decimals)
+        // Un widget salvato prima non ha il campo: parte senza decimale.
+        val old = """{"widgets":[{"type":"life_progress","id":"w1"}]}"""
+        assertEquals(false, (json.decodeFromString<WidgetsState>(old).widgets.single() as LifeProgressWidget).decimals)
+    }
 }

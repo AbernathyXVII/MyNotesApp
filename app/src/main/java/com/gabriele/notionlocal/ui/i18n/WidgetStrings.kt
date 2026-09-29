@@ -14,6 +14,7 @@ object WidgetStrings {
     val hideWidgets get() = t("Hide widgets", "Nascondi i widget", "Widgets ausblenden", "Masquer les widgets", "Ocultar widgets", "隐藏小组件", "위젯 숨기기", "ウィジェットを隠す")
     val showWidgets get() = t("Show widgets", "Mostra i widget", "Widgets anzeigen", "Afficher les widgets", "Mostrar widgets", "显示小组件", "위젯 보기", "ウィジェットを表示")
     val addWidget get() = t("Add widget", "Aggiungi widget", "Widget hinzufügen", "Ajouter un widget", "Añadir widget", "添加小组件", "위젯 추가", "ウィジェットを追加")
+    val showDecimals get() = t("Show decimals", "Mostra i decimali", "Dezimalstellen zeigen", "Afficher les décimales", "Mostrar decimales", "显示小数", "소수점 표시", "小数を表示")
     val widgetOptions get() = t("Widget options", "Opzioni del widget", "Widget-Optionen", "Options du widget", "Opciones del widget", "小组件选项", "위젯 옵션", "ウィジェットのオプション")
     val moveUp get() = t("Move up", "Sposta su", "Nach oben", "Monter", "Subir", "上移", "위로 이동", "上へ移動")
     val moveDown get() = t("Move down", "Sposta giù", "Nach unten", "Descendre", "Bajar", "下移", "아래로 이동", "下へ移動")

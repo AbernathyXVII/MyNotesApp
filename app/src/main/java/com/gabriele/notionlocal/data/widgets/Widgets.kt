@@ -61,8 +61,24 @@ data class ClockSetting(
 @SerialName("life_progress")
 data class LifeProgressWidget(
     override val id: String = newWidgetId(),
-    val bars: List<ProgressBarSetting> = defaultProgressBars()
+    val bars: List<ProgressBarSetting> = defaultProgressBars(),
+    /**
+     * **Il decimale** sulle percentuali (dal 29/09/2026, "Show decimals" nel
+     * menu del widget): "Anno: 74,6%" invece di "Anno: 74%".
+     */
+    val decimals: Boolean = false
 ) : Widget()
+
+/**
+ * La percentuale di una barra come si scrive accanto: per difetto, così il
+ * 100% arriva solo alla fine; col decimale, uno solo, col separatore delle
+ * impostazioni (74,6 o 74.6).
+ */
+fun progressPercentText(fraction: Double, decimals: Boolean, formatNumber: (String) -> String): String {
+    if (!decimals) return "${kotlin.math.floor(fraction * 100).toInt()}%"
+    val tenths = kotlin.math.floor(fraction * 1000).toLong()
+    return formatNumber("${tenths / 10}.${tenths % 10}") + "%"
+}
 
 enum class ProgressKind { YEAR, MONTH, WEEK, DAY, CUSTOM }
 

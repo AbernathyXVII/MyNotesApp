@@ -2022,6 +2022,29 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**29/09/2026 — Life progress: il decimale sulle percentuali, da accendere e spegnere**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 273 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Fai sì che io possa attivare o disattivare il decimale sui numeri della
+> Life progress bar nella Sidebar»
+
+- **[Nuova funzionalità]** Nel menu "⋯" del widget **Life progress** della
+  barra laterale c'è "**Show decimals**", con l'interruttore: acceso, le
+  percentuali hanno un decimale ("Year: 74,3%" invece di "Year: 74%"), col
+  separatore scelto nelle impostazioni (74,3 o 74.3); spento, tornano
+  intere. Si conta sempre per difetto, così il 100% arriva solo alla fine.
+  Vale per tutte le barre del widget, anche le date aggiunte a mano, e
+  resta com'era riaprendo l'app
+- Col decimale le scritte si allungano di ",0": le barre si accorciano
+  tutte di quel tanto, così restano lunghe uguali
+- **[Progetto]** `LifeProgressWidget.decimals` (un widget salvato prima
+  parte spento) e `progressPercentText`; test in `WidgetsTest`
+- Verificato sul telefono: acceso, "Year: 74,3%", "Month: 95,3%",
+  "Week: 22,7%", "Day: 59,1%", barre tutte uguali; ancora acceso dopo aver
+  riaperto l'app; spento, di nuovo "Year: 74%". Lasciato spento, com'era
+
 **29/09/2026 — Nuova proprietà "Page link": il collegamento a un'altra pagina**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 271 test
 passati; commit solo in locale)*
