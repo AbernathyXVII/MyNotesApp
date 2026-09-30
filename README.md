@@ -2022,6 +2022,27 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**30/09/2026 — Ritoccando un giorno col pallino, il pallino se ne va**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 316 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Nella selezione della data del calendario nella proprietà Date, se
+> ritocco un giorno che ho toccato e che è visualizzato con un pallino
+> arancione, mi toglie il pallino»
+
+- **[Nuova funzionalità]** Nel calendario della proprietà Date, toccando
+  di nuovo il giorno scelto (col pallino arancione) il pallino se ne va.
+  Con "End date" acceso: ritoccando la fine resta solo l'inizio;
+  ritoccando l'inizio resta solo la fine. Senza più niente scelto, "Done"
+  svuota la cella, come prima. Gli altri tocchi sono quelli di sempre
+- **[Progetto]** La regola sta in `pickCalendarDay` (`DayPick.kt`), usata
+  da `DateEditorSheet`; test in `DayPickTest`
+- Verificato sul telefono sulla data della riga "2" del database di prova
+  (il 15/09): ritoccato il 15, il pallino sparisce; con "End date" e il
+  periodo 15-18, ritoccando il 18 resta il 15, ritoccando il 15 resta il
+  18. Poi "Cancel": database identico
+
 **30/09/2026 — "Today" nel calendario delle date**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 313 test
 passati; commit solo in locale)*

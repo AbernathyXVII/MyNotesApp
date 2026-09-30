@@ -6990,19 +6990,11 @@ private fun DateEditorSheet(
                 start = startDate,
                 end = endDate.takeIf { withEndDate },
                 onPick = { day ->
-                    val start = startDate
-                    when {
-                        !withEndDate -> startDate = day
-                        // Ad interruttore acceso: il primo tocco è
-                        // l'inizio, il secondo (più avanti) la fine; un
-                        // tocco dopo un periodo completo, o prima
-                        // dell'inizio, ricomincia.
-                        start == null || endDate != null || day < start -> {
-                            startDate = day
-                            endDate = null
-                        }
-                        day > start -> endDate = day
-                    }
+                    // Ritoccando un giorno col pallino, il pallino se ne va
+                    // (dal 30/09/2026); il resto come prima. Vedi `pickCalendarDay`.
+                    val (start, end) = pickCalendarDay(day, startDate, endDate, withEndDate)
+                    startDate = start
+                    endDate = end
                 },
                 onWheelPick = { day ->
                     startDate = day
