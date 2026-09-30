@@ -55,8 +55,14 @@ sealed class NoteBlock {
     data class Table(val level: Int, val rows: List<List<String>>) : NoteBlock()
 }
 
-/** 📦 la prima versione, 🆕 una versione nuova, 🔧 una correzione. */
-enum class PatchKind { FIRST, RELEASE, FIX }
+/** 🆕 una versione nuova, 🔧 una correzione. */
+enum class PatchKind { RELEASE, FIX }
+
+/**
+ * L'ora di una versione di cui non si sa (le prime, fatte in un'altra chat
+ * fra l'8 e il 18/09/2026): si dice, invece di inventarla.
+ */
+const val UNKNOWN_TIME = "ora non registrata"
 
 /** Una versione: "🆕 v0.68 — 30/09/2026 · 15:09 — titolo", e sotto quello che contiene. */
 data class PatchVersion(
@@ -64,8 +70,9 @@ data class PatchVersion(
     val emoji: String,
     /** "0.68", "0.67.1": il numero senza la "v". */
     val version: String,
-    /** "30/09/2026", o "fino al 24/09/2026" per la prima. */
+    /** "30/09/2026", o un periodo ("fra l'8 e il 18/09/2026") quando l'ora non si sa. */
     val date: String,
+    /** "15:09", o `UNKNOWN_TIME`. */
     val time: String,
     val title: String,
     val blocks: List<NoteBlock>
@@ -80,7 +87,7 @@ data class PatchNotes(
 )
 
 /** Il titolo di una versione: "### 🆕 v0.68 — 30/09/2026 · 15:09 — Il time-blocking…". */
-val VERSION_HEADING = Regex("""^### (\S+) v(\d+\.\d+(?:\.\d+)?) — (.+?) · (\d{2}:\d{2}) — (.+)$""")
+val VERSION_HEADING = Regex("""^### (\S+) v(\d+\.\d+(?:\.\d+)?) — (.+?) · (\d{2}:\d{2}|$UNKNOWN_TIME) — (.+)$""")
 
 fun parsePatchNotes(markdown: String): PatchNotes {
     val lines = markdown.removePrefix("﻿").replace("\r\n", "\n").split("\n")
@@ -94,11 +101,7 @@ fun parsePatchNotes(markdown: String): PatchNotes {
         val head = current ?: return
         val (emoji, version, date, time, name) = head.destructured
         versions += PatchVersion(
-            kind = when {
-                emoji == "📦" -> PatchKind.FIRST
-                version.count { it == '.' } == 2 -> PatchKind.FIX
-                else -> PatchKind.RELEASE
-            },
+            kind = if (version.count { it == '.' } == 2) PatchKind.FIX else PatchKind.RELEASE,
             emoji = emoji,
             version = version,
             date = date,

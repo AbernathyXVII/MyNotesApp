@@ -52,21 +52,26 @@ class PatchNotesTest {
     @Test
     fun everyVersionHasItsNumberDayAndTime() {
         val versions = notes().versions
-        assertTrue("versioni: ${versions.size}", versions.size >= 85)
+        assertTrue("versioni: ${versions.size}", versions.size >= 150)
         // Ogni titolo "### " della Cronologia è una versione letta.
         assertEquals(readmeChronology().lines().count { it.startsWith("### ") }, versions.size)
+        // Dalla prima, v0.1, il giorno in cui nasce il progetto.
         val first = versions.last()
-        assertEquals(PatchKind.FIRST, first.kind)
+        assertEquals(PatchKind.RELEASE, first.kind)
         assertEquals("0.1", first.version)
-        assertEquals("fino al 24/09/2026", first.date)
-        versions.dropLast(1).forEach { v ->
-            assertTrue("${v.version}: ${v.date}", Regex("""\d{2}/\d{2}/\d{4}""").matches(v.date))
-            assertTrue("${v.version}: ${v.emoji}", v.emoji == if (v.kind == PatchKind.FIX) "🔧" else "🆕")
-        }
+        assertEquals("08/09/2026", first.date)
+        assertEquals("09:19", first.time)
         versions.forEach { v ->
-            assertTrue("${v.version}: ${v.time}", Regex("""\d{2}:\d{2}""").matches(v.time))
+            assertTrue("${v.version}: ${v.emoji}", v.emoji == if (v.kind == PatchKind.FIX) "🔧" else "🆕")
             assertTrue("${v.version}: vuota", v.blocks.isNotEmpty())
+            // L'ora c'è, o si dice che non si sa; con l'ora, la data è un giorno preciso.
+            if (v.time == UNKNOWN_TIME) return@forEach
+            assertTrue("${v.version}: ${v.time}", Regex("""\d{2}:\d{2}""").matches(v.time))
+            assertTrue("${v.version}: ${v.date}", Regex("""\d{2}/\d{2}/\d{4}""").matches(v.date))
         }
+        // Le versioni senza ora sono solo le prime, dell'altra chat.
+        val unknown = versions.filter { it.time == UNKNOWN_TIME }
+        assertTrue(unknown.isNotEmpty() && unknown.all { versions.indexOf(it) > versions.size - 12 })
     }
 
     @Test
@@ -86,7 +91,7 @@ class PatchNotesTest {
     @Test
     fun theNewestIsOnTopAndTimeNeverGoesBack() {
         val format = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
-        val times = notes().versions.dropLast(1).map { LocalDateTime.parse("${it.date} ${it.time}", format) }
+        val times = notes().versions.filter { it.time != UNKNOWN_TIME }.map { LocalDateTime.parse("${it.date} ${it.time}", format) }
         times.zipWithNext().forEach { (newer, older) -> assertTrue("$older dopo $newer", !older.isAfter(newer)) }
     }
 
