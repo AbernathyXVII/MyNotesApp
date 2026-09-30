@@ -27,6 +27,11 @@ object Routes {
     /** Settings → Patch Notes (dal 30/09/2026): le versioni dell'app. */
     const val PATCH_NOTES = "patchNotes"
 
+    /** La pagina di una versione delle Patch Notes ("0.68", "0.67.1"). */
+    const val PATCH_NOTE = "patchNote/{version}"
+
+    fun patchNote(version: String) = "patchNote/$version"
+
     /** Una sezione di un quaderno, con le sue pagine (vedi `NotebookSectionScreen`). */
     const val NOTEBOOK_SECTION = "notebookSection/{sectionId}"
 

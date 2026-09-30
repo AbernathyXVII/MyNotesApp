@@ -2046,6 +2046,42 @@ alla v0.15) portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.70 — 30/09/2026 · 18:33 — Patch Notes: l'elenco dei titoli, e una pagina per ogni versione
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 356 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Una cosa: dato che la pagina delle Patch Notes è iper mega lunga, puoi
+> far sì di creare una pagina per ogni titolo grande che hai scritto?
+> Lascia icone, nome della versione, data e ora al titolo, poi apro la
+> pagina di quel titolo e mostrerà il testo ad esso appartenente»
+
+- **[Nuova funzionalità]** Settings → Patch Notes ora è **l'elenco dei
+  titoli**: per ogni versione l'emoji, il numero, il giorno e l'ora, il
+  titolo e una freccia, uno sotto l'altro; in cima resta l'introduzione
+  che spiega i numeri. **Toccando un titolo si apre la sua pagina**: in
+  cima lo stesso titolo (emoji, numero, giorno e ora, titolo), sotto il
+  testo di quella versione — la richiesta, le modifiche, le verifiche —
+  come nel README. Il nome della pagina, in alto, è il numero della
+  versione
+- **[Nuova funzionalità]** Tornando indietro da una versione l'elenco
+  **resta dov'era**; riparte dalla cima solo cambiando l'ordine ("Newest
+  first" / "Oldest first", come prima)
+- **[Progetto]** `PatchNotesScreen` (l'elenco, `VersionRow`) e
+  `PatchNoteScreen` (la pagina di una versione), rotta
+  `Routes.PATCH_NOTE` ("patchNote/{version}"). Le Patch Notes si leggono
+  una volta sola (`PatchNotesAsset.loaded`): la pagina di una versione si
+  apre subito, senza rileggere i 400 KB del file. Test nuovo
+  `PatchNotesPagesTest` (2): nell'elenco le due versioni più recenti una
+  sotto l'altra senza il testo della prima, e il tocco apre quella giusta;
+  la pagina di una versione mostra il suo testo e non quello delle altre
+- Verificato sul telefono: l'elenco coi titoli (🆕 v0.67 "Color columns"
+  30/09/2026 · 13:34, 🔧 v0.67.1…); toccato v0.65 "Long text", la pagina
+  col titolo e sotto la citazione dell'utente e le quattro voci; col gesto
+  indietro l'elenco è dove l'avevo lasciato (v0.62 nello stesso punto dopo
+  averla aperta); "Oldest first" riparte dalla cima con 📦 v0.1, "Newest
+  first" con v0.69
+
 ### 🆕 v0.69 — 30/09/2026 · 18:22 — Le Patch Notes: ogni voce una versione con giorno e ora, e Settings → Patch Notes
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 354 test
 passati; commit solo in locale)*
@@ -8566,7 +8602,8 @@ pomodoro. `ui/screen/SidebarWidgets.kt` è come si vedono.
 
 `data/patchnotes/PatchNotes.kt` e `ui/screen/PatchNotesScreen.kt` sono
 **Settings → Patch Notes**: la Cronologia di questo README divisa in
-versioni e disegnata come su GitHub. Il testo lo copia il task
+versioni e disegnata come su GitHub — l'elenco dei titoli
+(`PatchNotesScreen`) e la pagina di ogni versione (`PatchNoteScreen`). Il testo lo copia il task
 `patchNotes` di `app/build.gradle.kts` (vedi "Nota tecnica").
 
 `ui/screen/BlockActionsSheet.kt` è il menu di un blocco (i sei puntini):

@@ -21,12 +21,22 @@ import android.content.Context
 object PatchNotesAsset {
     const val FILE_NAME = "patch_notes.md"
 
+    /**
+     * Le Patch Notes già lette, o null. Il file dentro l'app non cambia
+     * finché l'app è aperta: si legge una volta, e l'elenco e la pagina di
+     * una versione usano la stessa lettura.
+     */
+    @Volatile
+    var loaded: PatchNotes? = null
+        private set
+
     /** Le Patch Notes dell'app; vuote se il file non c'è. Legge un file: non dal thread principale. */
     fun load(context: Context): PatchNotes {
+        loaded?.let { return it }
         val text = runCatching {
             context.assets.open(FILE_NAME).bufferedReader(Charsets.UTF_8).use { it.readText() }
         }.getOrNull() ?: return PatchNotes(title = "", intro = emptyList(), versions = emptyList())
-        return parsePatchNotes(text)
+        return parsePatchNotes(text).also { loaded = it }
     }
 }
 

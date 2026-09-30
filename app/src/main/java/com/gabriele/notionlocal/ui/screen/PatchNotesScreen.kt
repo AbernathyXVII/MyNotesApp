@@ -2,6 +2,7 @@ package com.gabriele.notionlocal.ui.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,6 +22,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.SwapVert
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -70,18 +72,29 @@ import kotlinx.coroutines.withContext
  * Cronologia del README** — lo stesso testo, copiato a ogni compilazione
  * (vedi `PatchNotesAsset`).
  *
+ * **Qui ci sono solo i titoli** (dal 30/09/2026, chiesto dall'utente: tutto
+ * in una pagina sola era lunghissimo): l'emoji, il numero, il giorno e
+ * l'ora, e il titolo. Toccandone uno si apre la sua pagina
+ * (`PatchNoteScreen`) con quello che c'è scritto sotto. In cima resta
+ * l'introduzione della Cronologia, che spiega i numeri.
+ *
  * Di suo la più recente sta in cima; il pulsante in alto a destra le mette
  * dalla più vecchia, e viceversa.
  */
 @Composable
-fun PatchNotesScreen(onBack: () -> Unit) {
-    val context = LocalContext.current
-    val notes by produceState<PatchNotes?>(null, context) {
-        value = withContext(Dispatchers.IO) { PatchNotesAsset.load(context) }
-    }
+fun PatchNotesScreen(onBack: () -> Unit, onOpenVersion: (String) -> Unit) {
+    val notes = rememberPatchNotes()
     var oldestFirst by rememberSaveable { mutableStateOf(false) }
     val listState = rememberLazyListState()
-    LaunchedEffect(oldestFirst) { listState.scrollToItem(0) }
+    // Cambiato l'ordine si riparte dalla cima; tornando da una versione,
+    // invece, l'elenco resta dov'era.
+    var shownOrder by rememberSaveable { mutableStateOf(oldestFirst) }
+    LaunchedEffect(oldestFirst) {
+        if (oldestFirst != shownOrder) {
+            listState.scrollToItem(0)
+            shownOrder = oldestFirst
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -101,23 +114,52 @@ fun PatchNotesScreen(onBack: () -> Unit) {
     ) { padding ->
         val loaded = notes
         if (loaded == null) {
-            Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
+            Loading(Modifier.padding(padding))
             return@Scaffold
         }
         val versions = if (oldestFirst) loaded.versions.asReversed() else loaded.versions
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize().padding(padding),
-            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 40.dp)
+            contentPadding = PaddingValues(bottom = 40.dp)
         ) {
             itemsIndexed(loaded.intro, key = { index, _ -> "intro-$index" }) { _, block ->
-                NoteBlockView(block)
+                Box(modifier = Modifier.padding(horizontal = 20.dp)) { NoteBlockView(block) }
             }
-            versions.forEach { version ->
-                item(key = "v${version.version}") { VersionHeader(version) }
-                itemsIndexed(version.blocks, key = { index, _ -> "v${version.version}-$index" }) { _, block ->
+            item(key = "intro-end") { Spacer(modifier = Modifier.height(12.dp)) }
+            itemsIndexed(versions, key = { _, version -> "v${version.version}" }) { _, version ->
+                HorizontalDivider(color = NotionGray900)
+                VersionRow(version, onClick = { onOpenVersion(version.version) })
+            }
+        }
+    }
+}
+
+/**
+ * **La pagina di una versione** (dal 30/09/2026): il suo titolo come
+ * nell'elenco, e sotto quello che c'è scritto nella Cronologia — la
+ * richiesta dell'utente, le modifiche con le etichette, le verifiche.
+ */
+@Composable
+fun PatchNoteScreen(version: String, onBack: () -> Unit) {
+    val notes = rememberPatchNotes()
+    Scaffold(
+        topBar = { WorkspaceTopBar(title = "v$version", onBack = onBack) },
+        containerColor = DarkBackground
+    ) { padding ->
+        val loaded = notes
+        if (loaded == null) {
+            Loading(Modifier.padding(padding))
+            return@Scaffold
+        }
+        val shown = loaded.versions.find { it.version == version }
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(padding),
+            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 40.dp)
+        ) {
+            if (shown != null) {
+                item(key = "head") { VersionHeader(shown) }
+                itemsIndexed(shown.blocks, key = { index, _ -> "block-$index" }) { _, block ->
                     NoteBlockView(block)
                 }
             }
@@ -125,33 +167,80 @@ fun PatchNotesScreen(onBack: () -> Unit) {
     }
 }
 
-/** Il titolo di una versione: l'emoji, il numero, il giorno e l'ora, e il titolo. */
+/** Le Patch Notes, lette una volta sola (vedi `PatchNotesAsset.load`); null finché non ci sono. */
 @Composable
-private fun VersionHeader(version: PatchVersion) {
-    Column(modifier = Modifier.fillMaxWidth().padding(top = 28.dp, bottom = 6.dp)) {
-        HorizontalDivider(color = NotionGray900, modifier = Modifier.padding(bottom = 16.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(version.emoji, style = MaterialTheme.typography.titleMedium)
-            Spacer(modifier = Modifier.width(8.dp))
+private fun rememberPatchNotes(): PatchNotes? {
+    val context = LocalContext.current
+    val notes by produceState(PatchNotesAsset.loaded, context) {
+        value = withContext(Dispatchers.IO) { PatchNotesAsset.load(context) }
+    }
+    return notes
+}
+
+@Composable
+private fun Loading(modifier: Modifier) {
+    Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        CircularProgressIndicator()
+    }
+}
+
+/** Una versione nell'elenco: l'emoji, il numero, il giorno e l'ora, il titolo e la freccia per aprirla. */
+@Composable
+private fun VersionRow(version: PatchVersion, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(start = 20.dp, end = 12.dp, top = 14.dp, bottom = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            VersionLine(version)
+            Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = "v${version.version}",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                color = if (version.kind == PatchKind.RELEASE) Color.White else NotionWhite,
-                modifier = Modifier
-                    .background(
-                        if (version.kind == PatchKind.RELEASE) AccentBlue else DarkSurfaceVariant,
-                        RoundedCornerShape(percent = 50)
-                    )
-                    .padding(horizontal = 10.dp, vertical = 3.dp)
-            )
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(
-                text = "${version.date} · ${version.time}",
-                style = MaterialTheme.typography.labelLarge,
-                color = NotionGray400
+                text = inlineMarkdown(version.title),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = NotionWhite
             )
         }
+        Spacer(modifier = Modifier.width(8.dp))
+        Icon(Icons.Filled.KeyboardArrowRight, contentDescription = null, tint = NotionGray400)
+    }
+}
+
+/** L'emoji, il numero (azzurro per le versioni nuove) e il giorno con l'ora. */
+@Composable
+private fun VersionLine(version: PatchVersion) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(version.emoji, style = MaterialTheme.typography.titleMedium)
+        Spacer(modifier = Modifier.width(8.dp))
+        Text(
+            text = "v${version.version}",
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold,
+            color = if (version.kind == PatchKind.RELEASE) Color.White else NotionWhite,
+            modifier = Modifier
+                .background(
+                    if (version.kind == PatchKind.RELEASE) AccentBlue else DarkSurfaceVariant,
+                    RoundedCornerShape(percent = 50)
+                )
+                .padding(horizontal = 10.dp, vertical = 3.dp)
+        )
+        Spacer(modifier = Modifier.width(10.dp))
+        Text(
+            text = "${version.date} · ${version.time}",
+            style = MaterialTheme.typography.labelLarge,
+            color = NotionGray400
+        )
+    }
+}
+
+/** Il titolo in cima alla pagina di una versione: l'emoji, il numero, il giorno e l'ora, e il titolo. */
+@Composable
+private fun VersionHeader(version: PatchVersion) {
+    Column(modifier = Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 6.dp)) {
+        VersionLine(version)
         Spacer(modifier = Modifier.height(8.dp))
         Text(
             text = inlineMarkdown(version.title),
@@ -159,6 +248,7 @@ private fun VersionHeader(version: PatchVersion) {
             fontWeight = FontWeight.Bold,
             color = NotionWhite
         )
+        HorizontalDivider(color = NotionGray900, modifier = Modifier.padding(top = 14.dp))
     }
 }
 
