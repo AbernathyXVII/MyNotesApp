@@ -14,6 +14,13 @@ enum class ThemeMode { DARK, LIGHT, SYSTEM }
 /** Quanto si muove l'app: tutto, poco (animazioni più brevi) o niente. */
 enum class AnimationLevel { FULL, REDUCED, OFF }
 
+/**
+ * **La priorità delle notifiche** (dal 30/09/2026, la pagina Notifications):
+ * bassa = in silenzio, solo nella tendina; normale = suono e vibrazione;
+ * alta = anche il riquadro in cima allo schermo. Com'era prima: alta.
+ */
+enum class NotificationPriority { LOW, NORMAL, HIGH }
+
 /** Come si raggruppano le cifre: 1.000.000 (virgola per i decimali) o 1,000,000 (punto per i decimali). */
 enum class NumberStyle { DOT_GROUPS, COMMA_GROUPS }
 
@@ -104,6 +111,9 @@ object AppSettings {
         notificationSoundNameState.value = prefs.getString(KEY_SOUND_NAME, null)
         notificationsMutedState.value = prefs.getBoolean(KEY_MUTED, false)
         mutedUntilState.value = prefs.getLong(KEY_MUTED_UNTIL, 0L).takeIf { it > 0L }
+        notificationVibrateState.value = prefs.getBoolean(KEY_VIBRATE, true)
+        notificationPriorityState.value = enumOr(KEY_PRIORITY, NotificationPriority.HIGH)
+        notificationBadgeState.value = prefs.getBoolean(KEY_BADGE, true)
     }
 
     // --- Aspetto ---
@@ -236,9 +246,6 @@ object AppSettings {
         }
 
     // --- Suoni e notifiche ---
-    //
-    // Le notifiche vere non esistono ancora: queste scelte si salvano già,
-    // così quando arriveranno le troveranno fatte.
 
     private val notificationSoundUriState = mutableStateOf<String?>(null)
     val notificationSoundUri: String? get() = notificationSoundUriState.value
@@ -258,6 +265,30 @@ object AppSettings {
         set(value) {
             notificationsMutedState.value = value
             prefs.edit().putBoolean(KEY_MUTED, value).apply()
+        }
+
+    // **Vibrazione, priorità e pallino sull'icona** (dal 30/09/2026, la
+    // pagina Notifications). Di suo come prima: vibra, priorità alta, pallino.
+
+    private val notificationVibrateState = mutableStateOf(true)
+    var notificationVibrate: Boolean
+        get() = notificationVibrateState.value
+        set(value) {
+            notificationVibrateState.value = value
+            prefs.edit().putBoolean(KEY_VIBRATE, value).apply()
+        }
+
+    private val notificationPriorityState = mutableStateOf(NotificationPriority.HIGH)
+    var notificationPriority: NotificationPriority
+        get() = notificationPriorityState.value
+        set(value) { notificationPriorityState.value = value; putEnum(KEY_PRIORITY, value) }
+
+    private val notificationBadgeState = mutableStateOf(true)
+    var notificationBadge: Boolean
+        get() = notificationBadgeState.value
+        set(value) {
+            notificationBadgeState.value = value
+            prefs.edit().putBoolean(KEY_BADGE, value).apply()
         }
 
     private val mutedUntilState = mutableStateOf<Long?>(null)
@@ -300,4 +331,7 @@ object AppSettings {
     private const val KEY_SOUND_NAME = "notification_sound_name"
     private const val KEY_MUTED = "notifications_muted"
     private const val KEY_MUTED_UNTIL = "notifications_muted_until"
+    private const val KEY_VIBRATE = "notifications_vibrate"
+    private const val KEY_PRIORITY = "notifications_priority"
+    private const val KEY_BADGE = "notifications_badge"
 }

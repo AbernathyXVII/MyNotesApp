@@ -13,6 +13,7 @@ import androidx.core.app.NotificationManagerCompat
 import com.gabriele.notionlocal.MainActivity
 import com.gabriele.notionlocal.R
 import com.gabriele.notionlocal.data.settings.AppSettings
+import com.gabriele.notionlocal.data.settings.NotificationPriority
 import com.gabriele.notionlocal.data.widgets.PomodoroPhase
 import com.gabriele.notionlocal.data.widgets.WidgetEvent
 import com.gabriele.notionlocal.data.widgets.WidgetStore
@@ -33,26 +34,72 @@ import com.gabriele.notionlocal.ui.i18n.WidgetStrings
  *
  * Le impostazioni **"Turn off notifications"** e **"Turn off for a while"**
  * valgono qui: a notifiche spente non si mostra niente e non suona niente.
+ *
+ * **Vibrazione, priorità e pallino sull'icona** (dal 30/09/2026, la pagina
+ * Notifications) valgono per i promemoria. Android non lascia cambiare
+ * queste cose a un canale che c'è già: per ogni combinazione c'è un canale
+ * suo (`remindersChannel`), e scegliendone un'altra quello vecchio si
+ * toglie. Con la priorità bassa l'app non suona. Timer e pomodoro restano
+ * sul loro canale, alto e con la vibrazione: sono sveglie.
  */
 object Notifier {
 
-    const val CHANNEL_REMINDERS = "reminders"
+    /** L'inizio del nome dei canali dei promemoria; il resto dice le scelte (vedi `remindersChannel`). */
+    private const val REMINDERS = "reminders"
     const val CHANNEL_TIMERS = "timers"
+
+    /** Il canale dei promemoria per queste scelte: "reminders.high.vibrate.badge". */
+    fun remindersChannel(priority: NotificationPriority, vibrate: Boolean, badge: Boolean): String =
+        "$REMINDERS.${priority.name.lowercase()}.${if (vibrate) "vibrate" else "still"}.${if (badge) "badge" else "nobadge"}"
+
+    /** Il canale dei promemoria con le scelte di adesso. */
+    val currentRemindersChannel: String
+        get() = remindersChannel(AppSettings.notificationPriority, AppSettings.notificationVibrate, AppSettings.notificationBadge)
+
+    fun importanceOf(priority: NotificationPriority): Int = when (priority) {
+        NotificationPriority.LOW -> NotificationManager.IMPORTANCE_LOW
+        NotificationPriority.NORMAL -> NotificationManager.IMPORTANCE_DEFAULT
+        NotificationPriority.HIGH -> NotificationManager.IMPORTANCE_HIGH
+    }
+
+    private fun compatPriorityOf(priority: NotificationPriority): Int = when (priority) {
+        NotificationPriority.LOW -> NotificationCompat.PRIORITY_LOW
+        NotificationPriority.NORMAL -> NotificationCompat.PRIORITY_DEFAULT
+        NotificationPriority.HIGH -> NotificationCompat.PRIORITY_HIGH
+    }
 
     /** Cosa aprire toccando la notifica: vedi `NotificationTarget`. */
     const val EXTRA_PAGE_ID = "notify.pageId"
     const val EXTRA_ROW_ID = "notify.rowId"
     const val EXTRA_DATABASE_ID = "notify.databaseId"
 
+    /**
+     * I canali come li vogliono le scelte di adesso: quello dei promemoria
+     * (vedi `remindersChannel`) e quello dei timer. I canali dei promemoria
+     * di scelte vecchie — e quello di prima delle scelte, "reminders" — si
+     * tolgono, così nelle impostazioni del telefono ce n'è uno solo.
+     */
     fun ensureChannels(context: Context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
-        fun channel(id: String, name: String) = NotificationChannel(id, name, NotificationManager.IMPORTANCE_HIGH).apply {
-            setSound(null, null)
-            enableVibration(true)
-        }
-        manager.createNotificationChannel(channel(CHANNEL_REMINDERS, NotifyStrings.channelReminders))
-        manager.createNotificationChannel(channel(CHANNEL_TIMERS, NotifyStrings.channelTimers))
+        val priority = AppSettings.notificationPriority
+        val reminders = currentRemindersChannel
+        manager.createNotificationChannel(
+            NotificationChannel(reminders, NotifyStrings.channelReminders, importanceOf(priority)).apply {
+                setSound(null, null)
+                enableVibration(AppSettings.notificationVibrate)
+                setShowBadge(AppSettings.notificationBadge)
+            }
+        )
+        manager.createNotificationChannel(
+            NotificationChannel(CHANNEL_TIMERS, NotifyStrings.channelTimers, NotificationManager.IMPORTANCE_HIGH).apply {
+                setSound(null, null)
+                enableVibration(true)
+            }
+        )
+        manager.notificationChannels
+            .filter { it.id.startsWith(REMINDERS) && it.id != reminders }
+            .forEach { manager.deleteNotificationChannel(it.id) }
     }
 
     /** Le notifiche messe a tacere dalle impostazioni dell'app. */
@@ -70,10 +117,28 @@ object Notifier {
                 fire.rowId?.let { putExtra(EXTRA_ROW_ID, it) }
                 fire.databaseId?.let { putExtra(EXTRA_DATABASE_ID, it) }
             }
-            posted = post(context, CHANNEL_REMINDERS, fire.key.hashCode(), fire.title, fire.body, intent) || posted
+            posted = post(context, currentRemindersChannel, fire.key.hashCode(), fire.title, fire.body, intent) || posted
         }
-        if (posted) ring(context, null)
+        if (posted && AppSettings.notificationPriority != NotificationPriority.LOW) ring(context, null)
     }
+
+    /**
+     * **"Send a test notification"** (la pagina Notifications): una notifica
+     * subito, con il suono, la vibrazione, la priorità e il pallino scelti.
+     * Arriva anche con le notifiche messe a tacere dall'app, perché è chiesta
+     * apposta; false se Android non la lascia mostrare.
+     */
+    fun postTest(context: Context): Boolean {
+        ensureChannels(context)
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        val posted = post(context, currentRemindersChannel, TEST_ID, NotifyStrings.testTitle, NotifyStrings.testText, intent)
+        if (posted && AppSettings.notificationPriority != NotificationPriority.LOW) ring(context, null)
+        return posted
+    }
+
+    private const val TEST_ID = 0x7E57
 
     /**
      * La fine di timer e fasi del pomodoro. Suona **anche senza il permesso
@@ -117,7 +182,7 @@ object Notifier {
             .setSmallIcon(R.drawable.ic_stat_notification)
             .setContentTitle(title)
             .apply { if (body.isNotBlank()) setContentText(body) }
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setPriority(if (channel == CHANNEL_TIMERS) NotificationCompat.PRIORITY_HIGH else compatPriorityOf(AppSettings.notificationPriority))
             .setCategory(if (channel == CHANNEL_TIMERS) NotificationCompat.CATEGORY_ALARM else NotificationCompat.CATEGORY_REMINDER)
             .setAutoCancel(true)
             .setContentIntent(tap)

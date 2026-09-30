@@ -26,6 +26,98 @@ object NotifyStrings {
         "この時刻はもう過ぎています。通知は鳴りません。"
     )
 
+    // --- La pagina Notifications (dal 30/09/2026) ---
+
+    val vibration get() = t("Vibration", "Vibrazione", "Vibration", "Vibration", "Vibración", "振动", "진동", "バイブレーション")
+    val priority get() = t("Priority", "Priorità", "Priorität", "Priorité", "Prioridad", "优先级", "우선순위", "優先度")
+    val priorityLow get() = t("Low", "Bassa", "Niedrig", "Basse", "Baja", "低", "낮음", "低")
+    val priorityNormal get() = t("Normal", "Normale", "Normal", "Normale", "Normal", "普通", "보통", "標準")
+    val priorityHigh get() = t("High", "Alta", "Hoch", "Haute", "Alta", "高", "높음", "高")
+    val priorityLowDetail get() = t(
+        "Silent, only in the notification panel",
+        "In silenzio, solo nella tendina",
+        "Lautlos, nur in der Benachrichtigungsleiste",
+        "Silencieuse, seulement dans le volet",
+        "En silencio, solo en el panel",
+        "静音，只在通知栏中",
+        "무음, 알림창에만",
+        "サイレント、通知パネルのみ"
+    )
+    val priorityNormalDetail get() = t(
+        "Sound and vibration, in the notification panel",
+        "Suono e vibrazione, nella tendina",
+        "Ton und Vibration, in der Benachrichtigungsleiste",
+        "Son et vibration, dans le volet",
+        "Sonido y vibración, en el panel",
+        "声音和振动，在通知栏中",
+        "소리와 진동, 알림창에",
+        "音とバイブレーション、通知パネルに"
+    )
+    val priorityHighDetail get() = t(
+        "Sound, vibration and a pop-up on the screen",
+        "Suono, vibrazione e riquadro sullo schermo",
+        "Ton, Vibration und Einblendung auf dem Bildschirm",
+        "Son, vibration et bannière à l'écran",
+        "Sonido, vibración y aviso en la pantalla",
+        "声音、振动和屏幕弹出通知",
+        "소리, 진동, 화면 팝업",
+        "音、バイブレーション、画面のポップアップ"
+    )
+    val appIconBadge get() = t("App icon badge", "Pallino sull'icona dell'app", "App-Symbol-Badge", "Pastille sur l'icône de l'app", "Globo en el icono de la app", "应用图标角标", "앱 아이콘 배지", "アプリアイコンのバッジ")
+    val appIconBadgeDetail get() = t(
+        "A dot on the notE icon while a notification is waiting",
+        "Un pallino sull'icona di notE finché c'è una notifica da leggere",
+        "Ein Punkt auf dem notE-Symbol, solange eine Benachrichtigung wartet",
+        "Une pastille sur l'icône de notE tant qu'une notification attend",
+        "Un punto en el icono de notE mientras haya una notificación pendiente",
+        "有未读通知时，notE 图标上显示圆点",
+        "알림이 남아 있는 동안 notE 아이콘에 점 표시",
+        "通知があるあいだ notE のアイコンにドットを表示"
+    )
+    val phoneSounds get() = t(
+        "Phone sounds (default and downloaded)",
+        "Suoni del telefono (di serie e scaricati)",
+        "Töne des Telefons (vorinstalliert und heruntergeladen)",
+        "Sons du téléphone (d'origine et téléchargés)",
+        "Sonidos del teléfono (de serie y descargados)",
+        "手机声音（自带和下载的）",
+        "휴대폰 소리(기본 및 다운로드)",
+        "端末のサウンド（標準とダウンロード）"
+    )
+    val sendTest get() = t("Send a test notification", "Manda una notifica di prova", "Testbenachrichtigung senden", "Envoyer une notification de test", "Enviar una notificación de prueba", "发送测试通知", "테스트 알림 보내기", "テスト通知を送信")
+    val testTitle get() = t("notE", "notE", "notE", "notE", "notE", "notE", "notE", "notE")
+    val testText get() = t(
+        "This is how your notifications look",
+        "Le tue notifiche arriveranno così",
+        "So sehen deine Benachrichtigungen aus",
+        "Voici à quoi ressembleront vos notifications",
+        "Así llegarán tus notificaciones",
+        "你的通知会是这样的",
+        "알림은 이렇게 표시돼요",
+        "通知はこのように届きます"
+    )
+    val blockedByPhone get() = t(
+        "Notifications for notE are off in the phone settings",
+        "Le notifiche di notE sono spente nelle impostazioni del telefono",
+        "Die Benachrichtigungen von notE sind in den Telefoneinstellungen aus",
+        "Les notifications de notE sont désactivées dans les réglages du téléphone",
+        "Las notificaciones de notE están desactivadas en los ajustes del teléfono",
+        "notE 的通知已在手机设置中关闭",
+        "휴대폰 설정에서 notE 알림이 꺼져 있어요",
+        "端末の設定で notE の通知がオフになっています"
+    )
+    val openPhoneSettings get() = t("Open the phone settings", "Apri le impostazioni del telefono", "Telefoneinstellungen öffnen", "Ouvrir les réglages du téléphone", "Abrir los ajustes del teléfono", "打开手机设置", "휴대폰 설정 열기", "端末の設定を開く")
+    val timersAlwaysRing get() = t(
+        "Sound, vibration, priority and badge are for the reminders of pages and databases: timers and pomodoro always ring and pop up.",
+        "Suono, vibrazione, priorità e pallino valgono per i promemoria di pagine e database: timer e pomodoro suonano e compaiono sempre.",
+        "Ton, Vibration, Priorität und Badge gelten für die Erinnerungen von Seiten und Datenbanken: Timer und Pomodoro klingeln und erscheinen immer.",
+        "Son, vibration, priorité et pastille valent pour les rappels des pages et des bases de données : minuteurs et pomodoro sonnent et s'affichent toujours.",
+        "Sonido, vibración, prioridad y globo valen para los recordatorios de páginas y bases de datos: temporizadores y pomodoro siempre suenan y aparecen.",
+        "声音、振动、优先级和角标适用于页面和数据库的提醒：计时器和番茄钟总会响铃并弹出。",
+        "소리, 진동, 우선순위, 배지는 페이지와 데이터베이스의 리마인더에 적용돼요. 타이머와 뽀모도로는 항상 울리고 표시돼요.",
+        "サウンド、バイブレーション、優先度、バッジはページとデータベースのリマインダーに適用されます。タイマーとポモドーロは常に鳴って表示されます。"
+    )
+
     // --- Timer e pomodoro ---
 
     val timeIsUp get() = t("Time's up", "Tempo scaduto", "Die Zeit ist um", "Temps écoulé", "Se acabó el tiempo", "时间到了", "시간이 다 됐어요", "時間です")

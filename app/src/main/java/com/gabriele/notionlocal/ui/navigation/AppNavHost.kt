@@ -40,6 +40,7 @@ import com.gabriele.notionlocal.ui.screen.DatabaseViewScreen
 import com.gabriele.notionlocal.ui.screen.LockGate
 import com.gabriele.notionlocal.ui.screen.NotebookSectionScreen
 import com.gabriele.notionlocal.ui.screen.NotebookScreen
+import com.gabriele.notionlocal.ui.screen.NotificationsScreen
 import com.gabriele.notionlocal.ui.screen.PatchNoteScreen
 import com.gabriele.notionlocal.ui.screen.PatchNotesScreen
 import com.gabriele.notionlocal.ui.screen.NotebooksSidebarSection
@@ -169,8 +170,10 @@ fun AppNavHost(factory: ViewModelFactory) {
     // --- Toccata una notifica: la sua pagina ---
     //
     // Quella della riga di database per una data, quella con la riga
-    // "/notification" per un promemoria. Una riga senza più la sua pagina
-    // apre il database; una pagina sparita o nel cestino non apre niente.
+    // "/notification" per un promemoria. Una riga di un database semplice,
+    // che non ha una pagina, apre il database con la sua scheda (dal
+    // 30/09/2026, vedi `NotificationTarget.rowToShow`); una pagina sparita o
+    // nel cestino non apre niente.
     val openRequest by NotificationTarget.pending
     LaunchedEffect(openRequest) {
         val request = openRequest ?: return@LaunchedEffect
@@ -180,7 +183,9 @@ fun AppNavHost(factory: ViewModelFactory) {
             PageEntity.ROOT_PAGE_ID -> Routes.HOME
             else -> repository.getPage(pageId)?.takeIf { it.trashedAt == null }?.let { Routes.forPage(it.id, it.isDatabase) }
         }
-        val route = request.rowId?.let { rowId -> repository.ensureRowPage(rowId)?.let(Routes::pageEditor) }
+        val rowPage = request.rowId?.let { rowId -> repository.ensureRowPage(rowId)?.let(Routes::pageEditor) }
+        if (rowPage == null && request.rowId != null) NotificationTarget.rowToShow.value = request.rowId
+        val route = rowPage
             ?: request.databaseId?.let { routeOf(it) }
             ?: request.pageId?.let { routeOf(it) }
             ?: return@LaunchedEffect
@@ -229,6 +234,7 @@ fun AppNavHost(factory: ViewModelFactory) {
         onStartup = { closeSidebar(); navController.navigate(Routes.STARTUP) { launchSingleTop = true } },
         onTemplates = { closeSidebar(); navController.navigate(Routes.TEMPLATES) { launchSingleTop = true } },
         onTrash = { closeSidebar(); navController.navigate(Routes.TRASH) { launchSingleTop = true } },
+        onNotifications = { closeSidebar(); navController.navigate(Routes.NOTIFICATIONS) { launchSingleTop = true } },
         onSettings = { closeSidebar(); navController.navigate(Routes.SETTINGS) { launchSingleTop = true } }
     )
 
@@ -492,6 +498,10 @@ private fun AppRoutes(
                 onBack = { navController.popBackStack() },
                 onOpenPatchNotes = { navController.navigate(Routes.PATCH_NOTES) { launchSingleTop = true } }
             )
+        }
+
+        composable(Routes.NOTIFICATIONS) {
+            NotificationsScreen(onBack = { navController.popBackStack() })
         }
 
         composable(Routes.PATCH_NOTES) {

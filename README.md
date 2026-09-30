@@ -2046,6 +2046,83 @@ alla v0.15) portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.71 — 30/09/2026 · 18:55 — La pagina "Notifications": suono, vibrazione, priorità e pallino sull'icona
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 361 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Attiva l'opzione Notifications nella sidebar. Dentro, mi metterai le
+> varie opzioni che ogni app su Android o iPhone mettono, ossia : * scelta
+> del suono delle notifiche (sia suoni di default che suoni scaricati di
+> terze parti) * vibrazione * priorità: bassa, normale, alta * badge
+> sull'icona dell'app * selezione delle azioni per le notifiche (quelle che
+> appaiono nel riquadro della notifica in basso), ossia * completa *
+> rimanda * apri nota (che mi aprirà la pagina, perché di default se tocco
+> la notifica mi apre la schermata o il database collegato alla notifica)
+> * archivia * elimina»
+
+Alle domande su cosa dovessero fare "Completa", "Archivia" ed "Elimina",
+poi:
+> «Togli le azioni alle notifiche, e quando tocco una notifica fammi
+> vedere la pagina o la riga appartenente alla notifica. Perdonami, ora che
+> ci penso non hanno senso le azioni»
+
+- **[Nuova funzionalità]** La voce **"Notifications"** della barra
+  laterale, spenta finora, apre la pagina delle notifiche:
+  - **"Notification sound"**: "Phone sounds (default and downloaded)"
+    apre l'elenco dei suoni del telefono — quelli di serie e quelli
+    scaricati, anche da altre app: sul telefono dell'utente Android chiede
+    se sceglierli con SecSoundPicker o con Zedge —, "Choose from files" un
+    file audio qualsiasi, "Use default sound" e "Play" come prima. È la
+    stessa finestra di Settings → "Notification sound", che ora ha anche
+    lei i suoni del telefono
+  - **"Vibration"**, accesa o spenta
+  - **"Priority"**: **Low** (in silenzio, solo nella tendina), **Normal**
+    (suono e vibrazione, nella tendina) o **High** (anche il riquadro in
+    cima allo schermo). Di suo High, com'era prima
+  - **"App icon badge"**: il pallino sull'icona di notE finché c'è una
+    notifica da leggere
+  - **"Send a test notification"**: una notifica subito, con le scelte di
+    adesso, per sentire e vedere com'è
+  - "Turn off notifications" e "Turn off for a while", le stesse di
+    Settings; in cima, se Android ha spento le notifiche di notE, una riga
+    che lo dice e porta alle impostazioni del telefono
+  - Valgono per i promemoria di pagine e database ("/notification" e
+    "Include notification"). **Timer e pomodoro** sono sveglie: suonano e
+    compaiono sempre, com'erano (lo dice la nota in fondo alla pagina)
+- **[Nuova funzionalità]** **Toccando la notifica di una riga di un
+  database semplice** si apre il database **con la scheda di quella riga**;
+  prima si apriva solo il database. Il resto com'era: la notifica di una
+  data di un database apre la pagina della riga, quella di una riga
+  "/notification" la sua pagina
+- **[Rimosso]** Le azioni nel riquadro delle notifiche (Complete, Snooze,
+  Open note, Archive, Delete) non ci sono: chieste e poi tolte
+  dall'utente prima di essere fatte
+- **[Progetto]** Android non lascia cambiare priorità, vibrazione e
+  pallino a un canale di notifiche che c'è già: ogni combinazione ha il
+  suo canale ("reminders.high.vibrate.badge", …, `Notifier.remindersChannel`),
+  e scegliendone un'altra quello vecchio si toglie — anche "reminders", il
+  canale di prima —, così nelle impostazioni del telefono ce n'è sempre uno
+  solo. Con Low l'app non suona. Le scelte si salvano in `AppSettings`
+  (`notificationVibrate`, `notificationPriority`, `notificationBadge`).
+  Codice nuovo: `ui/screen/NotificationsScreen.kt` (la pagina e la finestra
+  del suono, `NotificationSoundDialog`), `Routes.NOTIFICATIONS`,
+  `NotificationTarget.rowToShow`; i testi nelle otto lingue. Test nuovo
+  `NotificationSettingsTest` (5): i valori di partenza, il salvataggio,
+  un canale diverso per ognuna delle 12 combinazioni, il canale che segue
+  le scelte (importanza, vibrazione, pallino) con quelli vecchi tolti e il
+  canale dei timer intatto, la notifica di prova sul canale giusto
+- Verificato sul telefono: la voce della barra apre la pagina; "Send a
+  test notification" con High compare in cima allo schermo (importanza 4),
+  con Low solo nella tendina (importanza 2); il canale nuovo c'è e
+  "reminders" risulta tolto; "Phone sounds" apre la scelta fra
+  SecSoundPicker e Zedge e poi l'elenco coi suoni Samsung e quello
+  scaricato dall'utente ("Smt3 title screen"), chiuso senza scegliere; il
+  tocco sulla notifica di "Esempio" di "SuduS al contrario" (database
+  semplice) apre il database con la sua scheda. Poi la priorità rimessa su
+  High; suono, vibrazione e pallino mai cambiati; la riga "Esempio" non
+  risulta modificata (ultima modifica sempre del 26/09)
+
 ### 🆕 v0.70 — 30/09/2026 · 18:33 — Patch Notes: l'elenco dei titoli, e una pagina per ogni versione
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 356 test
 passati; commit solo in locale)*

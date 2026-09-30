@@ -31,6 +31,13 @@ data class OpenRequest(val pageId: String?, val rowId: String?, val databaseId: 
 object NotificationTarget {
     val pending = mutableStateOf<OpenRequest?>(null)
 
+    /**
+     * **La riga da mostrare** (dal 30/09/2026): una riga di un database
+     * semplice non ha una pagina, quindi la notifica apre il database e il
+     * database, trovata la riga, apre la sua scheda e consuma questo valore.
+     */
+    val rowToShow = mutableStateOf<String?>(null)
+
     fun takeFrom(intent: Intent?) {
         intent ?: return
         val pageId = intent.getStringExtra(Notifier.EXTRA_PAGE_ID)

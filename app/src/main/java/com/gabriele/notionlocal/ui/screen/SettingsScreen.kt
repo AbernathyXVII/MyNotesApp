@@ -239,7 +239,7 @@ fun SettingsScreen(onBack: () -> Unit, onOpenPatchNotes: () -> Unit = {}) {
             onSelect = { AppSettings.themeMode = it },
             onDismiss = { dialog = null }
         )
-        SettingsDialog.SOUND -> SoundDialog(onDismiss = { dialog = null })
+        SettingsDialog.SOUND -> NotificationSoundDialog(onDismiss = { dialog = null })
         SettingsDialog.MUTE_FOR -> MuteForDialog(onDismiss = { dialog = null })
         SettingsDialog.ANIMATIONS -> ChoiceDialog(
             title = Strings.animations,
@@ -477,7 +477,7 @@ private fun zoneLabel(id: String): String {
 
 /** Una scelta fra poche voci: tocchi, si salva, si chiude. */
 @Composable
-private fun <T> ChoiceDialog(
+internal fun <T> ChoiceDialog(
     title: String,
     options: List<Pair<T, String>>,
     selected: T,
@@ -518,61 +518,8 @@ private fun <T> ChoiceDialog(
     )
 }
 
-/**
- * Il suono delle notifiche: un file scelto dal telefono, o quello
- * predefinito. Il file si sceglie con l'esplora file del telefono, e il
- * permesso di leggerlo si tiene anche dopo il riavvio — senza, al primo
- * riavvio del telefono l'app non potrebbe più aprirlo.
- */
 @Composable
-private fun SoundDialog(onDismiss: () -> Unit) {
-    val context = LocalContext.current
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
-        if (uri == null) return@rememberLauncherForActivityResult
-        runCatching {
-            context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-        val name = runCatching {
-            context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
-                if (c.moveToFirst()) c.getString(0) else null
-            }
-        }.getOrNull()
-        AppSettings.setNotificationSound(uri.toString(), name ?: uri.lastPathSegment)
-        onDismiss()
-    }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = DarkSheet,
-        title = { Text(Strings.notificationSound, color = NotionWhite) },
-        text = {
-            Column {
-                Text(
-                    AppSettings.notificationSoundName ?: Strings.defaultSound,
-                    color = NotionGray400,
-                    style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-                DialogAction(Strings.chooseFromFiles) { picker.launch(arrayOf("audio/*")) }
-                DialogAction(Strings.useDefaultSound) {
-                    AppSettings.setNotificationSound(null, null)
-                    onDismiss()
-                }
-                DialogAction(Strings.playSound) {
-                    val uri = AppSettings.notificationSoundUri?.let(Uri::parse)
-                        ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-                    // Una volta sola e per pochi secondi: un file scelto qui
-                    // può essere una suoneria che si ripete all'infinito.
-                    WidgetStore.playOnce(context, uri)
-                }
-            }
-        },
-        confirmButton = {},
-        dismissButton = { TextButton(onClick = onDismiss) { Text(Strings.done) } }
-    )
-}
-
-@Composable
-private fun DialogAction(label: String, onClick: () -> Unit) {
+internal fun DialogAction(label: String, onClick: () -> Unit) {
     Text(
         label,
         color = NotionWhite,
@@ -586,7 +533,7 @@ private fun DialogAction(label: String, onClick: () -> Unit) {
 
 /** Notifiche spente per un po': un'ora, otto ore, un giorno, una settimana. */
 @Composable
-private fun MuteForDialog(onDismiss: () -> Unit) {
+internal fun MuteForDialog(onDismiss: () -> Unit) {
     val hour = 60L * 60 * 1000
     val options = listOf(
         Strings.forOneHour to hour,

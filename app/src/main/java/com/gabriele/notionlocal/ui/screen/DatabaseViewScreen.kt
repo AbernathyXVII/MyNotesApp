@@ -251,6 +251,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gabriele.notionlocal.data.entity.EventDraft
+import com.gabriele.notionlocal.data.notify.NotificationTarget
 import androidx.compose.material.icons.filled.Event
 import com.gabriele.notionlocal.data.entity.CalendarMode
 import com.gabriele.notionlocal.data.entity.ColumnType
@@ -964,6 +965,16 @@ private fun DatabaseViewBody(
     // down" ci sono solo lì, dove l'ordine delle righe si vede.
     var rowPlace by remember { mutableStateOf<RowPlace?>(null) }
     LaunchedEffect(rowActionsFor == null) { if (rowActionsFor == null) rowPlace = null }
+    // **Toccata la notifica di una riga senza pagina** (dal 30/09/2026): una
+    // riga di un database semplice. La notifica ha aperto questo database;
+    // trovata la riga, si apre la sua scheda (vedi `NotificationTarget.rowToShow`).
+    val rowToShow by NotificationTarget.rowToShow
+    LaunchedEffect(rowToShow, state.rows) {
+        val id = rowToShow ?: return@LaunchedEffect
+        val row = state.rows.find { it.id == id } ?: return@LaunchedEffect
+        NotificationTarget.rowToShow.value = null
+        rowActionsFor = row
+    }
     // La scheda della galleria di cui si sta spostando la copertina
     // ("Reposition cover" nelle azioni della riga): quella scheda smette
     // di rispondere ai tocchi e segue il dito, finché Save o Cancel.

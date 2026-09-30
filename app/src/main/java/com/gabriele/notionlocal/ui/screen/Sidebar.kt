@@ -74,6 +74,8 @@ internal class SidebarActions(
     /** "Templates", sotto "Startup window" (dal 26/09/2026). */
     val onTemplates: () -> Unit,
     val onTrash: () -> Unit,
+    /** "Notifications" (dal 30/09/2026): la pagina delle notifiche. */
+    val onNotifications: () -> Unit,
     val onSettings: () -> Unit
 )
 
@@ -181,7 +183,7 @@ internal fun SidebarContent(
         SidebarItem(Icons.Filled.RocketLaunch, Strings.startupWindow, onClick = actions.onStartup)
         SidebarItem(Icons.Outlined.Description, TemplateStrings.templates, onClick = actions.onTemplates)
         SidebarItem(Icons.Filled.Backup, Strings.backup, enabled = false)
-        SidebarItem(Icons.Filled.Notifications, Strings.notifications, enabled = false)
+        SidebarItem(Icons.Filled.Notifications, Strings.notifications, onClick = actions.onNotifications)
         SidebarItem(Icons.Filled.Delete, Strings.trash, onClick = actions.onTrash)
         SidebarItem(Icons.Filled.FileDownload, Strings.import, enabled = false)
         SidebarItem(Icons.Filled.FileUpload, Strings.export, enabled = false)
