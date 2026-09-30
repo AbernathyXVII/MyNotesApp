@@ -2045,9 +2045,12 @@ L'utente, parola per parola:
 - Verificato sul telefono (copia del database prima; migrazione alla 49
   senza errori) sulla vista "Videogiochi" di "Titolo tre H3" messa in
   Board: l'interruttore c'è sotto "Group by"; acceso, le tre schede della
-  colonna PS5 diventano blu come il tag PS5 (#3A6590) e si leggono. Poi il
-  telefono si è scollegato: la vista di prova resta in Board con "Color
-  cards" acceso finché non la si rimette in Table
+  colonna PS5 diventano blu come il tag PS5 (#3A6590) e si leggono. Con
+  PC, SWITCH e XBOX aggiunti per prova al filtro della vista, ogni colonna
+  ha le schede del suo colore: grigio, rosso, verde. Poi (dopo che il
+  telefono si era scollegato e ricollegato) filtro di nuovo su PS5, "Color
+  cards" spento e vista rimessa in Table: database uguale alla copia,
+  tranne la colonna nuova e la data di modifica della vista
 
 **30/09/2026 — "Long text": tre puntini, colonna allargata o a capo; il riquadro grigio centrato**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 324 test
