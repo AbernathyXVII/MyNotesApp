@@ -2022,6 +2022,34 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**30/09/2026 — "Wrap in the cell": vanno a capo anche i titoli delle colonne**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 326 test
+passati; commit solo in locale)*
+
+L'utente, con la foto di una tabella di Notion (testi a capo dentro le
+celle, anche nella riga dei titoli: "Campaign Name", "Content Type"),
+parola per parola:
+> «Continua a non funzionare quello che dicevo io dell'andare a capo nella
+> stessa cella. Deve fare una cosa del genere che vedi nella foto»
+
+- **[Bug fix]** Con "Wrap in the cell" andava a capo il testo delle celle
+  ma non quello dei **titoli delle colonne**, che restava su una riga e si
+  perdeva oltre il bordo: ora va a capo anche lui, e la riga dei titoli si
+  alza quanto il più lungo, con le linee fra le colonne fino in fondo
+- Controllato prima sul telefono che nelle celle funzionasse: sulla vista
+  di prova, col modo acceso, il nome "Esempio nuovo con un titolo lungo" va
+  su tre righe dentro la cella mentre lo si scrive, e tutta la riga si
+  allunga. Nel database dell'utente nessuna vista aveva il modo acceso;
+  "SuduS al contrario" ha "Fit to content" su Number e Date (quelle colonne
+  si allargano quanto il testo, quindi non vanno a capo) e adesso mostra la
+  sua vista Board: non toccato
+- Verificato sul telefono sulla vista di prova, con la colonna Text
+  rinominata per prova "Text di prova lungo" e ristretta a 80: il titolo va
+  su quattro righe e la riga dei titoli si alza; la data col periodo va su
+  due righe e la riga si allunga. Poi nome, larghezza e modo rimessi:
+  database uguale, tranne "Last edited" di "Esempio nuovo" e le date di
+  modifica
+
 **30/09/2026 — "Color columns": la bacheca colorata come su Notion**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 326 test
 passati; commit solo in locale)*

@@ -2318,8 +2318,12 @@ private fun TableHeaderRow(
     val widths = LocalTableWidths.current
     // Il posto di ogni colonna nella tabella, Name compresa.
     fun place(index: Int) = if (index < namePlace) index else index + 1
+    // **Con "Wrap in the cell" vanno a capo anche i titoli delle colonne**
+    // (dal 30/09/2026, come nella tabella di Notion mostrata dall'utente): la
+    // riga dei titoli si alza quanto il più lungo.
+    val wrap = LocalWrapCells.current
     Box {
-    Row {
+    Row(modifier = if (wrap) Modifier.height(IntrinsicSize.Min) else Modifier) {
         TableSlots(
             columns = columns,
             namePlace = namePlace,
@@ -2334,7 +2338,7 @@ private fun TableHeaderRow(
                     onResize = { resize?.start(NAME_COLUMN_KEY) },
                     onFitChange = { onSetFitToContent(NAME_COLUMN_KEY, it) }
                 )
-                CellSeparator(NAME_COLUMN_KEY)
+                CellSeparator(NAME_COLUMN_KEY, stretch = wrap)
             }
         ) { index, column ->
             PropertyHeaderCell(
@@ -2354,7 +2358,7 @@ private fun TableHeaderRow(
                 onResize = { resize?.start(column.id) },
                 onFitChange = { onSetFitToContent(column.id, it) }
             )
-            CellSeparator(column.id)
+            CellSeparator(column.id, stretch = wrap)
         }
         AddPropertyCell(onClick = onAddProperty)
     }
@@ -5462,13 +5466,15 @@ private fun NameHeaderCell(
     onFitChange: (Boolean) -> Unit = {}
 ) {
     var menuOpen by remember { mutableStateOf(false) }
-    Box {
+    val wrap = LocalWrapCells.current
+    Box(modifier = if (wrap) Modifier.fillMaxHeight() else Modifier) {
     Row(
         modifier = Modifier
             .width(LocalTableWidths.current.name)
-            .height(ROW_HEIGHT)
+            .then(if (wrap) Modifier.heightIn(min = ROW_HEIGHT).fillMaxHeight() else Modifier.height(ROW_HEIGHT))
             .combinedClickable(onClick = {}, onLongClick = { menuOpen = true })
-            .padding(horizontal = 12.dp),
+            .padding(horizontal = 12.dp)
+            .cellWrapPadding(),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
@@ -5613,16 +5619,18 @@ private fun PropertyHeaderCell(
     var menuOpen by remember(column.id) { mutableStateOf(false) }
     val dataLocked = LocalDatabaseLocked.current
 
-    Box {
+    val wrap = LocalWrapCells.current
+    Box(modifier = if (wrap) Modifier.fillMaxHeight() else Modifier) {
         Row(
             modifier = Modifier
                 .width(LocalTableWidths.current.of(column))
-                .height(ROW_HEIGHT)
+                .then(if (wrap) Modifier.heightIn(min = ROW_HEIGHT).fillMaxHeight() else Modifier.height(ROW_HEIGHT))
                 .combinedClickable(
                     onClick = onClick,
                     onLongClick = { menuOpen = true }
                 )
-                .padding(horizontal = 12.dp),
+                .padding(horizontal = 12.dp)
+                .cellWrapPadding(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
@@ -5632,11 +5640,13 @@ private fun PropertyHeaderCell(
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.size(8.dp))
+            // Con "Wrap in the cell" il titolo va a capo invece di finire oltre il bordo.
             Text(
                 text = DbStrings.columnName(column.name),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1
+                maxLines = cellMaxLines,
+                overflow = TextOverflow.Ellipsis
             )
         }
 
