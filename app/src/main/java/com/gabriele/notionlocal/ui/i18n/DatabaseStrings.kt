@@ -106,7 +106,17 @@ object DbStrings {
         CalendarMode.YEAR -> year
         CalendarMode.MONTH -> month
         CalendarMode.WEEK -> week
+        CalendarMode.DAY -> day
     }
+
+    // Il time-blocking come Google Calendar (dal 30/09/2026): la finestra
+    // rapida di un evento e quella di "More options".
+    val addTitle get() = t("Add title", "Aggiungi un titolo", "Titel hinzufügen", "Ajouter un titre", "Añadir título", "添加标题", "제목 추가", "タイトルを追加")
+    val moreOptions get() = t("More options", "Altre opzioni", "Weitere Optionen", "Plus d'options", "Más opciones", "更多选项", "옵션 더보기", "その他のオプション")
+    val allDay get() = t("All day", "Tutto il giorno", "Ganztägig", "Toute la journée", "Todo el día", "全天", "종일", "終日")
+    val noTitle get() = t("(No title)", "(Senza titolo)", "(Kein Titel)", "(Sans titre)", "(Sin título)", "（无标题）", "(제목 없음)", "(タイトルなし)")
+    val editEvent get() = t("Edit event", "Modifica evento", "Termin bearbeiten", "Modifier l'événement", "Editar evento", "编辑活动", "일정 수정", "予定を編集")
+    val defaultColor get() = t("Default", "Predefinito", "Standard", "Par défaut", "Predeterminado", "默认", "기본", "デフォルト")
 
     fun zoomName(zoom: TimelineZoom): String = when (zoom) {
         TimelineZoom.HOURS -> t("Hours", "Ore", "Stunden", "Heures", "Horas", "小时", "시간", "時間")

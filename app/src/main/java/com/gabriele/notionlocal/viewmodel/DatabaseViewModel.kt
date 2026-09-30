@@ -1195,6 +1195,46 @@ class DatabaseViewModel(
         }
     }
 
+    /**
+     * **Salva un evento del calendario** (dal 30/09/2026, il time-blocking
+     * come Google Calendar): la finestra rapida o "More options".
+     *
+     * Nuovo (`rowId` null): una riga col nome, la data (`dateValue`, già nel
+     * formato della cella) e il colore; la proprietà data si crea al volo se
+     * non c'è, come toccando un giorno. Una riga che c'è già ("Edit event"):
+     * si scrive solo quello che è cambiato, così una riga lasciata com'era non
+     * risulta modificata adesso.
+     */
+    fun saveEvent(rowId: String?, title: String, dateValue: String, color: String?) {
+        val pageId = dataPageId ?: return
+        val existingColumn = calendarDateColumn()
+        val column = existingColumn ?: DatabaseColumnEntity(
+            pageId = pageId,
+            name = "Date",
+            type = ColumnType.DATE,
+            orderIndex = nextColumnIndex()
+        )
+        val state = _tableState.value
+        viewModelScope.launch {
+            if (existingColumn == null) repository.addColumn(column)
+            if (rowId != null) {
+                val row = state.rows.find { it.id == rowId }
+                val oldValue = state.cellValues[rowId to column.id].orEmpty()
+                if (row == null || row.title != title) repository.setRowTitle(rowId, title)
+                if (oldValue != dateValue) repository.setCellValue(rowId, column.id, dateValue)
+                if (row == null || row.eventColor != color) repository.setRowEventColor(rowId, color)
+            } else {
+                val row = DatabaseRowEntity(pageId = pageId, title = title, orderIndex = nextRowIndex(), eventColor = color)
+                keepVisibleWhileSearching(row.id)
+                repository.addRow(row)
+                repository.setCellValue(row.id, column.id, dateValue)
+                fillFilterValue(row.id, skipColumnId = column.id)
+            }
+        }
+        // Come toccando un giorno: la vista usa proprio la proprietà appena nata.
+        if (existingColumn == null) setCalendarDateColumn(column.id)
+    }
+
     fun setBoardGroupColumn(columnId: String) {
         val current = _page.value ?: return
         val updated = current.copy(boardGroupColumnId = columnId)

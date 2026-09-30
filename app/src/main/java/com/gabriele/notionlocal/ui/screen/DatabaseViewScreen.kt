@@ -250,6 +250,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.gabriele.notionlocal.data.entity.EventDraft
+import androidx.compose.material.icons.filled.Event
 import com.gabriele.notionlocal.data.entity.CalendarMode
 import com.gabriele.notionlocal.data.entity.ColumnType
 import com.gabriele.notionlocal.data.entity.DatabaseColumnEntity
@@ -953,6 +955,11 @@ private fun DatabaseViewBody(
     var calculateTarget by remember { mutableStateOf<CalculateTarget?>(null) }
     val calculations = parseViewCalculations(page?.viewCalculations)
     var rowActionsFor by remember { mutableStateOf<DatabaseRowEntity?>(null) }
+    // **L'evento che si sta scrivendo** (dal 30/09/2026, il time-blocking):
+    // dalla finestra rapida (un quadratino del giorno) o da "More options" /
+    // "Edit event" (`eventFullEditor`).
+    var eventDraft by remember { mutableStateOf<EventDraft?>(null) }
+    var eventFullEditor by remember { mutableStateOf(false) }
     // Dove la si è toccata, se è una riga della tabella: "Move up" e "Move
     // down" ci sono solo lì, dove l'ordine delle righe si vede.
     var rowPlace by remember { mutableStateOf<RowPlace?>(null) }
@@ -1326,6 +1333,17 @@ private fun DatabaseViewBody(
                     onAddRowOnDate = { millis ->
                         viewModel.addRowOnDateCreatingColumn(millis)
                     },
+                    draft = eventDraft,
+                    // Col database bloccato i quadratini non creano niente.
+                    onSlotTap = if (contentLocked) {
+                        null
+                    } else {
+                        { at ->
+                            focusManager.clearFocus()
+                            eventFullEditor = false
+                            eventDraft = EventDraft.at(at)
+                        }
+                    },
                     onAddDateProperty = {
                         focusManager.clearFocus()
                         propertyTarget = PropertyTarget.New(ColumnType.DATE)
@@ -1690,6 +1708,20 @@ private fun DatabaseViewBody(
             row = live,
             move = move,
             onCreateSubRow = onCreateSubRow,
+            // **"Edit event"** (dal 30/09/2026): nel calendario, l'evento
+            // intero — ore, ripetizione, colore — nella finestra di "More options".
+            onEditEvent = if (page?.databaseLayout == DatabaseLayout.CALENDAR && !contentLocked) {
+                {
+                    rowActionsFor = null
+                    val range = viewModel.calendarDateColumn()?.let { column ->
+                        parseDateRange(state.cellValues[live.id to column.id].orEmpty())
+                    }
+                    eventFullEditor = true
+                    eventDraft = EventDraft.of(live, range, AppSettings.zoneId, LocalDate.now().atTime(9, 0))
+                }
+            } else {
+                null
+            },
             columns = state.columns,
             cellValues = state.cellValues,
             onDismiss = { rowActionsFor = null },
@@ -1732,6 +1764,29 @@ private fun DatabaseViewBody(
                 rowPendingDeletion = live
             }
         )
+    }
+
+    eventDraft?.let { draft ->
+        val saveDraft = {
+            viewModel.saveEvent(draft.rowId, draft.title.trim(), draft.cellValue(AppSettings.zoneId), draft.color)
+            eventDraft = null
+        }
+        if (eventFullEditor) {
+            EventEditorSheet(
+                draft = draft,
+                onChange = { eventDraft = it },
+                onSave = saveDraft,
+                onDismiss = { eventDraft = null }
+            )
+        } else {
+            EventQuickDialog(
+                draft = draft,
+                onChange = { eventDraft = it },
+                onSave = saveDraft,
+                onMoreOptions = { eventFullEditor = true },
+                onDismiss = { eventDraft = null }
+            )
+        }
     }
 
     // L'icona della pagina di una riga: la stessa finestra delle pagine e
@@ -3051,9 +3106,10 @@ private const val BOARD_BORDER_TINT = 0.65f
 private const val BOARD_ACCENT_LIGHT = 0.35f
 
 /**
- * La visualizzazione a calendario: un anno, un mese o una settimana per
- * volta, con le pagine disegnate come barre lunghe quanto i giorni che
- * occupano.
+ * La visualizzazione a calendario: un anno, un mese, una settimana o un
+ * giorno per volta, con le pagine disegnate come barre lunghe quanto i
+ * giorni che occupano — nel giorno (dal 30/09/2026), come blocchi alti
+ * quanto le ore, per il time-blocking (vedi `CalendarDayView`).
  *
  * Il periodo mostrato non viene salvato — riaprendo si torna a oggi,
  * che è quasi sempre quello che interessa — mentre la scelta fra anno,
@@ -3070,6 +3126,10 @@ private fun CalendarLayout(
     onOpenRow: (DatabaseRowEntity) -> Unit,
     onRowLongPress: (DatabaseRowEntity) -> Unit,
     onAddRowOnDate: (Long) -> Unit,
+    /** L'evento nuovo che si sta scrivendo, per vederlo già nella griglia del giorno. */
+    draft: EventDraft? = null,
+    /** Un quadratino vuoto del giorno toccato: null col database bloccato. */
+    onSlotTap: ((LocalDateTime) -> Unit)? = null,
     onAddDateProperty: () -> Unit
 ) {
     // **Senza proprietà data il calendario si vede lo stesso**, vuoto,
@@ -3122,6 +3182,12 @@ private fun CalendarLayout(
             // quelle accanto sono già montate.
             windowStart = shownWeekStart.minusWeeks(1)
             windowEnd = shownWeekStart.plusWeeks(2).plusDays(6)
+        }
+        CalendarMode.DAY -> {
+            // Il giorno e quelli accanto, già montati per lo scorrimento; uno
+            // in più per parte per gli eventi che passano la mezzanotte.
+            windowStart = anchor.minusDays(2)
+            windowEnd = anchor.plusDays(2)
         }
     }
 
@@ -3205,6 +3271,7 @@ private fun CalendarLayout(
                         CalendarMode.YEAR -> anchor.minusYears(1)
                         CalendarMode.MONTH -> anchor.minusMonths(1)
                         CalendarMode.WEEK -> anchor.minusWeeks(1)
+                        CalendarMode.DAY -> anchor.minusDays(1)
                     }
                 }
             ) {
@@ -3218,6 +3285,10 @@ private fun CalendarLayout(
                         val start = startOfWeek(anchor, firstDayOfWeek)
                         "${start.format(DAY_MONTH_FORMAT)} – ${start.plusDays(6).format(DATE_FORMAT)}"
                     }
+                    CalendarMode.DAY -> "${
+                        anchor.dayOfWeek.getDisplayName(TextStyle.FULL, displayLocale)
+                            .replaceFirstChar { it.titlecase(displayLocale) }
+                    }, ${anchor.format(DATE_FORMAT)}"
                 },
                 style = MaterialTheme.typography.titleSmall,
                 textAlign = TextAlign.Center,
@@ -3230,6 +3301,7 @@ private fun CalendarLayout(
                         CalendarMode.YEAR -> anchor.plusYears(1)
                         CalendarMode.MONTH -> anchor.plusMonths(1)
                         CalendarMode.WEEK -> anchor.plusWeeks(1)
+                        CalendarMode.DAY -> anchor.plusDays(1)
                     }
                 }
             ) {
@@ -3237,14 +3309,17 @@ private fun CalendarLayout(
             }
         }
 
-        Box(
+        // Con Day i pulsantini sono quattro e centrati su tutta la riga
+        // finivano sotto Today: si centrano nello spazio che lui lascia.
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 2.dp)
+                .padding(horizontal = 12.dp, vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(modifier = Modifier.align(Alignment.Center)) {
+            Row(modifier = Modifier.weight(1f), horizontalArrangement = Arrangement.Center) {
                 CalendarMode.entries.forEachIndexed { index, option ->
-                    if (index > 0) Spacer(modifier = Modifier.size(8.dp))
+                    if (index > 0) Spacer(modifier = Modifier.size(6.dp))
                     CalendarModeChip(
                         label = option.displayName(),
                         selected = option == mode,
@@ -3267,7 +3342,6 @@ private fun CalendarLayout(
                 color = MaterialTheme.colorScheme.onBackground,
                 maxLines = 1,
                 modifier = Modifier
-                    .align(Alignment.CenterEnd)
                     .background(DarkSurface, RoundedCornerShape(percent = 50))
                     .clickable { anchor = today }
                     .padding(horizontal = 12.dp, vertical = 6.dp)
@@ -3287,7 +3361,7 @@ private fun CalendarLayout(
                     onSetMode(CalendarMode.MONTH)
                 }
             )
-        } else {
+        } else if (mode != CalendarMode.DAY) {
             Row(modifier = Modifier.fillMaxWidth()) {
                 (0..6).forEach { offset ->
                     Text(
@@ -3304,7 +3378,19 @@ private fun CalendarLayout(
             HorizontalDivider()
         }
 
-        if (mode == CalendarMode.WEEK) {
+        if (mode == CalendarMode.DAY) {
+            HorizontalDivider()
+            CalendarDayView(
+                day = anchor,
+                dated = dated,
+                draft = draft,
+                onOpenRow = onOpenRow,
+                onRowLongPress = onRowLongPress,
+                onSlotTap = onSlotTap,
+                onDayChange = { anchor = it }
+            )
+            HorizontalDivider()
+        } else if (mode == CalendarMode.WEEK) {
             CalendarWeekSwiper(
                 weekStart = shownWeekStart,
                 today = today,
@@ -3738,39 +3824,53 @@ private fun calendarRowIndexes(
 }
 
 /**
- * La riga di una barra: la barra alla sua colonna, con gli spazi vuoti
- * prima e dopo.
+ * La riga di una pagina: le sue barre alle loro colonne, con gli spazi
+ * vuoti prima, in mezzo e dopo.
  *
  * Le larghezze sono pesi e non misure fisse, così una barra di tre
  * giorni occupa esattamente tre settimi della riga qualunque sia la
  * larghezza dello schermo — che è il senso di "rispettare la lunghezza
  * dei giorni".
+ *
+ * **Le barre possono essere più d'una** (dal 30/09/2026): una pagina che
+ * si ripete ogni giorno compare più volte nella stessa settimana, sempre
+ * nella sua riga. Prima ne restava una sola — l'ultima — e le altre
+ * finivano nel "+N". Le volte che si accavallano (un impegno di tre
+ * giorni ripetuto ogni giorno) partono dal primo giorno libero.
  */
 @Composable
 private fun CalendarBarRow(
-    segment: CalendarSegment,
+    segments: List<CalendarSegment>,
     onOpenRow: (DatabaseRowEntity) -> Unit,
     onRowLongPress: (DatabaseRowEntity) -> Unit
 ) {
     Row(modifier = Modifier.fillMaxWidth().height(CALENDAR_BAR_HEIGHT)) {
-        if (segment.startColumn > 0) {
-            Spacer(modifier = Modifier.weight(segment.startColumn.toFloat()))
+        var column = 0
+        segments.sortedBy { it.startColumn }.forEach { segment ->
+            val start = maxOf(segment.startColumn, column)
+            if (start > segment.endColumn) return@forEach
+            if (start > column) {
+                Spacer(modifier = Modifier.weight((start - column).toFloat()))
+            }
+            val span = segment.endColumn - start + 1
+            CalendarBar(
+                segment = if (start == segment.startColumn) segment else segment.copy(startColumn = start, continuesBefore = true),
+                onOpen = { onOpenRow(segment.row) },
+                onLongPress = { onRowLongPress(segment.row) },
+                modifier = Modifier.weight(span.toFloat())
+            )
+            column = segment.endColumn + 1
         }
-        val span = segment.endColumn - segment.startColumn + 1
-        CalendarBar(
-            segment = segment,
-            onOpen = { onOpenRow(segment.row) },
-            onLongPress = { onRowLongPress(segment.row) },
-            modifier = Modifier.weight(span.toFloat())
-        )
-        val after = 6 - segment.endColumn
-        if (after > 0) {
-            Spacer(modifier = Modifier.weight(after.toFloat()))
+        if (column < 7) {
+            Spacer(modifier = Modifier.weight((7 - column).toFloat()))
         }
     }
 }
 
-/** La barra di una pagina: squadrata sui lati dove prosegue oltre la settimana. */
+/**
+ * La barra di una pagina: squadrata sui lati dove prosegue oltre la
+ * settimana. Del colore del suo evento, se ne ha uno (dal 30/09/2026).
+ */
 @Composable
 private fun CalendarBar(
     segment: CalendarSegment,
@@ -3780,12 +3880,13 @@ private fun CalendarBar(
 ) {
     val round = 4.dp
     val flat = 0.dp
+    val eventColor = segment.row.eventColor
     Box(
         modifier = modifier
             .fillMaxHeight()
             .padding(horizontal = 1.dp, vertical = 1.dp)
             .background(
-                DarkSurface,
+                if (eventColor != null) eventBackground(eventColor) else DarkSurface,
                 RoundedCornerShape(
                     topStart = if (segment.continuesBefore) flat else round,
                     bottomStart = if (segment.continuesBefore) flat else round,
@@ -3805,7 +3906,7 @@ private fun CalendarBar(
             Text(
                 text = highlightedTitle(segment.row.title),
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = eventContentColor(eventColor),
                 maxLines = 1
             )
         }
@@ -3882,13 +3983,15 @@ private fun CalendarWeekRow(
                     rowIndexes[segment.row.id]?.let { index -> index to segment }
                 }
             }
-            val visible = placed.filter { it.first < maxRows }.toMap()
+            // Una riga può avere più barre: le volte di una pagina che si
+            // ripete (vedi `CalendarBarRow`).
+            val visible = placed.filter { it.first < maxRows }.groupBy({ it.first }, { it.second })
             val rowsToDraw = (visible.keys.maxOrNull()?.plus(1)) ?: 0
             repeat(rowsToDraw) { rowIndex ->
-                val segment = visible[rowIndex]
-                if (segment != null) {
+                val rowSegments = visible[rowIndex]
+                if (rowSegments != null) {
                     CalendarBarRow(
-                        segment = segment,
+                        segments = rowSegments,
                         onOpenRow = onOpenRow,
                         onRowLongPress = onRowLongPress
                     )
@@ -3896,7 +3999,8 @@ private fun CalendarWeekRow(
                     Spacer(modifier = Modifier.height(CALENDAR_BAR_HEIGHT))
                 }
             }
-            val hidden = placed.size - visible.size
+            // Le pagine oltre il tetto, contate una volta anche se si ripetono.
+            val hidden = placed.filter { it.first >= maxRows }.map { it.second.row.id }.distinct().size
             if (hidden > 0) {
                 Text(
                     text = "+$hidden",
@@ -4637,7 +4741,7 @@ private val SearchHighlightRow = Color(0xFFFFD54F).copy(alpha = 0.16f)
  * e con **le lettere cercate illuminate** mentre si cerca.
  */
 @Composable
-private fun highlightedTitle(title: String): AnnotatedString {
+internal fun highlightedTitle(title: String): AnnotatedString {
     val shown = title.ifBlank { Strings.untitled }
     val query = LocalRowSearch.current?.query
     if (query.isNullOrEmpty() || title.isBlank()) return AnnotatedString(shown)
@@ -4659,7 +4763,7 @@ private fun highlightedTitle(title: String): AnnotatedString {
  * riquadro, perché il giallo segua gli angoli arrotondati delle schede.
  */
 @Composable
-private fun Modifier.foundInside(rowId: String, shape: Shape = RectangleShape): Modifier {
+internal fun Modifier.foundInside(rowId: String, shape: Shape = RectangleShape): Modifier {
     val search = LocalRowSearch.current ?: return this
     return if (rowId in search.foundInside) this.background(SearchHighlightRow, shape) else this
 }
@@ -7419,7 +7523,7 @@ private fun DateEditorSheet(
  * Google Calendar, e coprono quasi tutti i casi senza aprire niente.
  */
 @Composable
-private fun RepeatPresetDialog(
+internal fun RepeatPresetDialog(
     start: LocalDate,
     current: Recurrence?,
     onDismiss: () -> Unit,
@@ -7502,7 +7606,7 @@ private fun RepeatPresetDialog(
  * lunedì" solo per i mesi.
  */
 @Composable
-private fun CustomRecurrenceDialog(
+internal fun CustomRecurrenceDialog(
     start: LocalDate,
     initial: Recurrence?,
     onDismiss: () -> Unit,
@@ -7843,7 +7947,7 @@ private fun RecurrenceChoiceRow(selected: Boolean, label: String, onSelect: () -
  * riassunta in una riga si controlla a colpo d'occhio, mentre per
  * capire "FREQ=WEEKLY;INT=3" bisogna riaprire la schermata.
  */
-private fun recurrenceSummary(rule: Recurrence?, start: LocalDate): String {
+internal fun recurrenceSummary(rule: Recurrence?, start: LocalDate): String {
     if (rule == null) return DbStrings.doesNotRepeat
     val every = rule.interval
     val head = when (rule.freq) {
@@ -7966,7 +8070,7 @@ private val LocalRowIcons = compositionLocalOf<Map<String, String>> { emptyMap()
  * stacco dal testo.
  */
 @Composable
-private fun RowIconBadge(rowId: String, size: Dp) {
+internal fun RowIconBadge(rowId: String, size: Dp) {
     val fileName = LocalRowIcons.current[rowId] ?: return
     val context = LocalContext.current
     val store = remember(context) { PageImageStore(context) }
@@ -8034,6 +8138,8 @@ private fun RowActionsSheet(
     move: RowMoveActions? = null,
     /** "Create sub row": solo dalla tabella, dove le sotto-righe si vedono. */
     onCreateSubRow: (() -> Unit)? = null,
+    /** "Edit event": solo nel calendario (dal 30/09/2026, il time-blocking). */
+    onEditEvent: (() -> Unit)? = null,
     columns: List<DatabaseColumnEntity>,
     cellValues: Map<Pair<String, String>, String>,
     onDismiss: () -> Unit,
@@ -8118,6 +8224,10 @@ private fun RowActionsSheet(
                         Spacer(modifier = Modifier.size(12.dp))
                     }
                     SheetGroup {
+                        if (onEditEvent != null) {
+                            SheetAction(Icons.Filled.Event, DbStrings.editEvent) { onEditEvent() }
+                            HorizontalDivider()
+                        }
                         SheetAction(Icons.Filled.Delete, Strings.delete, isDestructive = true) {
                             onDelete()
                         }
@@ -8139,6 +8249,10 @@ private fun RowActionsSheet(
                         Spacer(modifier = Modifier.size(12.dp))
                     }
                     SheetGroup {
+                        if (onEditEvent != null) {
+                            SheetAction(Icons.Filled.Event, DbStrings.editEvent) { onEditEvent() }
+                            HorizontalDivider()
+                        }
                         // Come l'"Edit icon" delle azioni di una riga su
                         // Notion: l'icona della pagina senza doverla aprire.
                         SettingsRow(

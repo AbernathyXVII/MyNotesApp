@@ -247,6 +247,10 @@ class DatabaseRepository(private val db: AppDatabase) {
 
     suspend fun setSubRowsCollapsed(rowId: String, collapsed: Boolean) = dao.setSubRowsCollapsed(rowId, collapsed)
 
+    /** Il colore dell'evento di una riga (dal 30/09/2026): cambiarlo è modificare la riga. */
+    suspend fun setRowEventColor(rowId: String, color: String?) =
+        dao.setRowEventColor(rowId, color, System.currentTimeMillis())
+
     fun getAllCells(pageId: String): Flow<List<DatabaseCellEntity>> =
         dao.getAllCellsForPage(pageId)
 

@@ -130,6 +130,10 @@ interface DatabaseDao {
     suspend fun reparentRows(oldParent: String, newParent: String?)
 
     /** Apre o chiude le sotto-righe di una riga: solo quello, "Last edited" resta com'era. */
+    /** Il colore dell'evento di una riga (dal 30/09/2026, il time-blocking), o null per quello di sempre. */
+    @Query("UPDATE database_rows SET eventColor = :color, updatedAt = :now WHERE id = :rowId")
+    suspend fun setRowEventColor(rowId: String, color: String?, now: Long)
+
     @Query("UPDATE database_rows SET subRowsCollapsed = :collapsed WHERE id = :rowId")
     suspend fun setSubRowsCollapsed(rowId: String, collapsed: Boolean)
 

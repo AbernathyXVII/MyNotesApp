@@ -55,7 +55,7 @@ import kotlinx.serialization.json.Json
         NotebookEntity::class,
         NotebookSectionEntity::class
     ],
-    version = 49,
+    version = 50,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -730,6 +730,17 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /**
+         * 49 → 50 (30/09/2026): il colore degli eventi del calendario
+         * (`DatabaseRowEntity.eventColor`), per il time-blocking. Nessuna
+         * riga ne ha: restano del colore di sempre.
+         */
+        private val MIGRATION_49_50 = object : Migration(49, 50) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE database_rows ADD COLUMN eventColor TEXT")
+            }
+        }
+
+        /**
          * Solo per i test: chiude il database e lo dimentica, così il
          * `getInstance` dopo riapre il file da capo (e ne esegue le
          * migrazioni). Senza, il secondo test troverebbe il database del
@@ -791,7 +802,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_45_46,
                         MIGRATION_46_47,
                         MIGRATION_47_48,
-                        MIGRATION_48_49
+                        MIGRATION_48_49,
+                        MIGRATION_49_50
                     )
                     .build()
                 INSTANCE = instance

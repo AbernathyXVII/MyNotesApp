@@ -95,14 +95,19 @@ enum class PageFont {
 }
 
 /**
- * Quanto tempo mostra il calendario in una schermata: un anno, un mese
- * o una settimana. Sostituisce il vecchio `calendarWeekView`, che
+ * Quanto tempo mostra il calendario in una schermata: un anno, un mese,
+ * una settimana o un giorno. Sostituisce il vecchio `calendarWeekView`, che
  * essendo un sì/no non poteva reggere una terza scelta.
+ *
+ * **DAY** (dal 30/09/2026): il giorno con la griglia delle ore, per il
+ * time-blocking come su Google Calendar. Si salva col nome, come le altre:
+ * aggiungerla non ha chiesto di cambiare lo schema.
  */
 enum class CalendarMode {
     YEAR,
     MONTH,
-    WEEK
+    WEEK,
+    DAY
 }
 
 /**

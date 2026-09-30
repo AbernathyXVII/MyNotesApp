@@ -51,7 +51,11 @@ data class DatabaseRowEntity(
     // nata, o null per una riga principale. Vedi `SubRows.kt`.
     var parentRowId: String? = null,
     // Le sue sotto-righe sono chiuse: la freccia sul nome le riapre.
-    var subRowsCollapsed: Boolean = false
+    var subRowsCollapsed: Boolean = false,
+    // **Il colore dell'evento** (dal 30/09/2026, il time-blocking come
+    // Google Calendar): "#RRGGBB" di `EVENT_COLORS`, o null per il colore di
+    // sempre. Colora la riga nel calendario. Vedi `CalendarEvent.kt`.
+    var eventColor: String? = null
 )
 
 /**

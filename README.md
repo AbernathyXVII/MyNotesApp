@@ -2022,6 +2022,108 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**30/09/2026 — Il time-blocking come Google Calendar: la modalità Day del calendario**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 347 test
+passati; commit solo in locale)*
+
+L'utente, con tre foto di Google Calendar (la settimana con la griglia
+delle ore e gli eventi colorati — Dormire, Colazione, Corsetta, Coreano…;
+la finestrella che si apre toccando un quadratino vuoto della domenica;
+la finestra completa di "More options"), parola per parola:
+> «Saresti in grado di creare lo stesso sistema del Timeblocking degli
+> eventi che ha Google Calendar? Questa è una cosa che sicuramente
+> utilizzerò tantissimo sul programma su Windows o sulla Webapp. Ossia,
+> nella modalità giorno del calendario (che aggiungerai a Year, Month e
+> Week), io posso toccare sulle celle vuote che vedi nella domenica della
+> prima foto, e poi mi comparirà una finestra come nella seconda foto.
+> More option avranno le opzioni classiche del repeating dell'evento che
+> vedi nella terza foto»
+
+Alle due domande di Claude ha risposto: **nell'app Android adesso** (la
+versione Windows e quella web non esistono ancora, vedi "App Windows +
+sincronizzazione") e **il colore si sceglie evento per evento**, come su
+Google Calendar. Poi ha precisato: «Intendevo di non considerare la
+situazione del programma Windows. Ho già risposto alle tue domande,
+continua.»
+
+- **[Nuova funzionalità]** Il calendario ha un quarto pulsante, **Day**,
+  dopo Year, Month e Week: un giorno solo, con le ventiquattro ore una
+  sotto l'altra divise in **quadratini da mezz'ora**. Ogni pagina con
+  un'ora è un **blocco alto quanto dura**, del suo colore, col nome e le
+  ore ("Corsetta, 16:00 – 16:30" su una riga se è corto); quelle senza ora
+  (o lunghe un giorno o più) stanno in una **striscia in cima**. Gli
+  eventi che si accavallano stanno **affiancati**; quelli che passano la
+  mezzanotte si vedono in tutti e due i giorni. Oggi ha la **linea rossa
+  di adesso**; si apre un'ora prima di adesso. Le ore si scorrono su e giù
+  in un riquadro che arriva al fondo dello schermo, i giorni col dito a
+  destra e a sinistra (e con le frecce e Today, come sempre); le ore a
+  sinistra restano ferme
+- **[Nuova funzionalità]** **Toccando un quadratino vuoto** si apre la
+  finestra rapida della seconda foto: "Add title" con la tastiera già
+  aperta, il giorno e le ore (mezz'ora dal quadratino toccato; si tocca il
+  giorno o un'ora per cambiarli, con i selettori di Samsung della
+  proprietà Date), "Does not repeat", il colore, e sotto **"More
+  options"** e **"Save"**. Mentre la si scrive l'evento si vede già nel
+  suo quadratino, "(No title)" finché non ha un nome. Salvando nasce una
+  pagina del database con quel nome, quella data e quel colore (la
+  proprietà data si crea al volo se non c'è, come toccando un giorno)
+- **[Nuova funzionalità]** **"More options"** è la finestra della terza
+  foto: il nome; **"All day"**; inizio e fine, giorno e ora (spostando
+  l'inizio la fine lo segue e l'evento dura quanto prima; una fine prima
+  dell'inizio non si accetta); la **ripetizione** con le scelte di Google
+  Calendar — Daily, Weekly on…, Monthly on…, Annually on…, Every weekday
+  (Monday to Friday), Custom… — le stesse della proprietà Date;
+  "Include notification"; il **colore**. I colori sono gli undici di
+  Google Calendar (Tomato, Flamingo, Tangerine, Banana, Sage, Basil,
+  Peacock, Blueberry, Lavender, Grape, Graphite) più "Default", il grigio
+  di sempre
+- **[Nuova funzionalità]** **"Edit event"**: tenendo premuta una pagina
+  nel calendario, in cima alle azioni, apre "More options" su di lei (per
+  una che si ripete, su tutta la serie: è una pagina sola). Si scrive solo
+  quello che cambia: salvata com'era, la pagina non risulta modificata.
+  Toccare un blocco apre la sua pagina, come nelle altre viste
+- **[Nuova funzionalità]** Anche **le barre del mese e della settimana**
+  hanno il colore del loro evento
+- **[Bug fix]** Nella settimana (e nel mese) una pagina che si ripete più
+  volte nella stessa settimana — ogni giorno, per esempio — **compariva una
+  volta sola**, l'ultima, e le altre finivano nel "+N": le volte della
+  stessa pagina stavano nella stessa riga e si coprivano. Ora ci sono
+  tutte (c'era già prima: con "ogni settimana" non si vedeva)
+- **[Progetto]** Schema alla **versione 50**: `database_rows.eventColor`
+  ("#RRGGBB", null per il colore di sempre), migrazione 49→50 che lo
+  lascia vuoto dappertutto. Cambiarlo aggiorna `updatedAt`, come chiede la
+  regola per la sincronizzazione futura. La modalità `CalendarMode.DAY` si
+  salva col nome come le altre, senza migrazione. L'evento si salva nella
+  cella della data nel formato di sempre (`encodeDateRange`), quindi i
+  filtri, le notifiche e le altre viste lo leggono già. Codice nuovo:
+  `data/entity/CalendarEvent.kt` (colori, l'evento che si scrive, dove va
+  ogni blocco nella giornata e come si affiancano) e
+  `ui/screen/CalendarDay.kt` (la griglia, la finestra rapida, "More
+  options"); `DatabaseViewModel.saveEvent`. Test nuovi: `CalendarEventTest`
+  (16), `EventSaveTest` (4), `MigrationTest.from49NoRowHasAnEventColor`
+- **[Bug fix]** (trovato provando, prima del commit) Scorrendo i giorni
+  col dito il giorno si fermava a una ventina di pixel dal bordo, con un
+  filo del giorno accanto. Il pager contava duecentomila pagine: a
+  centoventi milioni di pixel i suoi numeri con la virgola vanno a passi
+  di otto e l'ultimo tratto non si faceva. Ora sono ventimila, come la
+  settimana (ventisette anni per parte; più in là il pager riparte da solo
+  sullo stesso giorno)
+- Verificato sul telefono sulla vista di prova "Videogiochi" di "Titolo
+  tre H3" messa in Calendar → Day: griglia, linea rossa, tocco sul
+  quadratino delle 16:00 → finestra rapida → "Corsetta prova", Sage,
+  Save → blocco verde; un secondo quadratino → "Studio prova" → More
+  options → Daily, Peacock, inizio alle 16:00 (la fine passa da sola alle
+  16:30) → Save → i due blocchi affiancati; giovedì e venerdì c'è solo
+  "Studio prova"; nella settimana "Studio" da mercoledì a sabato e
+  "Corsetta" verde; "Edit event" su "Studio prova" → Grape → viola; su
+  "Corsetta prova" → All day → nella striscia in cima. Nel database: le
+  due righe col colore, la data giusta e il valore del filtro (PS5). Poi
+  le due righe di prova cancellate e la vista rimessa in Table: database
+  uguale al backup, tranne la modalità del calendario della vista di
+  prova (prima vuota, ora "Month", che è quella che si vedeva) e la sua
+  data di modifica. Il calendario "Untitled" della stessa pagina,
+  dell'utente, non è stato toccato
+
 **30/09/2026 — "Wrap in the cell": vanno a capo anche i titoli delle colonne**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 326 test
 passati; commit solo in locale)*
@@ -8342,7 +8444,8 @@ le finestre che apre. Chi lo usa passa solo l'id del blocco.
 
 ## Nota tecnica
 
-Lo schema è alla **versione 49** (la 49, del 30/09/2026, aggiunge
+Lo schema è alla **versione 50** (la 50, del 30/09/2026, aggiunge
+`database_rows.eventColor`, il colore degli eventi del calendario; la 49, dello stesso giorno, aggiunge
 `pages.colorBoardCards`, "Color cards" delle bacheche; la 48, dello stesso giorno, aggiunge
 `pages.wrapCells`, oggi il testo lungo nelle celle delle tabelle (`PageEntity.cellOverflow`: 0 tre puntini, 1 a capo, 2 colonna allargata); la 47, del 29/09/2026, aggiunge
 `database_columns.durationFormat`, la proprietà Duration; la 46, dello stesso giorno, aggiunge
