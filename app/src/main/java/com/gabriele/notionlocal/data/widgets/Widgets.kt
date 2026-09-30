@@ -272,7 +272,13 @@ data class CountdownTimer(
     /** A timer fermo, quanto manca; mentre corre, quanto mancava quando è ripartito. */
     val remainingMs: Long = durationMs,
     /** Mentre corre: quando finisce. */
-    val endsAt: Long? = null
+    val endsAt: Long? = null,
+    /**
+     * La sua notifica nella tendina (vedi `TimerNotifications`) tolta con
+     * uno scorrimento: non torna finché non lo si fa ripartire, o non lo si
+     * mette in pausa o lo si riprende. Dal 30/09/2026.
+     */
+    val notificationDismissed: Boolean = false
 ) {
     /** Quanto manca adesso: mai più di quanto mancava alla partenza, come il pomodoro. */
     fun remainingAt(now: Long): Long = when {
@@ -336,13 +342,13 @@ fun stopwatchText(ms: Long): String {
 // Timer
 
 fun CountdownTimer.startedAt(now: Long): CountdownTimer =
-    copy(started = true, running = true, finished = false, remainingMs = durationMs, endsAt = now + durationMs)
+    copy(started = true, running = true, finished = false, remainingMs = durationMs, endsAt = now + durationMs, notificationDismissed = false)
 
 fun CountdownTimer.pausedAt(now: Long): CountdownTimer =
-    if (!running) this else copy(running = false, remainingMs = remainingAt(now), endsAt = null)
+    if (!running) this else copy(running = false, remainingMs = remainingAt(now), endsAt = null, notificationDismissed = false)
 
 fun CountdownTimer.resumedAt(now: Long): CountdownTimer =
-    if (running || finished || !started) this else copy(running = true, endsAt = now + remainingMs)
+    if (running || finished || !started) this else copy(running = true, endsAt = now + remainingMs, notificationDismissed = false)
 
 /** Di nuovo alle rotelle, col tempo che c'era. */
 /**
@@ -354,14 +360,26 @@ fun TimerWidget.withoutTimer(timerId: String): TimerWidget =
     if (timers.firstOrNull()?.id == timerId) this else copy(timers = timers.filterNot { it.id == timerId })
 
 fun CountdownTimer.backToSetup(): CountdownTimer =
-    copy(started = false, running = false, finished = false, remainingMs = durationMs, endsAt = null)
+    copy(started = false, running = false, finished = false, remainingMs = durationMs, endsAt = null, notificationDismissed = false)
 
 /** Se è arrivato a zero, finito; con quando è finito, per decidere se suonare. */
 fun CountdownTimer.finishedBy(now: Long): Pair<CountdownTimer, Long?> {
     val end = endsAt
     if (!running || end == null || end > now) return this to null
-    return copy(running = false, finished = true, remainingMs = 0, endsAt = null) to end
+    return copy(running = false, finished = true, remainingMs = 0, endsAt = null, notificationDismissed = false) to end
 }
+
+/**
+ * **Ha la sua notifica nella tendina** (dal 30/09/2026): partito e non
+ * finito, che corra o sia in pausa, e non tolto a mano.
+ */
+val CountdownTimer.inNotification: Boolean get() = started && !finished && !notificationDismissed
+
+/** I timer che hanno la loro notifica, per id: con il widget che li contiene. */
+fun WidgetsState.notifiedTimers(): Map<String, Pair<String, CountdownTimer>> =
+    widgets.filterIsInstance<TimerWidget>()
+        .flatMap { w -> w.timers.filter { it.inNotification }.map { it.id to (w.id to it) } }
+        .toMap()
 
 /** "9:55", "0:05", "1:09:55": arrotondato per eccesso come il pomodoro. */
 fun countdownText(ms: Long): String {

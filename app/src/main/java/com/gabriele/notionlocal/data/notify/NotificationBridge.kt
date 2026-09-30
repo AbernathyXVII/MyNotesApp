@@ -38,8 +38,19 @@ object NotificationTarget {
      */
     val rowToShow = mutableStateOf<String?>(null)
 
+    /**
+     * **La barra laterale da aprire** (dal 30/09/2026): toccata la notifica
+     * di un timer che corre, si va dove sta il suo widget. La apre e la
+     * consuma la navigazione (`AppNavHost`).
+     */
+    val openWidgets = mutableStateOf(false)
+
     fun takeFrom(intent: Intent?) {
         intent ?: return
+        if (intent.getBooleanExtra(Notifier.EXTRA_OPEN_WIDGETS, false)) {
+            openWidgets.value = true
+            intent.removeExtra(Notifier.EXTRA_OPEN_WIDGETS)
+        }
         val pageId = intent.getStringExtra(Notifier.EXTRA_PAGE_ID)
         val rowId = intent.getStringExtra(Notifier.EXTRA_ROW_ID)
         val databaseId = intent.getStringExtra(Notifier.EXTRA_DATABASE_ID)

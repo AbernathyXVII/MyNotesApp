@@ -46,6 +46,8 @@ class RescheduleReceiver : BroadcastReceiver() {
         val result = goAsync()
         AppSettings.init(app)
         WidgetStore.init(app)
+        // Riaccendendosi il telefono ha tolto le notifiche dei timer.
+        WidgetStore.restoreTimerNotifications()
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 NoteAlarms.rescheduleNow(app)

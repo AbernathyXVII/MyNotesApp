@@ -193,6 +193,15 @@ fun AppNavHost(factory: ViewModelFactory) {
         if (route == Routes.HOME) goHome() else jumpTo(route)
     }
 
+    // Toccata la notifica di un timer che corre (dal 30/09/2026, vedi
+    // `TimerNotifications`): la barra laterale, dove sta il suo widget.
+    val openWidgets by NotificationTarget.openWidgets
+    LaunchedEffect(openWidgets) {
+        if (!openWidgets) return@LaunchedEffect
+        NotificationTarget.openWidgets.value = false
+        openSidebar()
+    }
+
     // L'ultima pagina aperta, per la finestra di avvio "Last visited page".
     LaunchedEffect(navController) {
         navController.currentBackStackEntryFlow.collect { entry ->

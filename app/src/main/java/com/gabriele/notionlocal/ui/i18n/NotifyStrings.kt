@@ -10,6 +10,8 @@ object NotifyStrings {
 
     val channelReminders get() = t("Reminders", "Promemoria", "Erinnerungen", "Rappels", "Recordatorios", "提醒", "리마인더", "リマインダー")
     val channelTimers get() = t("Timer and pomodoro", "Timer e pomodoro", "Timer und Pomodoro", "Minuteur et pomodoro", "Temporizador y pomodoro", "计时器和番茄钟", "타이머와 뽀모도로", "タイマーとポモドーロ")
+    /** Le notifiche fisse dei timer che corrono (dal 30/09/2026): vedi `TimerNotifications`. */
+    val channelRunningTimers get() = t("Running timers", "Timer in corso", "Laufende Timer", "Minuteurs en cours", "Temporizadores en marcha", "正在运行的计时器", "실행 중인 타이머", "実行中のタイマー")
 
     /** Il suggerimento di una riga-notifica senza testo, che mostrerà il nome della pagina. */
     val textHint get() = t("Notification (page title)", "Notifica (titolo della pagina)", "Benachrichtigung (Seitentitel)", "Notification (titre de la page)", "Notificación (título de la página)", "通知（页面标题）", "알림(페이지 제목)", "通知（ページのタイトル）")
@@ -121,6 +123,8 @@ object NotifyStrings {
     // --- Timer e pomodoro ---
 
     val timeIsUp get() = t("Time's up", "Tempo scaduto", "Die Zeit ist um", "Temps écoulé", "Se acabó el tiempo", "时间到了", "시간이 다 됐어요", "時間です")
+    /** Un timer in pausa, nella sua notifica: "Paused · 4:32". */
+    fun pausedAt(left: String) = t("Paused · $left", "In pausa · $left", "Pausiert · $left", "En pause · $left", "En pausa · $left", "已暂停 · $left", "일시정지됨 · $left", "一時停止中 · $left")
     fun timerOf(duration: String) = t("Timer · $duration", "Timer · $duration", "Timer · $duration", "Minuteur · $duration", "Temporizador · $duration", "计时器 · $duration", "타이머 · $duration", "タイマー · $duration")
     fun breakTime(minutes: Int) = t(
         "Time for a break · $minutes min",

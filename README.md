@@ -2053,9 +2053,73 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.135 — 30/09/2026 · 19:53 — Il Timer nella tendina: una notifica fissa col tempo che scorre
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 370 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Saresti in grado di farmi sotto forma di notifica il passare del tempo
+> del Timer come lo fa quello di Samsung, oppure di pinnarmi in qualche
+> modo il timer come notifica "permanente" che rimane lì finché la tolgo
+> io con il timer che pian piano scorre?»
+
+E poi:
+> «Vai vai scusa»
+
+- **[Nuova funzionalità]** Ogni timer partito dal widget Timer ha la sua
+  **notifica fissa** nella tendina, come il timer di Samsung:
+  - **in corsa**: il conto alla rovescia accanto al nome dell'app, "Timer
+    · 3 m" come titolo e sotto "Ends at 19:37"; i pulsanti **Pause** e
+    **Cancel**. Il tempo lo fa scorrere Android, quindi scorre anche ad
+    app chiusa, senza che l'app debba aggiornare la notifica ogni secondo
+  - **in pausa**: "Paused · 2:37", fermo; i pulsanti **Resume** e
+    **Cancel**. "Cancel" riporta il timer alle rotelle, come
+    l'azzeramento del widget
+  - **finito**: se ne va, e arriva "Time's up" come prima
+  - **resta finché la si toglie**: uno scorrimento la toglie senza fermare
+    il timer (che poi suona lo stesso), e non torna, neanche riaprendo
+    l'app, finché il timer non cambia: pausa, ripresa o di nuovo "Start"
+  - toccandola si apre l'app **con la barra laterale aperta**, dove sta il
+    widget
+  - se il telefono la toglie (riaccendendosi, o aggiornando l'app) mentre
+    il timer corre, si rimette da sola
+  - un canale suo, **"Running timers"**, silenzioso: niente suono, niente
+    vibrazione, niente pallino sull'icona. Con le notifiche spente
+    dall'app ("Turn off notifications") non compare
+- **[Nuova funzionalità]** Su Android 16 la notifica chiede di essere una
+  **"live update"** (il permesso `POST_PROMOTED_NOTIFICATIONS`, "Show live
+  updates"), e sul telefono Android la accetta: ha il segno
+  `PROMOTED_ONGOING`. La pastiglia col tempo nella barra di stato e la Now
+  Bar, però, Samsung (One UI 8.5) le dà per ora solo alle app della sua
+  lista; per le altre c'è, a quanto pare, un'opzione fra quelle per
+  sviluppatori. Non l'ho toccata: è un'impostazione del telefono
+- **[Progetto]** `TimerNotifications` (mette, cambia e toglie le
+  notifiche confrontando lo stato di prima e di dopo a ogni modifica di
+  `WidgetStore`) e `TimerActionReceiver` (i pulsanti e lo scorrimento via,
+  anche ad app chiusa: il timer cambia con `TimerNotifications.handle`,
+  poi la sveglia di Android si rimette alla fine nuova);
+  `CountdownTimer.notificationDismissed`; `WidgetStore.restoreTimerNotifications`
+  all'avvio e dopo un riavvio; `NotificationTarget.openWidgets` per la
+  barra laterale. `TimerNotificationsTest`: 9 test (quali timer hanno la
+  notifica, il cronometro all'indietro fino alla fine, la pausa col tempo
+  fermo, i pulsanti, via quando finisce o si annulla, lo scorrimento via
+  che non torna, la richiesta di "live update"). Il test dei pulsanti
+  chiama `handle` e non il receiver: la sveglia, rimessa in sottofondo,
+  apriva il database dei test e faceva fallire a caso quelli dopo
+- Verificato sul telefono (Galaxy S25 Ultra, Android 16), con un secondo
+  timer da 3 minuti aggiunto col "+" e poi eliminato: la notifica compare
+  alla partenza e scorre; "Pause" e "Resume" dalla tendina fermano e
+  fanno ripartire il widget; alla fine se ne va e arriva "Time's up"; **ad
+  app chiusa** (processo terminato) resta e scorre, e "Pause" funziona
+  (l'app parte solo per quello); tolta con uno scorrimento non torna
+  riaprendo l'app, e torna riprendendo il timer; toccandola si apre la
+  barra laterale sul widget; "Cancel" la toglie e riporta il timer alle
+  rotelle. Rifatte "Pause" e "Cancel" con l'APK finale. Stato dei widget
+  e database uguali a prima della prova
+
 ### 🆕 v0.134 — 30/09/2026 · 19:22 — La storia intera, da v0.1 a oggi: una versione per ogni richiesta
-*(Claude Code sul PC; 361 test passati; da provare sul telefono; commit
-solo in locale)*
+*(Claude Code sul PC; 361 test passati; verificato sul telefono lo stesso
+giorno, con la v0.135; commit solo in locale)*
 
 L'utente, parola per parola:
 > «Ho fatto caso ad una cosa: hai racchiuso tutto quello fatto prima di
@@ -2106,10 +2170,13 @@ L'utente, parola per parola:
   correzioni). `PatchNotesTest`: la prima versione è la v0.1 dell'8/09
   alle 09:19, quelle senza ora sono solo le prime, e dove l'ora c'è non
   torna mai indietro
-- **Da provare sul telefono**, che era scollegato: nei test l'app legge
-  tutte le 167 versioni (la prima è la v0.1 dell'8/09 alle 09:19, le
-  pagine si aprono col testo giusto), ma sullo schermo non l'ho ancora
-  guardata
+- Verificato sul telefono (alle 19:42, installata la v0.135; prima era
+  scollegato): Settings → Patch Notes, "Oldest first": in cima la v0.1
+  "Nasce notE" 08/09/2026 · 09:19, poi le versioni dell'altra chat con
+  "fra l'8 e il 18/09/2026 · ora non registrata", la v0.7 del 17/09 alle
+  22:37 e dalla v0.8 (18/09 alle 21:19) quelle con la richiesta
+  dell'utente dentro, parola per parola; "Newest first": in cima la più
+  recente
 
 ### 🆕 v0.133 — 30/09/2026 · 18:55 — La pagina "Notifications": suono, vibrazione, priorità e pallino sull'icona
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 361 test

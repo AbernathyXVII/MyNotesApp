@@ -27,6 +27,8 @@
         android:name="android.permission.SCHEDULE_EXACT_ALARM"
         android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Android 16: i timer che corrono come "live update", col tempo nella barra di stato. Vedi `TimerNotifications`. -->
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
     <!-- L'impronta per aprire le pagine bloccate con la password (vedi `Biometrics`). -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 
@@ -69,6 +71,11 @@
         <!-- La sveglia delle notifiche: vedi `NoteAlarms`. -->
         <receiver
             android:name=".data.notify.AlarmReceiver"
+            android:exported="false" />
+
+        <!-- I pulsanti della notifica di un timer che corre: vedi `TimerNotifications`. -->
+        <receiver
+            android:name=".data.notify.TimerActionReceiver"
             android:exported="false" />
 
         <!-- Rimette la sveglia dopo un riavvio, un aggiornamento, un cambio d'ora o di fuso. -->

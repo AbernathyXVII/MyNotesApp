@@ -9,6 +9,7 @@ import android.os.Build
 import androidx.compose.runtime.mutableStateOf
 import com.gabriele.notionlocal.data.notify.NoteAlarms
 import com.gabriele.notionlocal.data.notify.Notifier
+import com.gabriele.notionlocal.data.notify.TimerNotifications
 import com.gabriele.notionlocal.data.settings.AppSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -35,6 +36,10 @@ import java.time.ZoneId
  * Android (`NoteAlarms`), che quando suona fa partire l'app e passa di qui
  * (`onAlarm`). Ogni fine manda una notifica (`Notifier`) e suona.
  *
+ * **I timer partiti stanno anche nella tendina** (dal 30/09/2026), col
+ * tempo che scorre: a ogni modifica `update` passa il prima e il dopo a
+ * `TimerNotifications`, che mette, cambia e toglie le loro notifiche.
+ *
  * `init` va chiamato all'avvio, dopo `AppSettings.init`.
  */
 object WidgetStore {
@@ -60,6 +65,17 @@ object WidgetStore {
         // Le fasi finite mentre l'app era chiusa: si recuperano in
         // silenzio, senza suonare per qualcosa di già passato.
         advancePomodoros(ringIfRecent = false)
+    }
+
+    /**
+     * Le notifiche dei timer partiti, se non ci sono più: il telefono le
+     * toglie riaccendendosi o aggiornando l'app, ma i timer intanto
+     * corrono. All'avvio dell'app e dopo un riavvio (non a ogni `init`: un
+     * pulsante della notifica che fa partire l'app non deve rimettere
+     * quella appena tolta).
+     */
+    fun restoreTimerNotifications() {
+        if (::appContext.isInitialized) TimerNotifications.restore(appContext, stateHolder.value)
     }
 
     private fun load(context: Context) {
@@ -94,10 +110,12 @@ object WidgetStore {
     }
 
     private fun update(transform: (WidgetsState) -> WidgetsState) {
-        val next = transform(stateHolder.value)
-        if (next == stateHolder.value) return
+        val previous = stateHolder.value
+        val next = transform(previous)
+        if (next == previous) return
         stateHolder.value = next
         if (::prefs.isInitialized) prefs.edit().putString(KEY_STATE, json.encodeToString(next)).apply()
+        if (::appContext.isInitialized) TimerNotifications.sync(appContext, previous, next)
         scheduleAlarm()
     }
 
@@ -260,6 +278,11 @@ object WidgetStore {
     fun timerPause(widgetId: String, timerId: String) = updateTimer(widgetId, timerId) { it.pausedAt(System.currentTimeMillis()) }
     fun timerResume(widgetId: String, timerId: String) = updateTimer(widgetId, timerId) { it.resumedAt(System.currentTimeMillis()) }
     fun timerReset(widgetId: String, timerId: String) = updateTimer(widgetId, timerId) { it.backToSetup() }
+
+    /** La sua notifica tolta dalla tendina: non la si rimette finché il timer non cambia (vedi `notificationDismissed`). */
+    fun timerNotificationDismissed(widgetId: String, timerId: String) = updateTimer(widgetId, timerId) {
+        if (it.inNotification) it.copy(notificationDismissed = true) else it
+    }
 
     /** Un timer in più, da impostare, in fondo: il "+" in alto a destra. */
     fun timerAdd(widgetId: String) = updateWidget<TimerWidget>(widgetId) { it.copy(timers = it.timers + CountdownTimer()) }

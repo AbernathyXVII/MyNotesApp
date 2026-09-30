@@ -50,6 +50,8 @@ class MainActivity : ComponentActivity() {
         AppLock.init(applicationContext)
         // Le notifiche: i canali, e la sveglia rimessa alla prossima.
         NoteAlarms.init(applicationContext)
+        // I timer partiti, con la loro notifica nella tendina.
+        WidgetStore.restoreTimerNotifications()
         NotificationPermission.requester = ::askNotificationPermission
         // Aperta toccando una notifica: la pagina da mostrare.
         NotificationTarget.takeFrom(intent)

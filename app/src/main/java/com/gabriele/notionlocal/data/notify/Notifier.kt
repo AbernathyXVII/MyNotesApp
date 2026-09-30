@@ -1,5 +1,6 @@
 package com.gabriele.notionlocal.data.notify
 
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -41,6 +42,9 @@ import com.gabriele.notionlocal.ui.i18n.WidgetStrings
  * suo (`remindersChannel`), e scegliendone un'altra quello vecchio si
  * toglie. Con la priorità bassa l'app non suona. Timer e pomodoro restano
  * sul loro canale, alto e con la vibrazione: sono sveglie.
+ *
+ * **I timer che corrono** hanno una notifica fissa a parte, su un canale
+ * silenzioso tutto loro (dal 30/09/2026): vedi `TimerNotifications`.
  */
 object Notifier {
 
@@ -72,10 +76,13 @@ object Notifier {
     const val EXTRA_PAGE_ID = "notify.pageId"
     const val EXTRA_ROW_ID = "notify.rowId"
     const val EXTRA_DATABASE_ID = "notify.databaseId"
+    /** La notifica di un timer che corre: si apre la barra laterale, coi widget. */
+    const val EXTRA_OPEN_WIDGETS = "notify.openWidgets"
 
     /**
      * I canali come li vogliono le scelte di adesso: quello dei promemoria
-     * (vedi `remindersChannel`) e quello dei timer. I canali dei promemoria
+     * (vedi `remindersChannel`), quello dei timer e quello dei timer che
+     * corrono (vedi `TimerNotifications`). I canali dei promemoria
      * di scelte vecchie — e quello di prima delle scelte, "reminders" — si
      * tolgono, così nelle impostazioni del telefono ce n'è uno solo.
      */
@@ -95,6 +102,14 @@ object Notifier {
             NotificationChannel(CHANNEL_TIMERS, NotifyStrings.channelTimers, NotificationManager.IMPORTANCE_HIGH).apply {
                 setSound(null, null)
                 enableVibration(true)
+            }
+        )
+        manager.createNotificationChannel(
+            NotificationChannel(TimerNotifications.CHANNEL, NotifyStrings.channelRunningTimers, NotificationManager.IMPORTANCE_DEFAULT).apply {
+                setSound(null, null)
+                enableVibration(false)
+                setShowBadge(false)
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
             }
         )
         manager.notificationChannels
