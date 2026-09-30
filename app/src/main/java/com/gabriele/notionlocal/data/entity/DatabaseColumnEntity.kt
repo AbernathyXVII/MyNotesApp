@@ -16,6 +16,12 @@ enum class ColumnType {
     TEXT,
     NUMBER,
     DATE,
+    /**
+     * **"Duration"** (dal 29/09/2026): quanto passa fra un inizio e una fine
+     * scelti a mano, in anni, mesi, giorni, ore e minuti. Il valore è quello
+     * di una data col periodo e l'ora; vedi `Duration.kt` e `DurationCell.kt`.
+     */
+    DURATION,
     CHECKBOX,
     /**
      * "Color cell" (dal 26/09/2026): la cella si riempie di un colore
@@ -165,7 +171,13 @@ data class DatabaseColumnEntity(
      */
     var dateFormat: String? = null,
     /** "H12" a 12 ore (9:30 PM), "HIDDEN" senza ora; null = a 24 ore (21:30). Vedi `TimeFormatKind`. */
-    var timeFormat: String? = null
+    var timeFormat: String? = null,
+    /**
+     * **Solo per le colonne Duration** (dal 29/09/2026), "Edit property":
+     * fino a quale unità si scrive la durata (il nome di un `DurationUnit`,
+     * da YEARS a MINUTES). Null = tutto, fino ai minuti.
+     */
+    var durationFormat: String? = null
 )
 
 /** A sinistra, al centro o a destra: le celle di una colonna, e i calcoli sotto la tabella. */

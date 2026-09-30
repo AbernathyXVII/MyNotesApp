@@ -67,6 +67,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gabriele.notionlocal.data.entity.Calculation
 import com.gabriele.notionlocal.data.entity.CalculationResult
+import com.gabriele.notionlocal.data.entity.DurationUnit
+import com.gabriele.notionlocal.data.entity.durationBetween
+import com.gabriele.notionlocal.data.entity.durationUnits
+import java.time.LocalDateTime
 import com.gabriele.notionlocal.data.entity.ColumnType
 import com.gabriele.notionlocal.data.entity.DEFAULT_NUMBER_COLOR
 import com.gabriele.notionlocal.data.entity.DatabaseColumnEntity
@@ -606,6 +610,47 @@ fun DateSettingsSection(settings: DateSettings, onChange: (DateSettings) -> Unit
             },
             onDismiss = { pickingTime = false }
         )
+    }
+}
+
+// --- "Edit property" di una colonna Duration (dal 29/09/2026) ---
+
+/** L'esempio sotto le scelte, quello dato dall'utente: dal 12/02/1996 00:00 al 29/09/2026 21:22. */
+private val DURATION_SAMPLE = durationBetween(LocalDateTime.of(1996, 2, 12, 0, 0), LocalDateTime.of(2026, 9, 29, 21, 22))!!
+
+/**
+ * **"Show as" di una colonna Duration**: fino a quale unità si scrive la
+ * durata, dai soli anni ad anni, mesi, giorni, ore e minuti; il resto si
+ * lascia fuori, senza decimali. Sotto ogni scelta, come si legge l'esempio.
+ */
+@Composable
+fun DurationSettingsSection(format: DurationUnit, onChange: (DurationUnit) -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Text(DbStrings.showAs, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(modifier = Modifier.height(4.dp))
+        DurationUnit.entries.forEach { unit ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onChange(unit) }
+                    .padding(vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(DbStrings.durationFormatName(unit), style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        DbStrings.durationText(durationUnits(DURATION_SAMPLE, unit)),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                if (unit == format) {
+                    Icon(Icons.Filled.Check, contentDescription = DbStrings.selected, tint = MaterialTheme.colorScheme.primary)
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(DbStrings.appliesToAllViews, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 

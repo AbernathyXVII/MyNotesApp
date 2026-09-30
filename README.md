@@ -2022,6 +2022,85 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**29-30/09/2026 — Nuova proprietà "Duration": quanto passa fra due date**
+*(Claude Code sul PC; verificato sul telefono; 306 test passati; commit
+solo in locale)*
+
+L'utente, parola per parola:
+> «Fammi una proprietà chiamata Duration che mi consente di calcolare la
+> differenza in anni, mesi, giorni, ore e minuti tra una data e l'altra.
+> Quando tocco una nuova colonna e seleziono Duration, mi chiederà
+> ovviamente di selezionare la data di inizio (che personalmente e
+> manualmente selezionerò io) e la data di fine (stessa cosa). Utilizziamo
+> un esempio per tutti i casi, ossia data di inizio 12 febbraio 1996 00:00,
+> data di fine sarà 29 settembre 2026 21:22. Nelle impostazioni di questa
+> proprietà, dammi la possibilità di mostrare:
+> * in anni (se è possibile), omettendo ogni decimale e il resto di mesi,
+>   giorni eccetera. Duration sarà 30 anni;
+> * in anni e mesi (se è possibile), omettendo ogni decimale e il resto in
+>   giorni, ore eccetera. Duration sarà 30 anni e 8 mesi;
+> * in anni, mesi e giorni (se è possibile), omettendo ogni decimale e il
+>   resto in ore e minuti. Duration sarà 30 anni, 8 mesi e 17 giorni;
+> * in anni, mesi, giorni e ore (se è possibile), omettendo ogni decimale e
+>   il resto in minuti. Duration sarà 30 anni, 8 mesi, 17 giorni e 21 ore;
+> * in anni, mesi, giorni, ore e minuti (se è possibile). Duration sarà 30
+>   anni, 8 mesi, 17 giorni, 21 ore e 22 minuti»
+
+- **[Nuova funzionalità]** Nuovo tipo di proprietà **Duration** (dopo
+  Date nell'elenco dei tipi). Toccando una cella si apre la sua finestra:
+  in cima quanto dura, sotto "Start date", "Start time", "End date", "End
+  time", ognuna col suo selettore (il calendario, con le rotelle di giorno,
+  mese e anno toccando il nome del mese, e l'orologio). L'ora parte da
+  00:00, la data da oggi. "Done" salva solo con tutte e due le date e la
+  fine dopo l'inizio (se no avvisa "The end comes before the start");
+  "Clear" svuota la cella
+- **[Nuova funzionalità]** In "Edit property", "**Show as**" con le cinque
+  scelte chieste, ognuna con l'esempio dell'utente sotto: "Years" (30
+  years), "Years and months", "Years, months and days", "Years, months,
+  days and hours", "Years, months, days, hours and minutes" (di suo). Il
+  resto si lascia fuori, senza decimali. Le unità a zero si saltano ("1
+  year and 17 days"); tutte a zero, lo zero dell'ultima ("0 years")
+- **Nota sull'esempio**: dal 12/02/1996 00:00 al 29/09/2026 21:22 i mesi
+  sono **7**, non 8: al 12/02/2026 sono 30 anni, al 12/09/2026 altri 7
+  mesi, poi 17 giorni fino al 29/09. Con 8 mesi si arriverebbe al
+  12/10/2026. L'app scrive quindi "30 years, 7 months, 17 days, 21 hours
+  and 22 minutes"
+- **[Nuova funzionalità]** La durata è scritta nella lingua dell'app
+  ("30 anni, 7 mesi e 17 giorni" in italiano, col singolare per 1; in
+  cinese e giapponese attaccata, "30年7か月17日"). La colonna nasce larga
+  320 perché ci stia tutto l'esempio; "Fit to content" misura la durata.
+  Le righe si ordinano per quanto durano (senza la fine in fondo); non si
+  raggruppa né si filtra per durata (il valore sono due istanti). Nelle
+  schede e nelle proprietà in cima alla pagina di una riga si legge la
+  durata
+- **[Progetto]** **Database alla versione 47**:
+  `database_columns.durationFormat` (null = fino ai minuti). Il valore
+  della cella è quello di una data col periodo e l'ora
+  (`encodeDateRange`, "inizio|fine|t"): una colonna Date con un periodo,
+  cambiata in Duration, mostra subito quanto dura, e al contrario. I conti
+  in `Duration.kt` (`durationBetween`: i mesi contati tutti insieme
+  dall'inizio, sull'ora dell'orologio, così il giorno del cambio dell'ora
+  legale resta un giorno), le parole in `DurationWords.kt`, la cella e la
+  finestra in `DurationCell.kt`, "Show as" in `NumberProperty.kt`. Test
+  in `DurationTest`, `DurationColumnTest` e `MigrationTest` 46→47, col file
+  `v46.sql`
+- Verificato sul telefono (copia del database prima; migrazione alla 47
+  senza errori) sulla vista collegata "Videogiochi" di "Titolo tre H3": col
+  "+" il tipo Duration c'è e la colonna nasce; nella cella della riga "1"
+  scelti 12/02/1996 00:00 e 29/09/2026 21:22 (anno, mese e giorno con le
+  rotelle); la finestra e poi la cella scrivono "30 years, 7 months, 17
+  days, 21 hours and 22 minutes". Le cinque scelte di "Show as" cambiano la
+  cella in "30 years", "30 years and 7 months", "30 years, 7 months and 17
+  days", "30 years, 7 months, 17 days and 21 hours" e di nuovo completa.
+  Dopo la prova sono cambiati due dettagli: la data non ancora scelta ora
+  parte da oggi (prima partiva dall'altra data, cioè dal 1996 per la fine)
+  e la colonna nasce larga 320 invece di 260 (a 260 la durata completa si
+  troncava). Poi la colonna riportata alla sua larghezza e cancellata: il
+  database è uguale alla copia, tranne "Last edited" della riga "1", la
+  data di modifica della vista e le modifiche fatte intanto dall'utente
+  (il toggle "SaaS" in My Space, una data e le colonne di "SuduS al
+  contrario")
+
 **29/09/2026 — La colonna Name si sposta dove si vuole**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 291 test
 passati; commit solo in locale)*
@@ -7970,7 +8049,8 @@ le finestre che apre. Chi lo usa passa solo l'id del blocco.
 
 ## Nota tecnica
 
-Lo schema è alla **versione 46** (la 46, del 29/09/2026, aggiunge
+Lo schema è alla **versione 47** (la 47, del 29/09/2026, aggiunge
+`database_columns.durationFormat`, la proprietà Duration; la 46, dello stesso giorno, aggiunge
 `pages.nameColumnOrder`, il posto della colonna Name; la 45, dello stesso giorno, aggiunge
 `database_rows.parentRowId` e `subRowsCollapsed`, le sotto-righe; la 44, dello stesso giorno, aggiunge
 `pages.columnWidths` e `fitColumns`, la larghezza delle colonne della tabella; la 43, dello stesso giorno, aggiunge

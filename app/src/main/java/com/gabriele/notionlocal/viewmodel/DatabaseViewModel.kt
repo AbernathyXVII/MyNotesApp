@@ -5,6 +5,8 @@ import com.gabriele.notionlocal.data.entity.DateSettings
 import com.gabriele.notionlocal.data.entity.NAME_COLUMN_KEY
 import com.gabriele.notionlocal.data.entity.nameOrderAt
 import com.gabriele.notionlocal.data.entity.tableKeys
+import com.gabriele.notionlocal.data.entity.DurationUnit
+import com.gabriele.notionlocal.data.entity.durationMillisOfCell
 import com.gabriele.notionlocal.data.entity.defaultColumnWidth
 import com.gabriele.notionlocal.data.entity.snapColumnWidth
 import com.gabriele.notionlocal.data.entity.encodeColumnWidths
@@ -775,6 +777,8 @@ class DatabaseViewModel(
                 raw
             )
             ColumnType.CHECKBOX -> SortValue(if (raw == "true") 1.0 else 0.0, raw)
+            // Per quanto dura, non per quando comincia; senza la fine è vuota.
+            ColumnType.DURATION -> durationMillisOfCell(raw)?.let { SortValue(it.toDouble(), raw) } ?: SortValue(null, "")
             // Per il titolo della pagina collegata, non per il suo id.
             ColumnType.PAGE_LINK -> SortValue(null, if (raw.isEmpty()) "" else _linkedPages.value[raw]?.title ?: raw)
             // Per il testo che c'è scritto sopra, non per il colore.
@@ -1311,13 +1315,19 @@ class DatabaseViewModel(
         /** Solo per una colonna Number: formato, cifre, barra o anello (vedi `NumberSettings`). */
         number: NumberSettings? = null,
         /** Solo per una colonna Date: formato della data e dell'ora (vedi `DateSettings`). */
-        date: DateSettings? = null
+        date: DateSettings? = null,
+        /** Solo per una colonna Duration: fino a quale unità si scrive (vedi `DurationUnit`). */
+        duration: DurationUnit? = null
     ) {
         val column = rawColumn(columnId) ?: return
         viewModelScope.launch {
             val renamed = column.copy(name = name, type = type, optionsJson = optionsJson)
             val withNumber = number?.let { renamed.withNumberSettings(it) } ?: renamed
-            repository.updateColumn(date?.let { withNumber.withDateSettings(it) } ?: withNumber)
+            val withDate = date?.let { withNumber.withDateSettings(it) } ?: withNumber
+            // Fino ai minuti è com'è di suo: non serve scriverlo.
+            repository.updateColumn(
+                duration?.let { withDate.copy(durationFormat = it.takeIf { unit -> unit != DurationUnit.MINUTES }?.name) } ?: withDate
+            )
         }
     }
 

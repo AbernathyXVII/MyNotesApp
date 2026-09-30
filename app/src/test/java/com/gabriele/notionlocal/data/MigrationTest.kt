@@ -73,7 +73,7 @@ class MigrationTest {
         assertNull(page.sourceDatabaseId)
         assertNull(page.viewHiddenColumnIds)
         assertNull(page.cardCoverScale)
-        assertEquals(46, db.openHelper.readableDatabase.version)
+        assertEquals(47, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -89,7 +89,7 @@ class MigrationTest {
         assertNull(yahei.cardCoverScale)
         assertNull(yahei.cardCoverOffsetX)
         assertNull(yahei.cardCoverOffsetY)
-        assertEquals(46, db.openHelper.readableDatabase.version)
+        assertEquals(47, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -117,7 +117,7 @@ class MigrationTest {
         assertEquals(listOf(RichTextSpan(text = "", color = "#E03E3E")), spans("b2"))
         // Una pagina senza font resta com'era.
         assertEquals(listOf(RichTextSpan(text = "Normale")), spans("b3"))
-        assertEquals(46, db.openHelper.readableDatabase.version)
+        assertEquals(47, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -129,7 +129,7 @@ class MigrationTest {
         assertNull(block.notifyAt)
         assertTrue(db.blockDao().getNotificationRows().isEmpty())
         assertTrue(db.databaseDao().getNotifyingDateCells().isEmpty())
-        assertEquals(46, db.openHelper.readableDatabase.version)
+        assertEquals(47, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -149,7 +149,7 @@ class MigrationTest {
             )
         )
         assertEquals("b1", db.inkDao().getForPageOnce("p1").single().anchor)
-        assertEquals(46, db.openHelper.readableDatabase.version)
+        assertEquals(47, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -159,7 +159,7 @@ class MigrationTest {
         assertEquals("Pagina alla 33", page.title)
         assertFalse(page.isProtected)
         assertEquals(0, db.pageDao().countProtected())
-        assertEquals(46, db.openHelper.readableDatabase.version)
+        assertEquals(47, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -170,7 +170,7 @@ class MigrationTest {
         assertNull(page.notebookSectionId)
         assertTrue(db.notebookDao().getNotebooksOnce().isEmpty())
         assertEquals(0, db.notebookDao().countProtectedSections())
-        assertEquals(46, db.openHelper.readableDatabase.version)
+        assertEquals(47, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -184,7 +184,7 @@ class MigrationTest {
         assertTrue(column.showNumber)
         assertFalse(column.ringCentered)
         assertNull(db.pageDao().getById("db1")!!.viewCalculations)
-        assertEquals(46, db.openHelper.readableDatabase.version)
+        assertEquals(47, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -194,7 +194,7 @@ class MigrationTest {
         assertNull(columns.getValue("c1").contentAlignment)
         assertEquals(CellAlignment.LEFT, columns.getValue("c1").cellAlignment)
         assertEquals(CellAlignment.CENTER, columns.getValue("c2").cellAlignment)
-        assertEquals(46, db.openHelper.readableDatabase.version)
+        assertEquals(47, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -205,7 +205,7 @@ class MigrationTest {
         assertNull(date.timeFormat)
         assertEquals(DateSettings(), date.dateSettings())
         assertEquals(TimeFormatKind.H24, date.dateSettings().time)
-        assertEquals(46, db.openHelper.readableDatabase.version)
+        assertEquals(47, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -214,7 +214,7 @@ class MigrationTest {
         val pages = db.pageDao()
         listOf("p1", "db1", "rp1").forEach { id -> assertFalse(pages.getById(id)!!.isTemplate) }
         assertEquals("r1", db.databaseDao().getRowsLinkingTo("rp1").single().id)
-        assertEquals(46, db.openHelper.readableDatabase.version)
+        assertEquals(47, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -223,7 +223,7 @@ class MigrationTest {
         val pages = db.pageDao()
         listOf("p1", "db1", "rp1").forEach { id -> assertNull(pages.getById(id)!!.chartSettings) }
         assertEquals("Database alla 39", pages.getById("db1")!!.title)
-        assertEquals(46, db.openHelper.readableDatabase.version)
+        assertEquals(47, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -232,7 +232,7 @@ class MigrationTest {
         val pages = db.pageDao()
         listOf("p1", "db1", "rp1").forEach { id -> assertNull(pages.getById(id)!!.tableSubGroupColumnId) }
         assertEquals("Database alla 40", pages.getById("db1")!!.title)
-        assertEquals(46, db.openHelper.readableDatabase.version)
+        assertEquals(47, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -243,7 +243,7 @@ class MigrationTest {
         assertEquals(true, pages.getById("p1")!!.hideEmptySubGroups)
         assertEquals(false, pages.getById("db1")!!.hideEmptySubGroups)
         assertEquals(false, pages.getById("db1")!!.hideEmptyGroups)
-        assertEquals(46, db.openHelper.readableDatabase.version)
+        assertEquals(47, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -258,7 +258,7 @@ class MigrationTest {
         }
         assertEquals(emptyList<Any>(), pages.getViewsOnce("db1"))
         assertEquals("Database alla 42", pages.getById("db1")!!.title)
-        assertEquals(46, db.openHelper.readableDatabase.version)
+        assertEquals(47, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -270,7 +270,7 @@ class MigrationTest {
             assertNull(pages.getById(id)!!.fitColumns)
         }
         assertEquals("Database alla 43", pages.getById("db1")!!.title)
-        assertEquals(46, db.openHelper.readableDatabase.version)
+        assertEquals(47, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -280,7 +280,7 @@ class MigrationTest {
         assertEquals("Riga alla 44", row.title)
         assertNull(row.parentRowId)
         assertEquals(false, row.subRowsCollapsed)
-        assertEquals(46, db.openHelper.readableDatabase.version)
+        assertEquals(47, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -290,6 +290,17 @@ class MigrationTest {
         listOf("p1", "db1", "rp1").forEach { id -> assertEquals(-1, pages.getById(id)!!.nameColumnOrder) }
         assertEquals("Database alla 45", pages.getById("db1")!!.title)
         assertEquals("Date", db.databaseDao().getColumnsForPageOnce("db1").single().name)
-        assertEquals(46, db.openHelper.readableDatabase.version)
+        assertEquals(47, db.openHelper.readableDatabase.version)
+    }
+
+    @Test
+    fun from46EveryColumnKeepsItsType() = runBlocking<Unit> {
+        val db = AppDatabase.getInstance(databaseAtVersion(46))
+        val column = db.databaseDao().getColumnsForPageOnce("db1").single()
+        assertEquals(com.gabriele.notionlocal.data.entity.ColumnType.DATE, column.type)
+        assertNull(column.durationFormat)
+        assertEquals(-1, db.pageDao().getById("db1")!!.nameColumnOrder)
+        assertEquals("Database alla 46", db.pageDao().getById("db1")!!.title)
+        assertEquals(47, db.openHelper.readableDatabase.version)
     }
 }

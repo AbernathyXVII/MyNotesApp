@@ -49,9 +49,16 @@ const val SNAP_TO_DEFAULT_DP = 4
 /** Una colonna "Image" è un quadrato: larga quanto è alta una riga. */
 const val DEFAULT_IMAGE_COLUMN_WIDTH_DP = 44
 
+/**
+ * Una colonna "Duration" nasce più larga: ci sta tutta "30 years, 7 months,
+ * 17 days, 21 hours and 22 minutes", che in 150 si fermerebbe a "30 years, 7…".
+ */
+const val DEFAULT_DURATION_COLUMN_WIDTH_DP = 320
+
 fun defaultColumnWidth(key: String, type: ColumnType? = null): Int = when {
     key == NAME_COLUMN_KEY -> DEFAULT_NAME_COLUMN_WIDTH_DP
     type == ColumnType.IMAGE -> DEFAULT_IMAGE_COLUMN_WIDTH_DP
+    type == ColumnType.DURATION -> DEFAULT_DURATION_COLUMN_WIDTH_DP
     else -> DEFAULT_COLUMN_WIDTH_DP
 }
 

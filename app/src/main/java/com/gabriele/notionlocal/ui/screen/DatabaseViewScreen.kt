@@ -1,6 +1,8 @@
 package com.gabriele.notionlocal.ui.screen
 
 import com.gabriele.notionlocal.data.entity.dateSettings
+import com.gabriele.notionlocal.data.entity.DurationUnit
+import com.gabriele.notionlocal.data.entity.durationFormatOf
 import com.gabriele.notionlocal.data.entity.DateSettings
 import androidx.compose.material.icons.filled.FormatAlignRight
 import com.gabriele.notionlocal.data.entity.parseCalculationAlignments
@@ -118,6 +120,7 @@ import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Segment
 import androidx.compose.material.icons.filled.SubdirectoryArrowRight
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Timelapse
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.ui.platform.LocalContext
 import com.gabriele.notionlocal.data.PageImageStore
@@ -1583,11 +1586,11 @@ private fun DatabaseViewBody(
         PropertySheet(
             target = target,
             onDismiss = { propertyTarget = null },
-            onSave = { name, type, optionsJson, number, date ->
+            onSave = { name, type, optionsJson, number, date, duration ->
                 when (target) {
                     is PropertyTarget.New -> viewModel.addColumn(name, type, optionsJson)
                     is PropertyTarget.Existing ->
-                        viewModel.updateColumn(target.column.id, name, type, optionsJson, number, date)
+                        viewModel.updateColumn(target.column.id, name, type, optionsJson, number, date, duration)
                 }
                 propertyTarget = null
             },
@@ -2160,6 +2163,7 @@ internal fun cellFitWidth(
         val cell = parseColorCell(value)
         measure(cell.text.ifEmpty { if (hexToColor(cell.color) == null) "\u2014" else "" }, typography.bodyMedium)
     }
+    ColumnType.DURATION -> measure(durationLabel(value, durationFormatOf(column.durationFormat)) ?: "\u2014", typography.bodyMedium)
     ColumnType.CREATED_TIME, ColumnType.LAST_EDITED_TIME -> {
         val instant = if (column.type == ColumnType.CREATED_TIME) row.createdAt else row.updatedAt ?: row.createdAt
         measure(Instant.ofEpochMilli(instant).atZone(AppSettings.zoneId).format(DATE_TIME_FORMAT), typography.bodyMedium)
@@ -4330,6 +4334,7 @@ private fun listCellLabel(column: DatabaseColumnEntity, value: String): String =
     ColumnType.COLOR -> parseColorCell(value).text
     ColumnType.NUMBER -> formatNumberValue(value, column)
     ColumnType.DATE -> parseDateRange(value)?.label(column.dateSettings()) ?: value
+    ColumnType.DURATION -> durationLabel(value, durationFormatOf(column.durationFormat)).orEmpty()
     ColumnType.MULTI_SELECT -> value.split(MULTI_VALUE_SEPARATOR)
         .filter { it.isNotBlank() }
         .joinToString(", ")
@@ -5984,7 +5989,8 @@ private fun CellContent(
         // La data e la cella colorata se lo mettono da sé, dentro la
         // propria zona toccabile.
         modifier = if (column.type == ColumnType.DATE || column.type == ColumnType.COLOR ||
-            column.type == ColumnType.PAGE_LINK || column.type == ColumnType.IMAGE
+            column.type == ColumnType.PAGE_LINK || column.type == ColumnType.IMAGE ||
+            column.type == ColumnType.DURATION
         ) {
             Modifier
         } else {
@@ -6035,6 +6041,14 @@ private fun CellContent(
                 onValueChange = onValueChange,
                 contentPadding = cellPadding,
                 alignment = LocalCellAlignment.current.box
+            )
+
+            ColumnType.DURATION -> DurationCell(
+                value = value,
+                onValueChange = onValueChange,
+                title = DbStrings.columnName(column.name),
+                format = durationFormatOf(column.durationFormat),
+                contentPadding = cellPadding
             )
 
             ColumnType.IMAGE -> ImageCell(
@@ -8282,7 +8296,7 @@ internal fun RowPageProperties(
         PropertySheet(
             target = PropertyTarget.New(),
             onDismiss = { addingProperty = false },
-            onSave = { name, type, optionsJson, _, _ ->
+            onSave = { name, type, optionsJson, _, _, _ ->
                 viewModel.addColumn(name, type, optionsJson)
                 addingProperty = false
             },
@@ -8791,7 +8805,10 @@ private fun SettingsSheet(
                             // "Page link", che salva l'id della pagina.
                             it.type != ColumnType.COLOR &&
                             it.type != ColumnType.PAGE_LINK &&
-                            it.type != ColumnType.IMAGE
+                            it.type != ColumnType.IMAGE &&
+                            // Una durata ha per valore due istanti: un
+                            // gruppo per valore sarebbe un gruppo per riga.
+                            it.type != ColumnType.DURATION
                     }
                     SheetGroup {
                         SettingsRow(
@@ -8830,6 +8847,7 @@ private fun SettingsSheet(
                             it.type != ColumnType.COLOR &&
                             it.type != ColumnType.PAGE_LINK &&
                             it.type != ColumnType.IMAGE &&
+                            it.type != ColumnType.DURATION &&
                             it.id != tableGroupColumn?.id
                     }
                     SheetGroup {
@@ -9212,7 +9230,7 @@ internal fun SettingsRow(
 private fun PropertySheet(
     target: PropertyTarget,
     onDismiss: () -> Unit,
-    onSave: (String, ColumnType, String, NumberSettings?, DateSettings?) -> Unit,
+    onSave: (String, ColumnType, String, NumberSettings?, DateSettings?, DurationUnit?) -> Unit,
     onDelete: () -> Unit
 ) {
     val existing = (target as? PropertyTarget.Existing)?.column
@@ -9223,6 +9241,7 @@ private fun PropertySheet(
     val showTypes = existing == null || changeTypeOnly
     var number by remember(existing?.id) { mutableStateOf(existing?.numberSettings() ?: NumberSettings()) }
     var date by remember(existing?.id) { mutableStateOf(existing?.dateSettings() ?: DateSettings()) }
+    var duration by remember(existing?.id) { mutableStateOf(durationFormatOf(existing?.durationFormat)) }
 
     var name by remember(existing?.id) { mutableStateOf(existing?.name ?: "") }
     var selectedType by remember(existing?.id) {
@@ -9271,7 +9290,8 @@ private fun PropertySheet(
                             selectedType,
                             optionsJson,
                             number.takeIf { selectedType == ColumnType.NUMBER },
-                            date.takeIf { selectedType == ColumnType.DATE }
+                            date.takeIf { selectedType == ColumnType.DATE },
+                            duration.takeIf { selectedType == ColumnType.DURATION }
                         )
                     }
                 ) { Text(if (existing == null) DbStrings.add else EditorStrings.save) }
@@ -9306,6 +9326,12 @@ private fun PropertySheet(
             if (!showTypes && existing?.type == ColumnType.DATE) {
                 Spacer(modifier = Modifier.size(12.dp))
                 DateSettingsSection(settings = date, onChange = { date = it })
+            }
+
+            // "Edit property" di una colonna Duration: fino a quale unità si scrive.
+            if (!showTypes && existing?.type == ColumnType.DURATION) {
+                Spacer(modifier = Modifier.size(12.dp))
+                DurationSettingsSection(format = duration, onChange = { duration = it })
             }
 
             if (showTypes) {
@@ -9487,6 +9513,7 @@ internal fun ColumnType.icon(): ImageVector = when (this) {
     ColumnType.SELECT -> Icons.Filled.ArrowDropDownCircle
     ColumnType.MULTI_SELECT -> Icons.Filled.Checklist
     ColumnType.DATE -> Icons.Filled.CalendarToday
+    ColumnType.DURATION -> Icons.Filled.Timelapse
     ColumnType.CHECKBOX -> Icons.Filled.CheckBox
     ColumnType.COLOR -> Icons.Filled.FormatColorFill
     ColumnType.URL -> Icons.Filled.Link

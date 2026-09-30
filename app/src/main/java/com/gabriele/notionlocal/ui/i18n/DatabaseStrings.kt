@@ -5,6 +5,7 @@ import com.gabriele.notionlocal.data.entity.CalendarMode
 import com.gabriele.notionlocal.data.entity.Calculation
 import com.gabriele.notionlocal.data.entity.CalculationGroup
 import com.gabriele.notionlocal.data.entity.NumberFormatKind
+import com.gabriele.notionlocal.data.entity.DurationUnit
 import com.gabriele.notionlocal.data.entity.ColumnType
 import com.gabriele.notionlocal.data.entity.DatabaseLayout
 import com.gabriele.notionlocal.data.entity.GalleryCardPreview
@@ -34,6 +35,7 @@ object DbStrings {
         ColumnType.SELECT -> "Select"
         ColumnType.MULTI_SELECT -> "Multi-select"
         ColumnType.DATE -> "Date"
+        ColumnType.DURATION -> "Duration"
         ColumnType.CHECKBOX -> "Checkbox"
         ColumnType.COLOR -> "Color cell"
         ColumnType.URL -> "URL"
@@ -51,6 +53,7 @@ object DbStrings {
         ColumnType.SELECT -> t("Select", "Selezione", "Auswahl", "Sélection", "Selección", "单选", "선택", "セレクト")
         ColumnType.MULTI_SELECT -> t("Multi-select", "Selezione multipla", "Mehrfachauswahl", "Sélection multiple", "Selección múltiple", "多选", "다중 선택", "マルチセレクト")
         ColumnType.DATE -> t("Date", "Data", "Datum", "Date", "Fecha", "日期", "날짜", "日付")
+        ColumnType.DURATION -> t("Duration", "Durata", "Dauer", "Durée", "Duración", "时长", "기간", "期間")
         ColumnType.CHECKBOX -> t("Checkbox", "Casella", "Kontrollkästchen", "Case à cocher", "Casilla", "复选框", "체크박스", "チェックボックス")
         ColumnType.COLOR -> t("Color cell", "Cella colorata", "Farbzelle", "Cellule colorée", "Celda de color", "颜色单元格", "색상 셀", "色付きセル")
         ColumnType.URL -> t("URL", "URL", "URL", "URL", "URL", "网址", "URL", "URL")
@@ -369,12 +372,28 @@ object DbStrings {
         hasEnd -> t("At 9:00 on the first and last day", "Alle 9:00 del primo e dell'ultimo giorno", "Um 9:00 am ersten und letzten Tag", "À 9:00 le premier et le dernier jour", "A las 9:00 el primer y el último día", "第一天和最后一天的 9:00", "첫날과 마지막 날 9:00에", "初日と最終日の 9:00 に")
         else -> t("At 9:00 on that day", "Alle 9:00 di quel giorno", "Um 9:00 an diesem Tag", "À 9:00 ce jour-là", "A las 9:00 de ese día", "当天 9:00", "그날 9:00에", "その日の 9:00 に")
     }
+    val startDate get() = t("Start date", "Data di inizio", "Startdatum", "Date de début", "Fecha de inicio", "开始日期", "시작 날짜", "開始日")
     val startTime get() = t("Start time", "Ora di inizio", "Startzeit", "Heure de début", "Hora de inicio", "开始时间", "시작 시간", "開始時刻")
     val endDate get() = t("End date", "Data di fine", "Enddatum", "Date de fin", "Fecha de fin", "结束日期", "종료 날짜", "終了日")
     val endTime get() = t("End time", "Ora di fine", "Endzeit", "Heure de fin", "Hora de fin", "结束时间", "종료 시간", "終了時刻")
     val repeat get() = t("Repeat", "Ripeti", "Wiederholen", "Répéter", "Repetir", "重复", "반복", "繰り返し")
     val clear get() = t("Clear", "Cancella", "Löschen", "Effacer", "Borrar", "清除", "지우기", "クリア")
     val ok get() = t("OK", "OK", "OK", "OK", "Aceptar", "确定", "확인", "OK")
+    // --- "Duration" (dal 29/09/2026) ---
+
+    /** Quanto dura, a parole nella lingua dell'app: vedi `durationWords`. */
+    fun durationText(units: List<Pair<DurationUnit, Long>>): String = durationWords(units, AppSettings.language)
+    val durationChooseBoth get() = t("Choose the start and the end", "Scegli l'inizio e la fine", "Wähle Beginn und Ende", "Choisis le début et la fin", "Elige el inicio y el fin", "请选择开始和结束", "시작과 끝을 선택하세요", "開始と終了を選んでください")
+    val durationEndBeforeStart get() = t("The end comes before the start", "La fine viene prima dell'inizio", "Das Ende liegt vor dem Beginn", "La fin précède le début", "El fin es anterior al inicio", "结束早于开始", "끝이 시작보다 앞섭니다", "終了が開始より前です")
+    /** Fino a quale unità si scrive una durata: le scelte di "Show as". */
+    fun durationFormatName(unit: DurationUnit): String = when (unit) {
+        DurationUnit.YEARS -> t("Years", "Anni", "Jahre", "Années", "Años", "年", "년", "年")
+        DurationUnit.MONTHS -> t("Years and months", "Anni e mesi", "Jahre und Monate", "Années et mois", "Años y meses", "年和月", "년, 개월", "年と月")
+        DurationUnit.DAYS -> t("Years, months and days", "Anni, mesi e giorni", "Jahre, Monate und Tage", "Années, mois et jours", "Años, meses y días", "年、月、天", "년, 개월, 일", "年・月・日")
+        DurationUnit.HOURS -> t("Years, months, days and hours", "Anni, mesi, giorni e ore", "Jahre, Monate, Tage und Stunden", "Années, mois, jours et heures", "Años, meses, días y horas", "年、月、天、小时", "년, 개월, 일, 시간", "年・月・日・時間")
+        DurationUnit.MINUTES -> t("Years, months, days, hours and minutes", "Anni, mesi, giorni, ore e minuti", "Jahre, Monate, Tage, Stunden und Minuten", "Années, mois, jours, heures et minutes", "Años, meses, días, horas y minutos", "年、月、天、小时、分钟", "년, 개월, 일, 시간, 분", "年・月・日・時間・分")
+    }
+
     // I selettori di data e ora come quelli di Samsung (vedi `SamsungPickers.kt`).
     val setDate get() = t("Set date", "Imposta data", "Datum festlegen", "Définir la date", "Establecer fecha", "设置日期", "날짜 설정", "日付を設定")
     val setTime get() = t("Set time", "Imposta ora", "Uhrzeit festlegen", "Définir l'heure", "Establecer hora", "设置时间", "시간 설정", "時刻を設定")
