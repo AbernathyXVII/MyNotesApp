@@ -2022,6 +2022,33 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**30/09/2026 — "Color columns": la bacheca colorata come su Notion**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 326 test
+passati; commit solo in locale)*
+
+L'utente, con la foto di una bacheca di Notion (colonne "1", "2", "3" e "No
+Select", ognuna tinta del colore del suo tag), parola per parola:
+> «Io intendevo un qualcosa del genere per i colori del Board»
+
+- **[Nuova funzionalità]** "Color cards" diventa "**Color columns**" e fa
+  come Notion: acceso, **la colonna intera** ha un velo del colore del suo
+  tag; in cima c'è il tag stesso (la pastiglia colorata) e il numero delle
+  pagine nel suo colore; le schede hanno un velo più carico e un bordino,
+  con le scritte di sempre; "New" è largo quanto la colonna, col bordo e la
+  scritta del colore. La colonna senza valore è grigia, come il colore
+  "Default". Spento, la bacheca è quella di sempre. Prima, acceso, le
+  schede erano piene del colore del tag
+- **[Progetto]** Nessun cambio di schema (la stessa
+  `pages.colorBoardCards`). I colori si mescolano allo sfondo della pagina
+  (`lerp`): colonna 25%, schede 45%, bordi 65%; il numero e "New" sono il
+  colore del tag schiarito del 35%. Così si leggono anche col tema chiaro
+- Verificato sul telefono sulla vista "Videogiochi" di "Titolo tre H3"
+  messa in Board, col filtro allargato per prova a PC, SWITCH e XBOX:
+  colonne PS5 blu, PC grigia, SWITCH rossa, XBOX verde, coi loro tag in
+  cima, le schede più cariche col bordino e "New" colorato. Poi filtro di
+  nuovo su PS5, "Color columns" spento e vista rimessa in Table: database
+  uguale, tranne la data di modifica della vista
+
 **30/09/2026 — "Color cards": le schede della bacheca del colore del loro tag**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 326 test
 passati; commit solo in locale)*

@@ -54,6 +54,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.material.icons.filled.DragIndicator
 import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -2814,7 +2815,7 @@ private fun buildRowGroups(
 private fun BoardLayout(
     state: DatabaseTableState,
     groupColumn: DatabaseColumnEntity?,
-    /** "Color cards": le schede del colore del tag della loro colonna. */
+    /** "Color columns": ogni colonna, con le sue schede, del colore del suo tag. */
     colorCards: Boolean = false,
     newRowTick: Int,
     onOpenRow: (DatabaseRowEntity) -> Unit,
@@ -2836,8 +2837,10 @@ private fun BoardLayout(
 
     val options = parseSelectOptionsFull(groupColumn.optionsJson)
     val groups = options.map { it.label } + ""
-    // Il colore di ogni colonna, per "Color cards"; quella senza valore non ne ha.
+    // Il colore di ogni colonna, per "Color columns"; quella senza valore è grigia.
     val groupColors = options.associate { it.label to it.color }
+    val pageBackground = MaterialTheme.colorScheme.background
+    val onPage = MaterialTheme.colorScheme.onBackground
 
     val boardScroll = rememberScrollState()
 
@@ -2857,27 +2860,47 @@ private fun BoardLayout(
                 (state.cellValues[it.id to groupColumn.id] ?: "") == groupValue
             }
 
+            // **"Color columns"** (dal 30/09/2026, sul modello di Notion che
+            // l'utente ha mostrato): la colonna intera ha un velo del colore
+            // del suo tag, le schede uno più carico col bordino, in cima c'è
+            // il tag stesso, e il numero e "New" sono del suo colore. La
+            // colonna senza valore resta grigia (il colore "Default").
+            val tint = if (colorCards) tagColor(groupColors[groupValue] ?: TAG_COLORS.first().hex) else null
+            val accent = tint?.let { lerp(it, onPage, BOARD_ACCENT_LIGHT) }
             Column(
                 modifier = Modifier
                     .width(BOARD_COLUMN_WIDTH)
                     .padding(horizontal = 6.dp)
+                    .then(
+                        if (tint != null) {
+                            Modifier
+                                .background(lerp(pageBackground, tint, BOARD_COLUMN_TINT), RoundedCornerShape(10.dp))
+                                .padding(start = 8.dp, end = 8.dp, bottom = 8.dp)
+                        } else {
+                            Modifier
+                        }
+                    )
             ) {
                 Row(
                     modifier = Modifier.padding(vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = groupValue.ifBlank { DbStrings.noValue(DbStrings.columnName(groupColumn.name)) },
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        modifier = Modifier.weight(1f, fill = false)
-                    )
+                    if (tint != null && groupValue.isNotEmpty()) {
+                        TagChip(label = groupValue, color = groupColors[groupValue])
+                    } else {
+                        Text(
+                            text = groupValue.ifBlank { DbStrings.noValue(DbStrings.columnName(groupColumn.name)) },
+                            style = MaterialTheme.typography.labelLarge,
+                            color = if (tint != null) onPage else MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                    }
                     Spacer(modifier = Modifier.size(8.dp))
                     Text(
                         text = rowsInGroup.size.toString(),
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = accent ?: MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
@@ -2886,21 +2909,39 @@ private fun BoardLayout(
                         row = row,
                         state = state,
                         groupColumnId = groupColumn.id,
-                        color = groupColors[groupValue]?.takeIf { colorCards },
+                        tint = tint,
                         onOpen = { onOpenRow(row) },
                         onLongPress = { onRowLongPress(row) }
                     )
                     Spacer(modifier = Modifier.size(8.dp))
                 }
 
-                TextButton(onClick = { onAddRowInGroup(groupValue) }) {
-                    Icon(
-                        Icons.Filled.Add,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.size(6.dp))
-                    Text(DbStrings.newShort, style = MaterialTheme.typography.labelMedium)
+                if (tint != null && accent != null) {
+                    // Come su Notion: "New" largo quanto la colonna, col
+                    // bordo e la scritta del colore del tag.
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .border(1.dp, lerp(pageBackground, tint, BOARD_BORDER_TINT), RoundedCornerShape(8.dp))
+                            .clickable { onAddRowInGroup(groupValue) }
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Filled.Add, contentDescription = null, tint = accent, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.size(6.dp))
+                        Text(DbStrings.newShort, style = MaterialTheme.typography.labelMedium, color = accent)
+                    }
+                } else {
+                    TextButton(onClick = { onAddRowInGroup(groupValue) }) {
+                        Icon(
+                            Icons.Filled.Add,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.size(6.dp))
+                        Text(DbStrings.newShort, style = MaterialTheme.typography.labelMedium)
+                    }
                 }
             }
         }
@@ -2939,32 +2980,32 @@ private fun MissingPropertyNotice(
 
 /**
  * Una scheda della bacheca: il nome della riga e i valori delle altre
- * proprietà. Con **"Color cards"** (dal 30/09/2026, chiesto dall'utente) è
- * del colore del tag della sua colonna, e le scritte sopra sono chiare come
- * sui tag.
+ * proprietà. Con **"Color columns"** (dal 30/09/2026) ha un velo del colore
+ * del tag della sua colonna, più carico di quello della colonna, e un
+ * bordino: le scritte restano quelle di sempre e si leggono.
  */
 @Composable
 private fun BoardCard(
     row: DatabaseRowEntity,
     state: DatabaseTableState,
     groupColumnId: String,
-    /** Il colore del tag della colonna ("#RRGGBB"), o null per quello di sempre. */
-    color: String? = null,
+    /** Il colore del tag della colonna, o null per la scheda di sempre. */
+    tint: Color? = null,
     onOpen: () -> Unit,
     onLongPress: () -> Unit
 ) {
-    val scheme = MaterialTheme.colorScheme
-    MaterialTheme(
-        colorScheme = if (color == null) {
-            scheme
-        } else {
-            scheme.copy(onBackground = NotionWhite, onSurfaceVariant = NotionWhite.copy(alpha = 0.78f))
-        }
-    ) {
+    val pageBackground = MaterialTheme.colorScheme.background
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(if (color != null) tagColor(color) else DarkSurface, RoundedCornerShape(8.dp))
+            .background(if (tint != null) lerp(pageBackground, tint, BOARD_CARD_TINT) else DarkSurface, RoundedCornerShape(8.dp))
+            .then(
+                if (tint != null) {
+                    Modifier.border(1.dp, lerp(pageBackground, tint, BOARD_BORDER_TINT), RoundedCornerShape(8.dp))
+                } else {
+                    Modifier
+                }
+            )
             .foundInside(row.id, RoundedCornerShape(8.dp))
             .pointerInput(row.id) {
                 detectTapGestures(onTap = { onOpen() }, onLongPress = { onLongPress() })
@@ -2996,8 +3037,14 @@ private fun BoardCard(
                 }
             }
     }
-    }
 }
+
+// Quanto colore del tag prendono, in "Color columns", la colonna, le schede,
+// i loro bordi, e quanto si schiariscono il numero e "New".
+private const val BOARD_COLUMN_TINT = 0.25f
+private const val BOARD_CARD_TINT = 0.45f
+private const val BOARD_BORDER_TINT = 0.65f
+private const val BOARD_ACCENT_LIGHT = 0.35f
 
 /**
  * La visualizzazione a calendario: un anno, un mese o una settimana per
@@ -8451,7 +8498,7 @@ private fun SettingsSheet(
     hideEmptyGroups: Boolean = true,
     onSetTableGroupColumn: ((String?) -> Unit)? = null,
     onSetHideEmptyGroups: ((Boolean) -> Unit)? = null,
-    /** "Color cards" della bacheca (dal 30/09/2026). */
+    /** "Color columns" della bacheca (dal 30/09/2026). */
     colorBoardCards: Boolean = false,
     onSetColorBoardCards: ((Boolean) -> Unit)? = null,
     /** I sottogruppi della tabella: la proprietà scelta, e come cambiarla. */
@@ -8616,14 +8663,14 @@ private fun SettingsSheet(
                                 value = groupColumn?.name?.let(DbStrings::columnName) ?: DbStrings.none,
                                 onClick = { page = SettingsPage.GROUP_BY }
                             )
-                            // **"Color cards"** (dal 30/09/2026, chiesto
-                            // dall'utente): le schede del colore del tag
-                            // della loro colonna.
+                            // **"Color columns"** (dal 30/09/2026, chiesto
+                            // dall'utente): ogni colonna, con le sue schede,
+                            // del colore del suo tag.
                             if (onSetColorBoardCards != null) {
                                 HorizontalDivider()
                                 SettingsToggleRow(
                                     icon = Icons.Filled.Palette,
-                                    label = DbStrings.colorCards,
+                                    label = DbStrings.colorColumns,
                                     checked = colorBoardCards,
                                     onCheckedChange = onSetColorBoardCards
                                 )

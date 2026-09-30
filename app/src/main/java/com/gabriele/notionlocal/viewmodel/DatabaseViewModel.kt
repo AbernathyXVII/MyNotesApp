@@ -1084,7 +1084,7 @@ class DatabaseViewModel(
         viewModelScope.launch { pageRepository.updatePage(updated) }
     }
 
-    /** **"Color cards"** della bacheca (dal 30/09/2026): le schede del colore del tag della loro colonna. */
+    /** **"Color columns"** della bacheca (dal 30/09/2026): ogni colonna del colore del suo tag. */
     fun setColorBoardCards(color: Boolean) {
         val current = _page.value ?: return
         val updated = current.copy(colorBoardCards = color)

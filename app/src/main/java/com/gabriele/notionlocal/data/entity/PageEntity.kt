@@ -271,8 +271,8 @@ data class PageEntity(
     // suo 1 sono i tre puntini e l'a capo.
     @ColumnInfo(name = "wrapCells")
     var cellOverflow: Int = 0,
-    // **"Color cards"** della bacheca (dal 30/09/2026), di questa vista: le
-    // schede prendono il colore del tag della loro colonna.
+    // **"Color columns"** della bacheca (dal 30/09/2026), di questa vista:
+    // ogni colonna, con le sue schede, del colore del suo tag.
     var colorBoardCards: Boolean = false,
     // Quale proprietà data colloca le righe nel calendario. null = non
     // scelta: si usa la prima proprietà di tipo data che c'è.
