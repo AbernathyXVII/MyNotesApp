@@ -5159,6 +5159,19 @@ private fun BlockRow(
         )
         viewModel.consumePendingCaret()
     }
+    // **Il font, il corpo e il colore messi dalla barra Aa o dal pennello**
+    // arrivano subito, anche col fuoco (corretto il 30/09/2026): prima il
+    // corpo scelto nella finestrella andava nel database ma non qui, e il
+    // titolo del toggle restava com'era; alla lettera dopo il campo
+    // riscriveva i suoi span e il corpo nuovo si perdeva. Il testo non
+    // cambia, quindi tastiera e cursore restano dove sono.
+    LaunchedEffect(block.id) {
+        viewModel.externalSpans.collect { (id, spans) ->
+            if (id == block.id && spans.plainText() == bodyOf(editState.fieldValue.text)) {
+                editState = editState.copy(spans = spans)
+            }
+        }
+    }
     val focusRequester = remember { FocusRequester() }
     val focusPark = LocalFocusPark.current
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -5258,6 +5271,12 @@ private fun BlockRow(
     // dentro un toggle veniva più largo dello stesso elenco fuori. Il
     // titolo del toggle e le altre isole tengono il loro respiro.
     val rowPadding = if (block.type in FLOWING_TYPES) 0.dp else 4.dp
+    // Col testo più grande la prima riga si allunga (`lineScale`): la
+    // freccetta del toggle, la casella e la campanella scendono di metà
+    // dell'allungamento, così restano a metà della riga e non in cima
+    // (dal 30/09/2026, col corpo del titolo che finalmente cambia).
+    val baseLineHeight = with(LocalDensity.current) { MaterialTheme.typography.bodyLarge.lineHeight.toDp() }
+    val markerDrop = baseLineHeight * (lineScale - 1f) / 2
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -5273,6 +5292,7 @@ private fun BlockRow(
                 IconButton(
                     onClick = { viewModel.toggleExpanded(block) },
                     modifier = Modifier
+                        .padding(top = markerDrop)
                         .size(TOGGLE_ARROW_SIZE)
                         .offset(y = -TOGGLE_ARROW_LIFT)
                 ) {
@@ -5326,15 +5346,17 @@ private fun BlockRow(
             }
 
             BlockType.CHECKBOX -> {
-                CheckboxMark(
-                    checked = block.isChecked,
-                    onToggle = { viewModel.toggleCheckbox(block) }
-                )
+                Box(modifier = Modifier.padding(top = markerDrop)) {
+                    CheckboxMark(
+                        checked = block.isChecked,
+                        onToggle = { viewModel.toggleCheckbox(block) }
+                    )
+                }
                 Spacer(modifier = Modifier.size(8.dp))
             }
 
             BlockType.NOTIFICATION -> {
-                Box(modifier = Modifier.size(24.dp), contentAlignment = Alignment.Center) {
+                Box(modifier = Modifier.padding(top = markerDrop).size(24.dp), contentAlignment = Alignment.Center) {
                     Icon(
                         Icons.Filled.Notifications,
                         contentDescription = null,

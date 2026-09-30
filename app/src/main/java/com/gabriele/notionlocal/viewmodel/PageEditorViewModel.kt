@@ -36,6 +36,8 @@ import com.gabriele.notionlocal.ui.theme.MIN_PAGE_FONT_SIZE
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -493,6 +495,20 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
     }
 
     /**
+     * **La formattazione messa da fuori a un blocco** (dal 30/09/2026): il
+     * font, il corpo e il colore scelti dalla barra Aa e dal pennello, col
+     * blocco e i suoi span nuovi. I campi dei blocchi a sé (il titolo di un
+     * toggle, una casella da spuntare…) tengono i loro span mentre si
+     * scrive, e quelli salvati li rileggono solo senza il fuoco: la
+     * finestrella del corpo il fuoco non lo toglie, e il titolo restava
+     * com'era — poi, alla lettera dopo, il campo riscriveva i suoi span e il
+     * corpo nuovo spariva ("Non mi modifica la grandezza del font di un
+     * titolo del toggle"). Con questo il campo li prende subito.
+     */
+    private val _externalSpans = MutableSharedFlow<Pair<String, List<RichTextSpan>>>(extraBufferCapacity = 16)
+    val externalSpans: SharedFlow<Pair<String, List<RichTextSpan>>> = _externalSpans
+
+    /**
      * Applica una modifica degli span a una selezione che può attraversare
      * più blocchi, come `applyColorToRun`: ogni blocco riceve la sua parte.
      */
@@ -514,7 +530,9 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
             val overlapStart = maxOf(blockStart, selection.start) - blockStart
             val overlapEnd = minOf(blockEnd, selection.end) - blockStart
             if (overlapStart >= overlapEnd) continue
-            updates.add(block.copy(textJson = json.encodeToString(transform(spansOf(block), overlapStart, overlapEnd))))
+            val newSpans = transform(spansOf(block), overlapStart, overlapEnd)
+            updates.add(block.copy(textJson = json.encodeToString(newSpans)))
+            _externalSpans.tryEmit(block.id to newSpans)
         }
         viewModelScope.launch { updates.forEach { repository.saveBlock(it) } }
     }
@@ -557,6 +575,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
                 hex
             )
             updates.add(block.copy(textJson = json.encodeToString(newSpans)))
+            _externalSpans.tryEmit(block.id to newSpans)
         }
 
         viewModelScope.launch { updates.forEach { repository.saveBlock(it) } }

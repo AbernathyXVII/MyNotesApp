@@ -2022,6 +2022,38 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**30/09/2026 — Il corpo del titolo di un toggle ora cambia**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 308 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Non mi modifica la grandezza del font di un titolo del toggle»
+
+- **[Bug fix]** Riprodotto sulla pagina di prova: selezionato il titolo di
+  un toggle e scelto 30 in "Font size" dalla barra Aa, la barra diceva 30
+  e nel database c'era 30, ma il titolo restava piccolo; alla prima
+  lettera scritta il 30 spariva anche dal database. Il titolo di un toggle
+  (come la casella da spuntare e la notifica) ha un campo suo che tiene la
+  sua copia della formattazione, e quella salvata la rileggeva solo senza
+  il fuoco: la finestrella del corpo il fuoco non lo toglie. Ora font,
+  corpo e colore messi dalla barra Aa e dal pennello arrivano subito anche
+  a quel campo, e restano scrivendo
+- **[Bug fix]** Col titolo grande, la freccetta del toggle (e la casella,
+  e la campanella) scende a metà della prima riga invece di restare in
+  cima
+- **[Progetto]** `PageEditorViewModel.externalSpans`: il blocco e i suoi
+  span nuovi, da `transformRun` (font e corpo) e `applyColorToRun`
+  (colore); il campo dei blocchi a sé li prende se il testo è lo stesso.
+  `markerDrop` nel campo: metà dell'allungamento della riga. Test in
+  `ToggleTitleSizeTest`
+- Verificato sul telefono sulla pagina di prova "Titolo tre H3" (My Space
+  non toccata; il toggle "SaaS" lì è dell'utente): prima della correzione
+  il bug si ripete uguale. Dopo: "Provax" a 30 si ingrandisce subito,
+  scrivendo "y" resta a 30 (`[{"text":"Provaxy","size":30}]`), la
+  freccetta sta a metà del titolo. Poi il toggle rimesso com'era, una
+  riga vuota: database uguale, tranne 3 voci di "Updates" della pagina di
+  prova
+
 **29-30/09/2026 — Nuova proprietà "Duration": quanto passa fra due date**
 *(Claude Code sul PC; verificato sul telefono; 306 test passati; commit
 solo in locale)*
