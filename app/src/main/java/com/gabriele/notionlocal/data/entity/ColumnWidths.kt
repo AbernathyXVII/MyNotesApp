@@ -34,7 +34,35 @@ fun parseFitColumns(raw: String?): Set<String> =
 fun encodeFitColumns(keys: Set<String>): String? =
     keys.takeIf { it.isNotEmpty() }?.sorted()?.joinToString(",")
 
-fun clampColumnWidth(widthDp: Int): Int = widthDp.coerceIn(MIN_COLUMN_WIDTH_DP, MAX_COLUMN_WIDTH_DP)
+fun clampColumnWidth(widthDp: Int, min: Int = MIN_COLUMN_WIDTH_DP): Int = widthDp.coerceIn(min, MAX_COLUMN_WIDTH_DP)
+
+/**
+ * **Le colonne in cui si scrive** (dal 30/09/2026, chiesto dall'utente) non
+ * vanno sotto questa larghezza: testo, numero, collegamento, email,
+ * telefono, cella colorata. Più strette non ci starebbe nemmeno una parola
+ * coi tre puntini.
+ */
+const val MIN_WRITABLE_COLUMN_WIDTH_DP = 80
+
+/** Name un po' di più: accanto al nome c'è OPEN. */
+const val MIN_NAME_COLUMN_WIDTH_DP = 120
+
+private val WRITABLE_COLUMN_TYPES = setOf(
+    ColumnType.TEXT,
+    ColumnType.NUMBER,
+    ColumnType.URL,
+    ColumnType.EMAIL,
+    ColumnType.PHONE,
+    ColumnType.COLOR
+)
+
+/** Più stretta di così questa colonna non va, né trascinandola né con "Fit to content". */
+fun minColumnWidth(key: String, type: ColumnType? = null): Int = when {
+    key == NAME_COLUMN_KEY -> MIN_NAME_COLUMN_WIDTH_DP
+    type in WRITABLE_COLUMN_TYPES -> MIN_WRITABLE_COLUMN_WIDTH_DP
+    // "Image" nasce quadrata a 44: il minimo non la allarga.
+    else -> minOf(MIN_COLUMN_WIDTH_DP, defaultColumnWidth(key, type))
+}
 
 /** La larghezza di sempre: 150, Name 200. */
 const val DEFAULT_COLUMN_WIDTH_DP = 150
@@ -62,7 +90,7 @@ fun defaultColumnWidth(key: String, type: ColumnType? = null): Int = when {
     else -> DEFAULT_COLUMN_WIDTH_DP
 }
 
-/** Dentro i limiti, e agganciata alla larghezza di sempre se ci è vicina. */
-fun snapColumnWidth(key: String, widthDp: Int, default: Int = defaultColumnWidth(key)): Int {
-    return if (kotlin.math.abs(widthDp - default) <= SNAP_TO_DEFAULT_DP) default else clampColumnWidth(widthDp)
+/** Dentro i limiti (`min`: vedi [minColumnWidth]), e agganciata alla larghezza di sempre se ci è vicina. */
+fun snapColumnWidth(key: String, widthDp: Int, default: Int = defaultColumnWidth(key), min: Int = minColumnWidth(key)): Int {
+    return if (kotlin.math.abs(widthDp - default) <= SNAP_TO_DEFAULT_DP) default else clampColumnWidth(widthDp, min)
 }

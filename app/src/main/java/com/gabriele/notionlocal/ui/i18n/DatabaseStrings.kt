@@ -395,6 +395,8 @@ object DbStrings {
     }
 
     // I selettori di data e ora come quelli di Samsung (vedi `SamsungPickers.kt`).
+    /** "Wrap cells" (dal 30/09/2026): nelle impostazioni di una tabella. */
+    val wrapCells get() = t("Wrap cells", "Testo a capo nelle celle", "Zellen umbrechen", "Retour à la ligne dans les cellules", "Ajustar texto en celdas", "单元格内换行", "셀 내용 줄바꿈", "セル内で折り返す")
     val setDate get() = t("Set date", "Imposta data", "Datum festlegen", "Définir la date", "Establecer fecha", "设置日期", "날짜 설정", "日付を設定")
     val setTime get() = t("Set time", "Imposta ora", "Uhrzeit festlegen", "Définir l'heure", "Establecer hora", "设置时间", "시간 설정", "時刻を設定")
     val previousMonth get() = t("Previous month", "Mese precedente", "Vorheriger Monat", "Mois précédent", "Mes anterior", "上个月", "이전 달", "前の月")

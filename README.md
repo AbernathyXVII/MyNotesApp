@@ -2022,6 +2022,66 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**30/09/2026 — "Wrap cells", i tre puntini e il testo intero di una cella**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 322 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Concedimi di far sì, tramite l'attivazione di un'opzione nelle settings
+> di ogni database, che tutto ciò che è scritto in una cella possa entrare
+> in uno spazio più alto, dipendentemente da quanto scrivo. Mi spiego
+> meglio: quando io allargo o rimpicciolisco la larghezza delle colonne,
+> tramite l'opzione nuova che metterai nelle setting dei database, posso
+> scegliere se il testo scritto in quella cella (che in realtà può non
+> essere visualizzato perché ho rimpicciolito troppo) verrà visualizzato in
+> uno spazio più alto (per far sì che tutto quanto venga visualizzato)
+> oppure con i tre puntini di sospensione per indicare che il titolo di
+> quella pagina (o qualsiasi cosa scritta in qualsiasi cella) continua.
+> Toccando ogni cella dove c'è del testo che continua e che di base non può
+> essere completamente visto, mi fa apparire un piccolo grigiume in
+> background (sulla stessa identica posizione dove c'era quel testo) sul
+> quale fa apparire il testo completo. Ovviamente, tutte le celle sulle
+> quali io posso scrivere qualsiasi cosa, avranno un minimo di larghezza
+> meno del quale non si può rimpicciolire»
+
+- **[Nuova funzionalità]** Nelle impostazioni di una tabella, sotto
+  "Group", l'interruttore "**Wrap cells**" (per vista, come le larghezze).
+  Acceso: il testo delle celle va a capo e **la riga si allunga** quanto la
+  sua cella più alta (nome, testo, numero, collegamento, email, telefono,
+  data, durata, "Page link", cella colorata, data di creazione e modifica;
+  i tag vanno a capo uno sotto l'altro); le linee fra le colonne seguono
+  tutta la riga. Scrivendo in una cella, il testo va a capo lì dentro
+- **[Nuova funzionalità]** Spento (di suo): quello che non ci sta finisce
+  coi **tre puntini**. Toccando una cella di testo, di numero, di
+  collegamento, email o telefono, o il nome di una riga, col testo tagliato,
+  compare **nello stesso punto un riquadro grigio col testo intero**, dove
+  si scrive come nella cella; si chiude con "Done" della tastiera, toccando
+  fuori o col gesto indietro. Se il testo ci sta, si scrive nella cella
+  come prima (col cursore in fondo). La data, la durata e "Page link"
+  tagliate si aprono col loro tocco di sempre, che le mostra intere
+- **[Nuova funzionalità]** **Larghezza minima** delle colonne in cui si
+  scrive: 80 per testo, numero, collegamento, email, telefono e cella
+  colorata, 120 per Name (c'è OPEN). Né trascinando il segnalino né con "Fit
+  to content" si va sotto; le misure salvate prima, più strette, si
+  allargano fin lì. Le altre colonne come prima (48; "Image" resta 44)
+- **[Progetto]** **Database alla versione 48**: `pages.wrapCells`. Nuovo
+  `CellText.kt`: `LocalWrapCells`, `TextLikeCell` (le celle in cui si
+  scrive: testo semplice finché non le si tocca), `FullTextPopup` (il
+  riquadro grigio). In "Wrap cells" la riga della tabella è alta quanto la
+  cella più alta (`IntrinsicSize.Min`). `minColumnWidth` in
+  `ColumnWidths.kt`. Test in `WrapCellsTest`, `CellTextRenderTest`
+  (disegnata davvero: i puntini, il riquadro, la scrittura, l'a capo) e
+  `MigrationTest` 47→48, col file `v47.sql`
+- Verificato sul telefono (copia del database prima; migrazione alla 48
+  senza errori) sulla vista "Videogiochi" di "Titolo tre H3": la data col
+  periodo finisce coi puntini; Text ristretta col segnalino si ferma a 80;
+  "Sdrogo" allungato per prova diventa "Sdrogo lu…", toccandolo compare il
+  riquadro grigio lì sopra col testo intero e la tastiera; cancellata la
+  parte in più nel riquadro, "Done" lo chiude. "Wrap cells" acceso: la data
+  va su due righe e la riga si allunga, nome, OPEN e tag a metà. Poi tutto
+  rimesso com'era: database uguale, tranne la colonna nuova e "Last
+  edited" della riga "Esempio nuovo"
+
 **30/09/2026 — Ritoccando un giorno col pallino, il pallino se ne va**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 316 test
 passati; commit solo in locale)*
@@ -8156,7 +8216,8 @@ le finestre che apre. Chi lo usa passa solo l'id del blocco.
 
 ## Nota tecnica
 
-Lo schema è alla **versione 47** (la 47, del 29/09/2026, aggiunge
+Lo schema è alla **versione 48** (la 48, del 30/09/2026, aggiunge
+`pages.wrapCells`, "Wrap cells" delle tabelle; la 47, del 29/09/2026, aggiunge
 `database_columns.durationFormat`, la proprietà Duration; la 46, dello stesso giorno, aggiunge
 `pages.nameColumnOrder`, il posto della colonna Name; la 45, dello stesso giorno, aggiunge
 `database_rows.parentRowId` e `subRowsCollapsed`, le sotto-righe; la 44, dello stesso giorno, aggiunge

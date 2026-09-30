@@ -131,7 +131,8 @@ internal fun PageLinkCell(
             .fillMaxWidth()
             .fillMaxHeight()
             .clickable(enabled = !locked && actions != null) { actions?.let { it.pick(value) { picked -> onValueChange(picked) } } }
-            .padding(horizontal = contentPadding),
+            .padding(horizontal = contentPadding)
+            .cellWrapPadding(),
         contentAlignment = alignment
     ) {
         when {
@@ -141,7 +142,7 @@ internal fun PageLinkCell(
                 style = MaterialTheme.typography.bodyMedium,
                 fontStyle = FontStyle.Italic,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
+                maxLines = cellMaxLines,
                 overflow = TextOverflow.Ellipsis
             )
             else -> Row(
@@ -158,7 +159,7 @@ internal fun PageLinkCell(
                     } else {
                         MaterialTheme.colorScheme.onBackground
                     },
-                    maxLines = 1,
+                    maxLines = cellMaxLines,
                     overflow = TextOverflow.Ellipsis
                 )
             }

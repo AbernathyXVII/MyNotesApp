@@ -264,6 +264,9 @@ data class PageEntity(
     // dati: subito prima della prima colonna con `orderIndex` uguale o più
     // alto. -1 = la prima, com'è sempre stata. Vedi `NameColumn.kt`.
     var nameColumnOrder: Int = -1,
+    // **"Wrap cells"** (dal 30/09/2026), di questa vista: il testo delle
+    // celle va a capo e la riga si allunga; spento, finisce coi tre puntini.
+    var wrapCells: Boolean = false,
     // Quale proprietà data colloca le righe nel calendario. null = non
     // scelta: si usa la prima proprietà di tipo data che c'è.
     var calendarDateColumnId: String? = null,

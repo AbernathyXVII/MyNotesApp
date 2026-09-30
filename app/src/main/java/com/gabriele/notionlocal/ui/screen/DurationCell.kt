@@ -74,14 +74,15 @@ internal fun DurationCell(
             .fillMaxWidth()
             .fillMaxHeight()
             .clickable(enabled = !locked) { editing = true }
-            .padding(horizontal = contentPadding),
+            .padding(horizontal = contentPadding)
+            .cellWrapPadding(),
         contentAlignment = LocalCellAlignment.current.box
     ) {
         Text(
             text = durationLabel(value, format) ?: "—",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onBackground,
-            maxLines = 1,
+            maxLines = cellMaxLines,
             overflow = TextOverflow.Ellipsis
         )
     }

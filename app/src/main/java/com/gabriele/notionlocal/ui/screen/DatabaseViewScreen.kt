@@ -206,6 +206,9 @@ import com.gabriele.notionlocal.data.entity.MAX_COLUMN_WIDTH_DP
 import com.gabriele.notionlocal.data.entity.snapColumnWidth
 import com.gabriele.notionlocal.data.entity.MIN_COLUMN_WIDTH_DP
 import com.gabriele.notionlocal.data.entity.namePosition
+import com.gabriele.notionlocal.data.entity.minColumnWidth
+import androidx.compose.material.icons.filled.WrapText
+import androidx.compose.foundation.layout.FlowRow
 import com.gabriele.notionlocal.data.entity.NAME_COLUMN_KEY
 import com.gabriele.notionlocal.data.entity.parseColumnWidths
 import com.gabriele.notionlocal.data.entity.parseFitColumns
@@ -1243,6 +1246,7 @@ private fun DatabaseViewBody(
                     onSetFitToContent = { key, fit -> viewModel.setFitToContent(key, fit) },
                     onToggleSubRows = { row -> viewModel.setSubRowsCollapsed(row, !row.subRowsCollapsed) },
                     calculationSubRows = parseCalculationSubRows(page?.viewCalculations),
+                    wrapCells = page?.wrapCells == true,
                     onOpenRow = openRow,
                     onRowLongPress = { row, place ->
                         focusManager.clearFocus()
@@ -1465,6 +1469,8 @@ private fun DatabaseViewBody(
             onSetTableSubGroupColumn = { viewModel.setTableSubGroupColumn(it) },
             hideEmptySubGroups = page?.hideEmptySubGroups != false,
             onSetHideEmptySubGroups = { viewModel.setHideEmptySubGroups(it) },
+            wrapCells = page?.wrapCells == true,
+            onSetWrapCells = { viewModel.setWrapCells(it) },
             onSetColumnHidden = { columnId, hidden ->
                 viewModel.setColumnHidden(columnId, hidden)
             },
@@ -1815,7 +1821,9 @@ private fun TableLayout(
     /** La freccia sul nome di una riga con sotto-righe: le apre o le chiude. */
     onToggleSubRows: (DatabaseRowEntity) -> Unit = {},
     /** I calcoli che contano anche le sotto-righe ("Include sub rows"). */
-    calculationSubRows: Set<String> = emptySet()
+    calculationSubRows: Set<String> = emptySet(),
+    /** "Wrap cells": il testo va a capo e la riga si allunga (vedi `LocalWrapCells`). */
+    wrapCells: Boolean = false
 ) {
     // Dentro un contenitore che scorre in orizzontale la larghezza
     // disponibile è illimitata: una linea che chiede "tutta la
@@ -1840,14 +1848,18 @@ private fun TableLayout(
     val treeShown = hasSubRows(state.rows)
     // Mentre si trascina comanda il dito; poi "Fit to content", se acceso;
     // poi la misura scelta; se no quella di sempre.
-    fun widthOf(key: String, default: Dp): Dp =
-        resize.draft?.takeIf { key == resize.key }
-            ?: fitted[key]
-            ?: columnWidths[key]?.dp
-            ?: default
+    // Mai sotto il minimo della colonna (dal 30/09/2026): anche le misure
+    // salvate prima, più strette, si allargano fin lì.
+    fun widthOf(key: String, default: Dp, min: Int): Dp =
+        (
+            resize.draft?.takeIf { key == resize.key }
+                ?: fitted[key]
+                ?: columnWidths[key]?.dp
+                ?: default
+            ).coerceAtLeast(min.dp)
     val widths = TableWidths(
-        name = widthOf(NAME_COLUMN_KEY, NAME_COLUMN_WIDTH),
-        byKey = shownColumns.associate { it.id to widthOf(it.id, defaultColumnWidth(it.id, it.type).dp) }
+        name = widthOf(NAME_COLUMN_KEY, NAME_COLUMN_WIDTH, minColumnWidth(NAME_COLUMN_KEY)),
+        byKey = shownColumns.associate { it.id to widthOf(it.id, defaultColumnWidth(it.id, it.type).dp, minColumnWidth(it.id, it.type)) }
     )
     val tableWidth = widths.name + SEPARATOR_WIDTH +
         shownColumns.fold(0.dp) { sum, column -> sum + widths.of(column) + SEPARATOR_WIDTH } +
@@ -1860,7 +1872,7 @@ private fun TableLayout(
 
     // Intestazione e righe scorrono insieme in orizzontale, così le
     // colonne restano allineate.
-    CompositionLocalProvider(LocalTableWidths provides widths, LocalColumnResize provides resize) {
+    CompositionLocalProvider(LocalTableWidths provides widths, LocalColumnResize provides resize, LocalWrapCells provides wrapCells) {
     Column(
         modifier = Modifier
             // Toccando la tabella fuori dal segnalino, il segnalino se ne va.
@@ -2199,6 +2211,8 @@ private fun ColumnResizeHandle(
     current: Dp,
     /** La larghezza di partenza della colonna, a cui ci si aggancia (vedi `snapColumnWidth`). */
     defaultWidth: Int,
+    /** Più stretta di così non va (vedi `minColumnWidth`). */
+    minWidth: Int = MIN_COLUMN_WIDTH_DP,
     onCommit: (Int) -> Unit
 ) {
     val density = LocalDensity.current
@@ -2227,7 +2241,7 @@ private fun ColumnResizeHandle(
                         change.consume()
                         resize.raw += with(density) { amount.toDp() }
                         // Vicino alla larghezza di sempre si aggancia lì, e lo si vede subito.
-                        resize.draft = snapColumnWidth(key, resize.raw.value.roundToInt(), defaultWidth).dp
+                        resize.draft = snapColumnWidth(key, resize.raw.value.roundToInt(), defaultWidth, minWidth).dp
                     }
                 )
             }
@@ -2346,6 +2360,7 @@ private fun TableHeaderRow(
                 center = edge + SEPARATOR_WIDTH / 2,
                 current = widths.of(key),
                 defaultWidth = defaultColumnWidth(key, columns.find { it.id == key }?.type),
+                minWidth = minColumnWidth(key, columns.find { it.id == key }?.type),
                 onCommit = { onSetColumnWidth(key, it) }
             )
         }
@@ -2560,7 +2575,10 @@ private fun TableBodyRow(
     /** Dove sta Name fra `columns` (vedi `TableHeaderRow`). */
     namePlace: Int = 0
 ) {
-    Row(modifier = Modifier.foundInside(row.id)) {
+    // **"Wrap cells"**: la riga è alta quanto la sua cella più alta, e
+    // tutte le celle (e le linee fra loro) si allungano fin lì.
+    val wrap = LocalWrapCells.current
+    Row(modifier = Modifier.foundInside(row.id).then(if (wrap) Modifier.height(IntrinsicSize.Min) else Modifier)) {
         TableSlots(
             columns = columns,
             namePlace = namePlace,
@@ -2576,7 +2594,7 @@ private fun TableBodyRow(
                     toggleSlot = toggleSlot,
                     onToggleSubRows = onToggleSubRows
                 )
-                CellSeparator(NAME_COLUMN_KEY)
+                CellSeparator(NAME_COLUMN_KEY, stretch = wrap)
             }
         ) { _, column ->
             CellEditor(
@@ -2589,7 +2607,7 @@ private fun TableBodyRow(
                 onSetOptionColor = onSetOptionColor,
                 onDeleteOption = onDeleteOption
             )
-            CellSeparator(column.id)
+            CellSeparator(column.id, stretch = wrap)
         }
         Box(modifier = Modifier.width(ADD_PROPERTY_WIDTH).height(ROW_HEIGHT))
     }
@@ -5333,10 +5351,14 @@ private enum class DateFilterEdge { START, END }
  * all'ultima riga: si vede dove finisce la colonna.
  */
 @Composable
-private fun CellSeparator(afterKey: String? = null) {
+private fun CellSeparator(
+    afterKey: String? = null,
+    /** Con "Wrap cells" la riga può essere più alta: la linea la segue tutta. */
+    stretch: Boolean = false
+) {
     val resizing = afterKey != null && LocalColumnResize.current?.key == afterKey
     VerticalDivider(
-        modifier = Modifier.height(ROW_HEIGHT),
+        modifier = if (stretch) Modifier.fillMaxHeight() else Modifier.height(ROW_HEIGHT),
         color = if (resizing) MaterialTheme.colorScheme.primary else DividerDefaults.color
     )
 }
@@ -5751,10 +5773,21 @@ private fun NameCell(
         if (!editing) localTitle = row.title
     }
 
+    val wrap = LocalWrapCells.current
+    // **Il nome tagliato coi tre puntini** (dal 30/09/2026): toccandolo si
+    // apre lì sopra il riquadro grigio col nome intero (`FullTextPopup`).
+    var cut by remember(row.id) { mutableStateOf(false) }
+    var expanded by remember(row.id) { mutableStateOf(false) }
+    var nameWidthPx by remember { mutableStateOf(0) }
+    DisposableEffect(expanded) {
+        val active = expanded
+        if (active) onEditingChange(true)
+        onDispose { if (active) onEditingChange(false) }
+    }
     Row(
         modifier = Modifier
             .width(LocalTableWidths.current.name)
-            .height(ROW_HEIGHT),
+            .then(if (wrap) Modifier.heightIn(min = ROW_HEIGHT).fillMaxHeight() else Modifier.height(ROW_HEIGHT)),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // L'icona della pagina, se c'è, sta fuori dal campo del nome: resta
@@ -5795,7 +5828,8 @@ private fun NameCell(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
-                    .padding(end = 12.dp),
+                    .padding(end = 12.dp)
+                    .onSizeChanged { nameWidthPx = it.width },
                 contentAlignment = Alignment.CenterStart
             ) {
                 if (editing) {
@@ -5819,7 +5853,7 @@ private fun NameCell(
                                     onTitleChange(singleLineTitle)
                                 }
                             },
-                            singleLine = true,
+                            singleLine = !wrap,
                             // Database bloccato: il nome della riga si legge e
                             // si seleziona, non si riscrive.
                             readOnly = LocalDatabaseLocked.current,
@@ -5834,6 +5868,7 @@ private fun NameCell(
                             cursorBrush = SolidColor(MaterialTheme.colorScheme.onBackground),
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .cellWrapPadding()
                                 .focusRequester(focusRequester)
                                 .markFocusChanges()
                                 .onFocusChanged { focusState ->
@@ -5853,9 +5888,13 @@ private fun NameCell(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .pointerInput(row.id) {
+                            .pointerInput(row.id, wrap) {
                                 detectTapGestures(
                                     onTap = {
+                                        if (cut && !wrap) {
+                                            expanded = true
+                                            return@detectTapGestures
+                                        }
                                         fieldValue = TextFieldValue(localTitle, TextRange(localTitle.length))
                                         // **Da capo anche la seconda volta** (26/09/2026): il
                                         // "ha già avuto il fuoco" della volta prima restava
@@ -5878,9 +5917,27 @@ private fun NameCell(
                             } else {
                                 MaterialTheme.colorScheme.onBackground
                             },
-                            maxLines = 1
+                            maxLines = cellMaxLines,
+                            overflow = TextOverflow.Ellipsis,
+                            onTextLayout = { cut = it.isCut() },
+                            modifier = Modifier.cellWrapPadding()
                         )
                     }
+                }
+                if (expanded) {
+                    FullTextPopup(
+                        value = localTitle,
+                        onValueChange = {
+                            localTitle = it
+                            onTitleChange(it)
+                        },
+                        cellTextWidthPx = nameWidthPx,
+                        keyboardOptions = KeyboardOptions(
+                            capitalization = KeyboardCapitalization.Sentences,
+                            imeAction = ImeAction.Done
+                        ),
+                        onDismiss = { expanded = false }
+                    )
                 }
             }
         }
@@ -5921,7 +5978,7 @@ private fun CellEditor(
     Box(
         modifier = Modifier
             .width(LocalTableWidths.current.of(column))
-            .height(ROW_HEIGHT)
+            .then(if (LocalWrapCells.current) Modifier.heightIn(min = ROW_HEIGHT).fillMaxHeight() else Modifier.height(ROW_HEIGHT))
             // **La cella si mangia i tocchi che non colpiscono niente.**
             // Senza, il tocco sullo spazio vuoto accanto a una casella
             // da spuntare attraversava la tabella e arrivava alla
@@ -6084,69 +6141,42 @@ private fun CellContent(
                         .format(DATE_TIME_FORMAT),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1
+                    maxLines = cellMaxLines,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.cellWrapPadding()
                 )
             }
 
             else -> {
                 // TEXT, NUMBER, URL, EMAIL, PHONE: un campo libero, che
-                // cambia solo il tipo di tastiera proposta.
-                var localValue by remember(cellKey) { mutableStateOf(value) }
-                var editing by remember(cellKey) { mutableStateOf(false) }
-                AutoCaps {
-                    BasicTextField(
-                        value = localValue,
-                        onValueChange = { newValue ->
-                            localValue = newValue
-                            onValueChange(newValue)
-                        },
-                        singleLine = true,
-                        // Un numero si legge nel formato delle impostazioni e della colonna
-                        // (1.000.000 o 1,000,000), ma **si scrive grezzo**:
-                        // mentre la cella ha il cursore il formato sparisce,
-                        // altrimenti i separatori comparirebbero e si
-                        // sposterebbero sotto le dita a ogni cifra.
-                        visualTransformation = if (column.type == ColumnType.NUMBER && !editing) {
-                            NumberDisplayTransformation(column.numberSettings())
-                        } else {
-                            VisualTransformation.None
-                        },
-                        // **Barra o anello** (dal 26/09/2026): finché non la si tocca,
-                        // la cella di un numero li disegna al posto del testo; il campo
-                        // resta lì sotto, invisibile, e al tocco si scrive il numero.
-                        decorationBox = { field ->
-                            if (column.type == ColumnType.NUMBER && !editing &&
-                                column.numberDisplayKind != NumberDisplay.NUMBER && localValue.isNotBlank()
-                            ) {
-                                Box(contentAlignment = LocalCellAlignment.current.box) {
-                                    Box(modifier = Modifier.alpha(0f)) { field() }
-                                    NumberVisual(column, localValue)
-                                }
-                            } else {
-                                field()
-                            }
-                        },
-                        // Database bloccato: la cella si legge, non si
-                        // riscrive.
-                        readOnly = LocalDatabaseLocked.current,
-                        // Anche qui l'invio non avrebbe niente da fare: una
-                        // cella sta su una riga sola.
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = column.type.keyboardType(),
-                            capitalization = column.type.capitalization(),
-                            imeAction = ImeAction.Done
-                        ),
-                        textStyle = MaterialTheme.typography.bodyMedium.copy(
-                            color = MaterialTheme.colorScheme.onBackground,
-                            textAlign = LocalCellAlignment.current.textAlign
-                        ),
-                        cursorBrush = SolidColor(MaterialTheme.colorScheme.onBackground),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .markFocusChanges()
-                            .onFocusChanged { editing = it.isFocused }
-                    )
-                }
+                // cambia solo il tipo di tastiera proposta. Testo semplice
+                // finché non lo si tocca (dal 30/09/2026): vedi `TextLikeCell`.
+                TextLikeCell(
+                    value = value,
+                    onValueChange = onValueChange,
+                    // Anche qui l'invio non avrebbe niente da fare: una
+                    // cella sta su una riga sola.
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = column.type.keyboardType(),
+                        capitalization = column.type.capitalization(),
+                        imeAction = ImeAction.Done
+                    ),
+                    // Un numero si legge nel formato delle impostazioni e della
+                    // colonna (1.000.000 o 1,000,000), ma **si scrive grezzo**.
+                    shown = if (column.type == ColumnType.NUMBER) {
+                        { raw -> formatNumberValue(raw, column) }
+                    } else {
+                        { raw -> raw }
+                    },
+                    // **Barra o anello** (dal 26/09/2026): finché non la si tocca,
+                    // la cella di un numero li disegna al posto del testo.
+                    idleVisual = if (column.type == ColumnType.NUMBER && column.numberDisplayKind != NumberDisplay.NUMBER) {
+                        { raw -> NumberVisual(column, raw) }
+                    } else {
+                        null
+                    },
+                    cellKey = cellKey
+                )
             }
         }
     }
@@ -6183,7 +6213,7 @@ private class NumberDisplayTransformation(private val settings: NumberSettings) 
  * singola scegliere chiude la finestra, con quella multipla resta
  * aperta perché di solito se ne spuntano più di uno.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 private fun TagCell(
     column: DatabaseColumnEntity,
@@ -6204,16 +6234,32 @@ private fun TagCell(
         listOfNotNull(value.takeIf { it.isNotBlank() })
     }
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { showSheet = true },
-        horizontalArrangement = LocalCellAlignment.current.arrangement,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        selected.forEach { label ->
-            TagChip(label = label, color = options.find { it.label == label }?.color)
-            Spacer(modifier = Modifier.size(4.dp))
+    if (LocalWrapCells.current) {
+        // **"Wrap cells"** (dal 30/09/2026): i tag che non ci stanno vanno a capo.
+        FlowRow(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { showSheet = true }
+                .cellWrapPadding(),
+            horizontalArrangement = Arrangement.spacedBy(4.dp, LocalCellAlignment.current.horizontal),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            selected.forEach { label ->
+                TagChip(label = label, color = options.find { it.label == label }?.color)
+            }
+        }
+    } else {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { showSheet = true },
+            horizontalArrangement = LocalCellAlignment.current.arrangement,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            selected.forEach { label ->
+                TagChip(label = label, color = options.find { it.label == label }?.color)
+                Spacer(modifier = Modifier.size(4.dp))
+            }
         }
     }
 
@@ -6535,7 +6581,8 @@ private fun DateCell(
             .fillMaxWidth()
             .fillMaxHeight()
             .clickable { showPicker = true }
-            .padding(horizontal = contentPadding),
+            .padding(horizontal = contentPadding)
+            .cellWrapPadding(),
         contentAlignment = LocalCellAlignment.current.box
     ) {
         // La data col suo nome sta dove chiede la colonna: la riga è larga
@@ -6546,7 +6593,8 @@ private fun DateCell(
                 text = range?.label(settings) ?: "—",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground,
-                maxLines = 1,
+                maxLines = cellMaxLines,
+                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f, fill = false)
             )
             // Una data che si ripete ha le frecce in cerchio accanto.
@@ -6629,7 +6677,8 @@ private fun ColorCell(
                 }
             )
             .clickable(enabled = !locked) { editing = true }
-            .padding(horizontal = if (inTable) contentPadding else 10.dp),
+            .padding(horizontal = if (inTable) contentPadding else 10.dp)
+            .cellWrapPadding(),
         contentAlignment = LocalCellAlignment.current.box
     ) {
         Text(
@@ -6637,7 +6686,7 @@ private fun ColorCell(
             text = cell.text.ifEmpty { if (fill == null) "—" else "" },
             style = MaterialTheme.typography.bodyMedium,
             color = textColor,
-            maxLines = 1,
+            maxLines = cellMaxLines,
             overflow = TextOverflow.Ellipsis
         )
     }
@@ -8368,6 +8417,9 @@ private fun SettingsSheet(
     onSetTableSubGroupColumn: ((String?) -> Unit)? = null,
     hideEmptySubGroups: Boolean = true,
     onSetHideEmptySubGroups: ((Boolean) -> Unit)? = null,
+    /** "Wrap cells" della tabella (dal 30/09/2026). */
+    wrapCells: Boolean = false,
+    onSetWrapCells: ((Boolean) -> Unit)? = null,
     /** Nasconde o rimostra una colonna, e tutte insieme. */
     onSetColumnHidden: (String, Boolean) -> Unit,
     onSetAllColumnsHidden: (Boolean) -> Unit,
@@ -8569,6 +8621,20 @@ private fun SettingsSheet(
                                     label = DbStrings.hideEmptySubGroups,
                                     checked = hideEmptySubGroups,
                                     onCheckedChange = onSetHideEmptySubGroups
+                                )
+                            }
+                            // **"Wrap cells"** (dal 30/09/2026, chiesto
+                            // dall'utente): acceso, il testo delle celle va a
+                            // capo e la riga si allunga; spento, quello che
+                            // non ci sta finisce coi tre puntini, e toccandolo
+                            // compare intero.
+                            if (onSetWrapCells != null) {
+                                HorizontalDivider()
+                                SettingsToggleRow(
+                                    icon = Icons.Filled.WrapText,
+                                    label = DbStrings.wrapCells,
+                                    checked = wrapCells,
+                                    onCheckedChange = onSetWrapCells
                                 )
                             }
                         }

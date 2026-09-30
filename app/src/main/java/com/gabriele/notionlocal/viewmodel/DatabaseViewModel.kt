@@ -7,6 +7,7 @@ import com.gabriele.notionlocal.data.entity.nameOrderAt
 import com.gabriele.notionlocal.data.entity.tableKeys
 import com.gabriele.notionlocal.data.entity.DurationUnit
 import com.gabriele.notionlocal.data.entity.durationMillisOfCell
+import com.gabriele.notionlocal.data.entity.minColumnWidth
 import com.gabriele.notionlocal.data.entity.defaultColumnWidth
 import com.gabriele.notionlocal.data.entity.snapColumnWidth
 import com.gabriele.notionlocal.data.entity.encodeColumnWidths
@@ -1071,6 +1072,17 @@ class DatabaseViewModel(
         viewModelScope.launch { pageRepository.updatePage(updated) }
     }
 
+    /**
+     * **"Wrap cells"** (dal 30/09/2026) di questa vista: il testo delle celle
+     * va a capo e la riga si allunga; spento, finisce coi tre puntini.
+     */
+    fun setWrapCells(wrap: Boolean) {
+        val current = _page.value ?: return
+        val updated = current.copy(wrapCells = wrap)
+        _page.value = updated
+        viewModelScope.launch { pageRepository.updatePage(updated) }
+    }
+
     /** Se i gruppi senza nemmeno una pagina si nascondono. */
     fun setHideEmptyGroups(hide: Boolean) {
         val current = _page.value ?: return
@@ -1369,8 +1381,9 @@ class DatabaseViewModel(
     fun setColumnWidth(key: String, widthDp: Int) {
         val current = _page.value ?: return
         // Tornata alla larghezza di sempre, non c'è niente da ricordare.
-        val default = defaultColumnWidth(key, rawColumn(key)?.type)
-        val width = snapColumnWidth(key, widthDp, default)
+        val type = rawColumn(key)?.type
+        val default = defaultColumnWidth(key, type)
+        val width = snapColumnWidth(key, widthDp, default, minColumnWidth(key, type))
         val widths = parseColumnWidths(current.columnWidths).let {
             if (width == default) it - key else it + (key to width)
         }
