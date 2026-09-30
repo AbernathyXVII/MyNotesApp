@@ -2022,6 +2022,27 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**30/09/2026 — "Today" nel calendario delle date**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 313 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Nella selezione della data del calendario nella proprietà Date, mettimi
+> Today, che mi porta al giorno corrente»
+
+- **[Nuova funzionalità]** In alto a destra del calendario, accanto alle
+  frecce del mese, c'è "**Today**", in arancione come il numero di oggi:
+  riporta il calendario al mese di oggi, anche dalle rotelle di giorno,
+  mese e anno (che si chiudono). Non sceglie il giorno: lo si tocca come
+  gli altri, così serve anche per arrivare, per esempio, a domani. Vale in
+  ogni calendario dell'app (la proprietà Date, "Set date" della durata e
+  della ripetizione), perché è lo stesso
+- **[Progetto]** In `SamsungCalendar` (`SamsungPickers.kt`)
+- Verificato sul telefono sulla data della riga "2" del database di prova:
+  da giugno 2026 "Today" riporta a settembre 2026 col 30 segnato; dalle
+  rotelle portate al 2021, "Today" chiude le rotelle e torna a settembre
+  2026. Poi "Cancel": database identico
+
 **30/09/2026 — In una pagina vuota il cursore va sulla prima riga**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 313 test
 passati; commit solo in locale)*

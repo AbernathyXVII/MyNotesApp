@@ -308,6 +308,28 @@ internal fun SamsungCalendar(
                     )
                 }
             }
+            // **"Today"** (dal 30/09/2026, chiesto dall'utente): riporta il
+            // calendario al mese di oggi, anche dalle rotelle. Arancione come
+            // il numero di oggi nel mese. Non sceglie il giorno: lo si tocca,
+            // come gli altri, così lo si può usare anche per arrivare a domani.
+            Text(
+                text = DbStrings.today,
+                color = SamsungOrange,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable {
+                        val page = pageOf(YearMonth.from(today))
+                        if (wheels) {
+                            wheels = false
+                            scope.launch { pagerState.scrollToPage(page) }
+                        } else {
+                            scope.launch { pagerState.animateScrollToPage(page) }
+                        }
+                    }
+                    .padding(horizontal = 10.dp, vertical = 10.dp)
+            )
         }
 
         if (wheels) {
