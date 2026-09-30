@@ -1084,6 +1084,14 @@ class DatabaseViewModel(
         viewModelScope.launch { pageRepository.updatePage(updated) }
     }
 
+    /** **"Color cards"** della bacheca (dal 30/09/2026): le schede del colore del tag della loro colonna. */
+    fun setColorBoardCards(color: Boolean) {
+        val current = _page.value ?: return
+        val updated = current.copy(colorBoardCards = color)
+        _page.value = updated
+        viewModelScope.launch { pageRepository.updatePage(updated) }
+    }
+
     /** Se i gruppi senza nemmeno una pagina si nascondono. */
     fun setHideEmptyGroups(hide: Boolean) {
         val current = _page.value ?: return

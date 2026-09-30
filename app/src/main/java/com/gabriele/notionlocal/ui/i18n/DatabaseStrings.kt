@@ -396,6 +396,8 @@ object DbStrings {
     }
 
     // I selettori di data e ora come quelli di Samsung (vedi `SamsungPickers.kt`).
+    /** "Color cards" (dal 30/09/2026): nelle impostazioni della bacheca. */
+    val colorCards get() = t("Color cards", "Colora le schede", "Karten einfärben", "Colorer les cartes", "Colorear tarjetas", "卡片着色", "카드 색상 입히기", "カードに色を付ける")
     /** "Long text" (dal 30/09/2026): nelle impostazioni di una tabella, cosa fa il testo che non ci sta. */
     val longText get() = t("Long text", "Testo lungo", "Langer Text", "Texte long", "Texto largo", "长文本", "긴 텍스트", "長いテキスト")
     fun cellOverflowName(mode: CellOverflow): String = when (mode) {

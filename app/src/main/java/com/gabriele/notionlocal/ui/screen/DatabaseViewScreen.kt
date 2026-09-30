@@ -150,6 +150,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material.icons.filled.Update
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.ViewColumn
 import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material.icons.filled.Title
@@ -1292,6 +1293,7 @@ private fun DatabaseViewBody(
                 DatabaseLayout.BOARD -> BoardLayout(
                     state = state,
                     groupColumn = viewModel.boardGroupColumn(),
+                    colorCards = page?.colorBoardCards == true,
                     newRowTick = newRowTick,
                     onOpenRow = openRow,
                     onRowLongPress = { row ->
@@ -1466,6 +1468,8 @@ private fun DatabaseViewBody(
             hideEmptyGroups = page?.hideEmptyGroups != false,
             onSetTableGroupColumn = { viewModel.setTableGroupColumn(it) },
             onSetHideEmptyGroups = { viewModel.setHideEmptyGroups(it) },
+            colorBoardCards = page?.colorBoardCards == true,
+            onSetColorBoardCards = { viewModel.setColorBoardCards(it) },
             tableSubGroupColumn = viewModel.tableSubGroupColumn(),
             onSetTableSubGroupColumn = { viewModel.setTableSubGroupColumn(it) },
             hideEmptySubGroups = page?.hideEmptySubGroups != false,
@@ -2810,6 +2814,8 @@ private fun buildRowGroups(
 private fun BoardLayout(
     state: DatabaseTableState,
     groupColumn: DatabaseColumnEntity?,
+    /** "Color cards": le schede del colore del tag della loro colonna. */
+    colorCards: Boolean = false,
     newRowTick: Int,
     onOpenRow: (DatabaseRowEntity) -> Unit,
     onRowLongPress: (DatabaseRowEntity) -> Unit,
@@ -2828,7 +2834,10 @@ private fun BoardLayout(
         return
     }
 
-    val groups = parseSelectOptions(groupColumn.optionsJson) + ""
+    val options = parseSelectOptionsFull(groupColumn.optionsJson)
+    val groups = options.map { it.label } + ""
+    // Il colore di ogni colonna, per "Color cards"; quella senza valore non ne ha.
+    val groupColors = options.associate { it.label to it.color }
 
     val boardScroll = rememberScrollState()
 
@@ -2877,6 +2886,7 @@ private fun BoardLayout(
                         row = row,
                         state = state,
                         groupColumnId = groupColumn.id,
+                        color = groupColors[groupValue]?.takeIf { colorCards },
                         onOpen = { onOpenRow(row) },
                         onLongPress = { onRowLongPress(row) }
                     )
@@ -2927,19 +2937,34 @@ private fun MissingPropertyNotice(
     }
 }
 
-/** Una scheda della bacheca: il nome della riga e i valori delle altre proprietà. */
+/**
+ * Una scheda della bacheca: il nome della riga e i valori delle altre
+ * proprietà. Con **"Color cards"** (dal 30/09/2026, chiesto dall'utente) è
+ * del colore del tag della sua colonna, e le scritte sopra sono chiare come
+ * sui tag.
+ */
 @Composable
 private fun BoardCard(
     row: DatabaseRowEntity,
     state: DatabaseTableState,
     groupColumnId: String,
+    /** Il colore del tag della colonna ("#RRGGBB"), o null per quello di sempre. */
+    color: String? = null,
     onOpen: () -> Unit,
     onLongPress: () -> Unit
 ) {
+    val scheme = MaterialTheme.colorScheme
+    MaterialTheme(
+        colorScheme = if (color == null) {
+            scheme
+        } else {
+            scheme.copy(onBackground = NotionWhite, onSurfaceVariant = NotionWhite.copy(alpha = 0.78f))
+        }
+    ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(DarkSurface, RoundedCornerShape(8.dp))
+            .background(if (color != null) tagColor(color) else DarkSurface, RoundedCornerShape(8.dp))
             .foundInside(row.id, RoundedCornerShape(8.dp))
             .pointerInput(row.id) {
                 detectTapGestures(onTap = { onOpen() }, onLongPress = { onLongPress() })
@@ -2970,6 +2995,7 @@ private fun BoardCard(
                     CardPropertyValue(column, value)
                 }
             }
+    }
     }
 }
 
@@ -8425,6 +8451,9 @@ private fun SettingsSheet(
     hideEmptyGroups: Boolean = true,
     onSetTableGroupColumn: ((String?) -> Unit)? = null,
     onSetHideEmptyGroups: ((Boolean) -> Unit)? = null,
+    /** "Color cards" della bacheca (dal 30/09/2026). */
+    colorBoardCards: Boolean = false,
+    onSetColorBoardCards: ((Boolean) -> Unit)? = null,
     /** I sottogruppi della tabella: la proprietà scelta, e come cambiarla. */
     tableSubGroupColumn: DatabaseColumnEntity? = null,
     onSetTableSubGroupColumn: ((String?) -> Unit)? = null,
@@ -8587,6 +8616,18 @@ private fun SettingsSheet(
                                 value = groupColumn?.name?.let(DbStrings::columnName) ?: DbStrings.none,
                                 onClick = { page = SettingsPage.GROUP_BY }
                             )
+                            // **"Color cards"** (dal 30/09/2026, chiesto
+                            // dall'utente): le schede del colore del tag
+                            // della loro colonna.
+                            if (onSetColorBoardCards != null) {
+                                HorizontalDivider()
+                                SettingsToggleRow(
+                                    icon = Icons.Filled.Palette,
+                                    label = DbStrings.colorCards,
+                                    checked = colorBoardCards,
+                                    onCheckedChange = onSetColorBoardCards
+                                )
+                            }
                         }
                         // Il raggruppamento della tabella: una voce
                         // diversa da "Group by" della bacheca, perché

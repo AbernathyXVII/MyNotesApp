@@ -2022,6 +2022,33 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**30/09/2026 — "Color cards": le schede della bacheca del colore del loro tag**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 326 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Nella visualizzazione dei database Board, consentimi di far colorare i
+> rettangolini delle pagine dello stesso colore di quello assegnato al
+> Select usato per la board»
+
+- **[Nuova funzionalità]** Nelle impostazioni di una bacheca, sotto "Group
+  by", l'interruttore "**Color cards**" (per vista, spento di suo). Acceso,
+  ogni scheda prende il colore del tag della sua colonna — quello scelto
+  per il Select con cui la bacheca è raggruppata — e il nome e le altre
+  proprietà sulla scheda diventano chiari come sui tag, per leggersi sul
+  colore. La colonna delle pagine senza valore resta del colore di sempre
+- **[Progetto]** **Database alla versione 48 → 49**:
+  `pages.colorBoardCards`. `BoardCard` riceve il colore del gruppo e, se
+  c'è, lo stende e schiarisce le scritte (`MaterialTheme` con
+  `onBackground` e `onSurfaceVariant` chiari). Test in `WrapCellsTest` e
+  `MigrationTest` 48→49, col file `v48.sql`
+- Verificato sul telefono (copia del database prima; migrazione alla 49
+  senza errori) sulla vista "Videogiochi" di "Titolo tre H3" messa in
+  Board: l'interruttore c'è sotto "Group by"; acceso, le tre schede della
+  colonna PS5 diventano blu come il tag PS5 (#3A6590) e si leggono. Poi il
+  telefono si è scollegato: la vista di prova resta in Board con "Color
+  cards" acceso finché non la si rimette in Table
+
 **30/09/2026 — "Long text": tre puntini, colonna allargata o a capo; il riquadro grigio centrato**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 324 test
 passati; commit solo in locale)*
@@ -8257,7 +8284,8 @@ le finestre che apre. Chi lo usa passa solo l'id del blocco.
 
 ## Nota tecnica
 
-Lo schema è alla **versione 48** (la 48, del 30/09/2026, aggiunge
+Lo schema è alla **versione 49** (la 49, del 30/09/2026, aggiunge
+`pages.colorBoardCards`, "Color cards" delle bacheche; la 48, dello stesso giorno, aggiunge
 `pages.wrapCells`, oggi il testo lungo nelle celle delle tabelle (`PageEntity.cellOverflow`: 0 tre puntini, 1 a capo, 2 colonna allargata); la 47, del 29/09/2026, aggiunge
 `database_columns.durationFormat`, la proprietà Duration; la 46, dello stesso giorno, aggiunge
 `pages.nameColumnOrder`, il posto della colonna Name; la 45, dello stesso giorno, aggiunge

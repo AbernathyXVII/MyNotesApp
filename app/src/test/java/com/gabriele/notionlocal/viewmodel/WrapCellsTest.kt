@@ -88,6 +88,16 @@ class WrapCellsTest {
     }
 
     @Test
+    fun colorCardsIsSavedWithTheView() {
+        // "Color cards" della bacheca (30/09/2026): di suo spento.
+        assertEquals(false, saved().colorBoardCards)
+        viewModel.setColorBoardCards(true)
+        waitFor("acceso") { saved().colorBoardCards }
+        viewModel.setColorBoardCards(false)
+        waitFor("spento") { !saved().colorBoardCards }
+    }
+
+    @Test
     fun theModesKeepTheNumbersOfTheOldSwitch() {
         // La colonna era sì/no: 0 "no" (i puntini), 1 "sì" (a capo).
         assertEquals(CellOverflow.TRUNCATE, CellOverflow.of(0))
