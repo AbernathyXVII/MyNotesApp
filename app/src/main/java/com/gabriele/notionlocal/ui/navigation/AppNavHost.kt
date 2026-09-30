@@ -40,6 +40,7 @@ import com.gabriele.notionlocal.ui.screen.DatabaseViewScreen
 import com.gabriele.notionlocal.ui.screen.LockGate
 import com.gabriele.notionlocal.ui.screen.NotebookSectionScreen
 import com.gabriele.notionlocal.ui.screen.NotebookScreen
+import com.gabriele.notionlocal.ui.screen.PatchNotesScreen
 import com.gabriele.notionlocal.ui.screen.NotebooksSidebarSection
 import com.gabriele.notionlocal.ui.i18n.NotebookStrings
 import com.gabriele.notionlocal.viewmodel.NotebooksViewModel
@@ -486,7 +487,14 @@ private fun AppRoutes(
         }
 
         composable(Routes.SETTINGS) {
-            SettingsScreen(onBack = { navController.popBackStack() })
+            SettingsScreen(
+                onBack = { navController.popBackStack() },
+                onOpenPatchNotes = { navController.navigate(Routes.PATCH_NOTES) { launchSingleTop = true } }
+            )
+        }
+
+        composable(Routes.PATCH_NOTES) {
+            PatchNotesScreen(onBack = { navController.popBackStack() })
         }
     }
 }

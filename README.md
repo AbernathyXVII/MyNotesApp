@@ -468,6 +468,16 @@ richieste dell'utente** (vedi "Diario delle sessioni cloud"). Lo scopo
 dichiarato: tornando su Claude Code non si deve ricominciare niente da
 capo.
 
+**Dal 30/09/2026 ogni voce della Cronologia è una versione** (chiesto
+dall'utente, vedi v0.69): il titolo è `### 🆕 v0.70 — gg/mm/aaaa · hh:mm
+— Titolo`, con 🆕 e il numero dopo per una richiesta che porta qualcosa
+di nuovo o toglie qualcosa, 🔧 e un decimale in più (v0.70.1, v0.70.2…)
+per una che corregge soltanto. Il giorno e l'ora sono quelli (italiani)
+del commit che chiude la voce; la voce nuova va in cima. La Cronologia è
+anche **Settings → Patch Notes** nell'app, che la copia a ogni
+compilazione, e `PatchNotesTest` controlla che numeri, date e ordine
+tornino.
+
 ---
 
 ## Come aprirla
@@ -2017,12 +2027,109 @@ del 24/09/2026"):
 
 ## Cronologia degli aggiornamenti
 
-Le voci nate nelle sessioni cloud stanno qui in cima, la più recente
-per prima, e portano scritto che **vanno ancora verificate sul
+**Le patch notes dell'app** (dal 30/09/2026, chiesto dall'utente). Ogni
+richiesta dell'utente è una **versione**: 🆕 da v0.2 a v0.3, v0.4… se
+porta qualcosa di nuovo o toglie qualcosa (`[Nuova funzionalità]`,
+`[Rimosso]`); 🔧 una **correzione** della versione prima (da v0.15 a
+v0.15.1, v0.15.2…) se corregge soltanto (`[Bug fix]`) o verifica. 📦 v0.1
+è tutto quello che c'era prima di GitHub. Accanto al numero, il giorno e
+l'ora (italiana) del commit che ha chiuso la voce. La più recente sta in
+cima; sotto il titolo, come sempre, la richiesta parola per parola e le
+modifiche, ognuna con la sua etichetta.
+
+Lo stesso testo, identico, è in **Settings → Patch Notes** dell'app, che
+lo copia da qui a ogni compilazione (vedi "Nota tecnica"); il numero
+della versione più recente è anche quello dell'app.
+
+Le voci nate nelle sessioni cloud (le versioni del 24/09/2026 fino
+alla v0.15) portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
-**30/09/2026 — Il time-blocking come Google Calendar: la modalità Day del calendario**
+### 🆕 v0.69 — 30/09/2026 · 18:22 — Le Patch Notes: ogni voce una versione con giorno e ora, e Settings → Patch Notes
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 354 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Vorrei chiederti una feature non feature per me molto importante,
+> qualcosa che riguarda il ReadMe adesso: ho già visto che all'interno di
+> esso lo stai facendo bene nella Cronologia aggiornamenti, con il titolo
+> della modifica principale (come se servisse da riassunto) più le
+> modifiche specifiche sotto. Ottimo. Se riesci, vorrei ogni modifica
+> fatta fino ad ora complessiva anche di data e ora, e come se ogni mio
+> prompt diventasse un'aggiunta della versione dell'app (tipo quando si
+> passa dalla 0.1 alla 0.2) ed ogni bug fix diventasse una mini aggiunta
+> decimale della versione (tipo nuova versione 0.1 ma subito dopo bug fix
+> e diventa 0.1.1), come se nel ReadMe ci fossero varie Patch Notes. Cerca
+> ovviamente di mantenere lo stesso stile del ReadMe che hai avuto finora,
+> ma con queste piccole aggiunte visive e di dettagli più specifici che ti
+> ho chiesto. Un'altra cosa riguardante il ReadMe, una chicca molto carina
+> che mi è venuta in mente, è quello di creare in Settings, in fondo, una
+> voce chiamata Patch Notes, con la lista completa e uguale spiccicata di
+> tutte le modifiche come le hai scritte nel Read Me, ovviamente con data
+> e ora di tutto quanto, che poi si aggiornerà ogni volta che modificherai
+> anche una singola riga di codice. Di default, la lista delle modifiche
+> sarà ordinata dall'alto più recenti e verso il basso più vecchie»
+
+- **[Progetto]** README: la Cronologia diventa le **patch notes**
+  dell'app. Ogni voce ha un titolo nuovo, "### 🆕 v0.68 — 30/09/2026 ·
+  15:09 — …": il numero della versione, il giorno e l'ora (italiana) del
+  commit che l'ha chiusa, presi dalla storia di git. 🆕 è una versione
+  nuova (qualcosa di nuovo o di tolto), 🔧 una correzione (solo `[Bug
+  fix]`, o una verifica), numerata sulla versione prima (v0.67.1). Le 81
+  voci di prima sono diventate 85 versioni, da v0.1 a v0.68, di cui 17
+  correzioni
+  - La parte scritta prima del trasloco su GitHub, divisa per argomento e
+    senza date, è **📦 v0.1** ("fino al 24/09/2026 · 11:26", l'ora
+    dell'archivio caricato): delle richieste di allora non c'è traccia
+    una per una
+  - La voce del 25/09 "le prove dell'utente, e quello che ne è venuto"
+    raccoglieva cinque richieste con cinque commit: ora sono cinque
+    versioni (v0.16 le prove della sera prima, 🔧 v0.16.1 il pomodoro che
+    partiva in ritardo, v0.17 l'ora nei fusi orari, v0.18 cronometro e
+    timer, v0.19 via i tempi pronti del timer). Il testo è lo stesso,
+    spostato; cambiano solo i rimandi ("vedi v0.19")
+  - Dove una voce aveva più commit di codice (il conteggio del testo, 12:28
+    e 12:32) vale l'ora dell'ultimo; i commit solo del README (le verifiche
+    scritte dopo) non la spostano. "Invio in fretta" era datata 26/09 ma
+    il suo commit è del 28/09 alle 19:33: vale il commit
+  - Tutto il resto è com'era: sotto ogni titolo la richiesta parola per
+    parola e le modifiche con le loro etichette. Aggiornate la "Regola di
+    lavoro concordata" (ogni voce è una versione), la "Nota tecnica" e la
+    "Struttura del progetto"
+- **[Nuova funzionalità]** **Settings → Patch Notes**, in fondo alle
+  impostazioni, col numero della versione di adesso sotto. Apre la
+  Cronologia **identica** a quella di questo README: il testo con
+  grassetto, corsivo, barrato e codice, le richieste dell'utente come
+  citazioni, gli elenchi (anche rientrati) e le tabelle; ogni versione ha
+  in cima l'emoji, il numero (azzurro per le versioni nuove, grigio per le
+  correzioni), il giorno e l'ora, e il titolo. Di suo la più recente sta
+  in cima; **"Newest first" / "Oldest first"** in alto a destra inverte
+  l'ordine
+- **[Progetto]** L'app **non ha una copia sua** da tenere aggiornata: a
+  ogni compilazione il task `patchNotes` (`app/build.gradle.kts`) copia la
+  sezione "Cronologia degli aggiornamenti" del README fra gli asset
+  (`patch_notes.md`), quindi ogni voce scritta qui è nell'app appena la si
+  ricompila. Anche la **versione dell'app** viene da qui: `versionName` è
+  il numero della voce più recente, `versionCode` quante versioni ci sono
+  (prima erano "0.1.0" e 1)
+- **[Progetto]** Codice nuovo: `data/patchnotes/PatchNotes.kt` (divide il
+  Markdown in versioni e blocchi) e `ui/screen/PatchNotesScreen.kt` (la
+  schermata, e grassetto, corsivo, barrato e codice dentro le righe);
+  `Routes.PATCH_NOTES`; i testi nelle otto lingue. Test nuovo
+  `PatchNotesTest` (7): l'app ha la Cronologia uguale al README; ogni
+  versione ha numero, giorno e ora; i numeri si susseguono (v0.N+1 dopo
+  una versione, v0.N.1, v0.N.2 dopo le correzioni); l'ora non torna mai
+  indietro; la versione dell'app è l'ultima; la lettura del Markdown. **È
+  anche il controllo della Cronologia**: una voce scritta senza numero o
+  fuori ordine fa fallire i test
+- Verificato sul telefono: in fondo a Settings "Patch Notes" con sotto la
+  versione; aperta, l'introduzione e poi 🆕 v0.68 "Il time-blocking come
+  Google Calendar…" 30/09/2026 · 15:09, con la citazione, il corsivo e il
+  codice come qui; "Oldest first" porta in cima 📦 v0.1 coi suoi elenchi e
+  i nomi del codice
+
+### 🆕 v0.68 — 30/09/2026 · 15:09 — Il time-blocking come Google Calendar: la modalità Day del calendario
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 347 test
 passati; commit solo in locale)*
 
@@ -2124,7 +2231,7 @@ continua.»
   data di modifica. Il calendario "Untitled" della stessa pagina,
   dell'utente, non è stato toccato
 
-**30/09/2026 — "Wrap in the cell": vanno a capo anche i titoli delle colonne**
+### 🔧 v0.67.1 — 30/09/2026 · 13:48 — "Wrap in the cell": vanno a capo anche i titoli delle colonne
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 326 test
 passati; commit solo in locale)*
 
@@ -2152,7 +2259,7 @@ parola per parola:
   database uguale, tranne "Last edited" di "Esempio nuovo" e le date di
   modifica
 
-**30/09/2026 — "Color columns": la bacheca colorata come su Notion**
+### 🆕 v0.67 — 30/09/2026 · 13:34 — "Color columns": la bacheca colorata come su Notion
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 326 test
 passati; commit solo in locale)*
 
@@ -2179,7 +2286,7 @@ Select", ognuna tinta del colore del suo tag), parola per parola:
   nuovo su PS5, "Color columns" spento e vista rimessa in Table: database
   uguale, tranne la data di modifica della vista
 
-**30/09/2026 — "Color cards": le schede della bacheca del colore del loro tag**
+### 🆕 v0.66 — 30/09/2026 · 13:23 — "Color cards": le schede della bacheca del colore del loro tag
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 326 test
 passati; commit solo in locale)*
 
@@ -2209,7 +2316,7 @@ L'utente, parola per parola:
   cards" spento e vista rimessa in Table: database uguale alla copia,
   tranne la colonna nuova e la data di modifica della vista
 
-**30/09/2026 — "Long text": tre puntini, colonna allargata o a capo; il riquadro grigio centrato**
+### 🆕 v0.65 — 30/09/2026 · 10:49 — "Long text": tre puntini, colonna allargata o a capo; il riquadro grigio centrato
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 324 test
 passati; commit solo in locale)*
 
@@ -2250,7 +2357,7 @@ L'utente, parola per parola:
   …" e "Sdrogo" rimesso dal riquadro: database uguale, tranne "Last edited"
   della riga e la data di modifica della vista
 
-**30/09/2026 — "Wrap cells", i tre puntini e il testo intero di una cella**
+### 🆕 v0.64 — 30/09/2026 · 10:35 — "Wrap cells", i tre puntini e il testo intero di una cella
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 322 test
 passati; commit solo in locale)*
 
@@ -2310,7 +2417,7 @@ L'utente, parola per parola:
   rimesso com'era: database uguale, tranne la colonna nuova e "Last
   edited" della riga "Esempio nuovo"
 
-**30/09/2026 — Ritoccando un giorno col pallino, il pallino se ne va**
+### 🆕 v0.63 — 30/09/2026 · 10:18 — Ritoccando un giorno col pallino, il pallino se ne va
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 316 test
 passati; commit solo in locale)*
 
@@ -2331,7 +2438,7 @@ L'utente, parola per parola:
   periodo 15-18, ritoccando il 18 resta il 15, ritoccando il 15 resta il
   18. Poi "Cancel": database identico
 
-**30/09/2026 — "Today" nel calendario delle date**
+### 🆕 v0.62 — 30/09/2026 · 10:11 — "Today" nel calendario delle date
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 313 test
 passati; commit solo in locale)*
 
@@ -2352,7 +2459,7 @@ L'utente, parola per parola:
   rotelle portate al 2021, "Today" chiude le rotelle e torna a settembre
   2026. Poi "Cancel": database identico
 
-**30/09/2026 — In una pagina vuota il cursore va sulla prima riga**
+### 🆕 v0.61 — 30/09/2026 · 09:04 — In una pagina vuota il cursore va sulla prima riga
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 313 test
 passati; commit solo in locale)*
 
@@ -2385,7 +2492,7 @@ L'utente, parola per parola:
   "V" va sulla seconda, subito sotto. Poi la pagina rimessa com'era, una
   riga vuota: database uguale, tranne 3 voci di "Updates" di quella pagina
 
-**30/09/2026 — Il corpo del titolo di un toggle ora cambia**
+### 🔧 v0.60.1 — 30/09/2026 · 08:44 — Il corpo del titolo di un toggle ora cambia
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 308 test
 passati; commit solo in locale)*
 
@@ -2417,7 +2524,7 @@ L'utente, parola per parola:
   riga vuota: database uguale, tranne 3 voci di "Updates" della pagina di
   prova
 
-**29-30/09/2026 — Nuova proprietà "Duration": quanto passa fra due date**
+### 🆕 v0.60 — 30/09/2026 · 08:33 — Nuova proprietà "Duration": quanto passa fra due date
 *(Claude Code sul PC; verificato sul telefono; 306 test passati; commit
 solo in locale)*
 
@@ -2496,7 +2603,7 @@ L'utente, parola per parola:
   (il toggle "SaaS" in My Space, una data e le colonne di "SuduS al
   contrario")
 
-**29/09/2026 — La colonna Name si sposta dove si vuole**
+### 🆕 v0.59 — 29/09/2026 · 20:32 — La colonna Name si sposta dove si vuole
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 291 test
 passati; commit solo in locale)*
 
@@ -2539,7 +2646,7 @@ L'utente, parola per parola:
   uguale alla copia, tranne la colonna nuova `nameColumnOrder` (-1) su ogni
   pagina
 
-**29/09/2026 — Divisori: cancellando le righe vuote sotto, il divisore resta**
+### 🔧 v0.58.1 — 29/09/2026 · 20:00 — Divisori: cancellando le righe vuote sotto, il divisore resta
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 281 test
 passati; commit solo in locale)*
 
@@ -2572,7 +2679,7 @@ L'utente, parola per parola:
   pagina rimessa com'era (database e 22 righe vuote): uguale, tranne una
   riga vuota rifatta e 2 voci di "Updates"
 
-**29/09/2026 — "Image" a tutto schermo, e il gesto indietro chiude il segnalino delle colonne**
+### 🆕 v0.58 — 29/09/2026 · 19:47 — "Image" a tutto schermo, e il gesto indietro chiude il segnalino delle colonne
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 278 test
 passati; commit solo in locale)*
 
@@ -2603,7 +2710,7 @@ L'utente, parola per parola:
   Poi immagine tolta, proprietà cancellata, immagine di prova tolta dal
   telefono: database uguale a prima tranne "Last edited" della riga "1"
 
-**29/09/2026 — Nuova proprietà "Image": una cella quadrata con un'immagine**
+### 🆕 v0.57 — 29/09/2026 · 19:37 — Nuova proprietà "Image": una cella quadrata con un'immagine
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 278 test
 passati; commit solo in locale)*
 
@@ -2644,7 +2751,7 @@ seconda colonna ha le figure dei Pokémon):
   riga "1". (Durante la prova il mio script ha creato per sbaglio una
   proprietà Text vuota, subito cancellata)
 
-**29/09/2026 — Life progress: le barre riempiono il widget**
+### 🆕 v0.56 — 29/09/2026 · 19:23 — Life progress: le barre riempiono il widget
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 273 test
 passati; commit solo in locale)*
 
@@ -2666,7 +2773,7 @@ L'utente, parola per parola:
   subito prima di "Year: 74%"; col decimale 660, tutte uguali, con
   "Month: 96,0%" intero. Il decimale lasciato spento, com'era
 
-**29/09/2026 — Life progress: il decimale sulle percentuali, da accendere e spegnere**
+### 🆕 v0.55 — 29/09/2026 · 19:19 — Life progress: il decimale sulle percentuali, da accendere e spegnere
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 273 test
 passati; commit solo in locale)*
 
@@ -2689,7 +2796,7 @@ L'utente, parola per parola:
   "Week: 22,7%", "Day: 59,1%", barre tutte uguali; ancora acceso dopo aver
   riaperto l'app; spento, di nuovo "Year: 74%". Lasciato spento, com'era
 
-**29/09/2026 — Nuova proprietà "Page link": il collegamento a un'altra pagina**
+### 🆕 v0.54 — 29/09/2026 · 14:06 — Nuova proprietà "Page link": il collegamento a un'altra pagina
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 271 test
 passati; commit solo in locale)*
 
@@ -2737,7 +2844,7 @@ L'utente, parola per parola:
   database è uguale a prima, tranne "Last edited" delle righe "1" e "2",
   che sono state scritte durante la prova
 
-**29/09/2026 — Sotto-righe: "Move up" e "Move down" solo sotto la loro riga (verifica)**
+### 🔧 v0.53.1 — 29/09/2026 · 13:53 — Sotto-righe: "Move up" e "Move down" solo sotto la loro riga (verifica)
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; nessuna
 modifica al codice; commit solo in locale)*
 
@@ -2756,7 +2863,7 @@ L'utente, parola per parola:
   "Move down" diventa grigio (non passa sotto "2"). Poi rimessa su, le due
   sotto-righe cancellate e la vista tolta: il database è identico a prima
 
-**29/09/2026 — Tabelle: le sotto-righe ("Create sub row")**
+### 🆕 v0.53 — 29/09/2026 · 13:48 — Tabelle: le sotto-righe ("Create sub row")
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 266 test
 passati; commit solo in locale)*
 
@@ -2812,7 +2919,7 @@ L'utente, parola per parola:
   cancellata e l'interruttore spento: il database è uguale alla copia,
   tranne la data di ultima modifica della vista collegata
 
-**29/09/2026 — Tabelle: "Move up" e "Move down" tenendo premuto il nome di una riga**
+### 🆕 v0.52 — 29/09/2026 · 13:35 — Tabelle: "Move up" e "Move down" tenendo premuto il nome di una riga
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 254 test
 passati; commit solo in locale)*
 
@@ -2847,7 +2954,7 @@ L'utente, parola per parola:
   down" (in fondo la voce diventa grigia) e la vista tolta: il database è
   identico alla copia
 
-**29/09/2026 — Tabelle: la larghezza delle colonne, col segnalino o adattata al contenuto**
+### 🆕 v0.51 — 29/09/2026 · 13:26 — Tabelle: la larghezza delle colonne, col segnalino o adattata al contenuto
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 250 test
 passati; commit solo in locale)*
 
@@ -2898,7 +3005,7 @@ L'utente, parola per parola:
   spento: il database è uguale alla copia, tranne la data di ultima
   modifica della vista collegata
 
-**29/09/2026 — La maiuscola automatica, ovunque si scriva, solo a campo vuoto**
+### 🆕 v0.50 — 29/09/2026 · 13:02 — La maiuscola automatica, ovunque si scriva, solo a campo vuoto
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 240 test
 passati; commit solo in locale)*
 
@@ -2943,7 +3050,7 @@ L'utente, parola per parola:
   parole "in composizione" della tastiera: com'è quando si scrive col
   dito lo si vede usandola
 
-**29/09/2026 — Le viste di un database: il "+" accanto a "Table" e l'elenco delle viste**
+### 🆕 v0.49 — 29/09/2026 · 12:48 — Le viste di un database: il "+" accanto a "Table" e l'elenco delle viste
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 230 test
 passati; commit solo in locale)*
 
@@ -3000,7 +3107,7 @@ scheda "Table" e la finestra "New view"):
   vista di partenza c'è solo "Rename". Alla fine il database è identico
   alla copia di prima
 
-**29/09/2026 — Divisori: il backspace sotto li toglie, e la riga spostata si illumina**
+### 🔧 v0.48.2 — 29/09/2026 · 08:38 — Divisori: il backspace sotto li toglie, e la riga spostata si illumina
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 219 test
 passati; commit solo in locale)*
 
@@ -3036,7 +3143,7 @@ L'utente, parola per parola:
   rimessa com'era e il database confrontato con la copia: uguale, tranne
   3 voci di "Updates" della pagina di prova
 
-**29/09/2026 — Col gesto indietro il cursore si spegne subito**
+### 🔧 v0.48.1 — 29/09/2026 · 08:21 — Col gesto indietro il cursore si spegne subito
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 216 test
 passati; commit solo in locale)*
 
@@ -3069,7 +3176,7 @@ L'utente, parola per parola:
   passa alla riga sotto e la tastiera sempre aperta. Poi le prove annullate
   e la pagina uguale a prima
 
-**29/09/2026 — Sottogruppi: "Hide empty sub groups", separato dai gruppi**
+### 🆕 v0.48 — 29/09/2026 · 08:07 — Sottogruppi: "Hide empty sub groups", separato dai gruppi
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 216 test
 passati; commit solo in locale)*
 
@@ -3096,7 +3203,7 @@ mostrate), alla proposta di separare l'interruttore:
   confrontato con la copia: uguale, tranne l'ora di ultima modifica della
   vista
 
-**29/09/2026 — Tabelle: i sottogruppi, gruppi dentro i gruppi**
+### 🆕 v0.47 — 29/09/2026 · 08:00 — Tabelle: i sottogruppi, gruppi dentro i gruppi
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 214 test
 passati; commit solo in locale)*
 
@@ -3135,7 +3242,7 @@ L'utente, parola per parola:
   non è stato provato sul telefono, per non aggiungere righe al database
   "Videogiochi" (c'è il test)
 
-**29/09/2026 — Sei puntini: "Add above" e "Add below"**
+### 🆕 v0.46 — 29/09/2026 · 07:48 — Sei puntini: "Add above" e "Add below"
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 209 test
 passati; commit solo in locale)*
 
@@ -3162,7 +3269,7 @@ L'utente, parola per parola:
   com'era e il database confrontato con la copia: uguale, tranne 10 voci
   di "Updates" di "Titolo tre H3" con le lettere delle prove
 
-**29/09/2026 — Colonne Checkbox: "Activate all" e "Deactivate all"**
+### 🆕 v0.45 — 29/09/2026 · 00:56 — Colonne Checkbox: "Activate all" e "Deactivate all"
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 204 test
 passati; commit solo in locale)*
 
@@ -3189,7 +3296,7 @@ L'utente, parola per parola:
   all" le toglie tutte. Poi il database di prova messo nel cestino e la
   pagina rimessa com'era (confrontata con la copia fatta prima)
 
-**29/09/2026 — Le frecce della barra spostano davvero la riga, e il cursore la segue**
+### 🔧 v0.44.1 — 29/09/2026 · 00:45 — Le frecce della barra spostano davvero la riga, e il cursore la segue
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 201 test
 passati; commit solo in locale)*
 
@@ -3233,7 +3340,7 @@ e poi, ancora con la versione di prima sul telefono:
   con la copia: uguale, tranne 11 voci di "Updates" di "Titolo tre H3" con
   le lettere delle prove
 
-**28/09/2026 — Database: la vista Chart, con barre, linea e ciambella**
+### 🆕 v0.44 — 28/09/2026 · 20:48 — Database: la vista Chart, con barre, linea e ciambella
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 196 test
 passati; commit solo in locale)*
 
@@ -3302,7 +3409,7 @@ L'utente, parola per parola, con sette foto di Notion:
   copia, tranne l'ora di ultima modifica della pagina "SuduS al
   contrario". "1 line" al singolare non è stato riprovato sul telefono
 
-**28/09/2026 — Lo scorrimento non si ferma più un istante prima di partire**
+### 🔧 v0.43.2 — 28/09/2026 · 20:05 — Lo scorrimento non si ferma più un istante prima di partire
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 185 test
 passati; commit solo in locale)*
 
@@ -3329,7 +3436,7 @@ L'utente, parola per parola:
   di preparazione), nessuno sopra i 16 ms su 84. La scrittura funziona
   come prima: toccata "Primo punto", cursore in fondo e tastiera aperta
 
-**28/09/2026 — Risalendo una pagina, i database non fanno più saltare tutto**
+### 🔧 v0.43.1 — 28/09/2026 · 19:57 — Risalendo una pagina, i database non fanno più saltare tutto
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 185 test
 passati; commit solo in locale)*
 
@@ -3359,7 +3466,7 @@ L'utente, parola per parola:
   tabella. **Dopo**: la tabella scende piano col dito, e da sopra compare
   un po' alla volta il fondo di "SuduS al contrario"
 
-**28/09/2026 — Pomodoro: la durata dello studio dal riquadro grande, "Study sound" e "Break sound"**
+### 🆕 v0.43 — 28/09/2026 · 19:49 — Pomodoro: la durata dello studio dal riquadro grande, "Study sound" e "Break sound"
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 185 test
 passati; commit solo in locale)*
 
@@ -3397,7 +3504,7 @@ L'utente, parola per parola:
   cambiato niente. Chiuso con Cancel: il pomodoro è rimasto com'era (1
   minuto di studio, 5 di pausa, nessun suono scelto)
 
-**28/09/2026 — Nei calendari per scegliere la data, solo i giorni del mese**
+### 🆕 v0.42 — 28/09/2026 · 19:40 — Nei calendari per scegliere la data, solo i giorni del mese
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno, appena
 ricollegato; 182 test passati; commit solo in locale)*
 
@@ -3418,7 +3525,7 @@ L'utente, parola per parola:
   gennaio 2026 comincia giovedì 1, prima niente. Chiuso con Cancel: le date
   nel database sono rimaste quelle di prima
 
-**28/09/2026 — Notebooks in cima alla barra laterale**
+### 🆕 v0.41 — 28/09/2026 · 19:38 — Notebooks in cima alla barra laterale
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 182 test
 passati; commit solo in locale)*
 
@@ -3434,7 +3541,7 @@ L'utente, parola per parola:
   poi "Widgets" coi fusi orari e gli altri; in fondo ai widget "Add
   widget", la linea, "Main menu"
 
-**26/09/2026 — Invio in fretta: niente righe in più, e i font non scattano**
+### 🔧 v0.40.2 — 28/09/2026 · 19:33 — Invio in fretta: niente righe in più, e i font non scattano
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 182 test
 passati; commit solo in locale il 28/09/2026)*
 
@@ -3480,7 +3587,7 @@ L'utente, parola per parola:
   28/09/2026, ricollegato, non c'erano più: in cima ci sono quattro righe
   vuote, e il resto della pagina, formattazione compresa, è intatto
 
-**26/09/2026 — "To-do list" dal "+" sulla prima riga di una pagina nuova**
+### 🔧 v0.40.1 — 26/09/2026 · 18:31 — "To-do list" dal "+" sulla prima riga di una pagina nuova
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 174 test
 passati; commit solo in locale)*
 
@@ -3507,7 +3614,7 @@ L'utente, parola per parola:
   database. I template di prova sono nel cestino; "SaaS" e "SuduS"
   dell'utente non sono stati toccati
 
-**26/09/2026 — i template delle pagine, e le proprietà in cima alla pagina di una riga**
+### 🆕 v0.40 — 26/09/2026 · 18:21 — I template delle pagine, e le proprietà in cima alla pagina di una riga
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 173 test
 passati; commit solo in locale)*
 
@@ -3614,7 +3721,7 @@ titolo):
   aggiunto "⁵" al nome "Riga semplice"; tolto, e al secondo confronto i
   dati erano identici a prima (a parte i due template di prova)
 
-**26/09/2026 — l'Invio a inizio della prima riga non chiude più la tastiera**
+### 🔧 v0.39.1 — 26/09/2026 · 17:49 — L'Invio a inizio della prima riga non chiude più la tastiera
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 168 test
 passati; commit solo in locale)*
 
@@ -3656,7 +3763,7 @@ L'utente, parola per parola:
   tolti il testo e il divisore di prova: la pagina ha di nuovo le sue
   23 righe vuote
 
-**26/09/2026 — "Date format" e "Time format" nella proprietà Date, e via da Settings**
+### 🆕 v0.39 — 26/09/2026 · 13:53 — "Date format" e "Time format" nella proprietà Date, e via da Settings
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 164 test
 passati; commit solo in locale)*
 
@@ -3702,7 +3809,7 @@ e subito dopo, con le due foto di Notion:
   Alla fine rimesso Chinese date e 24 hour: le celle sono tornate
   "2026年09月25日 19:43" e "2025年12月08日" come prima
 
-**26/09/2026 — a sinistra, al centro o a destra: le celle e i calcoli**
+### 🆕 v0.38 — 26/09/2026 · 13:40 — A sinistra, al centro o a destra: le celle e i calcoli
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 163 test
 passati; commit solo in locale)*
 
@@ -3750,7 +3857,7 @@ L'utente, parola per parola:
   calcolo dell'utente al suo posto (nel database la stringa dei calcoli è
   tornata identica)
 
-**26/09/2026 — la proprietà Number: formato, cifre, barra e anello; "Calculate" sotto la tabella**
+### 🆕 v0.37 — 26/09/2026 · 13:24 — La proprietà Number: formato, cifre, barra e anello; "Calculate" sotto la tabella
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno, tranne quello
 elencato in fondo; 161 test passati; commit solo in locale)*
 
@@ -3874,7 +3981,7 @@ menu di "Calculate"):
   dell'utente), il cambio di colore della barra, i calcoli delle date e
   delle caselle e quelli sotto i gruppi
 
-**26/09/2026 — il nome di una riga: il cursore in fondo, e la tastiera che resta con l'ordinamento**
+### 🔧 v0.36.1 — 26/09/2026 · 12:51 — Il nome di una riga: il cursore in fondo, e la tastiera che resta con l'ordinamento
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 152 test
 passati; commit solo in locale)*
 
@@ -3913,7 +4020,7 @@ L'utente, parola per parola:
   dentro il toggle"; controllato col confronto sulla copia di stamattina:
   i 28 blocchi di My Space sono identici, niente cambiato
 
-**26/09/2026 — la pagina di un quaderno, e un divisore sotto i quaderni**
+### 🆕 v0.36 — 26/09/2026 · 12:39 — La pagina di un quaderno, e un divisore sotto i quaderni
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 152 test
 passati; commit solo in locale)*
 
@@ -3958,7 +4065,7 @@ L'utente, parola per parola:
   "My Notebook › New Section Group 1" → indietro → di nuovo la pagina del
   quaderno, col gruppo ancora chiuso. Nessun dato dell'utente toccato
 
-**26/09/2026 — le ripetizioni: senza toccare il giorno, i pallini arancioni, fino al 2100**
+### 🆕 v0.35 — 26/09/2026 · 09:06 — Le ripetizioni: senza toccare il giorno, i pallini arancioni, fino al 2100
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 152 test
 passati; commit solo in locale)*
 
@@ -4025,7 +4132,7 @@ L'utente, parola per parola:
 - Da sapere: la cella mostra il giorno da cui la ripetizione parte, non la
   prossima volta in cui capita
 
-**26/09/2026 — i quaderni, come in OneNote**
+### 🆕 v0.34 — 26/09/2026 · 08:53 — I quaderni, come in OneNote
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno, tranne
 quello che è elencato in fondo; 147 test passati; commit solo in locale)*
 
@@ -4143,7 +4250,7 @@ una pagina aperta con titolo, data e ora):
   dell'utente), l'immagine come icona di un quaderno, i colori cambiati
   dopo, Rename e Move up/down dai menu (su e giù li prova il test)
 
-**26/09/2026 — la freccetta del toggle, un pelino più su**
+### 🔧 v0.33.1 — 26/09/2026 · 08:27 — La freccetta del toggle, un pelino più su
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; commit solo
 in locale)*
 
@@ -4167,7 +4274,7 @@ L'utente, parola per parola:
   Space: prima 2422–2455 (in pixel), dopo 2415–2448, con la "R" del titolo
   a 2414–2445
 
-**26/09/2026 — il lucchetto accanto ai tre puntini**
+### 🆕 v0.33 — 26/09/2026 · 08:20 — Il lucchetto accanto ai tre puntini
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno
 dall'utente: «Ho controllato, il lucchetto c'è»; 141 test passati; commit
 solo in locale)*
@@ -4193,7 +4300,7 @@ L'utente, parola per parola:
   e le pagine bloccate si aprono con l'impronta o la password dell'utente:
   **l'ha guardato l'utente**, aprendo "Untitled" in "Titolo tre H3"
 
-**26/09/2026 — la scheda della galleria di una pagina bloccata**
+### 🔧 v0.32.1 — 26/09/2026 · 08:16 — La scheda della galleria di una pagina bloccata
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 141 test
 passati; commit solo in locale)*
 
@@ -4230,7 +4337,7 @@ E subito dopo:
   "UntitledZeta" ha Icon, Edit property e Delete, senza "Reposition cover",
   che invece "Gioco uno" ha ancora
 
-**26/09/2026 — bloccare pagine e database con la password o l'impronta**
+### 🆕 v0.32 — 26/09/2026 · 08:04 — Bloccare pagine e database con la password o l'impronta
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno, tranne il
 database che diventa un collegamento, vedi in fondo; 140 test passati;
 commit solo in locale)*
@@ -4297,7 +4404,7 @@ Richiesta dell'utente, parola per parola:
   dell'installazione; li aveva cancellati l'utente («L'ho fatto io»), non
   è un errore
 
-**26/09/2026 — svuotare la cache, cancellare tutto il contenuto**
+### 🆕 v0.31 — 26/09/2026 · 00:23 — Svuotare la cache, cancellare tutto il contenuto
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno, tranne la
 cancellazione vera, vedi in fondo; 133 test passati; commit solo in
 locale)*
@@ -4339,7 +4446,7 @@ L'utente, parola per parola:
   laterale non si era aperto, e un tocco è finito sull'icona delle
   impostazioni del database a galleria di My Space; nessuna scelta toccata
 
-**26/09/2026 — la proprietà "Color cell"**
+### 🆕 v0.30 — 26/09/2026 · 00:14 — La proprietà "Color cell"
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno, tranne le
 targhette della bacheca e della galleria; 131 test passati; commit solo in
 locale)*
@@ -4377,7 +4484,7 @@ Richiesta dell'utente, parola per parola:
   "#12F20D|Fatto"); la scheda della riga → riquadro verde con "Fatto". Poi
   la proprietà di prova tolta ("Delete property"): la tabella è com'era
 
-**26/09/2026 — via il cestino accanto ai collegamenti alle pagine**
+### 🆕 v0.29 — 26/09/2026 · 00:03 — Via il cestino accanto ai collegamenti alle pagine
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 126 test
 passati; commit solo in locale)*
 
@@ -4393,7 +4500,7 @@ Richiesta dell'utente, parola per parola:
   c'è più; tenendo premuto si apre il menu con "Move to trash" (richiuso
   senza toccare niente)
 
-**25/09/2026 — il dito disegna, due dita scorrono, il palmo non conta**
+### 🆕 v0.28 — 25/09/2026 · 23:57 — Il dito disegna, due dita scorrono, il palmo non conta
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno, le due dita
 dall'utente il 26/09/2026, vedi in fondo; 126 test passati; commit solo in
 locale)*
@@ -4435,7 +4542,7 @@ solo. Risposta, parola per parola:
   disegno si fanno col dito, e quello che vuole la penna vera lo prova
   l'utente
 
-**25/09/2026 — il colore delle penne col selettore del pennello**
+### 🆕 v0.27 — 25/09/2026 · 23:49 — Il colore delle penne col selettore del pennello
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 126 test
 passati; commit solo in locale)*
 
@@ -4465,7 +4572,7 @@ Richiesta dell'utente, parola per parola:
   spessa): **la pressione funziona**, il tratto si allarga e si stringe.
   Lasciati com'erano. Nella prova è rimasta in mano la penna blu
 
-**25/09/2026 — disegnare a mano sulle pagine, anche con la S Pen**
+### 🆕 v0.26 — 25/09/2026 · 23:42 — Disegnare a mano sulle pagine, anche con la S Pen
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno, con la S Pen
 simulata da adb, vedi in fondo; 123 test passati; commit solo in locale)*
 
@@ -4549,8 +4656,8 @@ evidenziatore):
   Dalla cronologia della pagina le ha svuotate l'utente alle 23:16–23:17,
   prima dell'aggiornamento: non è stata la migrazione
 
-**25/09/2026 — le notifiche: "/notification", le date dei database, timer e
-pomodoro** *(Claude Code sul PC; verificato sul telefono lo stesso giorno,
+### 🆕 v0.25 — 25/09/2026 · 23:12 — Le notifiche: "/notification", le date dei database, timer e pomodoro
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno,
 tranne la riaccensione vera, vedi in fondo; 114 test passati; commit solo in
 locale)*
 
@@ -4701,7 +4808,7 @@ e, durante le prove:
   già suonate ("Test app chiusa", due "Tocca per aprire", "Diventa
   grigia"); lasciate lì, sono sulla pagina di prova dell'utente
 
-**25/09/2026 — i selettori di data e ora come quelli di Samsung**
+### 🆕 v0.24 — 25/09/2026 · 18:46 — I selettori di data e ora come quelli di Samsung
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 95 test
 passati; commit solo in locale)*
 
@@ -4764,7 +4871,8 @@ SEP · 25 · 2026; le rotelle 19 : 00 di "Set time"):
 - Notato: in cima a "My Space" ci sono sei righe vuote prima di "Titolo
   uno H1", nate dalle prove dell'utente delle 17:45; lasciate com'erano
 
-**25/09/2026 — il cestino per i timer aggiunti** *(Claude Code sul PC;
+### 🆕 v0.23 — 25/09/2026 · 18:18 — Il cestino per i timer aggiunti
+*(Claude Code sul PC;
 verificato sul telefono lo stesso giorno; 95 test passati; commit solo in
 locale)*
 
@@ -4792,7 +4900,7 @@ Richiesta dell'utente, parola per parola:
   cestino, ↻ e +) ed eliminato col cestino → due timer; il secondo
   riportato alle rotelle con ↻ — i due timer dell'utente sono com'erano
 
-**25/09/2026 — quattro bug, il link delle immagini tolto, la pagina vuota**
+### 🆕 v0.22 — 25/09/2026 · 18:04 — Quattro bug, il link delle immagini tolto, la pagina vuota
 *(Claude Code sul PC; tutto verificato sul telefono lo stesso giorno; 94
 test passati; commit solo in locale, **non** su GitHub finché l'utente non
 lo dice)*
@@ -4906,7 +5014,7 @@ i .png fanno) ?»
   stato modificato dall'utente (righe "A" rifatte, toggle chiuso); lasciato
   com'è
 
-**25/09/2026 — divisore sotto le pagine, menu dei font non più coperto**
+### 🆕 v0.21 — 25/09/2026 · 13:31 — Divisore sotto le pagine, menu dei font non più coperto
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 89 test
 passati; commit solo in locale)*
 
@@ -4937,7 +5045,8 @@ coperto, nella voce qui sotto):
   pagina, era già in Futura. **Confermato dall'utente**: «Sì, l'ho
   provato io, tranquillo». Lasciata com'è
 
-**25/09/2026 — font e dimensione sul testo selezionato** *(Claude Code
+### 🆕 v0.20 — 25/09/2026 · 13:23 — Font e dimensione sul testo selezionato
+*(Claude Code
 sul PC; verificato sul telefono lo stesso giorno; schema alla versione
 **31**; 89 test passati; commit solo in locale, **non** su GitHub finché
 l'utente non lo dice)*
@@ -5004,9 +5113,117 @@ Richiesta dell'utente, parola per parola:
   Select all, che copriva Garamond e Arial. **Corretto subito dopo**, vedi
   la voce qui sopra
 
-**25/09/2026 — le prove dell'utente, e quello che ne è venuto** *(Claude
-Code sul PC; tutto verificato sul telefono lo stesso giorno; schema alla
-versione **30**; 80 test passati)*
+### 🆕 v0.19 — 25/09/2026 · 12:59 — Timer: via i tempi pronti da 10, 15 e 30 minuti
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno)*
+
+L'utente, parola per parola:
+> «Mi sono dimenticato di dirti che i tre timer di preset (ossia 10
+> minuti, 15 minuti e 30 minuti) di Samsung non li volevo. Toglimeli per
+> favore.»
+
+- **[Rimosso]** I tempi pronti 00:10:00, 00:15:00 e 00:30:00 sotto le
+  rotelle del Timer, quelli della seconda foto (v0.18): resta solo
+  **Start**
+
+### 🆕 v0.18 — 25/09/2026 · 12:56 — Cronometro e Timer fra i widget, come quelli dell'orologio Samsung
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 80 test
+passati)*
+
+- **[Nuova funzionalità]** **Cronometro e Timer fra i widget.** Richiesta
+  dell'utente, parola per parola, con quattro foto dell'orologio Samsung
+  (il cronometro fermo a 00:32.52 con tre giri e in corsa a 00:10.84; le
+  rotelle del timer a 00:10:00 coi tempi pronti; un timer a 9:55 con
+  sopra "Add timer"): «Mettimi tra i widget Lo Stopwatch (prima e quarta
+  foto) e il Timer (seconda e terza foto). Saranno uguali a quelli di
+  Samsung (ovviamente i riquadri dei widget saranno piccoli e
+  rispetteranno la grande della sidebar). Nel caso dello Stopwatch, ci
+  saranno all'inizio due pulsanti, Lap e Start, faccio Start e parte lo
+  Stopwatch, il tempo scorre, Start sarà diventato Stop interrompendo
+  temporaneamente il tempo, che poi diventerà Resume per farlo continuare
+  a dov'era prima ed aggiungerà al posto di Lap Reset per resettare lo
+  Stopwatch; Lap servirà per vedere i giri (come nei circuiti), e sotto
+  apparirà una lista di giri come vedi nelle foto, con Lap, Lap times e
+  Overall times. Nel caso del Timer, il widget mi consentirà di scorrere
+  verticalmente da 0 a 99 ore, da 0 a 59 minuti e da 0 a 59 secondi,
+  toccherò Start, e in alto a destra avrò un'iconcina che mi consente di
+  resettare il timer e un'altra iconcina che mi consente di impostazione
+  contemporaneamente un altro timer (i vari timer saranno visualizzabili
+  tramite scorrimento orizzontale)». E: «Per il momento no, non mandarlo
+  su Github, te lo dirò io quando sarà il momento».
+  - **Stopwatch** (`StopwatchWidget`, `StopwatchView` in
+    `SidebarTimers.kt`): il quadrante a sessanta tacche coi centesimi al
+    centro in color pesca, la lancetta **blu** per i secondi del tempo
+    totale e, dopo il primo giro, quella **bianca** per il giro in corso
+    (è così nelle foto: a 00:32.52 la bianca segna i 24,76 s del quarto
+    giro). Pulsanti come chiesto: **Lap** (spento) e **Start**; in corsa
+    **Lap** e **Stop** (rosso scuro); fermo **Reset** e **Resume**. Sotto,
+    la lista **Lap / Lap times / Overall time**, dal giro più recente, col
+    **più veloce in arancio e il più lento in rosso** come nella foto (da
+    tre giri in su: con due sarebbero colorati tutti e due — scelta mia,
+    da confermare). Si conta sull'orologio come il pomodoro: il tempo va
+    avanti anche a barra o app chiusa
+  - **Timer** (`TimerWidget`, `CountdownTimer`, `TimerView`): tre
+    **rotelle** che girano senza fine come su Samsung (ore 0-99, minuti e
+    secondi 0-59), ognuna si ferma su un numero intero e il tempo si salva
+    subito; **Start**. *(I tempi pronti 00:10:00, 00:15:00 e 00:30:00
+    della seconda foto c'erano in questa versione e sono stati tolti
+    subito dopo, su richiesta dell'utente: vedi v0.19)*
+    Partito: il quadrante con le **tacche arancio per il tempo che resta**,
+    dentro il tempo impostato ("10 m"), il conto alla rovescia ("9:55") e
+    la **campanella con l'ora in cui finisce**; sotto **Pause** / **Resume**.
+    In alto a destra **↻** (torna alle rotelle) e **+** (un altro timer, che
+    corre insieme agli altri): la pagina nuova si apre da sola con
+    **Cancel / Start**, come l'"Add timer" della terza foto, e i timer si
+    **sfogliano in orizzontale** coi pallini sotto. Finito, **suona** (il
+    suono delle notifiche dell'app, una volta sola, anche a barra chiusa)
+    e mostra **0:00 in rosso** con **Reset**
+  - Verificato sul telefono: cronometro Start → tre Lap → Stop (00:10.28,
+    giri 01 bianco, 02 rosso, 03 arancio), Resume da 10.28 a 11.83, Reset;
+    timer con le rotelle portate a 00:07:02 e poi a 00:00:05 trascinando,
+    Start → 0:03 con le tacche e la fine alle 08:57, a zero il suono
+    (08:57:05-08:57:08) e 0:00 rosso; "+" → secondo timer con Cancel/Start
+    e i pallini, partito, **lo scorrimento orizzontale sfoglia i timer
+    senza chiudere la barra**, ↻ e Cancel lo tolgono. Test nuovi in
+    `WidgetsTest` (cronometro, giri e colori coi tempi delle foto, stati
+    del timer, rotelle, testi): 80 test passati
+
+### 🆕 v0.17 — 25/09/2026 · 08:34 — Fusi orari: l'ora a destra di ogni fuso nella finestra di scelta
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno)*
+
+- **[Nuova funzionalità]** **L'ora nella scelta del fuso di "Add to the
+  list".** Richiesta dell'utente, parola per parola: «Nella lista degli
+  orologi, non quando faccio "Add clock" ma "Add to the list", aggiungimi
+  a destra anche l'ora. Mi serve saperla in aggiunta del fuso orario
+  appartenente (ovviamente si deve aggiornare man mano che il tempo reale
+  scorre)». Letta così: nell'elenco del widget l'ora c'era già, mancava
+  nella finestra di scelta. Ora lì, a destra di ogni fuso (sotto il nome
+  resta "Regione · GMT±x"), c'è **l'ora che è in quel posto adesso**, che
+  avanza mentre la finestra resta aperta. Subito dopo l'utente: «Me la
+  metti anche in Add clock per favore?» — ora c'è in tutte e tre le
+  strade che aprono la finestra: "Add to the list", "Add clock" e "Change
+  time zone" di un orologio (`ZonePickerSheet`). Verificato: Midway 19:33
+  → 19:34 allo scatto del minuto, Marquesas (GMT-9:30) 21:03 → 21:04; in
+  "Add clock" 19:36 alle 08:36 italiane
+
+### 🔧 v0.16.1 — 25/09/2026 · 08:29 — Pomodoro: la cifra cambia a ogni secondo da quando si preme ▶
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno)*
+
+- **[Bug fix]** **…e partiva con un secondo di ritardo.** Segnalato
+  dall'utente dopo la correzione del secondo in più (v0.16): «non si vede il secondo in
+  più che ti dicevo, ma comunque il pomodoro ci mette un secondo in più a
+  partire rispetto a quando premo il pulsante play». Il widget si
+  ridisegnava allo scoccare dei secondi **dell'orologio**, e il timer
+  parte a metà di un secondo qualunque: il primo "00:59" arrivava fino a
+  quasi due secondi dopo ▶. Ora il pomodoro ha un'ora sua, rinfrescata
+  **quando cambia la cifra del timer** (`rememberTimerNow`,
+  `msUntilTimerTicks`); gli orologi restano sui secondi dell'orologio.
+  Test nuovo `WidgetsTest.theTimerRedrawsExactlyWhenItsDigitChanges`.
+  Verificato con screenshot a tempo dal telefono: "01:00" fino a 0,76 s
+  dopo il tocco, "00:59" a 1,13 s, "00:58" a 2,16 s, "00:57" a 3,06 s
+
+### 🆕 v0.16 — 25/09/2026 · 08:25 — Le prove dell'utente: "Reposition cover" nelle schede, il suono del pomodoro, SimSun al posto di MS YaHei
+*(Claude Code sul PC; tutto verificato sul telefono lo stesso giorno;
+schema alla versione **30**)*
 
 Richieste dell'utente, parola per parola (dopo le prove della sera
 prima: copertine, rotazione, pomodoro, font offline, voce 14):
@@ -5065,91 +5282,6 @@ prova: «La suoneria sta continuando a suonare all'infinito».
   partenza (`PomodoroWidget.remainingAt`). Test nuovo
   `WidgetsTest.aJustStartedPomodoroNeverShowsMoreThanItStartedWith`.
   Verificato: subito dopo ▶ "01:00", e un minuto dopo la pausa in verde
-- **[Bug fix]** **…e partiva con un secondo di ritardo.** Segnalato
-  dall'utente dopo la correzione qui sopra: «non si vede il secondo in
-  più che ti dicevo, ma comunque il pomodoro ci mette un secondo in più a
-  partire rispetto a quando premo il pulsante play». Il widget si
-  ridisegnava allo scoccare dei secondi **dell'orologio**, e il timer
-  parte a metà di un secondo qualunque: il primo "00:59" arrivava fino a
-  quasi due secondi dopo ▶. Ora il pomodoro ha un'ora sua, rinfrescata
-  **quando cambia la cifra del timer** (`rememberTimerNow`,
-  `msUntilTimerTicks`); gli orologi restano sui secondi dell'orologio.
-  Test nuovo `WidgetsTest.theTimerRedrawsExactlyWhenItsDigitChanges`.
-  Verificato con screenshot a tempo dal telefono: "01:00" fino a 0,76 s
-  dopo il tocco, "00:59" a 1,13 s, "00:58" a 2,16 s, "00:57" a 3,06 s
-- **[Nuova funzionalità]** **L'ora nella scelta del fuso di "Add to the
-  list".** Richiesta dell'utente, parola per parola: «Nella lista degli
-  orologi, non quando faccio "Add clock" ma "Add to the list", aggiungimi
-  a destra anche l'ora. Mi serve saperla in aggiunta del fuso orario
-  appartenente (ovviamente si deve aggiornare man mano che il tempo reale
-  scorre)». Letta così: nell'elenco del widget l'ora c'era già, mancava
-  nella finestra di scelta. Ora lì, a destra di ogni fuso (sotto il nome
-  resta "Regione · GMT±x"), c'è **l'ora che è in quel posto adesso**, che
-  avanza mentre la finestra resta aperta. Subito dopo l'utente: «Me la
-  metti anche in Add clock per favore?» — ora c'è in tutte e tre le
-  strade che aprono la finestra: "Add to the list", "Add clock" e "Change
-  time zone" di un orologio (`ZonePickerSheet`). Verificato: Midway 19:33
-  → 19:34 allo scatto del minuto, Marquesas (GMT-9:30) 21:03 → 21:04; in
-  "Add clock" 19:36 alle 08:36 italiane
-- **[Nuova funzionalità]** **Cronometro e Timer fra i widget.** Richiesta
-  dell'utente, parola per parola, con quattro foto dell'orologio Samsung
-  (il cronometro fermo a 00:32.52 con tre giri e in corsa a 00:10.84; le
-  rotelle del timer a 00:10:00 coi tempi pronti; un timer a 9:55 con
-  sopra "Add timer"): «Mettimi tra i widget Lo Stopwatch (prima e quarta
-  foto) e il Timer (seconda e terza foto). Saranno uguali a quelli di
-  Samsung (ovviamente i riquadri dei widget saranno piccoli e
-  rispetteranno la grande della sidebar). Nel caso dello Stopwatch, ci
-  saranno all'inizio due pulsanti, Lap e Start, faccio Start e parte lo
-  Stopwatch, il tempo scorre, Start sarà diventato Stop interrompendo
-  temporaneamente il tempo, che poi diventerà Resume per farlo continuare
-  a dov'era prima ed aggiungerà al posto di Lap Reset per resettare lo
-  Stopwatch; Lap servirà per vedere i giri (come nei circuiti), e sotto
-  apparirà una lista di giri come vedi nelle foto, con Lap, Lap times e
-  Overall times. Nel caso del Timer, il widget mi consentirà di scorrere
-  verticalmente da 0 a 99 ore, da 0 a 59 minuti e da 0 a 59 secondi,
-  toccherò Start, e in alto a destra avrò un'iconcina che mi consente di
-  resettare il timer e un'altra iconcina che mi consente di impostazione
-  contemporaneamente un altro timer (i vari timer saranno visualizzabili
-  tramite scorrimento orizzontale)». E: «Per il momento no, non mandarlo
-  su Github, te lo dirò io quando sarà il momento».
-  - **Stopwatch** (`StopwatchWidget`, `StopwatchView` in
-    `SidebarTimers.kt`): il quadrante a sessanta tacche coi centesimi al
-    centro in color pesca, la lancetta **blu** per i secondi del tempo
-    totale e, dopo il primo giro, quella **bianca** per il giro in corso
-    (è così nelle foto: a 00:32.52 la bianca segna i 24,76 s del quarto
-    giro). Pulsanti come chiesto: **Lap** (spento) e **Start**; in corsa
-    **Lap** e **Stop** (rosso scuro); fermo **Reset** e **Resume**. Sotto,
-    la lista **Lap / Lap times / Overall time**, dal giro più recente, col
-    **più veloce in arancio e il più lento in rosso** come nella foto (da
-    tre giri in su: con due sarebbero colorati tutti e due — scelta mia,
-    da confermare). Si conta sull'orologio come il pomodoro: il tempo va
-    avanti anche a barra o app chiusa
-  - **Timer** (`TimerWidget`, `CountdownTimer`, `TimerView`): tre
-    **rotelle** che girano senza fine come su Samsung (ore 0-99, minuti e
-    secondi 0-59), ognuna si ferma su un numero intero e il tempo si salva
-    subito; **Start**. *(I tempi pronti 00:10:00, 00:15:00 e 00:30:00
-    della seconda foto c'erano nella prima versione e sono stati tolti
-    subito dopo, **[Rimosso]** su richiesta dell'utente: «Mi sono
-    dimenticato di dirti che i tre timer di preset (ossia 10 minuti, 15
-    minuti e 30 minuti) di Samsung non li volevo. Toglimeli per favore.»)*
-    Partito: il quadrante con le **tacche arancio per il tempo che resta**,
-    dentro il tempo impostato ("10 m"), il conto alla rovescia ("9:55") e
-    la **campanella con l'ora in cui finisce**; sotto **Pause** / **Resume**.
-    In alto a destra **↻** (torna alle rotelle) e **+** (un altro timer, che
-    corre insieme agli altri): la pagina nuova si apre da sola con
-    **Cancel / Start**, come l'"Add timer" della terza foto, e i timer si
-    **sfogliano in orizzontale** coi pallini sotto. Finito, **suona** (il
-    suono delle notifiche dell'app, una volta sola, anche a barra chiusa)
-    e mostra **0:00 in rosso** con **Reset**
-  - Verificato sul telefono: cronometro Start → tre Lap → Stop (00:10.28,
-    giri 01 bianco, 02 rosso, 03 arancio), Resume da 10.28 a 11.83, Reset;
-    timer con le rotelle portate a 00:07:02 e poi a 00:00:05 trascinando,
-    Start → 0:03 con le tacche e la fine alle 08:57, a zero il suono
-    (08:57:05-08:57:08) e 0:00 rosso; "+" → secondo timer con Cancel/Start
-    e i pallini, partito, **lo scorrimento orizzontale sfoglia i timer
-    senza chiudere la barra**, ↻ e Cancel lo tolgono. Test nuovi in
-    `WidgetsTest` (cronometro, giri e colori coi tempi delle foto, stati
-    del timer, rotelle, testi): 80 test passati
 - **[Rimosso]** **MS YaHei.** Non era rotto: il suo sosia libero, Noto
   Sans SC, è **lo stesso disegno** che Android usa già per il cinese, e
   sul telefono non si distingueva dal font di sistema. Tolto su richiesta
@@ -5172,8 +5304,8 @@ prova: «La suoneria sta continuando a suonare all'infinito».
 - **[Progetto]** Voce 14 confermata dall'utente: le schede piccole, medie
   e grandi come su Notion, **medie** di partenza — è già così
 
-**Ripresa sul PC del 24/09/2026 — il lavoro cloud provato sul
-telefono** *(Claude Code sul PC, S25 Ultra in debug wireless, build
+### 🔧 v0.15.1 — 24/09/2026 · 23:17 — Ripresa sul PC del 24/09/2026 — il lavoro cloud provato sul telefono
+*(Claude Code sul PC, S25 Ultra in debug wireless, build
 firmata con la chiave di debug del PC; esito voce per voce in "Diario
 delle sessioni cloud" → "Da verificare sul telefono")*
 - **[Progetto]** Clonato il ramo `claude/funny-ramanujan-uuwahs` (la
@@ -5258,7 +5390,8 @@ delle sessioni cloud" → "Da verificare sul telefono")*
   tolto a mano. Il tasto Indietro con la tastiera già chiusa esce
   dall'app
 
-**Pedice e apice nella barra Aa** *(verificato in parte sul telefono
+### 🆕 v0.15 — 24/09/2026 · 15:52 — Pedice e apice nella barra Aa
+*(verificato in parte sul telefono
 il 24/09/2026: voce 30)* *(sessione cloud del 24/09/2026,
 richiesta 39: compilato, 70 test passati — 7 nuovi —, nessuna
 migrazione, **non provato sul telefono**)*
@@ -5292,8 +5425,8 @@ migrazione, **non provato sul telefono**)*
   nuovi nelle otto lingue (`EditorStrings.subscript`, `superscript`, che
   chi usa il lettore di schermo sente sui due pulsanti)
 
-**Widget nella barra laterale — fusi orari, avanzamento, contatore,
-pomodoro** *(verificato in parte sul telefono il 24/09/2026: voce 29)*
+### 🆕 v0.14 — 24/09/2026 · 15:21 — Widget nella barra laterale — fusi orari, avanzamento, contatore, pomodoro
+*(verificato in parte sul telefono il 24/09/2026: voce 29)*
 *(sessione cloud del 24/09/2026, richiesta 37: compilato, 63
 test passati — 12 nuovi —, nessuna migrazione, **non provato sul
 telefono**)*
@@ -5395,7 +5528,7 @@ telefono**)*
   richiesta 35) e "Linked view of data source" fra le voci grigie dei
   menu "+" e "/" (costruita alla richiesta 36). Barrate, non cancellate
 
-**Viste collegate — lo stesso database in un'altra pagina**
+### 🆕 v0.13 — 24/09/2026 · 14:56 — Viste collegate — lo stesso database in un'altra pagina
 *(verificato in parte sul telefono il 24/09/2026: voce 28)* *(sessione
 cloud del 24/09/2026, richiesta 36: compilato, 51 test passati — 9
 nuovi, compresa la migrazione 28→29 aperta da Room —, **schema alla
@@ -5467,7 +5600,7 @@ versione 29**, **non provato sul telefono**)*
   `linkedSourceMissing`, `noDatabasesToLink`, `removeLinkedViewTitle`,
   `removeLinkedViewText`)
 
-**Ricerca dentro un database — la lente accanto a Sort**
+### 🆕 v0.12 — 24/09/2026 · 14:35 — Ricerca dentro un database — la lente accanto a Sort
 *(verificato in parte sul telefono il 24/09/2026: voce 27)* *(sessione
 cloud del 24/09/2026, richiesta 35: compilato, 42 test passati — 10
 nuovi —, nessuna migrazione, **non provato sul telefono**)*
@@ -5519,7 +5652,7 @@ nuovi —, nessuna migrazione, **non provato sul telefono**)*
   aperta). Testi nuovi nelle otto lingue (`DbStrings.searchInDatabase`,
   `closeSearch`)
 
-**Annulla e Ripristina anche per Move to, Duplicate e Move to trash**
+### 🆕 v0.11 — 24/09/2026 · 14:24 — Annulla e Ripristina anche per Move to, Duplicate e Move to trash
 *(verificato in parte sul telefono il 24/09/2026: voci 25 e 26)*
 *(sessione cloud del 24/09/2026, richiesta 34: compilato, 32 test passati
 — 16 nuovi, sul database vero —, nessuna migrazione, **non provato sul
@@ -5583,7 +5716,8 @@ telefono**)*
   la tabella resta vuota. Non erano ipotesi. Le correzioni sono al loro
   posto, e i test passano
 
-**Move to — l'albero con la ricerca** *(verificato in parte sul
+### 🆕 v0.10 — 24/09/2026 · 14:04 — Move to — l'albero con la ricerca
+*(verificato in parte sul
 telefono il 24/09/2026: voce 24)* *(sessione cloud del 24/09/2026,
 richiesta 33: compilato, test passati, nessuna migrazione, **non
 provato sul telefono**)*
@@ -5650,7 +5784,8 @@ provato sul telefono**)*
   triangolino. Testi nuovi nelle otto lingue (`Strings.moveHint`,
   `moveDatabaseHint`, `moveRowPageHint`, `movedInto`)
 
-**Il menu del blocco — i sei puntini** *(verificato in parte sul
+### 🆕 v0.9 — 24/09/2026 · 13:52 — Il menu del blocco — i sei puntini
+*(verificato in parte sul
 telefono il 24/09/2026: voci 22 e 23; Duplicate aveva un bug, corretto —
 vedi "Ripresa sul PC")* *(sessione cloud del 24/09/2026,
 richieste 31-32: compilato, test passati, nessuna migrazione — schema
@@ -5781,7 +5916,8 @@ sempre alla 28 —, **non provato sul telefono**)*
   `turnIntoSimpleDatabase`, `turnIntoComplexDatabase`, `lockDatabase`,
   `openAsPage`, `simpleDatabaseLossTitle`, `simpleDatabaseLossText`)
 
-**Database semplice — le righe sono solo testo** *(verificato in parte
+### 🆕 v0.8 — 24/09/2026 · 13:25 — Database semplice — le righe sono solo testo
+*(verificato in parte
 sul telefono il 24/09/2026: voci 21 e 22)* *(sessione cloud del
 24/09/2026, richiesta 30: compilato, test passati, migrazione 27→28
 simulata, **non provato sul telefono**)*
@@ -5826,7 +5962,7 @@ simulata, **non provato sul telefono**)*
   scheda della riga semplice. Testi nuovi nelle otto lingue
   (`DbStrings.newRow`, `row`, `simpleDatabaseNote`)
 
-**Menu "+" — le stesse voci del menu "/", nello stesso ordine**
+### 🆕 v0.7 — 24/09/2026 · 13:12 — Menu "+" — le stesse voci del menu "/", nello stesso ordine
 *(verificato in parte sul telefono il 24/09/2026: voce 20)*
 *(sessione cloud del 24/09/2026, richiesta 29: compilato, test passati,
 **non provato sul telefono**)*
@@ -5873,7 +6009,7 @@ simulata, **non provato sul telefono**)*
   aveva solo il "/". Il comportamento di ogni voce è quello che aveva
   nel "/"
 
-**Pagine — la dimensione si scrive a mano, e via i titoli (Heading)**
+### 🆕 v0.6 — 24/09/2026 · 13:06 — Pagine — la dimensione si scrive a mano, e via i titoli (Heading)
 *(verificato sul telefono il 24/09/2026: voci 18 e 19, e la migrazione
 26→27 su titoli veri)* *(sessione cloud del 24/09/2026, richiesta 28: compilato, test passati,
 migrazione 26→27 provata su un database di prova, **non provato sul
@@ -5918,7 +6054,8 @@ telefono**)*
 - **"Predefinito"** in cima all'elenco dei font resta, confermato
   dall'utente
 
-**Pagine — font e dimensione del testo (barra Aa)** *(verificato sul
+### 🆕 v0.5 — 24/09/2026 · 12:55 — Pagine — font e dimensione del testo (barra Aa)
+*(verificato sul
 telefono il 24/09/2026: voci 17 e 18; la voce della dimensione era
 vuota, corretto — vedi "Ripresa sul PC")* *(sessione cloud
 del 24/09/2026, richiesta 27: compilato, migrazione 25→26 simulata,
@@ -6003,7 +6140,8 @@ del 24/09/2026, richiesta 27: compilato, migrazione 25→26 simulata,
   Testi nuovi nelle otto lingue (`EditorStrings.defaultFont`, `font`,
   `fontSize`). Primo uso di `R` nel codice (`R.font`, `R.array`)
 
-**Pagine — il conteggio del testo ("X words")** *(verificato sul
+### 🆕 v0.4 — 24/09/2026 · 12:32 — Pagine — il conteggio del testo ("X words")
+*(verificato sul
 telefono il 24/09/2026: voce 16)* *(sessione cloud del
 24/09/2026, richiesta 25: compilato e con i test automatici passati,
 **non provato sul telefono**)*
@@ -6077,7 +6215,8 @@ telefono il 24/09/2026: voce 16)* *(sessione cloud del
   mescolate, spazi speciali, emoji, a-capo, testo vuoto. Girano senza
   telefono: `gradle testDebugUnitTest`
 
-**Colonne — spostarle tenendo premuta l'intestazione** *(verificato in
+### 🆕 v0.3 — 24/09/2026 · 12:13 — Colonne — spostarle tenendo premuta l'intestazione
+*(verificato in
 parte sul telefono il 24/09/2026: voce 15)* *(trovata già
 scritta nel codice arrivato dal PC il 24/09/2026, ma mancava in questo
 README: documentata nella sessione cloud dello stesso giorno. **Da
@@ -6125,7 +6264,8 @@ verificare sul telefono**: non risulta che sia mai stata provata)*
   lo stesso menu. Le regole sono le stesse di Move left / Move right
   nella finestra della proprietà
 
-**Database — vista Gallery** *(verificato in parte sul telefono il
+### 🆕 v0.2 — 24/09/2026 · 11:50 — Database — vista Gallery
+*(verificato in parte sul telefono il
 24/09/2026: voci 3-14; mancano copertine, rotazione, fluidità)*
 *(sessione cloud del 24/09/2026:
 **compilata** in cloud — `assembleDebug` riuscito, query controllate da
@@ -6208,6 +6348,12 @@ telefono**)*
 - **Scelte da far confermare all'utente**: la copertina come anteprima
   di partenza, le larghezze minime delle schede e il rapporto 1,6 : 1
   della parte alta (`GALLERY_PREVIEW_RATIO`)
+
+### 📦 v0.1 — fino al 24/09/2026 · 11:26 — Prima di GitHub: tutto quello che c'era nell'archivio
+*(Il lavoro fatto prima del trasloco su GitHub, arrivato con l'archivio
+caricato il 24/09/2026 alle 11:26. Le richieste di allora non sono state
+registrate una per una, né con la data e l'ora: stanno tutte in questa
+prima versione, divise per argomento com'erano scritte.)*
 
 **[Nuova funzionalità] Ripensato il modello di editing del testo** — il
 cambiamento più grande dello sviluppo. Vedi "Decisioni di design
@@ -8418,6 +8564,11 @@ fatto ognuno e i calcoli (barre, ordine dei fusi, pomodoro), senza
 Android; `WidgetStore.kt` dove si salvano e l'attesa che fa suonare il
 pomodoro. `ui/screen/SidebarWidgets.kt` è come si vedono.
 
+`data/patchnotes/PatchNotes.kt` e `ui/screen/PatchNotesScreen.kt` sono
+**Settings → Patch Notes**: la Cronologia di questo README divisa in
+versioni e disegnata come su GitHub. Il testo lo copia il task
+`patchNotes` di `app/build.gradle.kts` (vedi "Nota tecnica").
+
 `ui/screen/BlockActionsSheet.kt` è il menu di un blocco (i sei puntini):
 le voci per una riga di testo, per una pagina e per un database, e tutte
 le finestre che apre. Chi lo usa passa solo l'id del blocco.
@@ -8489,6 +8640,18 @@ c'erano solo dati di prova, non più ora che ci sono note vere. La
 scorciatoia è stata tolta insieme alla migrazione 5→6, quindi un campo
 aggiunto senza la sua migrazione fa rifiutare l'avvio all'app — un
 errore rumoroso, molto meglio delle note cancellate in silenzio.
+
+**Le Patch Notes dell'app vengono da questo README** (dal 30/09/2026). A
+ogni compilazione il task `patchNotes` (`PatchNotesTask` in
+`app/build.gradle.kts`) copia la sezione "Cronologia degli
+aggiornamenti" — dal suo titolo fino al `## ` dopo — negli asset
+dell'app come `patch_notes.md` (con `addGeneratedSourceDirectory`, così
+Gradle sa che va rifatta quando il README cambia). Dallo stesso README
+vengono `versionName`, il numero del primo titolo "### … v0.N — " (la
+versione più recente), e `versionCode`, quanti titoli di versione ci
+sono. Quindi: **una voce nuova nel README è una versione nuova
+dell'app** alla prossima compilazione. `PatchNotesTest` legge l'asset
+come fa l'app e lo confronta col README.
 
 Prima di installare una build che cambia lo schema conviene portarsi
 via una copia del database dal telefono:

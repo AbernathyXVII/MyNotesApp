@@ -5,6 +5,44 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
 }
 
+/**
+ * **Le Patch Notes** (dal 30/09/2026, chiesto dall'utente): la Cronologia
+ * degli aggiornamenti del README, copiata fra gli asset dell'app a ogni
+ * compilazione, e letta da Settings → Patch Notes. Una copia sola, quella
+ * del README: l'app non può restare indietro.
+ */
+abstract class PatchNotesTask : DefaultTask() {
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val readme: RegularFileProperty
+
+    @get:OutputDirectory
+    abstract val outputDir: DirectoryProperty
+
+    @TaskAction
+    fun copy() {
+        val text = readme.get().asFile.readText(Charsets.UTF_8).removePrefix("\uFEFF")
+        val start = text.indexOf("## Cronologia degli aggiornamenti")
+        check(start >= 0) { "Nel README manca la Cronologia degli aggiornamenti" }
+        val end = text.indexOf("\n## ", start + 1).let { if (it < 0) text.length else it }
+        val out = outputDir.get().file("patch_notes.md").asFile
+        out.parentFile.mkdirs()
+        out.writeText(text.substring(start, end), Charsets.UTF_8)
+    }
+}
+
+val patchNotes = tasks.register<PatchNotesTask>("patchNotes") {
+    readme.set(rootProject.layout.projectDirectory.file("README.md"))
+}
+
+// **La versione dell'app è l'ultima delle Patch Notes**: il numero del primo
+// titolo "### 🆕 v0.68 — …" della Cronologia. `versionCode` è quante versioni
+// ci sono, così cresce sempre.
+val patchVersions = Regex("""^### \S+ v(\d+\.\d+(?:\.\d+)?) — """, RegexOption.MULTILINE)
+    .findAll(rootProject.file("README.md").readText(Charsets.UTF_8))
+    .map { it.groupValues[1] }
+    .toList()
+
 android {
     // Robolectric legge il manifest unito, che contiene l'attività vuota
     // su cui i test disegnano le schermate (ui-test-manifest).
@@ -19,8 +57,8 @@ android {
         applicationId = "com.gabriele.notionlocal"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = patchVersions.size.coerceAtLeast(1)
+        versionName = patchVersions.firstOrNull() ?: "0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -56,6 +94,12 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
+    }
+}
+
+androidComponents {
+    onVariants { variant ->
+        variant.sources.assets?.addGeneratedSourceDirectory(patchNotes, PatchNotesTask::outputDir)
     }
 }
 

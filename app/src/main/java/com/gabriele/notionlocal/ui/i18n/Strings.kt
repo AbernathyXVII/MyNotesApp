@@ -224,6 +224,10 @@ object Strings {
     val export get() = t("Export", "Esporta", "Exportieren", "Exporter", "Exportar", "导出", "내보내기", "エクスポート")
     val connections get() = t("Connections", "Connessioni", "Verbindungen", "Connexions", "Conexiones", "连接", "연결", "接続")
     val settings get() = t("Settings", "Impostazioni", "Einstellungen", "Paramètres", "Ajustes", "设置", "설정", "設定")
+    /** "Patch Notes" (dal 30/09/2026): in fondo alle impostazioni, le versioni dell'app. */
+    val patchNotes get() = t("Patch Notes", "Patch notes", "Versionshinweise", "Notes de version", "Notas de la versión", "更新日志", "패치 노트", "パッチノート")
+    val newestFirst get() = t("Newest first", "Più recenti prima", "Neueste zuerst", "Plus récentes d'abord", "Más recientes primero", "最新在前", "최신순", "新しい順")
+    val oldestFirst get() = t("Oldest first", "Più vecchie prima", "Älteste zuerst", "Plus anciennes d'abord", "Más antiguas primero", "最早在前", "오래된 순", "古い順")
     val expand get() = t("Expand", "Espandi", "Aufklappen", "Déplier", "Expandir", "展开", "펼치기", "展開")
     val collapse get() = t("Collapse", "Comprimi", "Zuklappen", "Replier", "Contraer", "折叠", "접기", "折りたたむ")
     val noPagesInside get() = t("No pages inside", "Nessuna pagina dentro", "Keine Seiten darin", "Aucune page à l'intérieur", "No hay páginas dentro", "里面没有页面", "안에 페이지가 없습니다", "中にページはありません")

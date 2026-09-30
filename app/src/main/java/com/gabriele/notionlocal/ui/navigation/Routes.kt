@@ -24,6 +24,9 @@ object Routes {
     const val TEMPLATES = "templates"
     const val SETTINGS = "settings"
 
+    /** Settings → Patch Notes (dal 30/09/2026): le versioni dell'app. */
+    const val PATCH_NOTES = "patchNotes"
+
     /** Una sezione di un quaderno, con le sue pagine (vedi `NotebookSectionScreen`). */
     const val NOTEBOOK_SECTION = "notebookSection/{sectionId}"
 

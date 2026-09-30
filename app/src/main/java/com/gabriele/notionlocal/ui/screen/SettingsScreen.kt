@@ -51,6 +51,7 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.NewReleases
 import androidx.compose.material.icons.filled.Numbers
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Timer
@@ -101,7 +102,7 @@ private enum class SettingsDialog { THEME, SOUND, MUTE_FOR, ANIMATIONS, NUMBER, 
  * barra Aa della pagina.
  */
 @Composable
-fun SettingsScreen(onBack: () -> Unit) {
+fun SettingsScreen(onBack: () -> Unit, onOpenPatchNotes: () -> Unit = {}) {
     var dialog by remember { mutableStateOf<SettingsDialog?>(null) }
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -212,6 +213,20 @@ fun SettingsScreen(onBack: () -> Unit) {
                 icon = Icons.Filled.DeleteForever,
                 value = Strings.deleteAllContentNote,
                 onClick = { dialog = SettingsDialog.DELETE_ALL }
+            )
+
+            // **"Patch Notes", in fondo** (dal 30/09/2026, chiesto
+            // dall'utente): le versioni dell'app come sono scritte nella
+            // Cronologia del README. Sotto, la versione di adesso.
+            HorizontalDivider(color = NotionGray900, modifier = Modifier.padding(vertical = 12.dp))
+            val appVersion = remember(context) {
+                runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName }.getOrNull()
+            }
+            SettingsItem(
+                Strings.patchNotes,
+                icon = Icons.Filled.NewReleases,
+                value = appVersion?.let { "v$it" },
+                onClick = onOpenPatchNotes
             )
         }
     }
