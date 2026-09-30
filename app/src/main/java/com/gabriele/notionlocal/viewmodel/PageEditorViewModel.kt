@@ -1890,6 +1890,18 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
      * di quello che si intende toccando sotto.
      */
     fun focusLastBlock() {
+        // **Con righe vuote in fondo, sulla prima di loro** (dal 30/09/2026):
+        // in una pagina vuota o nuova è la prima riga della pagina, non
+        // l'ultima con tutto il vuoto sopra ("non ci sia uno spazio vuoto
+        // sopra inutilissimo"). Vedi `trailingBlankLines`.
+        trailingBlankLines().firstOrNull()?.let { first ->
+            viewModelScope.launch {
+                delay(IME_SETTLE_DELAY_MS)
+                _focusRequestBlockId.value = first.id
+            }
+            return
+        }
+
         val topLevel = _blocks.value
             .filter { it.parentBlockId == null }
             .sortedBy { it.orderIndex }
@@ -1919,6 +1931,43 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
 
     fun consumeFocusRequest() {
         _focusRequestBlockId.value = null
+    }
+
+    /**
+     * **Le righe vuote in fondo alla pagina**: i paragrafi senza testo (e
+     * senza niente dentro) dopo l'ultimo blocco che ha qualcosa. In una
+     * pagina vuota o nuova sono tutte le sue righe. `localText` dà il testo
+     * delle righe che il campo ha appena cambiato e il database non ancora.
+     */
+    internal fun trailingBlankLines(localText: Map<String, String> = emptyMap()): List<BlockEntity> {
+        val all = _blocks.value
+        return all
+            .filter { it.parentBlockId == null }
+            .sortedBy { it.orderIndex }
+            .takeLastWhile { block ->
+                block.type == BlockType.PARAGRAPH &&
+                    (localText[block.id] ?: plainTextOf(block)).isEmpty() &&
+                    all.none { it.parentBlockId == block.id }
+            }
+    }
+
+    /**
+     * **Un tocco su una riga vuota in fondo alla pagina** (dal 30/09/2026,
+     * "in un campo vuoto o nuovo, se premo in un punto a caso della pagina
+     * il text cursor mi vada al primissimo blocco"): il cursore va sulla
+     * prima delle righe vuote in fondo, così sopra non resta del vuoto. È
+     * l'indice di quella riga fra `runBlockIds` (le righe del campo, coi
+     * loro testi di adesso in `lines`), o null se il tocco va bene dov'è:
+     * sulla prima di loro, su una riga col testo, o su una riga vuota in
+     * mezzo al testo, che è uno spazio voluto.
+     */
+    fun trailingBlankRedirect(runBlockIds: List<String>, lines: List<String>, lineIndex: Int): Int? {
+        val tapped = runBlockIds.getOrNull(lineIndex) ?: return null
+        val localText = if (lines.size == runBlockIds.size) runBlockIds.zip(lines).toMap() else emptyMap()
+        val trailing = trailingBlankLines(localText)
+        val first = trailing.firstOrNull() ?: return null
+        if (tapped == first.id || trailing.none { it.id == tapped }) return null
+        return runBlockIds.indexOf(first.id).takeIf { it >= 0 }
     }
 
     /**

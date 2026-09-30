@@ -2022,6 +2022,39 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**30/09/2026 — In una pagina vuota il cursore va sulla prima riga**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 313 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «In un campo vuoto o nuovo, se premo in un punto a casa della pagina,
+> fai sì che in realtà il text cursor mi vada al primissimo blocco, e non
+> mi fa creare il text cursor lì in fondo, cosicché non ci sia un spazio
+> vuoto sopra inutilissimo»
+
+- **[Nuova funzionalità]** Le **righe vuote in fondo alla pagina** (i
+  paragrafi senza testo dopo l'ultima cosa scritta; in una pagina vuota,
+  tutte) non prendono più il cursore dove cade il dito: toccandone una, o
+  toccando sotto l'ultima riga, il cursore va sulla **prima** di loro. In
+  una pagina vuota o nuova è la primissima riga, e sopra non resta vuoto.
+  Una riga vuota in mezzo al testo resta toccabile come sempre (è uno
+  spazio voluto), e l'Invio continua a fare spazio: vale solo per lo
+  spostamento del cursore, non per il testo che cambia. Un punto elenco
+  vuoto non è una riga vuota
+- **[Progetto]** `PageEditorViewModel.trailingBlankLines` e
+  `trailingBlankRedirect` (coi testi del campo appena scritti, che il
+  database non ha ancora); `focusLastBlock` va sulla prima riga vuota in
+  fondo invece che sull'ultima; nel campo unito lo spostamento del solo
+  cursore su una di quelle righe è portato sulla prima. Test in
+  `BlankTapTest`
+- Verificato sul telefono sulla pagina della riga "2" del database di
+  prova (una riga vuota; My Space non toccata). Con 5 righe vuote fatte
+  con l'Invio: toccando sotto tutte, la "Z" scritta finisce sulla prima
+  riga (prima andava sulla quinta); toccando la quarta riga, la "W"
+  finisce sulla prima; con la "W" scritta, toccando di nuovo la quarta la
+  "V" va sulla seconda, subito sotto. Poi la pagina rimessa com'era, una
+  riga vuota: database uguale, tranne 3 voci di "Updates" di quella pagina
+
 **30/09/2026 — Il corpo del titolo di un toggle ora cambia**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 308 test
 passati; commit solo in locale)*
