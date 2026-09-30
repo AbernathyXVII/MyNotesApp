@@ -209,6 +209,7 @@ import com.gabriele.notionlocal.data.entity.namePosition
 import com.gabriele.notionlocal.data.entity.minColumnWidth
 import androidx.compose.material.icons.filled.WrapText
 import androidx.compose.foundation.layout.FlowRow
+import com.gabriele.notionlocal.data.entity.CellOverflow
 import com.gabriele.notionlocal.data.entity.NAME_COLUMN_KEY
 import com.gabriele.notionlocal.data.entity.parseColumnWidths
 import com.gabriele.notionlocal.data.entity.parseFitColumns
@@ -1246,7 +1247,7 @@ private fun DatabaseViewBody(
                     onSetFitToContent = { key, fit -> viewModel.setFitToContent(key, fit) },
                     onToggleSubRows = { row -> viewModel.setSubRowsCollapsed(row, !row.subRowsCollapsed) },
                     calculationSubRows = parseCalculationSubRows(page?.viewCalculations),
-                    wrapCells = page?.wrapCells == true,
+                    cellOverflow = CellOverflow.of(page?.cellOverflow ?: 0),
                     onOpenRow = openRow,
                     onRowLongPress = { row, place ->
                         focusManager.clearFocus()
@@ -1469,8 +1470,8 @@ private fun DatabaseViewBody(
             onSetTableSubGroupColumn = { viewModel.setTableSubGroupColumn(it) },
             hideEmptySubGroups = page?.hideEmptySubGroups != false,
             onSetHideEmptySubGroups = { viewModel.setHideEmptySubGroups(it) },
-            wrapCells = page?.wrapCells == true,
-            onSetWrapCells = { viewModel.setWrapCells(it) },
+            cellOverflow = CellOverflow.of(page?.cellOverflow ?: 0),
+            onSetCellOverflow = { viewModel.setCellOverflow(it) },
             onSetColumnHidden = { columnId, hidden ->
                 viewModel.setColumnHidden(columnId, hidden)
             },
@@ -1822,8 +1823,8 @@ private fun TableLayout(
     onToggleSubRows: (DatabaseRowEntity) -> Unit = {},
     /** I calcoli che contano anche le sotto-righe ("Include sub rows"). */
     calculationSubRows: Set<String> = emptySet(),
-    /** "Wrap cells": il testo va a capo e la riga si allunga (vedi `LocalWrapCells`). */
-    wrapCells: Boolean = false
+    /** Il testo lungo nelle celle: tre puntini, colonna allargata o a capo (vedi `CellOverflow`). */
+    cellOverflow: CellOverflow = CellOverflow.TRUNCATE
 ) {
     // Dentro un contenitore che scorre in orizzontale la larghezza
     // disponibile è illimitata: una linea che chiede "tutta la
@@ -1842,7 +1843,11 @@ private fun TableLayout(
     // modifiche alla larghezza si torna alla tabella, invece di uscire dalla
     // pagina. Senza segnalino il gesto fa quello di sempre.
     BackHandler(enabled = resize.key != null) { resize.stop() }
-    val fitted = fitWidths(state, shownColumns, fitColumns, calculations, calculationSubRows)
+    // **"Widen the column"** (dal 30/09/2026): ogni colonna almeno larga
+    // quanto il suo contenuto, quindi si misurano tutte.
+    val widen = cellOverflow == CellOverflow.WIDEN
+    val fitKeys = if (widen) shownColumns.mapTo(mutableSetOf(NAME_COLUMN_KEY)) { it.id } else fitColumns
+    val fitted = fitWidths(state, shownColumns, fitKeys, calculations, calculationSubRows)
     // Se c'è almeno una sotto-riga, ogni nome lascia il posto della freccia:
     // così i nomi restano in colonna, con o senza sotto-righe.
     val treeShown = hasSubRows(state.rows)
@@ -1850,13 +1855,15 @@ private fun TableLayout(
     // poi la misura scelta; se no quella di sempre.
     // Mai sotto il minimo della colonna (dal 30/09/2026): anche le misure
     // salvate prima, più strette, si allargano fin lì.
-    fun widthOf(key: String, default: Dp, min: Int): Dp =
-        (
-            resize.draft?.takeIf { key == resize.key }
-                ?: fitted[key]
-                ?: columnWidths[key]?.dp
-                ?: default
-            ).coerceAtLeast(min.dp)
+    fun widthOf(key: String, default: Dp, min: Int): Dp {
+        val dragging = resize.draft?.takeIf { key == resize.key }
+        val chosen = dragging
+            ?: fitted[key]?.takeIf { key in fitColumns }
+            ?: columnWidths[key]?.dp
+            ?: default
+        // Mentre si trascina comanda il dito, anche con "Widen the column".
+        return shownColumnWidth(chosen, fitted[key], widen && dragging == null, min.dp)
+    }
     val widths = TableWidths(
         name = widthOf(NAME_COLUMN_KEY, NAME_COLUMN_WIDTH, minColumnWidth(NAME_COLUMN_KEY)),
         byKey = shownColumns.associate { it.id to widthOf(it.id, defaultColumnWidth(it.id, it.type).dp, minColumnWidth(it.id, it.type)) }
@@ -1872,7 +1879,11 @@ private fun TableLayout(
 
     // Intestazione e righe scorrono insieme in orizzontale, così le
     // colonne restano allineate.
-    CompositionLocalProvider(LocalTableWidths provides widths, LocalColumnResize provides resize, LocalWrapCells provides wrapCells) {
+    CompositionLocalProvider(
+        LocalTableWidths provides widths,
+        LocalColumnResize provides resize,
+        LocalWrapCells provides (cellOverflow == CellOverflow.WRAP)
+    ) {
     Column(
         modifier = Modifier
             // Toccando la tabella fuori dal segnalino, il segnalino se ne va.
@@ -5778,7 +5789,6 @@ private fun NameCell(
     // apre lì sopra il riquadro grigio col nome intero (`FullTextPopup`).
     var cut by remember(row.id) { mutableStateOf(false) }
     var expanded by remember(row.id) { mutableStateOf(false) }
-    var nameWidthPx by remember { mutableStateOf(0) }
     DisposableEffect(expanded) {
         val active = expanded
         if (active) onEditingChange(true)
@@ -5828,8 +5838,7 @@ private fun NameCell(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
-                    .padding(end = 12.dp)
-                    .onSizeChanged { nameWidthPx = it.width },
+                    .padding(end = 12.dp),
                 contentAlignment = Alignment.CenterStart
             ) {
                 if (editing) {
@@ -5924,22 +5933,24 @@ private fun NameCell(
                         )
                     }
                 }
-                if (expanded) {
-                    FullTextPopup(
-                        value = localTitle,
-                        onValueChange = {
-                            localTitle = it
-                            onTitleChange(it)
-                        },
-                        cellTextWidthPx = nameWidthPx,
-                        keyboardOptions = KeyboardOptions(
-                            capitalization = KeyboardCapitalization.Sentences,
-                            imeAction = ImeAction.Done
-                        ),
-                        onDismiss = { expanded = false }
-                    )
-                }
             }
+        }
+        // Il riquadro grigio sta qui, nella riga di tutta la cella: così è
+        // centrato sulla cella del nome, OPEN compreso.
+        if (expanded) {
+            FullTextPopup(
+                value = localTitle,
+                onValueChange = {
+                    localTitle = it
+                    onTitleChange(it)
+                },
+                cellWidth = LocalTableWidths.current.name,
+                keyboardOptions = KeyboardOptions(
+                    capitalization = KeyboardCapitalization.Sentences,
+                    imeAction = ImeAction.Done
+                ),
+                onDismiss = { expanded = false }
+            )
         }
         // Niente OPEN in un database semplice: la riga non ha una pagina
         // da aprire. Il nome si scrive qui, toccandolo, e il resto dalla
@@ -7897,6 +7908,8 @@ private enum class SettingsPage {
     TABLE_GROUP,
     /** I sottogruppi della tabella, dentro ogni gruppo (dal 29/09/2026). */
     TABLE_SUB_GROUP,
+    /** Il testo lungo nelle celle: tre puntini, colonna allargata o a capo (dal 30/09/2026). */
+    CELL_OVERFLOW,
     /** Quali colonne si vedono nella tabella e quali no. */
     PROPERTY_VISIBILITY,
     DATE_PROPERTY,
@@ -8417,9 +8430,9 @@ private fun SettingsSheet(
     onSetTableSubGroupColumn: ((String?) -> Unit)? = null,
     hideEmptySubGroups: Boolean = true,
     onSetHideEmptySubGroups: ((Boolean) -> Unit)? = null,
-    /** "Wrap cells" della tabella (dal 30/09/2026). */
-    wrapCells: Boolean = false,
-    onSetWrapCells: ((Boolean) -> Unit)? = null,
+    /** Il testo lungo nelle celle della tabella (dal 30/09/2026). */
+    cellOverflow: CellOverflow = CellOverflow.TRUNCATE,
+    onSetCellOverflow: ((CellOverflow) -> Unit)? = null,
     /** Nasconde o rimostra una colonna, e tutte insieme. */
     onSetColumnHidden: (String, Boolean) -> Unit,
     onSetAllColumnsHidden: (Boolean) -> Unit,
@@ -8500,6 +8513,7 @@ private fun SettingsSheet(
                         SettingsPage.GROUP_BY -> DbStrings.groupBy
                         SettingsPage.TABLE_GROUP -> DbStrings.group
                         SettingsPage.TABLE_SUB_GROUP -> DbStrings.subGroups
+                        SettingsPage.CELL_OVERFLOW -> DbStrings.longText
                         SettingsPage.PROPERTY_VISIBILITY -> DbStrings.propertyVisibility
                         SettingsPage.DATE_PROPERTY -> DbStrings.dateProperty
                         SettingsPage.CARD_PREVIEW -> DbStrings.cardPreview
@@ -8623,18 +8637,17 @@ private fun SettingsSheet(
                                     onCheckedChange = onSetHideEmptySubGroups
                                 )
                             }
-                            // **"Wrap cells"** (dal 30/09/2026, chiesto
-                            // dall'utente): acceso, il testo delle celle va a
-                            // capo e la riga si allunga; spento, quello che
-                            // non ci sta finisce coi tre puntini, e toccandolo
-                            // compare intero.
-                            if (onSetWrapCells != null) {
+                            // **"Long text"** (dal 30/09/2026, chiesto
+                            // dall'utente): il testo che non ci sta finisce
+                            // coi tre puntini, allarga la colonna o va a capo
+                            // nella cella. Vedi `CellOverflow`.
+                            if (onSetCellOverflow != null) {
                                 HorizontalDivider()
-                                SettingsToggleRow(
+                                SettingsRow(
                                     icon = Icons.Filled.WrapText,
-                                    label = DbStrings.wrapCells,
-                                    checked = wrapCells,
-                                    onCheckedChange = onSetWrapCells
+                                    label = DbStrings.longText,
+                                    value = DbStrings.cellOverflowName(cellOverflow),
+                                    onClick = { page = SettingsPage.CELL_OVERFLOW }
                                 )
                             }
                         }
@@ -8892,6 +8905,25 @@ private fun SettingsSheet(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(vertical = 12.dp)
                         )
+                    }
+                }
+
+                SettingsPage.CELL_OVERFLOW -> {
+                    // I tre modi, nell'ordine in cui li ha chiesti l'utente.
+                    SheetGroup {
+                        CellOverflow.entries.forEachIndexed { index, mode ->
+                            if (index > 0) HorizontalDivider()
+                            SettingsRow(
+                                icon = when (mode) {
+                                    CellOverflow.TRUNCATE -> Icons.Filled.MoreHoriz
+                                    CellOverflow.WIDEN -> Icons.Filled.SettingsEthernet
+                                    CellOverflow.WRAP -> Icons.Filled.WrapText
+                                },
+                                label = DbStrings.cellOverflowName(mode),
+                                value = if (mode == cellOverflow) "✓" else null,
+                                onClick = { onSetCellOverflow?.invoke(mode) }
+                            )
+                        }
                     }
                 }
 

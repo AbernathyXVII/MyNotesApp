@@ -308,7 +308,7 @@ class MigrationTest {
     fun from47EveryTableKeepsItsCellsOnOneLine() = runBlocking<Unit> {
         val db = AppDatabase.getInstance(databaseAtVersion(47))
         val pages = db.pageDao()
-        listOf("p1", "db1", "rp1").forEach { id -> assertEquals(false, pages.getById(id)!!.wrapCells) }
+        listOf("p1", "db1", "rp1").forEach { id -> assertEquals(0, pages.getById(id)!!.cellOverflow) }
         assertEquals("Database alla 47", pages.getById("db1")!!.title)
         assertEquals(48, db.openHelper.readableDatabase.version)
     }

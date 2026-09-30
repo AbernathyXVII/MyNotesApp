@@ -8,6 +8,7 @@ import com.gabriele.notionlocal.data.entity.tableKeys
 import com.gabriele.notionlocal.data.entity.DurationUnit
 import com.gabriele.notionlocal.data.entity.durationMillisOfCell
 import com.gabriele.notionlocal.data.entity.minColumnWidth
+import com.gabriele.notionlocal.data.entity.CellOverflow
 import com.gabriele.notionlocal.data.entity.defaultColumnWidth
 import com.gabriele.notionlocal.data.entity.snapColumnWidth
 import com.gabriele.notionlocal.data.entity.encodeColumnWidths
@@ -1073,12 +1074,12 @@ class DatabaseViewModel(
     }
 
     /**
-     * **"Wrap cells"** (dal 30/09/2026) di questa vista: il testo delle celle
-     * va a capo e la riga si allunga; spento, finisce coi tre puntini.
+     * **Il testo lungo nelle celle** (dal 30/09/2026) di questa vista: tre
+     * puntini, colonna allargata o a capo (vedi `CellOverflow`).
      */
-    fun setWrapCells(wrap: Boolean) {
+    fun setCellOverflow(mode: CellOverflow) {
         val current = _page.value ?: return
-        val updated = current.copy(wrapCells = wrap)
+        val updated = current.copy(cellOverflow = mode.code)
         _page.value = updated
         viewModelScope.launch { pageRepository.updatePage(updated) }
     }

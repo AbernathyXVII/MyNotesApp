@@ -6,6 +6,7 @@ import com.gabriele.notionlocal.data.entity.Calculation
 import com.gabriele.notionlocal.data.entity.CalculationGroup
 import com.gabriele.notionlocal.data.entity.NumberFormatKind
 import com.gabriele.notionlocal.data.entity.DurationUnit
+import com.gabriele.notionlocal.data.entity.CellOverflow
 import com.gabriele.notionlocal.data.entity.ColumnType
 import com.gabriele.notionlocal.data.entity.DatabaseLayout
 import com.gabriele.notionlocal.data.entity.GalleryCardPreview
@@ -395,8 +396,13 @@ object DbStrings {
     }
 
     // I selettori di data e ora come quelli di Samsung (vedi `SamsungPickers.kt`).
-    /** "Wrap cells" (dal 30/09/2026): nelle impostazioni di una tabella. */
-    val wrapCells get() = t("Wrap cells", "Testo a capo nelle celle", "Zellen umbrechen", "Retour à la ligne dans les cellules", "Ajustar texto en celdas", "单元格内换行", "셀 내용 줄바꿈", "セル内で折り返す")
+    /** "Long text" (dal 30/09/2026): nelle impostazioni di una tabella, cosa fa il testo che non ci sta. */
+    val longText get() = t("Long text", "Testo lungo", "Langer Text", "Texte long", "Texto largo", "长文本", "긴 텍스트", "長いテキスト")
+    fun cellOverflowName(mode: CellOverflow): String = when (mode) {
+        CellOverflow.TRUNCATE -> t("Show …", "Tre puntini", "Mit … kürzen", "Afficher …", "Mostrar …", "显示 …", "… 표시", "… で省略")
+        CellOverflow.WIDEN -> t("Widen the column", "Allarga la colonna", "Spalte verbreitern", "Élargir la colonne", "Ensanchar la columna", "加宽列", "열 넓히기", "列を広げる")
+        CellOverflow.WRAP -> t("Wrap in the cell", "A capo nella cella", "In der Zelle umbrechen", "Retour à la ligne", "Ajustar en la celda", "在单元格内换行", "셀 안에서 줄바꿈", "セル内で折り返す")
+    }
     val setDate get() = t("Set date", "Imposta data", "Datum festlegen", "Définir la date", "Establecer fecha", "设置日期", "날짜 설정", "日付を設定")
     val setTime get() = t("Set time", "Imposta ora", "Uhrzeit festlegen", "Définir l'heure", "Establecer hora", "设置时间", "시간 설정", "時刻を設定")
     val previousMonth get() = t("Previous month", "Mese precedente", "Vorheriger Monat", "Mois précédent", "Mes anterior", "上个月", "이전 달", "前の月")

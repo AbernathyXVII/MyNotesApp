@@ -2022,6 +2022,47 @@ per prima, e portano scritto che **vanno ancora verificate sul
 telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+**30/09/2026 — "Long text": tre puntini, colonna allargata o a capo; il riquadro grigio centrato**
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 324 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «1) La barra in background con il grigiume, centramale alla posizione
+> dove si trova la cella, proprio sopra di essa;
+> 2) Ecco vedi, non mi sono spiegato bene io. L'opzione consente:
+> * o di vedere i tre puntini se il testo va oltre la larghezza;
+> * o di allargare la cella quanto basta per vedere tutto il testo;
+> * o di far vedere il testo sotto la stessa cella andando a capo ma
+>   rimanendo sempre nella stessa cella, come se all'interno di essa ci
+>   fossero più righe. In questa situazione, l'altezza della riga deve
+>   essere per tutta la riga, non solo per la cella dove si trova il testo»
+
+- **[Nuova funzionalità]** L'interruttore "Wrap cells" diventa la voce
+  "**Long text**" con tre scelte, nell'ordine chiesto: "**Show …**" (tre
+  puntini, di suo; toccando la cella compare il testo intero), "**Widen
+  the column**" (ogni colonna si allarga quanto basta perché si legga
+  tutto, nome e intestazione compresi; più stretta di così non va, più
+  larga resta come la si è fatta) e "**Wrap in the cell**" (il testo va a
+  capo dentro la cella, e **tutta la riga** si allunga: le altre celle
+  restano a metà della riga più alta)
+- **[Bug fix]** Il riquadro grigio col testo intero è **centrato sulla
+  cella**, in orizzontale e in verticale, proprio sopra di lei (prima
+  partiva dal suo angolo in alto a sinistra); per il nome, centrato su
+  tutta la cella, OPEN compreso
+- **[Progetto]** `CellOverflow` (TRUNCATE, WIDEN, WRAP) in
+  `PageEntity.cellOverflow`, che sta nella stessa colonna `wrapCells` della
+  versione 48 (0 e 1 erano "no" e "sì", cioè i tre puntini e l'a capo):
+  nessuna migrazione, schema di Room identico. `shownColumnWidth` fa le
+  larghezze di "Widen the column"; test in `WrapCellsTest`
+- Verificato sul telefono sulla vista "Videogiochi" di "Titolo tre H3", con
+  "Sdrogo" allungato per prova a "Sdrogo lungo di prova ancora di piu":
+  coi tre puntini, toccandolo il riquadro grigio compare centrato sulla
+  cella; con "Widen the column" la colonna Text mostra tutto il testo e la
+  data col periodo si legge intera; con "Wrap in the cell" il testo va su
+  due righe dentro la cella e tutta la riga si allunga. Poi di nuovo "Show
+  …" e "Sdrogo" rimesso dal riquadro: database uguale, tranne "Last edited"
+  della riga e la data di modifica della vista
+
 **30/09/2026 — "Wrap cells", i tre puntini e il testo intero di una cella**
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 322 test
 passati; commit solo in locale)*
@@ -8217,7 +8258,7 @@ le finestre che apre. Chi lo usa passa solo l'id del blocco.
 ## Nota tecnica
 
 Lo schema è alla **versione 48** (la 48, del 30/09/2026, aggiunge
-`pages.wrapCells`, "Wrap cells" delle tabelle; la 47, del 29/09/2026, aggiunge
+`pages.wrapCells`, oggi il testo lungo nelle celle delle tabelle (`PageEntity.cellOverflow`: 0 tre puntini, 1 a capo, 2 colonna allargata); la 47, del 29/09/2026, aggiunge
 `database_columns.durationFormat`, la proprietà Duration; la 46, dello stesso giorno, aggiunge
 `pages.nameColumnOrder`, il posto della colonna Name; la 45, dello stesso giorno, aggiunge
 `database_rows.parentRowId` e `subRowsCollapsed`, le sotto-righe; la 44, dello stesso giorno, aggiunge

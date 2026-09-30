@@ -5,6 +5,7 @@ import android.os.Looper
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.gabriele.notionlocal.data.AppDatabase
+import com.gabriele.notionlocal.data.entity.CellOverflow
 import com.gabriele.notionlocal.data.entity.ColumnType
 import com.gabriele.notionlocal.data.entity.DEFAULT_IMAGE_COLUMN_WIDTH_DP
 import com.gabriele.notionlocal.data.entity.DatabaseColumnEntity
@@ -17,6 +18,8 @@ import com.gabriele.notionlocal.data.entity.minColumnWidth
 import com.gabriele.notionlocal.data.entity.parseColumnWidths
 import com.gabriele.notionlocal.data.repository.DatabaseRepository
 import com.gabriele.notionlocal.data.repository.PageRepository
+import androidx.compose.ui.unit.dp
+import com.gabriele.notionlocal.ui.screen.shownColumnWidth
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -29,8 +32,8 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
- * **"Wrap cells" e la larghezza minima** (30/09/2026): l'interruttore di
- * ogni tabella, e le colonne in cui si scrive che non vanno sotto un minimo.
+ * **Il testo lungo nelle celle e la larghezza minima** (30/09/2026): i tre
+ * modi di ogni tabella, e le colonne in cui si scrive che non vanno sotto un minimo.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = Application::class)
@@ -74,12 +77,36 @@ class WrapCellsTest {
     private fun saved() = runBlocking { db.pageDao().getById(games.id)!! }
 
     @Test
-    fun theSwitchIsSavedWithTheView() {
-        assertEquals(false, saved().wrapCells)
-        viewModel.setWrapCells(true)
-        waitFor("acceso") { saved().wrapCells }
-        viewModel.setWrapCells(false)
-        waitFor("spento") { !saved().wrapCells }
+    fun theModeIsSavedWithTheView() {
+        assertEquals(CellOverflow.TRUNCATE, CellOverflow.of(saved().cellOverflow))
+        viewModel.setCellOverflow(CellOverflow.WIDEN)
+        waitFor("allarga") { CellOverflow.of(saved().cellOverflow) == CellOverflow.WIDEN }
+        viewModel.setCellOverflow(CellOverflow.WRAP)
+        waitFor("a capo") { CellOverflow.of(saved().cellOverflow) == CellOverflow.WRAP }
+        viewModel.setCellOverflow(CellOverflow.TRUNCATE)
+        waitFor("i puntini") { saved().cellOverflow == 0 }
+    }
+
+    @Test
+    fun theModesKeepTheNumbersOfTheOldSwitch() {
+        // La colonna era sì/no: 0 "no" (i puntini), 1 "sì" (a capo).
+        assertEquals(CellOverflow.TRUNCATE, CellOverflow.of(0))
+        assertEquals(CellOverflow.WRAP, CellOverflow.of(1))
+        assertEquals(CellOverflow.WIDEN, CellOverflow.of(2))
+        assertEquals(CellOverflow.TRUNCATE, CellOverflow.of(99))
+        // Nell'ordine chiesto: puntini, allarga, a capo.
+        assertEquals(listOf(CellOverflow.TRUNCATE, CellOverflow.WIDEN, CellOverflow.WRAP), CellOverflow.entries)
+    }
+
+    @Test
+    fun widenGrowsTheColumnButNeverShrinksIt() {
+        // Il contenuto più largo: la colonna lo segue.
+        assertEquals(230.dp, shownColumnWidth(150.dp, 230.dp, widen = true, min = 80.dp))
+        // Il contenuto più stretto: resta com'era.
+        assertEquals(150.dp, shownColumnWidth(150.dp, 60.dp, widen = true, min = 80.dp))
+        // Negli altri modi non conta, e il minimo vale sempre.
+        assertEquals(150.dp, shownColumnWidth(150.dp, 230.dp, widen = false, min = 80.dp))
+        assertEquals(80.dp, shownColumnWidth(48.dp, null, widen = false, min = 80.dp))
     }
 
     @Test

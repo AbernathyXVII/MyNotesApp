@@ -708,9 +708,9 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /**
-         * 47 → 48 (30/09/2026): "Wrap cells" nelle impostazioni di una tabella
-         * (`PageEntity.wrapCells`). Spento dappertutto: le celle restano su
-         * una riga, coi tre puntini.
+         * 47 → 48 (30/09/2026): il testo lungo nelle celle, nelle impostazioni
+         * di una tabella (`PageEntity.cellOverflow`, colonna `wrapCells`). A 0
+         * dappertutto: le celle restano su una riga, coi tre puntini.
          */
         private val MIGRATION_47_48 = object : Migration(47, 48) {
             override fun migrate(db: SupportSQLiteDatabase) {

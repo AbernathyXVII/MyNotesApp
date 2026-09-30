@@ -62,6 +62,14 @@ internal fun Modifier.cellWrapPadding(): Modifier =
 
 private val WRAP_PADDING = 10.dp
 
+/**
+ * **Quanto è larga una colonna** (dal 30/09/2026): quella scelta (col
+ * segnalino, "Fit to content" o di sempre) — con "Widen the column" almeno
+ * quanto il suo contenuto (`fitted`) — e mai sotto il suo minimo.
+ */
+internal fun shownColumnWidth(chosen: Dp, fitted: Dp?, widen: Boolean, min: Dp): Dp =
+    (if (widen && fitted != null) maxOf(chosen, fitted) else chosen).coerceAtLeast(min)
+
 /** Se il testo di una cella è stato tagliato coi tre puntini. */
 internal fun TextLayoutResult.isCut(): Boolean =
     hasVisualOverflow || (lineCount > 0 && isLineEllipsized(lineCount - 1))
@@ -76,35 +84,31 @@ internal val CellAlignment.horizontal: Alignment.Horizontal
 
 /**
  * **Il testo intero di una cella** (dal 30/09/2026): toccando una cella il
- * cui testo finisce coi tre puntini, compare un riquadro grigio **nello
- * stesso punto**, col testo intero che va a capo, e ci si scrive come nella
- * cella. È largo almeno quanto la cella, e almeno [FULL_TEXT_MIN_WIDTH]: in
- * una colonna stretta il testo sarebbe una colonnina. Si chiude toccando
- * fuori, col gesto indietro o con "fine" sulla tastiera. Con il database
- * bloccato si legge e basta.
+ * cui testo finisce coi tre puntini, compare un riquadro grigio **centrato
+ * sulla cella, proprio sopra di lei** (così l'ha voluto l'utente, dopo una
+ * prima versione appoggiata all'angolo in alto a sinistra), col testo
+ * intero che va a capo, e ci si scrive come nella cella. È largo almeno
+ * quanto la cella, e almeno [FULL_TEXT_MIN_WIDTH]: in una colonna stretta il
+ * testo sarebbe una colonnina. Si chiude toccando fuori, col gesto indietro
+ * o con "Done" sulla tastiera. Con il database bloccato si legge e basta.
  *
- * Va messo dentro il riquadro del testo della cella: si appoggia al suo
- * angolo in alto a sinistra, spostato dei propri margini, così il testo del
- * riquadro parte proprio dove partiva quello della cella.
+ * Va messo dentro un riquadro centrato sulla cella: il suo centro è quello
+ * del riquadro.
  */
 @Composable
 internal fun FullTextPopup(
     value: String,
     onValueChange: (String) -> Unit,
-    /** Quanto è largo il testo della cella, in pixel. */
-    cellTextWidthPx: Int,
+    /** Quanto è larga la cella. */
+    cellWidth: Dp,
     keyboardOptions: KeyboardOptions,
     onDismiss: () -> Unit
 ) {
     val locked = LocalDatabaseLocked.current
-    val density = LocalDensity.current
     val screenWidth = LocalConfiguration.current.screenWidthDp.dp
-    val cellWidth = with(density) { cellTextWidthPx.toDp() }
-    val width = maxOf(cellWidth + FULL_TEXT_PADDING_H * 2, FULL_TEXT_MIN_WIDTH).coerceAtMost(screenWidth - 16.dp)
-    val offset = with(density) { IntOffset(-FULL_TEXT_PADDING_H.roundToPx(), -FULL_TEXT_PADDING_V.roundToPx()) }
+    val width = maxOf(cellWidth, FULL_TEXT_MIN_WIDTH).coerceAtMost(screenWidth - 16.dp)
     Popup(
-        alignment = Alignment.TopStart,
-        offset = offset,
+        alignment = Alignment.Center,
         onDismissRequest = onDismiss,
         properties = PopupProperties(focusable = true)
     ) {
@@ -260,7 +264,9 @@ internal fun TextLikeCell(
                     localValue = it
                     onValueChange(it)
                 },
-                cellTextWidthPx = textWidthPx,
+                // Il riquadro del testo sta in mezzo alla cella, coi suoi 12
+                // punti per lato: il suo centro è quello della cella.
+                cellWidth = with(LocalDensity.current) { textWidthPx.toDp() } + FULL_TEXT_PADDING_H * 2,
                 keyboardOptions = keyboardOptions,
                 onDismiss = { expanded = false }
             )
