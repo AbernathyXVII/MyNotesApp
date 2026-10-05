@@ -1,5 +1,15 @@
 package com.gabriele.notionlocal.ui.screen
 
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -430,6 +440,10 @@ internal fun MovePagePicker(
  * ma si tocca un database (vedi `DestinationPickerSheet.pickDatabases`). La
  * pagina, o il database, diventa una sua pagina nuova (vedi
  * `PageRepository.moveIntoDatabase`).
+ *
+ * **Scelto il database, si sceglie il nome della pagina nuova** (dal
+ * 05/10/2026, chiesto dall'utente), prima di spostare: è già scritto quello
+ * di adesso, tutto selezionato. "Cancel" torna alla scelta del database.
  */
 @Composable
 internal fun MoveToDatabasePicker(
@@ -437,17 +451,74 @@ internal fun MoveToDatabasePicker(
     exclusions: MoveExclusions,
     factory: ViewModelFactory,
     onDismiss: () -> Unit,
-    onPick: (PageTreeNode) -> Unit
+    onPick: (destination: PageTreeNode, rowTitle: String) -> Unit
 ) {
-    DestinationPickerSheet(
-        factory = factory,
-        title = Strings.moveToDatabase,
-        hint = if (page.isDatabase) Strings.moveDatabaseToDatabaseHint else Strings.moveToDatabaseHint,
-        viewModelKey = "move-to-database",
-        onDismiss = onDismiss,
-        onPick = onPick,
-        excluded = exclusions,
-        pickDatabases = true
+    var chosen by remember { mutableStateOf<PageTreeNode?>(null) }
+    val database = chosen
+    if (database == null) {
+        DestinationPickerSheet(
+            factory = factory,
+            title = Strings.moveToDatabase,
+            hint = if (page.isDatabase) Strings.moveDatabaseToDatabaseHint else Strings.moveToDatabaseHint,
+            viewModelKey = "move-to-database",
+            onDismiss = onDismiss,
+            onPick = { chosen = it },
+            excluded = exclusions,
+            pickDatabases = true
+        )
+    } else {
+        NewRowNameDialog(
+            current = page.title.takeUnless { it == "Untitled" }.orEmpty(),
+            explanation = if (page.isDatabase) {
+                Strings.newRowNameDatabaseHint(database.placeName())
+            } else {
+                Strings.newRowNameHint(database.placeName())
+            },
+            onBack = { chosen = null },
+            onConfirm = { name -> onPick(database, name) }
+        )
+    }
+}
+
+/** Il nome della pagina nuova di "Move to database": quello di adesso, tutto selezionato. */
+@Composable
+private fun NewRowNameDialog(
+    current: String,
+    explanation: String,
+    onBack: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var value by remember { mutableStateOf(TextFieldValue(current, TextRange(0, current.length))) }
+    val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(Unit) { focusRequester.requestFocus() }
+    val confirm = { onConfirm(value.text.replace("\n", "").trim()) }
+    AlertDialog(
+        onDismissRequest = onBack,
+        title = { Text(Strings.newRowName) },
+        text = {
+            Column {
+                Text(explanation, style = MaterialTheme.typography.bodyMedium)
+                Spacer(modifier = Modifier.size(12.dp))
+                AutoCaps {
+                    OutlinedTextField(
+                        value = value,
+                        onValueChange = { value = it.copy(text = it.text.replace("\n", "")) },
+                        singleLine = true,
+                        placeholder = { Text(Strings.untitled) },
+                        keyboardOptions = KeyboardOptions(
+                            capitalization = KeyboardCapitalization.Sentences,
+                            imeAction = ImeAction.Done
+                        ),
+                        keyboardActions = KeyboardActions(onDone = { confirm() }),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .focusRequester(focusRequester)
+                    )
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = confirm) { Text(Strings.moveButton) } },
+        dismissButton = { TextButton(onClick = onBack) { Text(Strings.cancel) } }
     )
 }
 

@@ -679,11 +679,11 @@ fun DatabaseViewScreen(
                 exclusions = exclusions,
                 factory = factory,
                 onDismiss = { moveExclusions = null },
-                onPick = { destination ->
+                onPick = { destination, rowTitle ->
                     moveExclusions = null
                     // Finisce in una pagina nuova del database scelto, aperto
                     // dentro di lei: l'avviso dice in quale database.
-                    menuViewModel.movePageToDatabase(destination) {
+                    menuViewModel.movePageToDatabase(destination, rowTitle) {
                         Toast.makeText(trashContext, Strings.movedInto(destination.placeName()), Toast.LENGTH_SHORT).show()
                         onBack()
                     }

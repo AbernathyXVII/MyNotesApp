@@ -2479,10 +2479,10 @@ private fun PageEditorContent(
                 exclusions = exclusions,
                 factory = factory,
                 onDismiss = { moveExclusions = null },
-                onPick = { destination ->
+                onPick = { destination, rowTitle ->
                     moveExclusions = null
                     // Come "Move to": si torna indietro, e l'avviso dice dove.
-                    viewModel.movePageToDatabase(destination) {
+                    viewModel.movePageToDatabase(destination, rowTitle) {
                         Toast.makeText(context, Strings.movedInto(destination.placeName()), Toast.LENGTH_SHORT).show()
                         onBack()
                     }

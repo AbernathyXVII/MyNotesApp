@@ -967,11 +967,11 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
      * (vedi `PageRepository.moveIntoDatabase`). Come "Move to": si torna
      * indietro, e l'Annulla lo prende la pagina che si vede dopo.
      */
-    fun movePageToDatabase(destination: PageRepository.PageTreeNode, onDone: () -> Unit) {
+    fun movePageToDatabase(destination: PageRepository.PageTreeNode, rowTitle: String, onDone: () -> Unit) {
         val current = _page.value ?: return
         val databaseId = destination.pageId ?: return
         viewModelScope.launch {
-            repository.moveIntoDatabase(current.id, databaseId)?.let { change ->
+            repository.moveIntoDatabase(current.id, databaseId, rowTitle)?.let { change ->
                 PendingPageUndo.offer(change)
                 onDone()
             }
@@ -3027,11 +3027,11 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
      * collegamento sparisce da qui e la pagina diventa una pagina del
      * database scelto. Annulla, da questa pagina, la rimette al suo posto.
      */
-    fun moveLinkedPageToDatabase(pageId: String, destination: PageRepository.PageTreeNode) {
+    fun moveLinkedPageToDatabase(pageId: String, destination: PageRepository.PageTreeNode, rowTitle: String) {
         val databaseId = destination.pageId ?: return
         viewModelScope.launch {
             historyLock.withLock {
-                repository.moveIntoDatabase(pageId, databaseId)?.let { pushPageChange(it) }
+                repository.moveIntoDatabase(pageId, databaseId, rowTitle)?.let { pushPageChange(it) }
             }
         }
     }

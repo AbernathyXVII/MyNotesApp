@@ -760,6 +760,12 @@ class PageRepository(private val db: AppDatabase) {
      *   aperto**. È lui, non una copia.
      * - La pagina di una riga lascia il suo database, come con "Move to".
      *
+     * **Il nome della pagina nuova** (`rowTitle`, dal 05/10/2026, chiesto
+     * dall'utente): lo si sceglie prima di spostare. Per una pagina è il suo
+     * nome nuovo (la pagina è lei); per un database è il nome della pagina
+     * che lo contiene, e il database tiene il suo. Vuoto o null = quello di
+     * adesso.
+     *
      * Non si può: verso un database semplice (le sue righe non sono
      * pagine), verso uno che sta dentro la pagina stessa (`pagesInside`),
      * o nel cestino. Una vista collegata vale come il database che mostra.
@@ -768,6 +774,7 @@ class PageRepository(private val db: AppDatabase) {
     suspend fun moveIntoDatabase(
         pageId: String,
         databaseId: String,
+        rowTitle: String? = null,
         copyImage: suspend (String) -> String? = imageCopier
     ): PageChange.MovedToDatabase? {
         if (pageId == PageEntity.ROOT_PAGE_ID) return null
@@ -788,9 +795,13 @@ class PageRepository(private val db: AppDatabase) {
             val cells = rows.flatMap { databaseDao.getCellsForRowOnce(it.id) }
             rows.forEach { databaseDao.deleteRow(it) }
             val now = System.currentTimeMillis()
+            val name = rowTitle?.trim()?.takeIf { it.isNotEmpty() } ?: page.title
+            // Il nome di prima, per Annulla, se la pagina spostata lo cambia.
+            val oldTitle = page.title.takeIf { !page.isDatabase && name != it }
+            if (oldTitle != null) pageDao.setTitle(pageId, name, now)
             val rowPageId = if (page.isDatabase) {
                 val wrapper = PageEntity(
-                    title = page.title,
+                    title = name,
                     icon = page.icon,
                     iconImage = wrapperIcon,
                     isRowPage = true,
@@ -808,7 +819,7 @@ class PageRepository(private val db: AppDatabase) {
             val order = (databaseDao.getRowsForPageOnce(target.id).maxOfOrNull { it.orderIndex } ?: -1) + 1
             val row = DatabaseRowEntity(
                 pageId = target.id,
-                title = page.title.takeUnless { it == "Untitled" }.orEmpty(),
+                title = name.takeUnless { it == "Untitled" }.orEmpty(),
                 linkedPageId = rowPageId,
                 orderIndex = order,
                 createdAt = now,
@@ -822,7 +833,9 @@ class PageRepository(private val db: AppDatabase) {
                 oldRows = rows,
                 oldCells = cells,
                 newRowId = row.id,
-                wrapperPageId = rowPageId.takeIf { it != pageId }
+                wrapperPageId = rowPageId.takeIf { it != pageId },
+                rowTitle = rowTitle,
+                oldTitle = oldTitle
             )
         }
     }
@@ -875,7 +888,11 @@ class PageRepository(private val db: AppDatabase) {
             val oldRows: List<DatabaseRowEntity>,
             val oldCells: List<DatabaseCellEntity>,
             val newRowId: String,
-            val wrapperPageId: String?
+            val wrapperPageId: String?,
+            /** Il nome scelto per la pagina nuova (per Ripristina). */
+            val rowTitle: String? = null,
+            /** Il nome che aveva la pagina spostata, se il nome scelto lo ha cambiato (per Annulla). */
+            val oldTitle: String? = null
         ) : PageChange
     }
 
@@ -961,6 +978,7 @@ class PageRepository(private val db: AppDatabase) {
                 } else {
                     pageDao.setRowPage(change.pageId, false)
                 }
+                change.oldTitle?.let { pageDao.setTitle(change.pageId, it, System.currentTimeMillis()) }
                 change.oldRows.forEach { row ->
                     if (pageDao.getById(row.pageId) != null) databaseDao.insertRow(row)
                 }
@@ -998,7 +1016,7 @@ class PageRepository(private val db: AppDatabase) {
             change
         }
         is PageChange.Trashed -> moveToTrash(change.pageId)
-        is PageChange.MovedToDatabase -> moveIntoDatabase(change.pageId, change.databaseId)
+        is PageChange.MovedToDatabase -> moveIntoDatabase(change.pageId, change.databaseId, change.rowTitle)
     }
 
     /**

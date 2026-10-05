@@ -140,6 +140,29 @@ object Strings {
         "데이터베이스를 누르세요. 이 데이터베이스가 같은 이름의 새 페이지에 들어가고, 그 안에 펼쳐진 상태로 보입니다.",
         "データベースをタップ：このデータベースは同じ名前の新しいページに入り、その中で開いた状態で表示されます。"
     )
+    // Il nome della pagina nuova di "Move to database" (dal 05/10/2026).
+    val newRowName get() = t("Name of the new page", "Nome della pagina nuova", "Name der neuen Seite", "Nom de la nouvelle page", "Nombre de la página nueva", "新页面的名称", "새 페이지 이름", "新しいページの名前")
+    fun newRowNameHint(database: String) = t(
+        "The page becomes a new page of “$database”, with this name.",
+        "La pagina diventa una pagina nuova di “$database”, con questo nome.",
+        "Die Seite wird zu einer neuen Seite von „$database“, mit diesem Namen.",
+        "La page devient une nouvelle page de « $database », avec ce nom.",
+        "La página se convierte en una página nueva de «$database», con este nombre.",
+        "该页面将成为“$database”中的新页面，使用此名称。",
+        "이 페이지는 이 이름으로 \"$database\"의 새 페이지가 됩니다.",
+        "このページは、この名前で「$database」の新しいページになります。"
+    )
+    fun newRowNameDatabaseHint(database: String) = t(
+        "A new page of “$database” with this name, and the database open inside it. The database keeps its own name.",
+        "Una pagina nuova di “$database” con questo nome, e dentro il database aperto. Il database tiene il suo nome.",
+        "Eine neue Seite von „$database“ mit diesem Namen, darin die Datenbank geöffnet. Die Datenbank behält ihren Namen.",
+        "Une nouvelle page de « $database » avec ce nom, et la base de données ouverte dedans. La base garde son nom.",
+        "Una página nueva de «$database» con este nombre, y dentro la base de datos abierta. La base de datos conserva su nombre.",
+        "“$database”中一个使用此名称的新页面，数据库在其中展开显示。数据库保留自己的名称。",
+        "이 이름으로 \"$database\"의 새 페이지가 생기고, 그 안에 데이터베이스가 펼쳐집니다. 데이터베이스 이름은 그대로입니다.",
+        "この名前で「$database」の新しいページができ、その中にデータベースが開いて表示されます。データベースの名前はそのままです。"
+    )
+    val moveButton get() = t("Move", "Sposta", "Verschieben", "Déplacer", "Mover", "移动", "이동", "移動")
     fun movedInto(title: String) = t(
         "Moved to “${title}”",
         "Spostata in “${title}”",

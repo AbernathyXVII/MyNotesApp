@@ -2053,6 +2053,45 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.142 — 05/10/2026 · 22:27 — "Move to database": prima di spostare, il nome della pagina nuova
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 400 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Ora che ci penso, sul fatto di spostare una pagina o un database in un
+> altro database, c'è una cosa che non ha senso, ma non è mai colpa tua:
+> se io ti chiedo di spostare una pagina o un database in un altro
+> database, si crea una riga, ossia una pagina. Dammi la possibilità,
+> prima di completare lo spostamento, di rinominare la nuova pagina nel
+> quale ci sarà quella pagina o quel database che ho spostato»
+
+- **[Nuova funzionalità]** In "Move to database", scelto il database,
+  compare **"Name of the new page"**: il nome della pagina nuova, già
+  scritto (quello di adesso) e tutto selezionato, con sopra cosa
+  succederà. "Move" sposta, "Cancel" torna alla scelta del database
+  - **una pagina** diventa lei la pagina nuova: il nome scritto è il suo
+    nome nuovo (Annulla rimette quello di prima)
+  - **un database** finisce dentro una pagina nuova col nome scritto, e
+    tiene il suo nome
+  - un nome lasciato vuoto tiene quello di adesso; un database senza nome
+    lascia il campo vuoto, con "Untitled" in grigio
+- **[Progetto]** `PageRepository.moveIntoDatabase(rowTitle)`;
+  `PageChange.MovedToDatabase` ricorda il nome scelto (per Ripristina) e
+  quello di prima (per Annulla). `MoveToDatabasePicker` chiede il nome
+  (`NewRowNameDialog`) prima di chiamare `onPick(destination, rowTitle)`.
+  `MoveToDatabaseTest`: 3 test in più (pagina rinominata con Annulla e
+  Ripristina, il nome della pagina di un database, il nome vuoto)
+- Verificato sul telefono, in Main calendar: una sottopagina "Bozza" di
+  una riga di prova, "Move to database" → Main calendar → la finestra col
+  nome "Bozza" selezionato → "Appunti finali" → "Move": è diventata la
+  riga "Appunti finali". Poi un database senza nome creato nella riga di
+  prova, dal menu del blocco → Main calendar → "Archivio": la riga
+  "Archivio" con dentro il database
+- **Un errore mio nella pulizia**: togliendo le righe di prova, la lista
+  era scorsa e ho eliminato per sbaglio la riga senza nome di Main
+  calendar delle 18:25 (non mia). La sua pagina, vuota, c'è ancora; la
+  riga è da rimettere
+
 ### 🔧 v0.141.1 — 05/10/2026 · 22:15 — Backspace sulla riga vuota sotto un divisore, e "Search databases"
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 397 test
 passati; commit solo in locale)*

@@ -920,11 +920,11 @@ class DatabaseViewModel(
      * (vedi `PageRepository.moveIntoDatabase`). `onDone` solo se lo
      * spostamento c'è stato.
      */
-    fun movePageToDatabase(destination: PageRepository.PageTreeNode, onDone: () -> Unit) {
+    fun movePageToDatabase(destination: PageRepository.PageTreeNode, rowTitle: String, onDone: () -> Unit) {
         val current = _page.value ?: return
         val databaseId = destination.pageId ?: return
         viewModelScope.launch {
-            pageRepository.moveIntoDatabase(current.id, databaseId)?.let { change ->
+            pageRepository.moveIntoDatabase(current.id, databaseId, rowTitle)?.let { change ->
                 PendingPageUndo.offer(change)
                 onDone()
             }

@@ -386,9 +386,9 @@ internal fun BlockActionsHost(
                     exclusions = exclusions,
                     factory = factory,
                     onDismiss = onDismiss,
-                    onPick = { destination ->
+                    onPick = { destination, rowTitle ->
                         onDismiss()
-                        viewModel.moveLinkedPageToDatabase(page.id, destination)
+                        viewModel.moveLinkedPageToDatabase(page.id, destination, rowTitle)
                         Toast.makeText(context, Strings.movedInto(destination.placeName()), Toast.LENGTH_SHORT).show()
                     }
                 )

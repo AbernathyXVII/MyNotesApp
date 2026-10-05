@@ -172,6 +172,40 @@ class MoveToDatabaseTest {
         assertEquals(moved.wrapperPageId, rowsOf(games.id).last().linkedPageId)
     }
 
+    /** Il nome scelto prima di spostare (05/10/2026): per una pagina è il suo nome nuovo; Annulla rimette il vecchio. */
+    @Test
+    fun aPageCanBeRenamedOnTheWay_andUndoGivesBackItsName() = runBlocking<Unit> {
+        val moved = repo.moveIntoDatabase(notes.id, games.id, rowTitle = "  Appunti  ")
+        assertEquals("Appunti", page(notes.id)!!.title)
+        assertEquals("Appunti", rowsOf(games.id).last().title)
+        assertEquals("Notes", moved!!.oldTitle)
+
+        repo.undoPageChange(moved)
+        assertEquals("Notes", page(notes.id)!!.title)
+
+        // Ripristina col nome scelto.
+        repo.redoPageChange(moved)
+        assertEquals("Appunti", page(notes.id)!!.title)
+    }
+
+    /** Per un database il nome è quello della pagina che lo contiene: lui tiene il suo. */
+    @Test
+    fun theNewPageOfADatabaseTakesTheChosenName() = runBlocking<Unit> {
+        val moved = repo.moveIntoDatabase(movies.id, games.id, rowTitle = "Film visti")
+        assertEquals("Film visti", page(moved!!.wrapperPageId!!)!!.title)
+        assertEquals("Film visti", rowsOf(games.id).last().title)
+        assertEquals("Movies", page(movies.id)!!.title)
+        assertNull(moved.oldTitle)
+    }
+
+    /** Un nome vuoto lascia quello di adesso. */
+    @Test
+    fun anEmptyNameKeepsTheCurrentOne() = runBlocking<Unit> {
+        val moved = repo.moveIntoDatabase(notes.id, games.id, rowTitle = "   ")
+        assertEquals("Notes", page(notes.id)!!.title)
+        assertNull(moved!!.oldTitle)
+    }
+
     @Test
     fun searchFindsOnlyRealDatabases() = runBlocking<Unit> {
         val simple = PageEntity(title = "Games list", isDatabase = true, isSimpleDatabase = true)
