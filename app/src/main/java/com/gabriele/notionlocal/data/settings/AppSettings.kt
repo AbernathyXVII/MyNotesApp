@@ -114,6 +114,11 @@ object AppSettings {
         notificationVibrateState.value = prefs.getBoolean(KEY_VIBRATE, true)
         notificationPriorityState.value = enumOr(KEY_PRIORITY, NotificationPriority.HIGH)
         notificationBadgeState.value = prefs.getBoolean(KEY_BADGE, true)
+        recentColorsState.value = prefs.getString(KEY_RECENT_COLORS, null)
+            ?.split(',')
+            ?.filter { HEX_COLOR.matches(it) }
+            ?.take(RECENT_COLORS_MAX)
+            .orEmpty()
     }
 
     // --- Aspetto ---
@@ -301,6 +306,27 @@ object AppSettings {
             prefs.edit().putLong(KEY_MUTED_UNTIL, value ?: 0L).apply()
         }
 
+    // --- I colori usati di recente (dal 05/10/2026, chiesto dall'utente) ---
+
+    private val recentColorsState = mutableStateOf<List<String>>(emptyList())
+
+    /**
+     * Gli ultimi colori applicati col selettore (`ColorPickerSheet`, lo
+     * stesso in tutta l'app: testo, celle, tag, penne, barre), "#RRGGBB",
+     * il più recente per primo, al massimo `RECENT_COLORS_MAX`.
+     */
+    val recentColors: List<String> get() = recentColorsState.value
+
+    /** Un colore appena applicato va in cima; se c'era già, sale lì. */
+    fun rememberColor(hex: String) {
+        val next = recentColorsState.value.withRecentColor(hex)
+        if (next == recentColorsState.value) return
+        recentColorsState.value = next
+        if (::prefs.isInitialized) prefs.edit().putString(KEY_RECENT_COLORS, next.joinToString(",")).apply()
+    }
+
+    const val RECENT_COLORS_MAX = 10
+
     // --- Utilità ---
 
     private inline fun <reified T : Enum<T>> enumOr(key: String, default: T): T =
@@ -334,4 +360,17 @@ object AppSettings {
     private const val KEY_VIBRATE = "notifications_vibrate"
     private const val KEY_PRIORITY = "notifications_priority"
     private const val KEY_BADGE = "notifications_badge"
+    private const val KEY_RECENT_COLORS = "recent_colors"
+}
+
+private val HEX_COLOR = Regex("#[0-9A-F]{6}")
+
+/**
+ * I colori recenti con `hex` in cima: maiuscolo, senza doppioni, al massimo
+ * `max`. Un codice che non è un colore "#RRGGBB" lascia la lista com'è.
+ */
+fun List<String>.withRecentColor(hex: String, max: Int = AppSettings.RECENT_COLORS_MAX): List<String> {
+    val clean = hex.trim().uppercase().let { if (it.startsWith("#")) it else "#$it" }
+    if (!HEX_COLOR.matches(clean)) return this
+    return (listOf(clean) + filterNot { it == clean }).take(max)
 }

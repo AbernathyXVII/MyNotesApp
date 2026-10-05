@@ -2053,6 +2053,40 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.143 — 05/10/2026 · 22:48 — Gli ultimi dieci colori usati, sotto il campo Hex
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 402 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Sotto il box dove scrivo il codice esadecimale del selettore del
+> colore, OVUNQUE, mettici gli ultimi dieci colori usati»
+
+- **[Nuova funzionalità]** Nel selettore del colore, sotto il campo
+  **Hex**, ci sono i **"Recent colors"**: gli ultimi dieci colori
+  applicati, il più recente per primo, in una fila di tondi. Toccandone
+  uno il selettore va su quel colore (si applica con "Apply", come gli
+  altri); quello uguale al colore scelto ha l'anello bianco
+  - **ovunque**: il selettore è lo stesso per il colore del testo e dello
+    sfondo, delle celle colorate, dei tag, delle penne del disegno, delle
+    barre e degli anelli dei numeri, delle barre dell'avanzamento — è
+    l'unico campo Hex dell'app
+  - un colore si ricorda quando lo si applica; uno già nella fila sale in
+    cima senza doppioni; restano anche chiudendo l'app. Finché non se ne è
+    applicato nessuno, la fila non c'è
+- **[Progetto]** `AppSettings.recentColors` e `rememberColor` (chiave
+  `recent_colors`), `withRecentColor` (in cima, senza doppioni, al massimo
+  `RECENT_COLORS_MAX` = 10); `RecentColorsRow` in `ColorPickerSheet`, che
+  ricorda il colore su "Apply". `RecentColorsTest`: 2 test (la lista dei
+  dieci, senza doppioni e solo colori veri; "Apply" lo ricorda e il tondo
+  lo rimette)
+- Verificato sul telefono, col colore di un tag "Prova" su una proprietà
+  di Main calendar aggiunta per la prova e poi tolta: prima nessuna fila;
+  applicati un blu (#040369) e un marrone (#562316), riaprendo c'erano
+  "Recent colors" coi due tondi, il marrone per primo con l'anello;
+  toccando il blu il campo Hex è passato a #040369. I due colori della
+  prova restano fra i recenti. Nel database è cambiata solo l'ora di
+  ultima modifica della riga di prova
+
 ### 🆕 v0.142 — 05/10/2026 · 22:27 — "Move to database": prima di spostare, il nome della pagina nuova
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 400 test
 passati; commit solo in locale)*

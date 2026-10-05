@@ -180,6 +180,8 @@ object EditorStrings {
     val green get() = t("Green", "Verde", "Grün", "Vert", "Verde", "绿", "초록", "緑")
     val blue get() = t("Blue", "Blu", "Blau", "Bleu", "Azul", "蓝", "파랑", "青")
     val noColor get() = t("No color", "Nessun colore", "Keine Farbe", "Aucune couleur", "Sin color", "无颜色", "색상 없음", "色なし")
+    /** Gli ultimi colori usati, sotto il campo Hex del selettore (dal 05/10/2026). */
+    val recentColors get() = t("Recent colors", "Colori recenti", "Zuletzt verwendet", "Couleurs récentes", "Colores recientes", "最近使用的颜色", "최근 사용한 색", "最近使用した色")
     val apply get() = t("Apply", "Applica", "Anwenden", "Appliquer", "Aplicar", "应用", "적용", "適用")
 
     // --- La cronologia ("Updates") ---

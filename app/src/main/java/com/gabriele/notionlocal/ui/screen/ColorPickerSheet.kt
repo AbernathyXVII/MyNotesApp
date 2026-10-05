@@ -3,12 +3,14 @@ package com.gabriele.notionlocal.ui.screen
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,6 +18,8 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
@@ -39,10 +43,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import com.gabriele.notionlocal.data.settings.AppSettings
 import com.gabriele.notionlocal.ui.i18n.EditorStrings
 import com.gabriele.notionlocal.ui.theme.DarkSheet
 import com.gabriele.notionlocal.ui.theme.DarkSurface
@@ -263,6 +270,23 @@ fun ColorPickerSheet(
                 }
             }
 
+            // **Gli ultimi dieci colori usati** (dal 05/10/2026, chiesto
+            // dall'utente: "ovunque", e infatti questo selettore è lo stesso
+            // per testo, celle, tag, penne e barre). Toccandone uno, il
+            // selettore va su quel colore; si applica con "Apply", come gli
+            // altri. Si ricordano quando si applicano (`AppSettings.rememberColor`).
+            val recent = AppSettings.recentColors
+            if (recent.isNotEmpty()) {
+                Spacer(modifier = Modifier.size(12.dp))
+                Text(EditorStrings.recentColors, style = MaterialTheme.typography.labelMedium, color = NotionGray400)
+                Spacer(modifier = Modifier.size(6.dp))
+                RecentColorsRow(
+                    colors = recent,
+                    current = hsl.toHex(),
+                    onPick = { hex -> hexToHsl(hex)?.let { setHsl(it) } }
+                )
+            }
+
             Spacer(modifier = Modifier.size(8.dp))
 
             Row(
@@ -274,10 +298,48 @@ fun ColorPickerSheet(
                 // metterlo, e da qualche parte doveva stare.
                 TextButton(onClick = { onPick(null) }) { Text(noColorLabel ?: EditorStrings.noColor) }
                 Spacer(modifier = Modifier.size(8.dp))
-                TextButton(onClick = { onPick(hsl.toHex()) }) { Text(EditorStrings.apply) }
+                TextButton(onClick = {
+                    val hex = hsl.toHex()
+                    AppSettings.rememberColor(hex)
+                    onPick(hex)
+                }) { Text(EditorStrings.apply) }
             }
 
             Spacer(modifier = Modifier.size(12.dp))
+        }
+    }
+}
+
+/**
+ * I colori recenti in fila, dieci posti larghi uguale (anche quando ce ne
+ * sono meno): un tondo del colore, col bordo grigio perché si vedano anche
+ * i colori scuri; quello uguale al colore scelto ha l'anello bianco.
+ */
+@Composable
+private fun RecentColorsRow(colors: List<String>, current: String, onPick: (String) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        repeat(AppSettings.RECENT_COLORS_MAX) { index ->
+            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
+                val hex = colors.getOrNull(index)
+                val color = hex?.let { hexToHsl(it)?.toColor() }
+                if (hex != null && color != null) {
+                    val selected = hex.equals(current, ignoreCase = true)
+                    Box(
+                        modifier = Modifier
+                            .widthIn(max = 32.dp)
+                            .fillMaxWidth()
+                            .aspectRatio(1f)
+                            .clip(CircleShape)
+                            .background(color)
+                            .border(if (selected) 2.dp else 1.dp, if (selected) NotionWhite else NotionGray400, CircleShape)
+                            .semantics { contentDescription = hex }
+                            .clickable { onPick(hex) }
+                    )
+                }
+            }
         }
     }
 }
