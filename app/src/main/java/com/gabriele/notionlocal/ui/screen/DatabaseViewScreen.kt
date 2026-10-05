@@ -6384,6 +6384,9 @@ private fun CellContent(
                     } else {
                         null
                     },
+                    // **Un URL si apre** (dal 05/10/2026): tocco = apri, tocco
+                    // lungo = modifica, copia, incolla. Vedi `TextLikeCell`.
+                    isLink = column.type == ColumnType.URL,
                     cellKey = cellKey
                 )
             }

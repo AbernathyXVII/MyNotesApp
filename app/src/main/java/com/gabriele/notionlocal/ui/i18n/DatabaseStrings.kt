@@ -747,4 +747,21 @@ object DbStrings {
     )
     fun showInTable(property: String) = t("Show $property in the table", "Mostra $property nella tabella", "$property in der Tabelle anzeigen", "Afficher $property dans le tableau", "Mostrar $property en la tabla", "在表格中显示$property", "표에 $property 표시", "テーブルに${property}を表示")
     fun hideFromTable(property: String) = t("Hide $property from the table", "Nascondi $property dalla tabella", "$property in der Tabelle ausblenden", "Masquer $property du tableau", "Ocultar $property de la tabla", "在表格中隐藏$property", "표에서 $property 숨기기", "テーブルで${property}を非表示")
+
+    // --- Le celle URL (dal 05/10/2026): un tocco apre, il tocco lungo il menu ---
+
+    val editLink get() = t("Edit link", "Modifica link", "Link bearbeiten", "Modifier le lien", "Editar enlace", "编辑链接", "링크 편집", "リンクを編集")
+    val copyLink get() = t("Copy link", "Copia link", "Link kopieren", "Copier le lien", "Copiar enlace", "复制链接", "링크 복사", "リンクをコピー")
+    val pasteLink get() = t("Paste link", "Incolla link", "Link einfügen", "Coller le lien", "Pegar enlace", "粘贴链接", "링크 붙여넣기", "リンクを貼り付け")
+    val linkCopied get() = t("Link copied", "Link copiato", "Link kopiert", "Lien copié", "Enlace copiado", "链接已复制", "링크를 복사했어요", "リンクをコピーしました")
+    val cantOpenLink get() = t(
+        "This link can't be opened",
+        "Questo link non si può aprire",
+        "Dieser Link lässt sich nicht öffnen",
+        "Impossible d'ouvrir ce lien",
+        "No se puede abrir este enlace",
+        "无法打开此链接",
+        "이 링크를 열 수 없어요",
+        "このリンクは開けません"
+    )
 }

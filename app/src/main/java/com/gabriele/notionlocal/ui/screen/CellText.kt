@@ -1,5 +1,13 @@
 package com.gabriele.notionlocal.ui.screen
 
+import android.content.ActivityNotFoundException
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -10,6 +18,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.ContentPaste
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,13 +42,17 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -41,6 +60,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.gabriele.notionlocal.data.entity.CellAlignment
+import com.gabriele.notionlocal.ui.i18n.DbStrings
+import com.gabriele.notionlocal.ui.theme.DarkSheet
 
 /**
  * **"Wrap cells"** (dal 30/09/2026, nelle impostazioni di ogni tabella):
@@ -168,6 +189,8 @@ internal fun TextLikeCell(
     shown: (String) -> String = { it },
     /** Al posto del testo finché non la si tocca (il numero come barra o anello); null = il testo. */
     idleVisual: (@Composable (String) -> Unit)? = null,
+    /** Una cella URL: con un indirizzo dentro, il tocco lo apre e il tocco lungo dà il menu (vedi sotto). */
+    isLink: Boolean = false,
     cellKey: String
 ) {
     val wrap = LocalWrapCells.current
@@ -227,19 +250,41 @@ internal fun TextLikeCell(
             }
         } else {
             val showsVisual = idleVisual != null && localValue.isNotBlank()
+            // **Un link** (dal 05/10/2026, chiesto dall'utente): una cella URL
+            // con un indirizzo dentro non si scrive più toccandola. Il tocco
+            // apre il link; il tocco lungo dà "Edit link", "Copy link" e
+            // "Paste link" (che mette al suo posto quello copiato). Vuota, si
+            // scrive come prima.
+            val link = isLink && localValue.isNotBlank()
+            val locked = LocalDatabaseLocked.current
+            val context = LocalContext.current
+            val haptics = LocalHapticFeedback.current
+            var linkMenu by remember(cellKey) { mutableStateOf(false) }
+            /** Si scrive nella cella; `inPlace` anche se il testo non ci sta, invece del riquadro del testo intero. */
+            fun startEditing(inPlace: Boolean = false) {
+                if (cut && !wrap && !showsVisual && !inPlace) {
+                    expanded = true
+                } else {
+                    fieldValue = TextFieldValue(localValue, TextRange(localValue.length))
+                    everFocused = false
+                    editing = true
+                }
+            }
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .pointerInput(cellKey, cut, wrap, showsVisual) {
-                        detectTapGestures(onTap = {
-                            if (cut && !wrap && !showsVisual) {
-                                expanded = true
+                    .pointerInput(cellKey, cut, wrap, showsVisual, link) {
+                        detectTapGestures(
+                            onTap = { if (link) openLink(context, localValue) else startEditing() },
+                            onLongPress = if (link) {
+                                {
+                                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    linkMenu = true
+                                }
                             } else {
-                                fieldValue = TextFieldValue(localValue, TextRange(localValue.length))
-                                everFocused = false
-                                editing = true
+                                null
                             }
-                        })
+                        )
                     },
                 contentAlignment = alignment.box
             ) {
@@ -248,12 +293,55 @@ internal fun TextLikeCell(
                 } else {
                     Text(
                         text = if (localValue.isBlank()) localValue else shown(localValue),
-                        style = textStyle,
+                        style = if (link) textStyle.copy(textDecoration = TextDecoration.Underline) else textStyle,
                         maxLines = cellMaxLines,
                         overflow = TextOverflow.Ellipsis,
                         onTextLayout = { cut = it.isCut() },
                         modifier = Modifier.fillMaxWidth()
                     )
+                }
+                DropdownMenu(
+                    expanded = linkMenu,
+                    onDismissRequest = { linkMenu = false },
+                    modifier = Modifier.background(DarkSheet)
+                ) {
+                    if (!locked) {
+                        DropdownMenuItem(
+                            text = { Text(DbStrings.editLink) },
+                            leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) },
+                            onClick = {
+                                linkMenu = false
+                                // Nella cella stessa, col cursore in fondo: il riquadro del
+                                // testo intero (`FullTextPopup`) è una finestra a parte, e una
+                                // cella in basso nella pagina lo lasciava sotto la tastiera
+                                // (trovato sul telefono il 05/10/2026). Il campo nella cella
+                                // invece la pagina lo porta sopra la tastiera.
+                                startEditing(inPlace = true)
+                            }
+                        )
+                    }
+                    DropdownMenuItem(
+                        text = { Text(DbStrings.copyLink) },
+                        leadingIcon = { Icon(Icons.Filled.ContentCopy, contentDescription = null) },
+                        onClick = {
+                            linkMenu = false
+                            copyLink(context, localValue)
+                        }
+                    )
+                    if (!locked && hasClipText(context)) {
+                        DropdownMenuItem(
+                            text = { Text(DbStrings.pasteLink) },
+                            leadingIcon = { Icon(Icons.Filled.ContentPaste, contentDescription = null) },
+                            onClick = {
+                                linkMenu = false
+                                val pasted = pastedLink(context)
+                                if (pasted != null && pasted != localValue) {
+                                    localValue = pasted
+                                    onValueChange(pasted)
+                                }
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -272,4 +360,47 @@ internal fun TextLikeCell(
             )
         }
     }
+}
+
+/**
+ * L'indirizzo da aprire: com'è scritto se ha già il suo inizio
+ * ("https://…", "mailto:…", "tel:…"), altrimenti con "https://" davanti —
+ * "bulbapedia.bulbagarden.net/wiki/…" scritto a mano si apre lo stesso.
+ */
+internal fun linkUri(raw: String): String {
+    val link = raw.trim()
+    val hasScheme = link.contains("://") || listOf("mailto:", "tel:", "geo:").any { link.startsWith(it, ignoreCase = true) }
+    return if (hasScheme) link else "https://$link"
+}
+
+/** Apre il link col browser (o l'app che lo sa aprire); se nessuna può, lo dice. */
+internal fun openLink(context: Context, raw: String) {
+    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(linkUri(raw))).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    try {
+        context.startActivity(intent)
+    } catch (e: ActivityNotFoundException) {
+        Toast.makeText(context, DbStrings.cantOpenLink, Toast.LENGTH_SHORT).show()
+    }
+}
+
+/** Copia il link. Da Android 13 il "copiato" lo dice già il telefono: l'avviso dell'app solo prima. */
+internal fun copyLink(context: Context, raw: String) {
+    val clipboard = context.getSystemService(ClipboardManager::class.java) ?: return
+    clipboard.setPrimaryClip(ClipData.newPlainText(DbStrings.copyLink, raw.trim()))
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+        Toast.makeText(context, DbStrings.linkCopied, Toast.LENGTH_SHORT).show()
+    }
+}
+
+/** C'è del testo da incollare: senza leggerlo, così il telefono non avvisa per niente. */
+internal fun hasClipText(context: Context): Boolean =
+    context.getSystemService(ClipboardManager::class.java)?.hasPrimaryClip() == true
+
+/** Il testo copiato, su una riga sola e senza spazi ai lati; null se non c'è. */
+internal fun pastedLink(context: Context): String? {
+    val clip = context.getSystemService(ClipboardManager::class.java)?.primaryClip ?: return null
+    if (clip.itemCount == 0) return null
+    return clip.getItemAt(0).coerceToText(context)?.toString()
+        ?.replace("\n", " ")?.trim()
+        ?.takeIf { it.isNotEmpty() }
 }

@@ -2053,6 +2053,54 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.136 — 05/10/2026 · 17:14 — Le celle URL: un tocco apre il link, il tocco lungo lo modifica, copia o incolla
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 375 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Una modifica. Se sulla cella di un database c'è un link, il semplice
+> tocco mi consente di aprire quel link. Se tengo premuto, mi consente di
+> modificare il link e di copiarne un altro»
+
+E poi:
+> «Se vuoi fai tutte le prove che vuoi nel database in menu Main calendar»
+
+- **[Nuova funzionalità]** Una cella **URL** con un indirizzo dentro non si
+  scrive più toccandola: è un link, sottolineato come quelli delle celle
+  Page link
+  - **un tocco lo apre** col browser del telefono. Scritto senza l'inizio
+    ("bulbapedia.bulbagarden.net"), si apre con "https://" davanti; se
+    nessuna app lo sa aprire, lo dice ("This link can't be opened")
+  - **il tocco lungo** (con la vibrazione) dà un menu:
+    - **Edit link**: si scrive nella cella stessa, col cursore in fondo,
+      anche quando il link non ci sta tutto. La pagina porta la cella
+      sopra la tastiera
+    - **Copy link**: lo copia. Da Android 13 il "copiato" lo dice il
+      telefono; prima, un avviso dell'app
+    - **Paste link**: mette al suo posto quello copiato (su una riga sola,
+      senza spazi ai lati). C'è solo se c'è qualcosa da incollare
+  - vale ovunque si vede la cella: nella tabella, nella scheda di una riga
+    e nelle proprietà in cima alla pagina di una riga. In un database con
+    la vista o il contenuto bloccati restano solo aprire e "Copy link"
+  - una cella URL vuota si scrive toccandola, come prima
+- **[Progetto]** `TextLikeCell` ha `isLink` (lo passa `CellContent` per
+  le colonne URL); `linkUri`, `openLink`, `copyLink`, `hasClipText` e
+  `pastedLink` in `CellText.kt`; le scritte in `DbStrings`, in tutte le
+  lingue dell'app. `CellLinkTest`: 5 test (l'indirizzo con o senza
+  "https://", il tocco che apre, il tocco lungo con Copy e Paste, Edit
+  link che fa scrivere nella cella, la cella vuota che si scrive come
+  prima)
+- Verificato sul telefono, in Main calendar con una proprietà URL
+  aggiunta per la prova e poi eliminata: scritto
+  "bulbapedia.bulbagarden.net", il tocco ha aperto Bulbapedia in Firefox;
+  il tocco lungo ha dato "Edit link" e "Copy link" ("Paste link" non c'era:
+  niente da incollare), e dopo "Copy link" anche "Paste link"; "Edit link"
+  ha aggiunto "/wiki/Ivysaur" e "Paste link" ha rimesso il link copiato.
+  Alla prima prova "Edit link" apriva il riquadro del testo intero, che
+  in fondo alla pagina restava sotto la tastiera: ora si scrive nella
+  cella, che resta in vista. Nel database è cambiata solo l'ora di ultima
+  modifica della riga di prova
+
 ### 🆕 v0.135 — 30/09/2026 · 19:53 — Il Timer nella tendina: una notifica fissa col tempo che scorre
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 370 test
 passati; commit solo in locale)*
