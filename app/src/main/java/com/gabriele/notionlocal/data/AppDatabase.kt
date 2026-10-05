@@ -55,7 +55,7 @@ import kotlinx.serialization.json.Json
         NotebookEntity::class,
         NotebookSectionEntity::class
     ],
-    version = 50,
+    version = 51,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -741,6 +741,18 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /**
+         * 50 → 51 (05/10/2026): la seconda regola di ordinamento
+         * (`PageEntity.thenSortColumnId` e `thenSortDescending`). Nessun
+         * database ne ha una: restano ordinati come prima.
+         */
+        private val MIGRATION_50_51 = object : Migration(50, 51) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE pages ADD COLUMN thenSortColumnId TEXT")
+                db.execSQL("ALTER TABLE pages ADD COLUMN thenSortDescending INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
+        /**
          * Solo per i test: chiude il database e lo dimentica, così il
          * `getInstance` dopo riapre il file da capo (e ne esegue le
          * migrazioni). Senza, il secondo test troverebbe il database del
@@ -803,7 +815,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_46_47,
                         MIGRATION_47_48,
                         MIGRATION_48_49,
-                        MIGRATION_49_50
+                        MIGRATION_49_50,
+                        MIGRATION_50_51
                     )
                     .build()
                 INSTANCE = instance

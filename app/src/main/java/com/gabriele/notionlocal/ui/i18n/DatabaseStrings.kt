@@ -277,6 +277,19 @@ object DbStrings {
     val databaseSettings get() = t("Database settings", "Impostazioni del database", "Datenbankeinstellungen", "Paramètres de la base de données", "Ajustes de la base de datos", "数据库设置", "데이터베이스 설정", "データベースの設定")
     val removeSort get() = t("Remove sort", "Rimuovi ordinamento", "Sortierung entfernen", "Supprimer le tri", "Quitar orden", "移除排序", "정렬 제거", "並べ替えを解除")
     val sortByAnother get() = t("Sort by another property", "Ordina per un'altra proprietà", "Nach anderer Eigenschaft sortieren", "Trier par une autre propriété", "Ordenar por otra propiedad", "按其他属性排序", "다른 속성으로 정렬", "別のプロパティで並べ替え")
+    // La seconda regola di ordinamento (dal 05/10/2026).
+    val thenSortBy get() = t("Then sort by", "Poi ordina per", "Danach sortieren nach", "Puis trier par", "Después ordenar por", "然后排序依据", "다음 정렬 기준", "次の並べ替え")
+    val addThenSort get() = t("Add a second sort", "Aggiungi un secondo ordinamento", "Zweite Sortierung hinzufügen", "Ajouter un second tri", "Añadir un segundo orden", "添加第二个排序", "두 번째 정렬 추가", "2つ目の並べ替えを追加")
+    val thenSortNote get() = t(
+        "Only for the rows that are equal for the first sort.",
+        "Solo per le righe che per il primo ordinamento sono pari.",
+        "Nur für Zeilen, die bei der ersten Sortierung gleich sind.",
+        "Seulement pour les lignes égales selon le premier tri.",
+        "Solo para las filas iguales según el primer orden.",
+        "仅用于按第一个排序相同的行。",
+        "첫 번째 정렬에서 같은 행에만 적용돼요.",
+        "最初の並べ替えで同じ行にだけ使われます。"
+    )
 
     // --- Filtro ---
 

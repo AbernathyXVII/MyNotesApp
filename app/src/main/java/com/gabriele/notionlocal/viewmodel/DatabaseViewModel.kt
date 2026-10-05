@@ -739,27 +739,57 @@ class DatabaseViewModel(
         cellValues: Map<Pair<String, String>, String>,
         page: PageEntity?
     ): List<DatabaseRowEntity> {
-        val sortId = page?.sortColumnId ?: return rows
-        val descending = page.sortDescending
-        val column = columns.find { it.id == sortId }
-        if (sortId != SORT_BY_NAME && column == null) return rows
+        val rules = sortRulesOf(page, columns)
+        if (rules.isEmpty()) return rows
 
         val keyed = rows.map { row ->
-            row to sortValueOf(row, column, cellValues)
+            row to rules.map { rule -> sortValueOf(row, rule.column, cellValues) }
         }
+        // **Prima la prima regola, poi la seconda** (dal 05/10/2026): la
+        // seconda conta solo fra le righe che per la prima sono pari. Fra
+        // quelle pari anche per lei resta l'ordine di prima (`sortedWith`
+        // non le rimescola).
         return keyed.sortedWith { a, b ->
-            val (_, first) = a
-            val (_, second) = b
-            when {
-                first.isEmpty && second.isEmpty -> 0
-                first.isEmpty -> 1
-                second.isEmpty -> -1
-                else -> {
-                    val cmp = compareSortValues(first, second)
-                    if (descending) -cmp else cmp
-                }
-            }
+            rules.indices.firstNotNullOfOrNull { i ->
+                compareForSort(a.second[i], b.second[i], rules[i].descending).takeIf { it != 0 }
+            } ?: 0
         }.map { it.first }
+    }
+
+    /** Una regola di ordinamento: la proprietà (null = il nome della riga) e il verso. */
+    private class SortRule(val column: DatabaseColumnEntity?, val descending: Boolean)
+
+    /**
+     * Le regole che valgono, nell'ordine: la prima e, se c'è, la seconda.
+     * Una regola su una proprietà che non c'è più non conta; senza la
+     * prima non conta nemmeno la seconda, come prima di lei.
+     */
+    private fun sortRulesOf(page: PageEntity?, columns: List<DatabaseColumnEntity>): List<SortRule> {
+        fun ruleOf(id: String?, descending: Boolean): SortRule? = when (id) {
+            null -> null
+            SORT_BY_NAME -> SortRule(null, descending)
+            else -> columns.find { it.id == id }?.let { SortRule(it, descending) }
+        }
+        val first = ruleOf(page?.sortColumnId, page?.sortDescending == true) ?: return emptyList()
+        val then = page?.thenSortColumnId
+            ?.takeIf { it != page.sortColumnId }
+            ?.let { ruleOf(it, page.thenSortDescending) }
+        return listOfNotNull(first, then)
+    }
+
+    /**
+     * Due valori della stessa regola. **Le celle vuote stanno in fondo in
+     * tutti e due i versi**: invertendo l'ordine ci si aspetta di vedere in
+     * cima l'ultimo valore, non una fila di righe senza niente scritto.
+     */
+    private fun compareForSort(first: SortValue, second: SortValue, descending: Boolean): Int = when {
+        first.isEmpty && second.isEmpty -> 0
+        first.isEmpty -> 1
+        second.isEmpty -> -1
+        else -> {
+            val cmp = compareSortValues(first, second)
+            if (descending) -cmp else cmp
+        }
     }
 
     private fun sortValueOf(
@@ -1000,10 +1030,48 @@ class DatabaseViewModel(
         viewModelScope.launch { pageRepository.updatePage(updated) }
     }
 
-    /** Sceglie la proprietà su cui ordinare, o null per tornare all'ordine di creazione. */
+    /**
+     * Sceglie la proprietà su cui ordinare, o null per togliere la regola.
+     *
+     * Con la seconda regola (dal 05/10/2026): togliendo la prima, **la
+     * seconda sale al suo posto**, col suo verso; senza nessuna delle due si
+     * torna all'ordine di creazione. Scegliendo per la prima la stessa
+     * proprietà della seconda, la seconda se ne va: ordinerebbe due volte
+     * per la stessa cosa.
+     */
     fun setSort(columnId: String?, descending: Boolean) {
         val current = _page.value ?: return
-        val updated = current.copy(sortColumnId = columnId, sortDescending = descending)
+        val updated = when {
+            columnId == null -> current.copy(
+                sortColumnId = current.thenSortColumnId,
+                sortDescending = current.thenSortColumnId != null && current.thenSortDescending,
+                thenSortColumnId = null,
+                thenSortDescending = false
+            )
+            columnId == current.thenSortColumnId -> current.copy(
+                sortColumnId = columnId,
+                sortDescending = descending,
+                thenSortColumnId = null,
+                thenSortDescending = false
+            )
+            else -> current.copy(sortColumnId = columnId, sortDescending = descending)
+        }
+        _page.value = updated
+        viewModelScope.launch { pageRepository.updatePage(updated) }
+    }
+
+    /**
+     * **La seconda regola** (dal 05/10/2026): fra le righe che per la prima
+     * sono pari, l'ordine lo dà questa. null la toglie. Senza una prima
+     * regola, o sulla sua stessa proprietà, non si mette.
+     */
+    fun setThenSort(columnId: String?, descending: Boolean) {
+        val current = _page.value ?: return
+        if (columnId != null && (current.sortColumnId == null || columnId == current.sortColumnId)) return
+        val updated = current.copy(
+            thenSortColumnId = columnId,
+            thenSortDescending = columnId != null && descending
+        )
         _page.value = updated
         viewModelScope.launch { pageRepository.updatePage(updated) }
     }

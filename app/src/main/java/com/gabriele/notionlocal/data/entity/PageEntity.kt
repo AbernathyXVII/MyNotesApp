@@ -316,6 +316,12 @@ data class PageEntity(
     // della tabella ma non una proprietà nel database.
     var sortColumnId: String? = null,
     var sortDescending: Boolean = false,
+    // **La seconda regola di ordinamento** (dal 05/10/2026, chiesto
+    // dall'utente): fra le righe che per la prima sono pari, l'ordine lo
+    // dà questa. null = nessuna. Senza la prima non vale; togliendo la
+    // prima, questa sale al suo posto. Vedi `DatabaseViewModel.sortRows`.
+    var thenSortColumnId: String? = null,
+    var thenSortDescending: Boolean = false,
     // In base a quale proprietà sono filtrate le righe, e su quale
     // valore. null = nessun filtro, cioè tutte le pagine — che è come
     // stavano prima che il filtro esistesse.

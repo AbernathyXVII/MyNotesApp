@@ -2053,6 +2053,51 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.140 — 05/10/2026 · 17:57 — Una seconda regola di ordinamento nei database
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno, dopo il
+backup del database; 386 test passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Permettimi di selezionare una seconda regola per il sorting di
+> un'altra proprietà dei database. Ovviamente rispettando prima quella che
+> è già stata inserita e poi quella nuova»
+
+- **[Nuova funzionalità]** Nella finestra **Sort** di un database, sotto
+  la regola che c'è, ora c'è **"Then sort by"**: con "Add a second sort"
+  si sceglie un'altra proprietà (o il nome), e **conta solo fra le righe
+  che per la prima sono pari**. Esempio: per piattaforma, e dentro ogni
+  piattaforma per voto
+  - si sceglie fra tutte le proprietà tranne quella della prima regola, e
+    parte crescente; toccandola si cambia verso, come la prima, e ha il
+    suo "Remove sort"
+  - **togliendo la prima, la seconda sale al suo posto**, col suo verso;
+    scegliendo per la prima la proprietà della seconda, la seconda se ne
+    va (ordinerebbe due volte per la stessa cosa)
+  - scegliendo la proprietà della prima regola la finestra ora resta
+    aperta, perché sotto c'è la seconda
+  - vale per ogni vista (Table, Board, List, Gallery…) e per le viste
+    collegate, ognuna con le sue regole; un database duplicato le copia
+  - le celle vuote restano in fondo anche nella seconda regola
+- **[Progetto]** Database alla **versione 51**: `pages.thenSortColumnId` e
+  `thenSortDescending` (migrazione 50 → 51: nessun database ne ha una, e
+  restano ordinati come prima). `DatabaseViewModel.sortRows` confronta per
+  le regole in fila (`sortRulesOf`, `compareForSort`); `setThenSort`;
+  `setSort(null)` fa salire la seconda. `SortSheet` con la scelta della
+  seconda regola. Nuovo `schema/v50.sql` per `MigrationTest` (la prova
+  dalla 50: l'ordinamento di prima resta, nessuna seconda regola).
+  `SecondSortTest`: 4 test (la seconda ordina i pari della prima; la
+  prima viene prima, anche cambiandole verso; togliendo la prima sale la
+  seconda; la seconda vuole una prima e un'altra proprietà)
+- Verificato sul telefono (Galaxy S25 Ultra), dopo il backup del
+  database: la migrazione alla 51 non ha perso niente (56 pagine prima e
+  dopo). In Main calendar, con una proprietà Number e tre righe aggiunte
+  per la prova (Beta 1, Alfa 1, Gamma 2) e poi tolte: per Number le righe
+  erano Beta, Alfa, Gamma e in fondo quella senza numero; con "Then sort
+  by" Name diventano Alfa, Beta, Gamma; con Name al contrario Beta, Alfa;
+  tolta la prima, "Name · Descending" è salita al suo posto. Tolto tutto,
+  il database è come prima (cambiata solo l'ora di ultima modifica della
+  vista di Main calendar)
+
 ### 🆕 v0.139 — 05/10/2026 · 17:40 — Il colore dei tag dallo spettro, come in tutti gli altri posti
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 381 test
 passati; commit solo in locale)*
@@ -9708,7 +9753,8 @@ le finestre che apre. Chi lo usa passa solo l'id del blocco.
 
 ## Nota tecnica
 
-Lo schema è alla **versione 50** (la 50, del 30/09/2026, aggiunge
+Lo schema è alla **versione 51** (la 51, del 05/10/2026, aggiunge
+`pages.thenSortColumnId` e `thenSortDescending`, la seconda regola di ordinamento; la 50, del 30/09/2026, aggiunge
 `database_rows.eventColor`, il colore degli eventi del calendario; la 49, dello stesso giorno, aggiunge
 `pages.colorBoardCards`, "Color cards" delle bacheche; la 48, dello stesso giorno, aggiunge
 `pages.wrapCells`, oggi il testo lungo nelle celle delle tabelle (`PageEntity.cellOverflow`: 0 tre puntini, 1 a capo, 2 colonna allargata); la 47, del 29/09/2026, aggiunge

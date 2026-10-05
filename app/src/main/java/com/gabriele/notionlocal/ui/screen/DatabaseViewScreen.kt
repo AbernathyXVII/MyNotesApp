@@ -1605,20 +1605,29 @@ private fun DatabaseViewBody(
             columns = state.columns,
             sortColumnId = page?.sortColumnId,
             descending = page?.sortDescending == true,
+            thenSortColumnId = page?.thenSortColumnId,
+            thenDescending = page?.thenSortDescending == true,
             onPick = { columnId ->
                 // Scegliendo una proprietà si parte sempre dal
                 // crescente: è il verso che ci si aspetta, e per
-                // l'altro basta un tocco in più.
+                // l'altro basta un tocco in più. La finestra resta
+                // aperta (dal 05/10/2026): sotto c'è la seconda regola.
                 viewModel.setSort(columnId, descending = false)
-                showSort = false
             },
             onToggleDirection = {
                 viewModel.setSort(page?.sortColumnId, descending = page?.sortDescending != true)
             },
             onClear = {
+                // Se c'è, la seconda regola sale al posto della prima.
+                val promoted = page?.thenSortColumnId != null
                 viewModel.setSort(null, descending = false)
-                showSort = false
+                if (!promoted) showSort = false
             },
+            onPickThen = { columnId -> viewModel.setThenSort(columnId, descending = false) },
+            onToggleThenDirection = {
+                viewModel.setThenSort(page?.thenSortColumnId, descending = page?.thenSortDescending != true)
+            },
+            onClearThen = { viewModel.setThenSort(null, descending = false) },
             onDismiss = { showSort = false }
         )
     }
@@ -5016,6 +5025,12 @@ internal fun SettingsToggleRow(
  * separate per crescente e decrescente: sono due stati della stessa
  * cosa, e un interruttore dice meglio di una lista che si può
  * rovesciare.
+ *
+ * **La seconda regola** (dal 05/10/2026, chiesto dall'utente): sotto la
+ * prima, "Then sort by" con la seconda — il verso si cambia allo stesso
+ * modo, e si toglie da sola — o, se non c'è, "Add a second sort", che
+ * mostra le proprietà fra cui sceglierla (tutte tranne quella della
+ * prima). Vale solo fra le righe che per la prima sono pari.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -5023,11 +5038,86 @@ private fun SortSheet(
     columns: List<DatabaseColumnEntity>,
     sortColumnId: String?,
     descending: Boolean,
+    thenSortColumnId: String?,
+    thenDescending: Boolean,
     onPick: (String) -> Unit,
     onToggleDirection: () -> Unit,
     onClear: () -> Unit,
+    onPickThen: (String) -> Unit,
+    onToggleThenDirection: () -> Unit,
+    onClearThen: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    // Si sta scegliendo la proprietà della seconda regola: al posto del
+    // resto, l'elenco delle proprietà con in cima "Then sort by".
+    var pickingThen by remember { mutableStateOf(false) }
+
+    fun nameOf(id: String): String = if (id == SORT_BY_NAME) {
+        DbStrings.name
+    } else {
+        columns.find { it.id == id }?.name?.let(DbStrings::columnName) ?: DbStrings.name
+    }
+
+    /** Il Nome per primo, poi le proprietà; `except` resta fuori. */
+    @Composable
+    fun PropertyList(except: String?, onChoose: (String) -> Unit) {
+        SheetGroup {
+            var first = true
+            // Il nome della pagina è una colonna della tabella ma non una
+            // proprietà: va elencato a mano, e per primo, perché è quello
+            // per cui si ordina più spesso.
+            if (except != SORT_BY_NAME) {
+                SettingsRow(
+                    icon = Icons.Filled.Notes,
+                    label = DbStrings.name,
+                    value = "",
+                    onClick = { onChoose(SORT_BY_NAME) }
+                )
+                first = false
+            }
+            columns.filter { it.id != except }.forEach { column ->
+                if (!first) HorizontalDivider()
+                first = false
+                SettingsRow(
+                    icon = column.type.icon(),
+                    label = DbStrings.columnName(column.name),
+                    value = "",
+                    onClick = { onChoose(column.id) }
+                )
+            }
+        }
+    }
+
+    /** Una regola attiva: tocco = cambia verso; sotto, "Remove sort". */
+    @Composable
+    fun ActiveRule(id: String, down: Boolean, onToggle: () -> Unit, onRemove: () -> Unit) {
+        SheetGroup {
+            SettingsRow(
+                icon = if (down) Icons.Filled.ArrowDownward else Icons.Filled.ArrowUpward,
+                label = nameOf(id),
+                value = if (down) Strings.descending else Strings.ascending,
+                onClick = onToggle
+            )
+            HorizontalDivider()
+            SettingsRow(
+                icon = Icons.Filled.Delete,
+                label = DbStrings.removeSort,
+                value = "",
+                onClick = onRemove,
+                danger = true
+            )
+        }
+    }
+
+    @Composable
+    fun Caption(text: String) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+
     NoteBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
@@ -5040,6 +5130,29 @@ private fun SortSheet(
                 .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
+            if (pickingThen && sortColumnId != null) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = { pickingThen = false }) {
+                        Icon(Icons.Filled.ArrowBack, contentDescription = Strings.back)
+                    }
+                    Text(
+                        text = DbStrings.thenSortBy,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Spacer(modifier = Modifier.size(4.dp))
+                Caption(DbStrings.thenSortNote)
+                Spacer(modifier = Modifier.size(12.dp))
+                PropertyList(except = sortColumnId) { id ->
+                    // Come la prima: si parte dal crescente.
+                    onPickThen(id)
+                    pickingThen = false
+                }
+                Spacer(modifier = Modifier.size(24.dp))
+                return@Column
+            }
+
             Text(
                 text = DbStrings.sort,
                 style = MaterialTheme.typography.titleMedium,
@@ -5048,60 +5161,31 @@ private fun SortSheet(
             Spacer(modifier = Modifier.size(12.dp))
 
             if (sortColumnId != null) {
-                val activeName = if (sortColumnId == SORT_BY_NAME) {
-                    DbStrings.name
-                } else {
-                    columns.find { it.id == sortColumnId }?.name?.let(DbStrings::columnName) ?: DbStrings.name
-                }
-                SheetGroup {
-                    SettingsRow(
-                        icon = if (descending) {
-                            Icons.Filled.ArrowDownward
-                        } else {
-                            Icons.Filled.ArrowUpward
-                        },
-                        label = activeName,
-                        value = if (descending) Strings.descending else Strings.ascending,
-                        onClick = onToggleDirection
-                    )
-                    HorizontalDivider()
-                    SettingsRow(
-                        icon = Icons.Filled.Delete,
-                        label = DbStrings.removeSort,
-                        value = "",
-                        onClick = onClear,
-                        danger = true
-                    )
-                }
+                ActiveRule(sortColumnId, descending, onToggleDirection, onClear)
+
+                // La seconda regola, o il modo di aggiungerla.
                 Spacer(modifier = Modifier.size(16.dp))
-                Text(
-                    text = DbStrings.sortByAnother,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Caption(DbStrings.thenSortBy)
+                Spacer(modifier = Modifier.size(8.dp))
+                if (thenSortColumnId != null && thenSortColumnId != sortColumnId) {
+                    ActiveRule(thenSortColumnId, thenDescending, onToggleThenDirection, onClearThen)
+                } else {
+                    SheetGroup {
+                        SettingsRow(
+                            icon = Icons.Filled.Add,
+                            label = DbStrings.addThenSort,
+                            value = "",
+                            onClick = { pickingThen = true }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.size(16.dp))
+                Caption(DbStrings.sortByAnother)
                 Spacer(modifier = Modifier.size(8.dp))
             }
 
-            SheetGroup {
-                // Il nome della pagina è una colonna della tabella ma
-                // non una proprietà: va elencato a mano, e per primo,
-                // perché è quello per cui si ordina più spesso.
-                SettingsRow(
-                    icon = Icons.Filled.Notes,
-                    label = DbStrings.name,
-                    value = "",
-                    onClick = { onPick(SORT_BY_NAME) }
-                )
-                columns.forEach { column ->
-                    HorizontalDivider()
-                    SettingsRow(
-                        icon = column.type.icon(),
-                        label = DbStrings.columnName(column.name),
-                        value = "",
-                        onClick = { onPick(column.id) }
-                    )
-                }
-            }
+            PropertyList(except = null, onChoose = onPick)
             Spacer(modifier = Modifier.size(24.dp))
         }
     }

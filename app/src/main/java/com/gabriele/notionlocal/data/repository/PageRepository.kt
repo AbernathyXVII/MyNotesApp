@@ -1145,6 +1145,7 @@ class PageRepository(private val db: AppDatabase) {
                     tableSubGroupColumnId = column(original.tableSubGroupColumnId),
                     calendarDateColumnId = column(original.calendarDateColumnId),
                     sortColumnId = column(original.sortColumnId),
+                    thenSortColumnId = column(original.thenSortColumnId),
                     filterColumnId = column(original.filterColumnId),
                     // Anche le larghezze delle colonne sono per id.
                     columnWidths = encodeColumnWidths(
