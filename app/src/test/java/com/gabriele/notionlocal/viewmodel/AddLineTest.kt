@@ -109,6 +109,30 @@ class AddLineTest {
         waitFor("e una sopra") { texts() == listOf("Sopra", "", "[database]", "", "Sotto") }
     }
 
+    /** Il menu del divisore (05/10/2026), tenendolo premuto: "Add above", "Add below" e "Delete". */
+    @Test
+    fun aboveAndBelowADividerAndDeleteIt() {
+        val sopra = line("Sopra", 0)
+        val divider = BlockEntity(pageId = page.id, type = BlockType.DIVIDER, orderIndex = 1)
+        val sotto = line("Sotto", 2)
+        open(sopra, divider, sotto)
+        viewModel.addLineNextTo(shown(divider.id), below = true)
+        waitFor("una riga sotto il divisore") { texts().size == 4 && types() == listOf(BlockType.PARAGRAPH, BlockType.DIVIDER, BlockType.PARAGRAPH, BlockType.PARAGRAPH) }
+        viewModel.addLineNextTo(shown(divider.id), below = false)
+        waitFor("e una sopra") { types() == listOf(BlockType.PARAGRAPH, BlockType.PARAGRAPH, BlockType.DIVIDER, BlockType.PARAGRAPH, BlockType.PARAGRAPH) }
+        assertEquals(listOf("Sopra", "", "", "", "Sotto"), texts())
+
+        // "Delete": se ne va il divisore, e basta.
+        viewModel.deleteBlock(shown(divider.id))
+        waitFor("il divisore tolto") { types().none { it == BlockType.DIVIDER } }
+        assertEquals(listOf("Sopra", "", "", "Sotto"), texts())
+    }
+
+    private fun types() = runBlocking { db.blockDao().getBlocksForPageOnce(page.id) }
+        .filter { it.parentBlockId == null }
+        .sortedBy { it.orderIndex }
+        .map { it.type }
+
     @Test
     fun insideAToggleTheLineStaysInside() {
         val toggle = line("Toggle", 0, type = BlockType.TOGGLE)

@@ -5158,7 +5158,12 @@ private fun BlockRow(
     }
 
     if (block.type == BlockType.DIVIDER) {
-        DividerBlockContent(block = block, depth = depth, viewModel = viewModel)
+        DividerBlockContent(
+            block = block,
+            depth = depth,
+            viewModel = viewModel,
+            onLongPress = onOpenBlockMenu?.let { open -> { open(block.id) } }
+        )
         return
     }
 
@@ -6051,9 +6056,16 @@ private fun PageLinkBlockContent(
 private fun DividerBlockContent(
     block: BlockEntity,
     depth: Int,
-    viewModel: PageEditorViewModel
+    viewModel: PageEditorViewModel,
+    /**
+     * **Il tocco lungo apre il menu del blocco** (dal 05/10/2026, chiesto
+     * dall'utente), quello della maniglia a sei puntini, con le sole voci
+     * che hanno senso per un divisore: "Add above", "Add below" e "Delete"
+     * (vedi `BlockActionsHost`). Prima chiedeva soltanto se eliminarlo.
+     * Null in una pagina bloccata: lì non fa niente.
+     */
+    onLongPress: (() -> Unit)?
 ) {
-    var showDeleteConfirm by remember { mutableStateOf(false) }
     // "Preso" dal primo backspace sotto di lui (dal 29/09/2026): si accende
     // d'azzurro, e il secondo backspace lo toglie. Vedi
     // `PageEditorViewModel.backspaceUnderDivider`.
@@ -6069,8 +6081,8 @@ private fun DividerBlockContent(
                 RoundedCornerShape(4.dp)
             )
             .padding(vertical = 12.dp)
-            .pointerInput(Unit) {
-                detectTapGestures(onLongPress = { showDeleteConfirm = true })
+            .pointerInput(onLongPress) {
+                detectTapGestures(onLongPress = onLongPress?.let { open -> { _ -> open() } })
             },
         contentAlignment = Alignment.CenterStart
     ) {
@@ -6079,22 +6091,6 @@ private fun DividerBlockContent(
                 .fillMaxWidth()
                 .height(1.dp)
                 .background(if (armed) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline)
-        )
-    }
-
-    if (showDeleteConfirm) {
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirm = false },
-            title = { Text(EditorStrings.deleteDividerTitle) },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.deleteBlock(block)
-                    showDeleteConfirm = false
-                }) { Text(Strings.delete) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) { Text(Strings.cancel) }
-            }
         )
     }
 }

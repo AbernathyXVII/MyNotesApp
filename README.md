@@ -2053,6 +2053,37 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.144 — 05/10/2026 · 22:58 — Il divisore tenuto premuto: "Add above", "Add below" e "Delete"
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 403 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Quando tengo premuto su un divider, fai sì che appaiano le impostazioni
+> che appaiono quando premo sull'icona dei sei puntini (tre puntini
+> verticali in due colonne) dei database che vedi in foto, ossia Add
+> above, Add below e Delete. Tutte le altre, naturalmente essendo non
+> coerenti con un divider, non le mettere»
+
+- **[Nuova funzionalità]** Tenendo premuto un **divisore** si apre il menu
+  dei blocchi (quello dei sei puntini), col titolo "Divider" e solo tre
+  voci: **Add above** e **Add below** (una riga vuota sopra o sotto, col
+  cursore dentro) e **Delete** (lo toglie subito; Annulla lo rimette).
+  Prima il tocco lungo chiedeva soltanto "Delete this divider?". In una
+  pagina bloccata il tocco lungo non fa niente, come per gli altri
+  blocchi
+- **[Rimosso]** La domanda "Delete this divider?"
+- **[Progetto]** `DividerBlockContent(onLongPress)` apre `BlockActionsHost`,
+  che per un divisore mostra `DividerBlockMenu`. `AddLineTest`: un test in
+  più (una riga sopra e una sotto il divisore, e "Delete" che toglie solo
+  lui)
+- Verificato sul telefono, in una riga di prova di Main calendar (poi
+  tolta) con "Sopra" e un divisore: tenendolo premuto, il menu "Divider"
+  con "Add above", "Add below" e "Delete"; "Add above" ha messo una riga
+  fra "Sopra" e il divisore col cursore dentro, "Add below" una subito
+  sotto, "Delete" ha tolto il divisore lasciando le righe. Alla prima
+  prova il titolo diceva "Text": corretto. Le righe di Main calendar sono
+  come prima della prova
+
 ### 🆕 v0.143 — 05/10/2026 · 22:48 — Gli ultimi dieci colori usati, sotto il campo Hex
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 402 test
 passati; commit solo in locale)*

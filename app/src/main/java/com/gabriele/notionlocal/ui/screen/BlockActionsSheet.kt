@@ -104,6 +104,11 @@ import kotlinx.coroutines.flow.map
  *   Turn into complex database, Lock database, Open as page; sotto le
  *   voci della pagina.
  *
+ * - **un divisore** (dal 05/10/2026, tenendolo premuto): solo "Add above",
+ *   "Add below" e "Delete" — le altre voci non hanno senso per una riga
+ *   che non ha testo, colore né nome. "Delete" lo toglie subito; Annulla
+ *   lo rimette.
+ *
  * In cima a tutti, "Add above" e "Add below" (dal 29/09/2026, chiesto
  * dall'utente): una riga vuota sopra o sotto il blocco, col cursore dentro.
  *
@@ -195,6 +200,17 @@ internal fun BlockActionsHost(
                             if ((entry.action as? SlashAction.Type)?.type != block.type) {
                                 onTurnInto(block, entry)
                             }
+                        }
+                    )
+                } else if (block.type == BlockType.DIVIDER) {
+                    DividerBlockMenu(
+                        onAddLine = { below ->
+                            onDismiss()
+                            viewModel.addLineNextTo(block, below)
+                        },
+                        onDelete = {
+                            onDismiss()
+                            viewModel.deleteBlock(block)
                         }
                     )
                 } else if (page == null) {
@@ -482,6 +498,23 @@ private fun AddLineGroup(onAddLine: (Boolean) -> Unit) {
         OptionRow(icon = Icons.Filled.VerticalAlignBottom, label = EditorStrings.addBelow, onClick = { onAddLine(true) })
     }
     Spacer(modifier = Modifier.size(12.dp))
+}
+
+/** Il menu di un divisore: le righe sopra e sotto, e toglierlo (dal 05/10/2026). */
+@Composable
+private fun DividerBlockMenu(onAddLine: (Boolean) -> Unit, onDelete: () -> Unit) {
+    // Il nome scritto a mano: nel catalogo dei menu "/" il divisore non è un
+    // "tipo" di riga (`SlashAction.Type`), e `blockTypeLabel` direbbe "Text".
+    MenuTitle(EditorStrings.blockType("Divider"))
+    AddLineGroup(onAddLine)
+    OptionsGroup {
+        OptionRow(
+            icon = Icons.Filled.Delete,
+            label = Strings.delete,
+            tint = MaterialTheme.colorScheme.error,
+            onClick = onDelete
+        )
+    }
 }
 
 /** Il menu per una riga di testo: le righe sopra e sotto, poi tre voci, come ha chiesto l'utente. */
