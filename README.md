@@ -2087,10 +2087,13 @@ L'utente, parola per parola:
   riga "Appunti finali". Poi un database senza nome creato nella riga di
   prova, dal menu del blocco → Main calendar → "Archivio": la riga
   "Archivio" con dentro il database
-- **Un errore mio nella pulizia**: togliendo le righe di prova, la lista
-  era scorsa e ho eliminato per sbaglio la riga senza nome di Main
-  calendar delle 18:25 (non mia). La sua pagina, vuota, c'è ancora; la
-  riga è da rimettere
+- **Un errore mio nella pulizia, rimediato**: togliendo le righe di prova,
+  la lista era scorsa e ho eliminato per sbaglio la riga senza nome di
+  Main calendar delle 18:25 (non mia). L'ho rimessa com'era — stessa
+  riga, stessa pagina, stesso posto e stessa data — sul database del
+  telefono, con l'app chiusa e dopo il backup, col permesso dell'utente.
+  Tolte poi le righe di prova: le righe di Main calendar sono identiche a
+  prima della prova
 
 ### 🔧 v0.141.1 — 05/10/2026 · 22:15 — Backspace sulla riga vuota sotto un divisore, e "Search databases"
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 397 test
