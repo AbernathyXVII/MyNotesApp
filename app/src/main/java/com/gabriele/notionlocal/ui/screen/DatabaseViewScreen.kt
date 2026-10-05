@@ -6430,7 +6430,7 @@ private class NumberDisplayTransformation(private val settings: NumberSettings) 
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-private fun TagCell(
+internal fun TagCell(
     column: DatabaseColumnEntity,
     value: String,
     allowMultiple: Boolean,
@@ -6522,6 +6522,7 @@ private fun TagOptionEditor(
     onDelete: () -> Unit
 ) {
     var name by remember(option.label) { mutableStateOf(option.label) }
+    var pickingColor by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
@@ -6552,53 +6553,73 @@ private fun TagOptionEditor(
             SheetAction(Icons.Filled.Delete, Strings.delete, isDestructive = true) { onDelete() }
         }
 
-        Spacer(modifier = Modifier.size(20.dp))
-        Text(
-            DbStrings.colors,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.size(8.dp))
+        // **Il colore, dallo spettro** (dal 05/10/2026, chiesto dall'utente):
+        // lo stesso selettore del testo, delle celle colorate e delle barre
+        // (`ColorPickerSheet`), con tinta, luminosità, Rosso/Verde/Blu ed
+        // Hex. Prima c'erano solo i dieci colori di Notion (`TAG_COLORS`),
+        // che restano quelli dati a giro ai tag nuovi.
+        Spacer(modifier = Modifier.size(12.dp))
         SheetGroup {
-            TAG_COLORS.forEachIndexed { index, paletteColor ->
-                if (index > 0) HorizontalDivider()
-                Row(
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { pickingColor = true }
+                    .padding(vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onSetColor(paletteColor.hex) }
-                        .padding(vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(24.dp)
-                            .background(tagColor(paletteColor.hex), RoundedCornerShape(4.dp))
-                    )
-                    Spacer(modifier = Modifier.size(14.dp))
-                    Text(DbStrings.tagColorName(paletteColor.name), modifier = Modifier.weight(1f))
-                    if (paletteColor.hex.equals(option.color, ignoreCase = true)) {
-                        Icon(
-                            Icons.Filled.Check,
-                            contentDescription = DbStrings.selected,
-                            modifier = Modifier.size(20.dp),
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                }
+                        .size(24.dp)
+                        .background(tagColor(option.color), RoundedCornerShape(4.dp))
+                )
+                Spacer(modifier = Modifier.size(14.dp))
+                Text(DbStrings.cellColor, modifier = Modifier.weight(1f))
+                Text(
+                    text = option.color.uppercase(),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Icon(
+                    Icons.Filled.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
 
         Spacer(modifier = Modifier.size(24.dp))
     }
+
+    if (pickingColor) {
+        ColorPickerSheet(
+            initialHex = option.color,
+            // Il tag è una pastiglia piena: l'anteprima "dietro al testo".
+            background = true,
+            onDismiss = { pickingColor = false },
+            onSwitchTarget = {},
+            onPick = { hex ->
+                // "Nessun colore" torna al grigio dei tag di Notion ("Default").
+                onSetColor(hex?.uppercase() ?: TAG_COLORS.first().hex)
+                pickingColor = false
+            },
+            showTargetSwitch = false,
+            previewLabel = option.label,
+            noColorLabel = DbStrings.defaultColor
+        )
+    }
 }
 
-/** La pastiglia colorata di un tag. */
+/**
+ * La pastiglia colorata di un tag. La scritta è bianca, o nera su un colore
+ * chiaro (dal 05/10/2026: dallo spettro si sceglie anche il giallo acceso,
+ * su cui il bianco non si legge), con la regola delle celle colorate.
+ */
 @Composable
 private fun TagChip(label: String, color: String?) {
     Text(
         text = label,
         style = MaterialTheme.typography.labelMedium,
-        color = NotionWhite,
+        color = if (color != null && darkTextOn(color)) Color.Black else NotionWhite,
         maxLines = 1,
         modifier = Modifier
             .background(tagColor(color), RoundedCornerShape(4.dp))

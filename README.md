@@ -2053,6 +2053,39 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.139 — 05/10/2026 · 17:40 — Il colore dei tag dallo spettro, come in tutti gli altri posti
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 381 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Fai sì che nella selezione del colore dei tag delle proprietà Select dei
+> database ci sia lo stesso spettro di colori che c'è in tutti gli altri
+> posti»
+
+- **[Nuova funzionalità]** Nella modifica di un tag (Select e
+  Multi-select, i tre puntini accanto al tag) l'elenco dei dieci colori
+  di Notion è diventato una riga **Color**, col quadratino del colore e
+  il suo codice: toccandola si apre **lo stesso selettore** del testo,
+  delle celle colorate, delle penne e delle barre — lo spettro con la
+  tinta e la luminosità, Rosso/Verde/Blu ed Hex. "Default" torna al
+  grigio dei tag di Notion. I tag nuovi prendono ancora, a giro, i dieci
+  colori di Notion
+- **[Nuova funzionalità]** La scritta di un tag è **nera sui colori
+  chiari** (un giallo acceso, per esempio), bianca sugli altri: la stessa
+  regola delle celle colorate. Prima era sempre bianca, che coi dieci
+  colori scuri di Notion andava bene
+- **[Progetto]** `TagOptionEditor` apre `ColorPickerSheet`; `TagChip`
+  sceglie la scritta con `darkTextOn`. `TagCell` è `internal` per i test;
+  tolta la scritta "Colors", che non usava più nessuno. `TagColorTest`: 3
+  test (la riga Color col codice del colore, un colore qualsiasi scritto
+  in Hex che arriva al tag, "Default" che torna al grigio)
+- Verificato sul telefono, in Main calendar con una proprietà Select e un
+  tag "Prova" aggiunti per la prova e poi eliminati: la riga "Color
+  #373735", lo spettro, un giallo (#FBF304) toccato nello spettro e nella
+  striscia della luminosità, "Apply": il tag giallo con la scritta nera,
+  nella modifica e nella tabella. Nel database è cambiata solo l'ora di
+  ultima modifica della riga di prova
+
 ### 🆕 v0.138 — 05/10/2026 · 17:30 — Le notifiche tutte in Settings, e fra i suoni anche le suonerie
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 378 test
 passati; commit solo in locale)*

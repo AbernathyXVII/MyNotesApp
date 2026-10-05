@@ -353,7 +353,6 @@ object DbStrings {
     // --- Tag ---
 
     val tagName get() = t("Tag name", "Nome del tag", "Tag-Name", "Nom du tag", "Nombre de la etiqueta", "标签名称", "태그 이름", "タグ名")
-    val colors get() = t("Colors", "Colori", "Farben", "Couleurs", "Colores", "颜色", "색상", "色")
     val selected get() = t("Selected", "Selezionato", "Ausgewählt", "Sélectionné", "Seleccionado", "已选择", "선택됨", "選択済み")
     val createATag get() = t("Create a tag", "Crea un tag", "Tag erstellen", "Créer un tag", "Crear una etiqueta", "创建标签", "태그 만들기", "タグを作成")
     val create get() = t("Create", "Crea", "Erstellen", "Créer", "Crear", "创建", "만들기", "作成")
