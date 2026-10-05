@@ -286,7 +286,9 @@ internal fun DestinationPickerSheet(
             SearchField(
                 value = query,
                 onValueChange = picker::setQuery,
-                modifier = Modifier.padding(horizontal = 16.dp)
+                modifier = Modifier.padding(horizontal = 16.dp),
+                // Cercando, in "Move to database" si trovano i database.
+                placeholder = if (pickDatabases) Strings.searchDatabases else Strings.searchPages
             )
             Spacer(modifier = Modifier.size(8.dp))
 
@@ -384,7 +386,9 @@ private fun HitRow(hit: DestinationHit, onClick: () -> Unit) {
 private fun SearchField(
     value: String,
     onValueChange: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    /** La scritta del campo vuoto: "Search pages", o "Search databases" per "Move to database". */
+    placeholder: String = Strings.searchPages
 ) {
     Row(
         modifier = modifier
@@ -397,7 +401,7 @@ private fun SearchField(
         Spacer(modifier = Modifier.size(10.dp))
         Box(modifier = Modifier.weight(1f)) {
             if (value.isEmpty()) {
-                Text(Strings.searchPages, color = NotionGray400, style = MaterialTheme.typography.bodyLarge)
+                Text(placeholder, color = NotionGray400, style = MaterialTheme.typography.bodyLarge)
             }
             AutoCaps {
                 BasicTextField(

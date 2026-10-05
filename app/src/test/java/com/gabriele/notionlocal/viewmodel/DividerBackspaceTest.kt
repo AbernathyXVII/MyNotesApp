@@ -113,14 +113,42 @@ class DividerBackspaceTest {
         assertEquals(3, saved().size)
     }
 
+    /**
+     * **Il bug del 05/10/2026**: su una riga vuota sotto un divisore, in
+     * fondo alla pagina, il backspace non faceva niente. Ora la riga se ne
+     * va e la tastiera si chiude (il campo deve lasciare il fuoco: il
+     * divisore non si può scrivere). Il divisore resta.
+     */
     @Test
-    fun anEmptyLastLineUnderADividerStays() {
+    fun anEmptyLastLineUnderADividerGoesAwayAndTheKeyboardCloses() {
         val divider = BlockEntity(pageId = page.id, type = BlockType.DIVIDER, orderIndex = 0)
         val vuota = line("", 1)
         open(divider, vuota)
-        assertEquals(BackspaceOutcome.NOTHING, viewModel.backspaceAtLineStartDetailed(listOf(vuota.id), 0))
+        assertEquals(BackspaceOutcome.REMOVED_CLOSE_KEYBOARD, viewModel.backspaceAtLineStartDetailed(listOf(vuota.id), 0))
+        waitFor("la riga vuota tolta") { saved().map { it.id } == listOf(divider.id) }
+        // Nessuna riga su cui spostare il cursore.
+        assertEquals(null, viewModel.pendingCaret.value)
+    }
+
+    @Test
+    fun anEmptyLineBetweenADividerAndADatabaseGoesAwayToo() {
+        val divider = BlockEntity(pageId = page.id, type = BlockType.DIVIDER, orderIndex = 0)
+        val vuota = line("", 1)
+        val table = BlockEntity(pageId = page.id, type = BlockType.DATABASE_LINK, linkedPageId = database.id, orderIndex = 2)
+        open(divider, vuota, table)
+        assertEquals(BackspaceOutcome.REMOVED_CLOSE_KEYBOARD, viewModel.backspaceAtLineStartDetailed(listOf(vuota.id), 0))
+        waitFor("la riga vuota tolta") { saved().map { it.id } == listOf(divider.id, table.id) }
+    }
+
+    /** Con del testo, la riga in fondo sotto il divisore resta: il backspace prende il divisore, come sempre. */
+    @Test
+    fun aLastLineWithTextUnderADividerStays() {
+        val divider = BlockEntity(pageId = page.id, type = BlockType.DIVIDER, orderIndex = 0)
+        val piena = line("Testo", 1)
+        open(divider, piena)
+        assertEquals(BackspaceOutcome.STEP_UNDONE, viewModel.backspaceAtLineStartDetailed(listOf(piena.id), 0))
         repeat(20) { shadowOf(Looper.getMainLooper()).idle(); Thread.sleep(10) }
-        assertEquals(listOf(divider.id, vuota.id), saved().map { it.id })
+        assertEquals(listOf(divider.id, piena.id), saved().map { it.id })
     }
 
     @Test

@@ -78,8 +78,12 @@ enum class SplitOutcome { SPLIT, SPLIT_ABOVE, BECAME_PARAGRAPH, NOTHING }
  * Cosa ha fatto il backspace a inizio riga. `MERGED_INTO_ISLAND` vuol
  * dire che questa riga è finita dentro il blocco di sopra e quindi non
  * esiste più: il campo che ha chiamato sta per essere distrutto.
+ * `REMOVED_CLOSE_KEYBOARD` (dal 05/10/2026): la riga se n'è andata e non
+ * c'è nessun'altra riga di testo vicina su cui spostare il cursore — sopra
+ * c'è un divisore, che non si può scrivere —: il campo deve lasciare il
+ * fuoco, e la tastiera si chiude.
  */
-enum class BackspaceOutcome { NOTHING, STEP_UNDONE, MERGED_INTO_ISLAND }
+enum class BackspaceOutcome { NOTHING, STEP_UNDONE, MERGED_INTO_ISLAND, REMOVED_CLOSE_KEYBOARD }
 
 class PageEditorViewModel(private val repository: PageRepository) : ViewModel() {
 
@@ -2249,7 +2253,11 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
      * divisore e la riga vuota restava ("cancellando lo spazio vuoto fino al
      * divider me lo cancella"). Ora:
      *  - **riga vuota**: se ne va lei, il divisore resta, e il cursore va
-     *    all'inizio della riga che sale al suo posto;
+     *    all'inizio della riga che sale al suo posto. **Se sotto non c'è una
+     *    riga di testo** (la riga vuota era l'ultima, o sotto c'è una
+     *    tabella, un database…) se ne va lo stesso, e la tastiera si chiude:
+     *    il divisore non si può scrivere (dal 05/10/2026, chiesto
+     *    dall'utente; prima il backspace lì non faceva niente);
      *  - **riga col testo**: come su Notion, il primo backspace "prende" il
      *    divisore (si accende), il secondo lo toglie. Così continuando a
      *    premere non sparisce senza avvisare.
@@ -2257,8 +2265,16 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
     private fun backspaceUnderDivider(divider: BlockEntity, line: BlockEntity, next: BlockEntity?): BackspaceOutcome {
         if (spansOf(line).plainText().isEmpty()) {
             // Senza una riga di testo sotto non c'è dove mettere il cursore:
-            // la riga vuota resta, e il divisore con lei.
-            if (next == null || !isFlowingTextType(next.type)) return BackspaceOutcome.NOTHING
+            // la riga se ne va lo stesso, e chi ha chiamato lascia il fuoco
+            // (la tastiera si chiude). Il divisore resta.
+            if (next == null || !isFlowingTextType(next.type)) {
+                disarmDivider()
+                snapshotForStructuralChange()
+                viewModelScope.launch {
+                    structuralEdits.withLock { repository.applyBlockChanges(deleted = listOf(line)) }
+                }
+                return BackspaceOutcome.REMOVED_CLOSE_KEYBOARD
+            }
             disarmDivider()
             snapshotForStructuralChange()
             viewModelScope.launch {

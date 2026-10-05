@@ -182,6 +182,8 @@ object Strings {
         "ページをタップすると、その末尾にコピーを置きます。データベースを開くと中のページが表示されます。"
     )
     val searchPages get() = t("Search pages", "Cerca una pagina", "Seiten suchen", "Rechercher une page", "Buscar páginas", "搜索页面", "페이지 검색", "ページを検索")
+    /** "Move to database" (dal 05/10/2026): cercando si trovano i database. */
+    val searchDatabases get() = t("Search databases", "Cerca un database", "Datenbanken suchen", "Rechercher une base de données", "Buscar bases de datos", "搜索数据库", "데이터베이스 검색", "データベースを検索")
     fun inPlace(title: String) = t("In ${title}", "In ${title}", "In ${title}", "Dans ${title}", "En ${title}", "位于 ${title}", "위치: ${title}", "場所：${title}")
     fun duplicatedInto(title: String) = t(
         "Copy placed in “${title}”",

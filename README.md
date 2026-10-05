@@ -2053,9 +2053,51 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🔧 v0.141.1 — 05/10/2026 · 22:15 — Backspace sulla riga vuota sotto un divisore, e "Search databases"
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 397 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Dopo controlla questo bug. Quando sto su un blocco da campo di testo
+> vuoto e precisamente sotto un divider, faccio poi Backspace, non mi fa
+> nulla. Fai sì che io possa cancellare il testo e poi si toglie la
+> tastiera, perché il divider non può essere focussato»
+
+(E prima, «Sì falle»: le cose rimaste della v0.141 — provare sul
+telefono lo spostamento di un database, togliere le righe di prova, la
+scritta della ricerca.)
+
+- **[Bug fix]** Su una **riga vuota subito sotto un divisore**, senza una
+  riga di testo sotto di lei (in fondo alla pagina, o con sotto una
+  tabella, un database…), il Backspace non faceva niente. Ora **la riga
+  se ne va e la tastiera si chiude**: il divisore non si può scrivere, e
+  non c'è un'altra riga su cui spostare il cursore. Il divisore resta.
+  Com'era: con una riga di testo sotto, la riga vuota se ne va e il
+  cursore sale su quella; su una riga col testo il primo Backspace
+  "prende" il divisore e il secondo lo toglie
+- **[Bug fix]** In "Move to database" il campo di ricerca diceva "Search
+  pages", ma cerca database: ora dice **"Search databases"**
+- **[Progetto]** `BackspaceOutcome.REMOVED_CLOSE_KEYBOARD`: il campo lascia
+  il fuoco e chiude la tastiera prima che la riga sparisca (un campo
+  distrutto col fuoco fa chiudere l'app). `DividerBackspaceTest`: il test
+  che diceva "la riga vuota in fondo resta" è diventato "se ne va e la
+  tastiera si chiude", più due test nuovi (con un database sotto; con del
+  testo resta). `SearchField(placeholder)`, `Strings.searchDatabases`
+- Verificato sul telefono, in una riga di prova di Main calendar
+  ("Contenitore"): inserito un divisore, sotto la riga vuota col cursore,
+  Backspace — la riga è sparita, il divisore è rimasto, la tastiera si è
+  chiusa, nessun crash. Poi la prova che mancava della v0.141: un
+  database creato lì dentro, dal menu del blocco "Move to database" (col
+  campo "Search databases") → Main calendar: è nata una riga nuova, e la
+  sua pagina mostra dentro il database aperto; da "Contenitore" è
+  sparito. Tolte poi le tre righe di prova ("Contenitore", "Sotto" e
+  quella del database); le righe "Untitled" e "SaaS" di Main calendar,
+  nate alle 18:25 e 18:26, non sono mie e sono rimaste com'erano
+
 ### 🆕 v0.141 — 05/10/2026 · 18:20 — "Move to database": una pagina o un database diventa una pagina di un database
-*(Claude Code sul PC; verificato sul telefono lo stesso giorno per una
-pagina; 395 test passati; commit solo in locale)*
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno, per una
+pagina e — con la v0.141.1 — per un database; 395 test passati; commit
+solo in locale)*
 
 L'utente, parola per parola:
 > «Dammi la possibilità, tramite un'opzione specifica, di spostare una
@@ -2090,8 +2132,7 @@ L'utente, parola per parola:
   dentro una sottopagina "Sotto"; dai tre puntini di "Sotto", "Move to
   database" → Main calendar: "Sotto" è diventata l'ultima riga di Main
   calendar, e da "Contenitore" il collegamento è sparito. Lo spostamento
-  di un database è provato dai test, non ancora sul telefono. Le righe di
-  prova "Contenitore" e "Sotto" sono rimaste in Main calendar
+  di un database l'ho provato col telefono dopo, con la v0.141.1 (vedi lì)
 
 ### 🔧 v0.140.1 — 05/10/2026 · 18:06 — Rinominare un tag: la tastiera non si chiude più alla prima lettera
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 389 test

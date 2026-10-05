@@ -4356,6 +4356,7 @@ private fun MergedTextRunField(
 
     val focusRequester = remember { FocusRequester() }
     val focusPark = LocalFocusPark.current
+    val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
     val imeVisible = WindowInsets.isImeVisible
 
@@ -4551,6 +4552,14 @@ private fun MergedTextRunField(
 
                 if (atFirstLineStart) {
                     val outcome = viewModel.backspaceAtLineStartDetailed(runBlocks.map { it.id }, 0)
+                    if (outcome == BackspaceOutcome.REMOVED_CLOSE_KEYBOARD) {
+                        // La riga vuota sotto un divisore se ne va e non c'è
+                        // un'altra riga in cui scrivere: il campo lascia il
+                        // fuoco prima di sparire (altrimenti l'app si chiude,
+                        // vedi sotto), e la tastiera si chiude.
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                    }
                     if (outcome == BackspaceOutcome.MERGED_INTO_ISLAND) {
                         // Questa riga è appena finita dentro la casella di
                         // sopra: sparisce, e con lei questo campo. Il fuoco
