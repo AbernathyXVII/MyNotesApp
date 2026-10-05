@@ -89,6 +89,9 @@ class PagePickerViewModel(private val repository: PageRepository) : ViewModel() 
 
     private var searchJob: Job? = null
 
+    /** "Move to database" (dal 05/10/2026): cercando si trovano i database, non le pagine. */
+    var databasesOnly = false
+
     /** Si riparte da capo a ogni apertura: l'albero può essere cambiato, e la ricerca di prima non serve più. */
     fun reset() {
         _expanded.value = setOf(PageEntity.ROOT_PAGE_ID)
@@ -118,7 +121,13 @@ class PagePickerViewModel(private val repository: PageRepository) : ViewModel() 
             _results.value = emptyList()
             return
         }
-        searchJob = viewModelScope.launch { _results.value = repository.searchDestinations(text) }
+        searchJob = viewModelScope.launch {
+            _results.value = if (databasesOnly) {
+                repository.searchDatabaseDestinations(text)
+            } else {
+                repository.searchDestinations(text)
+            }
+        }
     }
 }
 

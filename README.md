@@ -2053,6 +2053,46 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.141 — 05/10/2026 · 18:20 — "Move to database": una pagina o un database diventa una pagina di un database
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno per una
+pagina; 395 test passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Dammi la possibilità, tramite un'opzione specifica, di spostare una
+> pagina o un database complesso in un database, e di ricrearlo come se
+> fosse una pagina aggiunta a quel database»
+
+- **[Nuova funzionalità]** **"Move to database"**, sotto "Move to": nei
+  tre puntini di una pagina e di un database, e nel menu di un
+  collegamento a pagina o a database. Si apre l'albero delle pagine:
+  **toccando un database lo si sceglie** (la freccia lo apre), le pagine
+  si aprono come cartelle per arrivare ai database che hanno dentro, i
+  database semplici sono grigi (le loro righe non sono pagine), e
+  cercando si trovano i database
+  - **una pagina** diventa una pagina nuova del database, in fondo, col
+    suo nome e tutto il contenuto; lascia il posto in cui stava
+  - **un database complesso** finisce in una pagina nuova del database
+    scelto, con il suo nome e la sua icona, e **dentro di lei c'è lui,
+    aperto** (non una copia): le righe si aprono come pagine di testo,
+    quindi un database non può essere lui stesso la pagina di una riga
+  - la pagina di una riga lascia il suo database; una vista collegata
+    vale come il database che mostra; non si può spostare qualcosa in un
+    database che sta dentro di lei
+  - **Annulla** rimette tutto dov'era (la pagina nata per un database se
+    ne va); Ripristina lo rifà
+- **[Progetto]** `PageRepository.moveIntoDatabase`, `PageChange.MovedToDatabase`
+  (con Annulla e Ripristina), `searchDatabaseDestinations`,
+  `PageTreeNode.isSimpleDatabase`, `imageCopier` (la copia dell'icona,
+  dalla `ViewModelFactory`). `DestinationPickerSheet(pickDatabases)`,
+  `MoveToDatabasePicker`. `MoveToDatabaseTest`: 6 test (pagina, database,
+  pagina di una riga, i no, la vista collegata, la ricerca)
+- Verificato sul telefono, in Main calendar: una riga "Contenitore" con
+  dentro una sottopagina "Sotto"; dai tre puntini di "Sotto", "Move to
+  database" → Main calendar: "Sotto" è diventata l'ultima riga di Main
+  calendar, e da "Contenitore" il collegamento è sparito. Lo spostamento
+  di un database è provato dai test, non ancora sul telefono. Le righe di
+  prova "Contenitore" e "Sotto" sono rimaste in Main calendar
+
 ### 🔧 v0.140.1 — 05/10/2026 · 18:06 — Rinominare un tag: la tastiera non si chiude più alla prima lettera
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 389 test
 passati; commit solo in locale)*

@@ -118,6 +118,28 @@ object Strings {
         "페이지를 누르면 그 끝으로 옮겨집니다. 페이지는 데이터베이스에서 빠져나옵니다. 이름과 내용은 남고 행의 속성은 남지 않습니다.",
         "ページをタップすると、その末尾に移動します。ページはデータベースから外れます。名前と内容は残り、行のプロパティは残りません。"
     )
+    // "Move to database" (dal 05/10/2026): diventare una pagina di un database.
+    val moveToDatabase get() = t("Move to database", "Sposta in un database", "In Datenbank verschieben", "Déplacer dans une base de données", "Mover a una base de datos", "移动到数据库", "데이터베이스로 이동", "データベースに移動")
+    val moveToDatabaseHint get() = t(
+        "Tap a database: the page becomes a new page of it, with all its content. The arrow opens a page or a database to see what's inside.",
+        "Tocca un database: la pagina diventa una sua pagina nuova, con tutto il contenuto. La freccia apre una pagina o un database per vedere cosa c'è dentro.",
+        "Tippe auf eine Datenbank: Die Seite wird zu einer neuen Seite darin, mit ihrem ganzen Inhalt. Der Pfeil öffnet eine Seite oder Datenbank, um den Inhalt zu sehen.",
+        "Touchez une base de données : la page devient une nouvelle page de celle-ci, avec tout son contenu. La flèche ouvre une page ou une base de données pour voir son contenu.",
+        "Toca una base de datos: la página se convierte en una página nueva de ella, con todo su contenido. La flecha abre una página o una base de datos para ver lo que hay dentro.",
+        "点按数据库：页面会成为其中的新页面，内容全部保留。点箭头可展开页面或数据库查看里面的内容。",
+        "데이터베이스를 누르세요. 페이지가 내용 그대로 그 데이터베이스의 새 페이지가 됩니다. 화살표를 누르면 페이지나 데이터베이스 안을 볼 수 있습니다.",
+        "データベースをタップ：ページは内容ごと、そのデータベースの新しいページになります。矢印でページやデータベースの中を表示します。"
+    )
+    val moveDatabaseToDatabaseHint get() = t(
+        "Tap a database: this database goes into a new page of it, with the same name, and shows open inside it.",
+        "Tocca un database: questo database finisce in una sua pagina nuova, con lo stesso nome, e ci si vede aperto dentro.",
+        "Tippe auf eine Datenbank: Diese Datenbank kommt in eine neue Seite darin, mit demselben Namen, und wird dort offen angezeigt.",
+        "Touchez une base de données : celle-ci ira dans une nouvelle page de celle-là, avec le même nom, et s'y affichera ouverte.",
+        "Toca una base de datos: esta base de datos irá a una página nueva de ella, con el mismo nombre, y se verá abierta dentro.",
+        "点按数据库：此数据库会放进其中一个同名的新页面，并在页面中展开显示。",
+        "데이터베이스를 누르세요. 이 데이터베이스가 같은 이름의 새 페이지에 들어가고, 그 안에 펼쳐진 상태로 보입니다.",
+        "データベースをタップ：このデータベースは同じ名前の新しいページに入り、その中で開いた状態で表示されます。"
+    )
     fun movedInto(title: String) = t(
         "Moved to “${title}”",
         "Spostata in “${title}”",

@@ -368,7 +368,9 @@ class PageRepository(private val db: AppDatabase) {
         val emoji: String,
         val iconImage: String?,
         val isDatabase: Boolean,
-        val hasChildren: Boolean
+        val hasChildren: Boolean,
+        /** Un database semplice: le sue righe non hanno pagine, e dentro non ci si sposta niente. */
+        val isSimpleDatabase: Boolean = false
     ) {
         /** Chi è, per ricordarsi se è aperto: la pagina, o la riga se la pagina non c'è. */
         val key: String get() = pageId ?: "row:$rowId"
@@ -450,6 +452,7 @@ class PageRepository(private val db: AppDatabase) {
         emoji = page.icon,
         iconImage = page.iconImage,
         isDatabase = page.isDatabase,
+        isSimpleDatabase = page.isSimpleDatabase,
         hasChildren = if (page.isSimpleDatabase || (page.isProtected && !AppLock.isUnlocked(page.id))) {
             false
         } else if (page.isDatabase) {
@@ -743,6 +746,87 @@ class PageRepository(private val db: AppDatabase) {
         }
     }
 
+    /**
+     * **"Move to database"** (dal 05/10/2026, chiesto dall'utente): la
+     * pagina lascia il posto in cui stava e diventa **una pagina nuova del
+     * database scelto**, in fondo, col suo contenuto e il suo nome.
+     *
+     * - **Una pagina** diventa la pagina della riga nuova (`isRowPage`):
+     *   la si apre dalla riga, e le proprietà del database le compaiono in
+     *   cima, vuote.
+     * - **Un database** (complesso) non può essere lui la pagina di una
+     *   riga — le righe si aprono come pagine di testo —: nasce una pagina
+     *   della riga col suo nome e la sua icona, e **dentro, il database
+     *   aperto**. È lui, non una copia.
+     * - La pagina di una riga lascia il suo database, come con "Move to".
+     *
+     * Non si può: verso un database semplice (le sue righe non sono
+     * pagine), verso uno che sta dentro la pagina stessa (`pagesInside`),
+     * o nel cestino. Una vista collegata vale come il database che mostra.
+     * Null se non si fa, e niente è cambiato.
+     */
+    suspend fun moveIntoDatabase(
+        pageId: String,
+        databaseId: String,
+        copyImage: suspend (String) -> String? = imageCopier
+    ): PageChange.MovedToDatabase? {
+        if (pageId == PageEntity.ROOT_PAGE_ID) return null
+        val page = pageDao.getById(pageId) ?: return null
+        val chosen = pageDao.getById(databaseId)?.takeIf { it.isDatabase } ?: return null
+        val target = (chosen.sourceDatabaseId?.let { pageDao.getById(it) } ?: chosen)
+            .takeIf { it.isDatabase && !it.isSimpleDatabase && it.trashedAt == null } ?: return null
+        val inside = pagesInside(pageId)
+        if (target.id in inside || chosen.id in inside) return null
+        val databaseDao = db.databaseDao()
+        // L'icona fatta di un'immagine: la pagina nuova ne ha una copia sua
+        // (due pagine non possono avere lo stesso file).
+        val wrapperIcon = if (page.isDatabase) page.iconImage?.let { copyImage(it) } else null
+        return db.withTransaction {
+            val links = blockDao.getBlocksLinkingTo(pageId)
+            links.forEach { blockDao.delete(it) }
+            val rows = if (page.isRowPage) databaseDao.getRowsLinkingTo(pageId) else emptyList()
+            val cells = rows.flatMap { databaseDao.getCellsForRowOnce(it.id) }
+            rows.forEach { databaseDao.deleteRow(it) }
+            val now = System.currentTimeMillis()
+            val rowPageId = if (page.isDatabase) {
+                val wrapper = PageEntity(
+                    title = page.title,
+                    icon = page.icon,
+                    iconImage = wrapperIcon,
+                    isRowPage = true,
+                    createdAt = now,
+                    updatedAt = now
+                )
+                pageDao.insert(wrapper)
+                appendLink(wrapper.id, pageId, isDatabase = true)
+                if (page.isRowPage) pageDao.setRowPage(pageId, false)
+                wrapper.id
+            } else {
+                pageDao.setRowPage(pageId, true)
+                pageId
+            }
+            val order = (databaseDao.getRowsForPageOnce(target.id).maxOfOrNull { it.orderIndex } ?: -1) + 1
+            val row = DatabaseRowEntity(
+                pageId = target.id,
+                title = page.title.takeUnless { it == "Untitled" }.orEmpty(),
+                linkedPageId = rowPageId,
+                orderIndex = order,
+                createdAt = now,
+                updatedAt = now
+            )
+            databaseDao.insertRow(row)
+            PageChange.MovedToDatabase(
+                pageId = pageId,
+                databaseId = target.id,
+                oldLinks = links,
+                oldRows = rows,
+                oldCells = cells,
+                newRowId = row.id,
+                wrapperPageId = rowPageId.takeIf { it != pageId }
+            )
+        }
+    }
+
     // --- Annulla e Ripristina per quello che si fa alle pagine ---
 
     /**
@@ -778,6 +862,21 @@ class PageRepository(private val db: AppDatabase) {
 
         /** Buttata nel cestino: i collegamenti che la mostravano. */
         data class Trashed(val pageId: String, val oldLinks: List<BlockEntity>) : PageChange
+
+        /**
+         * Spostata in un database ("Move to database", dal 05/10/2026): dov'era
+         * prima, la riga nuova, e la pagina nata per contenerla se era un
+         * database.
+         */
+        data class MovedToDatabase(
+            val pageId: String,
+            val databaseId: String,
+            val oldLinks: List<BlockEntity>,
+            val oldRows: List<DatabaseRowEntity>,
+            val oldCells: List<DatabaseCellEntity>,
+            val newRowId: String,
+            val wrapperPageId: String?
+        ) : PageChange
     }
 
     /** Dove sta la copia appena fatta da "Duplicate", per poterla disfare. */
@@ -841,6 +940,38 @@ class PageRepository(private val db: AppDatabase) {
                 putLinksBack(change.pageId, change.oldLinks, fallbackToMainMenu = !inRow)
                 change
             }
+            // Torna dov'era: la riga nuova se ne va. La pagina nata per un
+            // database perde il collegamento al database (che torna al suo
+            // posto) e, se dentro non c'è altro, se ne va; se nel frattempo
+            // ci si è scritto, va nel cestino e niente è perso.
+            is PageChange.MovedToDatabase -> {
+                pageDao.getById(change.pageId) ?: return@withTransaction null
+                databaseDao.getRowById(change.newRowId)?.let { databaseDao.deleteRow(it) }
+                val wrapper = change.wrapperPageId?.let { pageDao.getById(it) }
+                if (wrapper != null) {
+                    blockDao.getBlocksLinkingTo(change.pageId)
+                        .filter { it.pageId == wrapper.id }
+                        .forEach { blockDao.delete(it) }
+                    if (blockDao.getBlocksForPageOnce(wrapper.id).isEmpty()) {
+                        pageDao.delete(wrapper)
+                    } else {
+                        pageDao.setRowPage(wrapper.id, false)
+                        pageDao.setTrashedAt(wrapper.id, System.currentTimeMillis())
+                    }
+                } else {
+                    pageDao.setRowPage(change.pageId, false)
+                }
+                change.oldRows.forEach { row ->
+                    if (pageDao.getById(row.pageId) != null) databaseDao.insertRow(row)
+                }
+                change.oldCells.forEach { cell ->
+                    if (databaseDao.getRowById(cell.rowId) != null) databaseDao.insertCell(cell)
+                }
+                val backInRow = databaseDao.getRowsLinkingTo(change.pageId).isNotEmpty()
+                if (backInRow) pageDao.setRowPage(change.pageId, true)
+                putLinksBack(change.pageId, change.oldLinks, fallbackToMainMenu = !backInRow)
+                change
+            }
         }
     }
 
@@ -867,7 +998,16 @@ class PageRepository(private val db: AppDatabase) {
             change
         }
         is PageChange.Trashed -> moveToTrash(change.pageId)
+        is PageChange.MovedToDatabase -> moveIntoDatabase(change.pageId, change.databaseId)
     }
+
+    /**
+     * Per "Move to database" (e il suo Ripristina): la copia dell'icona
+     * fatta di un'immagine, per la pagina nata per un database. Il
+     * repository non sa dov'è la cartella delle immagini: la imposta chi ce
+     * l'ha (`ViewModelFactory`); senza, la pagina nasce con l'emoji.
+     */
+    var imageCopier: suspend (String) -> String? = { null }
 
     /**
      * Rimette i collegamenti a una pagina dov'erano: stessa pagina, stesso
@@ -1334,6 +1474,30 @@ class PageRepository(private val db: AppDatabase) {
             )
         }
         return hits
+    }
+
+    /**
+     * **I database in cui spostare una pagina** ("Move to database", dal
+     * 05/10/2026), cercandoli per nome: quelli veri — non le viste in più,
+     * non le viste collegate, che mostrano un altro database — e non i
+     * database semplici, le cui righe non sono pagine. Niente dal cestino,
+     * e niente che non stia da nessuna parte. Sotto, la pagina in cui sta.
+     */
+    suspend fun searchDatabaseDestinations(query: String): List<DestinationHit> {
+        val needle = query.trim()
+        if (needle.isEmpty()) return emptyList()
+        return pageDao.searchByTitle(needle)
+            .filter {
+                it.isDatabase && !it.isSimpleDatabase && it.viewHostId == null &&
+                    it.sourceDatabaseId == null && it.trashedAt == null
+            }
+            .mapNotNull { database ->
+                val container = blockDao.getBlocksLinkingTo(database.id).firstOrNull()
+                    ?.let { pageDao.getById(it.pageId) }
+                    ?.takeIf { it.trashedAt == null }
+                    ?: return@mapNotNull null
+                DestinationHit(nodeFor(database), container.title)
+            }
     }
 
     // --- Cronologia delle modifiche (la voce "Updates") ---

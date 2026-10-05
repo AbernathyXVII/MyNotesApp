@@ -28,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DriveFileMove
+import androidx.compose.material.icons.filled.TableRows
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
@@ -93,6 +94,8 @@ fun PageOptionsSheet(
     onDuplicate: () -> Unit,
     onMoveTo: () -> Unit,
     onMoveToTrash: () -> Unit,
+    /** "Move to database" (dal 05/10/2026): null = la voce non c'è. */
+    onMoveToDatabase: (() -> Unit)? = null,
     onToggleViewLock: () -> Unit,
     onToggleLock: () -> Unit,
     onUpdates: () -> Unit,
@@ -209,6 +212,16 @@ fun PageOptionsSheet(
                         enabled = !isRoot,
                         onClick = onMoveTo
                     )
+                    // **"Move to database"** (dal 05/10/2026, chiesto
+                    // dall'utente): diventare una pagina di un database.
+                    if (!isRoot && onMoveToDatabase != null) {
+                        HorizontalDivider()
+                        OptionRow(
+                            icon = Icons.Filled.TableRows,
+                            label = Strings.moveToDatabase,
+                            onClick = onMoveToDatabase
+                        )
+                    }
                 }
                 if (!isRoot) {
                     if (onTurnIntoDatabase != null) {
@@ -409,6 +422,32 @@ internal fun MovePagePicker(
         onDismiss = onDismiss,
         onPick = onPick,
         excluded = exclusions
+    )
+}
+
+/**
+ * **"Move to database"** (dal 05/10/2026): lo stesso albero di "Move to",
+ * ma si tocca un database (vedi `DestinationPickerSheet.pickDatabases`). La
+ * pagina, o il database, diventa una sua pagina nuova (vedi
+ * `PageRepository.moveIntoDatabase`).
+ */
+@Composable
+internal fun MoveToDatabasePicker(
+    page: PageEntity,
+    exclusions: MoveExclusions,
+    factory: ViewModelFactory,
+    onDismiss: () -> Unit,
+    onPick: (PageTreeNode) -> Unit
+) {
+    DestinationPickerSheet(
+        factory = factory,
+        title = Strings.moveToDatabase,
+        hint = if (page.isDatabase) Strings.moveDatabaseToDatabaseHint else Strings.moveToDatabaseHint,
+        viewModelKey = "move-to-database",
+        onDismiss = onDismiss,
+        onPick = onPick,
+        excluded = exclusions,
+        pickDatabases = true
     )
 }
 

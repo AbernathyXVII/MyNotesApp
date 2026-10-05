@@ -510,6 +510,8 @@ fun DatabaseViewScreen(
 
     var showPageOptions by remember { mutableStateOf(false) }
     var moveExclusions by remember { mutableStateOf<PageRepository.MoveExclusions?>(null) }
+    // La scelta aperta è quella di "Move to database" invece di "Move to".
+    var movingIntoDatabase by remember { mutableStateOf(false) }
     var confirmTrash by remember { mutableStateOf(false) }
     var showDuplicate by remember { mutableStateOf(false) }
     var passwordLockRequest by remember { mutableStateOf<Boolean?>(null) }
@@ -629,6 +631,12 @@ fun DatabaseViewScreen(
                 },
                 onMoveTo = {
                     showPageOptions = false
+                    movingIntoDatabase = false
+                    menuViewModel.loadMoveExclusions { moveExclusions = it }
+                },
+                onMoveToDatabase = {
+                    showPageOptions = false
+                    movingIntoDatabase = true
                     menuViewModel.loadMoveExclusions { moveExclusions = it }
                 },
                 onMoveToTrash = {
@@ -665,7 +673,24 @@ fun DatabaseViewScreen(
             )
         }
 
-        moveExclusions?.let { exclusions ->
+        moveExclusions?.takeIf { movingIntoDatabase }?.let { exclusions ->
+            MoveToDatabasePicker(
+                page = current,
+                exclusions = exclusions,
+                factory = factory,
+                onDismiss = { moveExclusions = null },
+                onPick = { destination ->
+                    moveExclusions = null
+                    // Finisce in una pagina nuova del database scelto, aperto
+                    // dentro di lei: l'avviso dice in quale database.
+                    menuViewModel.movePageToDatabase(destination) {
+                        Toast.makeText(trashContext, Strings.movedInto(destination.placeName()), Toast.LENGTH_SHORT).show()
+                        onBack()
+                    }
+                }
+            )
+        }
+        moveExclusions?.takeIf { !movingIntoDatabase }?.let { exclusions ->
             MovePagePicker(
                 page = current,
                 exclusions = exclusions,

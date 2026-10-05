@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.DriveFileMove
+import androidx.compose.material.icons.filled.TableRows
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.EmojiEmotions
 import androidx.compose.material.icons.filled.GridOn
@@ -272,6 +273,12 @@ internal fun BlockActionsHost(
                                 step = BlockMenuStep.MOVE_TO
                             }
                         },
+                        onMoveToDatabase = {
+                            viewModel.loadMoveExclusionsFor(page.id) {
+                                moveExclusions = it
+                                step = BlockMenuStep.MOVE_TO_DATABASE
+                            }
+                        },
                         onMoveToTrash = { step = BlockMenuStep.TRASH }
                     )
                 }
@@ -369,6 +376,25 @@ internal fun BlockActionsHost(
             }
         }
 
+        BlockMenuStep.MOVE_TO_DATABASE -> {
+            val exclusions = moveExclusions
+            if (page != null && exclusions != null) {
+                // "Move to database" (dal 05/10/2026): come "Move to", ma la
+                // pagina diventa una pagina del database scelto.
+                MoveToDatabasePicker(
+                    page = page,
+                    exclusions = exclusions,
+                    factory = factory,
+                    onDismiss = onDismiss,
+                    onPick = { destination ->
+                        onDismiss()
+                        viewModel.moveLinkedPageToDatabase(page.id, destination)
+                        Toast.makeText(context, Strings.movedInto(destination.placeName()), Toast.LENGTH_SHORT).show()
+                    }
+                )
+            }
+        }
+
         BlockMenuStep.TRASH -> if (page != null) {
             MoveToTrashDialog(
                 pageTitle = page.title,
@@ -407,7 +433,7 @@ internal fun BlockActionsHost(
 private class Loaded(val page: PageEntity?)
 
 /** Le schermate del menu del blocco: il menu, la lista di "Turn into", e le finestre che si aprono dalle voci. */
-private enum class BlockMenuStep { MENU, TURN_INTO, COLOR, EDIT_ICON, RENAME, DUPLICATE, MOVE_TO, TRASH, CONFIRM_SIMPLE }
+private enum class BlockMenuStep { MENU, TURN_INTO, COLOR, EDIT_ICON, RENAME, DUPLICATE, MOVE_TO, MOVE_TO_DATABASE, TRASH, CONFIRM_SIMPLE }
 
 /** Il nome inglese del tipo di un blocco, com'è scritto nel catalogo dei menu (`SLASH_ENTRIES`). */
 private fun blockTypeLabel(type: BlockType): String =
@@ -504,6 +530,7 @@ private fun PageBlockMenu(
     onRename: () -> Unit,
     onDuplicate: () -> Unit,
     onMoveTo: () -> Unit,
+    onMoveToDatabase: () -> Unit,
     onMoveToTrash: () -> Unit
 ) {
     val linked = page.sourceDatabaseId != null
@@ -607,6 +634,8 @@ private fun PageBlockMenu(
         OptionRow(icon = Icons.Filled.ContentCopy, label = Strings.duplicate, onClick = onDuplicate)
         HorizontalDivider()
         OptionRow(icon = Icons.Filled.DriveFileMove, label = Strings.moveTo, onClick = onMoveTo)
+        HorizontalDivider()
+        OptionRow(icon = Icons.Filled.TableRows, label = Strings.moveToDatabase, onClick = onMoveToDatabase)
         HorizontalDivider()
         OptionRow(
             icon = Icons.Filled.Delete,

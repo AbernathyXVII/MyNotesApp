@@ -25,7 +25,12 @@ class ViewModelFactory(private val context: Context) : ViewModelProvider.Factory
      * schermata: all'avvio si svuota il cestino e si controlla che la
      * pagina da aprire esista ancora, prima che una schermata ci sia.
      */
-    val pageRepository by lazy { PageRepository(database) }
+    val pageRepository by lazy {
+        PageRepository(database).also { repository ->
+            // "Move to database" (vedi `PageRepository.imageCopier`).
+            repository.imageCopier = { imageStore.copy(it) }
+        }
+    }
     private val databaseRepository by lazy { DatabaseRepository(database) }
     val imageStore by lazy { PageImageStore(context) }
     /** I quaderni, come quelli di OneNote: vedi `NotebookEntity`. */

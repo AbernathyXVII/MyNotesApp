@@ -958,6 +958,23 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
     }
 
     /**
+     * **"Move to database"** dai tre puntini (dal 05/10/2026): la pagina
+     * diventa una pagina nuova del database scelto, col suo contenuto
+     * (vedi `PageRepository.moveIntoDatabase`). Come "Move to": si torna
+     * indietro, e l'Annulla lo prende la pagina che si vede dopo.
+     */
+    fun movePageToDatabase(destination: PageRepository.PageTreeNode, onDone: () -> Unit) {
+        val current = _page.value ?: return
+        val databaseId = destination.pageId ?: return
+        viewModelScope.launch {
+            repository.moveIntoDatabase(current.id, databaseId)?.let { change ->
+                PendingPageUndo.offer(change)
+                onDone()
+            }
+        }
+    }
+
+    /**
      * Butta la pagina nel cestino. La pagina resta nel database: quello
      * che sparisce è il collegamento che la mostrava. `onDone` serve a
      * tornare indietro, perché restare su una pagina che non è più
@@ -2985,6 +3002,20 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         viewModelScope.launch {
             historyLock.withLock {
                 repository.movePageTo(pageId, destination)?.let { pushPageChange(it) }
+            }
+        }
+    }
+
+    /**
+     * "Move to database" dal menu del blocco (dal 05/10/2026): il
+     * collegamento sparisce da qui e la pagina diventa una pagina del
+     * database scelto. Annulla, da questa pagina, la rimette al suo posto.
+     */
+    fun moveLinkedPageToDatabase(pageId: String, destination: PageRepository.PageTreeNode) {
+        val databaseId = destination.pageId ?: return
+        viewModelScope.launch {
+            historyLock.withLock {
+                repository.moveIntoDatabase(pageId, databaseId)?.let { pushPageChange(it) }
             }
         }
     }

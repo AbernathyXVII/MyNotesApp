@@ -224,10 +224,21 @@ internal fun DestinationPickerSheet(
     excluded: MoveExclusions? = null,
     /** Una voce in cima per togliere quello che c'è ("Remove link" di "Page link"); null = niente. */
     onClear: (() -> Unit)? = null,
-    clearLabel: String = ""
+    clearLabel: String = "",
+    /**
+     * **Si sceglie un database** ("Move to database", dal 05/10/2026): toccando
+     * un database lo si sceglie invece di aprirlo (si apre con la freccia),
+     * le pagine si aprono come cartelle per arrivare a quelli che hanno
+     * dentro, e i database semplici sono grigi. Cercando si trovano i
+     * database.
+     */
+    pickDatabases: Boolean = false
 ) {
     val picker: PagePickerViewModel = viewModel(factory = factory, key = viewModelKey)
-    LaunchedEffect(Unit) { picker.reset() }
+    LaunchedEffect(Unit) {
+        picker.databasesOnly = pickDatabases
+        picker.reset()
+    }
     val root by picker.root.collectAsStateWithLifecycle()
     val children by picker.children.collectAsStateWithLifecycle()
     val expanded by picker.expanded.collectAsStateWithLifecycle()
@@ -291,9 +302,16 @@ internal fun DestinationPickerSheet(
                             row = row,
                             isCurrent = false,
                             isExpanded = node.pageId in expanded,
-                            onOpen = { if (node.isDatabase) picker.toggle(node) else onPick(node) },
+                            onOpen = {
+                                when {
+                                    pickDatabases && node.isDatabase -> onPick(node)
+                                    pickDatabases || node.isDatabase -> picker.toggle(node)
+                                    else -> onPick(node)
+                                }
+                            },
                             onToggle = { picker.toggle(node) },
-                            enabled = excluded?.contains(node) != true
+                            enabled = excluded?.contains(node) != true &&
+                                !(pickDatabases && node.isDatabase && node.isSimpleDatabase)
                         )
                         val id = node.pageId
                         if (id != null && id in expanded && node.hasChildren && children[id]?.isEmpty() == true) {

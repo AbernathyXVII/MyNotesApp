@@ -1111,6 +1111,8 @@ private fun PageEditorContent(
     // "Move to": dove la pagina non può andare, letto quando si tocca la
     // voce; finché c'è, l'albero per scegliere è aperto.
     var moveExclusions by remember { mutableStateOf<PageRepository.MoveExclusions?>(null) }
+    // La scelta aperta è quella di "Move to database" invece di "Move to".
+    var movingIntoDatabase by remember { mutableStateOf(false) }
     var confirmTrash by remember { mutableStateOf(false) }
     var showDuplicate by remember { mutableStateOf(false) }
     // "Blocca con password": bloccare (true) o sbloccare (false), mentre se ne occupano le finestre.
@@ -2423,7 +2425,16 @@ private fun PageEditorContent(
                 },
                 onMoveTo = {
                     showPageOptions = false
+                    movingIntoDatabase = false
                     viewModel.loadMoveExclusions { moveExclusions = it }
+                },
+                // Non per le pagine dei quaderni né per i template, come "Move to".
+                onMoveToDatabase = if (inNotebook || current.isTemplate) null else {
+                    {
+                        showPageOptions = false
+                        movingIntoDatabase = true
+                        viewModel.loadMoveExclusions { moveExclusions = it }
+                    }
                 },
                 onMoveToTrash = {
                     showPageOptions = false
@@ -2462,7 +2473,23 @@ private fun PageEditorContent(
             )
         }
 
-        moveExclusions?.let { exclusions ->
+        moveExclusions?.takeIf { movingIntoDatabase }?.let { exclusions ->
+            MoveToDatabasePicker(
+                page = current,
+                exclusions = exclusions,
+                factory = factory,
+                onDismiss = { moveExclusions = null },
+                onPick = { destination ->
+                    moveExclusions = null
+                    // Come "Move to": si torna indietro, e l'avviso dice dove.
+                    viewModel.movePageToDatabase(destination) {
+                        Toast.makeText(context, Strings.movedInto(destination.placeName()), Toast.LENGTH_SHORT).show()
+                        onBack()
+                    }
+                }
+            )
+        }
+        moveExclusions?.takeIf { !movingIntoDatabase }?.let { exclusions ->
             MovePagePicker(
                 page = current,
                 exclusions = exclusions,

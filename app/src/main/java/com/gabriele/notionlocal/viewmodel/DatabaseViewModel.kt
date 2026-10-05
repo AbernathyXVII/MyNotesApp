@@ -915,6 +915,23 @@ class DatabaseViewModel(
     }
 
     /**
+     * **"Move to database"** dai tre puntini (dal 05/10/2026): il database
+     * finisce in una pagina nuova del database scelto, aperto dentro di lei
+     * (vedi `PageRepository.moveIntoDatabase`). `onDone` solo se lo
+     * spostamento c'è stato.
+     */
+    fun movePageToDatabase(destination: PageRepository.PageTreeNode, onDone: () -> Unit) {
+        val current = _page.value ?: return
+        val databaseId = destination.pageId ?: return
+        viewModelScope.launch {
+            pageRepository.moveIntoDatabase(current.id, databaseId)?.let { change ->
+                PendingPageUndo.offer(change)
+                onDone()
+            }
+        }
+    }
+
+    /**
      * L'icona del database: un'immagine scelta dall'utente, o null per
      * **nessuna icona**.
      *
