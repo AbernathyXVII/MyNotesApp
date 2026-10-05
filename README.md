@@ -2053,6 +2053,23 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.137 — 05/10/2026 · 17:20 — La vista List senza le linee fra le righe
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 375 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola (con l'immagine di una vista List di Notion):
+> «Nella visualizzazione List dei database, togli le righe orizzontali tra
+> una riga e l'altra»
+
+- **[Rimosso]** Nella vista **List** dei database non c'è più la linea
+  sotto ogni riga: le righe si separano con lo spazio, come su Notion.
+  Il resto della riga (icona, nome, i primi valori a destra, tocco e
+  tocco lungo) è com'era
+- Verificato sul telefono, in Main calendar con una vista List e una
+  seconda riga aggiunte per la prova e poi tolte: le due righe una sotto
+  l'altra, senza linee. Main calendar è tornato sulla vista Table, e il
+  database è identico a prima della prova
+
 ### 🆕 v0.136 — 05/10/2026 · 17:14 — Le celle URL: un tocco apre il link, il tocco lungo lo modifica, copia o incolla
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 375 test
 passati; commit solo in locale)*

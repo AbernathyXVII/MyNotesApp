@@ -4025,8 +4025,9 @@ private fun CalendarWeekRow(
 }
 
 /**
- * La visualizzazione a elenco: le stesse righe senza la griglia, con il
- * nome in evidenza e i valori delle proprietà di fianco, come su Notion.
+ * La visualizzazione a elenco: le stesse righe senza la griglia — e, dal
+ * 05/10/2026, senza le linee fra una riga e l'altra —, con il nome in
+ * evidenza e i valori delle proprietà di fianco, come su Notion.
  *
  * Qui il nome non si scrive sul posto: si tocca la riga e si apre la
  * pagina, che è dove in questa vista si lavora. Il tocco prolungato
@@ -4077,7 +4078,9 @@ private fun ListLayout(
                     }
                 }
             }
-            HorizontalDivider()
+            // Niente linea fra una riga e l'altra (tolta il 05/10/2026,
+            // chiesto dall'utente): come su Notion, le righe si separano
+            // con lo spazio e basta.
         }
     }
 }
