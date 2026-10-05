@@ -6593,9 +6593,15 @@ internal fun TagCell(
 /**
  * La schermata per modificare un tag: nome, eliminazione e colore.
  *
- * Il nome si applica mentre si scrive, non a un pulsante di conferma:
- * rinominare tocca anche le righe che usano quel tag, e vederlo
- * cambiare sotto le dita è più chiaro di un salvataggio invisibile.
+ * **Il nome si vede cambiare mentre si scrive** (la pastiglia in cima), ma
+ * il tag si rinomina **una volta sola, uscendo dalla modifica**: con
+ * "Done", tornando indietro o chiudendo la finestra (dal 05/10/2026).
+ * Fino ad allora si rinominava a ogni lettera, e l'elenco dei tag arriva
+ * dal database un attimo dopo: in quell'attimo la finestra cercava il tag
+ * col nome nuovo, non lo trovava, tornava all'elenco e la tastiera si
+ * chiudeva — l'utente poteva scrivere una lettera sola. E scrivendo
+ * veloce un rinomina poteva partire dal nome vecchio prima che il
+ * precedente fosse salvato, e perdersi.
  */
 @Composable
 private fun TagOptionEditor(
@@ -6607,6 +6613,20 @@ private fun TagOptionEditor(
 ) {
     var name by remember(option.label) { mutableStateOf(option.label) }
     var pickingColor by remember { mutableStateOf(false) }
+    // Già rinominato (o eliminato): l'uscita non deve rifarlo.
+    var settled by remember(option.label) { mutableStateOf(false) }
+    val currentOption by rememberUpdatedState(option)
+    val currentRename by rememberUpdatedState(onRename)
+
+    /** Il nome nuovo, se c'è e se è diverso: un nome vuoto lascia quello di prima. */
+    fun commitName() {
+        if (settled) return
+        settled = true
+        val newName = name.trim()
+        if (newName.isNotEmpty() && newName != currentOption.label) currentRename(newName)
+    }
+    // Chiudendo la finestra, o tornando indietro, il nome scritto vale.
+    DisposableEffect(option.label) { onDispose { commitName() } }
 
     Column(
         modifier = Modifier
@@ -6616,25 +6636,28 @@ private fun TagOptionEditor(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                TagChip(label = option.label, color = option.color)
+                TagChip(label = name.trim().ifEmpty { option.label }, color = option.color)
             }
-            TextButton(onClick = onDone) { Text(Strings.done) }
+            TextButton(onClick = {
+                commitName()
+                onDone()
+            }) { Text(Strings.done) }
         }
         Spacer(modifier = Modifier.size(12.dp))
 
         SheetTextField(
             value = name,
-            onValueChange = { newName ->
-                name = newName.replace("\n", "")
-                onRename(name)
-            },
+            onValueChange = { newName -> name = newName.replace("\n", "") },
             placeholder = DbStrings.tagName,
             leading = Icons.Filled.Notes
         )
 
         Spacer(modifier = Modifier.size(12.dp))
         SheetGroup {
-            SheetAction(Icons.Filled.Delete, Strings.delete, isDestructive = true) { onDelete() }
+            SheetAction(Icons.Filled.Delete, Strings.delete, isDestructive = true) {
+                settled = true
+                onDelete()
+            }
         }
 
         // **Il colore, dallo spettro** (dal 05/10/2026, chiesto dall'utente):
@@ -6752,10 +6775,8 @@ private fun TagPickerSheet(
             TagOptionEditor(
                 option = optionBeingEdited,
                 onDone = { editing = null },
-                onRename = { newLabel ->
-                    onRenameOption(optionBeingEdited.label, newLabel)
-                    editing = newLabel
-                },
+                // Una volta sola, uscendo dalla modifica: vedi `TagOptionEditor`.
+                onRename = { newLabel -> onRenameOption(optionBeingEdited.label, newLabel) },
                 onSetColor = { hex -> onSetOptionColor(optionBeingEdited.label, hex) },
                 onDelete = {
                     onDeleteOption(optionBeingEdited.label)

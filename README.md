@@ -2053,6 +2053,43 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🔧 v0.140.1 — 05/10/2026 · 18:06 — Rinominare un tag: la tastiera non si chiude più alla prima lettera
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 389 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Se voglio rinominare un Select, appena scrivo una lettera o un numero
+> nel rename di un select di un database, la tastiera scompare subito, ma
+> quando lo scrivo per la prima volta non dà problemi»
+
+- **[Bug fix]** Nella modifica di un tag (Select e Multi-select), scrivendo
+  nel nome la tastiera si chiudeva alla prima lettera o cifra. Il motivo:
+  ogni lettera rinominava subito il tag, e l'elenco dei tag arriva dal
+  database un attimo dopo; in quell'attimo la modifica cercava il tag col
+  nome nuovo, non lo trovava, tornava per un istante all'elenco e il campo
+  di testo spariva. Creando un tag non succedeva perché lì si scrive in un
+  altro campo, che non rinomina niente. Scrivendo veloce, poi, un rinomina
+  poteva partire dal nome vecchio prima che il precedente fosse salvato,
+  e perdersi
+  - ora **si scrive quanto si vuole**: la pastiglia in cima mostra il nome
+    mentre lo si scrive, e il tag **si rinomina una volta sola, uscendo
+    dalla modifica** — con "Done", tornando indietro o chiudendo la
+    finestra. Le righe che lo usano prendono il nome nuovo in quel momento
+  - un nome lasciato vuoto tiene quello di prima; "Delete" elimina senza
+    rinominare
+- **[Progetto]** `TagOptionEditor`: il nome resta nel campo e si salva in
+  `commitName` (da "Done" e all'uscita, `DisposableEffect`).
+  `TagRenameTest`: 3 test (con le opzioni che non cambiano, come in
+  quell'attimo: scrivendo lettera per lettera la modifica resta aperta e
+  il tag non si rinomina; "Done" rinomina una volta; chiudendo vale il
+  nome scritto)
+- Verificato sul telefono, in Main calendar con una proprietà Select e un
+  tag "Prova" aggiunti per la prova e poi tolti: scritti "1", "2", "3" e
+  "X" uno alla volta, dopo ognuno la tastiera era ancora aperta (e due
+  cancellazioni pure); "Done" ha rinominato il tag in "Prova12", e
+  scrivendo "A" e chiudendo con "indietro" è diventato "Prova12A". Nel
+  database è cambiata solo l'ora di ultima modifica della riga di prova
+
 ### 🆕 v0.140 — 05/10/2026 · 17:57 — Una seconda regola di ordinamento nei database
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno, dopo il
 backup del database; 386 test passati; commit solo in locale)*
