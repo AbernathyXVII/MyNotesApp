@@ -24,9 +24,6 @@ object Routes {
     const val TEMPLATES = "templates"
     const val SETTINGS = "settings"
 
-    /** "Notifications" della barra laterale (dal 30/09/2026): suono, vibrazione, priorità, pallino. */
-    const val NOTIFICATIONS = "notifications"
-
     /** Settings → Patch Notes (dal 30/09/2026): le versioni dell'app. */
     const val PATCH_NOTES = "patchNotes"
 

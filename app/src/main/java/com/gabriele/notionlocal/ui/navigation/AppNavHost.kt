@@ -40,7 +40,6 @@ import com.gabriele.notionlocal.ui.screen.DatabaseViewScreen
 import com.gabriele.notionlocal.ui.screen.LockGate
 import com.gabriele.notionlocal.ui.screen.NotebookSectionScreen
 import com.gabriele.notionlocal.ui.screen.NotebookScreen
-import com.gabriele.notionlocal.ui.screen.NotificationsScreen
 import com.gabriele.notionlocal.ui.screen.PatchNoteScreen
 import com.gabriele.notionlocal.ui.screen.PatchNotesScreen
 import com.gabriele.notionlocal.ui.screen.NotebooksSidebarSection
@@ -243,7 +242,6 @@ fun AppNavHost(factory: ViewModelFactory) {
         onStartup = { closeSidebar(); navController.navigate(Routes.STARTUP) { launchSingleTop = true } },
         onTemplates = { closeSidebar(); navController.navigate(Routes.TEMPLATES) { launchSingleTop = true } },
         onTrash = { closeSidebar(); navController.navigate(Routes.TRASH) { launchSingleTop = true } },
-        onNotifications = { closeSidebar(); navController.navigate(Routes.NOTIFICATIONS) { launchSingleTop = true } },
         onSettings = { closeSidebar(); navController.navigate(Routes.SETTINGS) { launchSingleTop = true } }
     )
 
@@ -507,10 +505,6 @@ private fun AppRoutes(
                 onBack = { navController.popBackStack() },
                 onOpenPatchNotes = { navController.navigate(Routes.PATCH_NOTES) { launchSingleTop = true } }
             )
-        }
-
-        composable(Routes.NOTIFICATIONS) {
-            NotificationsScreen(onBack = { navController.popBackStack() })
         }
 
         composable(Routes.PATCH_NOTES) {

@@ -353,7 +353,6 @@ object Strings {
     val themeDark get() = t("Dark", "Scuro", "Dunkel", "Sombre", "Oscuro", "深色", "어둡게", "ダーク")
     val themeLight get() = t("Light", "Chiaro", "Hell", "Clair", "Claro", "浅色", "밝게", "ライト")
     val themeSystem get() = t("System", "Sistema", "System", "Système", "Sistema", "跟随系统", "시스템", "システム")
-    val appSounds get() = t("App sounds", "Suoni dell'app", "App-Töne", "Sons de l'app", "Sonidos de la app", "应用声音", "앱 소리", "アプリのサウンド")
     val notificationSound get() = t("Notification sound", "Suono delle notifiche", "Benachrichtigungston", "Son des notifications", "Sonido de notificación", "通知声音", "알림 소리", "通知音")
     val defaultSound get() = t("Default", "Predefinito", "Standard", "Par défaut", "Predeterminado", "默认", "기본값", "デフォルト")
     val chooseFromFiles get() = t("Choose from files", "Scegli dai file", "Aus Dateien wählen", "Choisir dans les fichiers", "Elegir de los archivos", "从文件中选择", "파일에서 선택", "ファイルから選択")

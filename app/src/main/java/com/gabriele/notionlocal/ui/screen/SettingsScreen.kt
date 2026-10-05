@@ -50,11 +50,9 @@ import androidx.compose.material.icons.filled.Animation
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Language
-import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.NewReleases
 import androidx.compose.material.icons.filled.Numbers
 import androidx.compose.material.icons.filled.Public
-import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -90,7 +88,7 @@ import java.time.ZoneId
 import java.time.format.TextStyle
 
 /** Quale finestra di scelta è aperta. */
-private enum class SettingsDialog { THEME, SOUND, MUTE_FOR, ANIMATIONS, NUMBER, LANGUAGE, TIME_ZONE, LOCK_PASSWORD, CLEAR_CACHE, DELETE_ALL }
+private enum class SettingsDialog { THEME, ANIMATIONS, NUMBER, LANGUAGE, TIME_ZONE, LOCK_PASSWORD, CLEAR_CACHE, DELETE_ALL }
 
 /**
  * Le impostazioni. Ogni scelta si salva appena la si fa e vale subito: il
@@ -128,36 +126,14 @@ fun SettingsScreen(onBack: () -> Unit, onOpenPatchNotes: () -> Unit = {}) {
                 onClick = { dialog = SettingsDialog.THEME }
             )
 
-            SectionHeader(Strings.appSounds)
-            SettingsItem(
-                Strings.notificationSound,
-                icon = Icons.Filled.MusicNote,
-                value = AppSettings.notificationSoundName ?: Strings.defaultSound,
-                onClick = { dialog = SettingsDialog.SOUND }
-            )
-            SwitchItem(
-                Strings.turnOffNotifications,
-                checked = AppSettings.notificationsMuted
-            ) { AppSettings.notificationsMuted = it }
-            val mutedUntil = AppSettings.mutedUntil
-            SettingsItem(
-                Strings.turnOffForAWhile,
-                icon = Icons.Filled.Timer,
-                value = mutedUntil?.let { Strings.offUntil(Formats.dateTime(it)) },
-                enabled = !AppSettings.notificationsMuted,
-                onClick = { dialog = SettingsDialog.MUTE_FOR },
-                trailing = if (mutedUntil != null) {
-                    { TextButton(onClick = { AppSettings.mutedUntil = null }) { Text(Strings.turnBackOn) } }
-                } else {
-                    null
-                }
-            )
-            Text(
-                Strings.notificationsAbout,
-                color = NotionGray400,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp)
-            )
+            // **Le notifiche** (dal 05/10/2026 tutte qui, chiesto dall'utente):
+            // suono (anche le suonerie), vibrazione, priorità, pallino
+            // sull'icona, la notifica di prova e le notifiche spente. Prima
+            // questa sezione era "App sounds", con solo suono e notifiche
+            // spente, e il resto stava nella pagina "Notifications" della
+            // barra laterale. Vedi `NotificationSettingsSection`.
+            SectionHeader(Strings.notifications)
+            NotificationSettingsSection()
             HorizontalDivider(color = NotionGray900, modifier = Modifier.padding(vertical = 12.dp))
 
             SettingsItem(
@@ -239,8 +215,6 @@ fun SettingsScreen(onBack: () -> Unit, onOpenPatchNotes: () -> Unit = {}) {
             onSelect = { AppSettings.themeMode = it },
             onDismiss = { dialog = null }
         )
-        SettingsDialog.SOUND -> NotificationSoundDialog(onDismiss = { dialog = null })
-        SettingsDialog.MUTE_FOR -> MuteForDialog(onDismiss = { dialog = null })
         SettingsDialog.ANIMATIONS -> ChoiceDialog(
             title = Strings.animations,
             options = AnimationLevel.entries.map { it to animationLabel(it) },

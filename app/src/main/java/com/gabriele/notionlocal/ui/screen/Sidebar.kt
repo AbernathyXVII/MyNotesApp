@@ -29,7 +29,6 @@ import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.outlined.Description
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.RocketLaunch
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -74,8 +73,6 @@ internal class SidebarActions(
     /** "Templates", sotto "Startup window" (dal 26/09/2026). */
     val onTemplates: () -> Unit,
     val onTrash: () -> Unit,
-    /** "Notifications" (dal 30/09/2026): la pagina delle notifiche. */
-    val onNotifications: () -> Unit,
     val onSettings: () -> Unit
 )
 
@@ -183,7 +180,8 @@ internal fun SidebarContent(
         SidebarItem(Icons.Filled.RocketLaunch, Strings.startupWindow, onClick = actions.onStartup)
         SidebarItem(Icons.Outlined.Description, TemplateStrings.templates, onClick = actions.onTemplates)
         SidebarItem(Icons.Filled.Backup, Strings.backup, enabled = false)
-        SidebarItem(Icons.Filled.Notifications, Strings.notifications, onClick = actions.onNotifications)
+        // "Notifications" non c'è più (dal 05/10/2026, chiesto dall'utente):
+        // le sue scelte stanno in Settings, vedi `NotificationSettingsSection`.
         SidebarItem(Icons.Filled.Delete, Strings.trash, onClick = actions.onTrash)
         SidebarItem(Icons.Filled.FileDownload, Strings.import, enabled = false)
         SidebarItem(Icons.Filled.FileUpload, Strings.export, enabled = false)

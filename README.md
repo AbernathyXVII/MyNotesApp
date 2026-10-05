@@ -2053,6 +2053,46 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.138 — 05/10/2026 · 17:30 — Le notifiche tutte in Settings, e fra i suoni anche le suonerie
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 378 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Nella sidebar c'è l'opzione Notifications, ma c'è anche in Settings.
+> Toglila nella sidebar e metti quello che hai messo di nuovo in Settings.
+> Poi, tra i suoni delle notifiche, metti anche le Ringtones»
+
+- **[Rimosso]** La voce **Notifications** della barra laterale, e la sua
+  pagina (nate con la v0.133)
+- **[Nuova funzionalità]** In **Settings** la sezione che si chiamava
+  "App sounds" (suono e notifiche spente) ora si chiama **Notifications**
+  e ha tutto quello che c'era nella pagina: il suono, **Vibration**,
+  **Priority**, **App icon badge**, **Send a test notification**, "Turn
+  off notifications" e "Turn off for a while", e in cima, se Android le ha
+  spente per l'app, la riga per riaccenderle. Sotto, la nota su cosa
+  valgono (timer e pomodoro suonano sempre)
+- **[Nuova funzionalità]** Nella scelta del suono delle notifiche, oltre ai
+  suoni di notifica (la voce ora si chiama "Notification sounds (default
+  and downloaded)", prima "Phone sounds") ci sono le **suonerie**:
+  **"Ringtones (default and downloaded)"** apre l'elenco delle suonerie
+  del telefono, quelle di serie e quelle aggiunte. Una suoneria è fatta
+  per ripetersi: come ogni suono dell'app, si suona una volta sola e per
+  pochi secondi
+- **[Progetto]** `NotificationsScreen.kt` è diventato
+  `NotificationSettings.kt`: `NotificationSettingsSection`, che Settings
+  mette sotto la sua intestazione, e `NotificationSoundDialog`. Tolti la
+  rotta `Routes.NOTIFICATIONS`, `SidebarActions.onNotifications` e la
+  scritta "App sounds". `NotificationSettingsUiTest`: 3 test (in Settings
+  ci sono tutte le scelte e non c'è più "App sounds"; "Ringtones" apre
+  l'elenco delle suonerie; la barra laterale non ha più "Notifications")
+- Verificato sul telefono: nella barra laterale, dopo Templates, Backup e
+  Trash, nessun "Notifications"; in Settings la sezione Notifications
+  con tutte le voci; "Notification sound" mostra "Notification sounds" e
+  "Ringtones", e "Ringtones" (scelto SecSoundPicker con "Just once") apre
+  l'elenco "Ringtones" di Samsung, con le suonerie personalizzate e
+  quelle di serie. Chiuso senza sceglierne nessuna: il suono resta quello
+  predefinito
+
 ### 🆕 v0.137 — 05/10/2026 · 17:20 — La vista List senza le linee fra le righe
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 375 test
 passati; commit solo in locale)*

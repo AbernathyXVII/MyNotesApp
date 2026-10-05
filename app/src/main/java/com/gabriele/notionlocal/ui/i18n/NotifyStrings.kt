@@ -76,16 +76,30 @@ object NotifyStrings {
         "알림이 남아 있는 동안 notE 아이콘에 점 표시",
         "通知があるあいだ notE のアイコンにドットを表示"
     )
+    /** I suoni di notifica del telefono (fino al 05/10/2026 "Phone sounds": ora ci sono anche le suonerie). */
     val phoneSounds get() = t(
-        "Phone sounds (default and downloaded)",
-        "Suoni del telefono (di serie e scaricati)",
-        "Töne des Telefons (vorinstalliert und heruntergeladen)",
-        "Sons du téléphone (d'origine et téléchargés)",
-        "Sonidos del teléfono (de serie y descargados)",
-        "手机声音（自带和下载的）",
-        "휴대폰 소리(기본 및 다운로드)",
-        "端末のサウンド（標準とダウンロード）"
+        "Notification sounds (default and downloaded)",
+        "Suoni di notifica (di serie e scaricati)",
+        "Benachrichtigungstöne (vorinstalliert und heruntergeladen)",
+        "Sons de notification (d'origine et téléchargés)",
+        "Sonidos de notificación (de serie y descargados)",
+        "通知声音（自带和下载的）",
+        "알림 소리(기본 및 다운로드)",
+        "通知音（標準とダウンロード）"
     )
+    /** Le suonerie del telefono come suono delle notifiche (dal 05/10/2026, chiesto dall'utente). */
+    val ringtones get() = t(
+        "Ringtones (default and downloaded)",
+        "Suonerie (di serie e scaricate)",
+        "Klingeltöne (vorinstalliert und heruntergeladen)",
+        "Sonneries (d'origine et téléchargées)",
+        "Tonos de llamada (de serie y descargados)",
+        "铃声（自带和下载的）",
+        "벨소리(기본 및 다운로드)",
+        "着信音（標準とダウンロード）"
+    )
+    /** Il titolo dell'elenco delle suonerie. */
+    val ringtonesTitle get() = t("Ringtones", "Suonerie", "Klingeltöne", "Sonneries", "Tonos de llamada", "铃声", "벨소리", "着信音")
     val sendTest get() = t("Send a test notification", "Manda una notifica di prova", "Testbenachrichtigung senden", "Envoyer une notification de test", "Enviar una notificación de prueba", "发送测试通知", "테스트 알림 보내기", "テスト通知を送信")
     val testTitle get() = t("notE", "notE", "notE", "notE", "notE", "notE", "notE", "notE")
     val testText get() = t(
