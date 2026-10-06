@@ -71,6 +71,14 @@ interface BlockDao {
     @Query("UPDATE blocks SET type = :type, linkedPageId = :linkedPageId WHERE id = :blockId")
     suspend fun setTypeAndLink(blockId: String, type: BlockType, linkedPageId: String)
 
+    /**
+     * Tipo e pagina richiamata insieme, **col testo svuotato**: la riga che
+     * diventa "Database - Full page" (dal 06/10/2026). Il comando "/…" che
+     * l'ha creata non deve restare nascosto nel collegamento.
+     */
+    @Query("UPDATE blocks SET type = :type, linkedPageId = :linkedPageId, textJson = '[]' WHERE id = :blockId")
+    suspend fun setTypeAndLinkClearingText(blockId: String, type: BlockType, linkedPageId: String)
+
     /** Come setNumberStart: cambia il tipo senza riscrivere il testo della riga. */
     @Query("UPDATE blocks SET type = :type WHERE id = :blockId")
     suspend fun setType(blockId: String, type: BlockType)

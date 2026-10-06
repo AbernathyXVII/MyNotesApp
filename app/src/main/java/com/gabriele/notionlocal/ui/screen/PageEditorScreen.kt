@@ -1104,6 +1104,8 @@ private fun PageEditorContent(
     // "Linked view of data source": su quale riga si sta scegliendo il
     // database da mostrare, e l'elenco fra cui sceglierlo.
     var linkedViewRequest by remember { mutableStateOf<LinkedViewRequest?>(null) }
+    // "Link to page": la riga per cui si sta scegliendo la pagina.
+    var linkToPageFor by remember { mutableStateOf<BlockEntity?>(null) }
     var linkableDatabases by remember { mutableStateOf<List<PageRepository.LinkableDatabase>?>(null) }
     val askLinkedViewSource: (BlockEntity, Boolean) -> Unit = { block, keepText ->
         // La tastiera se ne va sotto la finestra comunque, e la riga che
@@ -1421,6 +1423,17 @@ private fun PageEditorContent(
                         }
                     }
                     SlashAction.LinkedView -> askLinkedViewSource(block, false)
+                    // Prima si sceglie la pagina: il cursore si spegne, la
+                    // tastiera se ne andrebbe comunque sotto la finestra.
+                    SlashAction.LinkToPage -> {
+                        focusManager.clearFocus()
+                        linkToPageFor = block
+                    }
+                    // Come "Page": il database nasce e ci si entra.
+                    SlashAction.FullPageDatabase -> {
+                        focusManager.clearFocus()
+                        viewModel.convertToFullPageDatabase(block) { onNavigateToDatabase(it) }
+                    }
                     SlashAction.NotYet -> Unit
                 }
             }
@@ -2385,8 +2398,31 @@ private fun PageEditorContent(
                     action.layout?.let { viewModel.setDatabaseLayout(databaseId, it) }
                 }
             SlashAction.LinkedView -> askLinkedViewSource(block, true)
-            SlashAction.NotYet -> Unit
+            // Il testo della riga diventa il nome del database, e si resta qui.
+            SlashAction.FullPageDatabase -> viewModel.convertToFullPageDatabase(block, title = text) {}
+            // Non sono in "Turn into" (vedi `TurnIntoList`): il testo andrebbe perso.
+            SlashAction.LinkToPage, SlashAction.NotYet -> Unit
         }
+    }
+
+    linkToPageFor?.let { block ->
+        // Lo stesso albero con la ricerca di "Move to" e di "Page link".
+        val pickScope = rememberCoroutineScope()
+        DestinationPickerSheet(
+            factory = factory,
+            title = EditorStrings.blockType("Link to page"),
+            hint = BlockStrings.linkToPageHint,
+            viewModelKey = "link-to-page",
+            onDismiss = { linkToPageFor = null },
+            onPick = { node ->
+                linkToPageFor = null
+                pickScope.launch {
+                    // Una riga mai aperta si sceglie lo stesso: la sua pagina nasce adesso.
+                    val pageId = node.pageId ?: node.rowId?.let { factory.pageRepository.ensureRowPage(it) }
+                    if (pageId != null) viewModel.convertToPageMention(block, pageId)
+                }
+            }
+        )
     }
 
     linkedViewRequest?.let { request ->
@@ -2409,6 +2445,7 @@ private fun PageEditorContent(
             imageStore = imageStore,
             onTurnInto = applyTurnInto,
             onNavigateToDatabase = onNavigateToDatabase,
+            onNavigateToPage = onNavigateToPage,
             onDismiss = { blockMenuFor = null }
         )
     }
@@ -3322,6 +3359,10 @@ internal sealed class SlashAction {
      * quale, da un elenco (vedi `LinkedSourcePickerSheet`).
      */
     object LinkedView : SlashAction()
+    /** "Link to page": si sceglie una pagina che c'è già, e la riga rimanda a lei (dal 06/10/2026). */
+    object LinkToPage : SlashAction()
+    /** "Database - Full page": un database nuovo che si apre a pagina intera (dal 06/10/2026). */
+    object FullPageDatabase : SlashAction()
     /** Elencata ma non ancora costruita: si vede spenta. */
     object NotYet : SlashAction()
 }
@@ -3373,7 +3414,7 @@ internal val SLASH_ENTRIES: List<SlashEntry> = listOf(
     SlashEntry("Quote", SlashCategory.BASIC, SlashAction.Type(BlockType.QUOTE), Icons.Filled.FormatQuote),
     SlashEntry("Table", SlashCategory.BASIC, SlashAction.Type(BlockType.TABLE), Icons.Filled.TableChart),
     SlashEntry("Divider", SlashCategory.BASIC, SlashAction.Divider, Icons.Filled.Remove),
-    SlashEntry("Link to page", SlashCategory.BASIC, SlashAction.NotYet, Icons.Filled.Link),
+    SlashEntry("Link to page", SlashCategory.BASIC, SlashAction.LinkToPage, Icons.Filled.Link),
 
     SlashEntry("Image", SlashCategory.MEDIA, SlashAction.NotYet, Icons.Filled.Image),
     SlashEntry("Video", SlashCategory.MEDIA, SlashAction.NotYet, Icons.Filled.Videocam),
@@ -3430,7 +3471,7 @@ internal val SLASH_ENTRIES: List<SlashEntry> = listOf(
         SlashAction.Database(null),
         Icons.Filled.TableChart
     ),
-    SlashEntry("Database - Full page", SlashCategory.DATABASE, SlashAction.NotYet, Icons.Filled.OpenInFull),
+    SlashEntry("Database - Full page", SlashCategory.DATABASE, SlashAction.FullPageDatabase, Icons.Filled.OpenInFull),
     // Il database le cui righe sono solo testo: vedi
     // `PageEntity.isSimpleDatabase`. Nasce come tabella, come "Database -
     // Inline", e la vista si cambia poi dalle impostazioni.
@@ -5212,6 +5253,17 @@ private fun BlockRow(
             onNavigateToPage = onNavigateToPage,
             onNavigateToDatabase = onNavigateToDatabase,
             onLongPress = onOpenBlockMenu?.let { open -> { open(block.id) } }
+        )
+        return
+    }
+
+    if (block.type == BlockType.PAGE_MENTION) {
+        PageMentionBlockContent(
+            block = block,
+            viewModel = viewModel,
+            onOpenPage = { page -> if (page.isDatabase) onNavigateToDatabase(page.id) else onNavigateToPage(page.id) },
+            onLongPress = onOpenBlockMenu?.let { open -> { open(block.id) } },
+            modifier = Modifier.padding(start = PAGE_SIDE_PADDING + (depth * 20).dp, end = PAGE_SIDE_PADDING)
         )
         return
     }

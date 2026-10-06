@@ -30,6 +30,12 @@ import androidx.compose.material.icons.filled.GridOn
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.OpenInFull
+import androidx.compose.material.icons.filled.OpenInNew
+import androidx.compose.material.icons.filled.Link
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.runtime.rememberCoroutineScope
+import com.gabriele.notionlocal.ui.i18n.BlockStrings
+import kotlinx.coroutines.launch
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.filled.TableChart
@@ -134,6 +140,8 @@ internal fun BlockActionsHost(
     /** Cosa fa una voce di "Turn into": decide la schermata, come per i menu "/" e "+". */
     onTurnInto: (BlockEntity, SlashEntry) -> Unit,
     onNavigateToDatabase: (String) -> Unit,
+    /** "Open" di un "Link to page" (dal 06/10/2026). */
+    onNavigateToPage: (String) -> Unit = {},
     onDismiss: () -> Unit
 ) {
     val block = blocks.find { it.id == blockId }
@@ -176,6 +184,7 @@ internal fun BlockActionsHost(
     val dataPage = if (sourceId != null) sourcePage else page
 
     var step by remember { mutableStateOf(BlockMenuStep.MENU) }
+    val menuScope = rememberCoroutineScope()
     var moveExclusions by remember { mutableStateOf<PageRepository.MoveExclusions?>(null) }
     var rowPagesToLose by remember { mutableIntStateOf(0) }
 
@@ -210,6 +219,39 @@ internal fun BlockActionsHost(
                         onAddLine = { below ->
                             onDismiss()
                             viewModel.addLineNextTo(block, below)
+                        },
+                        onDelete = {
+                            onDismiss()
+                            viewModel.deleteBlock(block)
+                        }
+                    )
+                } else if (block.type == BlockType.PAGE_MENTION) {
+                    // **"Link to page"** (dal 06/10/2026): aprire la pagina,
+                    // sceglierne un'altra, copiare o togliere il rimando — la
+                    // pagina richiamata non si tocca.
+                    val mentionId = block.attrs.pageId
+                    val mentioned by remember(mentionId) {
+                        if (mentionId == null) flowOf(null) else viewModel.observePageInfo(mentionId)
+                    }.collectAsStateWithLifecycle(initialValue = null)
+                    val target = mentioned
+                    ObjectBlockMenu(
+                        title = target?.title?.ifBlank { Strings.untitled } ?: EditorStrings.blockType("Link to page"),
+                        onAddLine = { below ->
+                            onDismiss()
+                            viewModel.addLineNextTo(block, below)
+                        },
+                        actions = listOfNotNull(
+                            target?.takeIf { it.trashedAt == null }?.let { p ->
+                                ObjectAction(Icons.Filled.OpenInNew, BlockStrings.openPage) {
+                                    onDismiss()
+                                    if (p.isDatabase) onNavigateToDatabase(p.id) else onNavigateToPage(p.id)
+                                }
+                            },
+                            ObjectAction(Icons.Filled.Link, BlockStrings.changePage) { step = BlockMenuStep.PICK_MENTION }
+                        ),
+                        onDuplicate = {
+                            onDismiss()
+                            viewModel.duplicateBlock(block.id, imageStore)
                         },
                         onDelete = {
                             onDismiss()
@@ -343,6 +385,21 @@ internal fun BlockActionsHost(
                 }
             )
         }
+
+        BlockMenuStep.PICK_MENTION -> DestinationPickerSheet(
+            factory = factory,
+            title = EditorStrings.blockType("Link to page"),
+            hint = BlockStrings.linkToPageHint,
+            viewModelKey = "link-to-page",
+            onDismiss = onDismiss,
+            onPick = { node ->
+                onDismiss()
+                menuScope.launch {
+                    val pageId = node.pageId ?: node.rowId?.let { factory.pageRepository.ensureRowPage(it) }
+                    if (pageId != null) viewModel.convertToPageMention(block, pageId)
+                }
+            }
+        )
 
         BlockMenuStep.CALLOUT_ICON -> CalloutIconSheet(
             store = imageStore,
@@ -499,7 +556,50 @@ private class Loaded(val page: PageEntity?)
 private enum class BlockMenuStep {
     MENU, TURN_INTO, COLOR, EDIT_ICON, RENAME, DUPLICATE, MOVE_TO, MOVE_TO_DATABASE, TRASH, CONFIRM_SIMPLE,
     /** L'icona e lo sfondo di un riquadro (dal 06/10/2026). */
-    CALLOUT_ICON, CALLOUT_COLOR
+    CALLOUT_ICON, CALLOUT_COLOR,
+    /** La pagina di un "Link to page" (dal 06/10/2026). */
+    PICK_MENTION
+}
+
+/** Una voce del menu di un blocco che non è testo: aprire, cambiare, scaricare… (dal 06/10/2026). */
+internal class ObjectAction(val icon: ImageVector, val label: String, val onClick: () -> Unit)
+
+/**
+ * **Il menu di un blocco che non è testo** (dal 06/10/2026): un link a una
+ * pagina, un'immagine, un video, un audio, un file, un segnalibro. Le righe
+ * sopra e sotto come per tutti; poi quello che si fa con lui (`actions`);
+ * in fondo copiarlo e toglierlo. Niente "Turn into" né "Color": non ha
+ * testo da trasformare o colorare.
+ */
+@Composable
+private fun ObjectBlockMenu(
+    title: String,
+    onAddLine: (Boolean) -> Unit,
+    actions: List<ObjectAction>,
+    onDuplicate: () -> Unit,
+    onDelete: () -> Unit
+) {
+    MenuTitle(title)
+    AddLineGroup(onAddLine)
+    if (actions.isNotEmpty()) {
+        OptionsGroup {
+            actions.forEachIndexed { index, action ->
+                if (index > 0) HorizontalDivider()
+                OptionRow(icon = action.icon, label = action.label, onClick = action.onClick)
+            }
+        }
+        Spacer(modifier = Modifier.size(12.dp))
+    }
+    OptionsGroup {
+        OptionRow(icon = Icons.Filled.ContentCopy, label = Strings.duplicate, onClick = onDuplicate)
+        HorizontalDivider()
+        OptionRow(
+            icon = Icons.Filled.Delete,
+            label = Strings.delete,
+            tint = MaterialTheme.colorScheme.error,
+            onClick = onDelete
+        )
+    }
 }
 
 /** Il nome inglese del tipo di un blocco, com'è scritto nel catalogo dei menu (`SLASH_ENTRIES`). */
@@ -777,8 +877,10 @@ private fun TurnIntoList(
             fontWeight = FontWeight.Bold
         )
     }
+    // "Link to page" non c'è: il testo della riga andrebbe perso (dal 06/10/2026).
+    val entries = slashEntries().filter { it.action != SlashAction.LinkToPage }
     OptionsGroup {
-        slashEntries().forEachIndexed { index, entry ->
+        entries.forEachIndexed { index, entry ->
             if (index > 0) HorizontalDivider()
             val current = (entry.action as? SlashAction.Type)?.type == block.type
             OptionRow(

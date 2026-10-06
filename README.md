@@ -2053,6 +2053,50 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.148 — 06/10/2026 · 10:15 — "Link to page" e "Database - Full page"
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 419 test
+passati; commit solo in locale)*
+
+Dalla stessa richiesta della v0.146, le due voci, parola per parola:
+> «Link to page (un collegamento ad una pagina all'interno del Workspace
+> come vedi nella quarta foto)»
+
+> «Database full page (un database che abbia come apertura di default
+> quella della pagina, dove rispetto alle altre non sarà inline e me la
+> farà aprire direttamente come pagina come vedi nell'undicesima foto)»
+
+- **[Nuova funzionalità]** **"Link to page"** (dal menu "/" e dal "+"): si
+  sceglie una pagina dall'albero del Workspace, o cercandola per nome (lo
+  stesso di "Move to"; anche le pagine delle righe dei database), e la riga
+  diventa un **rimando** a lei: la sua icona con una **freccetta** e il nome
+  sottolineato, sempre quelli di adesso. Toccandolo si apre la pagina (un
+  database si apre a pagina intera). **La pagina non si sposta**: resta dov'è
+  nell'albero, e questa non diventa sua madre
+- **[Nuova funzionalità]** Tenendo premuto il rimando: **"Open"**, **"Change
+  page"** (si sceglie un'altra pagina), "Duplicate" e "Delete" (toglie il
+  rimando, non la pagina). Se la pagina finisce nel cestino il rimando lo
+  dice ("In the trash") e non la apre; se viene eliminata per sempre diventa
+  "Deleted page"
+- **[Nuova funzionalità]** **"Database - Full page"**: nasce un database che
+  **si apre subito a pagina intera**, e nella pagina resta il suo
+  collegamento (l'icona della tabella e il nome), come un database dopo
+  "Turn into page". Da "Turn into" il testo della riga diventa il nome del
+  database
+- **[Modificato]** "Link to page" non è in "Turn into": il testo della riga
+  andrebbe perso
+- **[Progetto]** `BlockType.PAGE_MENTION`, con la pagina in
+  `BlockAttrs.pageId` e non in `linkedPageId` (che costruisce l'albero);
+  `PageMentionBlock.kt`; `PageRepository.makeFullPageDatabase`. Il menu dei
+  sei puntini dei blocchi che non sono testo è `ObjectBlockMenu`, che
+  useranno anche immagini, video, audio e file. Test: `LinkToPageTest` (4)
+- Verificato sul telefono, in una riga di prova di Main calendar (poi
+  tolta): "/link" → "Link to page" → "Food" fa il rimando con la freccetta;
+  toccandolo si apre Food (solo guardata, niente toccato), e tenendolo
+  premuto c'è il suo menu; "/full" → "Database - Full page" apre il database
+  nuovo a pagina intera, e tornando indietro resta il collegamento
+  "Untitled" con la tabella. Le pagine dell'utente e le righe di Main
+  calendar sono come prima della prova
+
 ### 🆕 v0.147 — 06/10/2026 · 10:08 — "Code": il codice col suo linguaggio e i suoi colori
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 415 test
 passati; commit solo in locale)*

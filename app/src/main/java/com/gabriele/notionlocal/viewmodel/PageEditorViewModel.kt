@@ -260,6 +260,14 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
             saved(blockId); repository.unnestAndConvert(blockId, newType)
         }
 
+        suspend fun setTypeAndAttrs(blockId: String, type: BlockType, attrs: BlockAttrs) {
+            saved(blockId); repository.setBlockTypeAndAttrs(blockId, type, attrs)
+        }
+
+        suspend fun makeFullPageDatabase(blockId: String, title: String?): String {
+            saved(blockId); return repository.makeFullPageDatabase(blockId, title)
+        }
+
         suspend fun setTableCellText(blockId: String, row: Int, col: Int, text: String) {
             saved(blockId); repository.setTableCellText(blockId, row, col, text)
         }
@@ -2971,6 +2979,31 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
                 )
             }
             onReady(targetPageId)
+        }
+    }
+
+    /**
+     * **"Database - Full page"** (dal 06/10/2026): un database nuovo che si
+     * apre a pagina intera; qui resta il suo collegamento. `onReady` riceve
+     * l'id per aprirlo subito, come fa "Page".
+     */
+    fun convertToFullPageDatabase(block: BlockEntity, title: String? = null, onReady: (String) -> Unit) {
+        snapshotForStructuralChange()
+        viewModelScope.launch {
+            val databaseId = structuralEdits.withLock { blocksDb.makeFullPageDatabase(block.id, title) }
+            onReady(databaseId)
+        }
+    }
+
+    /**
+     * **"Link to page"** (dal 06/10/2026): la riga diventa un rimando a una
+     * pagina che sta altrove. La pagina non si sposta e non entra
+     * nell'albero di questa (vedi `BlockType.PAGE_MENTION`).
+     */
+    fun convertToPageMention(block: BlockEntity, pageId: String) {
+        snapshotForStructuralChange()
+        viewModelScope.launch {
+            structuralEdits.withLock { blocksDb.setTypeAndAttrs(block.id, BlockType.PAGE_MENTION, BlockAttrs(pageId = pageId)) }
         }
     }
 

@@ -1921,6 +1921,21 @@ class PageRepository(private val db: AppDatabase) {
         if (updated != block.attrs) blockDao.setAttrs(blockId, BlockAttrs.encode(updated))
     }
 
+    /**
+     * **"Database - Full page"** (dal 06/10/2026): la riga diventa il
+     * collegamento a un database nuovo, che si apre a pagina intera invece di
+     * stare dentro la pagina — come un database dopo "Turn into page". Il
+     * nome è `title` (il testo della riga, da "Turn into") o "Untitled".
+     * Restituisce l'id del database.
+     */
+    suspend fun makeFullPageDatabase(blockId: String, title: String?): String = db.withTransaction {
+        unnestChildren(blockId)
+        val database = PageEntity(title = title?.takeIf { it.isNotBlank() } ?: "Untitled", isDatabase = true)
+        pageDao.insert(database)
+        blockDao.setTypeAndLinkClearingText(blockId, BlockType.PAGE_LINK, database.id)
+        database.id
+    }
+
     /** Una riga diventa un blocco senza testo (immagine, video, link a una pagina…): vedi `BlockDao.setTypeAndAttrs`. */
     suspend fun setBlockTypeAndAttrs(blockId: String, type: BlockType, attrs: BlockAttrs) = db.withTransaction {
         unnestChildren(blockId)
