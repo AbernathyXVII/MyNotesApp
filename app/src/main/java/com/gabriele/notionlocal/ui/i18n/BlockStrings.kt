@@ -20,4 +20,10 @@ object BlockStrings {
     val useEmoji get() = t("Use", "Usa", "Verwenden", "Utiliser", "Usar", "使用", "사용", "使う")
     /** La famiglia di emoji dei riquadri, come la chiama Notion. */
     val calloutEmojis get() = t("Callout", "Riquadro", "Hinweisbox", "Encadré", "Destacado", "标注", "콜아웃", "コールアウト")
+
+    // --- Codice ---
+
+    val copyCode get() = t("Copy code", "Copia il codice", "Code kopieren", "Copier le code", "Copiar código", "复制代码", "코드 복사", "コードをコピー")
+    val codeCopied get() = t("Code copied", "Codice copiato", "Code kopiert", "Code copié", "Código copiado", "代码已复制", "코드를 복사했습니다", "コードをコピーしました")
+    val searchLanguage get() = t("Search for a language…", "Cerca un linguaggio…", "Sprache suchen…", "Rechercher un langage…", "Buscar un lenguaje…", "搜索语言…", "언어 검색…", "言語を検索…")
 }

@@ -2053,6 +2053,43 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.147 — 06/10/2026 · 10:08 — "Code": il codice col suo linguaggio e i suoi colori
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 415 test
+passati; commit solo in locale)*
+
+Dalla stessa richiesta della v0.146, la voce del codice, parola per parola:
+> «Code (una finestrella che mi consente di scrivere del codice da
+> programmazione con la scelta di selezionare i più usati linguaggi di
+> programmazione come vedi nell'ottava foto)»
+
+- **[Nuova funzionalità]** **"Code"** (dal menu "/" e dal "+"): un
+  **riquadro** col carattere a larghezza fissa. In alto a sinistra il
+  **linguaggio** (di partenza JavaScript, come su Notion): toccandolo si
+  apre l'elenco dei sessanta più usati, con la ricerca in cima e il segno
+  accanto a quello scelto. In alto a destra il pulsante che **copia tutto il
+  codice** ("Code copied")
+- **[Nuova funzionalità]** **Il codice si colora** secondo il linguaggio,
+  coi colori dei temi "One" (scuro e chiaro): parole chiave viola, stringhe
+  verdi, commenti grigi in corsivo, numeri arancioni, funzioni azzurre, tipi
+  gialli. "Plain Text" e "Diff" restano senza colori
+- **[Nuova funzionalità]** Nel codice **l'Invio va sempre a capo dentro**, e
+  la tastiera non mette maiuscole e non corregge le parole. Mentre si scrive
+  codice la barra non mostra "Aa" né il pennello, e i sei puntini non hanno
+  "Color": i colori sono quelli del linguaggio. Hanno invece "Delete"
+- **[Nuova funzionalità]** **Backspace in un codice vuoto** lo fa tornare una
+  riga di testo; **"Turn into"** verso il testo fa di ogni riga di codice una
+  riga di testo
+- **[Progetto]** `CodeBlock.kt` (il blocco e la scelta del linguaggio),
+  `CodeHighlight.kt` (`CODE_LANGUAGES` e `highlightCode`); il linguaggio sta
+  in `BlockAttrs.language`. Test: `CodeHighlightTest` (5)
+- Verificato sul telefono, in una riga di prova di Main calendar (poi
+  tolta): "/code" fa il riquadro "JavaScript"; `const x = 1`, `// nota`,
+  `alert(x)` su tre righe, colorati; "Python" dalla ricerca "pyth" cambia i
+  colori (lì `const` e `//` non vogliono dire niente); il pulsante copia
+  ("Code copied"); "Turn into → Text" fa tre righe di testo; backspace in
+  un codice vuoto lo fa tornare testo. Le righe di Main calendar sono come
+  prima della prova
+
 ### 🆕 v0.146 — 06/10/2026 · 09:58 — "Callout" e "Quote": il riquadro con l'icona e la citazione
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 410 test
 passati; commit solo in locale)*

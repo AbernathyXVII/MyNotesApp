@@ -33,7 +33,7 @@ data class BlockAttrs(
     val size: Long? = null,
     /** L'immagine: quanto è larga, in frazione della larghezza della pagina (da 0,2 a 1). */
     val width: Float? = null,
-    /** Il codice: la lingua scelta, col nome com'è nell'elenco (`CODE_LANGUAGES`). */
+    /** Il codice: il linguaggio scelto, col nome com'è nell'elenco (`CODE_LANGUAGES`). */
     val language: String? = null,
     /** Il riquadro: l'emoji dell'icona; null = 💡, "" = nessuna icona. */
     val icon: String? = null,

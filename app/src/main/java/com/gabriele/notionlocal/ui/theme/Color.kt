@@ -78,3 +78,7 @@ val FloatingButtonBackground: Color get() = themed(0xB3505050, 0xB3E0E0DE)
 // non ne ha scelto uno: un grigio più chiaro della pagina, che la stacca
 // senza colorarla, come su Notion.
 val CalloutBackground: Color get() = themed(0xFF373737, 0xFFF1F1EF)
+
+// Lo sfondo del blocco "Code" (dal 06/10/2026): appena staccato dalla pagina,
+// più scuro del riquadro, perché i colori del codice si leggano bene.
+val CodeBackground: Color get() = themed(0xFF252525, 0xFFF7F6F3)

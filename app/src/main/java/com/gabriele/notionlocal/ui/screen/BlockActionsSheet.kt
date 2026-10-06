@@ -225,7 +225,8 @@ internal fun BlockActionsHost(
                             viewModel.addLineNextTo(block, below)
                         },
                         onTurnInto = { step = BlockMenuStep.TURN_INTO },
-                        onColor = { step = BlockMenuStep.COLOR },
+                        // Il codice ha i colori del suo linguaggio: niente "Color".
+                        onColor = if (block.type == BlockType.CODE) null else { { step = BlockMenuStep.COLOR } },
                         onDuplicate = {
                             onDismiss()
                             viewModel.duplicateBlock(block.id, imageStore)
@@ -573,7 +574,8 @@ private fun TextBlockMenu(
     title: String,
     onAddLine: (Boolean) -> Unit,
     onTurnInto: () -> Unit,
-    onColor: () -> Unit,
+    /** Null per il codice, che ha i colori del suo linguaggio. */
+    onColor: (() -> Unit)?,
     onDuplicate: () -> Unit,
     /** Il riquadro: la sua icona. Null per gli altri. */
     onEditIcon: (() -> Unit)? = null,
@@ -586,8 +588,10 @@ private fun TextBlockMenu(
     AddLineGroup(onAddLine)
     OptionsGroup {
         OptionRow(icon = Icons.Filled.Autorenew, label = EditorStrings.turnInto, trailing = { Chevron() }, onClick = onTurnInto)
-        HorizontalDivider()
-        OptionRow(icon = Icons.Filled.Brush, label = EditorStrings.color, trailing = { Chevron() }, onClick = onColor)
+        if (onColor != null) {
+            HorizontalDivider()
+            OptionRow(icon = Icons.Filled.Brush, label = EditorStrings.color, trailing = { Chevron() }, onClick = onColor)
+        }
         if (onEditIcon != null) {
             HorizontalDivider()
             OptionRow(icon = Icons.Filled.EmojiEmotions, label = EditorStrings.editIcon, trailing = { Chevron() }, onClick = onEditIcon)

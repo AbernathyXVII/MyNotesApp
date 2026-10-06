@@ -1963,7 +1963,9 @@ private fun PageEditorContent(
             // nella stessa riga invece di impilarsi.
             if (showBar) {
                 val focusedBlock = blocks.find { it.id == focusedBlockId }
-                val aaAvailable = focusedBlock != null
+                // Il codice ha i suoi colori, quelli del linguaggio: niente
+                // Aa né pennello (dal 06/10/2026).
+                val aaAvailable = focusedBlock != null && focusedBlock.type != BlockType.CODE
                 // **La barra se ne va insieme alla tastiera.**
                 //
                 // Il suo bordo inferiore sta appoggiato sopra la
@@ -3376,7 +3378,7 @@ internal val SLASH_ENTRIES: List<SlashEntry> = listOf(
     SlashEntry("Image", SlashCategory.MEDIA, SlashAction.NotYet, Icons.Filled.Image),
     SlashEntry("Video", SlashCategory.MEDIA, SlashAction.NotYet, Icons.Filled.Videocam),
     SlashEntry("Audio", SlashCategory.MEDIA, SlashAction.NotYet, Icons.Filled.VolumeUp),
-    SlashEntry("Code", SlashCategory.MEDIA, SlashAction.NotYet, Icons.Filled.Code),
+    SlashEntry("Code", SlashCategory.MEDIA, SlashAction.Type(BlockType.CODE), Icons.Filled.Code),
     SlashEntry("File", SlashCategory.MEDIA, SlashAction.NotYet, Icons.Filled.AttachFile),
     SlashEntry("Web bookmark", SlashCategory.MEDIA, SlashAction.NotYet, Icons.Filled.Bookmark),
 
@@ -5117,6 +5119,21 @@ private fun BlockRow(
 ) {
     if (block.type == BlockType.TABLE) {
         TableBlockContent(block = block, depth = depth, viewModel = viewModel)
+        return
+    }
+
+    // Il codice ha un campo tutto suo: vedi `CodeBlockContent`.
+    if (block.type == BlockType.CODE) {
+        val codeFocusPark = LocalFocusPark.current
+        CodeBlockContent(
+            block = block,
+            viewModel = viewModel,
+            focusRequestBlockId = focusRequestBlockId,
+            onFocusChanged = onFocusChanged,
+            locked = LocalPageLocked.current,
+            onUnmade = { codeFocusPark?.requestFocus() },
+            modifier = Modifier.padding(start = PAGE_SIDE_PADDING + NESTED_INDENT * depth, end = PAGE_SIDE_PADDING)
+        )
         return
     }
 

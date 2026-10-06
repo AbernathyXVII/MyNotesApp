@@ -1175,7 +1175,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
             // richiesta la tastiera si chiudeva e bisognava ritoccare la
             // riga per cominciare. Su Notion invece si scrive subito.
             // Lo stesso per il riquadro e la citazione (dal 06/10/2026).
-            val focusable = newType == BlockType.TOGGLE || newType == BlockType.CALLOUT || newType == BlockType.QUOTE
+            val focusable = newType == BlockType.TOGGLE || newType in MULTILINE_TYPES
             if (focusable && block.type != newType) {
                 delay(IME_SETTLE_DELAY_MS)
                 _focusRequestBlockId.value = block.id
