@@ -55,7 +55,7 @@ import kotlinx.serialization.json.Json
         NotebookEntity::class,
         NotebookSectionEntity::class
     ],
-    version = 51,
+    version = 52,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -753,6 +753,18 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /**
+         * 51 → 52 (06/10/2026): le voci in più dei blocchi nuovi — riquadro,
+         * citazione, codice, immagine, video, audio, file, segnalibro, link a
+         * una pagina — in `BlockEntity.attrsJson` (vedi `BlockAttrs`). I
+         * blocchi che c'erano non ne hanno: "{}".
+         */
+        private val MIGRATION_51_52 = object : Migration(51, 52) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE blocks ADD COLUMN attrsJson TEXT NOT NULL DEFAULT '{}'")
+            }
+        }
+
+        /**
          * Solo per i test: chiude il database e lo dimentica, così il
          * `getInstance` dopo riapre il file da capo (e ne esegue le
          * migrazioni). Senza, il secondo test troverebbe il database del
@@ -816,7 +828,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_47_48,
                         MIGRATION_48_49,
                         MIGRATION_49_50,
-                        MIGRATION_50_51
+                        MIGRATION_50_51,
+                        MIGRATION_51_52
                     )
                     .build()
                 INSTANCE = instance

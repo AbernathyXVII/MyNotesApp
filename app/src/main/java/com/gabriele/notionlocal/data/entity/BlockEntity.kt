@@ -33,7 +33,36 @@ enum class BlockType {
      * e il testo, che è quello che la notifica mostrerà. È un'isola: il
      * testo si scrive nel suo campo, l'ora si cambia toccandola.
      */
-    NOTIFICATION
+    NOTIFICATION,
+
+    // **I blocchi del menu "/" che c'erano spenti** (dal 06/10/2026,
+    // chiesti dall'utente). Quello che hanno in più del testo — l'icona del
+    // riquadro, il file, l'indirizzo, la lingua del codice — sta in
+    // `attrsJson` (vedi `BlockAttrs`).
+
+    /** Un riquadro colorato con un'icona, per il testo che deve saltare all'occhio. Si scrive su più righe. */
+    CALLOUT,
+    /** Una citazione: la riga spessa a sinistra e il testo accanto, su più righe. */
+    QUOTE,
+    /** Del codice, in un riquadro col carattere a larghezza fissa e la lingua scelta. */
+    CODE,
+    /** Un'immagine caricata dal telefono. */
+    IMAGE,
+    /** Un video caricato dal telefono o preso da un link. */
+    VIDEO,
+    /** Un file audio caricato dal telefono o preso da un link. */
+    AUDIO,
+    /** Un file qualsiasi, da aprire o salvare altrove. */
+    FILE,
+    /** Un link a un sito, con titolo e immagine quando il sito li dà. */
+    BOOKMARK,
+    /**
+     * **"Link to page"**: un rimando a una pagina che sta da un'altra parte.
+     * A differenza di `PAGE_LINK` non la mette dentro questa pagina: la
+     * pagina richiamata è in `BlockAttrs.pageId`, non in `linkedPageId`,
+     * che è quello che costruisce l'albero delle pagine.
+     */
+    PAGE_MENTION
 }
 
 /**
@@ -116,5 +145,8 @@ data class BlockEntity(
     var orderIndex: Int = 0,
     // Usato solo se type == NOTIFICATION: quando arriva la notifica, in
     // millisecondi (dalla versione 32 del database).
-    var notifyAt: Long? = null
+    var notifyAt: Long? = null,
+    // Quello che i blocchi del 06/10/2026 hanno in più del testo, in JSON:
+    // vedi `BlockAttrs` (dalla versione 52 del database). "{}" per tutti gli altri.
+    var attrsJson: String = "{}"
 )

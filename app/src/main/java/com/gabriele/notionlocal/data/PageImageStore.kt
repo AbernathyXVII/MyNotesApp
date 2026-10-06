@@ -64,7 +64,9 @@ class PageImageStore(context: Context) {
         runCatching {
             val source = File(directory, name)
             if (!source.exists()) return@runCatching null
-            val copyName = newName()
+            // Con la sua estensione: un video copiato resta un ".mp4", e
+            // l'app che lo apre lo riconosce (dal 06/10/2026, coi file dei blocchi).
+            val copyName = newName(source.extension.ifBlank { IMAGE_EXTENSION })
             source.copyTo(File(directory, copyName))
             copyName
         }.getOrNull()
@@ -180,10 +182,11 @@ class PageImageStore(context: Context) {
         return bounds.outWidth > 0 && bounds.outHeight > 0
     }
 
-    private fun newName() = "${UUID.randomUUID()}.img"
+    private fun newName(extension: String = IMAGE_EXTENSION) = "${UUID.randomUUID()}.$extension"
 
     private companion object {
         const val DIRECTORY = "page-images"
+        const val IMAGE_EXTENSION = "img"
 
         /** Sei megapixel in memoria sono ventiquattro megabyte: è il tetto. */
         const val MAX_PIXELS = 6_000_000L

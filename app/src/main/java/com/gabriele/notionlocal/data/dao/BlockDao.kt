@@ -75,6 +75,18 @@ interface BlockDao {
     @Query("UPDATE blocks SET type = :type WHERE id = :blockId")
     suspend fun setType(blockId: String, type: BlockType)
 
+    /** Cambia solo le voci in più di un blocco (`BlockAttrs`): il file, l'icona, la lingua… */
+    @Query("UPDATE blocks SET attrsJson = :attrsJson WHERE id = :blockId")
+    suspend fun setAttrs(blockId: String, attrsJson: String)
+
+    /**
+     * Una riga diventa un blocco senza testo da scrivere — immagine, video,
+     * file, link a una pagina…: tipo e voci insieme, e il testo svuotato
+     * (il comando "/…" che l'ha creata non deve restare nascosto lì dentro).
+     */
+    @Query("UPDATE blocks SET type = :type, attrsJson = :attrsJson, textJson = '[]' WHERE id = :blockId")
+    suspend fun setTypeAndAttrs(blockId: String, type: BlockType, attrsJson: String)
+
     /**
      * Fa posto: sposta avanti di `by` la numerazione di tutti i blocchi
      * fratelli da `fromIndex` in poi.

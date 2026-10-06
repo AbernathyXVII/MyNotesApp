@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.DriveFileMove
 import androidx.compose.material.icons.filled.TableRows
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.EmojiEmotions
+import androidx.compose.material.icons.filled.FormatColorFill
 import androidx.compose.material.icons.filled.GridOn
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
@@ -68,6 +69,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gabriele.notionlocal.data.PageImageStore
 import com.gabriele.notionlocal.data.entity.BlockEntity
 import com.gabriele.notionlocal.data.entity.BlockType
+import com.gabriele.notionlocal.data.entity.MULTILINE_TYPES
+import com.gabriele.notionlocal.data.entity.attrs
 import com.gabriele.notionlocal.data.entity.PageEntity
 import com.gabriele.notionlocal.data.repository.PageRepository
 import com.gabriele.notionlocal.ui.i18n.EditorStrings
@@ -226,6 +229,27 @@ internal fun BlockActionsHost(
                         onDuplicate = {
                             onDismiss()
                             viewModel.duplicateBlock(block.id, imageStore)
+                        },
+                        // Il riquadro ha in più l'icona e lo sfondo (dal
+                        // 06/10/2026); riquadro, citazione e codice si
+                        // tolgono anche da qui, come scatole a sé.
+                        onEditIcon = if (block.type == BlockType.CALLOUT) {
+                            { step = BlockMenuStep.CALLOUT_ICON }
+                        } else {
+                            null
+                        },
+                        onBackground = if (block.type == BlockType.CALLOUT) {
+                            { step = BlockMenuStep.CALLOUT_COLOR }
+                        } else {
+                            null
+                        },
+                        onDelete = if (block.type in MULTILINE_TYPES) {
+                            {
+                                onDismiss()
+                                viewModel.deleteBlock(block)
+                            }
+                        } else {
+                            null
                         }
                     )
                 } else {
@@ -318,6 +342,28 @@ internal fun BlockActionsHost(
                 }
             )
         }
+
+        BlockMenuStep.CALLOUT_ICON -> CalloutIconSheet(
+            store = imageStore,
+            onEmoji = { emoji -> viewModel.updateBlockAttrs(block.id) { it.copy(icon = emoji, iconImage = null) } },
+            onImage = { file -> viewModel.updateBlockAttrs(block.id) { it.copy(iconImage = file) } },
+            onRemove = { viewModel.updateBlockAttrs(block.id) { it.copy(icon = "", iconImage = null) } },
+            onDismiss = onDismiss
+        )
+
+        BlockMenuStep.CALLOUT_COLOR -> ColorPickerSheet(
+            initialHex = block.attrs.color,
+            background = true,
+            onDismiss = onDismiss,
+            onSwitchTarget = {},
+            onPick = { hex ->
+                onDismiss()
+                // Senza colore torna il grigio di sempre.
+                viewModel.updateBlockAttrs(block.id) { it.copy(color = hex) }
+            },
+            showTargetSwitch = false,
+            previewLabel = EditorStrings.backgroundColor
+        )
 
         BlockMenuStep.EDIT_ICON -> if (dataPage != null) {
             // L'icona che la vista mostra è quella del database di origine.
@@ -449,7 +495,11 @@ internal fun BlockActionsHost(
 private class Loaded(val page: PageEntity?)
 
 /** Le schermate del menu del blocco: il menu, la lista di "Turn into", e le finestre che si aprono dalle voci. */
-private enum class BlockMenuStep { MENU, TURN_INTO, COLOR, EDIT_ICON, RENAME, DUPLICATE, MOVE_TO, MOVE_TO_DATABASE, TRASH, CONFIRM_SIMPLE }
+private enum class BlockMenuStep {
+    MENU, TURN_INTO, COLOR, EDIT_ICON, RENAME, DUPLICATE, MOVE_TO, MOVE_TO_DATABASE, TRASH, CONFIRM_SIMPLE,
+    /** L'icona e lo sfondo di un riquadro (dal 06/10/2026). */
+    CALLOUT_ICON, CALLOUT_COLOR
+}
 
 /** Il nome inglese del tipo di un blocco, com'è scritto nel catalogo dei menu (`SLASH_ENTRIES`). */
 private fun blockTypeLabel(type: BlockType): String =
@@ -524,7 +574,13 @@ private fun TextBlockMenu(
     onAddLine: (Boolean) -> Unit,
     onTurnInto: () -> Unit,
     onColor: () -> Unit,
-    onDuplicate: () -> Unit
+    onDuplicate: () -> Unit,
+    /** Il riquadro: la sua icona. Null per gli altri. */
+    onEditIcon: (() -> Unit)? = null,
+    /** Il riquadro: il suo sfondo. Null per gli altri. */
+    onBackground: (() -> Unit)? = null,
+    /** Riquadro, citazione e codice: toglierli. Null per le righe di testo. */
+    onDelete: (() -> Unit)? = null
 ) {
     MenuTitle(title)
     AddLineGroup(onAddLine)
@@ -532,10 +588,27 @@ private fun TextBlockMenu(
         OptionRow(icon = Icons.Filled.Autorenew, label = EditorStrings.turnInto, trailing = { Chevron() }, onClick = onTurnInto)
         HorizontalDivider()
         OptionRow(icon = Icons.Filled.Brush, label = EditorStrings.color, trailing = { Chevron() }, onClick = onColor)
+        if (onEditIcon != null) {
+            HorizontalDivider()
+            OptionRow(icon = Icons.Filled.EmojiEmotions, label = EditorStrings.editIcon, trailing = { Chevron() }, onClick = onEditIcon)
+        }
+        if (onBackground != null) {
+            HorizontalDivider()
+            OptionRow(icon = Icons.Filled.FormatColorFill, label = EditorStrings.backgroundColor, trailing = { Chevron() }, onClick = onBackground)
+        }
     }
     Spacer(modifier = Modifier.size(12.dp))
     OptionsGroup {
         OptionRow(icon = Icons.Filled.ContentCopy, label = Strings.duplicate, onClick = onDuplicate)
+        if (onDelete != null) {
+            HorizontalDivider()
+            OptionRow(
+                icon = Icons.Filled.Delete,
+                label = Strings.delete,
+                tint = MaterialTheme.colorScheme.error,
+                onClick = onDelete
+            )
+        }
     }
 }
 

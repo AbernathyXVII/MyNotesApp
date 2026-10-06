@@ -73,3 +73,8 @@ val FavoriteStar = Color(0xFFE3B341)
 // copertina scura come sopra una chiara e la lascia intravedere. In
 // chiaro è più chiaro, così l'icona scura ci sta sopra.
 val FloatingButtonBackground: Color get() = themed(0xB3505050, 0xB3E0E0DE)
+
+// Lo sfondo di un riquadro ("Callout", dal 06/10/2026), quando l'utente
+// non ne ha scelto uno: un grigio più chiaro della pagina, che la stacca
+// senza colorarla, come su Notion.
+val CalloutBackground: Color get() = themed(0xFF373737, 0xFFF1F1EF)

@@ -4,6 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gabriele.notionlocal.data.PageImageStore
 import com.gabriele.notionlocal.data.entity.BlockEntity
+import com.gabriele.notionlocal.data.entity.BlockAttrs
+import com.gabriele.notionlocal.data.entity.MEDIA_TYPES
+import com.gabriele.notionlocal.data.entity.MULTILINE_TYPES
 import com.gabriele.notionlocal.data.entity.BlockType
 import com.gabriele.notionlocal.data.entity.DatabaseLayout
 import com.gabriele.notionlocal.data.entity.PageEditEntity
@@ -1132,6 +1135,20 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
     fun updateBlockType(block: BlockEntity, newType: BlockType) {
         snapshotForStructuralChange()
         val liftChildren = newType != BlockType.TOGGLE && hasChildren(block.id)
+        // Un riquadro, una citazione o del codice su più righe che diventano
+        // testo: le righe diventano blocchi (vedi `convertMultiline`).
+        val current = _blocks.value.find { it.id == block.id } ?: block
+        if (current.type in MULTILINE_TYPES && newType !in MULTILINE_TYPES) {
+            viewModelScope.launch {
+                structuralEdits.withLock { repository.convertMultiline(block.id, newType) }
+                if (newType == BlockType.TOGGLE) {
+                    blocksDb.setBlockExpanded(block.id, true)
+                    delay(IME_SETTLE_DELAY_MS)
+                    _focusRequestBlockId.value = block.id
+                }
+            }
+            return
+        }
         viewModelScope.launch {
             // **Un toggle che smette di esserlo lascia uscire i suoi figli.**
             // Solo un toggle mostra le righe che ha dentro: cambiandogli
@@ -1157,7 +1174,9 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
             // in cui si stava scrivendo non è più il suo, e senza questa
             // richiesta la tastiera si chiudeva e bisognava ritoccare la
             // riga per cominciare. Su Notion invece si scrive subito.
-            if (newType == BlockType.TOGGLE && block.type != BlockType.TOGGLE) {
+            // Lo stesso per il riquadro e la citazione (dal 06/10/2026).
+            val focusable = newType == BlockType.TOGGLE || newType == BlockType.CALLOUT || newType == BlockType.QUOTE
+            if (focusable && block.type != newType) {
                 delay(IME_SETTLE_DELAY_MS)
                 _focusRequestBlockId.value = block.id
             }
@@ -1832,6 +1851,27 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         }
     }
 
+    /**
+     * **Invio su una riga vuota in fondo a un riquadro o a una citazione**
+     * (dal 06/10/2026): si esce. La riga vuota se ne va (`kept` è il testo
+     * senza di lei) e sotto nasce una riga di testo col cursore dentro. Gli
+     * altri Invio vanno a capo dentro il blocco, che si allunga.
+     */
+    fun leaveMultilineBlock(block: BlockEntity, kept: List<RichTextSpan>) {
+        updateBlockSpans(block, kept)
+        addLineNextTo(block, below = true)
+    }
+
+    /**
+     * Cambia le voci in più di un blocco (`BlockAttrs`): l'icona o il colore
+     * di un riquadro, la lingua del codice, il file di un'immagine… Si può
+     * annullare come ogni altra modifica.
+     */
+    fun updateBlockAttrs(blockId: String, change: (BlockAttrs) -> BlockAttrs) {
+        snapshotForStructuralChange()
+        viewModelScope.launch { repository.updateBlockAttrs(blockId, change) }
+    }
+
     /** Dove sta il cursore dentro la riga `blockId`, se è lì che si sta scrivendo. */
     private fun caretInLine(blockId: String): Int? {
         val selection = liveSelection ?: return null
@@ -1928,7 +1968,10 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
             .sortedBy { it.orderIndex }
         val last = topLevel.lastOrNull()
 
-        if (last != null && isFocusableBlockType(last.type)) {
+        // Sotto un riquadro, una citazione o del codice si scrive su una riga
+        // nuova, come su Notion: rientrarci dentro non è quello che si
+        // intende toccando sotto.
+        if (last != null && isFocusableBlockType(last.type) && last.type !in MULTILINE_TYPES) {
             viewModelScope.launch {
                 delay(IME_SETTLE_DELAY_MS)
                 _focusRequestBlockId.value = last.id
@@ -2001,7 +2044,9 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         type != BlockType.DIVIDER &&
             type != BlockType.TABLE &&
             type != BlockType.PAGE_LINK &&
-            type != BlockType.DATABASE_LINK
+            type != BlockType.DATABASE_LINK &&
+            type != BlockType.PAGE_MENTION &&
+            type !in MEDIA_TYPES
 
     /**
      * I tipi "di testo scorrevole": vivono uniti in un unico campo di
@@ -2340,6 +2385,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
      */
     fun backspaceAtIslandStart(block: BlockEntity): Boolean {
         if (block.type == BlockType.TOGGLE) return unmakeToggle(block)
+        if (block.type in MULTILINE_TYPES) return unmakeMultiline(block)
         // La riga-notifica, col backspace a inizio riga, torna testo come
         // la casella da spuntare: la notifica se ne va, il testo resta.
         if (block.type != BlockType.CHECKBOX && block.type != BlockType.NOTIFICATION) {
@@ -2376,6 +2422,19 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
      * che si porta via mezza pagina nascosta dentro un toggle chiuso
      * sarebbe il modo peggiore di perdere del testo.
      */
+    private fun unmakeMultiline(block: BlockEntity): Boolean {
+        // **Backspace a inizio di un riquadro o di una citazione** (dal
+        // 06/10/2026): torna testo normale, come su Notion, con tutte le sue
+        // righe. Un altro backspace la unisce alla riga sopra.
+        snapshotForStructuralChange()
+        viewModelScope.launch {
+            structuralEdits.withLock { repository.convertMultiline(block.id, BlockType.PARAGRAPH) }
+            _pendingCaret.value = block.id to 0
+            _focusRequestBlockId.value = block.id
+        }
+        return true
+    }
+
     private fun unmakeToggle(block: BlockEntity): Boolean {
         val current = _blocks.value.find { it.id == block.id } ?: return false
         snapshotForStructuralChange()

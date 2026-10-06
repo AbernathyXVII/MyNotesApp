@@ -3,12 +3,13 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <!--
-      **Nessun permesso di rete.** Fino al 25/09/2026 c'era, per una cosa
-      sola: scaricare l'immagine di un link incollato dall'utente. Tolto
-      il link (su sua richiesta, le immagini si caricano dal telefono), se
-      n'è andato anche il permesso: l'app non si collega a niente. I font
-      cinesi e giapponesi li scarica Google Play Services per conto suo,
-      col permesso suo.
+      **La rete, di nuovo** (dal 06/10/2026, chiesto dall'utente). Fino al
+      25/09/2026 c'era per una cosa sola, scaricare l'immagine di un link, ed
+      era stata tolta con lui. Ora serve ai blocchi nuovi: i video presi da un
+      link (YouTube nel suo lettore, gli altri nel lettore dell'app) e le
+      anteprime dei segnalibri. Le note restano sul telefono: in rete va solo
+      quello che l'utente incolla in quei blocchi. I font cinesi e giapponesi
+      li scarica Google Play Services per conto suo, col permesso suo.
 
       **Notifiche e sveglie** (dal 25/09/2026): i promemoria di
       "/notification" e delle date dei database, e la fine di timer e
@@ -21,6 +22,7 @@
       serve a rimetterle.
     -->
 
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <uses-permission

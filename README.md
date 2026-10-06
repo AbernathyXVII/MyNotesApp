@@ -2053,6 +2053,103 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.146 — 06/10/2026 · 09:58 — "Callout" e "Quote": il riquadro con l'icona e la citazione
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 410 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola (con undici foto di Notion):
+> «Quando tocco il + nella Toolbar e quando scrivo /, ci sono delle feature
+> che ti ho fatto scrivere ma che non hai ancora implementato. Ora è il
+> momento di farlo. Attiva:
+> - Callout (una finestrella ingrandibile con un colore in background di
+>   default diverso da quello dell'app come vedi nella prima foto dove posso
+>   scriverci qualcosa che attiri l'attenzione. Mettici anche un'icona che
+>   posso modificare come vedi nella seconda foto, in base all'aggiunta delle
+>   icone che ti ho fatto mettere)
+> - Quote (una semplice linea verticale spessa come vedi nella terza foto)
+> - Link to page (un collegamento ad una pagina all'interno del Workspace
+>   come vedi nella quarta foto)
+> - Image (mettere un'immagine come vedi nella quinta foto esclusivamente con
+>   un upload diretto: posso redimensionarla, aprirla, zoomarla, scaricarla,
+>   e spostarla da qualche altra parte di default sempre in fondo alla
+>   pagina di destinazione)
+> - Video (mettere un video tramite upload o tramite link come vedi nella
+>   sesta foto, che mi permette o di riprodurlo direttamente sull'embed
+>   dell'app, con play, pause, resume, e la barra di riproduzione che mi
+>   consente di andare avanti o indietro, tipo con il pallino come Youtube, o
+>   di aprirlo o nel browser o sull' app corrispondente se esiste)
+> - Audio (mettere un file audio che posso riprodurre direttamente sull'app
+>   con play, pause, resume, e la barra di riproduzione che mi consente di
+>   andare avanti o indietro, come vedi nella settima foto)
+> - Code (una finestrella che mi consente di scrivere del codice da
+>   programmazione con la scelta di selezionare i più usati linguaggi di
+>   programmazione come vedi nell'ottava foto)
+> - File (mettere un file che posso aprire o scaricare ovunque io sia come
+>   vedi nella nona foto)
+> - Web bookmark (mettere un link che posso aprire nel mio browser
+>   predefinito come vedi nella decima foto)
+> - Database full page (un database che abbia come apertura di default
+>   quella della pagina, dove rispetto alle altre non sarà inline e me la
+>   farà aprire direttamente come pagina come vedi nell'undicesima foto)»
+
+Alla domanda di Claude (l'app dal 25/09/2026 non usa Internet: per i video
+da link e l'anteprima dei segnalibri serve di nuovo) la risposta è stata
+**"Sì, rimettilo"**.
+
+Le voci si costruiscono a gruppi, ognuno con la sua versione: questa è la
+prima, **Callout** e **Quote**.
+
+- **[Nuova funzionalità]** **"Callout"** (dal menu "/" e dal "+"): un
+  **riquadro** con lo sfondo grigio più chiaro della pagina, l'icona a
+  sinistra (di partenza la lampadina 💡, come su Notion) e il testo accanto.
+  **L'Invio va a capo dentro il riquadro**, che si allunga; un Invio su una
+  riga vuota in fondo esce: la riga vuota se ne va e sotto nasce una riga di
+  testo. Il testo si formatta come quello delle altre righe (grassetto,
+  colori, corpo)
+- **[Nuova funzionalità]** **L'icona del riquadro**, toccandola (o dai sei
+  puntini, "Edit icon"): le emoji della famiglia "Callout" del selettore di
+  Notion (💡 👉 ☝️ 👌 🔑 🚧 ⚠️ 🔥 📌 ✂️ ❓ 🚫 ⛔ ⏰ ☎️ 🚨 ♻️ ✅ 🔒 📎 📖 🗣️ ➡️ 📢
+  🛠️ ⚙️), "Other emoji" per scriverne una qualsiasi con la tastiera,
+  **"Upload"** per un'immagine dal telefono come per le icone delle pagine, e
+  "Remove" per lasciarlo senza icona
+- **[Nuova funzionalità]** **Lo sfondo del riquadro**, dai sei puntini
+  ("Background color"): lo stesso selettore dei colori di tutta l'app; "No
+  color" rimette il grigio
+- **[Nuova funzionalità]** **"Quote"**: la **riga verticale spessa** a
+  sinistra, alta quanto il testo, e il suggerimento grigio "Empty quote"
+  finché è vuota. Anche qui l'Invio va a capo dentro e quello su una riga
+  vuota in fondo esce
+- **[Nuova funzionalità]** **Backspace a inizio riquadro o citazione** li fa
+  tornare testo normale, come su Notion, **con tutte le loro righe**: ogni
+  riga diventa una riga di testo (lo stesso con "Turn into" verso un altro
+  tipo). Un altro backspace la unisce alla riga sopra
+- **[Nuova funzionalità]** Nei **sei puntini** di riquadro e citazione, oltre
+  alle voci delle righe di testo, **"Delete"**: sono scatole a sé
+- **[Modificato]** Toccando sotto un riquadro o una citazione in fondo alla
+  pagina si scrive su una riga nuova, invece di rientrarci dentro
+- **[Modificato]** **L'app può di nuovo usare Internet** (permesso tolto il
+  25/09/2026): servirà ai video presi da un link e alle anteprime dei
+  segnalibri delle prossime versioni. Le note restano sul telefono
+- **[Progetto]** Database alla **versione 52**: `blocks.attrsJson`, le voci
+  in più dei blocchi nuovi in JSON (`BlockAttrs`: file, indirizzo, nome,
+  larghezza, lingua, icona, colore, pagina…). I tipi nuovi sono già tutti
+  nell'enum (`CALLOUT`, `QUOTE`, `CODE`, `IMAGE`, `VIDEO`, `AUDIO`, `FILE`,
+  `BOOKMARK`, `PAGE_MENTION`). I file dei blocchi si copiano con la pagina o
+  il blocco duplicati e coi template, e se ne vanno con la pagina cancellata
+  per sempre. `PageRepository.convertMultiline` divide le righe;
+  `CalloutParts.kt` ha l'icona e la sua finestra. Test: `CalloutQuoteTest`
+  (5) e la migrazione 51→52 in `MigrationTest`
+- Verificato sul telefono, in una riga di prova di Main calendar (poi
+  tolta): "/callout" fa il riquadro con la lampadina; "Prima", Invio,
+  "Seconda riga" restano dentro, su due righe; due Invio in fondo escono;
+  "/quote" fa la riga spessa con "Empty quote", poi due righe; 🔥 dalla
+  finestra dell'icona; lo sfondo blu da "Background color"; backspace a
+  inizio citazione la fa tornare due righe di testo. **Alla prima prova
+  l'Invio dentro il riquadro lo spezzava in due**: quando la tastiera
+  rimanda lo stesso testo per spostare il cursore, il suo a-capo veniva
+  preso per un Invio. Corretto. Il database del telefono è passato alla 52
+  senza perdere niente
+
 ### 🔧 v0.145.1 — 06/10/2026 · 09:26 — "/database" sotto un divisore non chiude più l'app
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 404 test
 passati; commit solo in locale)*
@@ -10058,7 +10155,8 @@ le finestre che apre. Chi lo usa passa solo l'id del blocco.
 
 ## Nota tecnica
 
-Lo schema è alla **versione 51** (la 51, del 05/10/2026, aggiunge
+Lo schema è alla **versione 52** (la 52, del 06/10/2026, aggiunge
+`blocks.attrsJson`, le voci in più dei blocchi nuovi del menu "/" — vedi `BlockAttrs`; la 51, del 05/10/2026, aggiunge
 `pages.thenSortColumnId` e `thenSortDescending`, la seconda regola di ordinamento; la 50, del 30/09/2026, aggiunge
 `database_rows.eventColor`, il colore degli eventi del calendario; la 49, dello stesso giorno, aggiunge
 `pages.colorBoardCards`, "Color cards" delle bacheche; la 48, dello stesso giorno, aggiunge

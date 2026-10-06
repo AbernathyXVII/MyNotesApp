@@ -222,6 +222,10 @@ import androidx.compose.ui.window.PopupProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gabriele.notionlocal.data.entity.BlockEntity
+import com.gabriele.notionlocal.data.entity.MULTILINE_TYPES
+import com.gabriele.notionlocal.data.entity.attrs
+import com.gabriele.notionlocal.ui.i18n.BlockStrings
+import com.gabriele.notionlocal.ui.theme.CalloutBackground
 import com.gabriele.notionlocal.data.entity.BlockType
 import com.gabriele.notionlocal.data.entity.DatabaseLayout
 import com.gabriele.notionlocal.data.entity.PageEntity
@@ -425,6 +429,9 @@ private fun FloatingPageButton(
         content()
     }
 }
+
+/** La riga spessa a sinistra di una citazione ("Quote", dal 06/10/2026). */
+private val QUOTE_BAR_WIDTH = 3.dp
 
 private val TOGGLE_ARROW_SIZE = 24.dp
 private val TOGGLE_ARROW_GAP = 4.dp
@@ -1369,7 +1376,9 @@ private fun PageEditorContent(
                         // fuoco si posa prima sul campo
                         // invisibile, e da lì passa al
                         // titolo del toggle.
-                        if (action.type == BlockType.TOGGLE) focusPark.requestFocus()
+                        // Lo stesso per riquadro e citazione (dal
+                        // 06/10/2026): anche loro sono righe a sé.
+                        if (action.type == BlockType.TOGGLE || action.type in MULTILINE_TYPES) focusPark.requestFocus()
                         // La tabella è un'isola come il database qui
                         // sotto, e come lui non si prende il cursore.
                         if (action.type == BlockType.TABLE) focusManager.clearFocus()
@@ -2588,8 +2597,9 @@ internal enum class PageImageTarget { ICON, COVER }
  *
  * Fino al 25/09/2026 c'era anche un campo per il link di un'immagine da
  * scaricare: tolto su richiesta dell'utente, che le immagini le carica
- * dal telefono. Con lui se n'è andato il permesso di andare in rete: da
- * allora l'app non si collega a niente.
+ * dal telefono. (Il permesso di andare in rete, andato via con lui, è
+ * tornato il 06/10/2026 per i video da link e i segnalibri: qui resta
+ * solo il caricamento dal telefono.)
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -3357,8 +3367,8 @@ internal val SLASH_ENTRIES: List<SlashEntry> = listOf(
     // Una riga con data e ora che manda una notifica: vedi `makeNotification`.
     SlashEntry("Notification", SlashCategory.BASIC, SlashAction.Type(BlockType.NOTIFICATION), Icons.Filled.Notifications),
     SlashEntry("Page", SlashCategory.BASIC, SlashAction.PageLink, Icons.Filled.Description),
-    SlashEntry("Callout", SlashCategory.BASIC, SlashAction.NotYet, Icons.Filled.Info),
-    SlashEntry("Quote", SlashCategory.BASIC, SlashAction.NotYet, Icons.Filled.FormatQuote),
+    SlashEntry("Callout", SlashCategory.BASIC, SlashAction.Type(BlockType.CALLOUT), Icons.Filled.Info),
+    SlashEntry("Quote", SlashCategory.BASIC, SlashAction.Type(BlockType.QUOTE), Icons.Filled.FormatQuote),
     SlashEntry("Table", SlashCategory.BASIC, SlashAction.Type(BlockType.TABLE), Icons.Filled.TableChart),
     SlashEntry("Divider", SlashCategory.BASIC, SlashAction.Divider, Icons.Filled.Remove),
     SlashEntry("Link to page", SlashCategory.BASIC, SlashAction.NotYet, Icons.Filled.Link),
@@ -5274,6 +5284,12 @@ private fun BlockRow(
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
     val imeVisible = WindowInsets.isImeVisible
+    // Le voci in più del riquadro: icona e colore (vedi `BlockAttrs`).
+    val blockAttrs = remember(block.attrsJson) { block.attrs }
+    val rowContext = LocalContext.current
+    val rowImageStore = remember(rowContext) { PageImageStore(rowContext) }
+    var editingCalloutIcon by remember(block.id) { mutableStateOf(false) }
+    val pageLocked = LocalPageLocked.current
 
     LaunchedEffect(focusRequestBlockId) {
         if (focusRequestBlockId == block.id) {
@@ -5374,10 +5390,30 @@ private fun BlockRow(
     // (dal 30/09/2026, col corpo del titolo che finalmente cambia).
     val baseLineHeight = with(LocalDensity.current) { MaterialTheme.typography.bodyLarge.lineHeight.toDp() }
     val markerDrop = baseLineHeight * (lineScale - 1f) / 2
+    // **Il riquadro e la citazione** (dal 06/10/2026, chiesti dall'utente):
+    // il riquadro è una scatola col suo sfondo, che si allunga con quello che
+    // ci si scrive; la citazione è la riga spessa a sinistra, alta quanto il
+    // testo. Il resto della riga è quello di ogni isola col testo.
+    val quoteBarColor = NotionWhite
+    val islandLook = when (block.type) {
+        BlockType.CALLOUT -> Modifier
+            .padding(vertical = 4.dp)
+            .clip(RoundedCornerShape(6.dp))
+            .background(hexToColor(blockAttrs.color) ?: CalloutBackground)
+            .padding(horizontal = 12.dp, vertical = 12.dp)
+        BlockType.QUOTE -> Modifier
+            .padding(vertical = 4.dp)
+            .drawBehind {
+                drawRect(quoteBarColor, size = Size(QUOTE_BAR_WIDTH.toPx(), size.height))
+            }
+            .padding(start = QUOTE_BAR_WIDTH + 12.dp)
+        else -> Modifier.padding(top = rowPadding, bottom = rowPadding)
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = PAGE_SIDE_PADDING + NESTED_INDENT * depth, end = PAGE_SIDE_PADDING, top = rowPadding, bottom = rowPadding),
+            .padding(start = PAGE_SIDE_PADDING + NESTED_INDENT * depth, end = PAGE_SIDE_PADDING)
+            .then(islandLook),
         verticalAlignment = Alignment.Top
     ) {
         when (block.type) {
@@ -5464,6 +5500,17 @@ private fun BlockRow(
                 Spacer(modifier = Modifier.size(8.dp))
             }
 
+            BlockType.CALLOUT -> if (blockAttrs.hasCalloutIcon) {
+                Box(modifier = Modifier.padding(top = markerDrop)) {
+                    CalloutIcon(
+                        attrs = blockAttrs,
+                        store = rowImageStore,
+                        onClick = if (pageLocked) null else { { editingCalloutIcon = true } }
+                    )
+                }
+                Spacer(modifier = Modifier.size(10.dp))
+            }
+
             else -> { /* PARAGRAPH has no prefix */ }
         }
 
@@ -5507,6 +5554,39 @@ private fun BlockRow(
                     }
 
                     val newText = bodyOf(newFieldValue.text)
+                    if (block.type in MULTILINE_TYPES) {
+                        // **Nel riquadro e nella citazione l'Invio va a capo
+                        // dentro** (dal 06/10/2026): il blocco si allunga.
+                        // Premuto su una riga vuota in fondo, invece, si esce:
+                        // la riga vuota se ne va e sotto nasce una riga di
+                        // testo, come su Notion.
+                        //
+                        // Anche quando il testo non cambia (la tastiera che
+                        // sposta solo il cursore): lasciato passare, il suo
+                        // a-capo veniva preso per un Invio e il blocco si
+                        // spezzava in due (visto sul telefono).
+                        if (newText == oldText) {
+                            editState = editState.copy(fieldValue = newFieldValue)
+                            return@BasicTextField
+                        }
+                        lastSplit = null
+                        val caret = (newFieldValue.selection.end - RUN_LEAD.length).coerceAtLeast(0)
+                        val enterAtEnd = newText == oldText + "\n" && caret == newText.length
+                        if (enterAtEnd && oldText.endsWith("\n")) {
+                            val keptText = oldText.dropLast(1)
+                            val kept = applyTextEdit(editState.spans, oldText, keptText)
+                            editState = BlockEditState(
+                                kept,
+                                TextFieldValue(RUN_LEAD + keptText, TextRange(RUN_LEAD.length + keptText.length))
+                            )
+                            viewModel.leaveMultilineBlock(block, kept)
+                        } else {
+                            val newSpans = applyTextEdit(editState.spans, oldText, newText)
+                            editState = BlockEditState(newSpans, newFieldValue)
+                            viewModel.updateBlockSpans(block, newSpans)
+                        }
+                        return@BasicTextField
+                    }
                     if (newText.contains('\n')) {
                         val lines = newText.split('\n')
                         val movedAway = lines.drop(1).joinToString("\n")
@@ -5728,6 +5808,9 @@ private fun BlockRow(
                         if (block.type == BlockType.NOTIFICATION && bodyOf(editState.fieldValue.text).isEmpty()) {
                             Text(NotifyStrings.textHint, style = textStyle, color = NotionGray400, maxLines = 1)
                         }
+                        if (block.type == BlockType.QUOTE && bodyOf(editState.fieldValue.text).isEmpty()) {
+                            Text(BlockStrings.emptyQuote, style = textStyle, color = NotionGray400, maxLines = 1)
+                        }
                         inner()
                     }
                 },
@@ -5746,6 +5829,16 @@ private fun BlockRow(
         }
 
         if (block.type == BlockType.NOTIFICATION) NotificationTimeChip(block, viewModel)
+    }
+
+    if (editingCalloutIcon) {
+        CalloutIconSheet(
+            store = rowImageStore,
+            onEmoji = { emoji -> viewModel.updateBlockAttrs(block.id) { it.copy(icon = emoji, iconImage = null) } },
+            onImage = { file -> viewModel.updateBlockAttrs(block.id) { it.copy(iconImage = file) } },
+            onRemove = { viewModel.updateBlockAttrs(block.id) { it.copy(icon = "", iconImage = null) } },
+            onDismiss = { editingCalloutIcon = false }
+        )
     }
 
     val menuBlockId = numberMenuFor

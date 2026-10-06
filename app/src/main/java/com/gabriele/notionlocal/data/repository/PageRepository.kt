@@ -19,6 +19,10 @@ import com.gabriele.notionlocal.data.entity.PageEntity
 import com.gabriele.notionlocal.data.entity.RichTextSpan
 import com.gabriele.notionlocal.data.entity.TableCellEntity
 import com.gabriele.notionlocal.data.entity.plainText
+import com.gabriele.notionlocal.data.entity.splitLines
+import com.gabriele.notionlocal.data.entity.BlockAttrs
+import com.gabriele.notionlocal.data.entity.MULTILINE_TYPES
+import com.gabriele.notionlocal.data.entity.attrs
 import com.gabriele.notionlocal.data.ink.remapAnchor
 import com.gabriele.notionlocal.data.security.AppLock
 import kotlinx.coroutines.CoroutineScope
@@ -128,7 +132,8 @@ class PageRepository(private val db: AppDatabase) {
                     pageId = pageId,
                     parentBlockId = block.parentBlockId?.let { newBlockIds[it] },
                     orderIndex = if (block.parentBlockId == null) startAt + block.orderIndex else block.orderIndex,
-                    linkedPageId = block.linkedPageId?.let { copyLinkedPage(it, copies, copyImage) }
+                    linkedPageId = block.linkedPageId?.let { copyLinkedPage(it, copies, copyImage) },
+                    attrsJson = copiedAttrs(block, copyImage)
                 )
             }
             blockDao.insertAll(copied)
@@ -295,7 +300,8 @@ class PageRepository(private val db: AppDatabase) {
      * da fuori**: una sottopagina collegata pure da un'altra parte non è
      * sua soltanto, e cancellandola sparirebbe anche dall'altra.
      *
-     * Restituisce i nomi dei file immagine (icone e copertine) delle
+     * Restituisce i nomi dei file (icone e copertine, e dal 06/10/2026 i
+     * file dei blocchi: immagini, video, audio, file) delle
      * pagine cancellate, che chi chiama toglie dalla cartella: il
      * repository non sa dov'è.
      */
@@ -327,12 +333,15 @@ class PageRepository(private val db: AppDatabase) {
             // Le viste in più dei database che se ne vanno, con loro.
             doomed.toList().forEach { id -> pageDao.getViewsOnce(id).forEach { doomed += it.id } }
             val pages = pageDao.getByIds(doomed.toList())
+            // I file dei blocchi (immagini, video, file, icone dei riquadri):
+            // letti prima, perché i blocchi se ne vanno con le loro pagine.
+            val blockFiles = doomed.flatMap { id -> blockDao.getBlocksForPageOnce(id).flatMap { it.attrs.files } }
             // Se la pagina non era nel cestino, qualcuno la richiama
             // ancora: quei collegamenti porterebbero a una pagina che non
             // c'è più.
             doomed.forEach { id -> blockDao.getBlocksLinkingTo(id).forEach { blockDao.delete(it) } }
             pages.forEach { pageDao.delete(it) }
-            pages.flatMap { listOfNotNull(it.iconImage, it.coverImage) }
+            pages.flatMap { listOfNotNull(it.iconImage, it.coverImage) } + blockFiles
         }
     }
 
@@ -1233,6 +1242,24 @@ class PageRepository(private val db: AppDatabase) {
         }
     }
 
+    /**
+     * Le voci in più della copia di un blocco, coi **suoi** file (dal
+     * 06/10/2026): l'immagine, il video, il file, l'icona del riquadro.
+     * Come per le icone delle pagine, due blocchi non devono condividere lo
+     * stesso file: cancellando per sempre la pagina di uno, il file se ne va.
+     */
+    private suspend fun copiedAttrs(block: BlockEntity, copyImage: suspend (String) -> String?): String {
+        val attrs = block.attrs
+        if (attrs.files.isEmpty()) return block.attrsJson
+        return BlockAttrs.encode(
+            attrs.copy(
+                file = attrs.file?.let { copyImage(it) ?: it },
+                iconImage = attrs.iconImage?.let { copyImage(it) ?: it },
+                image = attrs.image?.let { copyImage(it) ?: it }
+            )
+        )
+    }
+
     /** Un blocco e, sotto, i suoi figli: vedi `duplicateBlock`. Dentro una transazione. */
     private suspend fun copyBlockTree(
         block: BlockEntity,
@@ -1247,7 +1274,8 @@ class PageRepository(private val db: AppDatabase) {
                 id = copyId,
                 parentBlockId = parentBlockId,
                 orderIndex = orderIndex,
-                linkedPageId = block.linkedPageId?.let { copyLinkedPage(it, copies, copyImage) }
+                linkedPageId = block.linkedPageId?.let { copyLinkedPage(it, copies, copyImage) },
+                attrsJson = copiedAttrs(block, copyImage)
             )
         )
         if (block.type == BlockType.TABLE) {
@@ -1333,7 +1361,8 @@ class PageRepository(private val db: AppDatabase) {
                 id = newBlockIds.getValue(block.id),
                 pageId = copyId,
                 parentBlockId = block.parentBlockId?.let { newBlockIds[it] },
-                linkedPageId = block.linkedPageId?.let { copyLinkedPage(it, copies, copyImage) }
+                linkedPageId = block.linkedPageId?.let { copyLinkedPage(it, copies, copyImage) },
+                attrsJson = copiedAttrs(block, copyImage)
             )
         }
         blockDao.insertAll(copiedBlocks)
@@ -1879,6 +1908,62 @@ class PageRepository(private val db: AppDatabase) {
     }
 
     suspend fun deleteBlock(block: BlockEntity) = blockDao.delete(block)
+
+    /**
+     * **Cambia le voci in più di un blocco** (`BlockAttrs`) leggendole dal
+     * database, dentro la transazione: due ritocchi di fila — l'icona e poi
+     * il colore di un riquadro — non si cancellano a vicenda come farebbero
+     * partendo dalla copia della schermata.
+     */
+    suspend fun updateBlockAttrs(blockId: String, change: (BlockAttrs) -> BlockAttrs) = db.withTransaction {
+        val block = blockDao.getById(blockId) ?: return@withTransaction
+        val updated = change(block.attrs)
+        if (updated != block.attrs) blockDao.setAttrs(blockId, BlockAttrs.encode(updated))
+    }
+
+    /** Una riga diventa un blocco senza testo (immagine, video, link a una pagina…): vedi `BlockDao.setTypeAndAttrs`. */
+    suspend fun setBlockTypeAndAttrs(blockId: String, type: BlockType, attrs: BlockAttrs) = db.withTransaction {
+        unnestChildren(blockId)
+        blockDao.setTypeAndAttrs(blockId, type, BlockAttrs.encode(attrs))
+    }
+
+    /**
+     * **Un blocco scritto su più righe cambia tipo** (dal 06/10/2026): un
+     * riquadro, una citazione o del codice che diventano testo, elenco,
+     * casella o toggle.
+     *
+     * Quei tipi tengono tutte le loro righe in un blocco solo, separate da
+     * a-capo; gli altri ne tengono una per blocco, e il testo condiviso conta
+     * le righe dagli a-capo. Un blocco di testo con dentro tre righe ne
+     * mostrerebbe tre e ne salverebbe una: qui la prima resta nel blocco,
+     * col suo nuovo tipo, e le altre diventano blocchi subito sotto, ognuna
+     * con la sua formattazione. Per un toggle le righe in più sono testo:
+     * tre toggle uno sotto l'altro non sono quello che si voleva.
+     */
+    suspend fun convertMultiline(blockId: String, newType: BlockType) = db.withTransaction {
+        if (newType != BlockType.TOGGLE) unnestChildren(blockId)
+        val block = blockDao.getById(blockId) ?: return@withTransaction
+        blockDao.setType(blockId, newType)
+        if (newType in MULTILINE_TYPES) return@withTransaction
+        val lines = (runCatching { json.decodeFromString<List<RichTextSpan>>(block.textJson) }.getOrNull() ?: emptyList())
+            .splitLines()
+        if (lines.size <= 1) return@withTransaction
+        blockDao.setText(blockId, json.encodeToString(lines.first()))
+        blockDao.shiftOrderIndexes(block.pageId, block.parentBlockId, block.orderIndex + 1, lines.size - 1)
+        val restType = if (newType == BlockType.TOGGLE) BlockType.PARAGRAPH else newType
+        lines.drop(1).forEachIndexed { i, line ->
+            blockDao.insert(
+                BlockEntity(
+                    pageId = block.pageId,
+                    parentBlockId = block.parentBlockId,
+                    type = restType,
+                    textJson = json.encodeToString(line),
+                    indentLevel = block.indentLevel,
+                    orderIndex = block.orderIndex + 1 + i
+                )
+            )
+        }
+    }
 
     /** Cambia solo da che numero riparte un elemento di elenco, senza riscrivere il testo. */
     suspend fun setNumberStart(blockId: String, startsAt: Int?) =
