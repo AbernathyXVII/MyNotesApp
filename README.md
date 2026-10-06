@@ -2053,6 +2053,41 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🔧 v0.145.1 — 06/10/2026 · 09:26 — "/database" sotto un divisore non chiude più l'app
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 404 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «In never_underestimate_feelings, ho creato un database, poi fatto Add
+> below, aggiunto un Divider, scritto /database, toccato Database inline e
+> il database è stato creato, ma l'app è crashata. È per caso quel bug di
+> cui mi hai parlato ieri?»
+
+- **[Bug]** Sì, era il crash del 03/10/2026 alle 19:31: il database
+  "Foreign languages" di never_underestimate_feelings è nato in quello
+  stesso secondo. Una riga sola sotto un divisore (o sotto un database) è
+  un gruppo di testo tutto suo; scegliendo **"Database - Inline"** (o
+  "Simple database", o una delle viste) dal menu **"/"** o dal **"+"**, la
+  riga diventava un database e il suo campo di scrittura spariva **col
+  cursore dentro**: la tastiera continuava a chiedergli dov'era il cursore
+  e l'app si chiudeva (`LayoutCoordinate operations are only valid when
+  isAttached is true`, lo stesso errore già risolto per toggle e divisore).
+  Ora il cursore si spegne prima, e la tastiera si chiude: nel database non
+  c'è niente da scrivere. Lo stesso per **"Table"**, che aveva lo stesso
+  difetto. "Turn into" dai sei puntini non lo aveva: lì il cursore si
+  spegne già prima di aprire il menu
+- **[Progetto]** `applyInsertAction`: `focusManager.clearFocus()` prima di
+  `convertToDatabaseLink` e prima di trasformare la riga in tabella, come
+  già faceva "Linked view of data source". Il crash dipende dalla tastiera
+  vera e non si riproduce nei test sul PC
+- Verificato sul telefono, in una riga di prova di Main calendar (poi
+  tolta): con la v0.145 i passi dell'utente (database, "Add below",
+  "/divider", "/database" sotto il divisore, "Database - Inline") hanno
+  chiuso l'app con lo stesso errore del 03/10; con la correzione, gli
+  stessi passi creano il database senza crash. Provati anche "/table" e
+  "/page" su una riga sola fra due isole: niente crash. Le righe di Main
+  calendar sono come prima della prova
+
 ### 🆕 v0.145 — 06/10/2026 · 09:13 — "Title position": il titolo sotto l'icona, accanto o nascosto
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 404 test
 passati; commit solo in locale)*

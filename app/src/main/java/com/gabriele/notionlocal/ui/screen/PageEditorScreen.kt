@@ -1370,6 +1370,9 @@ private fun PageEditorContent(
                         // invisibile, e da lì passa al
                         // titolo del toggle.
                         if (action.type == BlockType.TOGGLE) focusPark.requestFocus()
+                        // La tabella è un'isola come il database qui
+                        // sotto, e come lui non si prende il cursore.
+                        if (action.type == BlockType.TABLE) focusManager.clearFocus()
                         viewModel.updateBlockType(block, action.type)
                     }
                     SlashAction.PageLink ->
@@ -1392,12 +1395,22 @@ private fun PageEditorContent(
                     // appena esiste, così "Calendar
                     // view" dà un calendario e non una
                     // tabella da cambiare a mano.
-                    is SlashAction.Database ->
+                    //
+                    // **Prima si spegne il cursore** (dal 06/10/2026): la
+                    // riga sola sotto un divisore o un altro database è
+                    // un gruppo di testo tutto suo, e diventando database
+                    // il suo campo spariva col cursore dentro — l'app si
+                    // chiudeva (trovato dall'utente il 03/10/2026). Nel
+                    // database non c'è niente da scrivere, e la tastiera
+                    // se ne va: come per "Linked view of data source".
+                    is SlashAction.Database -> {
+                        focusManager.clearFocus()
                         viewModel.convertToDatabaseLink(block, simple = action.simple) { databaseId ->
                             action.layout?.let {
                                 viewModel.setDatabaseLayout(databaseId, it)
                             }
                         }
+                    }
                     SlashAction.LinkedView -> askLinkedViewSource(block, false)
                     SlashAction.NotYet -> Unit
                 }
