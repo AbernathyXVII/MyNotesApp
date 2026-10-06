@@ -2053,6 +2053,51 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.145 — 06/10/2026 · 09:13 — "Title position": il titolo sotto l'icona, accanto o nascosto
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 404 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Nelle opzioni di ogni pagina (i tre puntini orizzontali), consentimi di
+> scegliere (tramite una voce chiamata Title position) se:
+> 1) spostarmi il titolo di ogni pagina (anche quello del menu) a destra
+> dell'icona, così ho più spazio sotto (add cover lo metti in alto nelle
+> opzioni di ogni pagina);
+> 2) dove sta adesso;
+> 3) nasconderlo proprio»
+
+Alle due domande di Claude (la scelta vale per una pagina o per tutte? "Add
+cover" in cima ai tre puntini sempre o solo col titolo accanto?):
+> «Ora che ci penso è meglio se la metti opzione in Settings sopra
+> Animations. Per tutte insieme»
+
+> «Sempre nei tre puntini»
+
+- **[Nuova funzionalità]** In **Settings**, sopra "Animations", la voce
+  **"Title position"**, che vale per tutte le pagine insieme, anche quella
+  del menu principale: **Below the icon** (come prima, ed è la scelta di
+  partenza), **Next to the icon** (il titolo a destra dell'icona, sulla
+  stessa riga: tutto il resto della pagina sale) e **Hidden** (il titolo
+  non si vede; la pagina si rinomina con "Rename" dal menu del suo blocco
+  nella pagina madre o, per una riga, dalla cella del database). Le
+  pagine dei quaderni, che non hanno icona, tengono il titolo dov'è
+- **[Modificato]** **"Add cover"** non sta più accanto all'icona: è la
+  prima voce dei **tre puntini** di ogni pagina, sempre, qualunque sia la
+  posizione del titolo. Non c'è quando la pagina ha già una copertina (si
+  cambia toccandola), nel cestino e nelle pagine dei quaderni
+- **[Progetto]** `AppSettings.titlePosition` (`TitlePosition`: `BELOW_ICON`,
+  `BESIDE_ICON`, `HIDDEN`, salvata in "title_position"); nell'editor il
+  campo del titolo è `TitleField`, messo nella riga dell'icona o sotto;
+  `PageOptionsSheet(onAddCover)`. `TitlePositionTest`: la voce sta sopra
+  "Animations" e la scelta si salva
+- Verificato sul telefono: in Settings "Title position" sopra "Animations",
+  con le tre scelte; con "Next to the icon" "My Personal Workspace" accanto
+  al cappello, e in una riga di prova di Main calendar "Untitled" accanto ad
+  "Add icon"; nei tre puntini di quella riga "Add cover" in cima, che apre
+  la scelta della copertina; con "Hidden" il titolo sparisce dal menu e
+  dalla pagina della riga. Poi rimesso "Below the icon" e tolta la riga di
+  prova: le righe di Main calendar sono come prima della prova
+
 ### 🆕 v0.144 — 05/10/2026 · 22:58 — Il divisore tenuto premuto: "Add above", "Add below" e "Delete"
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 403 test
 passati; commit solo in locale)*

@@ -15,6 +15,14 @@ enum class ThemeMode { DARK, LIGHT, SYSTEM }
 enum class AnimationLevel { FULL, REDUCED, OFF }
 
 /**
+ * **Dove sta il titolo delle pagine** (dal 05/10/2026, chiesto dall'utente;
+ * Settings → "Title position", per tutte le pagine insieme, menu principale
+ * compreso): sotto l'icona (com'è sempre stato), accanto all'icona — una riga
+ * sola, più spazio per il testo —, o nascosto.
+ */
+enum class TitlePosition { BELOW_ICON, BESIDE_ICON, HIDDEN }
+
+/**
  * **La priorità delle notifiche** (dal 30/09/2026, la pagina Notifications):
  * bassa = in silenzio, solo nella tendina; normale = suono e vibrazione;
  * alta = anche il riquadro in cima allo schermo. Com'era prima: alta.
@@ -93,6 +101,7 @@ object AppSettings {
         prefs = context.applicationContext.getSharedPreferences("settings", Context.MODE_PRIVATE)
         themeModeState.value = enumOr(KEY_THEME, ThemeMode.DARK)
         animationsState.value = enumOr(KEY_ANIMATIONS, AnimationLevel.FULL)
+        titlePositionState.value = enumOr(KEY_TITLE_POSITION, TitlePosition.BELOW_ICON)
         numberStyleState.value = enumOr(KEY_NUMBER_STYLE, NumberStyle.DOT_GROUPS)
         dateStyleState.value = enumOr(KEY_DATE_STYLE, DateStyle.DAY_MONTH_YEAR_DOT)
         languageState.value = enumOr(KEY_LANGUAGE, AppLanguage.ENGLISH)
@@ -146,6 +155,13 @@ object AppSettings {
     var animations: AnimationLevel
         get() = animationsState.value
         set(value) { animationsState.value = value; putEnum(KEY_ANIMATIONS, value) }
+
+    private val titlePositionState = mutableStateOf(TitlePosition.BELOW_ICON)
+
+    /** Dove sta il titolo di tutte le pagine: vedi `TitlePosition`. */
+    var titlePosition: TitlePosition
+        get() = titlePositionState.value
+        set(value) { titlePositionState.value = value; putEnum(KEY_TITLE_POSITION, value) }
 
     // --- Formati ---
 
@@ -340,6 +356,7 @@ object AppSettings {
 
     private const val KEY_THEME = "theme"
     private const val KEY_ANIMATIONS = "animations"
+    private const val KEY_TITLE_POSITION = "title_position"
     private const val KEY_NUMBER_STYLE = "number_style"
     private const val KEY_DATE_STYLE = "date_style"
     private const val KEY_LANGUAGE = "language"

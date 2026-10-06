@@ -47,6 +47,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Animation
+import androidx.compose.material.icons.filled.Title
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Language
@@ -74,6 +75,7 @@ import com.gabriele.notionlocal.data.settings.AppSettings
 import com.gabriele.notionlocal.data.settings.DateStyle
 import com.gabriele.notionlocal.data.settings.NumberStyle
 import com.gabriele.notionlocal.data.settings.ThemeMode
+import com.gabriele.notionlocal.data.settings.TitlePosition
 import com.gabriele.notionlocal.data.widgets.WidgetStore
 import com.gabriele.notionlocal.ui.format.Formats
 import com.gabriele.notionlocal.ui.i18n.Strings
@@ -88,7 +90,7 @@ import java.time.ZoneId
 import java.time.format.TextStyle
 
 /** Quale finestra di scelta è aperta. */
-private enum class SettingsDialog { THEME, ANIMATIONS, NUMBER, LANGUAGE, TIME_ZONE, LOCK_PASSWORD, CLEAR_CACHE, DELETE_ALL }
+private enum class SettingsDialog { THEME, TITLE_POSITION, ANIMATIONS, NUMBER, LANGUAGE, TIME_ZONE, LOCK_PASSWORD, CLEAR_CACHE, DELETE_ALL }
 
 /**
  * Le impostazioni. Ogni scelta si salva appena la si fa e vale subito: il
@@ -136,6 +138,14 @@ fun SettingsScreen(onBack: () -> Unit, onOpenPatchNotes: () -> Unit = {}) {
             NotificationSettingsSection()
             HorizontalDivider(color = NotionGray900, modifier = Modifier.padding(vertical = 12.dp))
 
+            // **"Title position"** (dal 05/10/2026, chiesto dall'utente: "in
+            // Settings sopra Animations", per tutte le pagine insieme).
+            SettingsItem(
+                Strings.titlePosition,
+                icon = Icons.Filled.Title,
+                value = titlePositionLabel(AppSettings.titlePosition),
+                onClick = { dialog = SettingsDialog.TITLE_POSITION }
+            )
             SettingsItem(
                 Strings.animations,
                 icon = Icons.Filled.Animation,
@@ -213,6 +223,14 @@ fun SettingsScreen(onBack: () -> Unit, onOpenPatchNotes: () -> Unit = {}) {
             options = ThemeMode.entries.map { it to themeLabel(it) },
             selected = AppSettings.themeMode,
             onSelect = { AppSettings.themeMode = it },
+            onDismiss = { dialog = null }
+        )
+        SettingsDialog.TITLE_POSITION -> ChoiceDialog(
+            title = Strings.titlePosition,
+            subtitle = Strings.titlePositionNote,
+            options = TitlePosition.entries.map { it to titlePositionLabel(it) },
+            selected = AppSettings.titlePosition,
+            onSelect = { AppSettings.titlePosition = it },
             onDismiss = { dialog = null }
         )
         SettingsDialog.ANIMATIONS -> ChoiceDialog(
@@ -416,6 +434,12 @@ private fun themeLabel(mode: ThemeMode) = when (mode) {
     ThemeMode.DARK -> Strings.themeDark
     ThemeMode.LIGHT -> Strings.themeLight
     ThemeMode.SYSTEM -> Strings.themeSystem
+}
+
+private fun titlePositionLabel(position: TitlePosition) = when (position) {
+    TitlePosition.BELOW_ICON -> Strings.titleBelowIcon
+    TitlePosition.BESIDE_ICON -> Strings.titleBesideIcon
+    TitlePosition.HIDDEN -> Strings.titleHidden
 }
 
 private fun animationLabel(level: AnimationLevel) = when (level) {

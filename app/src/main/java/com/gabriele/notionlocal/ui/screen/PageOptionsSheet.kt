@@ -1,5 +1,7 @@
 package com.gabriele.notionlocal.ui.screen
 
+import com.gabriele.notionlocal.ui.i18n.EditorStrings
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
@@ -139,7 +141,14 @@ fun PageOptionsSheet(
      * ricerca, duplica e sposta, che sono del menu principale, e al posto di
      * "Move to trash" "Delete page", per sempre.
      */
-    inNotebook: Boolean = false
+    inNotebook: Boolean = false,
+    /**
+     * **"Add cover"**, in cima a tutto (dal 05/10/2026, chiesto
+     * dall'utente): prima stava accanto all'icona della pagina. Null quando
+     * la pagina ha già una copertina (si cambia toccandola), per i database
+     * e nelle pagine dei quaderni: allora la voce non c'è.
+     */
+    onAddCover: (() -> Unit)? = null
 ) {
     val isRoot = page.id == PageEntity.ROOT_PAGE_ID
 
@@ -163,6 +172,13 @@ fun PageOptionsSheet(
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
+
+            if (onAddCover != null) {
+                OptionsGroup {
+                    OptionRow(icon = Icons.Filled.Image, label = EditorStrings.addCover, onClick = onAddCover)
+                }
+                Spacer(modifier = Modifier.size(12.dp))
+            }
 
             OptionsGroup {
                 // La pagina principale non si mette fra i preferiti: è

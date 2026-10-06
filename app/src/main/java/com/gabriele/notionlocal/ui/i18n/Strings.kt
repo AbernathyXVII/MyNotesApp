@@ -424,6 +424,21 @@ object Strings {
         "알림은 페이지의 /notification, '알림 포함'을 켠 데이터베이스 날짜, 타이머와 뽀모도로에서 옵니다.",
         "通知は、ページの /notification、「通知を含める」をオンにしたデータベースの日付、タイマーとポモドーロから届きます。"
     )
+    // Dove sta il titolo delle pagine (dal 05/10/2026).
+    val titlePosition get() = t("Title position", "Posizione del titolo", "Position des Titels", "Position du titre", "Posición del título", "标题位置", "제목 위치", "タイトルの位置")
+    val titleBelowIcon get() = t("Below the icon", "Sotto l'icona", "Unter dem Symbol", "Sous l'icône", "Debajo del icono", "图标下方", "아이콘 아래", "アイコンの下")
+    val titleBesideIcon get() = t("Next to the icon", "Accanto all'icona", "Neben dem Symbol", "À côté de l'icône", "Junto al icono", "图标旁边", "아이콘 옆", "アイコンの横")
+    val titleHidden get() = t("Hidden", "Nascosto", "Ausgeblendet", "Masqué", "Oculto", "隐藏", "숨김", "非表示")
+    val titlePositionNote get() = t(
+        "For every page, the main menu too. Next to the icon leaves more room for the text.",
+        "Per tutte le pagine, anche il menu principale. Accanto all'icona lascia più spazio al testo.",
+        "Für alle Seiten, auch das Hauptmenü. Neben dem Symbol bleibt mehr Platz für den Text.",
+        "Pour toutes les pages, menu principal compris. À côté de l'icône laisse plus de place au texte.",
+        "Para todas las páginas, también el menú principal. Junto al icono deja más espacio al texto.",
+        "适用于所有页面，包括主菜单。放在图标旁边可为正文留出更多空间。",
+        "메인 메뉴를 포함한 모든 페이지에 적용돼요. 아이콘 옆에 두면 본문 공간이 넓어져요.",
+        "メインメニューを含むすべてのページに適用されます。アイコンの横にすると本文の場所が広がります。"
+    )
     val animations get() = t("Animations", "Animazioni", "Animationen", "Animations", "Animaciones", "动画", "애니메이션", "アニメーション")
     val animationsOn get() = t("On", "Attive", "An", "Activées", "Activadas", "开启", "켜기", "オン")
     val animationsReduced get() = t("Reduced", "Ridotte", "Reduziert", "Réduites", "Reducidas", "减少", "줄이기", "控えめ")

@@ -2,6 +2,7 @@ package com.gabriele.notionlocal.ui.screen
 
 import androidx.compose.ui.text.style.TextOverflow
 import com.gabriele.notionlocal.data.settings.AppSettings
+import com.gabriele.notionlocal.data.settings.TitlePosition
 import com.gabriele.notionlocal.ui.i18n.DbStrings
 import com.gabriele.notionlocal.ui.i18n.EditorStrings
 import android.widget.Toast
@@ -1616,7 +1617,7 @@ private fun PageEditorContent(
                 val coverImage = if (inNotebook) null else page?.coverImage
                 // Senza copertina, in cima si lascia la fascia dei
                 // pulsanti sospesi: altrimenti indietro e tre puntini
-                // finirebbero sopra l'icona e su "Add cover".
+                // finirebbero sopra l'icona.
                 // Nel cestino i pulsanti sospesi non ci sono (c'è la barra
                 // del cestino), e la fascia resterebbe vuota.
                 if (coverImage == null && !isTrashed) {
@@ -1717,6 +1718,74 @@ private fun PageEditorContent(
                     }
                 }
 
+                // **Il titolo** (vedi sotto, `TitleField`): dove lo vuole
+                // Settings → "Title position" (dal 05/10/2026). Le pagine dei
+                // quaderni non hanno icona, e il titolo resta dov'è.
+                val titlePosition = if (inNotebook) TitlePosition.BELOW_ICON else AppSettings.titlePosition
+
+                // Mentre si scrive comanda il testo locale, non quello che
+                // torna dal database: il salvataggio è immediato ma il giro
+                // di ritorno no, e se nel frattempo è stato battuto un
+                // altro tasto rimetterebbe il titolo com'era un attimo
+                // prima, mangiandosi il carattere. Fuori dalla scrittura
+                // comanda il database, così una rinomina fatta altrove si
+                // vede appena si torna qui.
+                var titleFocused by remember { mutableStateOf(false) }
+                var titleText by remember { mutableStateOf(page?.title.orEmpty()) }
+                LaunchedEffect(page?.title, titleFocused) {
+                    if (!titleFocused) titleText = page?.title.orEmpty()
+                }
+
+                @Composable
+                fun TitleField(modifier: Modifier) {
+                    AutoCaps {
+                        BasicTextField(
+                            value = titleText,
+                            // Un titolo sta su una riga sola: l'a capo digitato non
+                            // ha senso e l'incolla di un testo che ne contiene va
+                            // ripulito. La tastiera offre "fine" e basta: per
+                            // scrivere nel corpo si tocca il corpo.
+                            onValueChange = {
+                                val singleLine = it.replace("\n", "")
+                                titleText = singleLine
+                                viewModel.updateTitle(singleLine)
+                            },
+                            singleLine = true,
+                            // Pagina bloccata (o nel cestino): nemmeno il titolo si tocca.
+                            readOnly = readOnlyPage,
+                            keyboardOptions = KeyboardOptions(
+                                capitalization = KeyboardCapitalization.Sentences,
+                                imeAction = ImeAction.Done
+                            ),
+                            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                            textStyle = MaterialTheme.typography.titleLarge.copy(color = NotionWhite),
+                            cursorBrush = SolidColor(NotionWhite),
+                            // Una pagina di un quaderno nasce senza titolo: al suo
+                            // posto, grigio, "Untitled page", come in OneNote.
+                            decorationBox = { field ->
+                                Box {
+                                    if ((inNotebook || page?.isTemplate == true) && titleText.isEmpty()) {
+                                        Text(
+                                            if (inNotebook) NotebookStrings.untitledPage else TemplateStrings.untitledTemplate,
+                                            style = MaterialTheme.typography.titleLarge,
+                                            color = NotionGray400
+                                        )
+                                    }
+                                    field()
+                                }
+                            },
+                            modifier = modifier
+                                .markFocusChanges()
+                                .onFocusChanged {
+                                    titleFocused = it.isFocused
+                                    // Uscendo dal titolo la sua modifica si
+                                    // chiude, come per una riga qualsiasi.
+                                    if (!it.isFocused) viewModel.closeEditSession()
+                                }
+                        )
+                    }
+                }
+
                 if (!inNotebook) Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1760,77 +1829,19 @@ private fun PageEditorContent(
                         )
                     }
 
-                    if (coverImage == null && !isTrashed) {
+                    // "Add cover" non sta più qui (dal 05/10/2026): è in cima
+                    // ai tre puntini. Col titolo accanto all'icona, il titolo.
+                    if (titlePosition == TitlePosition.BESIDE_ICON) {
                         Spacer(modifier = Modifier.size(12.dp))
-                        Text(
-                            text = EditorStrings.addCover,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier
-                                .clickable { editingImage = PageImageTarget.COVER }
-                                .padding(vertical = 6.dp)
-                        )
+                        TitleField(Modifier.weight(1f))
                     }
                 }
 
-                // Mentre si scrive comanda il testo locale, non quello che
-                // torna dal database: il salvataggio è immediato ma il giro
-                // di ritorno no, e se nel frattempo è stato battuto un
-                // altro tasto rimetterebbe il titolo com'era un attimo
-                // prima, mangiandosi il carattere. Fuori dalla scrittura
-                // comanda il database, così una rinomina fatta altrove si
-                // vede appena si torna qui.
-                var titleFocused by remember { mutableStateOf(false) }
-                var titleText by remember { mutableStateOf(page?.title.orEmpty()) }
-                LaunchedEffect(page?.title, titleFocused) {
-                    if (!titleFocused) titleText = page?.title.orEmpty()
-                }
-                AutoCaps {
-                    BasicTextField(
-                        value = titleText,
-                        // Un titolo sta su una riga sola: l'a capo digitato non
-                        // ha senso e l'incolla di un testo che ne contiene va
-                        // ripulito. La tastiera offre "fine" e basta: per
-                        // scrivere nel corpo si tocca il corpo.
-                        onValueChange = {
-                            val singleLine = it.replace("\n", "")
-                            titleText = singleLine
-                            viewModel.updateTitle(singleLine)
-                        },
-                        singleLine = true,
-                        // Pagina bloccata (o nel cestino): nemmeno il titolo si tocca.
-                        readOnly = readOnlyPage,
-                        keyboardOptions = KeyboardOptions(
-                            capitalization = KeyboardCapitalization.Sentences,
-                            imeAction = ImeAction.Done
-                        ),
-                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                        textStyle = MaterialTheme.typography.titleLarge.copy(color = NotionWhite),
-                        cursorBrush = SolidColor(NotionWhite),
-                        // Una pagina di un quaderno nasce senza titolo: al suo
-                        // posto, grigio, "Untitled page", come in OneNote.
-                        decorationBox = { field ->
-                            Box {
-                                if ((inNotebook || page?.isTemplate == true) && titleText.isEmpty()) {
-                                    Text(
-                                        if (inNotebook) NotebookStrings.untitledPage else TemplateStrings.untitledTemplate,
-                                        style = MaterialTheme.typography.titleLarge,
-                                        color = NotionGray400
-                                    )
-                                }
-                                field()
-                            }
-                        },
-                        modifier = Modifier
+                if (titlePosition == TitlePosition.BELOW_ICON) {
+                    TitleField(
+                        Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 20.dp, vertical = 4.dp)
-                            .markFocusChanges()
-                            .onFocusChanged {
-                                titleFocused = it.isFocused
-                                // Uscendo dal titolo la sua modifica si
-                                // chiude, come per una riga qualsiasi.
-                                if (!it.isFocused) viewModel.closeEditSession()
-                            }
                     )
                 }
                 if (inNotebook) {
@@ -2413,6 +2424,14 @@ private fun PageEditorContent(
                 page = current,
                 inNotebook = inNotebook,
                 textStats = textStats,
+                onAddCover = if (current.coverImage == null && !inNotebook && !isTrashed) {
+                    {
+                        showPageOptions = false
+                        editingImage = PageImageTarget.COVER
+                    }
+                } else {
+                    null
+                },
                 onDismiss = { showPageOptions = false },
                 onToggleFavorite = { viewModel.toggleFavorite() },
                 onSearch = {
