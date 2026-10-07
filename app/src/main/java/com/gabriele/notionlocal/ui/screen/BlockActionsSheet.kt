@@ -31,6 +31,9 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material.icons.filled.OpenInNew
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Upload
+import com.gabriele.notionlocal.viewmodel.MediaRequestKind
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.runtime.rememberCoroutineScope
@@ -225,6 +228,40 @@ internal fun BlockActionsHost(
                             viewModel.deleteBlock(block)
                         }
                     )
+                } else if (block.type == BlockType.IMAGE) {
+                    // **L'immagine** (dal 06/10/2026): le cose da fare le fa
+                    // il blocco (vedi `PageEditorViewModel.mediaRequest`), perché
+                    // questo menu si chiude prima che la galleria risponda.
+                    val hasFile = block.attrs.file != null
+                    fun ask(kind: MediaRequestKind) {
+                        onDismiss()
+                        viewModel.requestMedia(block.id, kind)
+                    }
+                    ObjectBlockMenu(
+                        title = block.attrs.name ?: EditorStrings.blockType("Image"),
+                        onAddLine = { below ->
+                            onDismiss()
+                            viewModel.addLineNextTo(block, below)
+                        },
+                        actions = if (hasFile) {
+                            listOf(
+                                ObjectAction(Icons.Filled.OpenInFull, BlockStrings.view) { ask(MediaRequestKind.VIEW) },
+                                ObjectAction(Icons.Filled.Download, BlockStrings.download) { ask(MediaRequestKind.DOWNLOAD) },
+                                ObjectAction(Icons.Filled.Autorenew, BlockStrings.replace) { ask(MediaRequestKind.PICK) },
+                                ObjectAction(Icons.Filled.DriveFileMove, Strings.moveTo) { step = BlockMenuStep.MOVE_BLOCK }
+                            )
+                        } else {
+                            listOf(ObjectAction(Icons.Filled.Upload, EditorStrings.upload) { ask(MediaRequestKind.PICK) })
+                        },
+                        onDuplicate = {
+                            onDismiss()
+                            viewModel.duplicateBlock(block.id, imageStore)
+                        },
+                        onDelete = {
+                            onDismiss()
+                            viewModel.deleteBlock(block)
+                        }
+                    )
                 } else if (block.type == BlockType.PAGE_MENTION) {
                     // **"Link to page"** (dal 06/10/2026): aprire la pagina,
                     // sceglierne un'altra, copiare o togliere il rimando — la
@@ -382,6 +419,29 @@ internal fun BlockActionsHost(
                 onPick = { hex ->
                     onDismiss()
                     viewModel.colorWholeBlock(block.id, onBackground, hex)
+                }
+            )
+        }
+
+        BlockMenuStep.MOVE_BLOCK -> {
+            // "Move to" di un'immagine (dal 06/10/2026): in fondo alla pagina scelta.
+            val appContext = context.applicationContext
+            DestinationPickerSheet(
+                factory = factory,
+                title = Strings.moveTo,
+                hint = BlockStrings.moveBlockHint,
+                viewModelKey = "move-block",
+                onDismiss = onDismiss,
+                onPick = { node ->
+                    onDismiss()
+                    menuScope.launch {
+                        val pageId = node.pageId ?: node.rowId?.let { factory.pageRepository.ensureRowPage(it) }
+                        if (pageId != null) {
+                            viewModel.moveBlockToPage(block, pageId) {
+                                Toast.makeText(appContext, Strings.movedInto(node.placeName()), Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
                 }
             )
         }
@@ -558,7 +618,9 @@ private enum class BlockMenuStep {
     /** L'icona e lo sfondo di un riquadro (dal 06/10/2026). */
     CALLOUT_ICON, CALLOUT_COLOR,
     /** La pagina di un "Link to page" (dal 06/10/2026). */
-    PICK_MENTION
+    PICK_MENTION,
+    /** Dove spostare un'immagine (dal 06/10/2026). */
+    MOVE_BLOCK
 }
 
 /** Una voce del menu di un blocco che non è testo: aprire, cambiare, scaricare… (dal 06/10/2026). */
@@ -877,8 +939,9 @@ private fun TurnIntoList(
             fontWeight = FontWeight.Bold
         )
     }
-    // "Link to page" non c'è: il testo della riga andrebbe perso (dal 06/10/2026).
-    val entries = slashEntries().filter { it.action != SlashAction.LinkToPage }
+    // "Link to page", le immagini e gli altri file non ci sono: il testo
+    // della riga andrebbe perso (dal 06/10/2026).
+    val entries = slashEntries().filter { it.action != SlashAction.LinkToPage && it.action !is SlashAction.Media }
     OptionsGroup {
         entries.forEachIndexed { index, entry ->
             if (index > 0) HorizontalDivider()

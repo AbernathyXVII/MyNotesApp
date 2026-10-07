@@ -8,6 +8,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.foundation.layout.Row
+import com.gabriele.notionlocal.ui.i18n.BlockStrings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.runtime.mutableFloatStateOf
@@ -101,10 +104,18 @@ internal fun ImageCell(
 /**
  * **L'immagine a tutto schermo** (dal 29/09/2026), intera sul nero: con due
  * dita la si ingrandisce e la si sposta, con due tocchi si torna com'era.
- * Si chiude con la X o col gesto indietro.
+ * Si chiude con la X o col gesto indietro. `onDownload` (dal 06/10/2026,
+ * per le immagini delle pagine) mette accanto alla X il pulsante per
+ * scaricarla.
  */
 @Composable
-private fun FullScreenImage(fileName: String, store: PageImageStore, title: String, onDismiss: () -> Unit) {
+internal fun FullScreenImage(
+    fileName: String,
+    store: PageImageStore,
+    title: String,
+    onDismiss: () -> Unit,
+    onDownload: (() -> Unit)? = null
+) {
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
     Dialog(
@@ -143,14 +154,20 @@ private fun FullScreenImage(fileName: String, store: PageImageStore, title: Stri
                         translationY = offset.y
                     }
             )
-            IconButton(
-                onClick = onDismiss,
+            Row(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .statusBarsPadding()
                     .padding(8.dp)
             ) {
-                Icon(Icons.Filled.Close, contentDescription = EditorStrings.close, tint = Color.White)
+                if (onDownload != null) {
+                    IconButton(onClick = onDownload) {
+                        Icon(Icons.Filled.Download, contentDescription = BlockStrings.download, tint = Color.White)
+                    }
+                }
+                IconButton(onClick = onDismiss) {
+                    Icon(Icons.Filled.Close, contentDescription = EditorStrings.close, tint = Color.White)
+                }
             }
         }
     }

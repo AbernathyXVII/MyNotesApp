@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  **I file che l'app può passare alle altre app** (dal 06/10/2026): le
+  immagini, i video, gli audio e i file dei blocchi, che stanno tutti nella
+  cartella "page-images" dell'app. Le altre app li ricevono uno alla volta,
+  quando l'utente sceglie di aprirli con loro (vedi `BlockFiles`).
+-->
+<paths>
+    <files-path name="block-files" path="page-images/" />
+</paths>

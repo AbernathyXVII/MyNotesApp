@@ -2053,6 +2053,52 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.149 — 07/10/2026 · 20:39 — "Image": l'immagine da ridimensionare, ingrandire, scaricare e spostare
+*(Claude Code sul PC; verificato sul telefono il 06/10/2026; 423 test
+passati; commit solo in locale)*
+
+Dalla stessa richiesta della v0.146, la voce dell'immagine, parola per parola:
+> «Image (mettere un'immagine come vedi nella quinta foto esclusivamente con
+> un upload diretto: posso redimensionarla, aprirla, zoomarla, scaricarla, e
+> spostarla da qualche altra parte di default sempre in fondo alla pagina di
+> destinazione)»
+
+- **[Nuova funzionalità]** **"Image"** (dal menu "/" e dal "+"): la riga
+  diventa il riquadro grigio "Add an image" e **si apre subito la galleria**
+  del telefono, come su Notion. Si carica **solo dal telefono**, come
+  chiesto (niente link). Annullando la galleria il riquadro resta, e
+  toccandolo la si riapre
+- **[Nuova funzionalità]** L'immagine si vede **intera**, larga quanto la
+  pagina e centrata. **Due maniglie ai lati** la stringono (fino a un
+  quarto della pagina) o la allargano trascinandole; la larghezza resta
+- **[Nuova funzionalità]** **Toccandola si apre a tutto schermo**, sul nero:
+  si ingrandisce e si sposta con due dita, due tocchi la rimettono com'era.
+  Lì c'è anche il pulsante per **scaricarla**, nella Galleria del telefono
+  ("Pictures/notE")
+- **[Nuova funzionalità]** **Tenendola premuta**: "View", "Download",
+  "Replace" (un'altra dalla galleria), **"Move to"** — si sceglie la pagina,
+  dall'albero o cercandola, e l'immagine **va in fondo a quella pagina** —,
+  "Duplicate" (con una copia sua del file) e "Delete". "Move to" non si
+  annulla con la freccia indietro: l'avviso dice dov'è finita
+- **[Modificato]** **Backspace a inizio della riga sotto un riquadro o una
+  citazione** unisce la riga al loro testo, come già sotto un toggle o una
+  casella. Sotto un'immagine (o un altro blocco senza testo) non fa niente
+- **[Progetto]** `MediaBlocks.kt` (`ImageBlockContent`, `MediaPlaceholder`),
+  `BlockFiles` (nome e tipo del file, Galleria, apertura con altre app),
+  `PageImageStore.saveFile`, il `FileProvider` (`res/xml/shared_files.xml`),
+  `PageRepository.moveBlockToPage`. Il menu dei sei puntini chiede e il
+  blocco fa (`PageEditorViewModel.mediaRequest`): il menu si chiude prima che
+  la galleria risponda. L'immagine a tutto schermo è quella della proprietà
+  "Image" dei database, con in più "Scarica". Test: `ImageBlockTest` (4)
+- Verificato sul telefono, in due righe di prova di Main calendar (poi
+  tolte), con un'immagine di prova messa apposta nella Galleria (non le foto
+  dell'utente): "/image" apre la galleria; scelta, l'immagine compare a tutta
+  larghezza; le maniglie la stringono e poi la allargano, due volte di fila;
+  a tutto schermo "Scarica" la salva in Pictures/notE ("Saved in
+  Pictures/notE"); tenendola premuta, il menu con le sei voci; "Move to" →
+  "ProvaDest" la porta in fondo a quella pagina ("Moved to "ProvaDest""),
+  con la sua larghezza. Le righe di Main calendar sono come prima della prova
+
 ### 🆕 v0.148 — 06/10/2026 · 10:15 — "Link to page" e "Database - Full page"
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 419 test
 passati; commit solo in locale)*

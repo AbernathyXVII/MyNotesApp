@@ -1936,6 +1936,22 @@ class PageRepository(private val db: AppDatabase) {
         database.id
     }
 
+    /**
+     * **Sposta un blocco in fondo a un'altra pagina** (dal 06/10/2026, per
+     * l'immagine: "spostarla da qualche altra parte, di default sempre in
+     * fondo alla pagina di destinazione"). I blocchi rimasti si chiudono sul
+     * buco che lascia. Falso se il blocco non c'è più.
+     */
+    suspend fun moveBlockToPage(blockId: String, destinationPageId: String): Boolean = db.withTransaction {
+        val block = blockDao.getById(blockId) ?: return@withTransaction false
+        val last = blockDao.lastOrderIndex(destinationPageId) ?: -1
+        blockDao.moveToPage(blockId, destinationPageId, last + 1)
+        if (block.pageId != destinationPageId) {
+            blockDao.shiftOrderIndexes(block.pageId, block.parentBlockId, block.orderIndex + 1, -1)
+        }
+        true
+    }
+
     /** Una riga diventa un blocco senza testo (immagine, video, link a una pagina…): vedi `BlockDao.setTypeAndAttrs`. */
     suspend fun setBlockTypeAndAttrs(blockId: String, type: BlockType, attrs: BlockAttrs) = db.withTransaction {
         unnestChildren(blockId)

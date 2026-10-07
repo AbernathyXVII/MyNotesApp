@@ -2262,7 +2262,13 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         // Le isole "contenitore" (tabelle, link, database) non hanno un
         // testo in cui fondersi, e dentro hanno roba da non buttare: lì
         // non si fa niente, come prima.
-        if (above.type != BlockType.CHECKBOX && above.type != BlockType.TOGGLE) return BackspaceOutcome.NOTHING
+        // Riquadro e citazione (dal 06/10/2026) si fondono come il toggle:
+        // la riga va in fondo al loro testo.
+        if (above.type != BlockType.CHECKBOX && above.type != BlockType.TOGGLE &&
+            above.type != BlockType.CALLOUT && above.type != BlockType.QUOTE
+        ) {
+            return BackspaceOutcome.NOTHING
+        }
 
         val aboveSpans = spansOf(above)
         val joinAt = aboveSpans.plainText().length
@@ -3007,6 +3013,50 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         }
     }
 
+    // --- Immagini, video, audio e file (dal 06/10/2026) ---
+
+    private val _mediaRequest = MutableStateFlow<MediaRequest?>(null)
+
+    /**
+     * **Una cosa da fare con un'immagine, un video, un audio o un file**:
+     * sceglierlo, guardarlo a tutto schermo, scaricarlo, aprirlo altrove.
+     *
+     * La chiede il menu dei sei puntini, ma la fa **il blocco**: il menu si
+     * chiude subito, e la galleria o la scelta di dove salvare, aperte da
+     * lui, risponderebbero a nessuno. Anche il blocco appena nato dal menu
+     * "/" chiede così di aprire la scelta del file, come fa Notion.
+     */
+    val mediaRequest: StateFlow<MediaRequest?> = _mediaRequest
+
+    fun requestMedia(blockId: String, kind: MediaRequestKind) {
+        _mediaRequest.value = MediaRequest(blockId, kind)
+    }
+
+    fun consumeMediaRequest() {
+        _mediaRequest.value = null
+    }
+
+    /** La riga diventa un'immagine, un video, un audio, un file o un segnalibro ancora vuoti, e la scelta si apre. */
+    fun convertToMedia(block: BlockEntity, type: BlockType) {
+        snapshotForStructuralChange()
+        viewModelScope.launch {
+            structuralEdits.withLock { blocksDb.setTypeAndAttrs(block.id, type, BlockAttrs()) }
+            _mediaRequest.value = MediaRequest(block.id, MediaRequestKind.PICK)
+        }
+    }
+
+    /**
+     * Sposta il blocco in fondo a un'altra pagina. **Senza Annulla**: il
+     * blocco esce da questa pagina, e rimetterlo qui lascerebbe una copia
+     * anche là. L'avviso dice dov'è finito.
+     */
+    fun moveBlockToPage(block: BlockEntity, destinationPageId: String, onDone: () -> Unit) {
+        closeEditSession()
+        viewModelScope.launch {
+            if (structuralEdits.withLock { repository.moveBlockToPage(block.id, destinationPageId) }) onDone()
+        }
+    }
+
     // --- Il menu di un blocco (l'icona a sei puntini, o il dito tenuto su una pagina) ---
 
     /**
@@ -3256,3 +3306,8 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
      */
     suspend fun getPageInfo(pageId: String): PageEntity? = repository.getPage(pageId)
 }
+
+/** Cosa fare con un blocco-file: vedi `PageEditorViewModel.mediaRequest`. */
+enum class MediaRequestKind { PICK, VIEW, DOWNLOAD, OPEN_ELSEWHERE }
+
+data class MediaRequest(val blockId: String, val kind: MediaRequestKind)

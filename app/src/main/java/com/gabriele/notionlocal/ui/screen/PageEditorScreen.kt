@@ -1429,6 +1429,12 @@ private fun PageEditorContent(
                         focusManager.clearFocus()
                         linkToPageFor = block
                     }
+                    // Il blocco nasce vuoto e apre la scelta del file: la
+                    // tastiera non serve.
+                    is SlashAction.Media -> {
+                        focusManager.clearFocus()
+                        viewModel.convertToMedia(block, action.type)
+                    }
                     // Come "Page": il database nasce e ci si entra.
                     SlashAction.FullPageDatabase -> {
                         focusManager.clearFocus()
@@ -2401,7 +2407,7 @@ private fun PageEditorContent(
             // Il testo della riga diventa il nome del database, e si resta qui.
             SlashAction.FullPageDatabase -> viewModel.convertToFullPageDatabase(block, title = text) {}
             // Non sono in "Turn into" (vedi `TurnIntoList`): il testo andrebbe perso.
-            SlashAction.LinkToPage, SlashAction.NotYet -> Unit
+            is SlashAction.Media, SlashAction.LinkToPage, SlashAction.NotYet -> Unit
         }
     }
 
@@ -3359,6 +3365,12 @@ internal sealed class SlashAction {
      * quale, da un elenco (vedi `LinkedSourcePickerSheet`).
      */
     object LinkedView : SlashAction()
+    /**
+     * Un'immagine, un video, un audio, un file o un segnalibro (dal
+     * 06/10/2026): la riga diventa il blocco ancora vuoto, e si apre subito
+     * la scelta del file o del link.
+     */
+    data class Media(val type: BlockType) : SlashAction()
     /** "Link to page": si sceglie una pagina che c'è già, e la riga rimanda a lei (dal 06/10/2026). */
     object LinkToPage : SlashAction()
     /** "Database - Full page": un database nuovo che si apre a pagina intera (dal 06/10/2026). */
@@ -3416,7 +3428,7 @@ internal val SLASH_ENTRIES: List<SlashEntry> = listOf(
     SlashEntry("Divider", SlashCategory.BASIC, SlashAction.Divider, Icons.Filled.Remove),
     SlashEntry("Link to page", SlashCategory.BASIC, SlashAction.LinkToPage, Icons.Filled.Link),
 
-    SlashEntry("Image", SlashCategory.MEDIA, SlashAction.NotYet, Icons.Filled.Image),
+    SlashEntry("Image", SlashCategory.MEDIA, SlashAction.Media(BlockType.IMAGE), Icons.Filled.Image),
     SlashEntry("Video", SlashCategory.MEDIA, SlashAction.NotYet, Icons.Filled.Videocam),
     SlashEntry("Audio", SlashCategory.MEDIA, SlashAction.NotYet, Icons.Filled.VolumeUp),
     SlashEntry("Code", SlashCategory.MEDIA, SlashAction.Type(BlockType.CODE), Icons.Filled.Code),
@@ -5253,6 +5265,17 @@ private fun BlockRow(
             onNavigateToPage = onNavigateToPage,
             onNavigateToDatabase = onNavigateToDatabase,
             onLongPress = onOpenBlockMenu?.let { open -> { open(block.id) } }
+        )
+        return
+    }
+
+    if (block.type == BlockType.IMAGE) {
+        ImageBlockContent(
+            block = block,
+            viewModel = viewModel,
+            locked = LocalPageLocked.current,
+            onLongPress = onOpenBlockMenu?.let { open -> { open(block.id) } },
+            modifier = Modifier.padding(start = PAGE_SIDE_PADDING + (depth * 20).dp, end = PAGE_SIDE_PADDING)
         )
         return
     }

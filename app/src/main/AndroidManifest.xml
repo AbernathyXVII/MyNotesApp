@@ -70,6 +70,21 @@
             </intent-filter>
         </activity>
 
+        <!--
+          I file dei blocchi aperti con un'altra app (un video col suo
+          lettore, un PDF col suo visore): vedi `BlockFiles` e
+          `res/xml/shared_files.xml`.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/shared_files" />
+        </provider>
+
         <!-- La sveglia delle notifiche: vedi `NoteAlarms`. -->
         <receiver
             android:name=".data.notify.AlarmReceiver"

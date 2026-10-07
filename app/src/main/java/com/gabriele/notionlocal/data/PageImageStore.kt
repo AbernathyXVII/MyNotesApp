@@ -53,6 +53,24 @@ class PageImageStore(context: Context) {
     }
 
     /**
+     * **Copia dentro l'app un file qualsiasi** scelto dal telefono (dal
+     * 06/10/2026): il video, l'audio o il file di un blocco. Tiene la sua
+     * estensione, perché l'app che lo aprirà lo riconosca. Restituisce il
+     * nome del file nell'app.
+     */
+    suspend fun saveFile(uri: Uri, extension: String?): Result<String> = withContext(Dispatchers.IO) {
+        val name = newName(extension?.lowercase()?.filter { it.isLetterOrDigit() }?.takeIf { it.isNotEmpty() } ?: "bin")
+        val target = File(directory, name)
+        runCatching {
+            appContext.contentResolver.openInputStream(uri).use { input ->
+                requireNotNull(input) { "Il file scelto non si riesce ad aprire." }
+                target.outputStream().use { output -> input.copyTo(output) }
+            }
+            name
+        }.onFailure { target.delete() }
+    }
+
+    /**
      * Una copia del file con un nome suo, per una pagina duplicata.
      *
      * Le due pagine **non possono condividere lo stesso file**: cambiando

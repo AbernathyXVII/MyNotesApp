@@ -39,6 +39,28 @@ object BlockStrings {
     val changePage get() = t("Change page", "Cambia pagina", "Seite ändern", "Changer de page", "Cambiar página", "更换页面", "페이지 변경", "ページを変更")
     val openPage get() = t("Open", "Apri", "Öffnen", "Ouvrir", "Abrir", "打开", "열기", "開く")
 
+    // --- Immagini, video, audio e file ---
+
+    val addImage get() = t("Add an image", "Aggiungi un'immagine", "Bild hinzufügen", "Ajouter une image", "Añadir una imagen", "添加图片", "이미지 추가", "画像を追加")
+    val view get() = t("View", "Guarda", "Ansehen", "Voir", "Ver", "查看", "보기", "表示")
+    val download get() = t("Download", "Scarica", "Herunterladen", "Télécharger", "Descargar", "下载", "다운로드", "ダウンロード")
+    val replace get() = t("Replace", "Sostituisci", "Ersetzen", "Remplacer", "Reemplazar", "替换", "바꾸기", "置き換え")
+    val imageSaved get() = t("Saved in Pictures/notE", "Salvata in Immagini/notE", "In Bilder/notE gespeichert", "Enregistrée dans Images/notE", "Guardada en Imágenes/notE", "已保存到 图片/notE", "사진/notE에 저장했습니다", "ピクチャ/notE に保存しました")
+    val fileSaved get() = t("File saved", "File salvato", "Datei gespeichert", "Fichier enregistré", "Archivo guardado", "文件已保存", "파일을 저장했습니다", "ファイルを保存しました")
+    val saveFailed get() = t("Couldn't save the file", "Non sono riuscito a salvare il file", "Datei konnte nicht gespeichert werden", "Impossible d'enregistrer le fichier", "No se pudo guardar el archivo", "无法保存文件", "파일을 저장할 수 없습니다", "ファイルを保存できませんでした")
+    val moveBlockHint get() = t(
+        "It goes to the bottom of the page you choose.",
+        "Va in fondo alla pagina che scegli.",
+        "Es kommt ans Ende der gewählten Seite.",
+        "Il va en bas de la page choisie.",
+        "Va al final de la página que elijas.",
+        "它会移到你选择的页面底部。",
+        "선택한 페이지의 맨 아래로 이동해요.",
+        "選んだページの一番下に移動します。"
+    )
+    /** Le maniglie ai lati di un'immagine, per allargarla o stringerla. */
+    val resizeImage get() = t("Resize", "Ridimensiona", "Größe ändern", "Redimensionner", "Cambiar tamaño", "调整大小", "크기 조정", "サイズを変更")
+
     // --- Codice ---
 
     val copyCode get() = t("Copy code", "Copia il codice", "Code kopieren", "Copier le code", "Copiar código", "复制代码", "코드 복사", "コードをコピー")

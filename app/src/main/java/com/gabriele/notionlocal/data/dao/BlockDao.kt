@@ -83,6 +83,10 @@ interface BlockDao {
     @Query("UPDATE blocks SET type = :type WHERE id = :blockId")
     suspend fun setType(blockId: String, type: BlockType)
 
+    /** Porta un blocco in un'altra pagina, al primo livello e al posto `orderIndex`. */
+    @Query("UPDATE blocks SET pageId = :pageId, parentBlockId = NULL, orderIndex = :orderIndex WHERE id = :blockId")
+    suspend fun moveToPage(blockId: String, pageId: String, orderIndex: Int)
+
     /** Cambia solo le voci in più di un blocco (`BlockAttrs`): il file, l'icona, la lingua… */
     @Query("UPDATE blocks SET attrsJson = :attrsJson WHERE id = :blockId")
     suspend fun setAttrs(blockId: String, attrsJson: String)
