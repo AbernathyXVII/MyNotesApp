@@ -71,6 +71,20 @@ class PageImageStore(context: Context) {
     }
 
     /**
+     * **Un'immagine arrivata dalla rete** (dal 06/10/2026: l'anteprima di un
+     * segnalibro). Se non è davvero un'immagine non resta. Il nome del file, o null.
+     */
+    suspend fun saveImageBytes(bytes: ByteArray): String? = withContext(Dispatchers.IO) {
+        val name = newName()
+        val target = File(directory, name)
+        runCatching {
+            target.writeBytes(bytes)
+            require(isImage(target))
+            name
+        }.onFailure { target.delete() }.getOrNull()
+    }
+
+    /**
      * Una copia del file con un nome suo, per una pagina duplicata.
      *
      * Le due pagine **non possono condividere lo stesso file**: cambiando

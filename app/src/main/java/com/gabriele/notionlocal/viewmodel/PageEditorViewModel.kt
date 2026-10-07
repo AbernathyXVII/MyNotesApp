@@ -1880,6 +1880,16 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         viewModelScope.launch { repository.updateBlockAttrs(blockId, change) }
     }
 
+    /**
+     * Come `updateBlockAttrs`, ma **senza un passo di Annulla**: per quello
+     * che l'app aggiunge da sola, come l'anteprima di un segnalibro arrivata
+     * dalla rete. Annullando si tornerebbe al segnalibro "spoglio" di un
+     * attimo prima, che nessuno ha scritto.
+     */
+    fun fillBlockAttrs(blockId: String, change: (BlockAttrs) -> BlockAttrs) {
+        viewModelScope.launch { repository.updateBlockAttrs(blockId, change) }
+    }
+
     /** Dove sta il cursore dentro la riga `blockId`, se è lì che si sta scrivendo. */
     private fun caretInLine(blockId: String): Int? {
         val selection = liveSelection ?: return null

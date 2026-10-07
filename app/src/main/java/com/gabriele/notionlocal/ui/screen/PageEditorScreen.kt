@@ -3429,11 +3429,11 @@ internal val SLASH_ENTRIES: List<SlashEntry> = listOf(
     SlashEntry("Link to page", SlashCategory.BASIC, SlashAction.LinkToPage, Icons.Filled.Link),
 
     SlashEntry("Image", SlashCategory.MEDIA, SlashAction.Media(BlockType.IMAGE), Icons.Filled.Image),
-    SlashEntry("Video", SlashCategory.MEDIA, SlashAction.NotYet, Icons.Filled.Videocam),
-    SlashEntry("Audio", SlashCategory.MEDIA, SlashAction.NotYet, Icons.Filled.VolumeUp),
+    SlashEntry("Video", SlashCategory.MEDIA, SlashAction.Media(BlockType.VIDEO), Icons.Filled.Videocam),
+    SlashEntry("Audio", SlashCategory.MEDIA, SlashAction.Media(BlockType.AUDIO), Icons.Filled.VolumeUp),
     SlashEntry("Code", SlashCategory.MEDIA, SlashAction.Type(BlockType.CODE), Icons.Filled.Code),
-    SlashEntry("File", SlashCategory.MEDIA, SlashAction.NotYet, Icons.Filled.AttachFile),
-    SlashEntry("Web bookmark", SlashCategory.MEDIA, SlashAction.NotYet, Icons.Filled.Bookmark),
+    SlashEntry("File", SlashCategory.MEDIA, SlashAction.Media(BlockType.FILE), Icons.Filled.AttachFile),
+    SlashEntry("Web bookmark", SlashCategory.MEDIA, SlashAction.Media(BlockType.BOOKMARK), Icons.Filled.Bookmark),
 
     SlashEntry(
         "Table view",
@@ -5266,6 +5266,21 @@ private fun BlockRow(
             onNavigateToDatabase = onNavigateToDatabase,
             onLongPress = onOpenBlockMenu?.let { open -> { open(block.id) } }
         )
+        return
+    }
+
+    if (block.type == BlockType.VIDEO || block.type == BlockType.AUDIO ||
+        block.type == BlockType.FILE || block.type == BlockType.BOOKMARK
+    ) {
+        val mediaModifier = Modifier.padding(start = PAGE_SIDE_PADDING + (depth * 20).dp, end = PAGE_SIDE_PADDING)
+        val mediaLongPress = onOpenBlockMenu?.let { open -> { open(block.id) } }
+        val locked = LocalPageLocked.current
+        when (block.type) {
+            BlockType.VIDEO -> VideoBlockContent(block, viewModel, locked, mediaLongPress, mediaModifier)
+            BlockType.AUDIO -> AudioBlockContent(block, viewModel, locked, mediaLongPress, mediaModifier)
+            BlockType.FILE -> FileBlockContent(block, viewModel, locked, mediaLongPress, mediaModifier)
+            else -> BookmarkBlockContent(block, viewModel, locked, mediaLongPress, mediaModifier)
+        }
         return
     }
 

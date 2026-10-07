@@ -658,8 +658,9 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   per cambiarle, e l'immagine arriva dalla **galleria del telefono**
   ("Upload"), di cui l'app tiene una copia. Un PNG trasparente resta
   trasparente. (Fino al 25/09/2026 anche da un link: tolto su
-  richiesta, e con lui il permesso di rete — l'app non si collega a
-  niente)
+  richiesta, e con lui il permesso di rete. La rete è tornata il
+  06/10/2026, v0.146, solo per i video presi da un link e per le
+  anteprime dei segnalibri)
 - **La copertina si inquadra**: da "Reposition" la si sposta col dito
   in tutte le direzioni e la si ingrandisce pizzicando, fino a
   quattro volte. Il file non viene mai ritagliato né ridotto — nel
@@ -796,13 +797,14 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   sono testo completamente piatto, senza formattazione né colore:
   portarceli richiede di costruire per ciascuno l'infrastruttura già
   fatta per i blocchi
-- Nei menu "+" e "/" (dal 24/09/2026 hanno le stesse voci), **Callout,
+- ~~Nei menu "+" e "/" (dal 24/09/2026 hanno le stesse voci), **Callout,
   Quote, Link to page (come voce separata da "Page"), Image, Video,
   Audio, Code, File, Web bookmark e Database - Full page** ci sono ma
   sono grigie: non sono state
   costruite — alcune richiedono capacità nuove (gestione file,
-  embedding media). ~~Anche Linked view of data source.~~ **Superato**
-  (24/09/2026, richiesta 36): la vista collegata c'è
+  embedding media).~~ **Superato** (06–07/10/2026, dalla v0.146 alla
+  v0.151): ci sono tutte. ~~Anche Linked view of data source.~~
+  **Superato** (24/09/2026, richiesta 36): la vista collegata c'è
 - **Database: "Property visibility" non riordina e non cerca.** Su
   Notion le due liste hanno le maniglie per trascinare le colonne e un
   campo di ricerca in cima; qui l'ordine si cambia solo tenendo
@@ -2052,6 +2054,139 @@ Le voci nate nelle sessioni cloud (quelle del 24/09/2026, da "Database —
 vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
+
+### 🆕 v0.151 — 07/10/2026 · 21:19 — "File" e "Web bookmark": il file da aprire o scaricare e il link con l'anteprima
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno, anche con
+la rete; 431 test passati; commit solo in locale)*
+
+Dalla stessa richiesta della v0.146, le ultime due voci, parola per parola:
+> «File (mettere un file che posso aprire o scaricare ovunque io sia come
+> vedi nella nona foto)»
+>
+> «Web bookmark (mettere un link che posso aprire nel mio browser
+> predefinito come vedi nella decima foto)»
+
+Con questa, **tutte le voci di quella richiesta ci sono**.
+
+- **[Nuova funzionalità]** **"File"** (dal menu "/" e dal "+"): il riquadro
+  "Upload or embed a file" e la finestrella Upload/Link della v0.150:
+  "Choose a file" apre i file del telefono, **di qualsiasi tipo**; "Link"
+  ("Embed link") tiene l'indirizzo di un file in rete
+- **[Nuova funzionalità]** Il blocco è la riga della nona foto: **l'icona
+  del tipo** (PDF, immagine, video, audio, documento, archivio), **il nome
+  e il peso** ("215 KB", "1,4 MB"). **Toccandolo si apre** con l'app che lo
+  sa aprire (Android chiede quale); **la freccia a destra lo scarica dove si
+  sceglie** — il telefono, la scheda SD, Drive —: è il "scaricarlo ovunque
+  io sia". Tenendolo premuto: "Open with…", "Download", "Replace",
+  "Duplicate", "Delete". Un file da link si apre toccandolo
+- **[Nuova funzionalità]** **"Web bookmark"**: la finestra "Create
+  bookmark", dove si incolla il link. Il segnalibro è la scheda della decima
+  foto: **il titolo del sito, la descrizione e la sua immagine**, e sotto
+  l'indirizzo. **Toccandolo si apre nel browser predefinito** (o nell'app
+  del sito, se c'è). Tenendolo premuto: "Open in browser or app", "Replace",
+  "Duplicate", "Delete"
+- **[Nuova funzionalità]** **L'anteprima si legge dal sito una volta sola**,
+  appena nasce il segnalibro: sono i dati che il sito stesso dà per le
+  anteprime (gli stessi che usano Notion, WhatsApp e Telegram). L'immagine
+  si salva nell'app, quindi dopo si vede anche senza rete. Senza rete il
+  segnalibro mostra il nome del sito e l'indirizzo, e ci riprova alla
+  prossima apertura della pagina
+- **[Modificato]** README: tolte dai limiti noti le voci grigie dei menu
+  "+" e "/" (ora ci sono tutte), e nelle funzionalità la frase "l'app non
+  si collega a niente", vera fino alla v0.146
+- **[Progetto]** `FileBookmarkBlocks.kt` (`FileBlockContent`,
+  `BookmarkBlockContent`, `BookmarkSheet`, `formatFileSize`),
+  `LinkPreviews.kt` (legge al massimo 512 KB della pagina, presentandosi
+  come un browser, con 8 secondi di pazienza; l'immagine al massimo 5 MB).
+  Il "Download" passa dal "Salva in…" di Android, che non chiede permessi.
+  Test: `LinkPreviewTest` (4: i tag "og:" in qualsiasi ordine, il
+  `<title>` quando mancano, una pagina senza niente, il peso dei file)
+- Verificato sul telefono, nella stessa riga di prova di Main calendar
+  (poi tolta), con un file audio di prova: il blocco File mostra l'icona
+  dell'audio, il nome e "215 KB"; toccandolo Android chiede con che app
+  aprirlo; la freccia lo salva dove si sceglie, e il file salvato è
+  identico all'originale (stessa impronta md5). Il segnalibro, a rete
+  spenta, mostra "wikipedia.org" e l'indirizzo. **Con la rete accesa
+  l'anteprima non arrivava mai**: la lettura del sito ripartiva da capo
+  appena cominciata, e così si interrompeva da sola; ora parte una volta
+  per link. Poi: "Wikipedia, the free encyclopedia", la descrizione e il
+  globo; toccandolo si apre Firefox, il browser predefinito, su
+  wikipedia.org, e Indietro torna a notE
+
+### 🆕 v0.150 — 07/10/2026 · 21:18 — "Video" e "Audio": guardarli e ascoltarli dentro la pagina
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno, anche con
+la rete; 431 test passati insieme alla v0.151; commit solo in locale)*
+
+Dalla stessa richiesta della v0.146, le voci del video e dell'audio, parola
+per parola:
+> «Video (mettere un video tramite upload o tramite link come vedi nella
+> sesta foto, che mi permette o di riprodurlo direttamente sull'embed
+> dell'app, con play, pause, resume, e la barra di riproduzione che mi
+> consente di andare avanti o indietro, tipo con il pallino come Youtube, o
+> di aprirlo o nel browser o sull' app corrispondente se esiste)»
+>
+> «Audio (mettere un file audio che posso riprodurre direttamente sull'app
+> con play, pause, resume, e la barra di riproduzione che mi consente di
+> andare avanti o indietro, come vedi nella settima foto)»
+
+- **[Nuova funzionalità]** **"Video"** (dal menu "/" e dal "+"): la riga
+  diventa il riquadro "Embed or upload a video" e si apre subito la
+  finestrella di Notion con due schede: **"Upload"** ("Choose a video", la
+  galleria del telefono con i soli video) e **"Link"** (si incolla
+  l'indirizzo, "Embed video"). Un indirizzo senza "https://" lo prende; una
+  parola che non è un link no ("That doesn't look like a link")
+- **[Nuova funzionalità]** **Un video caricato, o il link diretto a un
+  video** (un .mp4…), si guarda **nel lettore dell'app**: toccando il video
+  parte o si ferma, e sotto ci sono **play/pausa, il tempo e la barra col
+  pallino** — lo si trascina per andare avanti o indietro, e il video ci
+  salta quando lo si lascia. Prima di partire mostra il primo fotogramma
+  invece del nero; arrivato in fondo, play ricomincia
+- **[Nuova funzionalità]** **YouTube e Vimeo** si guardano **nel loro
+  lettore, dentro la pagina** (play, pausa, la barra col pallino rosso):
+  è l'unico modo in cui quei siti lasciano vedere i loro video fuori da sé.
+  Il tasto **schermo intero** del lettore lo allarga a tutto il telefono,
+  barre di sistema comprese; Indietro lo riporta nella pagina. Sotto, il
+  nome del sito e i tre puntini del menu del blocco
+- **[Nuova funzionalità]** **Il menu del video** (tenendolo premuto, o dai
+  tre puntini): per un link **"Open in browser or app"** — Android chiede
+  se aprirlo nell'app di YouTube o nel browser —; per un file **"Open
+  with…"** (un altro lettore), **"Download"** (lo si salva dove si sceglie)
+  e "Replace"; per tutti "Duplicate" e "Delete"
+- **[Nuova funzionalità]** **"Audio"**: il riquadro "Add an audio file", poi
+  la stessa finestrella ("Choose a file" apre i file del telefono, solo
+  audio; "Link" per l'indirizzo di un file audio). Il blocco è la scheda
+  della settima foto: **il nome e, sotto, play/pausa, il tempo e la barra
+  col pallino**. Tenendolo premuto, lo stesso menu del video
+- **[Nuova funzionalità]** **Uscendo dall'app o dalla pagina il lettore si
+  ferma** (Home, un'altra app, lo schermo spento, un'altra pagina): niente
+  suono da una pagina che non si vede. Tornando non riparte da solo, e play
+  **riprende dal punto in cui si era fermato**
+- **[Progetto]** `MediaPlayers.kt`: `Playback` (il `MediaPlayer` di
+  Android su una `TextureView`), `PlaybackControls`, `InlineVideoPlayer`,
+  `InlineAudioPlayer`, e `EmbeddedVideoPlayer` — un `WebView` con l'iframe
+  di `youtube-nocookie.com` o di Vimeo, la cui pagina ha come indirizzo
+  "di casa" `https://com.gabriele.notionlocal` (YouTube vuole sapere chi
+  lo incorpora). `VideoAudioBlocks.kt`: la finestrella Upload/Link e i
+  blocchi. I file caricati vivono nella cartella delle immagini dei blocchi
+  e si aprono alle altre app dal `FileProvider` della v0.149. Test:
+  `MediaLinksTest` (4: YouTube in tutte le forme del suo indirizzo, Vimeo,
+  i link senza "https://", il tempo come un orologio)
+- Verificato sul telefono, in una riga di prova di Main calendar (poi
+  tolta), con un video e un audio di prova messi apposta nel telefono (non
+  i file dell'utente): il video caricato parte, si ferma, "Open with…" lo
+  apre in un altro lettore; l'audio parte, la barra salta avanti e
+  indietro, riprende. **Il video di YouTube restava nero**: con
+  l'ispettore del `WebView` si è visto che l'iframe era alto zero — in
+  Compose il `WebView` nasce "alto quanto il contenuto", e così la pagina
+  dentro si crede alta zero. Ora è alto quanto il riquadro: si vede, parte,
+  si ferma, va a schermo intero (prima quel tasto non faceva niente) e
+  torna. **Uscendo con Home l'audio diventava "This audio can't be played
+  here"**: fermare un lettore mai partito per Android è un errore; ora si
+  ferma solo quello che suona. Il link diretto a un .mp4 di prova si
+  carica, mostra il primo fotogramma e parte (0:02 di 0:10). "Open in
+  browser or app" su YouTube: Android offrirebbe l'app di YouTube e
+  Firefox (controllato senza aprirlo, per non toccare la cronologia di
+  YouTube dell'utente)
 
 ### 🆕 v0.149 — 07/10/2026 · 20:39 — "Image": l'immagine da ridimensionare, ingrandire, scaricare e spostare
 *(Claude Code sul PC; verificato sul telefono il 06/10/2026; 423 test

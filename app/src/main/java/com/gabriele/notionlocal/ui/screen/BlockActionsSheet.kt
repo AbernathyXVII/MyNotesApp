@@ -79,6 +79,7 @@ import com.gabriele.notionlocal.data.PageImageStore
 import com.gabriele.notionlocal.data.entity.BlockEntity
 import com.gabriele.notionlocal.data.entity.BlockType
 import com.gabriele.notionlocal.data.entity.MULTILINE_TYPES
+import com.gabriele.notionlocal.data.entity.MEDIA_TYPES
 import com.gabriele.notionlocal.data.entity.attrs
 import com.gabriele.notionlocal.data.entity.PageEntity
 import com.gabriele.notionlocal.data.repository.PageRepository
@@ -228,30 +229,39 @@ internal fun BlockActionsHost(
                             viewModel.deleteBlock(block)
                         }
                     )
-                } else if (block.type == BlockType.IMAGE) {
-                    // **L'immagine** (dal 06/10/2026): le cose da fare le fa
-                    // il blocco (vedi `PageEditorViewModel.mediaRequest`), perché
-                    // questo menu si chiude prima che la galleria risponda.
-                    val hasFile = block.attrs.file != null
+                } else if (block.type in MEDIA_TYPES) {
+                    // **Immagini, video, audio, file e segnalibri** (dal
+                    // 06/10/2026): le cose da fare le fa il blocco (vedi
+                    // `PageEditorViewModel.mediaRequest`), perché questo menu
+                    // si chiude prima che la galleria o il "Salva in…" rispondano.
+                    val media = block.attrs
                     fun ask(kind: MediaRequestKind) {
                         onDismiss()
                         viewModel.requestMedia(block.id, kind)
                     }
                     ObjectBlockMenu(
-                        title = block.attrs.name ?: EditorStrings.blockType("Image"),
+                        title = media.name ?: media.url?.let { linkHost(it) } ?: EditorStrings.blockType(mediaTypeLabel(block.type)),
                         onAddLine = { below ->
                             onDismiss()
                             viewModel.addLineNextTo(block, below)
                         },
-                        actions = if (hasFile) {
-                            listOf(
+                        actions = when {
+                            block.type == BlockType.IMAGE && media.file != null -> listOf(
                                 ObjectAction(Icons.Filled.OpenInFull, BlockStrings.view) { ask(MediaRequestKind.VIEW) },
                                 ObjectAction(Icons.Filled.Download, BlockStrings.download) { ask(MediaRequestKind.DOWNLOAD) },
                                 ObjectAction(Icons.Filled.Autorenew, BlockStrings.replace) { ask(MediaRequestKind.PICK) },
                                 ObjectAction(Icons.Filled.DriveFileMove, Strings.moveTo) { step = BlockMenuStep.MOVE_BLOCK }
                             )
-                        } else {
-                            listOf(ObjectAction(Icons.Filled.Upload, EditorStrings.upload) { ask(MediaRequestKind.PICK) })
+                            media.file != null -> listOf(
+                                ObjectAction(Icons.Filled.OpenInNew, BlockStrings.openWith) { ask(MediaRequestKind.OPEN_ELSEWHERE) },
+                                ObjectAction(Icons.Filled.Download, BlockStrings.download) { ask(MediaRequestKind.DOWNLOAD) },
+                                ObjectAction(Icons.Filled.Autorenew, BlockStrings.replace) { ask(MediaRequestKind.PICK) }
+                            )
+                            media.url != null -> listOf(
+                                ObjectAction(Icons.Filled.OpenInNew, BlockStrings.openInBrowser) { ask(MediaRequestKind.OPEN_ELSEWHERE) },
+                                ObjectAction(Icons.Filled.Autorenew, BlockStrings.replace) { ask(MediaRequestKind.PICK) }
+                            )
+                            else -> listOf(ObjectAction(Icons.Filled.Upload, EditorStrings.upload) { ask(MediaRequestKind.PICK) })
                         },
                         onDuplicate = {
                             onDismiss()
@@ -621,6 +631,15 @@ private enum class BlockMenuStep {
     PICK_MENTION,
     /** Dove spostare un'immagine (dal 06/10/2026). */
     MOVE_BLOCK
+}
+
+/** Il nome inglese di un blocco-file, com'è nel catalogo dei menu "/" e "+". */
+private fun mediaTypeLabel(type: BlockType): String = when (type) {
+    BlockType.IMAGE -> "Image"
+    BlockType.VIDEO -> "Video"
+    BlockType.AUDIO -> "Audio"
+    BlockType.FILE -> "File"
+    else -> "Web bookmark"
 }
 
 /** Una voce del menu di un blocco che non è testo: aprire, cambiare, scaricare… (dal 06/10/2026). */

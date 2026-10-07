@@ -61,6 +61,54 @@ object BlockStrings {
     /** Le maniglie ai lati di un'immagine, per allargarla o stringerla. */
     val resizeImage get() = t("Resize", "Ridimensiona", "Größe ändern", "Redimensionner", "Cambiar tamaño", "调整大小", "크기 조정", "サイズを変更")
 
+    // --- Video e audio ---
+
+    val addVideo get() = t("Embed or upload a video", "Incorpora o carica un video", "Video einbetten oder hochladen", "Intégrer ou importer une vidéo", "Insertar o subir un vídeo", "嵌入或上传视频", "동영상 삽입 또는 업로드", "動画を埋め込むかアップロード")
+    val addAudio get() = t("Add an audio file", "Aggiungi un file audio", "Audiodatei hinzufügen", "Ajouter un fichier audio", "Añadir un archivo de audio", "添加音频文件", "오디오 파일 추가", "音声ファイルを追加")
+    val uploadTab get() = t("Upload", "Carica", "Hochladen", "Importer", "Subir", "上传", "업로드", "アップロード")
+    val linkTab get() = t("Link", "Link", "Link", "Lien", "Enlace", "链接", "링크", "リンク")
+    val chooseVideo get() = t("Choose a video", "Scegli un video", "Video auswählen", "Choisir une vidéo", "Elegir un vídeo", "选择视频", "동영상 선택", "動画を選ぶ")
+    val chooseFile get() = t("Choose a file", "Scegli un file", "Datei auswählen", "Choisir un fichier", "Elegir un archivo", "选择文件", "파일 선택", "ファイルを選ぶ")
+    val pasteLink get() = t("Paste in https://…", "Incolla https://…", "https://… einfügen", "Collez https://…", "Pega https://…", "粘贴 https://…", "https://… 붙여넣기", "https://… を貼り付け")
+    val embedVideo get() = t("Embed video", "Incorpora il video", "Video einbetten", "Intégrer la vidéo", "Insertar vídeo", "嵌入视频", "동영상 삽입", "動画を埋め込む")
+    val embedAudio get() = t("Embed audio", "Incorpora l'audio", "Audio einbetten", "Intégrer l'audio", "Insertar audio", "嵌入音频", "오디오 삽입", "音声を埋め込む")
+    val videoLinkHint get() = t(
+        "YouTube and Vimeo play in their player; other links must point to the video itself (.mp4…).",
+        "YouTube e Vimeo si vedono nel loro lettore; gli altri link devono portare al video stesso (.mp4…).",
+        "YouTube und Vimeo laufen in ihrem Player; andere Links müssen direkt auf das Video zeigen (.mp4…).",
+        "YouTube et Vimeo se lisent dans leur lecteur ; les autres liens doivent mener à la vidéo elle-même (.mp4…).",
+        "YouTube y Vimeo se ven en su reproductor; los demás enlaces deben llevar al vídeo mismo (.mp4…).",
+        "YouTube 和 Vimeo 在它们自己的播放器中播放；其他链接必须直接指向视频文件（.mp4…）。",
+        "YouTube와 Vimeo는 자체 플레이어로 재생돼요. 다른 링크는 동영상 파일 자체(.mp4…)여야 해요.",
+        "YouTube と Vimeo はそれぞれのプレーヤーで再生されます。その他のリンクは動画そのもの（.mp4…）を指す必要があります。"
+    )
+    val notALink get() = t("That doesn't look like a link", "Questo non sembra un link", "Das sieht nicht wie ein Link aus", "Ceci ne ressemble pas à un lien", "Eso no parece un enlace", "这看起来不像链接", "링크가 아닌 것 같아요", "リンクではないようです")
+    val play get() = t("Play", "Riproduci", "Abspielen", "Lire", "Reproducir", "播放", "재생", "再生")
+    val pause get() = t("Pause", "Pausa", "Pause", "Pause", "Pausa", "暂停", "일시정지", "一時停止")
+    val cantPlay get() = t("This video can't be played here", "Questo video non si riesce a vedere qui", "Dieses Video kann hier nicht abgespielt werden", "Cette vidéo ne peut pas être lue ici", "Este vídeo no se puede reproducir aquí", "无法在此播放该视频", "이 동영상은 여기서 재생할 수 없어요", "この動画はここでは再生できません")
+    val cantPlayAudio get() = t("This audio can't be played here", "Questo audio non si riesce a sentire qui", "Dieses Audio kann hier nicht abgespielt werden", "Cet audio ne peut pas être lu ici", "Este audio no se puede reproducir aquí", "无法在此播放该音频", "이 오디오는 여기서 재생할 수 없어요", "この音声はここでは再生できません")
+    val openInBrowser get() = t("Open in browser or app", "Apri nel browser o nell'app", "Im Browser oder in der App öffnen", "Ouvrir dans le navigateur ou l'app", "Abrir en el navegador o la app", "在浏览器或应用中打开", "브라우저나 앱에서 열기", "ブラウザまたはアプリで開く")
+    val openWith get() = t("Open with…", "Apri con…", "Öffnen mit…", "Ouvrir avec…", "Abrir con…", "打开方式…", "다음으로 열기…", "アプリで開く…")
+    val noAppToOpen get() = t("No app can open it", "Nessuna app lo sa aprire", "Keine App kann es öffnen", "Aucune app ne peut l'ouvrir", "Ninguna app puede abrirlo", "没有可打开它的应用", "열 수 있는 앱이 없어요", "開けるアプリがありません")
+    val fileReadFailed get() = t("Couldn't read that file", "Non sono riuscito a leggere il file", "Datei konnte nicht gelesen werden", "Impossible de lire ce fichier", "No se pudo leer el archivo", "无法读取该文件", "파일을 읽을 수 없어요", "ファイルを読み込めませんでした")
+
+    // --- File e segnalibri ---
+
+    val addFile get() = t("Upload or embed a file", "Carica o incorpora un file", "Datei hochladen oder einbetten", "Importer ou intégrer un fichier", "Subir o insertar un archivo", "上传或嵌入文件", "파일 업로드 또는 삽입", "ファイルをアップロードまたは埋め込む")
+    val embedLink get() = t("Embed link", "Incorpora il link", "Link einbetten", "Intégrer le lien", "Insertar enlace", "嵌入链接", "링크 삽입", "リンクを埋め込む")
+    val addBookmark get() = t("Add a web bookmark", "Aggiungi un segnalibro web", "Web-Lesezeichen hinzufügen", "Ajouter un signet web", "Añadir un marcador web", "添加网页书签", "웹 북마크 추가", "Webブックマークを追加")
+    val createBookmark get() = t("Create bookmark", "Crea il segnalibro", "Lesezeichen erstellen", "Créer le signet", "Crear marcador", "创建书签", "북마크 만들기", "ブックマークを作成")
+    val bookmarkHint get() = t(
+        "Create a visual bookmark from a link.",
+        "Crea un segnalibro con l'anteprima del sito.",
+        "Erstellt ein Lesezeichen mit Vorschau aus einem Link.",
+        "Créez un signet visuel à partir d'un lien.",
+        "Crea un marcador visual a partir de un enlace.",
+        "从链接创建可视书签。",
+        "링크로 미리보기가 있는 북마크를 만들어요.",
+        "リンクからプレビュー付きのブックマークを作成します。"
+    )
+
     // --- Codice ---
 
     val copyCode get() = t("Copy code", "Copia il codice", "Code kopieren", "Copier le code", "Copiar código", "复制代码", "코드 복사", "コードをコピー")
