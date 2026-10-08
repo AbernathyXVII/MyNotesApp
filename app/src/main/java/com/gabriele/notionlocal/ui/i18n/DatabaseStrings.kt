@@ -699,6 +699,7 @@ object DbStrings {
     val addView get() = t("Add view", "Aggiungi una vista", "Ansicht hinzufügen", "Ajouter une vue", "Añadir vista", "添加视图", "보기 추가", "ビューを追加")
     val viewName get() = t("View name", "Nome della vista", "Name der Ansicht", "Nom de la vue", "Nombre de la vista", "视图名称", "보기 이름", "ビュー名")
     val viewOptions get() = t("View options", "Opzioni della vista", "Ansichtsoptionen", "Options de la vue", "Opciones de la vista", "视图选项", "보기 옵션", "ビューのオプション")
+    val editView get() = t("Edit view", "Modifica la vista", "Ansicht bearbeiten", "Modifier la vue", "Editar vista", "编辑视图", "보기 편집", "ビューを編集")
     val deleteView get() = t("Delete view", "Elimina la vista", "Ansicht löschen", "Supprimer la vue", "Eliminar vista", "删除视图", "보기 삭제", "ビューを削除")
     val deleteViewMessage get() = t(
         "The view goes away with its settings. The pages stay in the database.",

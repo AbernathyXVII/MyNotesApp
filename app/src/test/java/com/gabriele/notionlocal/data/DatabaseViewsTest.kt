@@ -1,5 +1,8 @@
 package com.gabriele.notionlocal.data
 
+import org.junit.Assert.assertFalse
+import com.gabriele.notionlocal.data.entity.DatabaseColumnEntity
+import com.gabriele.notionlocal.data.entity.ColumnType
 import android.app.Application
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
@@ -156,5 +159,45 @@ class DatabaseViewsTest {
         val copy = pages.duplicatePage(database.id, DuplicateTarget.NextToOriginal, "copy") { it }!!
         assertNull(page(copy)!!.activeViewId)
         assertEquals(emptyList<String>(), db.pageDao().getViewsOnce(copy).map { it.id })
+    }
+
+    @Test
+    fun deletingTheStartingViewGivesItTheSettingsOfTheNextOne() = runBlocking<Unit> {
+        // "Foreign Languages" (08/10/2026): la Table di partenza se ne va, resta la List.
+        val title = DatabaseColumnEntity(pageId = database.id, name = "Note", type = ColumnType.TEXT, orderIndex = 0)
+        val level = DatabaseColumnEntity(pageId = database.id, name = "Level", type = ColumnType.SELECT, orderIndex = 1, hidden = true)
+        db.databaseDao().insertColumn(title)
+        db.databaseDao().insertColumn(level)
+        val list = pages.createView(database.id, "Lista", DatabaseLayout.LIST)!!
+        db.pageDao().update(
+            page(list)!!.copy(sortColumnId = level.id, sortDescending = true, filterColumnId = level.id, filterValue = "B2", viewHiddenColumnIds = title.id)
+        )
+        val gallery = pages.createView(database.id, null, DatabaseLayout.GALLERY)!!
+        pages.setActiveView(database.id, list)
+
+        assertTrue(pages.deleteStartingView(database.id))
+        val host = page(database.id)!!
+        assertEquals(DatabaseLayout.LIST, host.databaseLayout)
+        assertEquals("Lista", host.viewName)
+        assertEquals(level.id, host.sortColumnId)
+        assertTrue(host.sortDescending)
+        assertEquals("B2", host.filterValue)
+        // Quella davanti se n'è andata: ora la mostra il database.
+        assertNull(host.activeViewId)
+        assertNull(page(list))
+        assertEquals(listOf(gallery), db.pageDao().getViewsOnce(database.id).map { it.id })
+        // Le colonne nascoste della List ora sono quelle del database.
+        val columns = db.databaseDao().getColumnsForPageOnce(database.id).associateBy { it.id }
+        assertTrue(columns[title.id]!!.hidden)
+        assertFalse(columns[level.id]!!.hidden)
+        // Il nome e il resto del database restano suoi.
+        assertEquals("Videogiochi", host.title)
+        assertTrue(host.isDatabase)
+    }
+
+    @Test
+    fun theLastViewCannotBeDeleted() = runBlocking<Unit> {
+        assertFalse(pages.deleteStartingView(database.id))
+        assertEquals(DatabaseLayout.BOARD, page(database.id)!!.databaseLayout)
     }
 }

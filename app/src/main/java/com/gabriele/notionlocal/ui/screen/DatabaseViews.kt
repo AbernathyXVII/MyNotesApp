@@ -1,5 +1,6 @@
 package com.gabriele.notionlocal.ui.screen
 
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -66,7 +67,11 @@ internal class DatabaseView(
     val id: String,
     val name: String,
     val layout: DatabaseLayout,
-    /** Quella di partenza è il database stesso: si rinomina, non si toglie. */
+    /**
+     * Se è una vista in più. Quella di partenza è il database stesso: dal
+     * 08/10/2026 si toglie anche lei, prendendo le impostazioni della vista
+     * dopo (vedi `PageRepository.deleteStartingView`).
+     */
     val removable: Boolean,
     /** Se il nome è suo: senza, è quello del layout e lo segue. */
     val named: Boolean
@@ -86,7 +91,9 @@ private fun PageEntity.toView(removable: Boolean) =
 /**
  * **Toccando il nome della vista**: l'elenco delle viste, per passare da una
  * all'altra. Il layout della vista di adesso si cambia dalle impostazioni
- * ("Layout"). Dai tre puntini di una vista si rinomina o si toglie; in fondo
+ * ("Layout"). Dai tre puntini di una vista: **"Edit view"** (dal 08/10/2026,
+ * la si mette davanti e si aprono le sue impostazioni), "Rename" e "Delete
+ * view" — anche per quella di partenza, purché ne resti un'altra. In fondo
  * se ne aggiunge una. Con la vista bloccata ("Lock view") si guarda soltanto.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -96,6 +103,7 @@ internal fun ViewsSheet(
     activeId: String,
     canEdit: Boolean,
     onPick: (String) -> Unit,
+    onEdit: (DatabaseView) -> Unit,
     onRename: (DatabaseView) -> Unit,
     onDelete: (DatabaseView) -> Unit,
     onAdd: () -> Unit,
@@ -126,7 +134,10 @@ internal fun ViewsSheet(
                         view = view,
                         active = view.id == activeId,
                         canEdit = canEdit,
+                        // L'ultima vista che resta non si toglie.
+                        canDelete = views.size > 1,
                         onPick = { onPick(view.id) },
+                        onEdit = { onEdit(view) },
                         onRename = { onRename(view) },
                         onDelete = { onDelete(view) }
                     )
@@ -152,7 +163,9 @@ private fun ViewRow(
     view: DatabaseView,
     active: Boolean,
     canEdit: Boolean,
+    canDelete: Boolean,
     onPick: () -> Unit,
+    onEdit: () -> Unit,
     onRename: () -> Unit,
     onDelete: () -> Unit
 ) {
@@ -196,6 +209,14 @@ private fun ViewRow(
             }
             DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                 DropdownMenuItem(
+                    text = { Text(DbStrings.editView) },
+                    leadingIcon = { Icon(Icons.Filled.Tune, contentDescription = null) },
+                    onClick = {
+                        menuOpen = false
+                        onEdit()
+                    }
+                )
+                DropdownMenuItem(
                     text = { Text(EditorStrings.rename) },
                     leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) },
                     onClick = {
@@ -203,8 +224,7 @@ private fun ViewRow(
                         onRename()
                     }
                 )
-                // La vista di partenza è il database stesso: non si toglie.
-                if (view.removable) {
+                if (canDelete) {
                     DropdownMenuItem(
                         text = { Text(DbStrings.deleteView, color = MaterialTheme.colorScheme.error) },
                         leadingIcon = { Icon(Icons.Filled.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },

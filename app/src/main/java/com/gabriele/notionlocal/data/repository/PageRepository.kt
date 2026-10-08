@@ -2247,6 +2247,67 @@ class PageRepository(private val db: AppDatabase) {
     suspend fun renameView(pageId: String, name: String?) =
         pageDao.setViewName(pageId, name?.trim()?.ifEmpty { null })
 
+    /**
+     * **Togliere la vista di partenza** (dal 08/10/2026, chiesto
+     * dall'utente: in "Foreign Languages" si poteva togliere la List e non
+     * la Table). La vista di partenza è il database stesso, che non può
+     * andarsene: prende allora **le impostazioni della vista che viene dopo**
+     * (layout, nome, filtro, ordinamento, gruppi, colonne nascoste e
+     * larghezze, calcoli, grafico…), e quella se ne va. Per chi guarda, la
+     * prima vista è sparita e la seconda è diventata la prima, come su
+     * Notion. Non si toglie l'ultima vista rimasta: restituisce false.
+     */
+    suspend fun deleteStartingView(hostId: String): Boolean = db.withTransaction {
+        val host = pageDao.getById(hostId)?.takeIf { it.isDatabase } ?: return@withTransaction false
+        val next = pageDao.getViewsOnce(hostId).firstOrNull() ?: return@withTransaction false
+        val databaseDao = db.databaseDao()
+        // Le colonne nascoste: in una vista sono una lista sua; nel database
+        // vero sono le colonne stesse. In una vista collegata, la sua lista.
+        val hidden = next.viewHiddenColumnIds?.split(',')?.filter { it.isNotBlank() }?.toSet().orEmpty()
+        if (host.sourceDatabaseId == null) {
+            databaseDao.getColumnsForPageOnce(host.id).forEach { column ->
+                val hide = column.id in hidden
+                if (column.hidden != hide) databaseDao.updateColumn(column.copy(hidden = hide))
+            }
+        }
+        pageDao.update(
+            host.copy(
+                databaseLayout = next.databaseLayout,
+                viewName = next.viewName,
+                boardGroupColumnId = next.boardGroupColumnId,
+                tableGroupColumnId = next.tableGroupColumnId,
+                hideEmptyGroups = next.hideEmptyGroups,
+                tableSubGroupColumnId = next.tableSubGroupColumnId,
+                hideEmptySubGroups = next.hideEmptySubGroups,
+                columnWidths = next.columnWidths,
+                fitColumns = next.fitColumns,
+                cellOverflow = next.cellOverflow,
+                colorBoardCards = next.colorBoardCards,
+                calendarDateColumnId = next.calendarDateColumnId,
+                calendarWeekView = next.calendarWeekView,
+                calendarMode = next.calendarMode,
+                timelineZoom = next.timelineZoom,
+                galleryCardPreview = next.galleryCardPreview,
+                galleryCardSize = next.galleryCardSize,
+                sortColumnId = next.sortColumnId,
+                sortDescending = next.sortDescending,
+                thenSortColumnId = next.thenSortColumnId,
+                thenSortDescending = next.thenSortDescending,
+                filterColumnId = next.filterColumnId,
+                filterValue = next.filterValue,
+                viewCalculations = next.viewCalculations,
+                chartSettings = next.chartSettings,
+                isViewLocked = next.isViewLocked,
+                viewHiddenColumnIds = if (host.sourceDatabaseId == null) host.viewHiddenColumnIds else next.viewHiddenColumnIds,
+                // Se davanti c'era quella che se ne va, ora è il database a mostrarla.
+                activeViewId = host.activeViewId?.takeIf { it != next.id },
+                updatedAt = System.currentTimeMillis()
+            )
+        )
+        pageDao.delete(next)
+        true
+    }
+
     /** Toglie una vista in più; se era davanti, torna quella del database. */
     suspend fun deleteView(viewId: String) = db.withTransaction {
         val view = pageDao.getById(viewId)?.takeIf { it.viewHostId != null } ?: return@withTransaction

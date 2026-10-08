@@ -2056,6 +2056,46 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.154 — 08/10/2026 · 09:57 — Le viste: "Edit view" dai tre puntini, e anche la prima si toglie
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 454 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Quando seleziono la vista di un database, permettimi di modificarla
+> tramite i tre puntini che hai messo nella lista delle visualizzazioni.
+> Inoltre, da come vedo in Foreign Languages, posso solo cancellare la vista
+> List, come mai quella Table no?»
+
+La Table non si toglieva perché era **la vista di partenza**: nell'app è il
+database stesso (le viste aggiunte col "+" sono a parte), e il database non
+può andarsene. Su Notion invece tutte le viste sono uguali.
+
+- **[Nuova funzionalità]** **"Edit view"** in cima ai tre puntini di ogni
+  vista, nell'elenco delle viste: la mette davanti e apre le sue
+  impostazioni (Layout, Filter, Group, Long text, proprietà…), come l'icona
+  dei cursori
+- **[Modificato]** **"Delete view" c'è anche per la vista di partenza**
+  (la Table di "Foreign Languages"). Il database prende le impostazioni
+  della vista che viene dopo — layout, nome, filtro, ordinamento, gruppi,
+  proprietà nascoste, larghezze delle colonne, calcoli, grafico — e quella
+  se ne va: per chi guarda, la prima vista è sparita e le altre sono
+  salite, come su Notion. Le pagine e le proprietà restano tutte. **L'ultima
+  vista rimasta non si toglie**: "Delete view" sparisce dai suoi tre puntini
+- **[Progetto]** `PageRepository.deleteStartingView` (le colonne nascoste di
+  una vista sono una lista sua, quelle del database sono le colonne stesse:
+  si travasano), `DatabaseViewModel.deleteStartingView`; nei tre puntini
+  (`ViewsSheet`) "Edit view" e `canDelete`; `DatabaseViewBody` apre le
+  impostazioni appena la vista si vede (`startWithSettings`, come già la
+  finestra dei grafici). Test: due in `DatabaseViewsTest`
+- Verificato sul telefono su un database di prova, dentro una riga di prova
+  di Main calendar (poi tolta col database; "Foreign Languages" non è stato
+  toccato): aggiunta una vista List accanto alla Table; i tre puntini della
+  Table hanno "Edit view", "Rename" e "Delete view"; "Edit view" mette
+  davanti la Table e apre le sue impostazioni ("Layout: Table"); "Delete
+  view" sulla Table, confermato, lascia solo la List, davanti; i tre puntini
+  della List, ora l'unica, hanno "Edit view" e "Rename" ma non "Delete
+  view". Alla fine il database del telefono è identico a prima della prova
+
 ### 🔧 v0.153.1 — 08/10/2026 · 09:48 — Cancellando una riga se ne va anche la sua pagina
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 452 test
 passati; copia del database del telefono fatta prima; commit solo in locale)*

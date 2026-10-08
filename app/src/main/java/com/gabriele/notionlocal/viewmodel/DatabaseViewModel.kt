@@ -279,6 +279,12 @@ class DatabaseViewModel(
         viewModelScope.launch { pageRepository.deleteView(viewId) }
     }
 
+    /** Toglie la vista di partenza: vedi `PageRepository.deleteStartingView`. */
+    fun deleteStartingView() {
+        val hostId = currentPageId ?: return
+        viewModelScope.launch { pageRepository.deleteStartingView(hostId) }
+    }
+
     /** Una vista collegata il cui database non c'è più, o è nel cestino. */
     private val _sourceMissing = MutableStateFlow(false)
     val sourceMissing: StateFlow<Boolean> = _sourceMissing

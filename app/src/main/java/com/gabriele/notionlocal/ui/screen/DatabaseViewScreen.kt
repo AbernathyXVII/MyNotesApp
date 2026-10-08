@@ -814,6 +814,9 @@ fun DatabaseContent(
     // Una vista nuova col layout Chart: appena si vede, la finestrella
     // dei quattro grafici, come scegliendo "Chart" dalle impostazioni.
     var chartTypeForView by remember { mutableStateOf<String?>(null) }
+    // "Edit view" dai tre puntini (dal 08/10/2026): appena la vista si vede,
+    // le sue impostazioni, come dall'icona dei cursori.
+    var settingsForView by remember { mutableStateOf<String?>(null) }
     val focusManager = LocalFocusManager.current
 
     // "Page link": le pagine collegate e la scelta, per tutte le viste (le
@@ -849,6 +852,8 @@ fun DatabaseContent(
             },
             startWithChartType = chartTypeForView == activeId,
             onChartTypeStarted = { chartTypeForView = null },
+            startWithSettings = settingsForView == activeId,
+            onSettingsStarted = { settingsForView = null },
             modifier = modifier
         )
     }
@@ -863,6 +868,11 @@ fun DatabaseContent(
             onPick = { id ->
                 showViews = false
                 if (id != activeId) hostViewModel.setActiveView(id)
+            },
+            onEdit = { view ->
+                showViews = false
+                settingsForView = view.id
+                if (view.id != activeId) hostViewModel.setActiveView(view.id)
             },
             onRename = { renamingView = it },
             onDelete = { deletingView = it },
@@ -899,7 +909,8 @@ fun DatabaseContent(
             name = view.name,
             onConfirm = {
                 deletingView = null
-                hostViewModel.deleteView(view.id)
+                // Quella di partenza è il database: prende le impostazioni della vista dopo.
+                if (view.removable) hostViewModel.deleteView(view.id) else hostViewModel.deleteStartingView()
             },
             onDismiss = { deletingView = null }
         )
@@ -931,6 +942,8 @@ private fun DatabaseViewBody(
     onAddView: (() -> Unit)?,
     startWithChartType: Boolean,
     onChartTypeStarted: () -> Unit,
+    startWithSettings: Boolean = false,
+    onSettingsStarted: () -> Unit = {},
     modifier: Modifier
 ) {
     // Un ViewModel per vista: la chiave li tiene distinti quando in una
@@ -1014,6 +1027,13 @@ private fun DatabaseViewBody(
     // Su quale schermata aprire le impostazioni: il pulsante della vista
     // porta dritto al selettore, l'icona dei cursori all'elenco completo.
     var settingsInitialPage by remember { mutableStateOf(SettingsPage.ROOT) }
+    LaunchedEffect(startWithSettings) {
+        if (startWithSettings) {
+            settingsInitialPage = SettingsPage.ROOT
+            showSettings = true
+            onSettingsStarted()
+        }
+    }
     // Cresce ad ogni pagina creata dal pulsante in fondo. La bacheca e
     // il calendario lo osservano per portare in vista quella nuova.
     var newRowTick by remember { mutableStateOf(0) }
