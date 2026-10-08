@@ -1769,8 +1769,16 @@ class DatabaseViewModel(
         viewModelScope.launch { repository.setRowTitle(row.id, newTitle) }
     }
 
-    fun deleteRow(row: DatabaseRowEntity) {
-        viewModelScope.launch { repository.deleteRow(row) }
+    /**
+     * Cancella una riga **con la sua pagina** (dal 08/10/2026): prima la
+     * pagina restava nel database, senza più un posto. I suoi file (icone,
+     * copertine, immagini e file dei blocchi) se ne vanno da `imageStore`.
+     */
+    fun deleteRow(row: DatabaseRowEntity, imageStore: PageImageStore? = null) {
+        viewModelScope.launch {
+            val pageId = repository.deleteRow(row) ?: return@launch
+            pageRepository.deleteRowPage(pageId).forEach { imageStore?.delete(it) }
+        }
     }
 
     // --- Le sotto-righe (dal 29/09/2026) ---

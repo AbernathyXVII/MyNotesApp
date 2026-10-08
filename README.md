@@ -2056,6 +2056,46 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🔧 v0.153.1 — 08/10/2026 · 09:48 — Cancellando una riga se ne va anche la sua pagina
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 452 test
+passati; copia del database del telefono fatta prima; commit solo in locale)*
+
+Claude aveva segnalato che cancellare una riga di un database lasciava nel
+database la sua pagina, coi blocchi e i file, senza più un posto (la ricerca
+la trovava ancora). L'utente, parola per parola:
+> «Sistema anche il bug delle pagine delle righe cancellate»
+
+- **[Bug]** **Cancellando una riga** ("Delete this page? The row and its
+  values will be deleted. This can't be undone.") **se ne va anche la sua
+  pagina**, con quello che c'è dentro: i blocchi, la cronologia delle
+  modifiche, i file (icone, copertine, immagini, video, audio, file), e le
+  sottopagine che non sono richiamate da nessun'altra parte, come quando si
+  cancella per sempre una pagina dal cestino. È quello che la conferma
+  diceva già. Prima se ne andava solo la riga
+- **[Bug]** **Le pagine rimaste da righe cancellate prima** non si
+  cancellano: all'avvio **vanno nel cestino**, dove si possono guardare e
+  ripristinare, e da dove se ne vanno con la regola del cestino (30 giorni).
+  Ripristinata, una di queste torna **una pagina normale, in fondo al menu
+  principale**: la sua riga non c'è più, e lasciarla "pagina di una riga"
+  l'avrebbe fatta sparire di nuovo. Se un'altra pagina la richiamava
+  ancora, resta lì e diventa una pagina normale
+- **[Progetto]** `DatabaseRepository.deleteRow` restituisce la pagina della
+  riga (letta dal database, non dalla riga in mano alla schermata);
+  `PageRepository.deleteRowPage` la cancella con `deletePermanently`, a
+  meno che un'altra riga la apra ancora; `PageRepository.tidyOrphanRowPages`
+  (all'avvio, dopo la pulizia del cestino) e `PageDao.orphanRowPages`;
+  `restoreFromTrash` sa delle pagine senza più riga. `ensureRowPage` crea
+  pagina e collegamento della riga insieme, così la pulizia non vede mai
+  una pagina a metà. Test: `RowPageDeleteTest` (2)
+- Verificato sul telefono, dopo aver copiato il database: all'avvio sono
+  andate nel cestino esattamente le 18 pagine rimaste (create fra il 05/10
+  e oggi, quasi tutte dalle prove di Claude: "Contenitore", "Sotto",
+  "Prova", "Archivio", "Divisore", "ProvaDest", diverse "Untitled"), e
+  nient'altro nel database è cambiato; il Cestino le mostra con "30 days
+  left". Una riga di prova in Main calendar (vista calendario, 9 ottobre),
+  aperta e con "Prova cancellazione" scritto dentro, poi cancellata: nel
+  database non resta niente, né la riga né la pagina né il testo
+
 ### 🆕 v0.153 — 08/10/2026 · 09:39 — La scheda "Icons": le icone di Material, bianche o del colore che si sceglie
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 450 test
 passati; database alla versione 53, copia del database del telefono fatta

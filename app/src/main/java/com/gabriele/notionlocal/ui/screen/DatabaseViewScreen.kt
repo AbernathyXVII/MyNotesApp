@@ -1882,7 +1882,7 @@ private fun DatabaseViewBody(
             },
             confirmButton = {
                 TextButton(onClick = {
-                    viewModel.deleteRow(row)
+                    viewModel.deleteRow(row, imageStore)
                     rowPendingDeletion = null
                 }) { Text(Strings.delete) }
             },

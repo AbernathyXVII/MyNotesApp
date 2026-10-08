@@ -155,6 +155,17 @@ interface PageDao {
     suspend fun setIcon(pageId: String, icon: String, iconImage: String?, iconSymbol: String?)
 
     /**
+     * **Le pagine di righe che non ci sono più** (vedi
+     * `PageRepository.tidyOrphanRowPages`): segnate come pagine di una riga,
+     * fuori dal cestino, ma nessuna riga le apre. I template restano fuori.
+     */
+    @Query(
+        "SELECT * FROM pages WHERE isRowPage = 1 AND isTemplate = 0 AND trashedAt IS NULL AND id NOT IN " +
+            "(SELECT linkedPageId FROM database_rows WHERE linkedPageId IS NOT NULL)"
+    )
+    suspend fun orphanRowPages(): List<PageEntity>
+
+    /**
      * Le immagini caricate come icona dalle pagine fuori dal cestino, le più
      * recenti prima: le "Custom" del selettore delle emoji.
      */

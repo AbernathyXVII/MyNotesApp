@@ -150,6 +150,9 @@ fun AppNavHost(factory: ViewModelFactory) {
             emptyAll = AppSettings.trashPolicy == TrashPolicy.EMPTY_AUTOMATICALLY,
             retentionDays = AppSettings.TRASH_RETENTION_DAYS
         ).forEach { factory.imageStore.delete(it) }
+        // Dopo la pulizia, così non se ne vanno subito: le pagine rimaste da
+        // righe cancellate vanno nel cestino (vedi `tidyOrphanRowPages`).
+        repository.tidyOrphanRowPages()
 
         if (launchedFromNotification) return@LaunchedEffect
         val targetId = when (AppSettings.startupMode) {

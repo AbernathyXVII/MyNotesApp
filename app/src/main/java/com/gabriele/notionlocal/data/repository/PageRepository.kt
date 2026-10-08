@@ -282,17 +282,58 @@ class PageRepository(private val db: AppDatabase) {
      *
      * Le pagine di una riga di database fanno eccezione: il loro posto è
      * la riga, che le ha sempre tenute, e un collegamento in più nel menu
-     * sarebbe un doppione.
+     * sarebbe un doppione. Se però la riga non c'è più (le pagine rimaste
+     * da righe cancellate, vedi `tidyOrphanRowPages`), la pagina torna una
+     * pagina normale, nel menu principale: altrimenti non la si troverebbe.
      */
     suspend fun restoreFromTrash(pageId: String) {
         val page = pageDao.getById(pageId) ?: return
         db.withTransaction {
             pageDao.setTrashedAt(pageId, null)
+            val rowGone = page.isRowPage && db.databaseDao().getRowsLinkingTo(pageId).isEmpty()
+            if (rowGone) pageDao.setRowPage(pageId, false)
             // Un template torna fra i template, non nel menu principale.
-            if (!page.isRowPage && !page.isTemplate && blockDao.getBlocksLinkingTo(pageId).isEmpty()) {
+            if ((!page.isRowPage || rowGone) && !page.isTemplate && blockDao.getBlocksLinkingTo(pageId).isEmpty()) {
                 appendLink(PageEntity.ROOT_PAGE_ID, pageId, page.isDatabase)
             }
         }
+    }
+
+    /**
+     * **La pagina di una riga appena cancellata se ne va con lei** (dal
+     * 08/10/2026, chiesto dall'utente): è quello che dice la conferma,
+     * "Delete this page? … This can't be undone". Prima restava nel
+     * database, senza più un posto, e la ricerca la trovava ancora. Se
+     * un'altra riga la apre ancora (una vista collegata), resta.
+     *
+     * Restituisce i file da cancellare, come `deletePermanently`.
+     */
+    suspend fun deleteRowPage(pageId: String): List<String> {
+        if (db.databaseDao().getRowsLinkingTo(pageId).isNotEmpty()) return emptyList()
+        if (pageDao.getById(pageId)?.isRowPage != true) return emptyList()
+        return deletePermanently(pageId)
+    }
+
+    /**
+     * **Le pagine rimaste da righe cancellate prima del 08/10/2026**: si
+     * fa all'avvio. Non si cancellano: vanno **nel cestino**, dove si
+     * possono guardare e ripristinare (tornano pagine normali, vedi
+     * `restoreFromTrash`) e da dove se ne vanno con la regola del cestino.
+     * Quelle che un'altra pagina richiama ancora diventano pagine normali
+     * lì dove sono. Restituisce quante ne sono andate nel cestino.
+     */
+    suspend fun tidyOrphanRowPages(): Int = db.withTransaction {
+        val now = System.currentTimeMillis()
+        var trashed = 0
+        for (page in pageDao.orphanRowPages()) {
+            if (blockDao.getBlocksLinkingTo(page.id).isNotEmpty()) {
+                pageDao.setRowPage(page.id, false)
+            } else {
+                pageDao.setTrashedAt(page.id, now)
+                trashed++
+            }
+        }
+        trashed
     }
 
     /**
@@ -443,8 +484,15 @@ class PageRepository(private val db: AppDatabase) {
     /** Le pagine fra cui scegliere quella da aprire all'avvio: tutte, tranne il cestino e la principale. */
     suspend fun startupCandidates(): List<PageEntity> = pageDao.getAllLivePages().filter { it.viewHostId == null }
 
-    /** Crea la pagina di una riga che non l'ha ancora, come fa il pulsante OPEN. */
-    suspend fun ensureRowPage(rowId: String): String? {
+    /**
+     * Crea la pagina di una riga che non l'ha ancora, come fa il pulsante OPEN.
+     * Pagina e riga cambiano insieme (dal 08/10/2026): in mezzo la pagina
+     * sarebbe di una riga che non la apre, e `tidyOrphanRowPages` la
+     * scambierebbe per una rimasta da una riga cancellata.
+     */
+    suspend fun ensureRowPage(rowId: String): String? = db.withTransaction { ensureRowPageNow(rowId) }
+
+    private suspend fun ensureRowPageNow(rowId: String): String? {
         val databaseDao = db.databaseDao()
         val row = databaseDao.getRowById(rowId) ?: return null
         row.linkedPageId?.let { return it }

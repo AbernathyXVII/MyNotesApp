@@ -243,10 +243,17 @@ class DatabaseRepository(private val db: AppDatabase) {
      * salgono di un livello, sotto la riga da cui era nata lei — o fra le
      * principali. Buttarle insieme a lei vorrebbe dire perdere righe con le
      * loro pagine senza averle mai guardate.
+     *
+     * Restituisce la pagina della riga, se ne aveva una: chi chiama la
+     * cancella con lei (`PageRepository.deleteRowPage`). È letta qui, non
+     * dalla riga in mano a chi chiama, che può essere di prima che la
+     * pagina nascesse.
      */
-    suspend fun deleteRow(row: DatabaseRowEntity) = db.withTransaction {
+    suspend fun deleteRow(row: DatabaseRowEntity): String? = db.withTransaction {
+        val current = dao.getRowById(row.id) ?: row
         dao.reparentRows(row.id, row.parentRowId)
-        dao.deleteRow(row)
+        dao.deleteRow(current)
+        current.linkedPageId
     }
 
     suspend fun setSubRowsCollapsed(rowId: String, collapsed: Boolean) = dao.setSubRowsCollapsed(rowId, collapsed)
