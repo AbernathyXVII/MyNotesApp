@@ -56,7 +56,8 @@ object Strings {
     val favorite get() = t("Favorite", "Preferita", "Favorit", "Favori", "Favorito", "收藏", "즐겨찾기", "お気に入り")
     val duplicate get() = t("Duplicate", "Duplica", "Duplizieren", "Dupliquer", "Duplicar", "复制", "복제", "複製")
     val moveTo get() = t("Move to", "Sposta in", "Verschieben nach", "Déplacer vers", "Mover a", "移动到", "이동", "移動")
-    val turnIntoDatabase get() = t("Turn into database", "Trasforma in database", "In Datenbank umwandeln", "Convertir en base de données", "Convertir en base de datos", "转换为数据库", "데이터베이스로 전환", "データベースに変換")
+    /** Rimette il database dentro la pagina che lo richiama: "inline" dal 08/10/2026, chiesto dall'utente. */
+    val turnIntoDatabase get() = t("Turn into database inline", "Trasforma in database in linea", "In Inline-Datenbank umwandeln", "Convertir en base de données intégrée", "Convertir en base de datos en línea", "转换为内嵌数据库", "인라인 데이터베이스로 전환", "インラインデータベースに変換")
     val turnIntoPage get() = t("Turn into page", "Trasforma in pagina", "In Seite umwandeln", "Convertir en page", "Convertir en página", "转换为页面", "페이지로 전환", "ページに変換")
     val moveToTrash get() = t("Move to trash", "Sposta nel cestino", "In den Papierkorb", "Mettre à la corbeille", "Mover a la papelera", "移到回收站", "휴지통으로 이동", "ゴミ箱に移動")
     val lockView get() = t("Lock view", "Blocca la vista", "Ansicht sperren", "Verrouiller la vue", "Bloquear vista", "锁定视图", "보기 잠금", "ビューをロック")

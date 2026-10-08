@@ -2056,6 +2056,31 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.156 — 08/10/2026 · 15:39 — "Turn into database inline"
+*(Claude Code sul PC; installata sul telefono, ma il menu non è stato
+aperto: l'utente stava usando l'app; 460 test passati; commit solo in locale)*
+
+L'utente, parola per parola (con la foto del menu del blocco di "Main
+calendar"):
+> «Riscrivi l'opzione 'Turn into database' in 'Turn into database inline'»
+
+- **[Modificato]** La voce che rimette un database a pagina intera dentro
+  la pagina che lo richiama ora si chiama **"Turn into database inline"**:
+  sia nel menu del blocco (tenendo premuto il collegamento, come nella foto)
+  sia nei tre puntini del database aperto a pagina intera, dove fa la stessa
+  cosa. Nelle altre lingue come "Database - Inline" del menu "/": "Trasforma
+  in database in linea", "In Inline-Datenbank umwandeln", "Convertir en base
+  de données intégrée", "Convertir en base de datos en línea", "转换为内嵌数据库",
+  "인라인 데이터베이스로 전환", "インラインデータベースに変換"
+- **[Progetto]** `Strings.turnIntoDatabase`, la scritta delle due voci
+- Installata sul telefono alle 15:37, ancora col numero 0.155 (la versione
+  si prende dal README, e questa voce non c'era ancora): la scritta nuova
+  c'è già. Il menu non è stato aperto per vederla: dal confronto del
+  database risultava che l'utente stava usando l'app (alle 15:34–15:35 aveva
+  tolto la spunta a otto righe di "Food" e aggiunto una riga in 家計簿), e da
+  lì Claude non ha più toccato il telefono. La scritta nuova è nell'APK
+  (controllata nei file compilati)
+
 ### 🆕 v0.155 — 08/10/2026 · 15:32 — "Freeze first column" e "Freeze first row": prima colonna e titoli sempre in vista
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 460 test
 passati; database alla versione 54, copia del database del telefono fatta
