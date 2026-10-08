@@ -2056,6 +2056,63 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.155 — 08/10/2026 · 15:32 — "Freeze first column" e "Freeze first row": prima colonna e titoli sempre in vista
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 460 test
+passati; database alla versione 54, copia del database del telefono fatta
+prima di installare; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Nelle impostazioni di un database (tre lineette con i pallini) mettimo
+> un'opzione che mi consente di bloccare la prima colonna e la prima riga
+> (due opzioni separate) in modo che se vado troppo a destra la prima
+> colonna la vedo comunque (per essere sicuro quali checkbox sto tickando,
+> per esempio) e se vado troppo sotto la prima riga la vedo comunque
+> (uguale come il punto di prima)»
+
+- **[Nuova funzionalità]** **"Freeze first column"**, nelle impostazioni
+  della tabella (sotto "Long text"): scorrendo la tabella a destra **la
+  prima colonna resta al bordo sinistro** — Name, o quella che c'è per
+  prima se Name è stata spostata — e le altre le passano sotto. Si sa
+  sempre di che riga è la casella che si spunta
+- **[Nuova funzionalità]** **"Freeze first row"**: scorrendo in giù **la
+  riga dei titoli delle colonne resta in cima**, e le righe le passano
+  sotto. La "prima riga" è quella coi nomi delle proprietà: è lei che dice
+  di quale proprietà è la casella. Dentro una pagina si ferma sotto i
+  pulsanti sospesi (indietro, barra laterale, tre puntini); a pagina intera
+  sotto la barra della vista. Quando la tabella finisce se ne va con lei. In
+  una tabella a gruppi ogni gruppo ha la sua, ferma finché si è nel gruppo
+- **[Nuova funzionalità]** Si accendono **tutte e due insieme** o una sola;
+  insieme, anche l'angolo (il titolo della prima colonna) resta fermo. Sono
+  impostazioni **della vista**, come "Long text": ogni vista ha le sue, e
+  con "Lock view" restano grigie
+- **[Progetto]** Database alla **versione 54**: `pages.freezeFirstColumn` e
+  `freezeFirstRow`, spente. `FrozenTable.kt`: la prima cella di ogni riga
+  è spostata di quanto la tabella è scorsa (`frozenFirstCell`, in
+  `TableSlots`); l'intestazione scende nel disegno (`PinnedHeaderSection`),
+  così resta ferma nello stesso fotogramma dello scorrimento, senza
+  inseguirlo. Il contenitore che scorre lo dice alla tabella
+  (`StickyViewport`): la pagina (`forList`, con il margine dei pulsanti) e
+  il database a pagina intera (`forScroll`). "Delete view" sulla prima vista
+  (v0.154) si porta dietro anche queste due. `SettingsToggleRow` sa essere
+  spento. Test: `FrozenTableTest` (5: l'intestazione in cima, sotto il
+  margine, spenta, dentro una pagina; la prima cella a sinistra), la
+  migrazione 53→54 in `MigrationTest`, e `DatabaseViewsTest`
+- Verificato sul telefono, dopo aver copiato il database (l'app si apre col
+  database alla 54), su un database di prova con una colonna di testo, una
+  Checkbox e una ventina di righe, dentro una riga di prova di Main calendar
+  (poi tolta, e con lei il database; il database del telefono è tornato
+  com'era): le due voci sotto "Long text", accese; con la tabella scorsa a
+  destra Name resta a sinistra e Text le passa sotto; scorrendo la pagina
+  la riga "Name | Checkbox" resta sotto i pulsanti in alto; una casella
+  spuntata lì sotto si spunta nella riga giusta, e toccando il titolo
+  "Checkbox" fermo si apre "Edit property" (il tocco arriva al titolo, non
+  alla riga nascosta sotto). A pagina intera la riga dei titoli resta sotto
+  la barra della vista, e scorrendo a destra Name e l'angolo restano fermi.
+  **Le prime prove del test hanno trovato due ritardi**, prima di arrivare
+  al telefono: a pagina intera l'intestazione si calcolava con lo
+  scorrimento del fotogramma prima, e dentro la pagina restava indietro di
+  un passo; ora si rimette a posto ogni volta che la tabella si sposta
+
 ### 🆕 v0.154 — 08/10/2026 · 09:57 — Le viste: "Edit view" dai tre puntini, e anche la prima si toglie
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 454 test
 passati; commit solo in locale)*

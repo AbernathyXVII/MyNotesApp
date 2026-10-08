@@ -699,6 +699,8 @@ object DbStrings {
     val addView get() = t("Add view", "Aggiungi una vista", "Ansicht hinzufügen", "Ajouter une vue", "Añadir vista", "添加视图", "보기 추가", "ビューを追加")
     val viewName get() = t("View name", "Nome della vista", "Name der Ansicht", "Nom de la vue", "Nombre de la vista", "视图名称", "보기 이름", "ビュー名")
     val viewOptions get() = t("View options", "Opzioni della vista", "Ansichtsoptionen", "Options de la vue", "Opciones de la vista", "视图选项", "보기 옵션", "ビューのオプション")
+    val freezeFirstColumn get() = t("Freeze first column", "Blocca la prima colonna", "Erste Spalte fixieren", "Figer la première colonne", "Fijar la primera columna", "冻结首列", "첫 열 고정", "最初の列を固定")
+    val freezeFirstRow get() = t("Freeze first row", "Blocca la prima riga", "Erste Zeile fixieren", "Figer la première ligne", "Fijar la primera fila", "冻结首行", "첫 행 고정", "最初の行を固定")
     val editView get() = t("Edit view", "Modifica la vista", "Ansicht bearbeiten", "Modifier la vue", "Editar vista", "编辑视图", "보기 편집", "ビューを編集")
     val deleteView get() = t("Delete view", "Elimina la vista", "Ansicht löschen", "Supprimer la vue", "Eliminar vista", "删除视图", "보기 삭제", "ビューを削除")
     val deleteViewMessage get() = t(

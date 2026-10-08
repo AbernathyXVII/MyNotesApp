@@ -281,6 +281,12 @@ data class PageEntity(
     // suo 1 sono i tre puntini e l'a capo.
     @ColumnInfo(name = "wrapCells")
     var cellOverflow: Int = 0,
+    // **Prima colonna e prima riga ferme** nella tabella (dal 08/10/2026,
+    // chiesto dall'utente), di questa vista: la prima colonna resta a
+    // sinistra scorrendo a destra, la riga dei titoli resta in cima
+    // scorrendo in giù. Vedi `FrozenTable.kt`.
+    var freezeFirstColumn: Boolean = false,
+    var freezeFirstRow: Boolean = false,
     // **"Color columns"** della bacheca (dal 30/09/2026), di questa vista:
     // ogni colonna, con le sue schede, del colore del suo tag.
     var colorBoardCards: Boolean = false,

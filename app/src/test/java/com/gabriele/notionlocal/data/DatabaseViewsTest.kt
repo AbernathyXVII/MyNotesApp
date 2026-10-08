@@ -170,7 +170,10 @@ class DatabaseViewsTest {
         db.databaseDao().insertColumn(level)
         val list = pages.createView(database.id, "Lista", DatabaseLayout.LIST)!!
         db.pageDao().update(
-            page(list)!!.copy(sortColumnId = level.id, sortDescending = true, filterColumnId = level.id, filterValue = "B2", viewHiddenColumnIds = title.id)
+            page(list)!!.copy(
+                sortColumnId = level.id, sortDescending = true, filterColumnId = level.id, filterValue = "B2",
+                viewHiddenColumnIds = title.id, freezeFirstColumn = true, freezeFirstRow = true
+            )
         )
         val gallery = pages.createView(database.id, null, DatabaseLayout.GALLERY)!!
         pages.setActiveView(database.id, list)
@@ -182,6 +185,8 @@ class DatabaseViewsTest {
         assertEquals(level.id, host.sortColumnId)
         assertTrue(host.sortDescending)
         assertEquals("B2", host.filterValue)
+        assertTrue(host.freezeFirstColumn)
+        assertTrue(host.freezeFirstRow)
         // Quella davanti se n'è andata: ora la mostra il database.
         assertNull(host.activeViewId)
         assertNull(page(list))

@@ -1180,6 +1180,22 @@ class DatabaseViewModel(
         viewModelScope.launch { pageRepository.updatePage(updated) }
     }
 
+    /** **"Freeze first column"** della tabella (dal 08/10/2026), di questa vista. */
+    fun setFreezeFirstColumn(freeze: Boolean) {
+        val current = _page.value ?: return
+        val updated = current.copy(freezeFirstColumn = freeze)
+        _page.value = updated
+        viewModelScope.launch { pageRepository.updatePage(updated) }
+    }
+
+    /** **"Freeze first row"**: la riga dei titoli resta in cima, di questa vista. */
+    fun setFreezeFirstRow(freeze: Boolean) {
+        val current = _page.value ?: return
+        val updated = current.copy(freezeFirstRow = freeze)
+        _page.value = updated
+        viewModelScope.launch { pageRepository.updatePage(updated) }
+    }
+
     /** **"Color columns"** della bacheca (dal 30/09/2026): ogni colonna del colore del suo tag. */
     fun setColorBoardCards(color: Boolean) {
         val current = _page.value ?: return

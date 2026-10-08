@@ -1336,6 +1336,10 @@ private fun PageEditorContent(
             val topLevelBlocks = blocks.filter { it.parentBlockId == null }
             val renderItems = remember(topLevelBlocks) { groupIntoRenderItems(topLevelBlocks) }
             val listState = rememberLazyListState()
+            // **La riga dei titoli dei database resta in cima** ("Freeze first
+            // row", dal 08/10/2026): la pagina dice alla tabella quando scorre,
+            // e dove fermarsi, sotto i pulsanti sospesi (vedi `FrozenTable.kt`).
+            val stickyViewport = remember(listState) { StickyViewport.forList(listState, FLOATING_BAR_CLEARANCE) }
             val inkState = remember(listState) { InkPageState(listState) }
             val inkCache = remember { InkPathCache() }
             val inkDensity = LocalDensity.current
@@ -1597,6 +1601,7 @@ private fun PageEditorContent(
                     )
             ) {
             CompositionLocalProvider(
+                LocalStickyViewport provides stickyViewport,
                 LocalFocusPark provides focusPark,
                 // Mentre si disegna, il testo si legge e basta.
                 LocalPageLocked provides (readOnlyPage || drawingMode)
@@ -1608,6 +1613,7 @@ private fun PageEditorContent(
                 state = listState,
                 modifier = Modifier
                     .fillMaxSize()
+                    .stickyViewport(stickyViewport)
                     // Tocco sullo spazio vuoto sotto l'ultimo blocco per
                     // continuare a scrivere. Deve rispondere SOLO a tocchi
                     // veri: con Modifier.clickable rispondeva anche al tasto

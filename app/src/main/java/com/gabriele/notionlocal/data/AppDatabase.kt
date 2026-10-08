@@ -55,7 +55,7 @@ import kotlinx.serialization.json.Json
         NotebookEntity::class,
         NotebookSectionEntity::class
     ],
-    version = 53,
+    version = 54,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -764,6 +764,14 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** Prima colonna e prima riga ferme nella tabella (08/10/2026): spente dappertutto. */
+        private val MIGRATION_53_54 = object : Migration(53, 54) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE pages ADD COLUMN freezeFirstColumn INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE pages ADD COLUMN freezeFirstRow INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         /** Le icone di Material delle pagine (08/10/2026): nessuna pagina ne ha una. */
         private val MIGRATION_52_53 = object : Migration(52, 53) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -837,7 +845,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_49_50,
                         MIGRATION_50_51,
                         MIGRATION_51_52,
-                        MIGRATION_52_53
+                        MIGRATION_52_53,
+                        MIGRATION_53_54
                     )
                     .build()
                 INSTANCE = instance

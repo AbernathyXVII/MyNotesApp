@@ -1,5 +1,7 @@
 package com.gabriele.notionlocal.ui.screen
 
+import androidx.compose.material.icons.filled.BorderTop
+import androidx.compose.material.icons.filled.BorderLeft
 import com.gabriele.notionlocal.data.hasChosenIcon
 import com.gabriele.notionlocal.data.chosenEmoji
 import com.gabriele.notionlocal.data.RowIconRef
@@ -1292,13 +1294,20 @@ private fun DatabaseViewBody(
 
         Spacer(modifier = Modifier.size(8.dp))
 
+        // A pagina intera le righe scorrono qui sotto: è il riquadro in cima
+        // al quale resta la riga dei titoli ("Freeze first row"). Dentro una
+        // pagina scorre la pagina, che lo dice da sé.
+        val bodyScroll = rememberScrollState()
+        val ownViewport = remember(bodyScroll) { StickyViewport.forScroll(bodyScroll) }
+        CompositionLocalProvider(LocalStickyViewport provides (if (embedded) LocalStickyViewport.current else ownViewport)) {
         Column(
             modifier = if (embedded) {
                 Modifier.fillMaxWidth()
             } else {
                 Modifier
                     .weight(1f)
-                    .verticalScroll(rememberScrollState())
+                    .verticalScroll(bodyScroll)
+                    .stickyViewport(ownViewport)
             }
         ) {
             when (layout) {
@@ -1341,6 +1350,8 @@ private fun DatabaseViewBody(
                     onToggleSubRows = { row -> viewModel.setSubRowsCollapsed(row, !row.subRowsCollapsed) },
                     calculationSubRows = parseCalculationSubRows(page?.viewCalculations),
                     cellOverflow = CellOverflow.of(page?.cellOverflow ?: 0),
+                    freezeFirstColumn = page?.freezeFirstColumn == true,
+                    freezeFirstRow = page?.freezeFirstRow == true,
                     onOpenRow = openRow,
                     onRowLongPress = { row, place ->
                         focusManager.clearFocus()
@@ -1537,6 +1548,7 @@ private fun DatabaseViewBody(
             }
             }
         }
+        }
     }
     }
 
@@ -1576,6 +1588,10 @@ private fun DatabaseViewBody(
             onSetHideEmptySubGroups = { viewModel.setHideEmptySubGroups(it) },
             cellOverflow = CellOverflow.of(page?.cellOverflow ?: 0),
             onSetCellOverflow = { viewModel.setCellOverflow(it) },
+            freezeFirstColumn = page?.freezeFirstColumn == true,
+            onSetFreezeFirstColumn = { viewModel.setFreezeFirstColumn(it) },
+            freezeFirstRow = page?.freezeFirstRow == true,
+            onSetFreezeFirstRow = { viewModel.setFreezeFirstRow(it) },
             onSetColumnHidden = { columnId, hidden ->
                 viewModel.setColumnHidden(columnId, hidden)
             },
@@ -1972,7 +1988,11 @@ private fun TableLayout(
     /** I calcoli che contano anche le sotto-righe ("Include sub rows"). */
     calculationSubRows: Set<String> = emptySet(),
     /** Il testo lungo nelle celle: tre puntini, colonna allargata o a capo (vedi `CellOverflow`). */
-    cellOverflow: CellOverflow = CellOverflow.TRUNCATE
+    cellOverflow: CellOverflow = CellOverflow.TRUNCATE,
+    /** "Freeze first column" (dal 08/10/2026): la prima colonna resta a sinistra (vedi `FrozenTable.kt`). */
+    freezeFirstColumn: Boolean = false,
+    /** "Freeze first row": la riga dei titoli resta in cima scorrendo in giù. */
+    freezeFirstRow: Boolean = false
 ) {
     // Dentro un contenitore che scorre in orizzontale la larghezza
     // disponibile è illimitata: una linea che chiede "tutta la
@@ -2027,10 +2047,13 @@ private fun TableLayout(
 
     // Intestazione e righe scorrono insieme in orizzontale, così le
     // colonne restano allineate.
+    val horizontal = rememberScrollState()
+    val frozenColumn = remember(horizontal, freezeFirstColumn) { if (freezeFirstColumn) FrozenColumn(horizontal) else null }
     CompositionLocalProvider(
         LocalTableWidths provides widths,
         LocalColumnResize provides resize,
-        LocalWrapCells provides (cellOverflow == CellOverflow.WRAP)
+        LocalWrapCells provides (cellOverflow == CellOverflow.WRAP),
+        LocalFrozenColumn provides frozenColumn
     ) {
     Column(
         modifier = Modifier
@@ -2047,9 +2070,10 @@ private fun TableLayout(
                     }
                 }
             }
-            .horizontalScroll(rememberScrollState())
+            .horizontalScroll(horizontal)
     ) {
         if (groupColumn == null) {
+            PinnedHeaderSection(pin = freezeFirstRow, header = {
             TableHeaderRow(
                 columns = shownColumns,
                 viewLocked = viewLocked,
@@ -2068,6 +2092,7 @@ private fun TableLayout(
                 onSetFitToContent = onSetFitToContent
             )
             HorizontalDivider(modifier = Modifier.width(tableWidth))
+            }) {
             // **Ogni riga col suo id** (dal 26/09/2026): con un ordinamento
             // una riga cambia posto, e senza l'id il campo in cui si stava
             // scrivendo finiva su un'altra riga, si chiudeva e la tastiera
@@ -2098,6 +2123,7 @@ private fun TableLayout(
                 }
             }
             CalculationFooter(state.rows, state, shownColumns, calculations, onCalculate, calculationAlignments, onCalculationAlign, calculationSubRows, namePlace = namePlace)
+            }
             return@Column
         }
 
@@ -2105,6 +2131,8 @@ private fun TableLayout(
         // colonne, righe, calcoli e "New page".
         @Composable
         fun GroupBody(rows: List<DatabaseRowEntity>, place: RowPlace, onAddRow: () -> Unit) {
+            // Ogni gruppo ha la sua intestazione, ferma finché si è nel gruppo.
+            PinnedHeaderSection(pin = freezeFirstRow, header = {
             TableHeaderRow(
                 columns = shownColumns,
                 viewLocked = viewLocked,
@@ -2123,6 +2151,7 @@ private fun TableLayout(
                 onSetFitToContent = onSetFitToContent
             )
             HorizontalDivider(modifier = Modifier.width(tableWidth))
+            }) {
             rowTree(rows).forEach { item ->
                 val row = item.row
                 key(row.id) {
@@ -2168,6 +2197,7 @@ private fun TableLayout(
                     if (LocalSimpleDatabase.current) DbStrings.newRow else DbStrings.newPage,
                     style = MaterialTheme.typography.labelLarge
                 )
+            }
             }
         }
 
@@ -2511,10 +2541,13 @@ private fun TableHeaderRow(
     if (resize != null && key != null) {
         val keys = columns.map { it.id }.toMutableList().apply { add(namePlace, NAME_COLUMN_KEY) }
         val index = keys.indexOf(key)
+        // Con la prima colonna ferma, il suo bordo è spostato di quanto la tabella è scorsa.
+        val frozen = LocalFrozenColumn.current
+        val frozenShift = if (frozen != null && index == 0) with(LocalDensity.current) { frozen.scroll.value.toDp() } else 0.dp
         val edge = if (index < 0) {
             null
         } else {
-            keys.take(index + 1).fold(0.dp) { sum, k -> sum + widths.of(k) } + SEPARATOR_WIDTH * index
+            keys.take(index + 1).fold(0.dp) { sum, k -> sum + widths.of(k) } + SEPARATOR_WIDTH * index + frozenShift
         }
         if (edge != null) {
             ColumnResizeHandle(
@@ -2702,14 +2735,25 @@ private fun CalculationLabel(calc: Calculation, value: String) {
 private fun TableSlots(
     columns: List<DatabaseColumnEntity>,
     namePlace: Int,
+    /** La riga, per l'evidenziazione della ricerca sulla prima cella ferma. */
+    rowId: String? = null,
     name: @Composable () -> Unit,
     column: @Composable (Int, DatabaseColumnEntity) -> Unit
 ) {
-    columns.forEachIndexed { index, c ->
-        if (index == namePlace) key(NAME_COLUMN_KEY) { name() }
-        key(c.id) { column(index, c) }
+    // **La prima colonna ferma** (dal 08/10/2026): la prima cella, col suo
+    // separatore, in un pezzo solo che resta al bordo sinistro (vedi
+    // `frozenFirstCell`). Spenta, le celle sono come prima.
+    val frozen = LocalFrozenColumn.current
+    val found = if (rowId != null) Modifier.foundInside(rowId) else Modifier
+    @Composable
+    fun first(content: @Composable () -> Unit) {
+        if (frozen == null) content() else Row(modifier = Modifier.frozenFirstCell(frozen, found)) { content() }
     }
-    if (namePlace >= columns.size) key(NAME_COLUMN_KEY) { name() }
+    columns.forEachIndexed { index, c ->
+        if (index == namePlace) key(NAME_COLUMN_KEY) { if (index == 0) first(name) else name() }
+        key(c.id) { if (index == 0 && namePlace > 0) first { column(index, c) } else column(index, c) }
+    }
+    if (namePlace >= columns.size) key(NAME_COLUMN_KEY) { if (columns.isEmpty()) first(name) else name() }
 }
 
 /** Una riga della tabella: nome, celle, e lo spazio sotto la colonna "+". */
@@ -2745,6 +2789,7 @@ private fun TableBodyRow(
         TableSlots(
             columns = columns,
             namePlace = namePlace,
+            rowId = row.id,
             name = {
                 NameCell(
                     row = row,
@@ -5064,12 +5109,14 @@ internal fun SettingsToggleRow(
     icon: ImageVector,
     label: String,
     checked: Boolean,
+    /** Spento con "Lock view", per le impostazioni della vista. */
+    enabled: Boolean = true,
     onCheckedChange: (Boolean) -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onCheckedChange(!checked) }
+            .clickable(enabled = enabled) { onCheckedChange(!checked) }
             .padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -5080,8 +5127,12 @@ internal fun SettingsToggleRow(
             tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.size(14.dp))
-        Text(label, modifier = Modifier.weight(1f))
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
+        Text(
+            label,
+            modifier = Modifier.weight(1f),
+            color = if (enabled) Color.Unspecified else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+        )
+        Switch(checked = checked, onCheckedChange = onCheckedChange, enabled = enabled)
     }
 }
 
@@ -8860,6 +8911,10 @@ private fun SettingsSheet(
     /** Il testo lungo nelle celle della tabella (dal 30/09/2026). */
     cellOverflow: CellOverflow = CellOverflow.TRUNCATE,
     onSetCellOverflow: ((CellOverflow) -> Unit)? = null,
+    freezeFirstColumn: Boolean = false,
+    onSetFreezeFirstColumn: ((Boolean) -> Unit)? = null,
+    freezeFirstRow: Boolean = false,
+    onSetFreezeFirstRow: ((Boolean) -> Unit)? = null,
     /** Nasconde o rimostra una colonna, e tutte insieme. */
     onSetColumnHidden: (String, Boolean) -> Unit,
     onSetAllColumnsHidden: (Boolean) -> Unit,
@@ -9087,6 +9142,28 @@ private fun SettingsSheet(
                                     label = DbStrings.longText,
                                     value = DbStrings.cellOverflowName(cellOverflow),
                                     onClick = { page = SettingsPage.CELL_OVERFLOW }
+                                )
+                            }
+                            // **Prima colonna e prima riga ferme** (dal
+                            // 08/10/2026, chiesto dall'utente): due voci a sé.
+                            if (onSetFreezeFirstColumn != null) {
+                                HorizontalDivider()
+                                SettingsToggleRow(
+                                    icon = Icons.Filled.BorderLeft,
+                                    label = DbStrings.freezeFirstColumn,
+                                    checked = freezeFirstColumn,
+                                    enabled = !viewLocked,
+                                    onCheckedChange = onSetFreezeFirstColumn
+                                )
+                            }
+                            if (onSetFreezeFirstRow != null) {
+                                HorizontalDivider()
+                                SettingsToggleRow(
+                                    icon = Icons.Filled.BorderTop,
+                                    label = DbStrings.freezeFirstRow,
+                                    checked = freezeFirstRow,
+                                    enabled = !viewLocked,
+                                    onCheckedChange = onSetFreezeFirstRow
                                 )
                             }
                         }

@@ -2282,6 +2282,8 @@ class PageRepository(private val db: AppDatabase) {
                 columnWidths = next.columnWidths,
                 fitColumns = next.fitColumns,
                 cellOverflow = next.cellOverflow,
+                freezeFirstColumn = next.freezeFirstColumn,
+                freezeFirstRow = next.freezeFirstRow,
                 colorBoardCards = next.colorBoardCards,
                 calendarDateColumnId = next.calendarDateColumnId,
                 calendarWeekView = next.calendarWeekView,
