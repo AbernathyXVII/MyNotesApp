@@ -555,9 +555,9 @@ internal fun BlockActionsHost(
                     exclusions = exclusions,
                     factory = factory,
                     onDismiss = onDismiss,
-                    onPick = { destination ->
+                    onPick = { destination, inline ->
                         onDismiss()
-                        viewModel.moveLinkedPageTo(page.id, destination)
+                        viewModel.moveLinkedPageTo(page.id, destination, inline)
                         Toast.makeText(context, Strings.movedInto(destination.placeName()), Toast.LENGTH_SHORT).show()
                     }
                 )

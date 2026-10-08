@@ -1,5 +1,6 @@
 package com.gabriele.notionlocal.ui.screen
 
+import androidx.compose.foundation.layout.Box
 import com.gabriele.notionlocal.ui.i18n.EditorStrings
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.foundation.text.KeyboardActions
@@ -434,8 +435,13 @@ internal fun MovePagePicker(
     exclusions: MoveExclusions,
     factory: ViewModelFactory,
     onDismiss: () -> Unit,
-    onPick: (PageTreeNode) -> Unit
+    /** La destinazione, e per un database se arriva aperto dentro la pagina ("Move as inline"). */
+    onPick: (PageTreeNode, Boolean) -> Unit
 ) {
+    // **"Move as inline"** (dal 08/10/2026, chiesto dall'utente): per un
+    // database, in fondo, se arriva aperto dentro la pagina o come
+    // collegamento a pagina. Parte com'è adesso.
+    var inline by remember(page.id) { mutableStateOf(exclusions.shownInline) }
     DestinationPickerSheet(
         factory = factory,
         title = Strings.moveTo,
@@ -446,8 +452,23 @@ internal fun MovePagePicker(
         },
         viewModelKey = "move-destination",
         onDismiss = onDismiss,
-        onPick = onPick,
-        excluded = exclusions
+        onPick = { onPick(it, page.isDatabase && inline) },
+        excluded = exclusions,
+        footer = if (page.isDatabase) {
+            {
+                HorizontalDivider()
+                Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+                    SettingsToggleRow(
+                        icon = Icons.Filled.TableChart,
+                        label = Strings.moveAsInline,
+                        checked = inline,
+                        onCheckedChange = { inline = it }
+                    )
+                }
+            }
+        } else {
+            null
+        }
     )
 }
 

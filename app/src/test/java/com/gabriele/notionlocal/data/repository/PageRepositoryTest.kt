@@ -160,6 +160,30 @@ class PageRepositoryTest {
     }
 
     @Test
+    fun withMoveAsInlineADatabaseArrivesOpen_andTheSwitchStartsAsItWas() = runBlocking<Unit> {
+        // "Move as inline" (08/10/2026): il database arriva aperto dentro la
+        // pagina; l'interruttore parte acceso se adesso si vede aperto.
+        val database = PageEntity(title = "Tasks", isDatabase = true)
+        repo.createPage(database)
+        link(parent.id, database.id, 3, BlockType.DATABASE_LINK)
+        assertTrue(repo.moveExclusions(database.id).shownInline)
+
+        val moved = repo.movePageTo(database.id, node(destination.id), asInline = true)!!
+        val arrived = linksTo(database.id).single()
+        assertEquals(BlockType.DATABASE_LINK, arrived.type)
+        assertEquals(destination.id, arrived.pageId)
+        assertEquals(moved.newLinkId, arrived.id)
+
+        // Come collegamento a pagina, l'interruttore parte spento.
+        repo.movePageTo(database.id, node(parent.id))
+        assertEquals(BlockType.PAGE_LINK, linksTo(database.id).single().type)
+        assertFalse(repo.moveExclusions(database.id).shownInline)
+        // Una pagina che non è un database resta un collegamento a pagina anche chiedendolo.
+        repo.movePageTo(child.id, node(destination.id), asInline = true)
+        assertEquals(BlockType.PAGE_LINK, linksTo(child.id).single().type)
+    }
+
+    @Test
     fun aPageCannotGoInsideItsOwnSubpage() = runBlocking<Unit> {
         val grandChild = PageEntity(title = "Grandchild")
         repo.createPage(grandChild)

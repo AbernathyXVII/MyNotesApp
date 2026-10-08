@@ -717,7 +717,16 @@ class PageRepository(private val db: AppDatabase) {
      * sottopagina, e nessuna delle due si raggiunge più dal menu
      * principale. Prima l'elenco di "Move to" non lo impediva.
      */
-    data class MoveExclusions(val pageIds: Set<String>, val rowIds: Set<String>)
+    data class MoveExclusions(
+        val pageIds: Set<String>,
+        val rowIds: Set<String>,
+        /**
+         * Se adesso il database si vede **aperto dentro una pagina** (un
+         * blocco database, non un collegamento a pagina): "Move as inline"
+         * parte acceso (dal 08/10/2026), così spostato si vede com'era.
+         */
+        val shownInline: Boolean = false
+    )
 
     suspend fun moveExclusions(pageId: String): MoveExclusions {
         val pages = pagesInside(pageId)
@@ -726,7 +735,8 @@ class PageRepository(private val db: AppDatabase) {
             .mapNotNull { pageDao.getById(it)?.takeIf { page -> page.isDatabase } }
             .flatMap { database -> databaseDao.getRowsForPageOnce(database.id).map { it.id } }
             .toSet()
-        return MoveExclusions(pages, rows)
+        val inline = blockDao.getBlocksLinkingTo(pageId).any { it.type == BlockType.DATABASE_LINK }
+        return MoveExclusions(pages, rows, inline)
     }
 
     /** Una pagina e tutte quelle dentro di lei (vedi `moveExclusions`). La principale mai: non sta dentro niente. */
@@ -761,18 +771,18 @@ class PageRepository(private val db: AppDatabase) {
      *   aperta nasce adesso. Dentro un database no: il suo contenuto sono
      *   righe, non blocchi. Né dentro la pagina stessa o una sua
      *   sottopagina (`moveExclusions`).
-     * - **Un database spostato arriva sempre come collegamento a
-     *   pagina**, anche se prima era mostrato dentro la pagina: chiesto
-     *   dall'utente il 24/09/2026 — se lo si vuole di nuovo aperto e
-     *   visibile lì, c'è "Turn into database" (tenendo premuto il
-     *   collegamento, o dai tre puntini del database). Prima si
-     *   ricreava sempre come database aperto.
+     * - **Un database spostato arriva come collegamento a pagina**
+     *   (chiesto dall'utente il 24/09/2026; prima si ricreava sempre come
+     *   database aperto), **oppure aperto dentro la pagina** se si accende
+     *   "Move as inline" (`asInline`, dal 08/10/2026, chiesto dall'utente:
+     *   la scelta in fondo alla finestra di "Move to"). Dopo, si cambia con
+     *   "Turn into database inline" / "Turn into page".
      * - **La pagina di una riga esce dal suo database**, come su Notion:
      *   la riga si toglie, con i valori delle sue proprietà, e la pagina
      *   diventa una pagina come le altre, con nome e contenuto. Prima
      *   restava anche nel database, cioè in due posti insieme.
      */
-    suspend fun movePageTo(pageId: String, destination: PageTreeNode): PageChange.Moved? {
+    suspend fun movePageTo(pageId: String, destination: PageTreeNode, asInline: Boolean = false): PageChange.Moved? {
         if (pageId == PageEntity.ROOT_PAGE_ID) return null
         val inside = pagesInside(pageId)
         val destinationPageId = when {
@@ -784,7 +794,7 @@ class PageRepository(private val db: AppDatabase) {
             }
             else -> return null
         }
-        return moveInto(pageId, destinationPageId, inside)
+        return moveInto(pageId, destinationPageId, inside, asInline)
     }
 
     /**
@@ -793,7 +803,7 @@ class PageRepository(private val db: AppDatabase) {
      * pagina dov'era: i collegamenti tolti, e la riga con i valori delle
      * sue proprietà se era la pagina di una riga.
      */
-    private suspend fun moveInto(pageId: String, destinationPageId: String, inside: Set<String>): PageChange.Moved? {
+    private suspend fun moveInto(pageId: String, destinationPageId: String, inside: Set<String>, asInline: Boolean = false): PageChange.Moved? {
         if (destinationPageId in inside) return null
         val page = pageDao.getById(pageId) ?: return null
         val target = pageDao.getById(destinationPageId) ?: return null
@@ -808,7 +818,8 @@ class PageRepository(private val db: AppDatabase) {
                 rows.forEach { databaseDao.deleteRow(it) }
                 pageDao.setRowPage(pageId, false)
             }
-            val newLinkId = appendLink(destinationPageId, pageId, isDatabase = false)
+            // Un database arriva aperto dentro la pagina solo se lo si è chiesto.
+            val newLinkId = appendLink(destinationPageId, pageId, isDatabase = asInline && page.isDatabase)
             PageChange.Moved(pageId, destinationPageId, links, rows, cells, newLinkId)
         }
     }

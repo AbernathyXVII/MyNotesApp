@@ -100,15 +100,17 @@ object Strings {
         "ページをタップすると、その末尾に移動します。データベースを開くと中のページが表示されます。"
     )
     val moveDatabaseHint get() = t(
-        "Tap a page: the database goes to its end as a page link. To show it open inside the page, use “Turn into database” afterwards.",
-        "Tocca una pagina: il database finirà in fondo come collegamento a pagina. Per vederlo aperto dentro la pagina, poi, “Trasforma in database”.",
-        "Tippe auf eine Seite: Die Datenbank kommt als Seitenlink an deren Ende. Um sie offen in der Seite zu zeigen, danach „In Datenbank umwandeln“.",
-        "Touchez une page : la base de données ira à la fin comme lien de page. Pour l'afficher ouverte dans la page, ensuite « Convertir en base de données ».",
-        "Toca una página: la base de datos irá al final como enlace de página. Para verla abierta dentro de la página, luego «Convertir en base de datos».",
-        "点按页面：数据库会以页面链接的形式放在其末尾。之后可用“转换为数据库”在页面中展开显示。",
-        "페이지를 누르세요. 데이터베이스는 그 끝에 페이지 링크로 놓입니다. 페이지 안에 펼쳐 보려면 나중에 \"데이터베이스로 전환\"을 사용하세요.",
-        "ページをタップ：データベースはページリンクとして末尾に置かれます。ページ内に開いて表示するには、あとで「データベースに変換」を使います。"
+        "Tap a page: the database goes to its end, as a page link or, with “Move as inline” on, open inside the page.",
+        "Tocca una pagina: il database finirà in fondo, come collegamento a pagina o, con “Sposta in linea” acceso, aperto dentro la pagina.",
+        "Tippe auf eine Seite: Die Datenbank kommt an deren Ende, als Seitenlink oder, mit „Inline verschieben“, offen in der Seite.",
+        "Touchez une page : la base de données ira à la fin, comme lien de page ou, avec « Déplacer en intégré », ouverte dans la page.",
+        "Toca una página: la base de datos irá al final, como enlace de página o, con «Mover en línea», abierta dentro de la página.",
+        "点按页面：数据库会放在其末尾，作为页面链接，或在开启“以内嵌方式移动”时在页面中展开显示。",
+        "페이지를 누르세요. 데이터베이스는 그 끝에 페이지 링크로, 또는 \"인라인으로 이동\"을 켜면 페이지 안에 펼쳐진 채로 놓입니다.",
+        "ページをタップ：データベースは末尾に、ページリンクとして、または「インラインで移動」をオンにするとページ内に開いた状態で置かれます。"
     )
+    /** "Move to" di un database, in fondo (dal 08/10/2026): arriva aperto dentro la pagina. */
+    val moveAsInline get() = t("Move as inline", "Sposta in linea", "Inline verschieben", "Déplacer en intégré", "Mover en línea", "以内嵌方式移动", "인라인으로 이동", "インラインで移動")
     val moveRowPageHint get() = t(
         "Tap a page to move it to its end. The page leaves its database: name and content stay, the row's properties don't.",
         "Tocca una pagina per spostarla in fondo. La pagina esce dal suo database: nome e contenuto restano, le proprietà della riga no.",

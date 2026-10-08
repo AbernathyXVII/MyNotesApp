@@ -701,11 +701,12 @@ fun DatabaseViewScreen(
                 exclusions = exclusions,
                 factory = factory,
                 onDismiss = { moveExclusions = null },
-                onPick = { destination ->
+                onPick = { destination, inline ->
                     moveExclusions = null
-                    // Arriva come collegamento a pagina (vedi
-                    // `PageRepository.movePageTo`): l'avviso dice dove.
-                    menuViewModel.movePageTo(destination) {
+                    // Come collegamento a pagina, o aperto dentro la pagina
+                    // con "Move as inline" (vedi `PageRepository.movePageTo`):
+                    // l'avviso dice dove.
+                    menuViewModel.movePageTo(destination, inline) {
                         Toast.makeText(trashContext, Strings.movedInto(destination.placeName()), Toast.LENGTH_SHORT).show()
                         onBack()
                     }

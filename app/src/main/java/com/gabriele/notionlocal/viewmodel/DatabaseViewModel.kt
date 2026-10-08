@@ -913,14 +913,14 @@ class DatabaseViewModel(
 
     /**
      * "Move to" dai tre puntini: il database arriva in fondo alla pagina
-     * scelta **come collegamento a pagina** (vedi
-     * `PageRepository.movePageTo`). `onDone` solo se lo spostamento c'è
-     * stato.
+     * scelta come collegamento a pagina, o aperto dentro di lei con "Move as
+     * inline" (`asInline`, vedi `PageRepository.movePageTo`). `onDone` solo
+     * se lo spostamento c'è stato.
      */
-    fun movePageTo(destination: PageRepository.PageTreeNode, onDone: () -> Unit) {
+    fun movePageTo(destination: PageRepository.PageTreeNode, asInline: Boolean = false, onDone: () -> Unit) {
         val current = _page.value ?: return
         viewModelScope.launch {
-            pageRepository.movePageTo(current.id, destination)?.let { change ->
+            pageRepository.movePageTo(current.id, destination, asInline)?.let { change ->
                 PendingPageUndo.offer(change)
                 onDone()
             }

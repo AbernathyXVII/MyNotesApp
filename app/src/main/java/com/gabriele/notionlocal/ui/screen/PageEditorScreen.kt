@@ -2597,7 +2597,7 @@ private fun PageEditorContent(
                 exclusions = exclusions,
                 factory = factory,
                 onDismiss = { moveExclusions = null },
-                onPick = { destination ->
+                onPick = { destination, _ ->
                     moveExclusions = null
                     // Spostata, questa pagina non sta più dov'era: si
                     // torna indietro, altrimenti si resterebbe su una

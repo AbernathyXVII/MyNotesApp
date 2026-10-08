@@ -3171,10 +3171,10 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
      * nasce uno in fondo alla pagina scelta. Annulla, da questa pagina, la
      * rimette al suo posto (`PageRepository.undoPageChange`).
      */
-    fun moveLinkedPageTo(pageId: String, destination: PageRepository.PageTreeNode) {
+    fun moveLinkedPageTo(pageId: String, destination: PageRepository.PageTreeNode, asInline: Boolean = false) {
         viewModelScope.launch {
             historyLock.withLock {
-                repository.movePageTo(pageId, destination)?.let { pushPageChange(it) }
+                repository.movePageTo(pageId, destination, asInline)?.let { pushPageChange(it) }
             }
         }
     }

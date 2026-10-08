@@ -2056,6 +2056,46 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.157 — 08/10/2026 · 15:57 — "Move as inline": un database spostato può arrivare aperto nella pagina
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 461 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Quando sposto un database che sia visualizzabile inline in un'altra
+> pagina, poi lì me lo ritrovo come pagina non inline. Quando sposto un
+> database, mettimi un'opzione in fondo attivabile o no chiamata 'Move as
+> inline' se si tratta di un database, così io posso decidere se vederlo
+> inline oppure come pagina»
+
+Arrivava come collegamento a pagina per una scelta del 24/09/2026 (chiesta
+allora dall'utente): lo spostamento rifaceva sempre un collegamento.
+
+- **[Nuova funzionalità]** **"Move as inline"**, in fondo alla finestra di
+  "Move to" quando si sposta **un database** (dal menu del blocco o dai tre
+  puntini del database a pagina intera): acceso, il database arriva **aperto
+  dentro la pagina** scelta; spento, come **collegamento a pagina**, come
+  prima. Per le pagine non c'è
+- **[Nuova funzionalità]** **Parte com'è il database adesso**: acceso se si
+  vede aperto dentro una pagina, spento se è un collegamento. Così, se non
+  lo si tocca, il database arriva com'era
+- **[Modificato]** La spiegazione in cima alla finestra dice le due strade
+  (prima rimandava a "Turn into database" da fare dopo)
+- **[Progetto]** `PageRepository.movePageTo(…, asInline)` crea il blocco
+  database invece del collegamento (solo per un database);
+  `MoveExclusions.shownInline` dice com'è adesso; `MovePagePicker` ha
+  l'interruttore, nella parte in fondo che `DestinationPickerSheet` ora sa
+  avere (`footer`). Annulla rimette tutto com'era, come prima. Test: uno in
+  `PageRepositoryTest`
+- Verificato sul telefono, con due righe di prova di Main calendar (poi
+  tolte; il database del telefono è tornato com'era): un database aperto
+  nella prima, "Move to" dal suo menu → in fondo "Move as inline", già
+  acceso; scelta la seconda riga ("Destinazione"), il database ci arriva
+  aperto. Di nuovo "Move to" con l'interruttore spento → arriva come
+  collegamento a pagina; e da collegamento, "Move to" mostra l'interruttore
+  spento. Prima delle prove il confronto del database mostrava che l'utente
+  aveva appena spostato "Main calendar" in fondo alla pagina principale: è
+  rimasto dove l'aveva messo
+
 ### 🆕 v0.156 — 08/10/2026 · 15:39 — "Turn into database inline"
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 460 test
 passati; commit solo in locale)*

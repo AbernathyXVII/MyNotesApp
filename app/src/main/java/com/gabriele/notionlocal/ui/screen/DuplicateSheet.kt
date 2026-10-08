@@ -232,7 +232,9 @@ internal fun DestinationPickerSheet(
      * dentro, e i database semplici sono grigi. Cercando si trovano i
      * database.
      */
-    pickDatabases: Boolean = false
+    pickDatabases: Boolean = false,
+    /** In fondo, sotto l'elenco: "Move as inline" di "Move to" per un database; null = niente. */
+    footer: (@Composable () -> Unit)? = null
 ) {
     val picker: PagePickerViewModel = viewModel(factory = factory, key = viewModelKey)
     LaunchedEffect(Unit) {
@@ -344,6 +346,7 @@ internal fun DestinationPickerSheet(
                     }
                 }
             }
+            footer?.invoke()
         }
     }
 }
