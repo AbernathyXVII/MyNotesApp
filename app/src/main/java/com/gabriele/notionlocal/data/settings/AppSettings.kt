@@ -135,6 +135,7 @@ object AppSettings {
             ?.take(RECENT_EMOJIS_MAX)
             .orEmpty()
         skinToneState.value = prefs.getInt(KEY_SKIN_TONE, 0).coerceIn(0, SKIN_TONE_COUNT)
+        iconColorState.value = prefs.getString(KEY_ICON_COLOR, null)?.takeIf { HEX_COLOR.matches(it) }
     }
 
     // --- Aspetto ---
@@ -371,6 +372,20 @@ object AppSettings {
 
     const val RECENT_EMOJIS_MAX = 24
 
+    private val iconColorState = mutableStateOf<String?>(null)
+
+    /**
+     * Il colore delle icone di Material della scheda "Icons" (dal 08/10/2026),
+     * "#RRGGBB"; null per il colore del testo, il bianco del tema scuro.
+     * Resta quello dell'ultima volta, come su Notion.
+     */
+    var iconColor: String?
+        get() = iconColorState.value
+        set(value) {
+            iconColorState.value = value?.uppercase()?.takeIf { HEX_COLOR.matches(it) }
+            if (::prefs.isInitialized) prefs.edit().putString(KEY_ICON_COLOR, iconColorState.value).apply()
+        }
+
     private val skinToneState = mutableStateOf(0)
 
     /** Il colore della pelle delle emoji di persone e mani: 0 il giallo, 1..5 dal più chiaro al più scuro. */
@@ -418,6 +433,7 @@ object AppSettings {
     private const val KEY_RECENT_COLORS = "recent_colors"
     private const val KEY_RECENT_EMOJIS = "recent_emojis"
     private const val KEY_SKIN_TONE = "skin_tone"
+    private const val KEY_ICON_COLOR = "icon_color"
 }
 
 private val HEX_COLOR = Regex("#[0-9A-F]{6}")

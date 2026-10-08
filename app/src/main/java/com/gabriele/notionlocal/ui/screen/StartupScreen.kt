@@ -116,7 +116,7 @@ fun StartupScreen(
                                 .padding(vertical = 10.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            PageIconView(emoji = page.icon, iconImage = page.iconImage, isDatabase = page.isDatabase)
+                            PageIconView(emoji = page.icon, iconImage = page.iconImage, isDatabase = page.isDatabase, iconSymbol = page.iconSymbol)
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(
                                 page.title.ifBlank { Strings.untitled },

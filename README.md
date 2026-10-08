@@ -2056,6 +2056,56 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.153 — 08/10/2026 · 09:39 — La scheda "Icons": le icone di Material, bianche o del colore che si sceglie
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 450 test
+passati; database alla versione 53, copia del database del telefono fatta
+prima di installare; commit solo in locale)*
+
+Alla domanda su cosa fosse la scheda "Icons" di Notion, e se farla con le
+icone di Material (quelle di Notion sono loro), l'utente, parola per parola
+(con la foto della scheda di Notion):
+> «Ah sì sì, quelle sono molto belle, tutte bianche e molto stile
+> minimalismo. Sì, falla con le icone Material e i colori come vedi nella
+> foto (di base tutte le icone sono bianche, ma selezionando il colore mi
+> appare il solito spettro dei colori che usi in tutta l'app)»
+
+- **[Nuova funzionalità]** **La scheda "Icons"** del selettore delle icone,
+  fra "Emoji" e "Upload": le **2132 icone piene di Material**, di partenza
+  **bianche** (il colore del testo: sul tema chiaro scure), in una griglia
+  come quella di Notion. "Filter…" le cerca per le parole del nome inglese
+  ("home", "alar acc"), "Random" ne sceglie una a caso
+- **[Nuova funzionalità]** **Il pallino accanto a "Random"** apre lo
+  spettro dei colori di tutta l'app ("Icon color"): il colore scelto colora
+  tutte le icone della griglia e va con l'icona che si sceglie; "No color"
+  le rimette bianche. Il colore resta per la prossima volta, come su Notion
+- **[Nuova funzionalità]** **L'icona scelta vale ovunque** come le emoji:
+  in cima alla pagina, nell'albero, nella ricerca, nei preferiti, nel
+  cestino, nei collegamenti e nei rimandi, davanti al nome di un database,
+  accanto alle righe in tutte le viste del database, nei riquadri
+- **[Progetto]** Database alla **versione 53**: `pages.iconSymbol`, il nome
+  dell'icona e il colore in una stringa ("Home" o "Home|#040369",
+  `IconSymbol`); nei riquadri la voce `symbol` di `BlockAttrs`. L'ordine:
+  immagine, poi icona di Material, poi emoji. `MaterialIconSet.kt` è
+  generato da `tools/icons/make_material_icons.py`, che legge le due
+  librerie di Material dell'app (quella di base, con le icone più comuni
+  come Home e Star, e quella estesa) e prende le icone che si specchiano
+  nelle lingue da destra a sinistra dalla loro versione nuova. Il disegno
+  comune è `SymbolIcon`; il colore scelto sta in `AppSettings.iconColor`.
+  Test: `MaterialIconsTest` (3: ogni nome dà la sua icona, le parole e la
+  ricerca, il colore), due in `PageIconTest`, uno in `IconPickerTest`, e la
+  migrazione 52→53 in `MigrationTest`
+- Verificato sul telefono, in una riga di prova di Main calendar (poi
+  tolta), dopo aver copiato il database del telefono: l'app si apre col
+  database alla 53; "Add icon" → "Icons" mostra la griglia bianca; il
+  pallino apre lo spettro con "Icon color"; scelto il primo dei colori
+  recenti (per non cambiarne l'ordine) e "Apply", tutta la griglia diventa
+  blu; "home" → la casa diventa l'icona della pagina, blu, e compare blu
+  accanto al nome della riga nel calendario; "No color" rimette la griglia
+  bianca. **Prima di installare, il test che controlla ogni nome ha
+  trovato che mancavano le icone più comuni** (Home, Star, Settings…):
+  stanno nella libreria di base di Material, e il generatore leggeva solo
+  quella estesa
+
 ### 🆕 v0.152 — 08/10/2026 · 09:17 — Le emoji di Notion per le icone: categorie, ricerca e colore della pelle
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 443 test
 passati; commit solo in locale)*

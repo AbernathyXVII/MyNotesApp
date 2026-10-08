@@ -359,7 +359,7 @@ private fun HitRow(hit: DestinationHit, onClick: () -> Unit) {
             .padding(horizontal = 20.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        PageIconView(emoji = node.emoji, iconImage = node.iconImage, isDatabase = false, size = 18.dp)
+        PageIconView(emoji = node.emoji, iconImage = node.iconImage, isDatabase = false, size = 18.dp, iconSymbol = node.iconSymbol)
         Spacer(modifier = Modifier.size(12.dp))
         Column {
             Text(

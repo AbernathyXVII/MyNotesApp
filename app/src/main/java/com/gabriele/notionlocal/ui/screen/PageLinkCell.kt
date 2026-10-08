@@ -149,7 +149,7 @@ internal fun PageLinkCell(
                 modifier = Modifier.clickable(enabled = actions != null) { actions?.let { it.open(page.id) } },
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                PageIconView(emoji = page.icon, iconImage = page.iconImage, isDatabase = page.isDatabase, size = 16.dp)
+                PageIconView(emoji = page.icon, iconImage = page.iconImage, isDatabase = page.isDatabase, size = 16.dp, iconSymbol = page.iconSymbol)
                 Spacer(modifier = Modifier.size(6.dp))
                 Text(
                     page.title.ifBlank { Strings.untitled },

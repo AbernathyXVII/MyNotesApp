@@ -151,8 +151,8 @@ interface PageDao {
      * selettore delle emoji): scrive solo queste due colonne, per la stessa
      * ragione di `setFavorite`.
      */
-    @Query("UPDATE pages SET icon = :icon, iconImage = :iconImage WHERE id = :pageId")
-    suspend fun setIcon(pageId: String, icon: String, iconImage: String?)
+    @Query("UPDATE pages SET icon = :icon, iconImage = :iconImage, iconSymbol = :iconSymbol WHERE id = :pageId")
+    suspend fun setIcon(pageId: String, icon: String, iconImage: String?, iconSymbol: String?)
 
     /**
      * Le immagini caricate come icona dalle pagine fuori dal cestino, le più

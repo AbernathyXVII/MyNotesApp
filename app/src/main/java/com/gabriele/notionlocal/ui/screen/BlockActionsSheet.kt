@@ -476,9 +476,7 @@ internal fun BlockActionsHost(
         BlockMenuStep.CALLOUT_ICON -> CalloutIconSheet(
             store = imageStore,
             hasIcon = block.attrs.hasCalloutIcon,
-            onEmoji = { emoji -> viewModel.updateBlockAttrs(block.id) { it.copy(icon = emoji, iconImage = null) } },
-            onImage = { file -> viewModel.updateBlockAttrs(block.id) { it.copy(iconImage = file) } },
-            onRemove = { viewModel.updateBlockAttrs(block.id) { it.copy(icon = "", iconImage = null) } },
+            onPick = { choice -> viewModel.updateBlockAttrs(block.id) { it.withIcon(choice) } },
             onDismiss = onDismiss
         )
 

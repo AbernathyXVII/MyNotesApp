@@ -1116,6 +1116,7 @@ private fun DatabaseViewBody(
             // il nome lo è.
             val databaseIcon = dataPage?.iconImage
             val databaseEmoji = dataPage?.chosenEmoji
+            val databaseSymbol = dataPage?.iconSymbol
             if (databaseIcon != null) {
                 PageImage(
                     fileName = databaseIcon,
@@ -1125,6 +1126,17 @@ private fun DatabaseViewBody(
                         .padding(start = 16.dp)
                         .size(if (embedded) 26.dp else 40.dp)
                         .clip(RoundedCornerShape(6.dp))
+                        .let { base ->
+                            if (contentLocked) base else base.clickable { editingIcon = true }
+                        }
+                )
+            } else if (databaseSymbol != null) {
+                // Un'icona di Material (dal 08/10/2026), grande quanto l'immagine.
+                SymbolIcon(
+                    databaseSymbol,
+                    if (embedded) 26.dp else 40.dp,
+                    Modifier
+                        .padding(start = 16.dp)
                         .let { base ->
                             if (contentLocked) base else base.clickable { editingIcon = true }
                         }
@@ -8253,6 +8265,7 @@ internal fun RowIconBadge(rowId: String, size: Dp) {
     val icon = LocalRowIcons.current[rowId] ?: return
     val fileName = icon.image
     val emoji = icon.emoji
+    val symbol = icon.symbol
     if (fileName != null) {
         val context = LocalContext.current
         val store = remember(context) { PageImageStore(context) }
@@ -8264,6 +8277,8 @@ internal fun RowIconBadge(rowId: String, size: Dp) {
                 .size(size)
                 .clip(RoundedCornerShape(3.dp))
         )
+    } else if (symbol != null) {
+        SymbolIcon(symbol, size)
     } else if (emoji != null) {
         // L'emoji scelta col selettore, grande quanto l'immagine: in sp
         // calcolati dalla misura, così non esce dal posto con i caratteri grandi.

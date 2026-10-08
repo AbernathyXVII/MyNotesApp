@@ -162,7 +162,7 @@ private fun LinkableDatabaseRow(database: LinkableDatabase, onClick: () -> Unit)
             .padding(horizontal = 20.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        PageIconView(emoji = page.icon, iconImage = page.iconImage, isDatabase = true, size = 20.dp)
+        PageIconView(emoji = page.icon, iconImage = page.iconImage, isDatabase = true, size = 20.dp, iconSymbol = page.iconSymbol)
         Spacer(modifier = Modifier.size(12.dp))
         Column {
             Text(

@@ -1,5 +1,6 @@
 package com.gabriele.notionlocal.viewmodel
 
+import com.gabriele.notionlocal.data.symbolField
 import com.gabriele.notionlocal.data.replacedImage
 import com.gabriele.notionlocal.data.imageField
 import com.gabriele.notionlocal.data.iconField
@@ -961,7 +962,7 @@ class DatabaseViewModel(
             return replacedImage(source.iconImage, choice)
         }
         val current = _page.value ?: return null
-        _page.value = current.copy(icon = choice.iconField, iconImage = choice.imageField)
+        _page.value = current.copy(icon = choice.iconField, iconImage = choice.imageField, iconSymbol = choice.symbolField)
         viewModelScope.launch { pageRepository.setIcon(current.id, choice) }
         return replacedImage(current.iconImage, choice)
     }
@@ -979,7 +980,9 @@ class DatabaseViewModel(
         val previous = _rowIcons.value[row.id]?.image
         _rowIcons.value = when (choice) {
             IconChoice.None -> _rowIcons.value - row.id
-            else -> _rowIcons.value + (row.id to RowIconRef(emoji = chosenEmoji(choice.iconField), image = choice.imageField))
+            else -> _rowIcons.value + (
+                row.id to RowIconRef(emoji = chosenEmoji(choice.iconField), image = choice.imageField, symbol = choice.symbolField)
+            )
         }
         viewModelScope.launch {
             val pageId = pageRepository.ensureRowPage(row.id) ?: return@launch

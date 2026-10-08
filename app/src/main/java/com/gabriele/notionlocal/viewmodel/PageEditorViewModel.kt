@@ -1,5 +1,6 @@
 package com.gabriele.notionlocal.viewmodel
 
+import com.gabriele.notionlocal.data.symbolField
 import com.gabriele.notionlocal.data.replacedImage
 import com.gabriele.notionlocal.data.imageField
 import com.gabriele.notionlocal.data.iconField
@@ -1071,7 +1072,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
      */
     fun setIcon(choice: IconChoice): String? {
         val current = _page.value ?: return null
-        val updated = current.copy(icon = choice.iconField, iconImage = choice.imageField)
+        val updated = current.copy(icon = choice.iconField, iconImage = choice.imageField, iconSymbol = choice.symbolField)
         _page.value = updated
         viewModelScope.launch { repository.setIcon(current.id, choice) }
         return replacedImage(current.iconImage, choice)

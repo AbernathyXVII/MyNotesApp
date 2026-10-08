@@ -1,5 +1,6 @@
 package com.gabriele.notionlocal.data.repository
 
+import com.gabriele.notionlocal.data.symbolField
 import androidx.room.withTransaction
 import com.gabriele.notionlocal.data.AppDatabase
 import com.gabriele.notionlocal.data.IconChoice
@@ -231,7 +232,7 @@ class PageRepository(private val db: AppDatabase) {
 
     /** L'icona di una pagina: un'emoji, un'immagine o niente (il 📄 di riserva). */
     suspend fun setIcon(pageId: String, choice: IconChoice) =
-        pageDao.setIcon(pageId, choice.iconField, choice.imageField)
+        pageDao.setIcon(pageId, choice.iconField, choice.imageField, choice.symbolField)
 
     /** Blocca o sblocca il **contenuto** di una pagina. */
     suspend fun setLocked(pageId: String, locked: Boolean) =
@@ -381,6 +382,8 @@ class PageRepository(private val db: AppDatabase) {
         val iconImage: String?,
         val isDatabase: Boolean,
         val hasChildren: Boolean,
+        /** L'icona di Material, se ne ha una (vedi `PageEntity.iconSymbol`). */
+        val iconSymbol: String? = null,
         /** Un database semplice: le sue righe non hanno pagine, e dentro non ci si sposta niente. */
         val isSimpleDatabase: Boolean = false
     ) {
@@ -463,6 +466,7 @@ class PageRepository(private val db: AppDatabase) {
         title = page.title,
         emoji = page.icon,
         iconImage = page.iconImage,
+        iconSymbol = page.iconSymbol,
         isDatabase = page.isDatabase,
         isSimpleDatabase = page.isSimpleDatabase,
         hasChildren = if (page.isSimpleDatabase || (page.isProtected && !AppLock.isUnlocked(page.id))) {
@@ -505,7 +509,8 @@ class PageRepository(private val db: AppDatabase) {
         val snippet: String?,
         val matchStart: Int,
         val matchLength: Int,
-        val inTrash: Boolean
+        val inTrash: Boolean,
+        val iconSymbol: String? = null
     )
 
     /**
@@ -535,6 +540,7 @@ class PageRepository(private val db: AppDatabase) {
             title = page.title,
             emoji = page.icon,
             iconImage = page.iconImage,
+            iconSymbol = page.iconSymbol,
             snippet = snippet?.text,
             matchStart = snippet?.start ?: 0,
             matchLength = snippet?.length ?: 0,
@@ -578,6 +584,7 @@ class PageRepository(private val db: AppDatabase) {
                         title = row.title,
                         emoji = database.icon,
                         iconImage = database.iconImage,
+                        iconSymbol = database.iconSymbol,
                         snippet = database.title,
                         matchStart = 0,
                         matchLength = 0,
@@ -816,6 +823,7 @@ class PageRepository(private val db: AppDatabase) {
                     title = name,
                     icon = page.icon,
                     iconImage = wrapperIcon,
+                    iconSymbol = page.iconSymbol,
                     isRowPage = true,
                     createdAt = now,
                     updatedAt = now

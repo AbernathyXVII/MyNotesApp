@@ -156,7 +156,7 @@ private fun TrashRow(page: PageEntity, policy: TrashPolicy, onClick: () -> Unit)
             .padding(horizontal = 20.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        PageIconView(emoji = page.icon, iconImage = page.iconImage, isDatabase = page.isDatabase, size = 24.dp)
+        PageIconView(emoji = page.icon, iconImage = page.iconImage, isDatabase = page.isDatabase, size = 24.dp, iconSymbol = page.iconSymbol)
         Spacer(modifier = Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(

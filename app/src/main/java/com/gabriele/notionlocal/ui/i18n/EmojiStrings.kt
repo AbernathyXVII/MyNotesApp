@@ -12,6 +12,8 @@ object EmojiStrings {
         Strings.t(en, it, de, fr, es, zh, ko, ja)
 
     val emojiTab get() = t("Emoji", "Emoji", "Emoji", "Emoji", "Emoji", "表情", "이모지", "絵文字")
+    val iconsTab get() = t("Icons", "Icone", "Symbole", "Icônes", "Iconos", "图标", "아이콘", "アイコン")
+    val iconColor get() = t("Icon color", "Colore delle icone", "Symbolfarbe", "Couleur des icônes", "Color de los iconos", "图标颜色", "아이콘 색상", "アイコンの色")
     val uploadTab get() = t("Upload", "Carica", "Hochladen", "Importer", "Subir", "上传", "업로드", "アップロード")
     val filter get() = t("Filter…", "Filtra…", "Filtern…", "Filtrer…", "Filtrar…", "筛选…", "필터…", "フィルター…")
     val random get() = t("Random", "Casuale", "Zufällig", "Aléatoire", "Aleatorio", "随机", "무작위", "ランダム")

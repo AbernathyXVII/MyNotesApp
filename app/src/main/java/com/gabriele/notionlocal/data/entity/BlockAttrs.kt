@@ -39,6 +39,8 @@ data class BlockAttrs(
     val icon: String? = null,
     /** Il riquadro: l'immagine messa al posto dell'emoji. */
     val iconImage: String? = null,
+    /** Il riquadro: un'icona di Material, "Home" o "Home|#E03E3E" (vedi `IconSymbol`). */
+    val symbol: String? = null,
     /** Il riquadro: il colore dello sfondo, "#RRGGBB"; null = il grigio di sempre. */
     val color: String? = null,
     /** "Link to page": la pagina richiamata. */

@@ -313,7 +313,7 @@ internal fun TreeRow(
             }
         }
         Spacer(modifier = Modifier.width(4.dp))
-        PageIconView(emoji = node.emoji, iconImage = node.iconImage, isDatabase = node.isDatabase, size = 18.dp)
+        PageIconView(emoji = node.emoji, iconImage = node.iconImage, isDatabase = node.isDatabase, size = 18.dp, iconSymbol = node.iconSymbol)
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = node.title.ifBlank { Strings.untitled },

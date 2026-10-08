@@ -1,5 +1,6 @@
 package com.gabriele.notionlocal.ui.screen
 
+import com.gabriele.notionlocal.data.IconSymbol
 import com.gabriele.notionlocal.data.chosenEmoji
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -80,16 +81,35 @@ internal fun WorkspaceTopBar(
 }
 
 /**
+ * **Un'icona di Material scelta come icona** (dal 08/10/2026, la scheda
+ * "Icons" del selettore): il disegno pieno, nel suo colore o in quello del
+ * testo. Niente, se il nome non c'è più nella libreria.
+ */
+@Composable
+internal fun SymbolIcon(value: String?, size: Dp, modifier: Modifier = Modifier) {
+    val symbol = IconSymbol.parse(value) ?: return
+    val vector = remember(symbol.name) { materialIconByName(symbol.name) } ?: return
+    Icon(
+        vector,
+        contentDescription = null,
+        tint = hexToColor(symbol.color) ?: NotionWhite,
+        modifier = modifier.size(size)
+    )
+}
+
+/**
  * L'icona di una pagina, come la mostra il suo collegamento: l'immagine
- * scelta se c'è, altrimenti l'emoji — e per un database senza un'icona
- * scelta il segno della tabella, non l'emoji di riserva del foglietto.
+ * scelta se c'è, poi l'icona di Material, altrimenti l'emoji — e per un
+ * database senza un'icona scelta il segno della tabella, non l'emoji di
+ * riserva del foglietto.
  */
 @Composable
 internal fun PageIconView(
     emoji: String,
     iconImage: String?,
     isDatabase: Boolean,
-    size: Dp = 20.dp
+    size: Dp = 20.dp,
+    iconSymbol: String? = null
 ) {
     val context = LocalContext.current
     val store = remember(context) { PageImageStore(context) }
@@ -101,6 +121,7 @@ internal fun PageIconView(
                 contentDescription = null,
                 modifier = Modifier.size(size)
             )
+            iconSymbol != null -> SymbolIcon(iconSymbol, size)
             isDatabase && chosenEmoji(emoji) == null -> Icon(
                 Icons.Filled.TableChart,
                 contentDescription = null,

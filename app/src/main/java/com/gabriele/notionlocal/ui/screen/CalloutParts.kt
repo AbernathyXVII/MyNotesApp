@@ -28,7 +28,19 @@ internal val CALLOUT_EMOJIS = listOf(
 )
 
 /** Se il riquadro ha un'icona da mostrare: "Remove" la toglie del tutto. */
-internal val BlockAttrs.hasCalloutIcon: Boolean get() = iconImage != null || icon != ""
+internal val BlockAttrs.hasCalloutIcon: Boolean get() = iconImage != null || symbol != null || icon != ""
+
+/**
+ * Le voci del riquadro dopo una scelta nel selettore. L'immagine di prima
+ * non si cancella: la freccia indietro del riquadro la rimette, e deve
+ * ritrovarla.
+ */
+internal fun BlockAttrs.withIcon(choice: IconChoice): BlockAttrs = when (choice) {
+    is IconChoice.Emoji -> copy(icon = choice.emoji, iconImage = null, symbol = null)
+    is IconChoice.Image -> copy(iconImage = choice.fileName, symbol = null)
+    is IconChoice.Symbol -> copy(symbol = choice.symbol.encoded, iconImage = null)
+    IconChoice.None -> copy(icon = "", iconImage = null, symbol = null)
+}
 
 /**
  * **L'icona di un riquadro**: l'immagine caricata, o l'emoji (la lampadina,
@@ -49,6 +61,7 @@ internal fun CalloutIcon(
         contentAlignment = Alignment.Center
     ) {
         val image = attrs.iconImage
+        val symbol = attrs.symbol
         if (image != null) {
             PageImage(
                 fileName = image,
@@ -56,6 +69,8 @@ internal fun CalloutIcon(
                 contentDescription = EditorStrings.icon,
                 modifier = Modifier.size(22.dp).clip(RoundedCornerShape(4.dp))
             )
+        } else if (symbol != null) {
+            SymbolIcon(symbol, 20.dp)
         } else {
             Text(attrs.icon ?: DEFAULT_CALLOUT_ICON, fontSize = 17.sp)
         }
@@ -66,29 +81,21 @@ internal fun CalloutIcon(
  * **Scegliere l'icona di un riquadro**: il selettore delle icone di tutta
  * l'app (dal 07/10/2026, `IconPickerSheet`), con in cima la famiglia
  * "Callout" di Notion che c'era dal 06/10/2026. "Remove" lascia il riquadro
- * senza icona.
- *
- * L'immagine di prima non si cancella: la freccia indietro del riquadro la
- * rimette, e deve ritrovarla.
+ * senza icona. Le voci nuove le fa `withIcon`.
  */
 @Composable
 internal fun CalloutIconSheet(
     store: PageImageStore,
     hasIcon: Boolean,
-    onEmoji: (String) -> Unit,
-    onImage: (String) -> Unit,
-    onRemove: () -> Unit,
+    onPick: (IconChoice) -> Unit,
     onDismiss: () -> Unit
 ) {
     IconPickerSheet(
         store = store,
         hasIcon = hasIcon,
         onPick = { choice ->
-            when (choice) {
-                is IconChoice.Emoji -> onEmoji(choice.emoji)
-                is IconChoice.Image -> onImage(choice.fileName)
-                IconChoice.None -> onRemove()
-            }
+            onPick(choice)
+            // L'immagine di prima resta: vedi `withIcon`.
             null
         },
         onDismiss = onDismiss,

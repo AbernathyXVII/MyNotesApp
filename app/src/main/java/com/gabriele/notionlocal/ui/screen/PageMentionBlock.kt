@@ -95,6 +95,7 @@ internal fun PageMentionBlockContent(
                     contentDescription = null,
                     modifier = Modifier.size(22.dp).clip(RoundedCornerShape(4.dp))
                 )
+                page?.iconSymbol != null -> SymbolIcon(page.iconSymbol, 22.dp)
                 page?.isDatabase == true && page.chosenEmoji == null -> Icon(Icons.Filled.TableChart, contentDescription = null, tint = NotionWhite, modifier = Modifier.size(20.dp))
                 else -> Text(page?.icon ?: "📄", style = MaterialTheme.typography.bodyLarge)
             }

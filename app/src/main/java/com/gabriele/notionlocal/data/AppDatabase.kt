@@ -55,7 +55,7 @@ import kotlinx.serialization.json.Json
         NotebookEntity::class,
         NotebookSectionEntity::class
     ],
-    version = 52,
+    version = 53,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -764,6 +764,13 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** Le icone di Material delle pagine (08/10/2026): nessuna pagina ne ha una. */
+        private val MIGRATION_52_53 = object : Migration(52, 53) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE pages ADD COLUMN iconSymbol TEXT DEFAULT NULL")
+            }
+        }
+
         /**
          * Solo per i test: chiude il database e lo dimentica, così il
          * `getInstance` dopo riapre il file da capo (e ne esegue le
@@ -829,7 +836,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_48_49,
                         MIGRATION_49_50,
                         MIGRATION_50_51,
-                        MIGRATION_51_52
+                        MIGRATION_51_52,
+                        MIGRATION_52_53
                     )
                     .build()
                 INSTANCE = instance

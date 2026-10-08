@@ -1,5 +1,11 @@
 package com.gabriele.notionlocal.ui.screen
 
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.border
+import com.gabriele.notionlocal.data.normalizeForSearch
+import com.gabriele.notionlocal.data.IconSymbol
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -111,6 +117,9 @@ import kotlinx.coroutines.launch
  *   segna quella che si sta guardando; "+" carica un'immagine nuova.
  *   In cima la ricerca (nelle otto lingue dell'app insieme),
  *   "Random" e il colore della pelle;
+ * - **"Icons"** (dal 08/10/2026): le icone piene di Material, bianche come
+ *   quelle di Notion; il pallino accanto a "Random" apre lo spettro dei
+ *   colori di tutta l'app e le colora tutte;
  * - **"Upload"**: un'immagine dal telefono, come prima;
  * - **"Remove"**, se un'icona c'è.
  *
@@ -131,7 +140,7 @@ internal fun IconPickerSheet(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var uploadTab by remember { mutableStateOf(false) }
+    var tab by remember { mutableStateOf(PickerTabKind.EMOJI) }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
 
@@ -174,8 +183,9 @@ internal fun IconPickerSheet(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                PickerTab(EmojiStrings.emojiTab, selected = !uploadTab) { uploadTab = false }
-                PickerTab(EmojiStrings.uploadTab, selected = uploadTab) { uploadTab = true }
+                PickerTab(EmojiStrings.emojiTab, selected = tab == PickerTabKind.EMOJI) { tab = PickerTabKind.EMOJI }
+                PickerTab(EmojiStrings.iconsTab, selected = tab == PickerTabKind.ICONS) { tab = PickerTabKind.ICONS }
+                PickerTab(EmojiStrings.uploadTab, selected = tab == PickerTabKind.UPLOAD) { tab = PickerTabKind.UPLOAD }
                 Spacer(modifier = Modifier.weight(1f))
                 if (hasIcon) {
                     Text(
@@ -191,7 +201,9 @@ internal fun IconPickerSheet(
             }
             HorizontalDivider(color = DarkSurface)
 
-            if (uploadTab) {
+            if (tab == PickerTabKind.ICONS) {
+                IconsTab(enabled = !busy, onSymbol = { choose(IconChoice.Symbol(it)) })
+            } else if (tab == PickerTabKind.UPLOAD) {
                 Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
                     Button(onClick = upload, enabled = !busy, modifier = Modifier.fillMaxWidth()) {
                         Text(EmojiStrings.uploadImage)
@@ -235,7 +247,10 @@ internal fun IconPickerSheet(
     }
 }
 
-/** Una scheda in cima ("Emoji", "Upload"), sottolineata quando è quella aperta. */
+/** Le schede in cima al selettore. */
+private enum class PickerTabKind { EMOJI, ICONS, UPLOAD }
+
+/** Una scheda in cima ("Emoji", "Icons", "Upload"), sottolineata quando è quella aperta. */
 @Composable
 private fun PickerTab(label: String, selected: Boolean, onClick: () -> Unit) {
     Column(
@@ -288,7 +303,6 @@ private fun ColumnScope.EmojiTab(
     var query by remember { mutableStateOf("") }
     var toneMenu by remember { mutableStateOf(false) }
     val tone = AppSettings.skinTone
-    val focusManager = LocalFocusManager.current
 
     fun shown(entry: EmojiEntry) = if (entry.acceptsTone) withSkinTone(entry.emoji, tone) else entry.emoji
 
@@ -296,34 +310,7 @@ private fun ColumnScope.EmojiTab(
         modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .weight(1f)
-                .clip(RoundedCornerShape(8.dp))
-                .background(DarkSurface)
-                .padding(horizontal = 10.dp, vertical = 9.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(Icons.Outlined.Search, contentDescription = null, tint = NotionGray400, modifier = Modifier.size(18.dp))
-            Spacer(modifier = Modifier.size(8.dp))
-            Box(modifier = Modifier.weight(1f)) {
-                if (query.isEmpty()) {
-                    Text(EmojiStrings.filter, style = MaterialTheme.typography.bodyMedium, color = NotionGray400)
-                }
-                AutoCaps {
-                    BasicTextField(
-                        value = query,
-                        onValueChange = { query = it },
-                        singleLine = true,
-                        textStyle = MaterialTheme.typography.bodyMedium.copy(color = NotionWhite),
-                        cursorBrush = SolidColor(NotionWhite),
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                        keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
-                        modifier = Modifier.fillMaxWidth().testTag("emojiFilter")
-                    )
-                }
-            }
-        }
+        PickerFilter(query, onChange = { query = it }, tag = "emojiFilter", modifier = Modifier.weight(1f))
         IconButton(
             enabled = enabled && catalog != null,
             onClick = { catalog?.all?.randomOrNull()?.let { onEmoji(shown(it)) } }
@@ -499,6 +486,150 @@ private fun ColumnScope.EmojiTab(
                 )
             }
         }
+    }
+}
+
+/** Il campo "Filter…" in cima alle schede Emoji e Icons. */
+@Composable
+private fun PickerFilter(query: String, onChange: (String) -> Unit, tag: String, modifier: Modifier = Modifier) {
+    val focusManager = LocalFocusManager.current
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(DarkSurface)
+            .padding(horizontal = 10.dp, vertical = 9.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(Icons.Outlined.Search, contentDescription = null, tint = NotionGray400, modifier = Modifier.size(18.dp))
+        Spacer(modifier = Modifier.size(8.dp))
+        Box(modifier = Modifier.weight(1f)) {
+            if (query.isEmpty()) {
+                Text(EmojiStrings.filter, style = MaterialTheme.typography.bodyMedium, color = NotionGray400)
+            }
+            AutoCaps {
+                BasicTextField(
+                    value = query,
+                    onValueChange = onChange,
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(color = NotionWhite),
+                    cursorBrush = SolidColor(NotionWhite),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                    keyboardActions = KeyboardActions(onSearch = { focusManager.clearFocus() }),
+                    modifier = Modifier.fillMaxWidth().testTag(tag)
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Le parole del nome di un'icona di Material, per cercarla: "AccessAlarm"
+ * è "access alarm", "_3dRotation" è "3d rotation". I nomi sono in inglese,
+ * come quelli della libreria.
+ */
+internal fun materialIconWords(name: String): List<String> =
+    name.trimStart('_')
+        .split(Regex("(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|(?<=[A-Za-z])(?=[0-9])"))
+        .map { it.lowercase() }
+        .filter { it.isNotEmpty() }
+
+/** Le icone il cui nome ha tutte le parole scritte, ognuna come inizio di una parola ("alar" trova "Alarm"). */
+internal fun searchMaterialIcons(query: String, names: List<String> = MATERIAL_ICON_NAMES): List<String> {
+    val tokens = normalizeForSearch(query).split(Regex("\\s+")).filter { it.isNotEmpty() }
+    if (tokens.isEmpty()) return names
+    return names.filter { name ->
+        val words = materialIconWords(name)
+        tokens.all { token -> words.any { it.startsWith(token) } }
+    }
+}
+
+/**
+ * **La scheda "Icons"** (dal 08/10/2026, come quella di Notion nella foto
+ * dell'utente): le icone piene di Material, di partenza nel colore del testo
+ * (bianche sul tema scuro). Il pallino accanto a "Random" apre lo spettro
+ * dei colori di tutta l'app: il colore scelto colora tutte le icone della
+ * griglia, va con l'icona scelta e resta per la prossima volta.
+ */
+@Composable
+private fun ColumnScope.IconsTab(enabled: Boolean, onSymbol: (IconSymbol) -> Unit) {
+    var query by remember { mutableStateOf("") }
+    var coloring by remember { mutableStateOf(false) }
+    val color = AppSettings.iconColor
+    val tint = hexToColor(color) ?: NotionWhite
+
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        PickerFilter(query, onChange = { query = it }, tag = "iconFilter", modifier = Modifier.weight(1f))
+        IconButton(
+            enabled = enabled,
+            onClick = { onSymbol(IconSymbol(MATERIAL_ICON_NAMES.random(), color)) }
+        ) {
+            Icon(Icons.Outlined.Shuffle, contentDescription = EmojiStrings.random, tint = NotionGray400)
+        }
+        IconButton(onClick = { coloring = true }) {
+            Box(
+                modifier = Modifier
+                    .size(20.dp)
+                    .clip(CircleShape)
+                    .background(tint)
+                    .border(1.dp, NotionGray400, CircleShape)
+                    .semantics { contentDescription = EmojiStrings.iconColor }
+            )
+        }
+    }
+
+    val names = remember(query) { searchMaterialIcons(query) }
+    if (names.isEmpty()) {
+        Text(
+            EmojiStrings.noResults,
+            style = MaterialTheme.typography.bodyMedium,
+            color = NotionGray400,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth().padding(24.dp).weight(1f)
+        )
+    } else {
+        LazyVerticalGrid(
+            columns = GridCells.Adaptive(EMOJI_CELL),
+            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+            modifier = Modifier.fillMaxWidth().weight(1f)
+        ) {
+            items(names, key = { it }, contentType = { "icon" }) { name ->
+                val vector = remember(name) { materialIconByName(name) }
+                Box(
+                    modifier = Modifier
+                        .height(EMOJI_CELL)
+                        .clip(RoundedCornerShape(6.dp))
+                        .clickable(enabled = enabled && vector != null) { onSymbol(IconSymbol(name, color)) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (vector != null) {
+                        Icon(
+                            vector,
+                            contentDescription = materialIconWords(name).joinToString(" "),
+                            tint = tint,
+                            modifier = Modifier.size(26.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    if (coloring) {
+        ColorPickerSheet(
+            initialHex = color,
+            background = false,
+            onDismiss = { coloring = false },
+            onSwitchTarget = {},
+            onPick = { hex ->
+                coloring = false
+                AppSettings.iconColor = hex
+            },
+            showTargetSwitch = false,
+            previewLabel = EmojiStrings.iconColor
+        )
     }
 }
 

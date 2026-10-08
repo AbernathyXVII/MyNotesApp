@@ -14,7 +14,7 @@ import com.gabriele.notionlocal.data.entity.DatabaseRowEntity
 import kotlinx.coroutines.flow.Flow
 
 /** L'icona della pagina di una riga, emoji e immagine: vedi `DatabaseDao.observeRowIcons`. */
-data class RowIcon(val rowId: String, val icon: String, val iconImage: String?)
+data class RowIcon(val rowId: String, val icon: String, val iconImage: String?, val iconSymbol: String?)
 
 /**
  * La copertina della pagina di una riga, con la sua inquadratura: vedi
@@ -197,15 +197,16 @@ interface DatabaseDao {
 
     /**
      * Le icone delle pagine delle righe: per ogni riga la cui pagina ha
-     * un'immagine o un'emoji scelta (non il 📄 di riserva), quale. Seguita
+     * un'immagine, un'icona di Material o un'emoji scelta (non il 📄 di riserva), quale. Seguita
      * nel tempo e su **tutte e due le tabelle**: l'icona cambiata dentro la
      * pagina si vede subito anche nel database, senza riaprirlo.
      */
     @Query(
-        "SELECT database_rows.id AS rowId, pages.icon AS icon, pages.iconImage AS iconImage " +
+        "SELECT database_rows.id AS rowId, pages.icon AS icon, pages.iconImage AS iconImage, " +
+            "pages.iconSymbol AS iconSymbol " +
             "FROM database_rows JOIN pages ON pages.id = database_rows.linkedPageId " +
-            "WHERE database_rows.pageId = :pageId AND " +
-            "(pages.iconImage IS NOT NULL OR (pages.icon != '📄' AND pages.icon != ''))"
+            "WHERE database_rows.pageId = :pageId AND (pages.iconImage IS NOT NULL OR " +
+            "pages.iconSymbol IS NOT NULL OR (pages.icon != '📄' AND pages.icon != ''))"
     )
     fun observeRowIcons(pageId: String): Flow<List<RowIcon>>
 

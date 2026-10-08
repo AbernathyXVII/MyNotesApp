@@ -107,7 +107,7 @@ class DatabaseRepository(private val db: AppDatabase) {
     /** Riga → immagine dell'icona della sua pagina, per le righe che ne hanno una. */
     fun observeRowIcons(pageId: String): Flow<Map<String, RowIconRef>> =
         dao.observeRowIcons(pageId).map { icons ->
-            icons.associate { it.rowId to RowIconRef(emoji = chosenEmoji(it.icon), image = it.iconImage) }
+            icons.associate { it.rowId to RowIconRef(emoji = chosenEmoji(it.icon), image = it.iconImage, symbol = it.iconSymbol) }
         }
 
     /** Riga → copertina della sua pagina, con l'inquadratura, per le righe che ne hanno una. */

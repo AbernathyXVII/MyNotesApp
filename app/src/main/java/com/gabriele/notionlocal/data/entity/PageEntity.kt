@@ -176,6 +176,11 @@ data class PageEntity(
     // cartella dell'app può cambiare posto fra un'installazione e
     // l'altra, il nome no.
     var iconImage: String? = null,
+    // **Un'icona di Material** (dal 08/10/2026, la scheda "Icons" del
+    // selettore): il suo nome e, se non è quella bianca di sempre, il
+    // colore — "Home" o "Home|#E03E3E" (vedi `IconSymbol`). Vale sopra
+    // all'emoji, sotto all'immagine.
+    var iconSymbol: String? = null,
     var coverImage: String? = null,
     // Come è inquadrata la copertina dentro la sua striscia: quanto è
     // ingrandita (1 = riempie la striscia e basta) e di quanto è

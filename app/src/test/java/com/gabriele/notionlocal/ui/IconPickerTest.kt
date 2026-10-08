@@ -1,5 +1,6 @@
 package com.gabriele.notionlocal.ui
 
+import com.gabriele.notionlocal.data.IconSymbol
 import android.app.Application
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -107,5 +108,19 @@ class IconPickerTest {
         show(hasIcon = false)
         compose.onNodeWithTag("emojiFilter").performTextInput("zzzqqq")
         compose.onNodeWithText("No results").assertExists()
+    }
+
+    @Test
+    fun theIconsTabGivesAMaterialIconInTheChosenColor() {
+        AppSettings.iconColor = "#E03E3E"
+        try {
+            show(hasIcon = false)
+            compose.onNodeWithText("Icons").performClick()
+            compose.onNodeWithTag("iconFilter").performTextInput("home")
+            compose.onNodeWithContentDescription("home").performClick()
+            assertEquals(IconChoice.Symbol(IconSymbol("Home", "#E03E3E")), picked)
+        } finally {
+            AppSettings.iconColor = null
+        }
     }
 }

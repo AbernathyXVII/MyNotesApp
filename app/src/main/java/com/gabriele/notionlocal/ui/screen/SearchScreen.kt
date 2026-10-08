@@ -195,7 +195,7 @@ private fun SearchResultRow(hit: SearchHit, onClick: () -> Unit) {
             .padding(horizontal = 20.dp, vertical = 12.dp),
         verticalAlignment = Alignment.Top
     ) {
-        PageIconView(emoji = hit.emoji, iconImage = hit.iconImage, isDatabase = hit.isDatabase, size = 22.dp)
+        PageIconView(emoji = hit.emoji, iconImage = hit.iconImage, isDatabase = hit.isDatabase, size = 22.dp, iconSymbol = hit.iconSymbol)
         Spacer(modifier = Modifier.width(14.dp))
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {

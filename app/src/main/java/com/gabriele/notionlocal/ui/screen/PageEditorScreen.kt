@@ -1865,6 +1865,14 @@ private fun PageEditorContent(
                                 .clip(RoundedCornerShape(8.dp))
                                 .clickable(enabled = !isTrashed) { editingImage = PageImageTarget.ICON }
                         )
+                    } else if (page?.iconSymbol != null) {
+                        SymbolIcon(
+                            page?.iconSymbol,
+                            PAGE_ICON_SIZE,
+                            Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable(enabled = !isTrashed) { editingImage = PageImageTarget.ICON }
+                        )
                     } else {
                         Text(
                             text = page?.icon ?: "📄",
@@ -5944,9 +5952,7 @@ private fun BlockRow(
         CalloutIconSheet(
             store = rowImageStore,
             hasIcon = block.attrs.hasCalloutIcon,
-            onEmoji = { emoji -> viewModel.updateBlockAttrs(block.id) { it.copy(icon = emoji, iconImage = null) } },
-            onImage = { file -> viewModel.updateBlockAttrs(block.id) { it.copy(iconImage = file) } },
-            onRemove = { viewModel.updateBlockAttrs(block.id) { it.copy(icon = "", iconImage = null) } },
+            onPick = { choice -> viewModel.updateBlockAttrs(block.id) { it.withIcon(choice) } },
             onDismiss = { editingCalloutIcon = false }
         )
     }
@@ -6216,7 +6222,8 @@ private fun PageLinkBlockContent(
         verticalAlignment = Alignment.CenterVertically
     ) {
         val linkedEmoji = linkedPage?.chosenEmoji
-        if (block.type == BlockType.DATABASE_LINK && linkedPage?.iconImage == null && linkedEmoji == null) {
+        val linkedSymbol = linkedPage?.iconSymbol
+        if (block.type == BlockType.DATABASE_LINK && linkedPage?.iconImage == null && linkedSymbol == null && linkedEmoji == null) {
             Icon(
                 Icons.Filled.TableChart,
                 contentDescription = null,
@@ -6239,6 +6246,8 @@ private fun PageLinkBlockContent(
                         .size(22.dp)
                         .clip(RoundedCornerShape(4.dp))
                 )
+            } else if (linkedSymbol != null) {
+                SymbolIcon(linkedSymbol, 22.dp)
             } else if (linkedPage?.isDatabase == true && linkedEmoji == null) {
                 // Un database senza icona sua non ha un'emoji da mostrare:
                 // il 📄 scritto nel suo campo è solo il valore di riserva

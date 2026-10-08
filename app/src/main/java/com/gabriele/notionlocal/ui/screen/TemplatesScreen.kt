@@ -171,8 +171,8 @@ private fun TemplateRow(template: PageEntity, onClick: () -> Unit, onMoveToTrash
  */
 @Composable
 internal fun TemplateIcon(template: PageEntity, size: androidx.compose.ui.unit.Dp) {
-    if (template.iconImage != null || template.icon != "📄") {
-        PageIconView(emoji = template.icon, iconImage = template.iconImage, isDatabase = false, size = size)
+    if (template.iconImage != null || template.iconSymbol != null || template.icon != "📄") {
+        PageIconView(emoji = template.icon, iconImage = template.iconImage, isDatabase = false, size = size, iconSymbol = template.iconSymbol)
     } else {
         Icon(Icons.Outlined.Description, contentDescription = null, tint = NotionGray400, modifier = Modifier.size(size))
     }
