@@ -1,5 +1,7 @@
 package com.gabriele.notionlocal.ui.screen
 
+import com.gabriele.notionlocal.data.replacedImage
+import com.gabriele.notionlocal.data.hasChosenIcon
 import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -473,6 +475,7 @@ internal fun BlockActionsHost(
 
         BlockMenuStep.CALLOUT_ICON -> CalloutIconSheet(
             store = imageStore,
+            hasIcon = block.attrs.hasCalloutIcon,
             onEmoji = { emoji -> viewModel.updateBlockAttrs(block.id) { it.copy(icon = emoji, iconImage = null) } },
             onImage = { file -> viewModel.updateBlockAttrs(block.id) { it.copy(iconImage = file) } },
             onRemove = { viewModel.updateBlockAttrs(block.id) { it.copy(icon = "", iconImage = null) } },
@@ -495,16 +498,13 @@ internal fun BlockActionsHost(
 
         BlockMenuStep.EDIT_ICON -> if (dataPage != null) {
             // L'icona che la vista mostra è quella del database di origine.
-            PageImageSheet(
-                target = PageImageTarget.ICON,
-                hasImage = dataPage.iconImage != null,
+            IconPickerSheet(
                 store = imageStore,
-                onPicked = { fileName ->
-                    val previous = dataPage.iconImage
-                    viewModel.setIconImageFor(dataPage.id, fileName)
-                    previous?.takeIf { it != fileName }
+                hasIcon = dataPage.hasChosenIcon,
+                onPick = { choice ->
+                    viewModel.setIconFor(dataPage.id, choice)
+                    replacedImage(dataPage.iconImage, choice)
                 },
-                onReposition = null,
                 onDismiss = onDismiss
             )
         }

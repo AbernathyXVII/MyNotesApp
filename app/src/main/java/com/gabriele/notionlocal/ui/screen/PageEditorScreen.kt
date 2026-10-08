@@ -1,5 +1,7 @@
 package com.gabriele.notionlocal.ui.screen
 
+import com.gabriele.notionlocal.data.chosenEmoji
+import com.gabriele.notionlocal.data.hasChosenIcon
 import androidx.compose.ui.text.style.TextOverflow
 import com.gabriele.notionlocal.data.settings.AppSettings
 import com.gabriele.notionlocal.data.settings.TitlePosition
@@ -1836,11 +1838,12 @@ private fun PageEditorContent(
                     val iconImage = page?.iconImage
                     // **La pagina di una riga di database nasce senza
                     // icona**, come su Notion: niente foglietto 📄 di
-                    // riserva, ma "Add icon". Così togliendo l'immagine
-                    // l'icona sparisce davvero — e nel database, accanto al
-                    // nome della riga, non resta niente. Le altre pagine
-                    // tengono la loro emoji di sempre.
-                    val rowPageWithoutIcon = iconImage == null && page?.isRowPage == true
+                    // riserva, ma "Add icon". Così togliendo l'icona
+                    // sparisce davvero — e nel database, accanto al nome
+                    // della riga, non resta niente. Un'emoji scelta (dal
+                    // 07/10/2026) si vede. Le altre pagine tengono la loro
+                    // emoji di sempre.
+                    val rowPageWithoutIcon = page?.isRowPage == true && page?.hasChosenIcon != true
                     if (rowPageWithoutIcon) {
                         if (!isTrashed) {
                             Text(
@@ -2319,21 +2322,20 @@ private fun PageEditorContent(
     }
 
     val target = editingImage
-    if (target != null) {
+    if (target == PageImageTarget.ICON) {
+        // **Il selettore delle icone** (dal 07/10/2026): emoji, immagine o niente.
+        IconPickerSheet(
+            store = imageStore,
+            hasIcon = page?.hasChosenIcon == true,
+            onPick = { choice -> viewModel.setIcon(choice) },
+            onDismiss = { editingImage = null }
+        )
+    } else if (target != null) {
         PageImageSheet(
             target = target,
-            hasImage = when (target) {
-                PageImageTarget.ICON -> page?.iconImage != null
-                PageImageTarget.COVER -> page?.coverImage != null
-            },
+            hasImage = page?.coverImage != null,
             store = imageStore,
-            onPicked = { fileName ->
-                val replaced = when (target) {
-                    PageImageTarget.ICON -> viewModel.setIconImage(fileName)
-                    PageImageTarget.COVER -> viewModel.setCoverImage(fileName)
-                }
-                replaced
-            },
+            onPicked = { fileName -> viewModel.setCoverImage(fileName) },
             onReposition = if (target == PageImageTarget.COVER) {
                 {
                     // Si riparte da dove si era rimasti, non da capo:
@@ -5941,6 +5943,7 @@ private fun BlockRow(
     if (editingCalloutIcon) {
         CalloutIconSheet(
             store = rowImageStore,
+            hasIcon = block.attrs.hasCalloutIcon,
             onEmoji = { emoji -> viewModel.updateBlockAttrs(block.id) { it.copy(icon = emoji, iconImage = null) } },
             onImage = { file -> viewModel.updateBlockAttrs(block.id) { it.copy(iconImage = file) } },
             onRemove = { viewModel.updateBlockAttrs(block.id) { it.copy(icon = "", iconImage = null) } },
@@ -6212,7 +6215,8 @@ private fun PageLinkBlockContent(
             ),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        if (block.type == BlockType.DATABASE_LINK) {
+        val linkedEmoji = linkedPage?.chosenEmoji
+        if (block.type == BlockType.DATABASE_LINK && linkedPage?.iconImage == null && linkedEmoji == null) {
             Icon(
                 Icons.Filled.TableChart,
                 contentDescription = null,
@@ -6235,7 +6239,7 @@ private fun PageLinkBlockContent(
                         .size(22.dp)
                         .clip(RoundedCornerShape(4.dp))
                 )
-            } else if (linkedPage?.isDatabase == true) {
+            } else if (linkedPage?.isDatabase == true && linkedEmoji == null) {
                 // Un database senza icona sua non ha un'emoji da mostrare:
                 // il 📄 scritto nel suo campo è solo il valore di riserva
                 // delle pagine. Qui si vede il segno della tabella, come

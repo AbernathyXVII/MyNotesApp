@@ -1,5 +1,9 @@
 package com.gabriele.notionlocal.viewmodel
 
+import com.gabriele.notionlocal.data.replacedImage
+import com.gabriele.notionlocal.data.imageField
+import com.gabriele.notionlocal.data.iconField
+import com.gabriele.notionlocal.data.IconChoice
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gabriele.notionlocal.data.PageImageStore
@@ -1059,22 +1063,22 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
     }
 
     /**
-     * L'immagine dell'icona, o null per tornare all'emoji. Il nome del
-     * file vecchio viene restituito a chi chiama, che è l'unico a
-     * sapere dove stanno i file e può cancellarlo: lasciarlo lì
-     * vorrebbe dire riempire la cartella di immagini irraggiungibili.
+     * **L'icona della pagina** scelta nel selettore: un'emoji, un'immagine o
+     * niente (torna il 📄 di riserva). Il nome del file dell'immagine di
+     * prima viene restituito a chi chiama, che è l'unico a sapere dove
+     * stanno i file e può cancellarlo: lasciarlo lì vorrebbe dire riempire
+     * la cartella di immagini irraggiungibili.
      */
-    fun setIconImage(fileName: String?): String? {
+    fun setIcon(choice: IconChoice): String? {
         val current = _page.value ?: return null
-        val previous = current.iconImage
-        val updated = current.copy(iconImage = fileName)
+        val updated = current.copy(icon = choice.iconField, iconImage = choice.imageField)
         _page.value = updated
-        viewModelScope.launch { repository.updatePage(updated) }
-        return previous?.takeIf { it != fileName }
+        viewModelScope.launch { repository.setIcon(current.id, choice) }
+        return replacedImage(current.iconImage, choice)
     }
 
     /**
-     * La copertina, o null per toglierla. Vedi `setIconImage`.
+     * La copertina, o null per toglierla. Vedi `setIcon`.
      *
      * L'inquadratura torna a zero: era stata scelta guardando l'altra
      * immagine, e su una nuova darebbe un ritaglio deciso a caso. Anche
@@ -3147,9 +3151,9 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         viewModelScope.launch { repository.renamePage(pageId, title) }
     }
 
-    /** L'icona della pagina collegata. Il file vecchio lo cancella chi chiama, come per `setIconImage`. */
-    fun setIconImageFor(pageId: String, fileName: String?) {
-        viewModelScope.launch { repository.setIconImage(pageId, fileName) }
+    /** L'icona della pagina collegata. Il file vecchio lo cancella chi chiama, come per `setIcon`. */
+    fun setIconFor(pageId: String, choice: IconChoice) {
+        viewModelScope.launch { repository.setIcon(pageId, choice) }
     }
 
     /** "Lock database" dal menu del blocco. */

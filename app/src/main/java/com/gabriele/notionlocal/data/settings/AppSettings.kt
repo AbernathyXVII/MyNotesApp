@@ -1,5 +1,6 @@
 package com.gabriele.notionlocal.data.settings
 
+import com.gabriele.notionlocal.data.SKIN_TONE_COUNT
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.compose.runtime.getValue
@@ -128,6 +129,12 @@ object AppSettings {
             ?.filter { HEX_COLOR.matches(it) }
             ?.take(RECENT_COLORS_MAX)
             .orEmpty()
+        recentEmojisState.value = prefs.getString(KEY_RECENT_EMOJIS, null)
+            ?.split('\n')
+            ?.filter { it.isNotBlank() }
+            ?.take(RECENT_EMOJIS_MAX)
+            .orEmpty()
+        skinToneState.value = prefs.getInt(KEY_SKIN_TONE, 0).coerceIn(0, SKIN_TONE_COUNT)
     }
 
     // --- Aspetto ---
@@ -343,6 +350,37 @@ object AppSettings {
 
     const val RECENT_COLORS_MAX = 10
 
+    // --- Le emoji usate di recente e il colore della pelle (dal 07/10/2026) ---
+
+    private val recentEmojisState = mutableStateOf<List<String>>(emptyList())
+
+    /**
+     * Le ultime emoji scelte come icona nel selettore (`IconPickerSheet`),
+     * la più recente per prima, al massimo `RECENT_EMOJIS_MAX`: la
+     * categoria "Recent" di Notion.
+     */
+    val recentEmojis: List<String> get() = recentEmojisState.value
+
+    /** Un'emoji appena scelta va in cima; se c'era già, sale lì. */
+    fun rememberEmoji(emoji: String) {
+        val next = recentEmojisState.value.withRecentEmoji(emoji)
+        if (next == recentEmojisState.value) return
+        recentEmojisState.value = next
+        if (::prefs.isInitialized) prefs.edit().putString(KEY_RECENT_EMOJIS, next.joinToString("\n")).apply()
+    }
+
+    const val RECENT_EMOJIS_MAX = 24
+
+    private val skinToneState = mutableStateOf(0)
+
+    /** Il colore della pelle delle emoji di persone e mani: 0 il giallo, 1..5 dal più chiaro al più scuro. */
+    var skinTone: Int
+        get() = skinToneState.value
+        set(value) {
+            skinToneState.value = value.coerceIn(0, SKIN_TONE_COUNT)
+            if (::prefs.isInitialized) prefs.edit().putInt(KEY_SKIN_TONE, skinToneState.value).apply()
+        }
+
     // --- Utilità ---
 
     private inline fun <reified T : Enum<T>> enumOr(key: String, default: T): T =
@@ -378,9 +416,18 @@ object AppSettings {
     private const val KEY_PRIORITY = "notifications_priority"
     private const val KEY_BADGE = "notifications_badge"
     private const val KEY_RECENT_COLORS = "recent_colors"
+    private const val KEY_RECENT_EMOJIS = "recent_emojis"
+    private const val KEY_SKIN_TONE = "skin_tone"
 }
 
 private val HEX_COLOR = Regex("#[0-9A-F]{6}")
+
+/** Le emoji recenti dopo averne scelta una: lei in cima, senza doppioni. */
+fun List<String>.withRecentEmoji(emoji: String, max: Int = AppSettings.RECENT_EMOJIS_MAX): List<String> {
+    val clean = emoji.trim()
+    if (clean.isEmpty() || clean.contains('\n')) return this
+    return (listOf(clean) + filterNot { it == clean }).take(max)
+}
 
 /**
  * I colori recenti con `hex` in cima: maiuscolo, senza doppioni, al massimo

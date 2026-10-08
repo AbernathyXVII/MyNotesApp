@@ -1,5 +1,6 @@
 package com.gabriele.notionlocal.ui.screen
 
+import com.gabriele.notionlocal.data.chosenEmoji
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -80,8 +81,8 @@ internal fun WorkspaceTopBar(
 
 /**
  * L'icona di una pagina, come la mostra il suo collegamento: l'immagine
- * scelta se c'è, altrimenti l'emoji — e per un database senza immagine il
- * segno della tabella, non l'emoji di riserva del foglietto.
+ * scelta se c'è, altrimenti l'emoji — e per un database senza un'icona
+ * scelta il segno della tabella, non l'emoji di riserva del foglietto.
  */
 @Composable
 internal fun PageIconView(
@@ -100,7 +101,7 @@ internal fun PageIconView(
                 contentDescription = null,
                 modifier = Modifier.size(size)
             )
-            isDatabase -> Icon(
+            isDatabase && chosenEmoji(emoji) == null -> Icon(
                 Icons.Filled.TableChart,
                 contentDescription = null,
                 tint = NotionGray400,

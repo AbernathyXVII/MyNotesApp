@@ -1,5 +1,8 @@
 package com.gabriele.notionlocal.ui.screen
 
+import com.gabriele.notionlocal.data.hasChosenIcon
+import com.gabriele.notionlocal.data.chosenEmoji
+import com.gabriele.notionlocal.data.RowIconRef
 import com.gabriele.notionlocal.data.entity.dateSettings
 import com.gabriele.notionlocal.data.entity.DurationUnit
 import com.gabriele.notionlocal.data.entity.durationFormatOf
@@ -1112,6 +1115,7 @@ private fun DatabaseViewBody(
             // impostazioni. Più piccola dentro una pagina, dove anche
             // il nome lo è.
             val databaseIcon = dataPage?.iconImage
+            val databaseEmoji = dataPage?.chosenEmoji
             if (databaseIcon != null) {
                 PageImage(
                     fileName = databaseIcon,
@@ -1121,6 +1125,18 @@ private fun DatabaseViewBody(
                         .padding(start = 16.dp)
                         .size(if (embedded) 26.dp else 40.dp)
                         .clip(RoundedCornerShape(6.dp))
+                        .let { base ->
+                            if (contentLocked) base else base.clickable { editingIcon = true }
+                        }
+                )
+            } else if (databaseEmoji != null) {
+                // Un'emoji scelta col selettore (dal 07/10/2026), grande
+                // quanto l'immagine.
+                Text(
+                    databaseEmoji,
+                    fontSize = if (embedded) 20.sp else 32.sp,
+                    modifier = Modifier
+                        .padding(start = 16.dp)
                         .let { base ->
                             if (contentLocked) base else base.clickable { editingIcon = true }
                         }
@@ -1493,20 +1509,17 @@ private fun DatabaseViewBody(
     }
 
     if (editingIcon) {
-        PageImageSheet(
-            target = PageImageTarget.ICON,
-            hasImage = dataPage?.iconImage != null,
+        IconPickerSheet(
             store = imageStore,
-            onPicked = { viewModel.setIconImage(it) },
-            // Un'icona è un quadratino: non c'è niente da inquadrare.
-            onReposition = null,
+            hasIcon = dataPage?.hasChosenIcon == true,
+            onPick = { viewModel.setIcon(it) },
             onDismiss = { editingIcon = false }
         )
     }
 
     if (showSettings) {
         SettingsSheet(
-            hasIcon = dataPage?.iconImage != null,
+            hasIcon = dataPage?.hasChosenIcon == true,
             onEditIcon = if (contentLocked) {
                 null
             } else {
@@ -1834,16 +1847,14 @@ private fun DatabaseViewBody(
         }
     }
 
-    // L'icona della pagina di una riga: la stessa finestra delle pagine e
-    // dei database (Upload / Link / Remove). La pagina della riga, se non
+    // L'icona della pagina di una riga: lo stesso selettore delle pagine e
+    // dei database (emoji, Upload, Remove). La pagina della riga, se non
     // c'era ancora, nasce qui: l'icona sta nella pagina.
     iconForRow?.let { row ->
-        PageImageSheet(
-            target = PageImageTarget.ICON,
-            hasImage = rowIcons[row.id] != null,
+        IconPickerSheet(
             store = imageStore,
-            onPicked = { fileName -> viewModel.setRowIcon(row, fileName) },
-            onReposition = null,
+            hasIcon = rowIcons[row.id] != null,
+            onPick = { choice -> viewModel.setRowIcon(row, choice) },
             onDismiss = { iconForRow = null }
         )
     }
@@ -8224,12 +8235,12 @@ internal val LocalDatabaseLocked = staticCompositionLocalOf { false }
 private val LocalSimpleDatabase = staticCompositionLocalOf { false }
 
 /**
- * Le icone delle pagine delle righe del database aperto: riga → file
- * dell'immagine. Passa da qui per la stessa ragione di `LocalDatabaseLocked`:
+ * Le icone delle pagine delle righe del database aperto: riga → immagine o
+ * emoji. Passa da qui per la stessa ragione di `LocalDatabaseLocked`:
  * il titolo di una riga si disegna in sette viste diverse, in fondo a
  * catene di composable che non hanno altro motivo per saperlo.
  */
-private val LocalRowIcons = compositionLocalOf<Map<String, String>> { emptyMap() }
+private val LocalRowIcons = compositionLocalOf<Map<String, RowIconRef>> { emptyMap() }
 
 /**
  * L'icona della pagina di una riga, prima del suo titolo — solo se ne ha
@@ -8239,17 +8250,30 @@ private val LocalRowIcons = compositionLocalOf<Map<String, String>> { emptyMap()
  */
 @Composable
 internal fun RowIconBadge(rowId: String, size: Dp) {
-    val fileName = LocalRowIcons.current[rowId] ?: return
-    val context = LocalContext.current
-    val store = remember(context) { PageImageStore(context) }
-    PageImage(
-        fileName = fileName,
-        store = store,
-        contentDescription = null,
-        modifier = Modifier
-            .size(size)
-            .clip(RoundedCornerShape(3.dp))
-    )
+    val icon = LocalRowIcons.current[rowId] ?: return
+    val fileName = icon.image
+    val emoji = icon.emoji
+    if (fileName != null) {
+        val context = LocalContext.current
+        val store = remember(context) { PageImageStore(context) }
+        PageImage(
+            fileName = fileName,
+            store = store,
+            contentDescription = null,
+            modifier = Modifier
+                .size(size)
+                .clip(RoundedCornerShape(3.dp))
+        )
+    } else if (emoji != null) {
+        // L'emoji scelta col selettore, grande quanto l'immagine: in sp
+        // calcolati dalla misura, così non esce dal posto con i caratteri grandi.
+        val fontSize = with(LocalDensity.current) { (size * 0.82f).toSp() }
+        Box(modifier = Modifier.size(size), contentAlignment = Alignment.Center) {
+            Text(emoji, fontSize = fontSize, maxLines = 1)
+        }
+    } else {
+        return
+    }
     Spacer(modifier = Modifier.size(6.dp))
 }
 

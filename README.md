@@ -980,9 +980,10 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
 - **Menu del blocco: "Turn into" di una pagina o di un database non è
   costruito** (la voce c'è, grigia), e nemmeno "Color" di un database
   dentro la pagina. Il colore di un collegamento vale solo per quel
-  collegamento, non per la pagina. **"Edit icon" cambia l'immagine
+  collegamento, non per la pagina. ~~**"Edit icon" cambia l'immagine
   dell'icona**, come ovunque nell'app: l'emoji di una pagina non si
-  sceglie ancora da nessuna parte
+  sceglie ancora da nessuna parte~~ **Superato** (08/10/2026, v0.152):
+  "Edit icon", come ogni icona, apre il selettore delle emoji di Notion
 - ~~**Annulla dopo un "Duplicate" di una pagina** (o di un toggle con
   dentro una sottopagina) toglie il collegamento alla copia, ma la copia
   resta: la si ritrova dalla ricerca. Annulla segue i blocchi della
@@ -2054,6 +2055,80 @@ Le voci nate nelle sessioni cloud (quelle del 24/09/2026, da "Database —
 vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
+
+### 🆕 v0.152 — 08/10/2026 · 09:17 — Le emoji di Notion per le icone: categorie, ricerca e colore della pelle
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 443 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola (con la foto della barra delle categorie del
+selettore di Notion):
+> «Quando tocco su un'icona per modificarla, implementa le stesse emoji che
+> mi si aprono quando le vedo su Notion, le emoticon, cibi, icone standard,
+> bandiere, eccetera»
+
+- **[Nuova funzionalità]** **Il selettore delle icone**, lo stesso
+  dappertutto si tocca un'icona per cambiarla: l'icona di una pagina (anche
+  "Add icon" delle pagine delle righe), "Icon" delle impostazioni di un
+  database e delle azioni di una riga, "Edit icon" dei collegamenti, l'icona
+  dei riquadri (Callout). In cima due schede, **"Emoji"** e **"Upload"**
+  (l'immagine dal telefono, come prima), e **"Remove"** quando un'icona c'è
+- **[Nuova funzionalità]** **Tutte le emoji, nelle categorie di Notion**:
+  Recent, People, Animals and nature, Food and drink, Activity, Travel and
+  places, Objects, Symbols, Flags (1906 emoji di Unicode 16; quelle che il
+  telefono non sa ancora disegnare restano fuori, invece di comparire come
+  quadratini). In fondo **"Custom"**: le immagini già caricate come icona di
+  pagine e riquadri, una volta sola anche se copiate più volte; toccandone
+  una la pagina ne prende una copia sua
+- **[Nuova funzionalità]** **La barra in basso della foto**: orologio,
+  faccina, foglia, carota, pallone, aereo, lampadina, spunta, bandiera,
+  quadretti e "+". Ogni voce porta alla sua categoria e resta accesa mentre
+  la si guarda; "+" carica un'immagine nuova
+- **[Nuova funzionalità]** **"Filter…"**: si cerca per nome **in tutte e
+  otto le lingue dell'app insieme**, senza badare a maiuscole e accenti —
+  "gatto", "cat", "Katze" e "猫" trovano il gatto anche con l'app in
+  inglese. Ogni parola scritta è l'inizio di una parola del nome ("pizz"
+  trova la pizza, "cat" non trova la "catena" prima dei gatti). Un'emoji
+  scritta con la tastiera si usa così com'è ("Use this emoji")
+- **[Nuova funzionalità]** **"Random"** sceglie un'emoji a caso; **la
+  manina** accanto apre i sei colori della pelle, che valgono per tutte le
+  emoji di persone e mani e restano scelti
+- **[Nuova funzionalità]** **Anche i database e le pagine delle righe hanno
+  l'emoji**: davanti al nome del database, nell'albero, nella ricerca, nei
+  collegamenti e accanto al nome della riga in tutte le viste (tabella,
+  bacheca, calendario…). Prima per loro contava solo un'immagine
+- **[Modificato]** **Il selettore dei riquadri** è questo, con in cima la
+  famiglia "Callout" della v0.146; il campo "Other emoji" non c'è più, la
+  ricerca fa lo stesso
+- **[Modificato]** README: nei limiti noti, la frase "l'emoji di una pagina
+  non si sceglie ancora da nessuna parte" è superata
+- **[Progetto]** `IconPicker.kt` (`IconPickerSheet`), `EmojiCatalog.kt`
+  (`EmojiCatalog`, `withSkinTone`, `EmojiCatalogs`, `IconLibrary`),
+  `PageIcons.kt` (`IconChoice`: un'emoji, un'immagine o niente; il 📄 di
+  riserva nel campo `icon` vuol dire "niente scelto"), `EmojiStrings`. Le
+  emoji recenti e il colore della pelle stanno in `AppSettings`. Nessun
+  cambio al database: `PageDao.setIcon` scrive emoji e immagine insieme, e
+  le icone delle righe (`DatabaseDao.observeRowIcons`) portano anche
+  l'emoji. Gli asset sono in `assets/emoji` (le emoji per categoria e i nomi
+  del CLDR nelle otto lingue) e si rigenerano con
+  `tools/emoji/make_emoji_assets.py`, che scarica da sé i file di Unicode.
+  Test: `EmojiCatalogTest` (6), `PageIconTest` (2), `IconPickerTest` (4)
+- Verificato sul telefono, in una riga di prova di Main calendar (poi
+  tolta), creata toccando il 9 ottobre nella vista calendario: "Add icon"
+  apre il selettore con le schede, la ricerca, la manina, le People e la
+  barra della foto; la carota porta a "Food and drink", la bandiera alle
+  Flags, i quadretti alle Custom (il cappello, le icone delle pagine, i
+  Pokémon). **"gatto" dava "No results"**: l'app è in inglese, e la ricerca
+  conosceva solo la lingua dell'app e l'inglese; ora conosce tutte le
+  lingue e trova i gatti. 🐈 diventa l'icona della pagina e compare
+  accanto al nome della riga nel calendario. "Icon" delle impostazioni di
+  Main calendar: in Recent c'è 🐈, scelto compare davanti a "Main
+  calendar", "Remove" lo toglie (nel database torna com'era: 📄 e nessuna
+  immagine). Nel riquadro: in cima la famiglia "Callout", la manina coi sei
+  colori, "pollice" dà le mani colorate, 👍🏽 diventa l'icona. **In fondo
+  alla griglia la barra restava sulla bandiera** anche toccando i
+  quadretti: le Custom non arrivano in cima; ora vale l'ultima sezione che
+  si vede. Il colore della pelle è stato rimesso giallo. Le Recent del
+  telefono hanno 🐈 e 👍🏽 delle prove
 
 ### 🆕 v0.151 — 07/10/2026 · 21:19 — "File" e "Web bookmark": il file da aprire o scaricare e il link con l'anteprima
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno, anche con

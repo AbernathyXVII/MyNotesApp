@@ -2,6 +2,9 @@ package com.gabriele.notionlocal.data.repository
 
 import androidx.room.withTransaction
 import com.gabriele.notionlocal.data.AppDatabase
+import com.gabriele.notionlocal.data.IconChoice
+import com.gabriele.notionlocal.data.iconField
+import com.gabriele.notionlocal.data.imageField
 import com.gabriele.notionlocal.data.TextStats
 import com.gabriele.notionlocal.data.textStatsOf
 import com.gabriele.notionlocal.data.entity.BlockEntity
@@ -226,9 +229,9 @@ class PageRepository(private val db: AppDatabase) {
         pageDao.setFavorite(pageId, favorite, if (favorite) System.currentTimeMillis() else null)
     }
 
-    /** L'immagine dell'icona di una pagina, o null per toglierla: una colonna sola. */
-    suspend fun setIconImage(pageId: String, fileName: String?) =
-        pageDao.setIconImage(pageId, fileName)
+    /** L'icona di una pagina: un'emoji, un'immagine o niente (il 📄 di riserva). */
+    suspend fun setIcon(pageId: String, choice: IconChoice) =
+        pageDao.setIcon(pageId, choice.iconField, choice.imageField)
 
     /** Blocca o sblocca il **contenuto** di una pagina. */
     suspend fun setLocked(pageId: String, locked: Boolean) =

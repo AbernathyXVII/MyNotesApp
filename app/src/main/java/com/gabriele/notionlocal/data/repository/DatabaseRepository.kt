@@ -2,6 +2,8 @@ package com.gabriele.notionlocal.data.repository
 
 import androidx.room.withTransaction
 import com.gabriele.notionlocal.data.AppDatabase
+import com.gabriele.notionlocal.data.RowIconRef
+import com.gabriele.notionlocal.data.chosenEmoji
 import com.gabriele.notionlocal.data.dao.RowCover
 import com.gabriele.notionlocal.data.entity.BlockType
 import com.gabriele.notionlocal.data.entity.DATE_NOTIFY_FLAG
@@ -103,8 +105,10 @@ class DatabaseRepository(private val db: AppDatabase) {
         dao.getRowsForPage(pageId)
 
     /** Riga → immagine dell'icona della sua pagina, per le righe che ne hanno una. */
-    fun observeRowIcons(pageId: String): Flow<Map<String, String>> =
-        dao.observeRowIcons(pageId).map { icons -> icons.associate { it.rowId to it.iconImage } }
+    fun observeRowIcons(pageId: String): Flow<Map<String, RowIconRef>> =
+        dao.observeRowIcons(pageId).map { icons ->
+            icons.associate { it.rowId to RowIconRef(emoji = chosenEmoji(it.icon), image = it.iconImage) }
+        }
 
     /** Riga → copertina della sua pagina, con l'inquadratura, per le righe che ne hanno una. */
     fun observeRowCovers(pageId: String): Flow<Map<String, RowCover>> =

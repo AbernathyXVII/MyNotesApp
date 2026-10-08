@@ -1,5 +1,6 @@
 package com.gabriele.notionlocal.ui.screen
 
+import com.gabriele.notionlocal.data.chosenEmoji
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -94,7 +95,7 @@ internal fun PageMentionBlockContent(
                     contentDescription = null,
                     modifier = Modifier.size(22.dp).clip(RoundedCornerShape(4.dp))
                 )
-                page?.isDatabase == true -> Icon(Icons.Filled.TableChart, contentDescription = null, tint = NotionWhite, modifier = Modifier.size(20.dp))
+                page?.isDatabase == true && page.chosenEmoji == null -> Icon(Icons.Filled.TableChart, contentDescription = null, tint = NotionWhite, modifier = Modifier.size(20.dp))
                 else -> Text(page?.icon ?: "📄", style = MaterialTheme.typography.bodyLarge)
             }
             // La freccetta in basso a destra: un rimando, non una sottopagina.

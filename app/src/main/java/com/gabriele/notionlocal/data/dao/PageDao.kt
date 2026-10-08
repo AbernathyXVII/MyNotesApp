@@ -146,9 +146,20 @@ interface PageDao {
     @Query("UPDATE pages SET trashedAt = :at WHERE id = :pageId")
     suspend fun setTrashedAt(pageId: String, at: Long?)
 
-    /** Solo l'immagine dell'icona, per la stessa ragione di `setFavorite`. */
-    @Query("UPDATE pages SET iconImage = :fileName WHERE id = :pageId")
-    suspend fun setIconImage(pageId: String, fileName: String?)
+    /**
+     * **L'icona intera**, emoji e immagine insieme (dal 07/10/2026, il
+     * selettore delle emoji): scrive solo queste due colonne, per la stessa
+     * ragione di `setFavorite`.
+     */
+    @Query("UPDATE pages SET icon = :icon, iconImage = :iconImage WHERE id = :pageId")
+    suspend fun setIcon(pageId: String, icon: String, iconImage: String?)
+
+    /**
+     * Le immagini caricate come icona dalle pagine fuori dal cestino, le più
+     * recenti prima: le "Custom" del selettore delle emoji.
+     */
+    @Query("SELECT iconImage FROM pages WHERE iconImage IS NOT NULL AND trashedAt IS NULL ORDER BY updatedAt DESC")
+    suspend fun liveIconImages(): List<String>
 
     /**
      * Solo il titolo, da "Rename" nel menu di un blocco: la pagina

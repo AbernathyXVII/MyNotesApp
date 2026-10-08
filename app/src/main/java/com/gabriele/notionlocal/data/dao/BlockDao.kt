@@ -88,6 +88,10 @@ interface BlockDao {
     suspend fun moveToPage(blockId: String, pageId: String, orderIndex: Int)
 
     /** Cambia solo le voci in più di un blocco (`BlockAttrs`): il file, l'icona, la lingua… */
+    /** Le voci dei riquadri con un'immagine per icona: vedi `PageRepository.iconImagesInUse`. */
+    @Query("SELECT attrsJson FROM blocks WHERE type = 'CALLOUT' AND attrsJson LIKE '%iconImage%'")
+    suspend fun calloutAttrs(): List<String>
+
     @Query("UPDATE blocks SET attrsJson = :attrsJson WHERE id = :blockId")
     suspend fun setAttrs(blockId: String, attrsJson: String)
 

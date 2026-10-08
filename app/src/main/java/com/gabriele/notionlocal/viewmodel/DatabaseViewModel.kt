@@ -1,5 +1,11 @@
 package com.gabriele.notionlocal.viewmodel
 
+import com.gabriele.notionlocal.data.replacedImage
+import com.gabriele.notionlocal.data.imageField
+import com.gabriele.notionlocal.data.iconField
+import com.gabriele.notionlocal.data.chosenEmoji
+import com.gabriele.notionlocal.data.RowIconRef
+import com.gabriele.notionlocal.data.IconChoice
 import com.gabriele.notionlocal.data.entity.withDateSettings
 import com.gabriele.notionlocal.data.entity.DateSettings
 import com.gabriele.notionlocal.data.entity.NAME_COLUMN_KEY
@@ -293,8 +299,8 @@ class DatabaseViewModel(
     private fun rawColumn(id: String): DatabaseColumnEntity? = rawColumns.find { it.id == id }
 
     /** Riga → immagine dell'icona della sua pagina, per le righe che ne hanno una. */
-    private val _rowIcons = MutableStateFlow<Map<String, String>>(emptyMap())
-    val rowIcons: StateFlow<Map<String, String>> = _rowIcons
+    private val _rowIcons = MutableStateFlow<Map<String, RowIconRef>>(emptyMap())
+    val rowIcons: StateFlow<Map<String, RowIconRef>> = _rowIcons
 
     /** Riga → copertina della sua pagina: le schede della galleria. */
     private val _rowCovers = MutableStateFlow<Map<String, RowCover>>(emptyMap())
@@ -932,58 +938,54 @@ class DatabaseViewModel(
     }
 
     /**
-     * L'icona del database: un'immagine scelta dall'utente, o null per
-     * **nessuna icona**.
+     * L'icona del database: un'immagine, un'emoji (dal 07/10/2026, il
+     * selettore delle emoji) o **nessuna icona**.
      *
      * Per un database "nessuna icona" vuol dire proprio niente accanto
      * al nome, non il 📄 delle pagine: l'emoji di riserva che le pagine
-     * hanno scritto nel campo `icon` qui non si usa, altrimenti ogni
+     * hanno scritto nel campo `icon` qui non conta, altrimenti ogni
      * database avrebbe avuto un foglietto davanti senza che nessuno
-     * l'avesse chiesto. Conta solo `iconImage`.
+     * l'avesse chiesto. Conta un'emoji scelta davvero (`chosenEmoji`).
      *
      * Restituisce il nome del file che è stato sostituito, perché chi
      * chiama possa cancellarlo: lasciarlo lì riempirebbe la cartella di
      * immagini che nessuno può più raggiungere. Stessa regola delle
-     * pagine (`PageEditorViewModel.setIconImage`).
+     * pagine (`PageEditorViewModel.setIcon`).
      */
-    fun setIconImage(fileName: String?): String? {
+    fun setIcon(choice: IconChoice): String? {
         // In una vista collegata l'icona è quella del database di origine:
         // è quella che la vista mostra, e cambiarla vuol dire cambiarla là.
         if (_page.value?.sourceDatabaseId != null) {
             val source = _dataPage.value ?: return null
-            val previous = source.iconImage
-            viewModelScope.launch { pageRepository.setIconImage(source.id, fileName) }
-            return previous?.takeIf { it != fileName }
+            viewModelScope.launch { pageRepository.setIcon(source.id, choice) }
+            return replacedImage(source.iconImage, choice)
         }
         val current = _page.value ?: return null
-        val previous = current.iconImage
-        val updated = current.copy(iconImage = fileName)
-        _page.value = updated
-        viewModelScope.launch { pageRepository.updatePage(updated) }
-        return previous?.takeIf { it != fileName }
+        _page.value = current.copy(icon = choice.iconField, iconImage = choice.imageField)
+        viewModelScope.launch { pageRepository.setIcon(current.id, choice) }
+        return replacedImage(current.iconImage, choice)
     }
 
     /**
-     * L'icona della pagina di una riga, o null per toglierla.
+     * L'icona della pagina di una riga: un'emoji, un'immagine o niente.
      *
      * La riga potrebbe non avere ancora una pagina — nasce la prima volta
      * che la si apre — e allora la si crea qui: l'icona sta nella pagina,
      * non nella riga. Si vede subito, prima ancora che il database la
      * confermi. Restituisce il file dell'icona di prima, che chi chiama
-     * toglie dalla cartella (come `setIconImage`).
+     * toglie dalla cartella (come `setIcon`).
      */
-    fun setRowIcon(row: DatabaseRowEntity, fileName: String?): String? {
-        val previous = _rowIcons.value[row.id]
-        _rowIcons.value = if (fileName == null) {
-            _rowIcons.value - row.id
-        } else {
-            _rowIcons.value + (row.id to fileName)
+    fun setRowIcon(row: DatabaseRowEntity, choice: IconChoice): String? {
+        val previous = _rowIcons.value[row.id]?.image
+        _rowIcons.value = when (choice) {
+            IconChoice.None -> _rowIcons.value - row.id
+            else -> _rowIcons.value + (row.id to RowIconRef(emoji = chosenEmoji(choice.iconField), image = choice.imageField))
         }
         viewModelScope.launch {
             val pageId = pageRepository.ensureRowPage(row.id) ?: return@launch
-            pageRepository.setIconImage(pageId, fileName)
+            pageRepository.setIcon(pageId, choice)
         }
-        return previous?.takeIf { it != fileName }
+        return replacedImage(previous, choice)
     }
 
     /**
