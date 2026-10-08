@@ -2057,8 +2057,8 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 gg/mm/aaaa)" accanto al titolo.
 
 ### 🆕 v0.156 — 08/10/2026 · 15:39 — "Turn into database inline"
-*(Claude Code sul PC; installata sul telefono, ma il menu non è stato
-aperto: l'utente stava usando l'app; 460 test passati; commit solo in locale)*
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 460 test
+passati; commit solo in locale)*
 
 L'utente, parola per parola (con la foto del menu del blocco di "Main
 calendar"):
@@ -2078,8 +2078,11 @@ calendar"):
   c'è già. Il menu non è stato aperto per vederla: dal confronto del
   database risultava che l'utente stava usando l'app (alle 15:34–15:35 aveva
   tolto la spunta a otto righe di "Food" e aggiunto una riga in 家計簿), e da
-  lì Claude non ha più toccato il telefono. La scritta nuova è nell'APK
-  (controllata nei file compilati)
+  lì Claude non ha più toccato il telefono. Avuto il via dall'utente
+  («Ora puoi installare, non sto usando il telefono»), installata la 0.156:
+  tenendo premuto il collegamento "Main calendar" nella pagina principale il
+  menu dice "Turn into database inline". Il menu è stato solo aperto e
+  chiuso, e il database è rimasto com'era
 
 ### 🆕 v0.155 — 08/10/2026 · 15:32 — "Freeze first column" e "Freeze first row": prima colonna e titoli sempre in vista
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 460 test
