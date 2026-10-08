@@ -1,5 +1,8 @@
 package com.gabriele.notionlocal.data.repository
 
+import kotlinx.coroutines.flow.first
+import com.gabriele.notionlocal.data.entity.ignoredWords
+import com.gabriele.notionlocal.data.entity.PROOFING_ON
 import android.app.Application
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
@@ -523,5 +526,32 @@ class PageRepositoryTest {
         assertNull(kept.linkedPageId)
         assertEquals("Done", db.databaseDao().getCellsForRowOnce(row.id).single().value)
         assertTrue(db.pageDao().getById(database.id)!!.isSimpleDatabase)
+    }
+
+    // --- Il correttore (08/10/2026) ---
+
+    @Test
+    fun proofingChoicesStayOnThePageWithoutTouchingItsDate() = runBlocking<Unit> {
+        val before = repo.getPage(parent.id)!!
+        repo.setPageProofing(parent.id, PROOFING_ON, "de")
+        repo.setPageIgnoredWords(parent.id, setOf("notE", "Ferrandina"))
+        val after = repo.getPage(parent.id)!!
+        assertEquals(PROOFING_ON, after.proofingMode)
+        assertEquals("de", after.proofingLanguage)
+        assertEquals(setOf("notE", "Ferrandina"), after.ignoredWords)
+        // Non è una modifica del contenuto: "ultima modifica" resta quella.
+        assertEquals(before.updatedAt, after.updatedAt)
+        repo.setPageIgnoredWords(parent.id, emptySet())
+        assertNull(repo.getPage(parent.id)!!.proofingIgnored)
+    }
+
+    @Test
+    fun personalWordsAreAddedOnceAndRemoved() = runBlocking<Unit> {
+        repo.addPersonalWord("notE")
+        repo.addPersonalWord(" notE ")
+        repo.addPersonalWord("Ferrandina")
+        assertEquals(listOf("Ferrandina", "notE"), repo.observePersonalWords().first())
+        repo.removePersonalWord("notE")
+        assertEquals(listOf("Ferrandina"), repo.observePersonalWords().first())
     }
 }

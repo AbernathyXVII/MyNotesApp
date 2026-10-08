@@ -287,6 +287,13 @@ data class PageEntity(
     // scorrendo in giù. Vedi `FrozenTable.kt`.
     var freezeFirstColumn: Boolean = false,
     var freezeFirstRow: Boolean = false,
+    // **Il correttore di questa pagina** (dal 08/10/2026), dai tre puntini:
+    // `PROOFING_DEFAULT` segue Settings, `PROOFING_ON` e `PROOFING_OFF` no.
+    // La lingua è il codice di una `ProofingLanguage`, null = quella di
+    // Settings. Le parole ignorate solo qui ("Ignore"), una per riga.
+    var proofingMode: Int = PROOFING_DEFAULT,
+    var proofingLanguage: String? = null,
+    var proofingIgnored: String? = null,
     // **"Color columns"** della bacheca (dal 30/09/2026), di questa vista:
     // ogni colonna, con le sue schede, del colore del suo tag.
     var colorBoardCards: Boolean = false,
@@ -425,3 +432,12 @@ data class PageEntity(
         const val ROOT_PAGE_ID = "root"
     }
 }
+
+/** Il correttore della pagina come dicono le impostazioni: vedi `PageEntity.proofingMode`. */
+const val PROOFING_DEFAULT = 0
+const val PROOFING_ON = 1
+const val PROOFING_OFF = 2
+
+/** Le parole ignorate in una pagina, come insieme. */
+val PageEntity.ignoredWords: Set<String>
+    get() = proofingIgnored?.split('\n')?.filter { it.isNotEmpty() }?.toSet().orEmpty()

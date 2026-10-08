@@ -1,5 +1,6 @@
 package com.gabriele.notionlocal.data.settings
 
+import com.gabriele.notionlocal.data.proofing.ProofingLanguage
 import com.gabriele.notionlocal.data.SKIN_TONE_COUNT
 import android.content.Context
 import android.content.SharedPreferences
@@ -136,6 +137,10 @@ object AppSettings {
             .orEmpty()
         skinToneState.value = prefs.getInt(KEY_SKIN_TONE, 0).coerceIn(0, SKIN_TONE_COUNT)
         iconColorState.value = prefs.getString(KEY_ICON_COLOR, null)?.takeIf { HEX_COLOR.matches(it) }
+        proofingEnabledState.value = prefs.getBoolean(KEY_PROOFING, false)
+        proofingLanguageState.value = ProofingLanguage.fromCode(prefs.getString(KEY_PROOFING_LANGUAGE, null))
+            ?.takeIf { it.available }
+            ?: ProofingLanguage.forApp(languageState.value)
     }
 
     // --- Aspetto ---
@@ -396,6 +401,32 @@ object AppSettings {
             if (::prefs.isInitialized) prefs.edit().putInt(KEY_SKIN_TONE, skinToneState.value).apply()
         }
 
+    // --- Correttore (dal 08/10/2026) ---
+
+    private val proofingEnabledState = mutableStateOf(false)
+
+    /**
+     * Se il correttore è acceso in tutte le pagine — Workspace e Notebooks
+     * — che non dicono altro dai loro tre puntini. Spento di partenza.
+     */
+    var proofingEnabled: Boolean
+        get() = proofingEnabledState.value
+        set(value) {
+            proofingEnabledState.value = value
+            if (::prefs.isInitialized) prefs.edit().putBoolean(KEY_PROOFING, value).apply()
+        }
+
+    private val proofingLanguageState = mutableStateOf(ProofingLanguage.ENGLISH_US)
+
+    /** La lingua del correttore, se la pagina non ne sceglie un'altra. All'inizio quella dell'app. */
+    var proofingLanguage: ProofingLanguage
+        get() = proofingLanguageState.value
+        set(value) {
+            if (!value.available) return
+            proofingLanguageState.value = value
+            if (::prefs.isInitialized) prefs.edit().putString(KEY_PROOFING_LANGUAGE, value.code).apply()
+        }
+
     // --- Utilità ---
 
     private inline fun <reified T : Enum<T>> enumOr(key: String, default: T): T =
@@ -434,6 +465,8 @@ object AppSettings {
     private const val KEY_RECENT_EMOJIS = "recent_emojis"
     private const val KEY_SKIN_TONE = "skin_tone"
     private const val KEY_ICON_COLOR = "icon_color"
+    private const val KEY_PROOFING = "proofing"
+    private const val KEY_PROOFING_LANGUAGE = "proofing_language"
 }
 
 private val HEX_COLOR = Regex("#[0-9A-F]{6}")

@@ -1,6 +1,8 @@
 package com.gabriele.notionlocal.ui.screen
 
 import androidx.compose.material.icons.filled.Fingerprint
+import androidx.compose.material.icons.filled.Spellcheck
+import com.gabriele.notionlocal.ui.i18n.ProofingStrings
 import androidx.compose.material3.Switch
 import androidx.compose.foundation.layout.Row
 import androidx.compose.ui.Alignment
@@ -90,7 +92,7 @@ import java.time.ZoneId
 import java.time.format.TextStyle
 
 /** Quale finestra di scelta è aperta. */
-private enum class SettingsDialog { THEME, TITLE_POSITION, ANIMATIONS, NUMBER, LANGUAGE, TIME_ZONE, LOCK_PASSWORD, CLEAR_CACHE, DELETE_ALL }
+private enum class SettingsDialog { THEME, TITLE_POSITION, ANIMATIONS, NUMBER, LANGUAGE, PROOFING, TIME_ZONE, LOCK_PASSWORD, CLEAR_CACHE, DELETE_ALL }
 
 /**
  * Le impostazioni. Ogni scelta si salva appena la si fa e vale subito: il
@@ -167,6 +169,19 @@ fun SettingsScreen(onBack: () -> Unit, onOpenPatchNotes: () -> Unit = {}) {
                 icon = Icons.Filled.Language,
                 value = languageName(AppSettings.language),
                 onClick = { dialog = SettingsDialog.LANGUAGE }
+            )
+            // **Il correttore** (dal 08/10/2026), sotto la lingua dell'app:
+            // acceso o spento in tutte le pagine, la sua lingua, le parole
+            // aggiunte. Ogni pagina può dire altro dai suoi tre puntini.
+            SettingsItem(
+                ProofingStrings.proofing,
+                icon = Icons.Filled.Spellcheck,
+                value = if (AppSettings.proofingEnabled) {
+                    "${ProofingStrings.on} · ${AppSettings.proofingLanguage.label}"
+                } else {
+                    ProofingStrings.off
+                },
+                onClick = { dialog = SettingsDialog.PROOFING }
             )
             SettingsItem(
                 Strings.timeZone,
@@ -255,6 +270,7 @@ fun SettingsScreen(onBack: () -> Unit, onOpenPatchNotes: () -> Unit = {}) {
             onSelect = { AppSettings.language = it },
             onDismiss = { dialog = null }
         )
+        SettingsDialog.PROOFING -> ProofingSettingsDialog(onDismiss = { dialog = null })
         SettingsDialog.TIME_ZONE -> TimeZoneDialog(onDismiss = { dialog = null })
         SettingsDialog.LOCK_PASSWORD -> LockPasswordSettings(onDismiss = { dialog = null })
         SettingsDialog.CLEAR_CACHE -> AlertDialog(

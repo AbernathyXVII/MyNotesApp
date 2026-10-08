@@ -235,4 +235,11 @@ interface PageDao {
     /** I template (`PageEntity.isTemplate`) fuori dal cestino, per nome. */
     @Query("SELECT * FROM pages WHERE isTemplate = 1 AND trashedAt IS NULL ORDER BY title COLLATE NOCASE ASC, createdAt ASC")
     fun observeTemplates(): Flow<List<PageEntity>>
+
+    /** Il correttore di una pagina (vedi `PageEntity.proofingMode`): non è una modifica del contenuto, la data resta. */
+    @Query("UPDATE pages SET proofingMode = :mode, proofingLanguage = :language WHERE id = :pageId")
+    suspend fun setProofing(pageId: String, mode: Int, language: String?)
+
+    @Query("UPDATE pages SET proofingIgnored = :ignored WHERE id = :pageId")
+    suspend fun setProofingIgnored(pageId: String, ignored: String?)
 }

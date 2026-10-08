@@ -11,6 +11,7 @@ import com.gabriele.notionlocal.data.dao.DatabaseDao
 import com.gabriele.notionlocal.data.dao.InkDao
 import com.gabriele.notionlocal.data.dao.NotebookDao
 import com.gabriele.notionlocal.data.dao.PageDao
+import com.gabriele.notionlocal.data.dao.PersonalWordDao
 import com.gabriele.notionlocal.data.dao.PageEditDao
 import com.gabriele.notionlocal.data.dao.TableCellDao
 import com.gabriele.notionlocal.data.entity.BlockEntity
@@ -22,6 +23,7 @@ import com.gabriele.notionlocal.data.entity.NotebookEntity
 import com.gabriele.notionlocal.data.entity.NotebookSectionEntity
 import com.gabriele.notionlocal.data.entity.PageEditEntity
 import com.gabriele.notionlocal.data.entity.PageEntity
+import com.gabriele.notionlocal.data.entity.PersonalWordEntity
 import com.gabriele.notionlocal.data.entity.RichTextSpan
 import com.gabriele.notionlocal.data.entity.TableCellEntity
 import kotlinx.serialization.decodeFromString
@@ -53,9 +55,10 @@ import kotlinx.serialization.json.Json
         PageEditEntity::class,
         InkStrokeEntity::class,
         NotebookEntity::class,
-        NotebookSectionEntity::class
+        NotebookSectionEntity::class,
+        PersonalWordEntity::class
     ],
-    version = 54,
+    version = 55,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -67,6 +70,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun tableCellDao(): TableCellDao
     abstract fun inkDao(): InkDao
     abstract fun notebookDao(): NotebookDao
+    abstract fun personalWordDao(): PersonalWordDao
 
     companion object {
         @Volatile
@@ -765,6 +769,23 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /** Prima colonna e prima riga ferme nella tabella (08/10/2026): spente dappertutto. */
+        /**
+         * Il correttore (08/10/2026): le scelte di ogni pagina — tutte a
+         * "come dicono le impostazioni" — e il dizionario dell'utente,
+         * vuoto.
+         */
+        private val MIGRATION_54_55 = object : Migration(54, 55) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE pages ADD COLUMN proofingMode INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE pages ADD COLUMN proofingLanguage TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE pages ADD COLUMN proofingIgnored TEXT DEFAULT NULL")
+                db.execSQL(
+                    "CREATE TABLE IF NOT EXISTS `personal_words` " +
+                        "(`word` TEXT NOT NULL, `addedAt` INTEGER NOT NULL, PRIMARY KEY(`word`))"
+                )
+            }
+        }
+
         private val MIGRATION_53_54 = object : Migration(53, 54) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE pages ADD COLUMN freezeFirstColumn INTEGER NOT NULL DEFAULT 0")
@@ -846,7 +867,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_50_51,
                         MIGRATION_51_52,
                         MIGRATION_52_53,
-                        MIGRATION_53_54
+                        MIGRATION_53_54,
+                        MIGRATION_54_55
                     )
                     .build()
                 INSTANCE = instance

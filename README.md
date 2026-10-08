@@ -735,6 +735,15 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   **Dark / Light / System** (vedi la voce "Theme" in Cronologia). I
   grigi di Notion qui sopra restano quelli del tema scuro, che è ancora
   quello di partenza; niente colori dinamici
+- **Il correttore** (dal 08/10/2026), come in OneNote: le parole che il
+  dizionario non conosce hanno sotto una riga rossa ondulata; toccandone
+  una, fino a cinque parole al suo posto, "Add to dictionary" e
+  "Ignore". Si accende da Settings → Proofing per tutte le pagine
+  (Workspace e Notebooks) o dai tre puntini di una pagina sola, che può
+  avere anche la sua lingua: inglese americano e britannico, italiano,
+  tedesco, francese, spagnolo. Spento di partenza. I dizionari sono
+  quelli di Hunspell (LibreOffice), letti da un motore scritto apposta
+  (`data/proofing/`), senza internet
 
 ## Limiti noti
 
@@ -1050,6 +1059,11 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   contatore azzerato non tornano indietro
 - **Widget: si spostano coi tre puntini**, Sposta su e Sposta giù, non
   trascinandoli
+- **Correttore** (dal 08/10/2026): niente cinese, coreano e giapponese
+  (si vedono grigi, "Not available yet"); non controlla le celle dei
+  database e delle tabelle, il codice, gli indirizzi, le sigle tutte
+  maiuscole e le parole con dei numeri. È solo ortografia: la grammatica
+  ("le casa") non la guarda
 - **Export/backup** (Markdown+CSV, PDF) progettato ma non implementato.
   Decisione già presa con l'utente: **Markdown+CSV come formato
   principale** (il PDF non conserva la struttura, quindi è inadatto al
@@ -2056,6 +2070,100 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.158 — 08/10/2026 · 22:37 — Il correttore, come in OneNote: riga rossa sotto le parole sbagliate
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 490 test passati; database alla
+versione 55, copia del database del telefono fatta prima di installare; commit solo in locale)*
+
+L'utente, parola per parola:
+> «So che questo sarà pesante, e dimmi come vuoi farlo (dato che dovrò per
+> forza di cose scaricare dizionari a parte, o dimmi te). Vorrei la
+> possibilità (NON permanente, attivabile o meno dalle Settings nella
+> sidebar come opzione globale in tutto il Workspace e i Notebooks, o
+> attivabile o meno dalle opzioni di ogni pagina) di usare il proofing
+> delle parole come fa OneNote nelle pagine. Due chicche: vorrei la
+> possibilità anche di selezionare la lingua desiderata (per il momento
+> metti solo le lingue che ti ho fatto mettere dalle impostazioni), e di
+> aggiungere al dizionario parole che io scrivo. Prima di scrivere il
+> codice, dimmi come pensi di farla e se è fattibile. Se lo è, procedi, ma
+> prima parlamene»
+
+e, sentito come l'avrei fatto:
+> «Vai, entrambi dizionari inglesi»
+
+- **[Nuova funzionalità]** **La riga rossa ondulata** sotto le parole che
+  il dizionario non conosce, nelle pagine del Workspace e dei Notebooks:
+  nel testo, negli elenchi, nelle caselle, nei toggle, nei riquadri, nelle
+  citazioni, nelle notifiche e nel titolo. La parola che si sta scrivendo
+  non si segna finché non la si finisce, e le altre si ricontrollano
+  appena si smette di scrivere
+- **[Nuova funzionalità]** **Toccando una parola sottolineata** si apre il
+  suo menu: fino a **cinque parole al suo posto** (quattro con la
+  tastiera aperta, perché il menu stia sopra o sotto la parola senza
+  coprirla), la migliore per prima ("perche" → "perché", "squola" →
+  "scuola", "dellacasa" → "della casa"), **"Add to dictionary"** e
+  **"Ignore"**. La tastiera resta aperta; "Indietro" o un tocco fuori lo
+  chiudono
+- **[Nuova funzionalità]** **Settings → Proofing**, sotto Language:
+  "Check spelling" per tutte le pagine, Workspace e Notebooks insieme;
+  **la lingua**; **"My dictionary"**, le parole aggiunte, che da lì si
+  tolgono. **Spento di partenza**; la lingua di partenza è quella
+  dell'app
+- **[Nuova funzionalità]** **"Proofing" nei tre puntini di una pagina**:
+  "Default" (come dice Settings), "On" o "Off" solo per lei, e la sua
+  lingua — una pagina in tedesco in un'app in italiano. Sotto, le parole
+  ignorate in quella pagina, con "Check again" per rimetterle
+- **[Nuova funzionalità]** **Le lingue** sono quelle dell'app: inglese
+  americano e britannico, italiano, tedesco, francese, spagnolo. Cinese,
+  coreano e giapponese ci sono ma grigie, "Not available yet". Le parole
+  aggiunte al dizionario valgono in tutte
+- **[Nuova funzionalità]** **Non si controllano**, come in OneNote e Word:
+  indirizzi, email e nomi di file ("notes.txt"), le parole con dei numeri,
+  le sigle tutte maiuscole, le parole di una lettera, quelle in un altro
+  alfabeto, il testo sotto uno spoiler, il codice, le celle dei database
+- **[Progetto]** **I dizionari sono quelli di Hunspell** — il correttore
+  di LibreOffice, Firefox e Chrome — dentro l'app (circa 6 MB in tutto, 2
+  compressi nell'APK), con le loro licenze; niente da scaricare a parte,
+  niente internet. `tools/proofing/get_dictionaries.py` li riscarica alle
+  versioni provate
+- **[Progetto]** **Un motore scritto apposta in Kotlin** (`data/proofing/`),
+  senza librerie native: `SpellDictionary` legge i file di Hunspell e
+  controlla una parola come fa Hunspell — prefissi e desinenze, anche due
+  desinenze una sull'altra ("dámelo"), l'elisione ("dell'anno",
+  "l'homme"), le parole composte del tedesco ("Haustür",
+  "Donaudampfschifffahrt"), maiuscole e "ß"; `SpellSuggestions.kt` trova
+  le parole al suo posto (gli errori tipici prima — accenti, doppie,
+  lettere scambiate — e se non basta le parole che si somigliano);
+  `ProofingText` divide il testo in parole; `SpellChecker` aggiunge le
+  parole dell'utente e quelle ignorate. Nella pagina: `ProofingUi.kt` (la
+  riga e il menu, attaccati ai campi di testo senza cambiarne il
+  funzionamento) e `ProofingSettings.kt` (le scelte)
+- **[Progetto]** Database alla **versione 55**: `pages.proofingMode`,
+  `proofingLanguage`, `proofingIgnored` (tutte le pagine "come dice
+  Settings") e la tabella `personal_words`. Test: `SpellDictionaryTest`
+  (frasi vere nelle sei lingue: le parole giuste passano, le sbagliate no,
+  il primo suggerimento è quello giusto, e in fretta), `ProofingTextTest`,
+  `SpellCheckerTest`, `ProofingMarksTest`, `ProofingRenderTest` (la riga
+  disegnata e il tocco che apre il menu), la migrazione 54→55 in
+  `MigrationTest` e due prove in `PageRepositoryTest`
+- Verificato sul telefono, dopo aver copiato il database (l'app si apre
+  col database alla 55, niente perso). Settings → Proofing acceso, in
+  inglese: la pagina principale ha la riga rossa sotto le parole italiane
+  delle liste, e non sotto "lo", "WC" e "Shampoo". Poi su una riga di prova
+  di Main calendar, coi tre puntini → "Proofing" e l'italiano solo per
+  lei, scritto "Domani vado a squola perche ce il compito di Mario. Parola
+  zorblat e blablabla.": segnate "squola", "perche", "zorblat",
+  "blablabla" (e il titolo "Untitled"). Toccando "squola" il menu dice
+  scuola, suola, squalo, stuola, con la tastiera ancora aperta, e "scuola"
+  prende il suo posto; "perche" diventa "perché"; "zorblat" con "Add to
+  dictionary" perde la riga e compare in Settings → My dictionary, da cui
+  "Remove" lo toglie; "blablabla" con "Ignore" finisce fra le parole
+  ignorate della pagina, e "Check again" lo rimette. Lo stesso in una
+  citazione. **Il telefono ha trovato tre cose**, sistemate prima del
+  commit: il menu copriva la parola (con la tastiera aperta non ci stava né
+  sopra né sotto), "Indietro" chiudeva la tastiera ma non il menu, e in
+  Settings l'interruttore spento quasi non si vedeva e la spiegazione sotto
+  era tagliata. Alla fine riga di prova tolta, parola tolta dal dizionario
+  e correttore rispento: il database del telefono è tornato com'era
 ### 🆕 v0.157 — 08/10/2026 · 15:57 — "Move as inline": un database spostato può arrivare aperto nella pagina
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 461 test
 passati; commit solo in locale)*
@@ -10704,7 +10812,16 @@ app/src/test/resources/schema/v28.sql
 app/src/main/res/font/            # I 10 font occidentali delle pagine (sosia liberi)
 app/src/main/res/values/font_certs.xml   # Certificati per scaricare i font da Google
 app/src/main/assets/font_licenses/OFL.txt # Licenza e copyright dei font inclusi
+app/src/main/assets/proofing/     # I dizionari del correttore, con le loro licenze
+tools/proofing/get_dictionaries.py # Li riscarica, alle versioni provate
 ```
+
+`data/proofing/` è il correttore: `SpellDictionary` legge un dizionario
+di Hunspell e controlla una parola, `SpellSuggestions.kt` trova le parole
+al suo posto, `ProofingText` divide il testo in parole da controllare,
+`SpellChecker` aggiunge il dizionario dell'utente e le parole ignorate.
+`ui/screen/ProofingUi.kt` è come si vede nella pagina (la riga ondulata,
+il menu), `ProofingSettings.kt` le scelte in Settings e nei tre puntini.
 
 `ui/theme/PageFonts.kt` è il catalogo dei font delle pagine: nomi,
 sosia, gruppi, da dove arrivano, e `PageTypography`, che porta font e
@@ -10747,7 +10864,11 @@ le finestre che apre. Chi lo usa passa solo l'id del blocco.
 
 ## Nota tecnica
 
-Lo schema è alla **versione 52** (la 52, del 06/10/2026, aggiunge
+Lo schema è alla **versione 55** (la 55, del 08/10/2026, aggiunge
+`pages.proofingMode`, `proofingLanguage` e `proofingIgnored` e la tabella
+`personal_words`, il correttore — vedi `ProofingUi.kt`; la 54, dello stesso giorno, aggiunge
+`pages.freezeFirstColumn` e `freezeFirstRow`, la prima colonna e la prima riga ferme; la 53, dello stesso giorno, aggiunge
+`pages.iconSymbol`, le icone di Material delle pagine; la 52, del 06/10/2026, aggiunge
 `blocks.attrsJson`, le voci in più dei blocchi nuovi del menu "/" — vedi `BlockAttrs`; la 51, del 05/10/2026, aggiunge
 `pages.thenSortColumnId` e `thenSortDescending`, la seconda regola di ordinamento; la 50, del 30/09/2026, aggiunge
 `database_rows.eventColor`, il colore degli eventi del calendario; la 49, dello stesso giorno, aggiunge

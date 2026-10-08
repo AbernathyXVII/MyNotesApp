@@ -20,6 +20,7 @@ import com.gabriele.notionlocal.data.entity.DatabaseCellEntity
 import com.gabriele.notionlocal.data.entity.DatabaseRowEntity
 import com.gabriele.notionlocal.data.entity.PageEditEntity
 import com.gabriele.notionlocal.data.entity.PageEntity
+import com.gabriele.notionlocal.data.entity.PersonalWordEntity
 import com.gabriele.notionlocal.data.entity.RichTextSpan
 import com.gabriele.notionlocal.data.entity.TableCellEntity
 import com.gabriele.notionlocal.data.entity.plainText
@@ -34,6 +35,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -2552,4 +2554,24 @@ class PageRepository(private val db: AppDatabase) {
             )
         }
     }
+
+    // --- Il correttore (dal 08/10/2026) ---
+
+    private val personalWordDao = db.personalWordDao()
+
+    /** Il dizionario dell'utente, in ordine alfabetico. */
+    fun observePersonalWords(): Flow<List<String>> = personalWordDao.observeAll().map { list -> list.map { it.word } }
+
+    suspend fun addPersonalWord(word: String) {
+        val w = word.trim()
+        if (w.isNotEmpty()) personalWordDao.insert(PersonalWordEntity(w))
+    }
+
+    suspend fun removePersonalWord(word: String) = personalWordDao.delete(word)
+
+    /** Il correttore di una pagina: vedi `PageEntity.proofingMode`. */
+    suspend fun setPageProofing(pageId: String, mode: Int, language: String?) = pageDao.setProofing(pageId, mode, language)
+
+    suspend fun setPageIgnoredWords(pageId: String, words: Set<String>) =
+        pageDao.setProofingIgnored(pageId, words.sorted().joinToString("\n").ifEmpty { null })
 }

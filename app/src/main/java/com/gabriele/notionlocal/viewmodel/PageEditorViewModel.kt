@@ -43,6 +43,7 @@ import com.gabriele.notionlocal.ui.theme.MAX_PAGE_FONT_SIZE
 import com.gabriele.notionlocal.ui.theme.MIN_PAGE_FONT_SIZE
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import com.gabriele.notionlocal.data.entity.ignoredWords
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -1070,6 +1071,35 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
      * stanno i file e può cancellarlo: lasciarlo lì vorrebbe dire riempire
      * la cartella di immagini irraggiungibili.
      */
+    // --- Il correttore (dal 08/10/2026): vedi `ProofingUi.kt` ---
+
+    /** Il dizionario dell'utente: vale in tutte le pagine e in tutte le lingue. */
+    val personalWords: Flow<List<String>> = repository.observePersonalWords()
+
+    fun addToDictionary(word: String) {
+        viewModelScope.launch { repository.addPersonalWord(word) }
+    }
+
+    /** "Proofing" dai tre puntini: acceso, spento o come Settings, e la lingua (null = quella di Settings). */
+    fun setProofing(mode: Int, language: String?) {
+        val current = _page.value ?: return
+        _page.value = current.copy(proofingMode = mode, proofingLanguage = language)
+        viewModelScope.launch { repository.setPageProofing(current.id, mode, language) }
+    }
+
+    /** "Ignore": la parola non si segna più, solo in questa pagina. */
+    fun ignoreWord(word: String) = setIgnored { it + word }
+
+    /** "Check again": la parola ignorata torna a segnarsi. */
+    fun stopIgnoring(word: String) = setIgnored { it - word }
+
+    private fun setIgnored(change: (Set<String>) -> Set<String>) {
+        val current = _page.value ?: return
+        val words = change(current.ignoredWords)
+        _page.value = current.copy(proofingIgnored = words.sorted().joinToString("\n").ifEmpty { null })
+        viewModelScope.launch { repository.setPageIgnoredWords(current.id, words) }
+    }
+
     fun setIcon(choice: IconChoice): String? {
         val current = _page.value ?: return null
         val updated = current.copy(icon = choice.iconField, iconImage = choice.imageField, iconSymbol = choice.symbolField)

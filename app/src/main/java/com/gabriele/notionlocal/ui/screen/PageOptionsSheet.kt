@@ -3,6 +3,7 @@ package com.gabriele.notionlocal.ui.screen
 import androidx.compose.foundation.layout.Box
 import com.gabriele.notionlocal.ui.i18n.EditorStrings
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Spellcheck
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
@@ -76,6 +77,7 @@ import com.gabriele.notionlocal.data.settings.AppSettings
 import com.gabriele.notionlocal.data.settings.TrashPolicy
 import com.gabriele.notionlocal.ui.i18n.InkStrings
 import com.gabriele.notionlocal.ui.i18n.LockStrings
+import com.gabriele.notionlocal.ui.i18n.ProofingStrings
 import com.gabriele.notionlocal.ui.i18n.NotebookStrings
 import com.gabriele.notionlocal.ui.i18n.Strings
 import com.gabriele.notionlocal.ui.theme.DarkSheet
@@ -149,7 +151,14 @@ fun PageOptionsSheet(
      * la pagina ha già una copertina (si cambia toccandola), per i database
      * e nelle pagine dei quaderni: allora la voce non c'è.
      */
-    onAddCover: (() -> Unit)? = null
+    onAddCover: (() -> Unit)? = null,
+    /**
+     * **"Proofing"** (dal 08/10/2026): il correttore di questa pagina, con
+     * scritto accanto com'è adesso ([proofingValue]). Null per i database,
+     * che non hanno testo da correggere: allora la voce non c'è.
+     */
+    proofingValue: String? = null,
+    onProofing: (() -> Unit)? = null
 ) {
     val isRoot = page.id == PageEntity.ROOT_PAGE_ID
 
@@ -298,6 +307,24 @@ fun PageOptionsSheet(
                             Switch(checked = page.isProtected, onCheckedChange = { onTogglePasswordLock() })
                         },
                         onClick = onTogglePasswordLock
+                    )
+                }
+            }
+
+            if (onProofing != null) {
+                Spacer(modifier = Modifier.size(12.dp))
+                OptionsGroup {
+                    OptionRow(
+                        icon = Icons.Filled.Spellcheck,
+                        label = ProofingStrings.proofing,
+                        trailing = {
+                            Text(
+                                proofingValue.orEmpty(),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        onClick = onProofing
                     )
                 }
             }

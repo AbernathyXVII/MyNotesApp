@@ -189,6 +189,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -1027,7 +1028,9 @@ fun PageEditorScreen(
     val keyboardWatch = remember { KeyboardCloseWatch() }
     CompositionLocalProvider(
         LocalInNotebook provides (page?.notebookSectionId != null),
-        LocalKeyboardCloseWatch provides keyboardWatch
+        LocalKeyboardCloseWatch provides keyboardWatch,
+        // Il correttore della pagina, se è acceso: vedi `ProofingUi.kt`.
+        LocalProofing provides rememberPageProofing(page, viewModel)
     ) {
         PageEditorContent(
             pageId = pageId,
@@ -1120,6 +1123,8 @@ private fun PageEditorContent(
 
     // Il menu dei tre puntini e le due cose che può aprire.
     var showPageOptions by remember { mutableStateOf(false) }
+    // "Proofing" dai tre puntini: vedi `PageProofingSheet`.
+    var showProofing by remember { mutableStateOf(false) }
     // "Move to": dove la pagina non può andare, letto quando si tocca la
     // voce; finché c'è, l'albero per scegliere è aperto.
     var moveExclusions by remember { mutableStateOf<PageRepository.MoveExclusions?>(null) }
@@ -1784,6 +1789,12 @@ private fun PageEditorContent(
                 LaunchedEffect(page?.title, titleFocused) {
                     if (!titleFocused) titleText = page?.title.orEmpty()
                 }
+                // Il correttore anche nel titolo: vedi `ProofingUi.kt`.
+                val titleProofing = LocalProofing.current
+                val titleMisspellings = rememberMisspellings(if (titleProofing == null) emptyList() else listOf(titleText))
+                var titleLayout by remember { mutableStateOf<TextLayoutResult?>(null) }
+                var titleTyping by remember { mutableStateOf<Int?>(null) }
+                var titleMenu by remember { mutableStateOf<Pair<MisspelledWord, IntRect>?>(null) }
 
                 @Composable
                 fun TitleField(modifier: Modifier) {
@@ -1796,10 +1807,17 @@ private fun PageEditorContent(
                             // scrivere nel corpo si tocca il corpo.
                             onValueChange = {
                                 val singleLine = it.replace("\n", "")
+                                titleTyping = if (singleLine != titleText) singleLine.length else null
                                 titleText = singleLine
                                 viewModel.updateTitle(singleLine)
                             },
                             singleLine = true,
+                            visualTransformation = if (titleProofing == null) {
+                                VisualTransformation.None
+                            } else {
+                                ProofingTransformation(titleMisspellings[titleText].orEmpty(), titleTyping.takeIf { titleFocused })
+                            },
+                            onTextLayout = { titleLayout = it },
                             // Pagina bloccata (o nel cestino): nemmeno il titolo si tocca.
                             readOnly = readOnlyPage,
                             keyboardOptions = KeyboardOptions(
@@ -1821,9 +1839,30 @@ private fun PageEditorContent(
                                         )
                                     }
                                     field()
+                                    titleMenu?.let { (word, at) ->
+                                        if (word.end <= titleText.length) {
+                                            ProofingMenu(
+                                                word = titleText.substring(word.start, word.end),
+                                                anchor = at,
+                                                onReplace = { with ->
+                                                    if (word.end <= titleText.length) {
+                                                        val new = titleText.replaceRange(word.start, word.end, with)
+                                                        titleText = new
+                                                        titleTyping = null
+                                                        viewModel.updateTitle(new)
+                                                    }
+                                                },
+                                                onDismiss = { titleMenu = null }
+                                            )
+                                        }
+                                    }
                                 }
                             },
                             modifier = modifier
+                                .drawBehind { drawMisspellings(titleLayout) }
+                                .proofingTaps(enabled = titleProofing != null && !readOnlyPage, layout = { titleLayout }) { word, at ->
+                                    titleMenu = word to at
+                                }
                                 .markFocusChanges()
                                 .onFocusChanged {
                                     titleFocused = it.isFocused
@@ -2564,7 +2603,20 @@ private fun PageEditorContent(
                         focusManager.clearFocus()
                         passwordLockRequest = !current.isProtected
                     }
+                },
+                proofingValue = proofingSummary(current),
+                onProofing = {
+                    showPageOptions = false
+                    showProofing = true
                 }
+            )
+        }
+        if (showProofing) {
+            PageProofingSheet(
+                page = current,
+                onSetProofing = viewModel::setProofing,
+                onStopIgnoring = viewModel::stopIgnoring,
+                onDismiss = { showProofing = false }
             )
         }
         passwordLockRequest?.let { wanted ->
@@ -3994,7 +4046,11 @@ private class MergedRunVisualTransformation(
      * resta quella di prima, e senza questo `null` uno spoiler già
      * aperto sarebbe rimasto aperto anche dopo essere usciti.
      */
-    private val caret: IntRange?
+    private val caret: IntRange?,
+    /** Le parole sbagliate di una riga, se il correttore è acceso: vedi `ProofingUi.kt`. */
+    private val proof: ((String) -> List<IntRange>)? = null,
+    /** Dove finisce quello che si è appena scritto, nel testo vero: la parola lì non si segna ancora. */
+    private val typingAt: Int? = null
 ) : VisualTransformation {
     override fun filter(text: AnnotatedString): TransformedText {
         val hasLead = text.text.startsWith(RUN_LEAD)
@@ -4138,6 +4194,13 @@ private class MergedRunVisualTransformation(
                         }
                     }
                 }
+            }
+            // Le parole sbagliate della riga (vedi `ProofingUi.kt`), tranne
+            // quelle sotto uno spoiler e quella che si sta scrivendo.
+            proof?.let { p ->
+                val lineSpans = predicted[i] ?: block?.let { b -> viewModel.spansOf(b).takeIf { it.plainText() == line } }
+                val typingEnd = typingAt?.let { it - lineBodyStart }?.takeIf { it in 0..line.length }
+                builder.markMisspellings(i, p(line), contentStart, lineSpans, typingEnd)
             }
             lineBodyStart += line.length + 1
             if (i < lines.size - 1) builder.append("\n")
@@ -4388,6 +4451,10 @@ private fun MergedTextRunField(
     }
     var lastLineBlockId by remember(runKey) { mutableStateOf<String?>(null) }
     var fieldFocused by remember(runKey) { mutableStateOf(false) }
+    // Il correttore: dove finisce quello che si è appena scritto (la parola
+    // lì non si segna finché si scrive) e la parola toccata, col suo menu.
+    var proofTyping by remember(runKey) { mutableStateOf<Int?>(null) }
+    var proofMenu by remember(runKey) { mutableStateOf<Pair<MisspelledWord, IntRect>?>(null) }
 
     // Se il contenuto "ufficiale" (dal database, via runBlocks) è
     // diverso da quello che il campo mostra localmente, risincronizza —
@@ -4637,6 +4704,27 @@ private fun MergedTextRunField(
     // righe del gruppo si allungano quanto basta per lui (vedi `lineScaleFor`).
     val lineScale = remember(runBlocks) { lineScaleFor(runBlocks.flatMap { viewModel.spansOf(it) }) }
 
+    // Il correttore (vedi `ProofingUi.kt`): le parole sbagliate di ogni riga.
+    val proofing = LocalProofing.current
+    val misspellings = rememberMisspellings(if (proofing == null) emptyList() else bodyOf(fieldValue.text).split('\n'))
+    val pageLocked = LocalPageLocked.current
+
+    // Una parola scelta dal menu del correttore prende il posto di quella
+    // sbagliata, come se la si fosse scritta: stesso giro di `applySlashEntry`.
+    fun replaceMisspelled(word: MisspelledWord, with: String) {
+        val body = bodyOf(fieldValue.text)
+        val lines = body.split('\n')
+        val line = lines.getOrNull(word.line) ?: return
+        if (word.end > line.length) return
+        val newLines = lines.toMutableList().also { it[word.line] = line.replaceRange(word.start, word.end, with) }
+        val lineStart = lines.take(word.line).sumOf { it.length + 1 }
+        val newText = RUN_LEAD + newLines.joinToString("\n")
+        fieldValue = TextFieldValue(newText, TextRange(RUN_LEAD.length + lineStart + word.start + with.length))
+        pendingText = newText
+        proofTyping = null
+        viewModel.updateRun(runBlocks.map { it.id }, newLines, lines, word.line)
+    }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -4649,6 +4737,7 @@ private fun MergedTextRunField(
             onValueChange = { newValue ->
                 val oldText = fieldValue.text
                 val oldBody = bodyOf(oldText)
+                proofTyping = if (newValue.text != oldText) newValue.selection.end - RUN_LEAD.length else null
                 val newText = newValue.text
                 val caretRaw = newValue.selection.end
 
@@ -4958,10 +5047,16 @@ private fun MergedTextRunField(
                         (fieldValue.selection.max - 1).coerceAtLeast(0)
                 } else {
                     null
-                }
+                },
+                proof = proofing?.let { { line: String -> misspellings[line].orEmpty() } },
+                typingAt = if (fieldFocused) proofTyping else null
             ),
             modifier = Modifier
                 .fillMaxWidth()
+                .drawBehind { drawMisspellings(textLayout) }
+                .proofingTaps(enabled = proofing != null && !pageLocked, layout = { textLayout }) { word, at ->
+                    proofMenu = word to at
+                }
                 .drawBehind {
                     val strength = moveFlash.value
                     val movedId = movedBlock?.blockId
@@ -5012,6 +5107,18 @@ private fun MergedTextRunField(
         layout = textLayout,
         onToggle = { viewModel.toggleCheckbox(it) }
     )
+
+    proofMenu?.let { (word, at) ->
+        val line = bodyOf(fieldValue.text).split('\n').getOrNull(word.line)
+        if (line != null && word.end <= line.length) {
+            ProofingMenu(
+                word = line.substring(word.start, word.end),
+                anchor = at,
+                onReplace = { replaceMisspelled(word, it) },
+                onDismiss = { proofMenu = null }
+            )
+        }
+    }
 
     if (slashAnchor != null) {
         SlashMenu(
@@ -5356,6 +5463,12 @@ private fun BlockRow(
     var fieldFocused by remember(block.id) { mutableStateOf(false) }
     // Su quale numero è stato tenuto premuto: apre il menu della lista.
     var numberMenuFor by remember(block.id) { mutableStateOf<String?>(null) }
+    // Il correttore, come nel campo unito: vedi lì.
+    var proofTyping by remember(block.id) { mutableStateOf<Int?>(null) }
+    var proofMenu by remember(block.id) { mutableStateOf<Pair<MisspelledWord, IntRect>?>(null) }
+    var islandLayout by remember(block.id) { mutableStateOf<TextLayoutResult?>(null) }
+    val proofing = LocalProofing.current
+    val islandMisspellings = rememberMisspellings(if (proofing == null) emptyList() else listOf(bodyOf(editState.fieldValue.text)))
 
     // Quando il testo del blocco cambia da fuori — la riga di sotto che
     // ci si fonde dentro col backspace — il campo deve rileggerlo.
@@ -5642,6 +5755,7 @@ private fun BlockRow(
                 value = editState.fieldValue,
                 onValueChange = { newFieldValue ->
                     val oldText = bodyOf(editState.fieldValue.text)
+                    proofTyping = if (bodyOf(newFieldValue.text) != oldText) newFieldValue.selection.end - RUN_LEAD.length else null
                     noteLog(
                         "casella ${block.id.takeLast(4)} scrive: " +
                             "'${oldText.forLog()}' -> '${bodyOf(newFieldValue.text).forLog()}' " +
@@ -5922,8 +6036,11 @@ private fun BlockRow(
                             (editState.fieldValue.selection.max - RUN_LEAD.length).coerceAtLeast(0)
                     } else {
                         null
-                    }
+                    },
+                    proof = proofing?.let { { text: String -> islandMisspellings[text].orEmpty() } },
+                    typingAt = if (fieldFocused) proofTyping else null
                 ),
+                onTextLayout = { islandLayout = it },
                 // Una notifica senza testo mostrerà il nome della pagina: il
                 // suggerimento lo dice, finché non si scrive niente.
                 decorationBox = { inner ->
@@ -5935,10 +6052,38 @@ private fun BlockRow(
                             Text(BlockStrings.emptyQuote, style = textStyle, color = NotionGray400, maxLines = 1)
                         }
                         inner()
+                        proofMenu?.let { (word, at) ->
+                            val text = bodyOf(editState.fieldValue.text)
+                            if (word.end <= text.length) {
+                                ProofingMenu(
+                                    word = text.substring(word.start, word.end),
+                                    anchor = at,
+                                    onReplace = { with ->
+                                        // Come se la parola la si fosse scritta: stessi span, stesso salvataggio.
+                                        val old = bodyOf(editState.fieldValue.text)
+                                        if (word.end <= old.length) {
+                                            val new = old.replaceRange(word.start, word.end, with)
+                                            val newSpans = applyTextEdit(editState.spans, old, new)
+                                            editState = BlockEditState(
+                                                newSpans,
+                                                TextFieldValue(RUN_LEAD + new, TextRange(RUN_LEAD.length + word.start + with.length))
+                                            )
+                                            proofTyping = null
+                                            viewModel.updateBlockSpans(block, newSpans)
+                                        }
+                                    },
+                                    onDismiss = { proofMenu = null }
+                                )
+                            }
+                        }
                     }
                 },
                 modifier = Modifier
                     .weight(1f)
+                    .drawBehind { drawMisspellings(islandLayout) }
+                    .proofingTaps(enabled = proofing != null && !pageLocked, layout = { islandLayout }) { word, at ->
+                        proofMenu = word to at
+                    }
                     .focusRequester(focusRequester)
                     .onFocusChanged { state ->
                         noteLog(
@@ -6104,7 +6249,10 @@ private data class BlockEditState(val spans: List<RichTextSpan>, val fieldValue:
 private class RichTextVisualTransformation(
     private val spans: List<RichTextSpan>,
     /** Vedi il gemello nel campo unito: serve a scoprire gli spoiler toccati dal cursore. */
-    private val caret: IntRange? = null
+    private val caret: IntRange? = null,
+    /** Vedi i gemelli nel campo unito. */
+    private val proof: ((String) -> List<IntRange>)? = null,
+    private val typingAt: Int? = null
 ) : VisualTransformation {
     override fun filter(text: AnnotatedString): TransformedText {
         // L'a-capo nascosto in testa non si deve vedere: quello che si
@@ -6155,6 +6303,7 @@ private class RichTextVisualTransformation(
                 builder.addStyle(spoilerStyle(revealed), start, pos)
             }
         }
+        proof?.let { p -> builder.markMisspellings(0, p(body), 0, effective, typingAt?.takeIf { it in 0..body.length }) }
         return TransformedText(builder.toAnnotatedString(), mapping)
     }
 }
