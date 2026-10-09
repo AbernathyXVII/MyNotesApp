@@ -27,8 +27,8 @@ import java.time.Duration
 /**
  * **Le righe ferme dopo una spunta** (08/10/2026): in una lista ordinata
  * (o filtrata) per la sua casella, spuntare una riga non la fa saltare via
- * da sotto il dito; va al suo posto un secondo dopo l'ultima spunta, o
- * uscendo dalla pagina. Vedi `DatabaseViewModel.checkboxHold`.
+ * da sotto il dito; va al suo posto un attimo dopo l'ultima spunta
+ * (`CHECKBOX_SETTLE_MS`), o uscendo dalla pagina. Vedi `DatabaseViewModel.checkboxHold`.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = Application::class)
@@ -108,19 +108,20 @@ class CheckboxHoldTest {
     }
 
     @Test
-    fun aSecondAfterTheLastTickTheRowsGoToTheirPlace() {
+    fun aMomentAfterTheLastTickTheRowsGoToTheirPlace() {
         viewModel.setSort(bought.id, descending = false)
         waitFor("l'ordine per casella") { titles() == listOf("Shampoo", "Dentifricio", "Spazzolino", "Pasta") }
 
+        val half = CHECKBOX_SETTLE_MS * 6 / 10
         tick("Shampoo", true)
-        elapse(600)
+        elapse(half)
         assertEquals(listOf("Shampoo", "Dentifricio", "Spazzolino", "Pasta"), titles())
-        // Un'altra spunta prima che passi il secondo: il conto riparte, e
+        // Un'altra spunta prima che passi l'attimo: il conto riparte, e
         // scenderanno insieme.
         tick("Dentifricio", true)
-        elapse(600)
+        elapse(half)
         assertEquals(listOf("Shampoo", "Dentifricio", "Spazzolino", "Pasta"), titles())
-        elapse(500)
+        elapse(half)
         waitFor("le prese in fondo") { titles().first() == "Spazzolino" }
         assertEquals(setOf("Shampoo", "Dentifricio", "Pasta"), titles().drop(1).toSet())
     }

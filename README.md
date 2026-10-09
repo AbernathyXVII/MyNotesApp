@@ -2070,6 +2070,28 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🔧 v0.158.3 — 09/10/2026 · 09:03 — Food: la riga spuntata scende dopo 0,2 secondi
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 495 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Un secondo è estremamente troppo. Fallo tipo di 0.2 secondi»
+
+- **[Modificato]** La riga appena spuntata (o tolta) va al suo posto **0,2
+  secondi** dopo che la sua casella si è riempita, non più un secondo dopo.
+  Spuntando più cose di fila restano ferme finché si continua, e poi
+  scendono insieme
+- **[Progetto]** `CHECKBOX_SETTLE_MS` a 200. Con un attimo così corto, un
+  salvataggio lento avrebbe fatto partire la riga prima che la casella si
+  riempisse, e lo scatto della v0.158.1 sarebbe tornato: per questo gli 0,2
+  secondi ora si contano **da quando il valore nuovo arriva dal database**
+  (`holdAfterCheckbox` aspetta di vederlo nella tabella, al più 2 secondi),
+  non dal tocco. `CheckboxHoldTest` usa la costante
+- Verificato sul telefono registrando lo schermo, su "Dentifricio" in
+  Food: la casella si riempie 0,15 s dopo il tocco, e a 0,28 s la riga è
+  già scesa fra le prese; nella colonna delle caselle nessun altro
+  movimento. Tolta la spunta, risale dopo "Shampoo". Il database del
+  telefono è tornato com'era (cambia solo l'ora di modifica della riga)
 ### 🔧 v0.158.2 — 09/10/2026 · 08:56 — Food: la riga spuntata scende al suo posto dopo un secondo
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 495 test
 passati; commit solo in locale)*

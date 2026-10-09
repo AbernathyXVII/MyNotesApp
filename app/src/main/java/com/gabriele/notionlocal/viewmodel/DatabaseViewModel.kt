@@ -64,10 +64,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -120,10 +122,12 @@ private data class SortValue(val number: Double?, val text: String) {
 data class RowSearch(val query: String, val foundInside: Set<String>)
 
 /**
- * Quanto restano ferme le righe dopo l'ultima spunta, prima di andare al loro
- * posto: vedi `DatabaseViewModel.checkboxHold`.
+ * Quanto restano ferme le righe dopo che l'ultima casella spuntata si è
+ * riempita, prima di andare al loro posto: vedi
+ * `DatabaseViewModel.checkboxHold`. Era un secondo, "estremamente troppo"
+ * per l'utente (09/10/2026).
  */
-internal const val CHECKBOX_SETTLE_MS = 1_000L
+internal const val CHECKBOX_SETTLE_MS = 200L
 
 data class DatabaseTableState(
     val columns: List<DatabaseColumnEntity> = emptyList(),
@@ -366,12 +370,16 @@ class DatabaseViewModel(
      * sembrava che scattassero caselle mai toccate, e un secondo tocco nello
      * stesso punto spuntava una riga diversa. Ora la casella si riempie
      * dov'è, e l'ordine e le righe che si vedono restano quelli del momento
-     * della spunta per [CHECKBOX_SETTLE_MS] dopo **l'ultima** spunta: poi le
-     * righe vanno al loro posto, ognuna con la sua casella (09/10/2026: la
-     * prima versione le teneva ferme finché si restava sulla pagina, e
-     * all'utente mancava vedere la presa scendere in fondo). Spuntando più
-     * righe di fila, a meno di un secondo l'una dall'altra, restano tutte
-     * ferme e scendono insieme. Anche uscendo dalla pagina
+     * della spunta finché la casella non è piena, e poi per altri
+     * [CHECKBOX_SETTLE_MS] dopo **l'ultima** spunta: allora le righe vanno al
+     * loro posto, ognuna con la sua casella (09/10/2026: la prima versione le
+     * teneva ferme finché si restava sulla pagina, e all'utente mancava
+     * vedere la presa scendere in fondo). Il tempo si conta da quando il
+     * valore nuovo è arrivato dal database, non dal tocco: con un attimo così
+     * corto un salvataggio lento farebbe partire la riga prima che la sua
+     * casella si sia riempita, e si tornerebbe allo scatto. Spuntando più
+     * righe di fila restano tutte ferme e scendono insieme. Anche uscendo
+     * dalla pagina
      * ([releaseCheckboxHold], dalla schermata) o cambiando ordine e filtro
      * vanno subito al loro posto.
      */
@@ -1844,7 +1852,7 @@ class DatabaseViewModel(
         _heldVisible.value = null
     }
 
-    private fun holdAfterCheckbox(column: DatabaseColumnEntity) {
+    private fun holdAfterCheckbox(row: DatabaseRowEntity, column: DatabaseColumnEntity, value: String) {
         val page = _page.value
         val sorted = sortRulesOf(page, rawColumns).any { it.column?.id == column.id }
         val filtered = page?.filterColumnId == column.id && !page.filterValue.isNullOrBlank()
@@ -1855,6 +1863,9 @@ class DatabaseViewModel(
         checkboxHold = true
         holdRelease?.cancel()
         holdRelease = viewModelScope.launch {
+            // Prima la casella si riempie dov'è (il valore arriva dal
+            // database), poi un attimo, poi le righe al loro posto.
+            withTimeoutOrNull(2_000) { _tableState.first { it.cellValues[row.id to column.id] == value } }
             delay(CHECKBOX_SETTLE_MS)
             holdRelease = null
             releaseCheckboxHold()
@@ -1923,7 +1934,7 @@ class DatabaseViewModel(
     }
 
     fun setCellValue(row: DatabaseRowEntity, column: DatabaseColumnEntity, value: String) {
-        if (column.type == ColumnType.CHECKBOX) holdAfterCheckbox(column)
+        if (column.type == ColumnType.CHECKBOX) holdAfterCheckbox(row, column, value)
         viewModelScope.launch {
             repository.setCellValue(row.id, column.id, value)
         }
