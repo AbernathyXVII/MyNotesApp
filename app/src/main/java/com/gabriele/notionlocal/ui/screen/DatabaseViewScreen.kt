@@ -956,7 +956,8 @@ private fun DatabaseViewBody(
 
     LaunchedEffect(pageId) { viewModel.load(pageId) }
     // Le righe ferme dopo una spunta vanno al loro posto quando la tabella
-    // lascia lo schermo: vedi `DatabaseViewModel.checkboxHold`.
+    // esce dalla composizione, cioè lasciando la pagina: vedi
+    // `DatabaseViewModel.checkboxHold`.
     DisposableEffect(viewModel) { onDispose { viewModel.releaseCheckboxHold() } }
 
     val state by viewModel.tableState.collectAsStateWithLifecycle()

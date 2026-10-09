@@ -358,7 +358,8 @@ class DatabaseViewModel(
      * sembrava che scattassero caselle mai toccate, e un secondo tocco nello
      * stesso punto spuntava una riga diversa. Ora l'ordine e le righe che si
      * vedono restano quelli del momento della spunta finché la tabella è
-     * sullo schermo; vanno al loro posto quando la si lascia
+     * composta — cioè finché si resta sulla pagina: una tabella appena fuori
+     * dallo schermo la lista la tiene pronta; vanno al loro posto uscendo
      * ([releaseCheckboxHold], dalla schermata) o quando si cambiano ordine e
      * filtro. Così si possono spuntare più righe di fila, come in una lista
      * della spesa, senza che nessuna scappi.
@@ -1816,8 +1817,9 @@ class DatabaseViewModel(
     }
 
     /**
-     * La tabella non è più sullo schermo, o cambiano ordine e filtro: le
-     * righe ferme dopo una spunta vanno al loro posto. Vedi [checkboxHold].
+     * La tabella esce dalla composizione (si lascia la pagina), o cambiano
+     * ordine e filtro: le righe ferme dopo una spunta vanno al loro posto.
+     * Vedi [checkboxHold].
      */
     fun releaseCheckboxHold() {
         if (!checkboxHold) return
