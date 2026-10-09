@@ -349,6 +349,25 @@ class DatabaseViewModel(
      */
     private val _frozenOrder = MutableStateFlow<List<String>?>(null)
 
+    /**
+     * **Le righe ferme dopo una spunta** (dal 08/10/2026, trovato
+     * dall'utente in Food, ordinato per la sua casella). Spuntando una
+     * casella su cui la vista ordina (o filtra), la riga saltava subito al
+     * suo nuovo posto: le righe in mezzo scalavano di uno, e sotto il dito
+     * arrivava un'altra riga, con la sua casella che si ridisegnava —
+     * sembrava che scattassero caselle mai toccate, e un secondo tocco nello
+     * stesso punto spuntava una riga diversa. Ora l'ordine e le righe che si
+     * vedono restano quelli del momento della spunta finché la tabella è
+     * sullo schermo; vanno al loro posto quando la si lascia
+     * ([releaseCheckboxHold], dalla schermata) o quando si cambiano ordine e
+     * filtro. Così si possono spuntare più righe di fila, come in una lista
+     * della spesa, senza che nessuna scappi.
+     */
+    private var checkboxHold = false
+
+    /** Le righe che si vedevano alla spunta: restano anche se il filtro ora le nasconderebbe. */
+    private val _heldVisible = MutableStateFlow<Set<String>?>(null)
+
     private fun keepVisibleWhileSearching(rowId: String) {
         if (_searchQuery.value.isNotBlank()) _addedWhileSearching.value = _addedWhileSearching.value + rowId
     }
@@ -520,10 +539,10 @@ class DatabaseViewModel(
                 // l'ordinamento: senza, cambiarlo non farebbe
                 // ricalcolare niente e la tabella resterebbe com'era.
                 _page,
-                combine(_searchQuery, _searchIndex, _addedWhileSearching, _frozenOrder) { query, index, added, frozen ->
-                    SearchAndOrder(query, index, added, frozen)
+                combine(_searchQuery, _searchIndex, _addedWhileSearching, _frozenOrder, _heldVisible) { query, index, added, frozen, held ->
+                    SearchAndOrder(query, index, added, frozen, held)
                 }
-            ) { (sourceColumns, rows, cells), page, (query, index, added, frozen) ->
+            ) { (sourceColumns, rows, cells), page, (query, index, added, frozen, held) ->
                 rawColumns = sourceColumns
                 lastRowOrderIndex = rows.maxOfOrNull { it.orderIndex } ?: -1
                 // In una vista collegata si vede quello che nasconde la
@@ -539,7 +558,12 @@ class DatabaseViewModel(
                 // stanno per sparire è lavoro buttato, e il risultato
                 // sarebbe lo stesso. La ricerca è un filtro in più, sopra
                 // a quello scelto nelle impostazioni.
-                val filtered = filterRows(rows, columns, cellValues, page)
+                val filtered = filterRows(rows, columns, cellValues, page).let { shown ->
+                    if (held == null) shown else {
+                        val ids = shown.mapTo(HashSet()) { it.id }
+                        rows.filter { it.id in ids || it.id in held }
+                    }
+                }
                 val (kept, search) = searchRows(filtered, columns, cellValues, query, index, added)
                 val sorted = sortRows(kept, columns, cellValues, page)
                 DatabaseTableState(
@@ -709,6 +733,7 @@ class DatabaseViewModel(
 
     /** Sceglie proprietà e valore del filtro. */
     fun setFilter(columnId: String?, value: String?) {
+        releaseCheckboxHold()
         val current = _page.value ?: return
         val updated = current.copy(filterColumnId = columnId, filterValue = value)
         _page.value = updated
@@ -743,7 +768,8 @@ class DatabaseViewModel(
         val query: String,
         val index: Map<String, String>,
         val added: Set<String>,
-        val frozen: List<String>?
+        val frozen: List<String>?,
+        val held: Set<String>?
     )
 
     private fun sortRows(
@@ -1068,6 +1094,7 @@ class DatabaseViewModel(
      * per la stessa cosa.
      */
     fun setSort(columnId: String?, descending: Boolean) {
+        releaseCheckboxHold()
         val current = _page.value ?: return
         val updated = when {
             columnId == null -> current.copy(
@@ -1094,6 +1121,7 @@ class DatabaseViewModel(
      * regola, o sulla sua stessa proprietà, non si mette.
      */
     fun setThenSort(columnId: String?, descending: Boolean) {
+        releaseCheckboxHold()
         val current = _page.value ?: return
         if (columnId != null && (current.sortColumnId == null || columnId == current.sortColumnId)) return
         val updated = current.copy(
@@ -1782,9 +1810,31 @@ class DatabaseViewModel(
         if (_frozenOrder.value == null) _frozenOrder.value = _tableState.value.rows.map { it.id }
     }
 
-    /** Finito di scrivere: le righe tornano al loro ordine. */
+    /** Finito di scrivere: le righe tornano al loro ordine (se una spunta non le tiene ferme). */
     fun endTitleEdit() {
+        if (!checkboxHold) _frozenOrder.value = null
+    }
+
+    /**
+     * La tabella non è più sullo schermo, o cambiano ordine e filtro: le
+     * righe ferme dopo una spunta vanno al loro posto. Vedi [checkboxHold].
+     */
+    fun releaseCheckboxHold() {
+        if (!checkboxHold) return
+        checkboxHold = false
         _frozenOrder.value = null
+        _heldVisible.value = null
+    }
+
+    private fun holdAfterCheckbox(column: DatabaseColumnEntity) {
+        val page = _page.value
+        val sorted = sortRulesOf(page, rawColumns).any { it.column?.id == column.id }
+        val filtered = page?.filterColumnId == column.id && !page.filterValue.isNullOrBlank()
+        if (!sorted && !filtered) return
+        val shown = _tableState.value.rows.map { it.id }
+        if (_frozenOrder.value == null) _frozenOrder.value = shown
+        if (_heldVisible.value == null) _heldVisible.value = shown.toSet()
+        checkboxHold = true
     }
 
     fun updateRowTitle(row: DatabaseRowEntity, newTitle: String) {
@@ -1849,6 +1899,7 @@ class DatabaseViewModel(
     }
 
     fun setCellValue(row: DatabaseRowEntity, column: DatabaseColumnEntity, value: String) {
+        if (column.type == ColumnType.CHECKBOX) holdAfterCheckbox(column)
         viewModelScope.launch {
             repository.setCellValue(row.id, column.id, value)
         }

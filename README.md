@@ -2070,6 +2070,54 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🔧 v0.158.1 — 09/10/2026 · 07:44 — Le caselle di Food non scattano più: la riga spuntata resta sotto il dito
+*(Claude Code sul PC; provato sul telefono l'08/10/2026 registrando lo
+schermo; 494 test passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Quando unchecko o checko una checkbox, capita un bug in cui la prima e
+> una tra le ultime fanno un piccolo scattino di attivo-disattivo
+> immediato, che non centrano nulla su quelle che sto tickando o
+> untickando»
+
+e, alla domanda su dove:
+> «Nel database Food, nel menu principale, se checko o unchecko le
+> checkbox capita che mi si scattino delle checkbox sopra o sotto. Fai pure
+> delle prove te su quel database»
+
+- **[Bug]** **Food è ordinato per la sua casella** (prima le cose da
+  prendere, poi le prese). Spuntandone una, la riga saltava **subito** fra
+  le prese: le righe in mezzo scalavano di un posto, e sotto il dito
+  arrivava un'altra riga, con la sua casella che si ridisegnava. Si vedeva
+  scattare una casella mai toccata, sopra o sotto; e toccando di nuovo lo
+  stesso punto si spuntava **un'altra riga** (successo anche durante le
+  prove: "Spazzolino" al posto di "Dentifricio")
+- **[Modificato]** Ora, spuntata (o tolta) una casella su cui la vista
+  **ordina o filtra**, le righe **restano dove sono** finché la tabella è
+  sullo schermo: si possono spuntare più cose di fila, come in una lista
+  della spesa, e sotto il dito c'è sempre la riga che si vede. Vanno al
+  loro posto quando la tabella esce dallo schermo — uscendo dalla pagina,
+  o scorrendola via — o cambiando ordine e filtro. Con un filtro sulla
+  casella ("solo da prendere") la riga appena presa resta visibile fino ad
+  allora, invece di sparire
+- **[Progetto]** `DatabaseViewModel.checkboxHold`: `setCellValue` su una
+  casella che decide l'ordine o il filtro ferma l'ordine (lo stesso
+  `_frozenOrder` di quando si scrive un nome) e le righe visibili
+  (`_heldVisible`); `releaseCheckboxHold` le libera, chiamato dalla tabella
+  quando lascia lo schermo (`DisposableEffect` in `DatabaseViewBody`) e da
+  `setSort`, `setThenSort`, `setFilter`. Test: `CheckboxHoldTest` (4: la
+  riga resta e un secondo tocco tocca lei, il filtro, niente fermo senza
+  ordine né filtro sulla casella, cambiare ordine libera le righe)
+- Provato sul telefono registrando lo schermo e misurando le caselle
+  fotogramma per fotogramma. Prima: spuntando "Dentifricio" la riga
+  scendeva e la casella del posto sotto ripartiva vuota e si riempiva; il
+  secondo tocco nello stesso punto spuntava "Spazzolino". Dopo: la casella
+  toccata si riempie e resta lì, il secondo tocco la toglie, le altre non
+  si muovono; sei tocchi di fila, tutti sulla stessa riga. Il ritardo fra
+  tocco e casella piena è quello di prima (fra 17 e 156 ms, misurati).
+  **Non ancora visto sul telefono**: le righe che tornano al loro posto
+  quando la tabella esce dallo schermo — il telefono è stato scollegato a
+  metà di quella prova
 ### 🆕 v0.158 — 08/10/2026 · 22:37 — Il correttore, come in OneNote: riga rossa sotto le parole sbagliate
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 490 test passati; database alla
 versione 55, copia del database del telefono fatta prima di installare; commit solo in locale)*

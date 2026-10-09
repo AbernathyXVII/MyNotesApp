@@ -955,6 +955,9 @@ private fun DatabaseViewBody(
     val viewModel: DatabaseViewModel = viewModel(factory = factory, key = "database-$pageId")
 
     LaunchedEffect(pageId) { viewModel.load(pageId) }
+    // Le righe ferme dopo una spunta vanno al loro posto quando la tabella
+    // lascia lo schermo: vedi `DatabaseViewModel.checkboxHold`.
+    DisposableEffect(viewModel) { onDispose { viewModel.releaseCheckboxHold() } }
 
     val state by viewModel.tableState.collectAsStateWithLifecycle()
     // **Vista collegata**: `page` è la vista (impostazioni), `dataPage` il
