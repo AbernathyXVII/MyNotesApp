@@ -57,6 +57,8 @@ import com.gabriele.notionlocal.data.repository.DatabaseRepository
 import com.gabriele.notionlocal.data.repository.PageRepository
 import com.gabriele.notionlocal.data.repository.RowPreviewLine
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -116,6 +118,12 @@ private data class SortValue(val number: Double?, val text: String) {
  * pagina — e non nel nome, che si illuminano per intero.
  */
 data class RowSearch(val query: String, val foundInside: Set<String>)
+
+/**
+ * Quanto restano ferme le righe dopo l'ultima spunta, prima di andare al loro
+ * posto: vedi `DatabaseViewModel.checkboxHold`.
+ */
+internal const val CHECKBOX_SETTLE_MS = 1_000L
 
 data class DatabaseTableState(
     val columns: List<DatabaseColumnEntity> = emptyList(),
@@ -356,15 +364,21 @@ class DatabaseViewModel(
      * suo nuovo posto: le righe in mezzo scalavano di uno, e sotto il dito
      * arrivava un'altra riga, con la sua casella che si ridisegnava —
      * sembrava che scattassero caselle mai toccate, e un secondo tocco nello
-     * stesso punto spuntava una riga diversa. Ora l'ordine e le righe che si
-     * vedono restano quelli del momento della spunta finché la tabella è
-     * composta — cioè finché si resta sulla pagina: una tabella appena fuori
-     * dallo schermo la lista la tiene pronta; vanno al loro posto uscendo
-     * ([releaseCheckboxHold], dalla schermata) o quando si cambiano ordine e
-     * filtro. Così si possono spuntare più righe di fila, come in una lista
-     * della spesa, senza che nessuna scappi.
+     * stesso punto spuntava una riga diversa. Ora la casella si riempie
+     * dov'è, e l'ordine e le righe che si vedono restano quelli del momento
+     * della spunta per [CHECKBOX_SETTLE_MS] dopo **l'ultima** spunta: poi le
+     * righe vanno al loro posto, ognuna con la sua casella (09/10/2026: la
+     * prima versione le teneva ferme finché si restava sulla pagina, e
+     * all'utente mancava vedere la presa scendere in fondo). Spuntando più
+     * righe di fila, a meno di un secondo l'una dall'altra, restano tutte
+     * ferme e scendono insieme. Anche uscendo dalla pagina
+     * ([releaseCheckboxHold], dalla schermata) o cambiando ordine e filtro
+     * vanno subito al loro posto.
      */
     private var checkboxHold = false
+
+    /** Il conto alla rovescia che rimette a posto le righe: vedi [checkboxHold]. */
+    private var holdRelease: Job? = null
 
     /** Le righe che si vedevano alla spunta: restano anche se il filtro ora le nasconderebbe. */
     private val _heldVisible = MutableStateFlow<Set<String>?>(null)
@@ -1822,6 +1836,8 @@ class DatabaseViewModel(
      * Vedi [checkboxHold].
      */
     fun releaseCheckboxHold() {
+        holdRelease?.cancel()
+        holdRelease = null
         if (!checkboxHold) return
         checkboxHold = false
         _frozenOrder.value = null
@@ -1837,6 +1853,12 @@ class DatabaseViewModel(
         if (_frozenOrder.value == null) _frozenOrder.value = shown
         if (_heldVisible.value == null) _heldVisible.value = shown.toSet()
         checkboxHold = true
+        holdRelease?.cancel()
+        holdRelease = viewModelScope.launch {
+            delay(CHECKBOX_SETTLE_MS)
+            holdRelease = null
+            releaseCheckboxHold()
+        }
     }
 
     fun updateRowTitle(row: DatabaseRowEntity, newTitle: String) {

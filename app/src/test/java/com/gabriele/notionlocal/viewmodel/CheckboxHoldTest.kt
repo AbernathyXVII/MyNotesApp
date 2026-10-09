@@ -22,12 +22,13 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import java.time.Duration
 
 /**
  * **Le righe ferme dopo una spunta** (08/10/2026): in una lista ordinata
  * (o filtrata) per la sua casella, spuntare una riga non la fa saltare via
- * da sotto il dito; va al suo posto quando la tabella lascia lo schermo.
- * Vedi `DatabaseViewModel.checkboxHold`.
+ * da sotto il dito; va al suo posto un secondo dopo l'ultima spunta, o
+ * uscendo dalla pagina. Vedi `DatabaseViewModel.checkboxHold`.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = Application::class)
@@ -77,6 +78,9 @@ class CheckboxHoldTest {
 
     private fun titles() = viewModel.tableState.value.rows.map { it.title }
 
+    /** Fa passare il tempo dell'app (non quello vero): i conti alla rovescia vanno avanti. */
+    private fun elapse(ms: Long) = shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(ms))
+
     private fun checked(name: String) =
         viewModel.tableState.value.cellValues[rows.first { it.title == name }.id to bought.id] == "true"
 
@@ -86,7 +90,7 @@ class CheckboxHoldTest {
     }
 
     @Test
-    fun aTickedRowStaysUnderTheFingerUntilTheTableLeavesTheScreen() {
+    fun aTickedRowStaysUnderTheFingerUntilReleased() {
         viewModel.setSort(bought.id, descending = false)
         waitFor("l'ordine per casella") { titles() == listOf("Shampoo", "Dentifricio", "Spazzolino", "Pasta") }
 
@@ -101,6 +105,24 @@ class CheckboxHoldTest {
         viewModel.releaseCheckboxHold()
         waitFor("le prese in fondo") { titles().take(2) == listOf("Dentifricio", "Spazzolino") }
         assertEquals(setOf("Shampoo", "Pasta"), titles().drop(2).toSet())
+    }
+
+    @Test
+    fun aSecondAfterTheLastTickTheRowsGoToTheirPlace() {
+        viewModel.setSort(bought.id, descending = false)
+        waitFor("l'ordine per casella") { titles() == listOf("Shampoo", "Dentifricio", "Spazzolino", "Pasta") }
+
+        tick("Shampoo", true)
+        elapse(600)
+        assertEquals(listOf("Shampoo", "Dentifricio", "Spazzolino", "Pasta"), titles())
+        // Un'altra spunta prima che passi il secondo: il conto riparte, e
+        // scenderanno insieme.
+        tick("Dentifricio", true)
+        elapse(600)
+        assertEquals(listOf("Shampoo", "Dentifricio", "Spazzolino", "Pasta"), titles())
+        elapse(500)
+        waitFor("le prese in fondo") { titles().first() == "Spazzolino" }
+        assertEquals(setOf("Shampoo", "Dentifricio", "Pasta"), titles().drop(1).toSet())
     }
 
     @Test

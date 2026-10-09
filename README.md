@@ -2070,6 +2070,37 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🔧 v0.158.2 — 09/10/2026 · 08:56 — Food: la riga spuntata scende al suo posto dopo un secondo
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 495 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «In Food se io prima checkavo delle checkbox, me le spostava sotto perché
+> avevo attivato il sorting delle checkbox checked in ordine ascendente.
+> Ora non lo fa più»
+
+La v0.158.1 teneva ferme le righe finché si restava sulla pagina: niente
+più caselle che scattavano, ma nemmeno la presa che scende in fondo.
+
+- **[Modificato]** **Un secondo dopo l'ultima spunta** le righe vanno al
+  loro posto: la casella si riempie dove la si è toccata, e poco dopo la
+  riga scende fra le prese (o risale, togliendo la spunta). Spuntando più
+  cose di fila, a meno di un secondo l'una dall'altra, restano tutte ferme
+  e poi scendono insieme: sotto il dito c'è sempre la riga che si vede.
+  Quando le righe si spostano ognuna porta con sé la sua casella, quindi
+  non si vede nessuna casella svuotarsi e riempirsi da sola. Uscendo dalla
+  pagina, o cambiando ordine e filtro, vanno subito al loro posto
+- **[Progetto]** `DatabaseViewModel.holdAfterCheckbox` fa partire un conto
+  alla rovescia (`CHECKBOX_SETTLE_MS`, un secondo) che ricomincia a ogni
+  spunta e alla fine chiama `releaseCheckboxHold`. Test: un caso in più in
+  `CheckboxHoldTest` (spunta, 0,6 s ancora ferma, un'altra spunta, altri
+  0,6 s ancora ferme, poi giù insieme)
+- Verificato sul telefono registrando lo schermo, su "Dentifricio" in Food:
+  toccata, la casella si riempie in 0,1 s dov'è; 1,1 s dopo il tocco i nomi
+  cambiano posto e "Dentifricio" è fra le prese, dopo "Bagnoschiuma";
+  nella colonna delle caselle nessun altro movimento. Tolta la spunta
+  laggiù, si svuota lì e 1,1 s dopo risale dopo "Shampoo". Il database del
+  telefono è tornato com'era (cambia solo l'ora di modifica della riga)
 ### 🔧 v0.158.1 — 09/10/2026 · 07:44 — Le caselle di Food non scattano più: la riga spuntata resta sotto il dito
 *(Claude Code sul PC; provato sul telefono l'08 e il 09/10/2026,
 registrando lo schermo; 494 test passati; commit solo in locale)*
