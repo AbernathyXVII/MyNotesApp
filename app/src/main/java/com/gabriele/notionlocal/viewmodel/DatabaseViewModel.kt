@@ -28,6 +28,7 @@ import com.gabriele.notionlocal.data.PageImageStore
 import com.gabriele.notionlocal.data.dao.RowCover
 import com.gabriele.notionlocal.data.entity.CalendarMode
 import com.gabriele.notionlocal.data.entity.ColumnType
+import com.gabriele.notionlocal.data.entity.canGroup
 import com.gabriele.notionlocal.data.entity.DatabaseLayout
 import com.gabriele.notionlocal.data.entity.ChartSettings
 import com.gabriele.notionlocal.data.entity.encodeChartSettings
@@ -1157,21 +1158,51 @@ class DatabaseViewModel(
 
     /**
      * La proprietà che fa da colonna nella vista a bacheca. Se non è
-     * stata scelta, o se quella scelta è sparita o non è più a selezione
-     * singola, si ripiega sulla prima adatta: meglio una bacheca
-     * ragionevole che una schermata vuota.
+     * stata scelta, o se quella scelta è sparita o non si può più usare
+     * per raggruppare, si ripiega sulla prima a selezione singola: meglio
+     * una bacheca ragionevole che una schermata vuota.
      *
-     * Solo SELECT: con la selezione multipla una riga apparterrebbe a
-     * più colonne insieme, e non è ovvio cosa dovrebbe succedere
-     * spostandola.
+     * **Dal 14/10/2026 si sceglie fra quasi tutte le proprietà**, come per
+     * la tabella ([canGroup]): prima solo SELECT, e in Food all'utente veniva
+     * offerto solo "Supermercato". Con la selezione multipla una
+     * scheda sta nella colonna di ognuno dei suoi tag; nella bacheca le
+     * schede non si trascinano, quindi non c'è da decidere cosa vorrebbe
+     * dire spostarla.
      */
     fun boardGroupColumn(): DatabaseColumnEntity? {
         val columns = _tableState.value.columns
         val chosen = _page.value?.boardGroupColumnId?.let { id ->
             columns.find { it.id == id }
         }
-        return chosen?.takeIf { it.type == ColumnType.SELECT }
+        return chosen?.takeIf { it.type.canGroup }
             ?: columns.firstOrNull { it.type == ColumnType.SELECT }
+    }
+
+    /**
+     * **Le fasce della bacheca** (dal 14/10/2026), o null se non ce ne sono:
+     * valgono solo quando la bacheca ha le sue colonne, e mai sulla stessa
+     * proprietà delle colonne.
+     */
+    fun boardSubGroupColumn(): DatabaseColumnEntity? {
+        val group = boardGroupColumn() ?: return null
+        val id = _page.value?.boardSubGroupColumnId?.takeIf { it != group.id } ?: return null
+        return _tableState.value.columns.find { it.id == id }?.takeIf { it.type.canGroup }
+    }
+
+    /** Sceglie la proprietà delle fasce della bacheca, o null per toglierle. */
+    fun setBoardSubGroupColumn(columnId: String?) {
+        val current = _page.value ?: return
+        val updated = current.copy(boardSubGroupColumnId = columnId)
+        _page.value = updated
+        viewModelScope.launch { pageRepository.updatePage(updated) }
+    }
+
+    /** Se le fasce della bacheca senza nemmeno una pagina si nascondono. */
+    fun setBoardHideEmptySubGroups(hide: Boolean) {
+        val current = _page.value ?: return
+        val updated = current.copy(boardHideEmptySubGroups = hide)
+        _page.value = updated
+        viewModelScope.launch { pageRepository.updatePage(updated) }
     }
 
     /**
@@ -1398,9 +1429,14 @@ class DatabaseViewModel(
         if (existingColumn == null) setCalendarDateColumn(column.id)
     }
 
+    /**
+     * Sceglie la proprietà delle colonne della bacheca. Se è quella delle
+     * fasce, le fasce se ne vanno: non avrebbero più niente da dividere.
+     */
     fun setBoardGroupColumn(columnId: String) {
         val current = _page.value ?: return
-        val updated = current.copy(boardGroupColumnId = columnId)
+        val sub = current.boardSubGroupColumnId?.takeIf { it != columnId }
+        val updated = current.copy(boardGroupColumnId = columnId, boardSubGroupColumnId = sub)
         _page.value = updated
         viewModelScope.launch { pageRepository.updatePage(updated) }
     }
@@ -1794,7 +1830,7 @@ class DatabaseViewModel(
             keepVisibleWhileSearching(row.id)
             repository.addRow(row)
             if (value.isNotEmpty()) {
-                repository.setCellValue(row.id, columnId, value)
+                repository.setCellValue(row.id, columnId, groupCellValue(columnId, value))
             }
             fillFilterValue(row.id, skipColumnId = columnId)
         }
@@ -1810,12 +1846,27 @@ class DatabaseViewModel(
             val row = DatabaseRowEntity(pageId = pageId, orderIndex = nextRowIndex())
             keepVisibleWhileSearching(row.id)
             repository.addRow(row)
-            if (groupValue.isNotEmpty()) repository.setCellValue(row.id, groupColumnId, groupValue)
-            if (subValue.isNotEmpty()) repository.setCellValue(row.id, subColumnId, subValue)
+            if (groupValue.isNotEmpty()) repository.setCellValue(row.id, groupColumnId, groupCellValue(groupColumnId, groupValue))
+            if (subValue.isNotEmpty()) repository.setCellValue(row.id, subColumnId, groupCellValue(subColumnId, subValue))
             // Il valore del filtro non deve coprire quello del gruppo o del sottogruppo.
             val skip = if (_page.value?.filterColumnId == subColumnId) subColumnId else groupColumnId
             fillFilterValue(row.id, skipColumnId = skip)
         }
+    }
+
+    /**
+     * Il valore da scrivere nella cella di una riga nata dentro il gruppo
+     * `key`: quasi sempre è la chiave stessa, ma i gruppi per data sono
+     * giorni (`toEpochDay`) e la cella vuole l'istante della mezzanotte.
+     * Fino al 14/10/2026 ci finiva il numero del giorno così com'era, e la
+     * riga nuova cadeva al 1° gennaio 1970, in un gruppo tutto suo.
+     */
+    private fun groupCellValue(columnId: String, key: String): String {
+        if (rawColumn(columnId)?.type != ColumnType.DATE) return key
+        val day = key.toLongOrNull() ?: return key
+        return LocalDate.ofEpochDay(day)
+            .atStartOfDay(com.gabriele.notionlocal.data.settings.AppSettings.zoneId)
+            .toInstant().toEpochMilli().toString()
     }
 
     // Uno più del massimo, non il numero di righe: dopo un'eliminazione

@@ -50,6 +50,23 @@ enum class ColumnType {
 }
 
 /**
+ * Se si può raggruppare per una proprietà di questo tipo, nella tabella e
+ * nella bacheca: quello che conta è che il valore stia in una cella e che
+ * si legga. "Creata il" e "Modificata il" non ci sono perché non sono celle
+ * ma proprietà della riga, e un gruppo per istante esatto sarebbe un gruppo
+ * per riga. Un gruppo per colore avrebbe per nome un codice ("#E03E3E"), e
+ * "Page link" e "Image" salvano un id o il nome di un file: non si leggono.
+ * Una durata ha per valore due istanti: anche lì, un gruppo per riga.
+ */
+val ColumnType.canGroup: Boolean
+    get() = this != ColumnType.CREATED_TIME &&
+        this != ColumnType.LAST_EDITED_TIME &&
+        this != ColumnType.COLOR &&
+        this != ColumnType.PAGE_LINK &&
+        this != ColumnType.IMAGE &&
+        this != ColumnType.DURATION
+
+/**
  * Una singola opzione disponibile per una colonna SELECT. Serializzata
  * come lista JSON dentro DatabaseColumnEntity.optionsJson — usare questo
  * data class (invece di costruire il JSON a mano) evita errori di

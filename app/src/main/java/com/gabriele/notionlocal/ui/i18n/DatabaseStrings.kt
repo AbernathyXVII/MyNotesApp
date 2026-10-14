@@ -736,16 +736,6 @@ object DbStrings {
         "그룹화는 값이 같은 페이지를 모으므로 기준이 될 속성이 필요합니다.",
         "グループ化は同じ値のページをまとめるため、基準となるプロパティが必要です。"
     )
-    val boardNeedsSelectSettings get() = t(
-        "A board groups rows by a Select property, and this database doesn't have one yet.",
-        "Una bacheca raggruppa le righe in base a una proprietà Selezione, e questo database non ne ha ancora una.",
-        "Ein Board gruppiert Zeilen nach einer Auswahl-Eigenschaft, und diese Datenbank hat noch keine.",
-        "Un tableau Kanban regroupe les lignes selon une propriété Sélection, et cette base de données n'en a pas encore.",
-        "Un tablero agrupa las filas según una propiedad Selección, y esta base de datos aún no tiene ninguna.",
-        "看板会按单选属性分组各行，而此数据库还没有单选属性。",
-        "보드는 선택 속성으로 행을 그룹화하는데, 이 데이터베이스에는 아직 선택 속성이 없습니다.",
-        "ボードはセレクトプロパティで行をグループ化しますが、このデータベースにはまだありません。"
-    )
     val shownInTable get() = t("Shown in table", "Visibili nella tabella", "In der Tabelle sichtbar", "Affichées dans le tableau", "Visibles en la tabla", "在表格中显示", "표에 표시됨", "テーブルに表示")
     val hideAll get() = t("Hide all", "Nascondi tutte", "Alle ausblenden", "Tout masquer", "Ocultar todas", "全部隐藏", "모두 숨기기", "すべて非表示")
     val hiddenInTable get() = t("Hidden in table", "Nascoste nella tabella", "In der Tabelle ausgeblendet", "Masquées dans le tableau", "Ocultas en la tabla", "在表格中隐藏", "표에서 숨김", "テーブルで非表示")

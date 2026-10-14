@@ -71,6 +71,8 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ColumnScope
+import com.gabriele.notionlocal.data.entity.canGroup
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.pager.HorizontalPager
@@ -1401,6 +1403,8 @@ private fun DatabaseViewBody(
                 DatabaseLayout.BOARD -> BoardLayout(
                     state = state,
                     groupColumn = viewModel.boardGroupColumn(),
+                    subGroupColumn = viewModel.boardSubGroupColumn(),
+                    hideEmptySubGroups = page?.boardHideEmptySubGroups != false,
                     colorCards = page?.colorBoardCards == true,
                     newRowTick = newRowTick,
                     onOpenRow = openRow,
@@ -1411,6 +1415,13 @@ private fun DatabaseViewBody(
                     onAddRowInGroup = { groupValue ->
                         viewModel.boardGroupColumn()?.let { column ->
                             viewModel.addRowInGroup(column.id, groupValue)
+                        }
+                    },
+                    onAddRowInSubGroup = { groupValue, subValue ->
+                        val group = viewModel.boardGroupColumn()
+                        val sub = viewModel.boardSubGroupColumn()
+                        if (group != null && sub != null) {
+                            viewModel.addRowInSubGroup(group.id, groupValue, sub.id, subValue)
                         }
                     },
                     onAddGroupProperty = {
@@ -1591,6 +1602,10 @@ private fun DatabaseViewBody(
             onSetTableSubGroupColumn = { viewModel.setTableSubGroupColumn(it) },
             hideEmptySubGroups = page?.hideEmptySubGroups != false,
             onSetHideEmptySubGroups = { viewModel.setHideEmptySubGroups(it) },
+            boardSubGroupColumn = viewModel.boardSubGroupColumn(),
+            onSetBoardSubGroupColumn = { viewModel.setBoardSubGroupColumn(it) },
+            boardHideEmptySubGroups = page?.boardHideEmptySubGroups != false,
+            onSetBoardHideEmptySubGroups = { viewModel.setBoardHideEmptySubGroups(it) },
             cellOverflow = CellOverflow.of(page?.cellOverflow ?: 0),
             onSetCellOverflow = { viewModel.setCellOverflow(it) },
             freezeFirstColumn = page?.freezeFirstColumn == true,
@@ -2880,8 +2895,9 @@ private fun GroupHeaderRow(
 }
 
 /**
- * Un gruppo di righe della tabella: il valore che lo definisce, come
- * si legge, il colore se è un tag, e le righe che ci stanno dentro.
+ * Un gruppo di righe della tabella, o una colonna (o una fascia) della
+ * bacheca: il valore che lo definisce, come si legge, il colore se è un
+ * tag, e le righe che ci stanno dentro.
  */
 private data class RowGroup(
     val key: String,
@@ -2901,16 +2917,21 @@ private data class RowGroup(
  * smistate, che sono il contenuto vero.
  *
  * Con la selezione multipla una riga compare in **tutti** i gruppi dei
- * suoi tag: è quello che ci si aspetta da un raggruppamento, ed è
- * anche il motivo per cui la bacheca invece non la sostiene — lì una
- * scheda dovrebbe stare in due colonne insieme.
+ * suoi tag: è quello che ci si aspetta da un raggruppamento. Dal 14/10/2026
+ * anche le colonne della bacheca vengono da qui, e una scheda sta nella
+ * colonna di ognuno dei suoi tag.
  */
 private fun buildRowGroups(
     state: DatabaseTableState,
     column: DatabaseColumnEntity,
     hideEmpty: Boolean,
     /** Le righe da dividere: tutte, o quelle di un gruppo per farne i sottogruppi. */
-    rows: List<DatabaseRowEntity> = state.rows
+    rows: List<DatabaseRowEntity> = state.rows,
+    /**
+     * Tiene il gruppo "senza valore" anche vuoto: nella bacheca è la colonna
+     * dove nasce una pagina creata dal pulsante in fondo.
+     */
+    keepEmptyNone: Boolean = false
 ): List<RowGroup> {
     fun valueOf(row: DatabaseRowEntity) = state.cellValues[row.id to column.id].orEmpty()
 
@@ -2993,9 +3014,12 @@ private fun buildRowGroups(
         }
     }
 
-    // Un gruppo "senza valore" vuoto non si mostra mai: non è una
-    // scelta dell'utente, è semplicemente che non c'è niente da dire.
-    return groups.filter { it.rows.isNotEmpty() || (!hideEmpty && it.key.isNotEmpty()) }
+    // Un gruppo "senza valore" vuoto non si mostra: non è una scelta
+    // dell'utente, è semplicemente che non c'è niente da dire. Tranne la
+    // colonna della bacheca, che è il posto delle pagine nuove.
+    return groups.filter {
+        it.rows.isNotEmpty() || (!hideEmpty && it.key.isNotEmpty()) || (keepEmptyNone && it.key.isEmpty())
+    }
 }
 
 /**
@@ -3007,17 +3031,32 @@ private fun buildRowGroups(
  * dedicata in fondo a destra, dopo quelle con un tag. Davanti
  * ruberebbero il primo sguardo a quelle già smistate, che sono il
  * contenuto vero della bacheca.
+ *
+ * **Le colonne vengono da [buildRowGroups]** (dal 14/10/2026), come i gruppi
+ * della tabella: si raggruppa anche per casella, data, numero o testo, e una
+ * riga con un tag cancellato ha comunque la sua colonna invece di sparire.
+ *
+ * **Con i sottogruppi** (dal 14/10/2026, chiesto dall'utente) la bacheca si
+ * divide in fasce orizzontali, come su Notion: una per valore della seconda
+ * proprietà, ognuna con tutte le colonne. I nomi delle colonne stanno una
+ * volta sola, in cima; quello della fascia resta a sinistra mentre le colonne
+ * scorrono, e toccandolo la fascia si chiude.
  */
 @Composable
-private fun BoardLayout(
+internal fun BoardLayout(
     state: DatabaseTableState,
     groupColumn: DatabaseColumnEntity?,
+    /** La proprietà delle fasce, o null per la bacheca di sempre. */
+    subGroupColumn: DatabaseColumnEntity? = null,
+    hideEmptySubGroups: Boolean = true,
     /** "Color columns": ogni colonna, con le sue schede, del colore del suo tag. */
     colorCards: Boolean = false,
     newRowTick: Int,
     onOpenRow: (DatabaseRowEntity) -> Unit,
     onRowLongPress: (DatabaseRowEntity) -> Unit,
     onAddRowInGroup: (String) -> Unit,
+    /** "New" dentro una fascia: la riga nasce col valore della colonna e quello della fascia. */
+    onAddRowInSubGroup: (String, String) -> Unit = { _, _ -> },
     onAddGroupProperty: () -> Unit
 ) {
     if (groupColumn == null) {
@@ -3032,12 +3071,22 @@ private fun BoardLayout(
         return
     }
 
-    val options = parseSelectOptionsFull(groupColumn.optionsJson)
-    val groups = options.map { it.label } + ""
-    // Il colore di ogni colonna, per "Color columns"; quella senza valore è grigia.
-    val groupColors = options.associate { it.label to it.color }
-    val pageBackground = MaterialTheme.colorScheme.background
+    // Tutte le colonne dei tag, anche vuote, e sempre quella senza valore.
+    val groups = buildRowGroups(state, groupColumn, hideEmpty = false, keepEmptyNone = true)
+    val tagged = groupColumn.type == ColumnType.SELECT || groupColumn.type == ColumnType.MULTI_SELECT
     val onPage = MaterialTheme.colorScheme.onBackground
+    // **"Color columns"** (dal 30/09/2026, sul modello di Notion che l'utente
+    // ha mostrato): la colonna intera ha un velo del colore del suo tag, le
+    // schede uno più carico col bordino, in cima c'è il tag stesso, e il
+    // numero e "New" sono del suo colore. La colonna senza valore, e quelle
+    // che non sono tag, restano grigie (il colore "Default").
+    val tints = groups.associate { group ->
+        group.key to if (colorCards) tagColor(group.color ?: TAG_COLORS.first().hex) else null
+    }
+    fun accentOf(tint: Color?) = tint?.let { lerp(it, onPage, BOARD_ACCENT_LIGHT) }
+    // Le proprietà che fanno da colonna e da fascia non si ripetono sulle
+    // schede: sono già scritte in cima.
+    val hidden = setOfNotNull(groupColumn.id, subGroupColumn?.id)
 
     val boardScroll = rememberScrollState()
 
@@ -3048,99 +3097,187 @@ private fun BoardLayout(
         if (newRowTick > 0) boardScroll.animateScrollTo(boardScroll.maxValue)
     }
 
-    Row(
-        modifier = Modifier.horizontalScroll(boardScroll),
-        verticalAlignment = Alignment.Top
-    ) {
-        groups.forEach { groupValue ->
-            val rowsInGroup = state.rows.filter {
-                (state.cellValues[it.id to groupColumn.id] ?: "") == groupValue
-            }
-
-            // **"Color columns"** (dal 30/09/2026, sul modello di Notion che
-            // l'utente ha mostrato): la colonna intera ha un velo del colore
-            // del suo tag, le schede uno più carico col bordino, in cima c'è
-            // il tag stesso, e il numero e "New" sono del suo colore. La
-            // colonna senza valore resta grigia (il colore "Default").
-            val tint = if (colorCards) tagColor(groupColors[groupValue] ?: TAG_COLORS.first().hex) else null
-            val accent = tint?.let { lerp(it, onPage, BOARD_ACCENT_LIGHT) }
-            Column(
-                modifier = Modifier
-                    .width(BOARD_COLUMN_WIDTH)
-                    .padding(horizontal = 6.dp)
-                    .then(
-                        if (tint != null) {
-                            Modifier
-                                .background(lerp(pageBackground, tint, BOARD_COLUMN_TINT), RoundedCornerShape(10.dp))
-                                .padding(start = 8.dp, end = 8.dp, bottom = 8.dp)
-                        } else {
-                            Modifier
-                        }
-                    )
-            ) {
-                Row(
-                    modifier = Modifier.padding(vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (tint != null && groupValue.isNotEmpty()) {
-                        TagChip(label = groupValue, color = groupColors[groupValue])
-                    } else {
-                        Text(
-                            text = groupValue.ifBlank { DbStrings.noValue(DbStrings.columnName(groupColumn.name)) },
-                            style = MaterialTheme.typography.labelLarge,
-                            color = if (tint != null) onPage else MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            modifier = Modifier.weight(1f, fill = false)
-                        )
-                    }
-                    Spacer(modifier = Modifier.size(8.dp))
-                    Text(
-                        text = rowsInGroup.size.toString(),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = accent ?: MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                rowsInGroup.forEach { row ->
-                    BoardCard(
-                        row = row,
+    if (subGroupColumn == null) {
+        Row(
+            modifier = Modifier.horizontalScroll(boardScroll),
+            verticalAlignment = Alignment.Top
+        ) {
+            groups.forEach { group ->
+                val tint = tints[group.key]
+                BoardColumnBox(tint) {
+                    BoardColumnHeader(group, tagged, tint, accentOf(tint))
+                    BoardColumnCards(
+                        rows = group.rows,
                         state = state,
-                        groupColumnId = groupColumn.id,
+                        hiddenColumnIds = hidden,
                         tint = tint,
-                        onOpen = { onOpenRow(row) },
-                        onLongPress = { onRowLongPress(row) }
+                        accent = accentOf(tint),
+                        onOpenRow = onOpenRow,
+                        onRowLongPress = onRowLongPress,
+                        onAdd = { onAddRowInGroup(group.key) }
                     )
-                    Spacer(modifier = Modifier.size(8.dp))
                 }
+            }
+        }
+        return
+    }
 
-                if (tint != null && accent != null) {
-                    // Come su Notion: "New" largo quanto la colonna, col
-                    // bordo e la scritta del colore del tag.
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .border(1.dp, lerp(pageBackground, tint, BOARD_BORDER_TINT), RoundedCornerShape(8.dp))
-                            .clickable { onAddRowInGroup(groupValue) }
-                            .padding(horizontal = 12.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Filled.Add, contentDescription = null, tint = accent, modifier = Modifier.size(16.dp))
-                        Spacer(modifier = Modifier.size(6.dp))
-                        Text(DbStrings.newShort, style = MaterialTheme.typography.labelMedium, color = accent)
-                    }
-                } else {
-                    TextButton(onClick = { onAddRowInGroup(groupValue) }) {
-                        Icon(
-                            Icons.Filled.Add,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.size(6.dp))
-                        Text(DbStrings.newShort, style = MaterialTheme.typography.labelMedium)
+    val subGroups = buildRowGroups(state, subGroupColumn, hideEmptySubGroups)
+    // Quali fasce sono chiuse: come per i gruppi della tabella, è come si
+    // sta guardando adesso, e riaprendo la pagina si riparte con tutto aperto.
+    val collapsed = remember(groupColumn.id, subGroupColumn.id) { mutableStateMapOf<String, Boolean>() }
+    Column(modifier = Modifier.horizontalScroll(boardScroll)) {
+        Row(verticalAlignment = Alignment.Top) {
+            groups.forEach { group ->
+                val tint = tints[group.key]
+                BoardColumnBox(tint) {
+                    BoardColumnHeader(group, tagged, tint, accentOf(tint))
+                }
+            }
+        }
+        subGroups.forEach { sub ->
+            val isCollapsed = collapsed[sub.key] == true
+            // Spostato quanto le colonne sono scorse, così il nome resta
+            // sempre sul bordo sinistro dello schermo (come la prima
+            // colonna ferma della tabella, `frozenFirstCell`).
+            Box(modifier = Modifier.offset { IntOffset(boardScroll.value, 0) }) {
+                GroupHeaderRow(
+                    group = sub,
+                    collapsed = isCollapsed,
+                    width = BOARD_COLUMN_WIDTH,
+                    indent = 6.dp,
+                    onToggle = { collapsed[sub.key] = !isCollapsed }
+                )
+            }
+            if (!isCollapsed) {
+                val inSub = sub.rows.mapTo(HashSet()) { it.id }
+                Row(verticalAlignment = Alignment.Top) {
+                    groups.forEach { group ->
+                        val tint = tints[group.key]
+                        BoardColumnBox(tint, top = if (tint != null) 8.dp else 0.dp) {
+                            BoardColumnCards(
+                                rows = group.rows.filter { it.id in inSub },
+                                state = state,
+                                hiddenColumnIds = hidden,
+                                tint = tint,
+                                accent = accentOf(tint),
+                                onOpenRow = onOpenRow,
+                                onRowLongPress = onRowLongPress,
+                                onAdd = { onAddRowInSubGroup(group.key, sub.key) }
+                            )
+                        }
                     }
                 }
             }
+            Spacer(modifier = Modifier.size(12.dp))
+        }
+    }
+}
+
+/** Il riquadro di una colonna della bacheca, col velo del suo colore se c'è. */
+@Composable
+private fun BoardColumnBox(
+    tint: Color?,
+    /** Lo spazio in cima quando non c'è l'intestazione a farlo (le colonne nelle fasce). */
+    top: Dp = 0.dp,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    val pageBackground = MaterialTheme.colorScheme.background
+    Column(
+        modifier = Modifier
+            .width(BOARD_COLUMN_WIDTH)
+            .padding(horizontal = 6.dp)
+            .then(
+                if (tint != null) {
+                    Modifier
+                        .background(lerp(pageBackground, tint, BOARD_COLUMN_TINT), RoundedCornerShape(10.dp))
+                        .padding(start = 8.dp, end = 8.dp, top = top, bottom = 8.dp)
+                } else {
+                    Modifier
+                }
+            ),
+        content = content
+    )
+}
+
+/** In cima a una colonna della bacheca: il suo valore (il tag, con "Color columns") e quante schede ha. */
+@Composable
+private fun BoardColumnHeader(group: RowGroup, tagged: Boolean, tint: Color?, accent: Color?) {
+    val onPage = MaterialTheme.colorScheme.onBackground
+    Row(
+        modifier = Modifier.padding(vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (tint != null && tagged && group.key.isNotEmpty()) {
+            TagChip(label = group.label, color = group.color)
+        } else {
+            Text(
+                text = group.label,
+                style = MaterialTheme.typography.labelLarge,
+                color = if (tint != null) onPage else MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                modifier = Modifier.weight(1f, fill = false)
+            )
+        }
+        Spacer(modifier = Modifier.size(8.dp))
+        Text(
+            text = group.rows.size.toString(),
+            style = MaterialTheme.typography.labelMedium,
+            color = accent ?: MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+/** Le schede di una colonna della bacheca (o della sua parte in una fascia) e "New" sotto. */
+@Composable
+private fun BoardColumnCards(
+    rows: List<DatabaseRowEntity>,
+    state: DatabaseTableState,
+    hiddenColumnIds: Set<String>,
+    tint: Color?,
+    accent: Color?,
+    onOpenRow: (DatabaseRowEntity) -> Unit,
+    onRowLongPress: (DatabaseRowEntity) -> Unit,
+    onAdd: () -> Unit
+) {
+    val pageBackground = MaterialTheme.colorScheme.background
+    rows.forEach { row ->
+        BoardCard(
+            row = row,
+            state = state,
+            hiddenColumnIds = hiddenColumnIds,
+            tint = tint,
+            onOpen = { onOpenRow(row) },
+            onLongPress = { onRowLongPress(row) }
+        )
+        Spacer(modifier = Modifier.size(8.dp))
+    }
+
+    if (tint != null && accent != null) {
+        // Come su Notion: "New" largo quanto la colonna, col
+        // bordo e la scritta del colore del tag.
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .border(1.dp, lerp(pageBackground, tint, BOARD_BORDER_TINT), RoundedCornerShape(8.dp))
+                .clickable { onAdd() }
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Filled.Add, contentDescription = null, tint = accent, modifier = Modifier.size(16.dp))
+            Spacer(modifier = Modifier.size(6.dp))
+            Text(DbStrings.newShort, style = MaterialTheme.typography.labelMedium, color = accent)
+        }
+    } else {
+        TextButton(onClick = onAdd) {
+            Icon(
+                Icons.Filled.Add,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(modifier = Modifier.size(6.dp))
+            Text(DbStrings.newShort, style = MaterialTheme.typography.labelMedium)
         }
     }
 }
@@ -3185,7 +3322,8 @@ private fun MissingPropertyNotice(
 private fun BoardCard(
     row: DatabaseRowEntity,
     state: DatabaseTableState,
-    groupColumnId: String,
+    /** Le proprietà che non si ripetono sulla scheda: quella delle colonne, e delle fasce. */
+    hiddenColumnIds: Set<String>,
     /** Il colore del tag della colonna, o null per la scheda di sempre. */
     tint: Color? = null,
     onOpen: () -> Unit,
@@ -3223,9 +3361,10 @@ private fun BoardCard(
         }
 
         // La proprietà che fa da colonna non si ripete sulle schede:
-        // è già scritta in cima alla colonna che le contiene.
+        // è già scritta in cima alla colonna che le contiene (e quella
+        // delle fasce in cima alla fascia).
         state.visibleColumns
-            .filter { it.id != groupColumnId }
+            .filter { it.id !in hiddenColumnIds }
             .forEach { column ->
                 val value = state.cellValues[row.id to column.id].orEmpty()
                 if (value.isNotBlank()) {
@@ -8376,8 +8515,11 @@ private enum class SettingsPage {
     GROUP_BY,
     /** Su quale proprietà raggruppa la **tabella**: `GROUP_BY` è della bacheca. */
     TABLE_GROUP,
-    /** I sottogruppi della tabella, dentro ogni gruppo (dal 29/09/2026). */
-    TABLE_SUB_GROUP,
+    /**
+     * I sottogruppi: della tabella, dentro ogni gruppo (dal 29/09/2026), o
+     * le fasce della bacheca (dal 14/10/2026). Quali, lo dice la vista.
+     */
+    SUB_GROUP,
     /** Il testo lungo nelle celle: tre puntini, colonna allargata o a capo (dal 30/09/2026). */
     CELL_OVERFLOW,
     /** Quali colonne si vedono nella tabella e quali no. */
@@ -8913,6 +9055,11 @@ private fun SettingsSheet(
     onSetTableSubGroupColumn: ((String?) -> Unit)? = null,
     hideEmptySubGroups: Boolean = true,
     onSetHideEmptySubGroups: ((Boolean) -> Unit)? = null,
+    /** Le fasce della bacheca (dal 14/10/2026): la proprietà scelta, e come cambiarla. */
+    boardSubGroupColumn: DatabaseColumnEntity? = null,
+    onSetBoardSubGroupColumn: ((String?) -> Unit)? = null,
+    boardHideEmptySubGroups: Boolean = true,
+    onSetBoardHideEmptySubGroups: ((Boolean) -> Unit)? = null,
     /** Il testo lungo nelle celle della tabella (dal 30/09/2026). */
     cellOverflow: CellOverflow = CellOverflow.TRUNCATE,
     onSetCellOverflow: ((CellOverflow) -> Unit)? = null,
@@ -8999,7 +9146,7 @@ private fun SettingsSheet(
                         SettingsPage.LAYOUT -> DbStrings.layout
                         SettingsPage.GROUP_BY -> DbStrings.groupBy
                         SettingsPage.TABLE_GROUP -> DbStrings.group
-                        SettingsPage.TABLE_SUB_GROUP -> DbStrings.subGroups
+                        SettingsPage.SUB_GROUP -> DbStrings.subGroups
                         SettingsPage.CELL_OVERFLOW -> DbStrings.longText
                         SettingsPage.PROPERTY_VISIBILITY -> DbStrings.propertyVisibility
                         SettingsPage.DATE_PROPERTY -> DbStrings.dateProperty
@@ -9074,6 +9221,27 @@ private fun SettingsSheet(
                                 value = groupColumn?.name?.let(DbStrings::columnName) ?: DbStrings.none,
                                 onClick = { page = SettingsPage.GROUP_BY }
                             )
+                            // **"Sub groups"** anche qui (dal 14/10/2026, chiesto
+                            // dall'utente): le fasce orizzontali, come su Notion.
+                            if (groupColumn != null && onSetBoardSubGroupColumn != null) {
+                                HorizontalDivider()
+                                SettingsRow(
+                                    icon = Icons.Filled.SubdirectoryArrowRight,
+                                    label = DbStrings.subGroups,
+                                    enabled = !viewLocked,
+                                    value = boardSubGroupColumn?.name?.let(DbStrings::columnName) ?: DbStrings.none,
+                                    onClick = { page = SettingsPage.SUB_GROUP }
+                                )
+                                if (boardSubGroupColumn != null && onSetBoardHideEmptySubGroups != null) {
+                                    HorizontalDivider()
+                                    SettingsToggleRow(
+                                        icon = Icons.Filled.VisibilityOff,
+                                        label = DbStrings.hideEmptySubGroups,
+                                        checked = boardHideEmptySubGroups,
+                                        onCheckedChange = onSetBoardHideEmptySubGroups
+                                    )
+                                }
+                            }
                             // **"Color columns"** (dal 30/09/2026, chiesto
                             // dall'utente): ogni colonna, con le sue schede,
                             // del colore del suo tag.
@@ -9110,7 +9278,7 @@ private fun SettingsSheet(
                                     label = DbStrings.subGroups,
                                     enabled = !viewLocked,
                                     value = tableSubGroupColumn?.name?.let(DbStrings::columnName) ?: DbStrings.none,
-                                    onClick = { page = SettingsPage.TABLE_SUB_GROUP }
+                                    onClick = { page = SettingsPage.SUB_GROUP }
                                 )
                             }
                             // L'interruttore compare solo quando i
@@ -9384,24 +9552,8 @@ private fun SettingsSheet(
                 }
 
                 SettingsPage.TABLE_GROUP -> {
-                    // Si può raggruppare per quasi tutto: quello che
-                    // conta è che il valore stia in una cella. "Creata
-                    // il" e "Modificata il" non ci sono perché non sono
-                    // celle ma proprietà della riga, e un gruppo per
-                    // istante esatto sarebbe un gruppo per riga.
-                    val groupable = columns.filter {
-                        it.type != ColumnType.CREATED_TIME &&
-                            it.type != ColumnType.LAST_EDITED_TIME &&
-                            // Un gruppo per colore avrebbe per nome un
-                            // codice ("#E03E3E"): non si legge. Lo stesso
-                            // "Page link", che salva l'id della pagina.
-                            it.type != ColumnType.COLOR &&
-                            it.type != ColumnType.PAGE_LINK &&
-                            it.type != ColumnType.IMAGE &&
-                            // Una durata ha per valore due istanti: un
-                            // gruppo per valore sarebbe un gruppo per riga.
-                            it.type != ColumnType.DURATION
-                    }
+                    // Si può raggruppare per quasi tutto: vedi `canGroup`.
+                    val groupable = columns.filter { it.type.canGroup }
                     SheetGroup {
                         SettingsRow(
                             icon = Icons.Filled.Block,
@@ -9448,33 +9600,29 @@ private fun SettingsSheet(
                     }
                 }
 
-                SettingsPage.TABLE_SUB_GROUP -> {
+                SettingsPage.SUB_GROUP -> {
                     // Le stesse proprietà del raggruppamento, tranne quella
-                    // che fa già i gruppi: dividere per lo stesso valore non
-                    // darebbe niente.
-                    val groupable = columns.filter {
-                        it.type != ColumnType.CREATED_TIME &&
-                            it.type != ColumnType.LAST_EDITED_TIME &&
-                            it.type != ColumnType.COLOR &&
-                            it.type != ColumnType.PAGE_LINK &&
-                            it.type != ColumnType.IMAGE &&
-                            it.type != ColumnType.DURATION &&
-                            it.id != tableGroupColumn?.id
-                    }
+                    // che fa già i gruppi (le colonne, nella bacheca):
+                    // dividere per lo stesso valore non darebbe niente.
+                    val board = layout == DatabaseLayout.BOARD
+                    val group = if (board) groupColumn else tableGroupColumn
+                    val chosen = if (board) boardSubGroupColumn else tableSubGroupColumn
+                    val onChoose = if (board) onSetBoardSubGroupColumn else onSetTableSubGroupColumn
+                    val groupable = columns.filter { it.type.canGroup && it.id != group?.id }
                     SheetGroup {
                         SettingsRow(
                             icon = Icons.Filled.Block,
                             label = DbStrings.none,
-                            value = if (tableSubGroupColumn == null) "✓" else null,
-                            onClick = { onSetTableSubGroupColumn?.invoke(null) }
+                            value = if (chosen == null) "✓" else null,
+                            onClick = { onChoose?.invoke(null) }
                         )
                         groupable.forEach { column ->
                             HorizontalDivider()
                             SettingsRow(
                                 icon = column.type.icon(),
                                 label = DbStrings.columnName(column.name),
-                                value = if (column.id == tableSubGroupColumn?.id) "✓" else null,
-                                onClick = { onSetTableSubGroupColumn?.invoke(column.id) }
+                                value = if (column.id == chosen?.id) "✓" else null,
+                                onClick = { onChoose?.invoke(column.id) }
                             )
                         }
                     }
@@ -9551,17 +9699,20 @@ private fun SettingsSheet(
                 }
 
                 SettingsPage.GROUP_BY -> {
-                    val selectColumns = columns.filter { it.type == ColumnType.SELECT }
-                    if (selectColumns.isEmpty()) {
+                    // Le stesse proprietà della tabella (dal 14/10/2026):
+                    // prima solo quelle a selezione singola, e in Food
+                    // l'utente si vedeva offrire solo "Supermercato".
+                    val groupable = columns.filter { it.type.canGroup }
+                    if (groupable.isEmpty()) {
                         Text(
-                            text = DbStrings.boardNeedsSelectSettings,
+                            text = DbStrings.groupingNeedsProperty,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(vertical = 12.dp)
                         )
                     } else {
                         SheetGroup {
-                            selectColumns.forEachIndexed { index, column ->
+                            groupable.forEachIndexed { index, column ->
                                 if (index > 0) HorizontalDivider()
                                 SettingsRow(
                                     icon = column.type.icon(),

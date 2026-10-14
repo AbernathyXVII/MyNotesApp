@@ -232,7 +232,9 @@ data class PageEntity(
     // una, e null vale "tabella", che è quello che stavano già usando.
     var databaseLayout: DatabaseLayout? = null,
     // Quale proprietà fa da colonna nella vista a bacheca. null = non
-    // scelta: si usa la prima proprietà a selezione singola che c'è.
+    // scelta: si usa la prima proprietà a selezione singola che c'è. Dal
+    // 14/10/2026 può essere quasi ogni proprietà, come per la tabella
+    // (vedi `ColumnType.canGroup`).
     var boardGroupColumnId: String? = null,
     // In base a quale proprietà la **tabella** raggruppa le righe.
     // null = nessun raggruppamento, cioè l'elenco piatto di sempre. È
@@ -297,6 +299,15 @@ data class PageEntity(
     // **"Color columns"** della bacheca (dal 30/09/2026), di questa vista:
     // ogni colonna, con le sue schede, del colore del suo tag.
     var colorBoardCards: Boolean = false,
+    // **I sottogruppi della bacheca** (dal 14/10/2026, chiesto dall'utente,
+    // come su Notion): fasce orizzontali, una per valore di questa seconda
+    // proprietà, ognuna con tutte le colonne della bacheca. null = niente
+    // fasce. Un campo a sé da `tableSubGroupColumnId` per lo stesso motivo
+    // di `boardGroupColumnId`: cambiando vista non si rimescola l'altra.
+    var boardSubGroupColumnId: String? = null,
+    // Se le fasce senza nemmeno una pagina si nascondono, come
+    // `hideEmptySubGroups` per la tabella.
+    var boardHideEmptySubGroups: Boolean = true,
     // Quale proprietà data colloca le righe nel calendario. null = non
     // scelta: si usa la prima proprietà di tipo data che c'è.
     var calendarDateColumnId: String? = null,

@@ -58,7 +58,7 @@ import kotlinx.serialization.json.Json
         NotebookSectionEntity::class,
         PersonalWordEntity::class
     ],
-    version = 55,
+    version = 56,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -768,7 +768,17 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
-        /** Prima colonna e prima riga ferme nella tabella (08/10/2026): spente dappertutto. */
+        /**
+         * I sottogruppi della bacheca (14/10/2026): nessuna bacheca li ha, e
+         * le fasce vuote, quando ci saranno, si nascondono come nella tabella.
+         */
+        private val MIGRATION_55_56 = object : Migration(55, 56) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE pages ADD COLUMN boardSubGroupColumnId TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE pages ADD COLUMN boardHideEmptySubGroups INTEGER NOT NULL DEFAULT 1")
+            }
+        }
+
         /**
          * Il correttore (08/10/2026): le scelte di ogni pagina — tutte a
          * "come dicono le impostazioni" — e il dizionario dell'utente,
@@ -786,6 +796,7 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** Prima colonna e prima riga ferme nella tabella (08/10/2026): spente dappertutto. */
         private val MIGRATION_53_54 = object : Migration(53, 54) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE pages ADD COLUMN freezeFirstColumn INTEGER NOT NULL DEFAULT 0")
@@ -868,7 +879,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_51_52,
                         MIGRATION_52_53,
                         MIGRATION_53_54,
-                        MIGRATION_54_55
+                        MIGRATION_54_55,
+                        MIGRATION_55_56
                     )
                     .build()
                 INSTANCE = instance

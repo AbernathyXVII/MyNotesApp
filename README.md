@@ -2070,6 +2070,59 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.159 — 14/10/2026 · 10:28 — I sottogruppi anche nella Board, e "Group by" per quasi ogni proprietà
+*(Claude Code sul PC; **non ancora provato sul telefono**: il telefono non
+era collegato; 508 test passati; database alla versione 56, da copiare dal
+telefono prima di installare; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Ho appena visto che ti manca di aggiungere il Sub Grouping anche alla
+> vista Board. Scrivi il codice per il momento poi lunedì ti ricollegherò il
+> telefono (ho quasi finito i token per questa settimana). Inoltre, nel
+> database Food, quando seleziono la vista Board, e voglio fare il Grouping,
+> mi dice solo Spermercato, ma di proprietà per fare il Grouping ce ne sono
+> anche altre. È un bug?»
+
+- **[Nuova funzionalità]** **"Sub groups" nella Board**, sotto "Group by",
+  come su Notion: la bacheca si divide in **fasce orizzontali**, una per
+  valore della seconda proprietà, e ogni fascia ha tutte le colonne della
+  bacheca con le sue schede. I nomi delle colonne stanno una volta sola, in
+  cima; il nome della fascia, col numero delle sue schede, resta sul bordo
+  sinistro mentre le colonne scorrono, e toccandolo la fascia si chiude e si
+  riapre. "New" dentro una fascia crea una scheda già col valore della
+  colonna **e** quello della fascia. Sulle schede non si ripetono né il
+  valore della colonna né quello della fascia
+- **[Nuova funzionalità]** **"Hide empty sub groups"** per le fasce della
+  Board, acceso di partenza, a sé da quello della tabella
+- **[Modificato]** **"Group by" della Board offre le stesse proprietà del
+  raggruppamento della tabella**: anche casella, data, numero, testo,
+  selezione multipla, URL, email, telefono — non più solo quelle a
+  selezione singola. Una casella fa due colonne, "Checked" e "Unchecked";
+  con la selezione multipla una scheda sta nella colonna di ognuno dei suoi
+  tag. Non ci sono colore, immagine, collegamento a pagina, durata, "Created
+  time" e "Last edited time", che non danno nomi leggibili o fanno un gruppo
+  per riga. Senza scelta resta la prima a selezione singola, come prima
+- **[Bug]** Nella Board una scheda con un tag poi cancellato dalla
+  proprietà spariva: ora ha la sua colonna, dopo quelle dei tag, come nella
+  tabella
+- **[Bug]** Nella tabella raggruppata per una data, "New page" dentro un
+  gruppo creava la riga al **1° gennaio 1970**, in un gruppo tutto suo: ora
+  nasce nel giorno del gruppo. Lo stesso vale per la Board
+- **[Progetto]** Sulla domanda: **"Checkbox" e "Order" mancavano per un
+  limite voluto**, non per un bug: la Board accettava apposta solo le
+  proprietà a selezione singola. "Tipologia prodotto" però è a selezione
+  singola (nella copia del database del 09/10) e la lista avrebbe dovuto
+  offrirla già: perché mancasse anche lei è da guardare sul telefono
+- **[Progetto]** Database alla **versione 56**: `pages.boardSubGroupColumnId`
+  e `boardHideEmptySubGroups` (`MIGRATION_55_56`), copiati anche duplicando
+  una pagina e togliendo la prima vista. `ColumnType.canGroup` dice per
+  quali proprietà si raggruppa, per tabella, sottogruppi e Board. La Board
+  prende colonne e fasce da `buildRowGroups`, lo stesso dei gruppi della
+  tabella; la pagina "Sub groups" delle impostazioni è una sola per tabella
+  e Board. Test: `BoardSubGroupTest` (ViewModel), `BoardLayoutTest` (la
+  bacheca disegnata: schede nella colonna e nella fascia giuste, fasce che
+  si chiudono, "New" coi due valori, colonne per casella), e la migrazione
+  dalla 55 in `MigrationTest` (`schema/v55.sql`)
 ### 🔧 v0.158.3 — 09/10/2026 · 09:03 — Food: la riga spuntata scende dopo 0,2 secondi
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 495 test
 passati; commit solo in locale)*
