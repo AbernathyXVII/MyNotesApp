@@ -2070,6 +2070,54 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.161 — 14/10/2026 · 11:07 — Il "+" cambia tutte le righe selezionate, non solo quella col cursore
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 511 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Se seleziono del testo, e poi premo To do list, mi fa la checkbox solo nel
+> campo di testo dove è presente il text cursor. Vorrei che me le creasse per
+> tutti i blocchi che seleziono, ovviamente dipendentemente da quello che
+> voglio: se seleziono del testo (che sia di qualsiasi tipo, di qualsiasi
+> font e di qualsiasi size font) e poi voglio trasformare tutto per esempio
+> in numbered list, tutti quei blocchi selezionati saranno in numbered list
+> (rispettando ovviamente l'ordine).
+> Una cosa aggiuntiva a proposito della numbered list: non ho più la
+> possibilità di tenere premuto come prima per modificare la lista? Prima
+> tenevo premuto e potevo dire di resettare da capo la lista da un punto
+> preciso e altre opzioni, ti ricordi?»
+
+- **[Nuova funzionalità]** **Con del testo selezionato, il "+" della barra
+  cambia tutte le righe che la selezione tocca**, nell'ordine in cui sono:
+  tre paragrafi selezionati e "Numbered list" fanno 1, 2, 3; "To-do list"
+  fa tre caselle. Vale qualunque tipo avessero (testo, elenco puntato o
+  numerato, casella) e qualunque font o corpo abbia il testo, che resta
+  com'era. Le voci sono Text, Bulleted list, Numbered list, To-do list,
+  Toggle list, Callout, Quote e Code: ogni riga diventa la sua. Notification,
+  Table e le altre restano della riga col cursore, come prima. Senza
+  selezione, o dentro una riga sola, cambia la riga col cursore. **Annulla**
+  le rimette tutte com'erano in un passo solo
+- **[Progetto]** Quali righe tocca la selezione: quelle di cui è selezionato
+  almeno un carattere, e quelle vuote che le stanno dentro; una selezione che
+  finisce proprio all'inizio di una riga non la prende (si è selezionato fino
+  all'a-capo prima). Il "+" mette da parte la selezione quando si apre, come
+  il pennello (`captureSelection`); `capturedSelectionBlocks` e
+  `updateBlockTypes` nel ViewModel, `PageRepository.setBlockTypes` cambia le
+  righe in una transazione sola (si vedono cambiare tutte insieme). Test:
+  `TurnIntoManyTest` (quali righe, numerate in ordine col testo intatto e
+  Annulla in un passo, quattro caselle)
+- **[Progetto]** Sul menu della lista numerata: **c'è ancora**, tenendo
+  premuto **sul numero** ("Begin a new list here", "Renumber as continuation
+  of previous list", "Remove number", "Change to bullet"). Provato sul
+  telefono in una pagina nuova e in "Permanent notes" (sul "3.", sul "iv."
+  rientrato, e con la tastiera aperta): si apre ogni volta. Chiesto
+  all'utente dove non gli si apriva
+- Verificato sul telefono in una pagina di prova in Main calendar (poi
+  tolta): "Uno, Due, Tre, Quattro", selezionato da "Uno" all'inizio di "Tre"
+  e scelto Numbered list → "1. Uno, 2. Due", Tre e Quattro restano testo;
+  poi "Select all" e To-do list → quattro caselle, anche le due numerate;
+  Annulla → di nuovo "1. Uno, 2. Due, Tre, Quattro". Il database del telefono
+  è identico a prima delle prove
 ### 🆕 v0.160 — 14/10/2026 · 10:51 — La cella su cui si scrive sale sopra la tastiera, con un movimento solo
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 508 test
 passati; commit solo in locale)*

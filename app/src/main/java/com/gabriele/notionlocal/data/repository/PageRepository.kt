@@ -2380,6 +2380,23 @@ class PageRepository(private val db: AppDatabase) {
         blockDao.setType(blockId, type)
 
     /**
+     * **Più righe cambiano tipo insieme** (dal 14/10/2026, il "+" su del testo
+     * selezionato): in una transazione sola, così la pagina le vede cambiare
+     * tutte nello stesso istante e non una dopo l'altra. Come per una riga
+     * sola, i figli di un toggle che smette di esserlo escono subito sotto
+     * (`unnestChildren`), e un toggle nuovo nasce aperto.
+     */
+    suspend fun setBlockTypes(blockIds: List<String>, type: BlockType) = db.withTransaction {
+        for (id in blockIds) {
+            val block = blockDao.getById(id) ?: continue
+            if (block.type == type) continue
+            if (type != BlockType.TOGGLE) unnestChildren(id)
+            blockDao.setType(id, type)
+            if (type == BlockType.TOGGLE) blockDao.setExpanded(id, true)
+        }
+    }
+
+    /**
      * **Blocca o sblocca una pagina con la password.** Un database bloccato
      * che si vede dentro una pagina ci diventa un collegamento, come con
      * "Turn into page", richiesto così dall'utente: altrimenti le sue righe

@@ -242,6 +242,10 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
             saved(blockId); repository.setBlockType(blockId, type)
         }
 
+        suspend fun setBlockTypes(blockIds: List<String>, type: BlockType) {
+            blockIds.forEach { saved(it) }; repository.setBlockTypes(blockIds, type)
+        }
+
         suspend fun setBlockExpanded(blockId: String, expanded: Boolean) {
             saved(blockId); repository.setBlockExpanded(blockId, expanded)
         }
@@ -455,6 +459,33 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
      */
     fun captureSelection() {
         capturedSelection = liveSelection
+    }
+
+    /**
+     * **Le righe toccate dalla selezione messa da parte** (dal 14/10/2026),
+     * nell'ordine della pagina: quelle di cui è selezionato almeno un
+     * carattere, e quelle vuote che stanno dentro la selezione. Una
+     * selezione che finisce proprio all'inizio di una riga non la prende:
+     * si è selezionato fino all'a-capo prima, come trascinando fino in fondo
+     * a una riga. Senza testo selezionato nessuna: vale la riga del cursore.
+     */
+    fun capturedSelectionBlocks(): List<BlockEntity> {
+        val selection = capturedSelection?.takeIf { it.start < it.end } ?: return emptyList()
+        val all = _blocks.value
+        val touched = mutableListOf<BlockEntity>()
+        var pos = 0
+        for (id in selection.blockIds) {
+            val block = all.find { it.id == id } ?: continue
+            val length = spansOf(block).plainText().length
+            val inside = if (length == 0) {
+                pos >= selection.start && pos < selection.end
+            } else {
+                selection.start < pos + length && selection.end > pos
+            }
+            if (inside) touched += block
+            pos += length + 1 // +1 per l'a-capo che separa i blocchi
+        }
+        return touched
     }
 
     /** Vero se c'è davvero del testo selezionato da colorare. */
@@ -1222,6 +1253,36 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
             if (focusable && block.type != newType) {
                 delay(IME_SETTLE_DELAY_MS)
                 _focusRequestBlockId.value = block.id
+            }
+        }
+    }
+
+    /**
+     * **"+" su più righe selezionate** (dal 14/10/2026, chiesto dall'utente):
+     * diventano tutte `newType`, ognuna per conto suo e nell'ordine in cui
+     * sono — tre paragrafi selezionati fanno tre caselle, o un elenco 1, 2, 3
+     * — qualunque font e corpo abbia il testo, che resta com'era. Annulla le
+     * rimette com'erano in un passo solo. Con una riga sola è
+     * [updateBlockType].
+     *
+     * Le righe che si selezionano insieme stanno nello stesso testo
+     * condiviso (paragrafi, elenchi, caselle), quindi nessuna è scritta su
+     * più righe come un riquadro: non c'è niente da dividere. Diventando
+     * toggle, riquadro, citazione o codice escono dal testo condiviso, e si
+     * continua a scrivere nell'ultima, come con una riga sola.
+     */
+    fun updateBlockTypes(blocks: List<BlockEntity>, newType: BlockType) {
+        if (blocks.size <= 1) {
+            blocks.firstOrNull()?.let { updateBlockType(it, newType) }
+            return
+        }
+        snapshotForStructuralChange()
+        viewModelScope.launch {
+            blocksDb.setBlockTypes(blocks.map { it.id }, newType)
+            val focusable = newType == BlockType.TOGGLE || newType in MULTILINE_TYPES
+            if (focusable) {
+                delay(IME_SETTLE_DELAY_MS)
+                _focusRequestBlockId.value = blocks.last().id
             }
         }
     }

@@ -271,6 +271,18 @@ import com.gabriele.notionlocal.viewmodel.SplitOutcome
 import com.gabriele.notionlocal.viewmodel.ViewModelFactory
 
 /**
+ * I tipi che il "+" dà a tutte le righe selezionate insieme (vedi
+ * `PageEditorViewModel.updateBlockTypes`): quelli che una riga di testo
+ * diventa da sola, senza aprire finestre e senza diventare altro.
+ */
+private val TURN_INTO_MANY = setOf(
+    BlockType.PARAGRAPH,
+    BlockType.BULLET_LIST_ITEM, BlockType.NUMBERED_LIST_ITEM,
+    BlockType.CHECKBOX, BlockType.TOGGLE,
+    BlockType.CALLOUT, BlockType.QUOTE, BlockType.CODE
+)
+
+/**
  * I tipi "di testo scorrevole" vengono uniti, quando consecutivi, in un
  * unico campo di testo condiviso (vedi MergedTextRunField) — è quello
  * che rende selezione e backspace naturali tra un blocco e l'altro,
@@ -2192,7 +2204,13 @@ private fun PageEditorContent(
                             // menu non si chiude più da solo al tocco
                             // fuori — altrimenti questo tocco lo avrebbe
                             // chiuso e riaperto nello stesso istante.
-                            BarButton(onClick = { showTypeMenu = !showTypeMenu }) {
+                            BarButton(onClick = {
+                                // Aprendo il menu la selezione si mette da
+                                // parte, come per il pennello: è lei a dire
+                                // quali righe cambiare (vedi sotto).
+                                if (!showTypeMenu) viewModel.captureSelection()
+                                showTypeMenu = !showTypeMenu
+                            }) {
                                 Icon(Icons.Filled.Add, contentDescription = EditorStrings.addOrChangeBlock, tint = NotionWhite, modifier = Modifier.size(BAR_ICON_SIZE))
                             }
                             BlockTypeMenu(
@@ -2201,9 +2219,24 @@ private fun PageEditorContent(
                                 onSelect = { entry ->
                                     showTypeMenu = false
                                     val block = focusedBlock ?: return@BlockTypeMenu
-                                    // La stessa funzione del menu "/":
-                                    // vedi `applyInsertAction`.
-                                    applyInsertAction(block, entry.action)
+                                    // **Con del testo selezionato cambiano
+                                    // tutte le righe che tocca** (dal
+                                    // 14/10/2026, chiesto dall'utente): prima
+                                    // solo quella col cursore. Vale per i tipi
+                                    // che una riga di testo diventa da sola;
+                                    // la notifica (che apre la sua finestra),
+                                    // la tabella e il resto restano della riga
+                                    // col cursore.
+                                    val action = entry.action
+                                    val selected = viewModel.capturedSelectionBlocks()
+                                    if (action is SlashAction.Type && action.type in TURN_INTO_MANY && selected.isNotEmpty()) {
+                                        if (action.type == BlockType.TOGGLE || action.type in MULTILINE_TYPES) focusPark.requestFocus()
+                                        viewModel.updateBlockTypes(selected, action.type)
+                                    } else {
+                                        // La stessa funzione del menu "/":
+                                        // vedi `applyInsertAction`.
+                                        applyInsertAction(block, action)
+                                    }
                                 }
                             )
                         }
