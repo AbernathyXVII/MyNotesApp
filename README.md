@@ -2070,6 +2070,60 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.160 — 14/10/2026 · 10:51 — La cella su cui si scrive sale sopra la tastiera, con un movimento solo
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 508 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola (con due foto di Food a pagina intera, la
+tastiera dei numeri aperta sulle celle "Order" vuote in fondo):
+> «Come vedi nella prima immagine, mi sono rimase le voci Carta forno,
+> Pellicola trasparente e Capsule lavastoviglie vuote per metterci dentro un
+> numero, che è l'ordine di importanza per il Sorting. Ma quando seleziono
+> quelle voci, esse rimangono dietro la tastiera e non ho la possibilità di
+> vedere cosa scrivo. Saresti in grado di fare una funzione intelligente che
+> capisca quando la tastiera nasconde un campo di testo o una cella di un
+> database in modo da alzare tutto quanto? L'effetto di spostamento deve
+> essere fluido, non di scatto»
+
+- **[Nuova funzionalità]** **La cella su cui si scrive resta sempre sopra
+  la tastiera**, intera, col suo bordo e un po' di spazio: mentre la
+  tastiera sale, la tabella sale con lei, in un movimento solo che
+  accelera e rallenta e finisce insieme alla tastiera. Vale per ogni campo
+  di un database: le celle, i nomi delle righe, il titolo, nella tabella a
+  pagina intera, nel database dentro una pagina e nelle proprietà di una
+  riga aperta come pagina. Chiudendo la tastiera tutto torna giù al suo
+  posto
+- **[Bug]** **A pagina intera la tastiera passava sopra le righe**: la
+  parte che scorre restava alta come lo schermo, e le celle in fondo si
+  scrivevano alla cieca (le foto dell'utente). Ora si accorcia insieme alla
+  tastiera
+- **[Bug]** **Dentro una pagina la cella restava mezza coperta**: la pagina
+  saliva, ma solo fino a far vedere il testo, e il bordo della cella
+  restava dietro la tastiera
+- **[Progetto]** `keepFocusedAboveKeyboard` (`KeepAboveKeyboard.kt`), messo
+  dentro quello che scorre. Il riquadro che scorre si accorcia con la
+  tastiera (`imePadding` a pagina intera, come già l'editor delle pagine), e
+  Compose insegue da sé il campo col fuoco; in più, a ogni fotogramma della
+  salita, si chiede di vedere il campo con 24 dp sopra e sotto, e Compose
+  unisce la richiesta all'animazione già in corso. La tastiera si legge
+  fuori dal disegno (`snapshotFlow`), per non ridisegnare tutto il database
+  a ogni fotogramma. Il margine non supera il contenuto che c'è sotto e
+  sopra il campo (chiedere di scorrere oltre la fine fa interrompere a
+  Compose l'animazione); i campi più alti di un terzo dello schermo si
+  lasciano stare. La richiesta riparte anche quando il fuoco passa a
+  un'altra cella con la tastiera aperta (questo non provato sul telefono).
+  Una prima versione chiedeva il margine solo a tastiera ferma: si vedevano
+  due movimenti, con due fotogrammi di pausa in mezzo
+- Verificato sul telefono registrando lo schermo a 120 Hz e misurando di
+  quanto si sposta la tabella a ogni fotogramma. **A pagina intera**, Food,
+  cella "Order" di "Capsule lavastoviglie" (l'ultima): la tastiera sale in
+  0,23 s e la tabella con lei, 4 → 12 → 16 → 24 → 28 px per fotogramma, poi
+  giù fino a 4 e 0, senza salti né pause; alla fine la riga è tutta sopra la
+  tastiera, col bordo e lo spazio. Prima la tastiera la copriva del tutto.
+  **Nella pagina** (My Personal Workspace, cella di "Fette di pane"): stesso
+  movimento unico, e la cella intera in vista invece che tagliata a metà.
+  Chiudendo la tastiera la tabella torna giù. Nessun valore scritto: il
+  database del telefono è identico a prima delle prove
 ### 🆕 v0.159 — 14/10/2026 · 10:28 — I sottogruppi anche nella Board, e "Group by" per quasi ogni proprietà
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 508 test
 passati; database alla versione 56, copia del database del telefono fatta

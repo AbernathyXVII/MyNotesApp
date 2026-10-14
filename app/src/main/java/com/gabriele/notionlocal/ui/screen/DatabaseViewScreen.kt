@@ -68,6 +68,8 @@ import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Box
@@ -617,6 +619,16 @@ fun DatabaseViewScreen(
             onOpenSource = onOpenDatabase,
             modifier = Modifier
                 .padding(padding)
+                // **Le righe si fanno da parte per la tastiera** (dal
+                // 14/10/2026): prima la tastiera ci passava sopra, e le
+                // celle in fondo si scrivevano alla cieca. Così il
+                // riquadro che scorre si accorcia insieme a lei, un
+                // fotogramma alla volta, e la cella su cui si scrive la
+                // segue (vedi `keepFocusedAboveKeyboard`). Lo spazio della
+                // barra di navigazione, già dato dallo Scaffold, non si
+                // somma a quello della tastiera.
+                .consumeWindowInsets(padding)
+                .imePadding()
                 .onFocusChanged { anythingFocused = it.hasFocus }
         )
         }
@@ -1112,7 +1124,10 @@ private fun DatabaseViewBody(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .then(if (embedded) Modifier else Modifier.fillMaxSize())
+            // Dentro una pagina scorre la pagina: è lei che deve tenere la
+            // cella sopra la tastiera, titolo compreso. A schermo intero lo
+            // fa il riquadro delle righe, più sotto.
+            .then(if (embedded) Modifier.keepFocusedAboveKeyboard() else Modifier.fillMaxSize())
     ) {
         // Il titolo si può nascondere, ma **solo dentro una pagina**:
         // lì la pagina ha già un suo titolo e un database che si
@@ -1314,6 +1329,7 @@ private fun DatabaseViewBody(
                 Modifier
                     .weight(1f)
                     .verticalScroll(bodyScroll)
+                    .keepFocusedAboveKeyboard()
                     .stickyViewport(ownViewport)
             }
         ) {
@@ -8870,6 +8886,9 @@ internal fun RowPageProperties(
         Column(
             modifier = modifier
                 .fillMaxWidth()
+                // Le proprietà stanno nella pagina che scorre: anche qui la
+                // cella su cui si scrive resta sopra la tastiera.
+                .keepFocusedAboveKeyboard()
                 .padding(horizontal = 20.dp)
         ) {
             Column(
