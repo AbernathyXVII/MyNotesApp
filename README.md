@@ -2110,8 +2110,8 @@ L'utente, parola per parola:
   premuto **sul numero** ("Begin a new list here", "Renumber as continuation
   of previous list", "Remove number", "Change to bullet"). Provato sul
   telefono in una pagina nuova e in "Permanent notes" (sul "3.", sul "iv."
-  rientrato, e con la tastiera aperta): si apre ogni volta. Chiesto
-  all'utente dove non gli si apriva
+  rientrato, e con la tastiera aperta): si apre ogni volta. Riprovato,
+  l'utente: «Ora funziona»
 - Verificato sul telefono in una pagina di prova in Main calendar (poi
   tolta): "Uno, Due, Tre, Quattro", selezionato da "Uno" all'inizio di "Tre"
   e scelto Numbered list → "1. Uno, 2. Due", Tre e Quattro restano testo;
