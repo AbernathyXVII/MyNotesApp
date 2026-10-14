@@ -2070,6 +2070,39 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.162 — 14/10/2026 · 11:22 — "Move up" e "Move down" anche per database e pagine
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 512 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Dammi la possibilità di spostare qualsiasi tipologia di campo di testo in
+> cui il text cursor si trova, compresi database e pagine. A destra
+> dell'icona dei sei puntini, mettimi 'Move up', 'Move down'. Ovviamente
+> queste due opzioni mi consentono di spostare tutto, anche testo semplice,
+> checkbox, numbered o bulleted list, eccetera»
+
+e, ricordato che per le righe di testo le frecce ↑ ↓ della barra sopra la
+tastiera ci sono già:
+> «Non mi ricordavo che già ci fossero. Perdonami. Fallo nel menu dei sei
+> puntini per i database e sopra Add above per le pagine quando ci tengo
+> premuto»
+
+- **[Nuova funzionalità]** **"Move up" e "Move down"** in cima al menu che
+  si apre dai sei puntini di un database dentro una pagina e tenendo
+  premuto il collegamento a una pagina, sopra "Add above": il blocco
+  scambia il posto con quello sopra o sotto, come fanno le frecce della
+  barra per le righe di testo. In cima "Move up" è grigio, in fondo "Move
+  down". Il menu si chiude, e la pagina porta in vista il blocco spostato
+- **[Progetto]** `MoveGroup` in `BlockActionsSheet.kt`, nel menu di pagine e
+  database (`PageBlockMenu`); usa `PageEditorViewModel.moveBlockUp` e
+  `moveBlockDown`, gli stessi delle frecce. Test: in `MoveBlockTest` il
+  database che sale in cima e riscende fino in fondo
+- Verificato sul telefono, in una pagina di prova in Main calendar (poi
+  tolta, con le pagine che conteneva): "Sopra", un database, "Sotto". Dai sei
+  puntini del database "Move up" → il database sopra "Sopra", e riaprendo il
+  menu "Move up" è grigio; due volte "Move down" → in fondo, e "Move down"
+  grigio. Una sottopagina tenuta premuta → "Move up" → sale sopra "Sotto".
+  Il database del telefono è identico a prima delle prove
 ### 🆕 v0.161 — 14/10/2026 · 11:07 — Il "+" cambia tutte le righe selezionate, non solo quella col cursore
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 511 test
 passati; commit solo in locale)*

@@ -129,6 +129,24 @@ class MoveBlockTest {
     }
 
     @Test
+    fun theDatabaseItselfMovesUpAndDown() {
+        // "Move up" e "Move down" del menu dei sei puntini (14/10/2026): il
+        // database non ha cursore, si sposta lui.
+        val sopra = line("Sopra", 0)
+        val table = BlockEntity(pageId = page.id, type = BlockType.DATABASE_LINK, linkedPageId = database.id, orderIndex = 1)
+        val sotto = line("Sotto", 2)
+        open(sopra, table, sotto)
+        viewModel.moveBlockUp(shown(table.id))
+        waitFor("il database in cima") { saved().map { it.id } == listOf(table.id, sopra.id, sotto.id) }
+        waitFor("la lista mostrata") { viewModel.blocks.value.map { it.id } == listOf(table.id, sopra.id, sotto.id) }
+        viewModel.moveBlockDown(shown(table.id))
+        waitFor("di nuovo in mezzo") { saved().map { it.id } == listOf(sopra.id, table.id, sotto.id) }
+        waitFor("la lista mostrata") { viewModel.blocks.value.map { it.id } == listOf(sopra.id, table.id, sotto.id) }
+        viewModel.moveBlockDown(shown(table.id))
+        waitFor("il database in fondo") { saved().map { it.id } == listOf(sopra.id, sotto.id, table.id) }
+    }
+
+    @Test
     fun downAndBackUpIsWhereItWas() {
         val uno = line("Uno", 0)
         val due = line("Due", 1)

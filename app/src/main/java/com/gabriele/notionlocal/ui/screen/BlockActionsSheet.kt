@@ -16,6 +16,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Autorenew
 import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.Check
@@ -126,6 +128,9 @@ import kotlinx.coroutines.flow.map
  *
  * In cima a tutti, "Add above" e "Add below" (dal 29/09/2026, chiesto
  * dall'utente): una riga vuota sopra o sotto il blocco, col cursore dentro.
+ * Per le pagine e i database, sopra ancora, "Move up" e "Move down" (dal
+ * 14/10/2026, chiesto dall'utente): sono i blocchi in cui il cursore non
+ * entra, e quindi senza le frecce della barra sopra la tastiera.
  *
  * Una voce che per quel blocco non è ancora costruita si vede **grigia**
  * (Turn into per pagine e database, Color per i database), come nei menu
@@ -345,10 +350,30 @@ internal fun BlockActionsHost(
                         }
                     )
                 } else {
+                    // Il suo posto fra i fratelli, per spegnere "Move up" in
+                    // cima e "Move down" in fondo: lo stesso conto delle frecce.
+                    val siblings = blocks.filter { it.parentBlockId == block.parentBlockId }
+                    val position = siblings.indexOfFirst { it.id == block.id }
                     PageBlockMenu(
                         block = block,
                         page = page,
                         data = dataPage ?: page,
+                        onMoveUp = if (position > 0) {
+                            {
+                                onDismiss()
+                                viewModel.moveBlockUp(block)
+                            }
+                        } else {
+                            null
+                        },
+                        onMoveDown = if (position >= 0 && position < siblings.lastIndex) {
+                            {
+                                onDismiss()
+                                viewModel.moveBlockDown(block)
+                            }
+                        } else {
+                            null
+                        },
                         onAddLine = { below ->
                             onDismiss()
                             viewModel.addLineNextTo(block, below)
@@ -719,6 +744,32 @@ private fun CurrentMark() {
     )
 }
 
+/**
+ * **"Move up" e "Move down"** (dal 14/10/2026, chiesto dall'utente): il blocco
+ * scambia il posto con quello sopra o sotto, come con le frecce della barra
+ * sopra la tastiera (`PageEditorViewModel.moveBlockUp`), e la pagina lo porta
+ * in vista. Null = già il primo (o l'ultimo): la voce si vede grigia.
+ */
+@Composable
+private fun MoveGroup(onMoveUp: (() -> Unit)?, onMoveDown: (() -> Unit)?) {
+    OptionsGroup {
+        OptionRow(
+            icon = Icons.Filled.ArrowUpward,
+            label = EditorStrings.moveUp,
+            enabled = onMoveUp != null,
+            onClick = { onMoveUp?.invoke() }
+        )
+        HorizontalDivider()
+        OptionRow(
+            icon = Icons.Filled.ArrowDownward,
+            label = EditorStrings.moveDown,
+            enabled = onMoveDown != null,
+            onClick = { onMoveDown?.invoke() }
+        )
+    }
+    Spacer(modifier = Modifier.size(12.dp))
+}
+
 /** "Add above" e "Add below": una riga vuota sopra (false) o sotto (true) il blocco. */
 @Composable
 private fun AddLineGroup(onAddLine: (Boolean) -> Unit) {
@@ -806,6 +857,9 @@ private fun PageBlockMenu(
     page: PageEntity,
     /** Chi ha i dati: il database di origine per una vista collegata, altrimenti `page`. */
     data: PageEntity,
+    /** "Move up" e "Move down": null quando il blocco è già il primo o l'ultimo. */
+    onMoveUp: (() -> Unit)?,
+    onMoveDown: (() -> Unit)?,
     onAddLine: (Boolean) -> Unit,
     onTurnIntoPage: () -> Unit,
     onTurnIntoDatabase: () -> Unit,
@@ -826,6 +880,7 @@ private fun PageBlockMenu(
     // Una vista collegata si presenta come "↗ Nome del database", come nel
     // suo titolo dentro la pagina.
     MenuTitle((if (linked) "↗ " else "") + data.title.ifBlank { Strings.untitled })
+    MoveGroup(onMoveUp, onMoveDown)
     AddLineGroup(onAddLine)
 
     if (page.isDatabase) {
