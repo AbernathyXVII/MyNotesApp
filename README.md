@@ -2071,9 +2071,9 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 gg/mm/aaaa)" accanto al titolo.
 
 ### 🆕 v0.159 — 14/10/2026 · 10:28 — I sottogruppi anche nella Board, e "Group by" per quasi ogni proprietà
-*(Claude Code sul PC; **non ancora provato sul telefono**: il telefono non
-era collegato; 508 test passati; database alla versione 56, da copiare dal
-telefono prima di installare; commit solo in locale)*
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 508 test
+passati; database alla versione 56, copia del database del telefono fatta
+prima di installare; commit solo in locale)*
 
 L'utente, parola per parola:
 > «Ho appena visto che ti manca di aggiungere il Sub Grouping anche alla
@@ -2108,11 +2108,11 @@ L'utente, parola per parola:
 - **[Bug]** Nella tabella raggruppata per una data, "New page" dentro un
   gruppo creava la riga al **1° gennaio 1970**, in un gruppo tutto suo: ora
   nasce nel giorno del gruppo. Lo stesso vale per la Board
-- **[Progetto]** Sulla domanda: **"Checkbox" e "Order" mancavano per un
-  limite voluto**, non per un bug: la Board accettava apposta solo le
-  proprietà a selezione singola. "Tipologia prodotto" però è a selezione
-  singola (nella copia del database del 09/10) e la lista avrebbe dovuto
-  offrirla già: perché mancasse anche lei è da guardare sul telefono
+- **[Progetto]** Sulla domanda: **non era un bug ma un limite voluto**. La
+  Board accettava apposta solo le proprietà a selezione singola, e in Food
+  dopo il 09/10 "Tipologia prodotto" è diventata a selezione multipla: con
+  "Order" (numero) e "Checkbox" restava fuori, e rimaneva solo
+  "Supermercato"
 - **[Progetto]** Database alla **versione 56**: `pages.boardSubGroupColumnId`
   e `boardHideEmptySubGroups` (`MIGRATION_55_56`), copiati anche duplicando
   una pagina e togliendo la prima vista. `ColumnType.canGroup` dice per
@@ -2123,6 +2123,16 @@ L'utente, parola per parola:
   bacheca disegnata: schede nella colonna e nella fascia giuste, fasce che
   si chiudono, "New" coi due valori, colonne per casella), e la migrazione
   dalla 55 in `MigrationTest` (`schema/v55.sql`)
+- Verificato sul telefono, nella vista Board di Food: "Group by" offre
+  Supermercato, Tipologia prodotto, Order e Checkbox; "Sub groups" le stesse
+  tranne Supermercato. Con le fasce per "Tipologia prodotto" si vedono
+  Bagno (13), Cucina (4), Bevande (1), Colazione (6)…, ognuna con ALDI,
+  IPERPOLI e "No Supermercato"; scorrendo a destra il nome della fascia
+  resta a sinistra; toccandolo "Bagno" si chiude. "New" in Cucina sotto ALDI
+  ha creato una riga con ALDI e Cucina (poi tolta). Raggruppata per
+  Checkbox: "Checked" 44 e "Unchecked" 0. Rimesse le impostazioni di prima
+  e la vista Table: il database del telefono è com'era (cambia solo l'ora di
+  modifica della vista Board)
 ### 🔧 v0.158.3 — 09/10/2026 · 09:03 — Food: la riga spuntata scende dopo 0,2 secondi
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 495 test
 passati; commit solo in locale)*
