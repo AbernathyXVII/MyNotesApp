@@ -1880,9 +1880,13 @@ class PageRepository(private val db: AppDatabase) {
                     textJson = carriedTextJson ?: "[]"
                 )
             )
-            if (carriedTextJson != null) {
-                blockDao.setText(current.id, json.encodeToString(listOf(RichTextSpan(text = ""))))
-            }
+            // **Il divisore resta senza testo**, sempre (dal 14/10/2026): un
+            // divisore non lo mostra, e quello che gli restava addosso
+            // finiva nella ricerca e nel conteggio delle parole. Fatto con
+            // "---", sul telefono il divisore si teneva i suoi tre trattini,
+            // anche se il campo li aveva già tolti: un salvataggio del testo
+            // arrivato prima di questo cambio di tipo.
+            blockDao.setText(current.id, json.encodeToString(listOf(RichTextSpan(text = ""))))
         }
 
     /**

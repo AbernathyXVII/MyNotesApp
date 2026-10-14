@@ -2672,6 +2672,16 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
     }
 
     /**
+     * **"---" in una riga di testo** (dal 14/10/2026, chiesto dall'utente, come
+     * su Notion): la riga del testo condiviso che deve diventare un divisore,
+     * o null se non è un paragrafo — su un elenco o una casella i trattini
+     * restano scritti, come "5.". A trasformarla ci pensa poi la stessa voce
+     * "Divider" del menu "/".
+     */
+    fun dividerShortcutBlock(runBlockIds: List<String>, lineIndex: Int): BlockEntity? =
+        resolveRun(runBlockIds)?.getOrNull(lineIndex)?.takeIf { it.type == BlockType.PARAGRAPH }
+
+    /**
      * Lo stesso "5." per una riga che ha un campo suo: le righe dentro un
      * toggle. Fino al 25/09/2026 lì non scattava — la regola c'era solo
      * nel testo condiviso — e l'utente ha trovato che dentro un toggle

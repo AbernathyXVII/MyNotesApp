@@ -896,6 +896,36 @@ private fun numberedListPrefixJustTyped(oldBody: String, newBody: String, caret:
     )
 }
 
+/** La riga in cui si è appena scritto "---" (vedi `dividerShortcutJustTyped`). */
+internal data class DividerShortcut(val lineIndex: Int, val lineStart: Int)
+
+/**
+ * Le righe che, scritte da sole, diventano un divisore (dal 14/10/2026,
+ * chiesto dall'utente, come su Notion): tre trattini attaccati. Anche con
+ * la lineetta lunga o media al posto dei primi due, che certe tastiere
+ * mettono da sole scrivendo "--".
+ */
+private val DIVIDER_SHORTCUTS = setOf("---", "—-", "–-")
+
+/**
+ * Riconosce "ho appena scritto il terzo trattino di una riga che contiene
+ * solo `---`". Come per "5." (`numberedListPrefixJustTyped`): il
+ * cambiamento è un solo trattino in più, il cursore è subito dopo, in fondo
+ * alla riga, e nella riga non c'è nient'altro. Una riga che ha già "---"
+ * scritto, o "---" in mezzo ad altro testo, resta com'è.
+ */
+internal fun dividerShortcutJustTyped(oldBody: String, newBody: String, caret: Int): DividerShortcut? {
+    if (newBody.length != oldBody.length + 1) return null
+    if (caret < 1 || caret > newBody.length) return null
+    if (newBody[caret - 1] != '-') return null
+    if (newBody.removeRange(caret - 1, caret) != oldBody) return null
+    val lineStart = newBody.lastIndexOf('\n', caret - 1) + 1
+    val lineEnd = newBody.indexOf('\n', caret).let { if (it < 0) newBody.length else it }
+    if (caret != lineEnd) return null
+    if (newBody.substring(lineStart, lineEnd) !in DIVIDER_SHORTCUTS) return null
+    return DividerShortcut(lineIndex = newBody.take(lineStart).count { it == '\n' }, lineStart = lineStart)
+}
+
 /**
  * Dove stanno le due coppie di barre appena chiuse, nel testo che le
  * contiene ancora: `open` è la prima delle quattro, `contentStart` e
@@ -4915,6 +4945,15 @@ private fun MergedTextRunField(
                             listPrefix.startNumber
                         )
 
+                    // **"---" da solo in una riga di testo fa un divisore**
+                    // (dal 14/10/2026, chiesto dall'utente, come su Notion).
+                    val dividerLine = if (spoiler == null && !listStarted) {
+                        dividerShortcutJustTyped(oldBody, newBody, caret)
+                    } else {
+                        null
+                    }
+                    val dividerBlock = dividerLine?.let { viewModel.dividerShortcutBlock(runBlocks.map { b -> b.id }, it.lineIndex) }
+
                     // Backspace a inizio di una riga successiva: lì il testo
                     // cambia davvero (sparisce l'a-capo sopra). Se la riga ha
                     // ancora un marcatore o un rientro da perdere, la fusione
@@ -4938,6 +4977,23 @@ private fun MergedTextRunField(
                         val strippedText = RUN_LEAD + strippedBody
                         fieldValue = TextFieldValue(strippedText, TextRange(listPrefix.lineStart + 1))
                         pendingText = strippedText
+                    } else if (dividerBlock != null && dividerLine != null) {
+                        // I trattini spariscono — erano un comando, non roba
+                        // scritta — e la riga, rimasta vuota, diventa il
+                        // divisore col cursore sulla riga nuova sotto: lo
+                        // stesso giro di "Divider" dal menu "/"
+                        // (`applySlashEntry`), testo prima e tipo dopo.
+                        val strippedBody = newBody.removeRange(dividerLine.lineStart, caret)
+                        val strippedText = RUN_LEAD + strippedBody
+                        fieldValue = TextFieldValue(strippedText, TextRange(RUN_LEAD.length + dividerLine.lineStart))
+                        pendingText = strippedText
+                        viewModel.updateRun(
+                            runBlocks.map { it.id },
+                            strippedBody.split('\n'),
+                            oldBody.split('\n'),
+                            dividerLine.lineIndex
+                        )
+                        onSlashAction(dividerBlock, SlashAction.Divider)
                     } else if (stepUndone) {
                         val oldLines = oldBody.split('\n')
                         var caretAtLineStart = 1
@@ -6020,6 +6076,25 @@ private fun BlockRow(
                                 listOf(RichTextSpan(text = stripped)),
                                 TextFieldValue(RUN_LEAD + stripped, TextRange(RUN_LEAD.length + listPrefix.lineStart))
                             )
+                            return@BasicTextField
+                        }
+                        // E "---" da solo, come nel testo condiviso: la riga
+                        // diventa un divisore, col cursore sulla riga nuova
+                        // sotto. Il campo sta per sparire col cursore dentro:
+                        // prima il fuoco va sul campo invisibile, come per
+                        // "Divider" dal menu "/".
+                        val divider = if (block.type == BlockType.PARAGRAPH && newText in DIVIDER_SHORTCUTS) {
+                            dividerShortcutJustTyped(oldText, newText, caretInBody)
+                        } else {
+                            null
+                        }
+                        if (divider != null) {
+                            editState = BlockEditState(
+                                listOf(RichTextSpan(text = "")),
+                                TextFieldValue(RUN_LEAD, TextRange(RUN_LEAD.length))
+                            )
+                            focusPark?.requestFocus()
+                            viewModel.convertToDividerAndFocusNext(block)
                             return@BasicTextField
                         }
                         // Stessa scorciatoia del testo condiviso: `||x||`

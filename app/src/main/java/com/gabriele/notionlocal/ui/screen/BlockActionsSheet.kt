@@ -128,9 +128,11 @@ import kotlinx.coroutines.flow.map
  *
  * In cima a tutti, "Add above" e "Add below" (dal 29/09/2026, chiesto
  * dall'utente): una riga vuota sopra o sotto il blocco, col cursore dentro.
- * Per le pagine e i database, sopra ancora, "Move up" e "Move down" (dal
- * 14/10/2026, chiesto dall'utente): sono i blocchi in cui il cursore non
- * entra, e quindi senza le frecce della barra sopra la tastiera.
+ * Sopra ancora, "Move up" e "Move down" (dal 14/10/2026, chiesto
+ * dall'utente) per i blocchi in cui il cursore non entra, e che quindi non
+ * hanno le frecce della barra sopra la tastiera: pagine e database, poi
+ * (lo stesso giorno) immagini, video, audio, file, segnalibri, "Link to
+ * page" e divisori.
  *
  * Una voce che per quel blocco non è ancora costruita si vede **grigia**
  * (Turn into per pagine e database, Color per i database), come nei menu
@@ -212,6 +214,26 @@ internal fun BlockActionsHost(
                     .padding(horizontal = 16.dp)
                     .navigationBarsPadding()
             ) {
+                // Il suo posto fra i fratelli, per spegnere "Move up" in
+                // cima e "Move down" in fondo: lo stesso conto delle frecce.
+                val siblings = blocks.filter { it.parentBlockId == block.parentBlockId }
+                val position = siblings.indexOfFirst { it.id == block.id }
+                val onMoveUp: (() -> Unit)? = if (position > 0) {
+                    {
+                        onDismiss()
+                        viewModel.moveBlockUp(block)
+                    }
+                } else {
+                    null
+                }
+                val onMoveDown: (() -> Unit)? = if (position >= 0 && position < siblings.lastIndex) {
+                    {
+                        onDismiss()
+                        viewModel.moveBlockDown(block)
+                    }
+                } else {
+                    null
+                }
                 if (step == BlockMenuStep.TURN_INTO) {
                     TurnIntoList(
                         block = block,
@@ -227,6 +249,8 @@ internal fun BlockActionsHost(
                     )
                 } else if (block.type == BlockType.DIVIDER) {
                     DividerBlockMenu(
+                        onMoveUp = onMoveUp,
+                        onMoveDown = onMoveDown,
                         onAddLine = { below ->
                             onDismiss()
                             viewModel.addLineNextTo(block, below)
@@ -248,6 +272,8 @@ internal fun BlockActionsHost(
                     }
                     ObjectBlockMenu(
                         title = media.name ?: media.url?.let { linkHost(it) } ?: EditorStrings.blockType(mediaTypeLabel(block.type)),
+                        onMoveUp = onMoveUp,
+                        onMoveDown = onMoveDown,
                         onAddLine = { below ->
                             onDismiss()
                             viewModel.addLineNextTo(block, below)
@@ -290,6 +316,8 @@ internal fun BlockActionsHost(
                     val target = mentioned
                     ObjectBlockMenu(
                         title = target?.title?.ifBlank { Strings.untitled } ?: EditorStrings.blockType("Link to page"),
+                        onMoveUp = onMoveUp,
+                        onMoveDown = onMoveDown,
                         onAddLine = { below ->
                             onDismiss()
                             viewModel.addLineNextTo(block, below)
@@ -350,30 +378,12 @@ internal fun BlockActionsHost(
                         }
                     )
                 } else {
-                    // Il suo posto fra i fratelli, per spegnere "Move up" in
-                    // cima e "Move down" in fondo: lo stesso conto delle frecce.
-                    val siblings = blocks.filter { it.parentBlockId == block.parentBlockId }
-                    val position = siblings.indexOfFirst { it.id == block.id }
                     PageBlockMenu(
                         block = block,
                         page = page,
                         data = dataPage ?: page,
-                        onMoveUp = if (position > 0) {
-                            {
-                                onDismiss()
-                                viewModel.moveBlockUp(block)
-                            }
-                        } else {
-                            null
-                        },
-                        onMoveDown = if (position >= 0 && position < siblings.lastIndex) {
-                            {
-                                onDismiss()
-                                viewModel.moveBlockDown(block)
-                            }
-                        } else {
-                            null
-                        },
+                        onMoveUp = onMoveUp,
+                        onMoveDown = onMoveDown,
                         onAddLine = { below ->
                             onDismiss()
                             viewModel.addLineNextTo(block, below)
@@ -678,12 +688,16 @@ internal class ObjectAction(val icon: ImageVector, val label: String, val onClic
 @Composable
 private fun ObjectBlockMenu(
     title: String,
+    /** "Move up" e "Move down": null quando il blocco è già il primo o l'ultimo. */
+    onMoveUp: (() -> Unit)?,
+    onMoveDown: (() -> Unit)?,
     onAddLine: (Boolean) -> Unit,
     actions: List<ObjectAction>,
     onDuplicate: () -> Unit,
     onDelete: () -> Unit
 ) {
     MenuTitle(title)
+    MoveGroup(onMoveUp, onMoveDown)
     AddLineGroup(onAddLine)
     if (actions.isNotEmpty()) {
         OptionsGroup {
@@ -781,12 +795,18 @@ private fun AddLineGroup(onAddLine: (Boolean) -> Unit) {
     Spacer(modifier = Modifier.size(12.dp))
 }
 
-/** Il menu di un divisore: le righe sopra e sotto, e toglierlo (dal 05/10/2026). */
+/** Il menu di un divisore: spostarlo, le righe sopra e sotto, e toglierlo (dal 05/10/2026). */
 @Composable
-private fun DividerBlockMenu(onAddLine: (Boolean) -> Unit, onDelete: () -> Unit) {
+private fun DividerBlockMenu(
+    onMoveUp: (() -> Unit)?,
+    onMoveDown: (() -> Unit)?,
+    onAddLine: (Boolean) -> Unit,
+    onDelete: () -> Unit
+) {
     // Il nome scritto a mano: nel catalogo dei menu "/" il divisore non è un
     // "tipo" di riga (`SlashAction.Type`), e `blockTypeLabel` direbbe "Text".
     MenuTitle(EditorStrings.blockType("Divider"))
+    MoveGroup(onMoveUp, onMoveDown)
     AddLineGroup(onAddLine)
     OptionsGroup {
         OptionRow(

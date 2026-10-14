@@ -2070,6 +2070,36 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.163 — 14/10/2026 · 11:35 — "---" fa un divisore, e "Move up"/"Move down" per immagini, file e divisori
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 515 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Sì, aggiungile anche lì. Inoltre, come fa Notion, se scrivo attaccate tre
+> lineette (così ---), mi crea un divider. Fai la stessa cosa anche qui»
+
+- **[Nuova funzionalità]** **"---" scritto da solo in una riga di testo la
+  fa diventare un divisore**, come su Notion: i trattini spariscono e il
+  cursore va sulla riga nuova sotto. Vale anche con la lineetta lunga al
+  posto dei primi due trattini, e nelle righe dentro un toggle. Su elenchi
+  e caselle, o in mezzo ad altro testo, i trattini restano scritti.
+  Annulla toglie il divisore e rimette "--"
+- **[Nuova funzionalità]** **"Move up" e "Move down" anche per immagini,
+  video, audio, file, segnalibri, "Link to page" e divisori**, sopra "Add
+  above", tenendoli premuti; grigi in cima e in fondo
+- **[Bug]** Un divisore teneva nel database il testo che aveva prima
+  (invisibile, ma contato nella ricerca): ora diventando divisore il blocco
+  si svuota sempre
+- **[Progetto]** `dividerShortcutJustTyped` (come `numberedListPrefixJustTyped`
+  per "5."), `PageEditorViewModel.dividerShortcutBlock`, poi la stessa voce
+  "Divider" del menu "/"; `MoveGroup` in `ObjectBlockMenu` e
+  `DividerBlockMenu`; `turnIntoDividerWithLineBelow` svuota sempre il testo.
+  Test: `DividerShortcutTest`
+- Verificato sul telefono in una pagina di prova in Main calendar (poi
+  tolta): "Uno", a capo, tre trattini → divisore, e "Due" scritto sotto;
+  tenuto premuto il divisore, "Move down" → sotto "Due"; un secondo "---"
+  ha il testo vuoto nel database; Annulla → "--". Il database del telefono
+  è identico a prima delle prove
 ### 🆕 v0.162 — 14/10/2026 · 11:22 — "Move up" e "Move down" anche per database e pagine
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 512 test
 passati; commit solo in locale)*
