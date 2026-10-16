@@ -182,9 +182,10 @@ data class DatabaseColumnEntity(
     var contentAlignment: String? = null,
     // --- Solo per le colonne Date (dal 26/09/2026), "Edit property" ---
     /**
-     * Come si scrive la data (il nome di uno stile `DateStyle`, gli stessi
-     * che prima si sceglievano per tutta l'app nelle impostazioni). Null =
-     * quello scelto allora nelle impostazioni.
+     * Come si scriveva la data in questa colonna (il nome di uno stile
+     * `DateStyle`), dal 26/09/2026 al 16/10/2026. **Non si legge più**: lo
+     * stile della data è tornato uno solo per tutta l'app, in Settings. Resta
+     * solo perché togliere una colonna dal database chiede una migrazione.
      */
     var dateFormat: String? = null,
     /** "H12" a 12 ore (9:30 PM), "HIDDEN" senza ora; null = a 24 ore (21:30). Vedi `TimeFormatKind`. */

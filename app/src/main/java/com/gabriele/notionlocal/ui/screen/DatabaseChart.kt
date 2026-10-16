@@ -113,15 +113,13 @@ private fun ChartHeight.dp(): Dp = when (this) {
  */
 @Composable
 internal fun ChartLayout(state: DatabaseTableState, settings: ChartSettings) {
-    val groupColumn = settings.groupColumnId?.let { id -> state.columns.find { it.id == id } }
     val valueColumn = settings.valueColumnId?.let { id -> state.columns.find { it.id == id && it.type == ColumnType.NUMBER } }
-    val dayStyle = groupColumn?.dateSettings()?.style
     val labels = ChartLabels(
         untitled = Strings.untitled,
         empty = ChartStrings.empty,
         checked = ChartStrings.checked,
         unchecked = ChartStrings.unchecked,
-        day = { day -> if (dayStyle != null) Formats.dateFormatter(dayStyle).format(day) else Formats.date(day) }
+        day = { day -> Formats.date(day) }
     )
     val points = remember(state.rows, state.columns, state.cellValues, settings, AppSettings.zoneId) {
         chartPoints(state.rows, state.columns, state.cellValues, settings, labels, AppSettings.zoneId)

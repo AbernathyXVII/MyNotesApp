@@ -4815,12 +4815,12 @@ private fun LocalDateTime.toEpochMillis(): Long =
     atZone(AppSettings.zoneId).toInstant().toEpochMilli()
 
 /**
- * "12 Jan 2026", "12 Jan 2026, 09:30" oppure con la freccia e la fine. Nel
- * formato della colonna (dal 26/09/2026): lo stile della data e l'ora a 12,
- * a 24 ore o nascosta; di suo quelli di sempre.
+ * "12 Jan 2026", "12 Jan 2026, 09:30" oppure con la freccia e la fine. La
+ * data nel formato di Settings, l'ora come dice la colonna (dal 26/09/2026):
+ * a 12, a 24 ore o nascosta.
  */
 private fun DateRange.label(settings: DateSettings = DateSettings()): String {
-    val style = settings.style ?: AppSettings.dateStyle
+    val style = AppSettings.dateStyle
     val format = if (hasTime) Formats.dateTimeFormatter(style, settings.time) else Formats.dateFormatter(style)
     val startText = Instant.ofEpochMilli(start)
         .atZone(AppSettings.zoneId).format(format)

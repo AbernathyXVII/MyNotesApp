@@ -1,8 +1,5 @@
 package com.gabriele.notionlocal.ui.screen
 
-import java.time.LocalDate
-import java.time.Instant
-import com.gabriele.notionlocal.data.settings.DateStyle
 import com.gabriele.notionlocal.data.settings.AppSettings
 import com.gabriele.notionlocal.data.entity.dateSettings
 import com.gabriele.notionlocal.data.entity.TimeFormatKind
@@ -569,34 +566,18 @@ private fun DecimalPlacesDialog(current: Int?, onPick: (Int?) -> Unit, onDismiss
 // --- "Edit property" di una colonna Date (dal 26/09/2026) ---
 
 /**
- * **Date format e Time format**, come su Notion: lo stile della data (gli
- * stessi di prima nelle impostazioni, con un esempio di oggi) e l'ora a 12
- * ore, a 24 ore o nascosta.
+ * **Time format**, come su Notion: l'ora a 12 ore, a 24 ore o nascosta.
+ *
+ * "Date format" c'era qui dal 26/09/2026 al 16/10/2026: è tornato in
+ * Settings, uno solo per tutta l'app, come ha chiesto l'utente.
  */
 @Composable
 fun DateSettingsSection(settings: DateSettings, onChange: (DateSettings) -> Unit) {
-    var pickingDate by remember { mutableStateOf(false) }
     var pickingTime by remember { mutableStateOf(false) }
-    val style = settings.style ?: AppSettings.dateStyle
     Column(modifier = Modifier.fillMaxWidth()) {
-        SettingsLine(Strings.dateFormat, Formats.dateStyleName(style)) { pickingDate = true }
         SettingsLine(DbStrings.timeFormat, DbStrings.timeFormatName(settings.time)) { pickingTime = true }
         Spacer(modifier = Modifier.height(4.dp))
         Text(DbStrings.appliesToAllViews, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-    if (pickingDate) {
-        val today = remember { LocalDate.now(AppSettings.zoneId) }
-        ChoiceListDialog(
-            title = Strings.dateFormat,
-            options = DateStyle.entries.map { it to Formats.dateStyleName(it) },
-            details = DateStyle.entries.associateWith { Formats.sample(it, today) },
-            selected = style,
-            onPick = {
-                onChange(settings.copy(style = it))
-                pickingDate = false
-            },
-            onDismiss = { pickingDate = false }
-        )
     }
     if (pickingTime) {
         ChoiceListDialog(
@@ -814,10 +795,8 @@ fun calculationText(result: CalculationResult, column: DatabaseColumnEntity?): S
         val raw = result.value.stripTrailingZeros().toPlainString()
         if (column != null) formatNumberValue(raw, column) else Formats.number(raw)
     }
-    // Le date più vecchia e più recente nel formato della colonna.
-    is CalculationResult.Date -> column?.dateSettings()?.style?.let { style ->
-        Formats.dateFormatter(style).format(Instant.ofEpochMilli(result.epochMillis).atZone(AppSettings.zoneId).toLocalDate())
-    } ?: Formats.date(result.epochMillis)
+    // Le date più vecchia e più recente, nel formato di Settings.
+    is CalculationResult.Date -> Formats.date(result.epochMillis)
     is CalculationResult.Days -> DbStrings.daysCount(result.days)
     CalculationResult.Nothing -> "—"
 }

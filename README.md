@@ -2070,6 +2070,35 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.164 — 16/10/2026 · 17:15 — "Date format" torna in Settings, uno solo per tutta l'app
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 518 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «In settings, rimettimi l'opzione per il formato di data globale in tutta
+> l'app (quelli che già sai), e toglila dalla proprietà della data dei
+> database. L'opzione deve essere globale, non scelta singolarmente»
+
+- **[Nuova funzionalità]** **"Date format" in Settings**, dopo "Number
+  format", come prima della v0.101: i nove formati (Full date, Short date,
+  Month.Day.Year, Month/Day/Year, Day.Month.Year, Day/Month/Year,
+  Year.Month.Day, Year/Month/Day, Chinese date), ognuno con la data di oggi.
+  Vale **ovunque**: celle, liste, calcoli (Earliest, Latest…), riassunto del
+  filtro, grafici, cronologia, preferiti, cestino, quaderni. Quello scelto
+  resta quello di prima: sul telefono "Chinese date"
+- **[Rimosso]** **"Date format" da "Edit property" delle colonne Date**.
+  Resta "Time format" (Hidden, 12 hour, 24 hour), che vale per la colonna.
+  L'unica colonna che se n'era scelto uno suo, "Release date" di
+  Videogames ("Full date"), ora segue quello di Settings
+- **[Progetto]** `DateSettings` ha solo l'ora; `database_columns.dateFormat`
+  resta nel database ma non si legge più, e salvando la colonna si svuota.
+  Test: `GlobalDateFormatTest`
+- Verificato sul telefono: Settings → "Date format — Chinese date
+  2026年10月16日", la lista dei nove con la spunta su Chinese date; scelto per
+  prova Day/Month/Year, le date di Main calendar sono diventate
+  "15/11/2026 15:00"; in "Edit property" della colonna Date c'è solo "Time
+  format". Rimesso Chinese date: database e impostazioni del telefono sono
+  identici a prima delle prove
 ### 🔧 v0.163.1 — 16/10/2026 · 17:04 — L'ora della data resta quella scelta, e la notifica non va più alle 9:00
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 516 test
 passati; commit solo in locale)*
