@@ -1,5 +1,7 @@
 package com.gabriele.notionlocal.ui.screen
 
+import com.gabriele.notionlocal.ui.format.Formats
+
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -158,7 +160,7 @@ private fun dayPagerOrigin(day: LocalDate): LocalDate =
 /** La linea di "adesso", rossa come su Google Calendar. */
 private val NOW_LINE_COLOR = Color(0xFFEA4335)
 
-private val EVENT_TIME_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+private val EVENT_TIME_FORMAT: DateTimeFormatter get() = Formats.timeFormatter()
 private val EVENT_DAY_FORMAT: DateTimeFormatter
     get() = DateTimeFormatter.ofPattern("EEEE, d MMMM", AppSettings.language.locale)
 private val EVENT_DATE_FORMAT: DateTimeFormatter
@@ -323,7 +325,7 @@ private fun HourLabels(modifier: Modifier) {
     Box(modifier = modifier) {
         for (hour in 1..23) {
             Text(
-                text = LocalTime.of(hour, 0).format(EVENT_TIME_FORMAT),
+                text = LocalTime.of(hour, 0).format(Formats.hourLabelFormatter()),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,

@@ -2,6 +2,7 @@ package com.gabriele.notionlocal.data.settings
 
 import com.gabriele.notionlocal.data.proofing.ProofingLanguage
 import com.gabriele.notionlocal.data.SKIN_TONE_COUNT
+import com.gabriele.notionlocal.data.entity.TimeFormatKind
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.compose.runtime.getValue
@@ -106,6 +107,7 @@ object AppSettings {
         titlePositionState.value = enumOr(KEY_TITLE_POSITION, TitlePosition.BELOW_ICON)
         numberStyleState.value = enumOr(KEY_NUMBER_STYLE, NumberStyle.DOT_GROUPS)
         dateStyleState.value = enumOr(KEY_DATE_STYLE, DateStyle.DAY_MONTH_YEAR_DOT)
+        timeFormatState.value = enumOr(KEY_TIME_FORMAT, TimeFormatKind.H24)
         languageState.value = enumOr(KEY_LANGUAGE, AppLanguage.ENGLISH)
         timeZoneIdState.value = prefs.getString(KEY_TIME_ZONE, null)
             ?.takeIf { runCatching { ZoneId.of(it) }.isSuccess }
@@ -187,6 +189,18 @@ object AppSettings {
     var dateStyle: DateStyle
         get() = dateStyleState.value
         set(value) { dateStyleState.value = value; putEnum(KEY_DATE_STYLE, value) }
+
+    /**
+     * **Come si scrive l'ora in tutta l'app** (dal 16/10/2026, chiesto
+     * dall'utente: prima si sceglieva per ogni colonna Date): a 24 ore
+     * (15:07), a 12 ore (3:07 PM) o nascosta. Nascosta vale per le date dei
+     * database; dove l'ora è tutto quello che c'è da dire (la cronologia,
+     * "Created", la fine di un timer) resta a 24 ore.
+     */
+    private val timeFormatState = mutableStateOf(TimeFormatKind.H24)
+    var timeFormat: TimeFormatKind
+        get() = timeFormatState.value
+        set(value) { timeFormatState.value = value; putEnum(KEY_TIME_FORMAT, value) }
 
     private val languageState = mutableStateOf(AppLanguage.ENGLISH)
     var language: AppLanguage
@@ -443,6 +457,7 @@ object AppSettings {
     private const val KEY_TITLE_POSITION = "title_position"
     private const val KEY_NUMBER_STYLE = "number_style"
     private const val KEY_DATE_STYLE = "date_style"
+    private const val KEY_TIME_FORMAT = "time_format"
     private const val KEY_LANGUAGE = "language"
     private const val KEY_TIME_ZONE = "time_zone"
     private const val KEY_STARTUP_MODE = "startup_mode"

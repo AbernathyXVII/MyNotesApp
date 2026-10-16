@@ -88,11 +88,16 @@ import com.gabriele.notionlocal.ui.theme.NotionGray900
 import com.gabriele.notionlocal.ui.theme.NotionWhite
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import androidx.compose.material.icons.filled.Schedule
+import com.gabriele.notionlocal.data.entity.TimeFormatKind
+import com.gabriele.notionlocal.ui.i18n.DbStrings
 import java.time.ZoneId
 import java.time.format.TextStyle
 
 /** Quale finestra di scelta è aperta. */
-private enum class SettingsDialog { THEME, TITLE_POSITION, ANIMATIONS, NUMBER, DATE, LANGUAGE, PROOFING, TIME_ZONE, LOCK_PASSWORD, CLEAR_CACHE, DELETE_ALL }
+private enum class SettingsDialog { THEME, TITLE_POSITION, ANIMATIONS, NUMBER, DATE, TIME, LANGUAGE, PROOFING, TIME_ZONE, LOCK_PASSWORD, CLEAR_CACHE, DELETE_ALL }
 
 /**
  * Le impostazioni. Ogni scelta si salva appena la si fa e vale subito: il
@@ -170,6 +175,15 @@ fun SettingsScreen(onBack: () -> Unit, onOpenPatchNotes: () -> Unit = {}) {
                 icon = Icons.Filled.CalendarMonth,
                 value = "${Formats.dateStyleName(AppSettings.dateStyle)} — ${Formats.sample(AppSettings.dateStyle, today())}",
                 onClick = { dialog = SettingsDialog.DATE }
+            )
+            // **"Time format"** subito sotto (dal 16/10/2026, chiesto
+            // dall'utente): anche lui uno solo per tutta l'app, non più per
+            // ogni colonna Date.
+            SettingsItem(
+                DbStrings.timeFormat,
+                icon = Icons.Filled.Schedule,
+                value = DbStrings.timeFormatName(AppSettings.timeFormat),
+                onClick = { dialog = SettingsDialog.TIME }
             )
             SettingsItem(
                 Strings.language,
@@ -275,6 +289,19 @@ fun SettingsScreen(onBack: () -> Unit, onOpenPatchNotes: () -> Unit = {}) {
             details = DateStyle.entries.associateWith { Formats.sample(it, today()) },
             selected = AppSettings.dateStyle,
             onSelect = { AppSettings.dateStyle = it },
+            onDismiss = { dialog = null }
+        )
+        SettingsDialog.TIME -> ChoiceDialog(
+            title = DbStrings.timeFormat,
+            // Nell'ordine di Notion: Hidden, 12 hour, 24 hour.
+            options = listOf(TimeFormatKind.HIDDEN, TimeFormatKind.H12, TimeFormatKind.H24).map { it to DbStrings.timeFormatName(it) },
+            details = mapOf(
+                TimeFormatKind.HIDDEN to DbStrings.timeHiddenNote,
+                TimeFormatKind.H12 to DateTimeFormatter.ofPattern("h:mm a", AppSettings.language.locale).format(LocalTime.now(AppSettings.zoneId)),
+                TimeFormatKind.H24 to DateTimeFormatter.ofPattern("HH:mm").format(LocalTime.now(AppSettings.zoneId))
+            ),
+            selected = AppSettings.timeFormat,
+            onSelect = { AppSettings.timeFormat = it },
             onDismiss = { dialog = null }
         )
         SettingsDialog.LANGUAGE -> ChoiceDialog(

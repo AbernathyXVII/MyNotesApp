@@ -328,23 +328,6 @@ enum class TimeFormatKind {
     }
 }
 
-/**
- * Le scelte di "Edit property" per una colonna Date: come si scrive l'ora.
- *
- * **Lo stile della data non c'è più** (dal 16/10/2026, chiesto dall'utente:
- * "L'opzione deve essere globale, non scelta singolarmente"): è uno solo
- * per tutta l'app, "Date format" in Settings (`AppSettings.dateStyle`).
- */
-data class DateSettings(
-    val time: TimeFormatKind = TimeFormatKind.H24
-)
-
-fun DatabaseColumnEntity.dateSettings(): DateSettings = DateSettings(
-    time = TimeFormatKind.of(timeFormat)
-)
-
-/** Salvando, lo stile che la colonna si era scelta prima del 16/10/2026 se ne va: non lo legge più nessuno. */
-fun DatabaseColumnEntity.withDateSettings(settings: DateSettings): DatabaseColumnEntity = copy(
-    dateFormat = null,
-    timeFormat = settings.time.takeIf { it != TimeFormatKind.H24 }?.name
-)
+// Le scelte di "Edit property" di una colonna Date (`DateSettings`: il formato
+// della data e quello dell'ora) non ci sono più: dal 16/10/2026 sono
+// "Date format" e "Time format" in Settings, uguali per tutta l'app.

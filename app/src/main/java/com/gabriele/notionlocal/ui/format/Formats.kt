@@ -35,10 +35,10 @@ object Formats {
 
     fun date(day: LocalDate): String = dateFormatter().format(day)
 
-    /** Data e ora, l'ora sempre in 24 ore: "20.09.2026 19:41". */
+    /** Data e ora, l'ora come dice Settings: "20.09.2026 19:41" o "20.09.2026 7:41 PM". */
     fun dateTime(millis: Long): String {
         val zoned = Instant.ofEpochMilli(millis).atZone(AppSettings.zoneId)
-        return "${date(zoned.toLocalDate())} ${TIME.format(zoned)}"
+        return "${date(zoned.toLocalDate())} ${timeFormatter().format(zoned)}"
     }
 
     /**
@@ -54,18 +54,37 @@ object Formats {
 
     /** Solo l'ora. */
     fun time(millis: Long): String =
-        TIME.format(Instant.ofEpochMilli(millis).atZone(AppSettings.zoneId))
+        timeFormatter().format(Instant.ofEpochMilli(millis).atZone(AppSettings.zoneId))
 
-    private val TIME: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+    /**
+     * **L'ora come dice "Time format" in Settings** (dal 16/10/2026): "15:07"
+     * o "3:07 PM" (nella lingua dell'app). "Hidden" toglie l'ora solo dalle
+     * date dei database (`dateTimeFormatter(style)`); qui, dove l'ora è quello
+     * che si vuole leggere, resta a 24 ore.
+     */
+    fun timeFormatter(): DateTimeFormatter =
+        if (AppSettings.timeFormat == TimeFormatKind.H12) {
+            DateTimeFormatter.ofPattern("h:mm a", AppSettings.language.locale)
+        } else {
+            DateTimeFormatter.ofPattern("HH:mm")
+        }
+
+    /** Le ore piene di una griglia (il giorno del calendario): "15" … o "3 PM". */
+    fun hourLabelFormatter(): DateTimeFormatter =
+        if (AppSettings.timeFormat == TimeFormatKind.H12) {
+            DateTimeFormatter.ofPattern("h a", AppSettings.language.locale)
+        } else {
+            DateTimeFormatter.ofPattern("HH:mm")
+        }
 
     /** La data nel formato scelto, per chi deve formattare da sé (le celle dei database). */
     fun dateFormatter(): DateTimeFormatter = formatterFor(AppSettings.dateStyle)
 
-    /** Data e ora nel formato scelto: la data, uno spazio, l'ora in 24 ore. */
+    /** Data e ora nel formato scelto: la data, uno spazio, l'ora come dice Settings. */
     fun dateTimeFormatter(): DateTimeFormatter = DateTimeFormatterBuilder()
         .append(dateFormatter())
         .appendLiteral(' ')
-        .appendPattern("HH:mm")
+        .append(timeFormatter())
         .toFormatter(AppSettings.language.locale)
 
     /** "Sep 20" in inglese; mese dopo il giorno nelle lingue europee, coi caratteri propri in Asia. */
@@ -79,22 +98,16 @@ object Formats {
     /** Un giorno scritto in un certo formato, per gli esempi del menu delle impostazioni. */
     fun sample(style: DateStyle, day: LocalDate): String = formatterFor(style).format(day)
 
-    /** La data in uno stile scelto (quello di una colonna Date), invece che in quello di tutta l'app. */
-    fun dateFormatter(style: DateStyle): DateTimeFormatter = formatterFor(style)
-
     /**
-     * **Data e ora come le vuole una colonna Date** (dal 26/09/2026): l'ora a
-     * 24 ore (21:30), a 12 ore (9:30 PM, nella lingua dell'app) o nascosta.
+     * **Una data di un database con la sua ora** (dal 26/09/2026): il formato
+     * della data e dell'ora di Settings, e con "Hidden" l'ora non si scrive.
+     * Fino al 16/10/2026 sceglieva ogni colonna Date.
      */
-    fun dateTimeFormatter(style: DateStyle, time: TimeFormatKind): DateTimeFormatter =
-        if (time == TimeFormatKind.HIDDEN) {
-            formatterFor(style)
+    fun databaseDateTimeFormatter(): DateTimeFormatter =
+        if (AppSettings.timeFormat == TimeFormatKind.HIDDEN) {
+            dateFormatter()
         } else {
-            DateTimeFormatterBuilder()
-                .append(formatterFor(style))
-                .appendLiteral(' ')
-                .appendPattern(if (time == TimeFormatKind.H12) "h:mm a" else "HH:mm")
-                .toFormatter(AppSettings.language.locale)
+            dateTimeFormatter()
         }
 
     /** Il nome di uno stile di data: "Full date", "Day/Month/Year (.)"… */

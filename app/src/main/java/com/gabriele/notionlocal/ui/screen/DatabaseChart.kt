@@ -59,7 +59,6 @@ import com.gabriele.notionlocal.data.entity.NumberSettings
 import com.gabriele.notionlocal.data.entity.chartPoints
 import com.gabriele.notionlocal.data.entity.chartAxis
 import com.gabriele.notionlocal.data.entity.compactNumber
-import com.gabriele.notionlocal.data.entity.dateSettings
 import com.gabriele.notionlocal.data.entity.decorate
 import com.gabriele.notionlocal.data.entity.numberSettings
 import com.gabriele.notionlocal.data.settings.AppSettings

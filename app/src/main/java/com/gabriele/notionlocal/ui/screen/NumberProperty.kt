@@ -1,9 +1,7 @@
 package com.gabriele.notionlocal.ui.screen
 
 import com.gabriele.notionlocal.data.settings.AppSettings
-import com.gabriele.notionlocal.data.entity.dateSettings
 import com.gabriele.notionlocal.data.entity.TimeFormatKind
-import com.gabriele.notionlocal.data.entity.DateSettings
 import com.gabriele.notionlocal.data.entity.CellAlignment
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -561,37 +559,6 @@ private fun DecimalPlacesDialog(current: Int?, onPick: (Int?) -> Unit, onDismiss
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text(Strings.cancel) } }
     )
-}
-
-// --- "Edit property" di una colonna Date (dal 26/09/2026) ---
-
-/**
- * **Time format**, come su Notion: l'ora a 12 ore, a 24 ore o nascosta.
- *
- * "Date format" c'era qui dal 26/09/2026 al 16/10/2026: è tornato in
- * Settings, uno solo per tutta l'app, come ha chiesto l'utente.
- */
-@Composable
-fun DateSettingsSection(settings: DateSettings, onChange: (DateSettings) -> Unit) {
-    var pickingTime by remember { mutableStateOf(false) }
-    Column(modifier = Modifier.fillMaxWidth()) {
-        SettingsLine(DbStrings.timeFormat, DbStrings.timeFormatName(settings.time)) { pickingTime = true }
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(DbStrings.appliesToAllViews, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-    if (pickingTime) {
-        ChoiceListDialog(
-            title = DbStrings.timeFormat,
-            // Nell'ordine di Notion: Hidden, 12 hour, 24 hour.
-            options = listOf(TimeFormatKind.HIDDEN, TimeFormatKind.H12, TimeFormatKind.H24).map { it to DbStrings.timeFormatName(it) },
-            selected = settings.time,
-            onPick = {
-                onChange(settings.copy(time = it))
-                pickingTime = false
-            },
-            onDismiss = { pickingTime = false }
-        )
-    }
 }
 
 // --- "Edit property" di una colonna Duration (dal 29/09/2026) ---

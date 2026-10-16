@@ -253,4 +253,4 @@ private fun DurationPickRow(label: String, value: String?, onClick: () -> Unit) 
 
 /** Le date nello stile scelto nelle impostazioni dell'app. */
 private val DURATION_DATE_FORMAT: DateTimeFormatter get() = Formats.dateFormatter()
-private val DURATION_TIME_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+private val DURATION_TIME_FORMAT: DateTimeFormatter get() = Formats.timeFormatter()

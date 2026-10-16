@@ -7,8 +7,6 @@ import com.gabriele.notionlocal.data.iconField
 import com.gabriele.notionlocal.data.chosenEmoji
 import com.gabriele.notionlocal.data.RowIconRef
 import com.gabriele.notionlocal.data.IconChoice
-import com.gabriele.notionlocal.data.entity.withDateSettings
-import com.gabriele.notionlocal.data.entity.DateSettings
 import com.gabriele.notionlocal.data.entity.NAME_COLUMN_KEY
 import com.gabriele.notionlocal.data.entity.nameOrderAt
 import com.gabriele.notionlocal.data.entity.tableKeys
@@ -1574,8 +1572,6 @@ class DatabaseViewModel(
         optionsJson: String,
         /** Solo per una colonna Number: formato, cifre, barra o anello (vedi `NumberSettings`). */
         number: NumberSettings? = null,
-        /** Solo per una colonna Date: formato della data e dell'ora (vedi `DateSettings`). */
-        date: DateSettings? = null,
         /** Solo per una colonna Duration: fino a quale unità si scrive (vedi `DurationUnit`). */
         duration: DurationUnit? = null
     ) {
@@ -1583,7 +1579,9 @@ class DatabaseViewModel(
         viewModelScope.launch {
             val renamed = column.copy(name = name, type = type, optionsJson = optionsJson)
             val withNumber = number?.let { renamed.withNumberSettings(it) } ?: renamed
-            val withDate = date?.let { withNumber.withDateSettings(it) } ?: withNumber
+            // Le colonne Date non hanno più un formato loro (dal 16/10/2026):
+            // quello che restava della scelta di prima se ne va.
+            val withDate = if (type == ColumnType.DATE) withNumber.copy(dateFormat = null, timeFormat = null) else withNumber
             // Fino ai minuti è com'è di suo: non serve scriverlo.
             repository.updateColumn(
                 duration?.let { withDate.copy(durationFormat = it.takeIf { unit -> unit != DurationUnit.MINUTES }?.name) } ?: withDate

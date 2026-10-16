@@ -1,5 +1,7 @@
 package com.gabriele.notionlocal.ui.screen
 
+import com.gabriele.notionlocal.ui.format.Formats
+
 import com.gabriele.notionlocal.data.notify.NotificationPermission
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -359,7 +361,7 @@ private fun RunningTimerPage(widgetId: String, timer: CountdownTimer, active: Bo
     }
 }
 
-private val END_TIME: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+private val END_TIME: DateTimeFormatter get() = Formats.timeFormatter()
 
 // --- Pezzi comuni ---
 

@@ -5,10 +5,8 @@ import androidx.compose.material.icons.filled.BorderLeft
 import com.gabriele.notionlocal.data.hasChosenIcon
 import com.gabriele.notionlocal.data.chosenEmoji
 import com.gabriele.notionlocal.data.RowIconRef
-import com.gabriele.notionlocal.data.entity.dateSettings
 import com.gabriele.notionlocal.data.entity.DurationUnit
 import com.gabriele.notionlocal.data.entity.durationFormatOf
-import com.gabriele.notionlocal.data.entity.DateSettings
 import androidx.compose.material.icons.filled.FormatAlignRight
 import com.gabriele.notionlocal.data.entity.parseCalculationAlignments
 import com.gabriele.notionlocal.data.entity.cellAlignment
@@ -467,7 +465,7 @@ private val MONTH_FORMAT: DateTimeFormatter
     get() = DateTimeFormatter.ofPattern("MMMM yyyy", AppSettings.language.locale)
 private val DAY_MONTH_FORMAT: DateTimeFormatter
     get() = DateTimeFormatter.ofPattern("d MMM", AppSettings.language.locale)
-private val TIME_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+private val TIME_FORMAT: DateTimeFormatter get() = Formats.timeFormatter()
 
 /** La lingua in cui scrivere nomi di giorni e mesi: quella dell'app, non quella del telefono. */
 private val displayLocale: Locale get() = AppSettings.language.locale
@@ -1758,11 +1756,11 @@ private fun DatabaseViewBody(
         PropertySheet(
             target = target,
             onDismiss = { propertyTarget = null },
-            onSave = { name, type, optionsJson, number, date, duration ->
+            onSave = { name, type, optionsJson, number, duration ->
                 when (target) {
                     is PropertyTarget.New -> viewModel.addColumn(name, type, optionsJson)
                     is PropertyTarget.Existing ->
-                        viewModel.updateColumn(target.column.id, name, type, optionsJson, number, date, duration)
+                        viewModel.updateColumn(target.column.id, name, type, optionsJson, number, duration = duration)
                 }
                 propertyTarget = null
             },
@@ -2392,7 +2390,7 @@ internal fun cellFitWidth(
     }
     ColumnType.DATE -> {
         val range = parseDateRange(value)
-        measure(range?.label(column.dateSettings()) ?: "\u2014", typography.bodyMedium) +
+        measure(range?.label() ?: "\u2014", typography.bodyMedium) +
             (if (range?.recurrence != null) 18.dp else 0.dp) +
             (if (range?.notify == true) 18.dp else 0.dp)
     }
@@ -4815,13 +4813,12 @@ private fun LocalDateTime.toEpochMillis(): Long =
     atZone(AppSettings.zoneId).toInstant().toEpochMilli()
 
 /**
- * "12 Jan 2026", "12 Jan 2026, 09:30" oppure con la freccia e la fine. La
- * data nel formato di Settings, l'ora come dice la colonna (dal 26/09/2026):
- * a 12, a 24 ore o nascosta.
+ * "12 Jan 2026", "12 Jan 2026, 09:30" oppure con la freccia e la fine: la
+ * data e l'ora come dicono "Date format" e "Time format" in Settings (l'ora a
+ * 12, a 24 ore o nascosta).
  */
-private fun DateRange.label(settings: DateSettings = DateSettings()): String {
-    val style = AppSettings.dateStyle
-    val format = if (hasTime) Formats.dateTimeFormatter(style, settings.time) else Formats.dateFormatter(style)
+private fun DateRange.label(): String {
+    val format = if (hasTime) Formats.databaseDateTimeFormatter() else Formats.dateFormatter()
     val startText = Instant.ofEpochMilli(start)
         .atZone(AppSettings.zoneId).format(format)
     val endText = end?.let {
@@ -4839,7 +4836,7 @@ private fun listCellLabel(column: DatabaseColumnEntity, value: String): String =
     ColumnType.CHECKBOX -> if (value == "true") "✓" else ""
     ColumnType.COLOR -> parseColorCell(value).text
     ColumnType.NUMBER -> formatNumberValue(value, column)
-    ColumnType.DATE -> parseDateRange(value)?.label(column.dateSettings()) ?: value
+    ColumnType.DATE -> parseDateRange(value)?.label() ?: value
     ColumnType.DURATION -> durationLabel(value, durationFormatOf(column.durationFormat)).orEmpty()
     ColumnType.MULTI_SELECT -> value.split(MULTI_VALUE_SEPARATOR)
         .filter { it.isNotBlank() }
@@ -5496,7 +5493,7 @@ private fun filterSummary(column: DatabaseColumnEntity?, value: String): String 
     when (column.type) {
         ColumnType.DATE -> {
             val range = parseDateRange(value) ?: return DbStrings.none
-            return "${DbStrings.columnName(column.name)}: ${range.label(column.dateSettings())}"
+            return "${DbStrings.columnName(column.name)}: ${range.label()}"
         }
         ColumnType.NUMBER -> {
             val parts = value.split(MULTI_VALUE_SEPARATOR)
@@ -6664,8 +6661,7 @@ private fun CellContent(
             ColumnType.DATE -> DateCell(
                 value = value,
                 onValueChange = onValueChange,
-                contentPadding = cellPadding,
-                settings = column.dateSettings()
+                contentPadding = cellPadding
             )
 
             ColumnType.PAGE_LINK -> PageLinkCell(
@@ -7182,9 +7178,7 @@ private fun TagPickerSheet(
 private fun DateCell(
     value: String,
     onValueChange: (String) -> Unit,
-    contentPadding: Dp = 0.dp,
-    /** Il formato della colonna: vedi `DateRange.label`. */
-    settings: DateSettings = DateSettings()
+    contentPadding: Dp = 0.dp
 ) {
     var showPicker by remember { mutableStateOf(false) }
     val range = parseDateRange(value)
@@ -7210,7 +7204,7 @@ private fun DateCell(
         // spostarla dentro è la disposizione, non il riquadro intorno.
         Row(horizontalArrangement = LocalCellAlignment.current.arrangement, verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = range?.label(settings) ?: "—",
+                text = range?.label() ?: "—",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onBackground,
                 maxLines = cellMaxLines,
@@ -9007,7 +9001,7 @@ internal fun RowPageProperties(
         PropertySheet(
             target = PropertyTarget.New(),
             onDismiss = { addingProperty = false },
-            onSave = { name, type, optionsJson, _, _, _ ->
+            onSave = { name, type, optionsJson, _, _ ->
                 viewModel.addColumn(name, type, optionsJson)
                 addingProperty = false
             },
@@ -10027,7 +10021,7 @@ internal fun SettingsRow(
 private fun PropertySheet(
     target: PropertyTarget,
     onDismiss: () -> Unit,
-    onSave: (String, ColumnType, String, NumberSettings?, DateSettings?, DurationUnit?) -> Unit,
+    onSave: (String, ColumnType, String, NumberSettings?, DurationUnit?) -> Unit,
     onDelete: () -> Unit
 ) {
     val existing = (target as? PropertyTarget.Existing)?.column
@@ -10037,7 +10031,6 @@ private fun PropertySheet(
     val changeTypeOnly = (target as? PropertyTarget.Existing)?.changeType == true
     val showTypes = existing == null || changeTypeOnly
     var number by remember(existing?.id) { mutableStateOf(existing?.numberSettings() ?: NumberSettings()) }
-    var date by remember(existing?.id) { mutableStateOf(existing?.dateSettings() ?: DateSettings()) }
     var duration by remember(existing?.id) { mutableStateOf(durationFormatOf(existing?.durationFormat)) }
 
     var name by remember(existing?.id) { mutableStateOf(existing?.name ?: "") }
@@ -10087,7 +10080,6 @@ private fun PropertySheet(
                             selectedType,
                             optionsJson,
                             number.takeIf { selectedType == ColumnType.NUMBER },
-                            date.takeIf { selectedType == ColumnType.DATE },
                             duration.takeIf { selectedType == ColumnType.DURATION }
                         )
                     }
@@ -10119,11 +10111,8 @@ private fun PropertySheet(
                 NumberSettingsSection(settings = number, onChange = { number = it })
             }
 
-            // "Edit property" di una colonna Date: Date format e Time format.
-            if (!showTypes && existing?.type == ColumnType.DATE) {
-                Spacer(modifier = Modifier.size(12.dp))
-                DateSettingsSection(settings = date, onChange = { date = it })
-            }
+            // "Edit property" di una colonna Date non ha più niente in più: Date
+            // format e Time format sono in Settings, per tutta l'app (dal 16/10/2026).
 
             // "Edit property" di una colonna Duration: fino a quale unità si scrive.
             if (!showTypes && existing?.type == ColumnType.DURATION) {

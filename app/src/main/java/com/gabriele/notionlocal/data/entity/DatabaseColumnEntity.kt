@@ -188,7 +188,11 @@ data class DatabaseColumnEntity(
      * solo perché togliere una colonna dal database chiede una migrazione.
      */
     var dateFormat: String? = null,
-    /** "H12" a 12 ore (9:30 PM), "HIDDEN" senza ora; null = a 24 ore (21:30). Vedi `TimeFormatKind`. */
+    /**
+     * Come si scriveva l'ora in questa colonna ("H12", "HIDDEN"; null = 24
+     * ore), dal 26/09/2026 al 16/10/2026. **Non si legge più**: è "Time
+     * format" in Settings, come `dateFormat`.
+     */
     var timeFormat: String? = null,
     /**
      * **Solo per le colonne Duration** (dal 29/09/2026), "Edit property":

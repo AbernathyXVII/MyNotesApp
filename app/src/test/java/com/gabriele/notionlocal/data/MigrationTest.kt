@@ -4,9 +4,6 @@ import kotlinx.coroutines.flow.first
 import com.gabriele.notionlocal.data.entity.PersonalWordEntity
 import com.gabriele.notionlocal.data.entity.PROOFING_DEFAULT
 import com.gabriele.notionlocal.data.entity.DatabaseLayout
-import com.gabriele.notionlocal.data.entity.DateSettings
-import com.gabriele.notionlocal.data.entity.TimeFormatKind
-import com.gabriele.notionlocal.data.entity.dateSettings
 import com.gabriele.notionlocal.data.entity.CellAlignment
 import com.gabriele.notionlocal.data.entity.cellAlignment
 import android.app.Application
@@ -210,8 +207,6 @@ class MigrationTest {
         val date = db.databaseDao().getColumnsForPageOnce("db1").single { it.id == "c3" }
         assertNull(date.dateFormat)
         assertNull(date.timeFormat)
-        assertEquals(DateSettings(), date.dateSettings())
-        assertEquals(TimeFormatKind.H24, date.dateSettings().time)
         assertEquals(56, db.openHelper.readableDatabase.version)
     }
 

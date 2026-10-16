@@ -550,6 +550,16 @@ object DbStrings {
     val timeHidden get() = t("Hidden", "Nascosta", "Ausgeblendet", "Masquée", "Oculta", "隐藏", "숨김", "非表示")
     val time12 get() = t("12 hour", "12 ore", "12 Stunden", "12 heures", "12 horas", "12 小时制", "12시간", "12 時間")
     val time24 get() = t("24 hour", "24 ore", "24 Stunden", "24 heures", "24 horas", "24 小时制", "24시간", "24 時間")
+    val timeHiddenNote get() = t(
+        "No time in database dates",
+        "Niente ora nelle date dei database",
+        "Keine Uhrzeit in Datenbank-Daten",
+        "Pas d'heure dans les dates des bases de données",
+        "Sin hora en las fechas de las bases de datos",
+        "数据库日期中不显示时间",
+        "데이터베이스 날짜에 시간 없음",
+        "データベースの日付に時刻を表示しない"
+    )
 
     fun timeFormatName(time: TimeFormatKind): String = when (time) {
         TimeFormatKind.HIDDEN -> timeHidden

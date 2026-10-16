@@ -2070,6 +2070,38 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.165 — 16/10/2026 · 17:40 — Anche "Time format" in Settings, uno solo per tutta l'app
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 519 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Sì, metti anche Time format globale in Settings»
+
+- **[Nuova funzionalità]** **"Time format" in Settings**, subito sotto
+  "Date format": **Hidden**, **12 hour**, **24 hour**, con l'ora di adesso
+  scritta così. 12 hour vale in tutta l'app: le date dei database, la
+  cronologia, "Created" e "Last edited", preferiti, cestino, quaderni, le
+  righe "/notification", gli eventi e le ore del giorno nel calendario
+  ("3 PM"), le durate, la fine dei timer. **Hidden** toglie l'ora dalle date
+  dei database; dove l'ora è quello che si vuole leggere (cronologia,
+  "Created", timer…) resta a 24 ore. Le rotelle di "Set time" restano a 24
+  ore. Di partenza 24 hour, come avevano tutte le colonne
+- **[Rimosso]** **"Time format" da "Edit property" delle colonne Date**: lì
+  ora c'è solo il nome
+- **[Progetto]** `AppSettings.timeFormat` (`TimeFormatKind`);
+  `Formats.timeFormatter`, `hourLabelFormatter` e
+  `databaseDateTimeFormatter` al posto dei formati scritti a mano nei vari
+  file. Via `DateSettings` e `DateSettingsSection`;
+  `database_columns.timeFormat`, come `dateFormat`, resta nel database ma
+  non si legge più. Test: `GlobalTimeFormatTest` (24 ore, 12 ore e "3 PM",
+  Hidden solo nei database). Il test cambiava le impostazioni fuori da
+  un'istantanea di Compose, e i test grafici dopo di lui restavano ad
+  aspettare: ora le cambia dentro, e il giro completo torna a 44 secondi
+- Verificato sul telefono: Settings → "Time format — 24 hour", la lista
+  Hidden ("No time in database dates"), 12 hour (5:37 PM), 24 hour (17:37);
+  con 12 hour Main calendar → "2026年11月15日 3:00 PM", con Hidden
+  "2026年11月15日" con la campanella; "Edit property" della colonna Date ha
+  solo il nome. Rimesso 24 hour: database identico a prima delle prove
 ### 🆕 v0.164 — 16/10/2026 · 17:15 — "Date format" torna in Settings, uno solo per tutta l'app
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 518 test
 passati; commit solo in locale)*

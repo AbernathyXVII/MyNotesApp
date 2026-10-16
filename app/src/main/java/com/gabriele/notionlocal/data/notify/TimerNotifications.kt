@@ -71,7 +71,7 @@ object TimerNotifications {
      */
     private const val EXTRA_REQUEST_PROMOTED_ONGOING = "android.requestPromotedOngoing"
 
-    private val END_TIME: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+    private val END_TIME: DateTimeFormatter get() = com.gabriele.notionlocal.ui.format.Formats.timeFormatter()
 
     fun idOf(timerId: String): Int = "timerRunning:$timerId".hashCode()
 
