@@ -21,8 +21,9 @@ import java.time.temporal.ChronoUnit
  *    `notifyAt`, col testo della riga — o, se è vuota, col nome della pagina;
  *  - le date dei database con **"Include notification"** acceso
  *    (`DateRange.notify`): suonano all'inizio e alla fine (se c'è), all'ora
- *    della data o alle 9:00 se non ne ha una, a ogni ripetizione se si
- *    ripete, col nome della pagina della riga.
+ *    della data, a ogni ripetizione se si ripete, col nome della pagina della
+ *    riga. Dal 16/10/2026 la notifica ha sempre un'ora scelta; le 9:00 valgono
+ *    solo per le date salvate prima con la notifica e senza ora.
  *
  * Qui dentro solo il calcolo, senza Android: chi le programma e chi le
  * manda è `NoteAlarms`, chi le mostra `Notifier`.

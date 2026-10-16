@@ -2070,6 +2070,42 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🔧 v0.163.1 — 16/10/2026 · 17:04 — L'ora della data resta quella scelta, e la notifica non va più alle 9:00
+*(Claude Code sul PC; verificato sul telefono lo stesso giorno; 516 test
+passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «C'è un bug nella schermata della selezione della data in un database:
+> scelgo l'ora precisa per cui farmi mandare la notifica, ma rimane sempre
+> alle 9:00. Facciamo così: ti ricordi quando ti avevo detto che di default
+> se non metto un orario deve essere sempre alle 9:00? Toglila, tanto l'ora
+> manualmente la inserisco sempre
+> EDIT: quando ho chiuso un attimo la schermata e l'ho riaperta, mi ha fatto
+> scegliere le 15:00, ma per esempio non mi fa mettere le 15:01 o un altro
+> minuto, anche se chiudo l'app»
+
+- **[Bug]** **"Set time" teneva l'ora di prima** se si premeva "Done" mentre
+  la rotella si stava ancora fermando: dopo un colpo veloce sui minuti
+  restavano quelli di partenza (le 9:00, o le 15:00). Ora "Done" prende i
+  numeri che si vedono in mezzo. Vale per ogni "Set time" dell'app: date
+  dei database, eventi del calendario, durate, righe "/notification"
+- **[Modificato]** **Niente più 9:00 da sole**: accendendo "Include
+  notification" si accende anche "Include time", e spegnendo l'ora si spegne
+  la notifica, così la notifica suona sempre all'ora scelta. L'ora proposta,
+  quando non ce n'è una, è quella di adesso e non più le 9:00 (la fine un'ora
+  dopo). Le date salvate prima con la notifica e senza ora restano com'erano
+  (alle 9:00) finché non le si cambia: nel database del telefono è una sola,
+  "Picross S Climax" in Videogames
+- **[Progetto]** `WheelPicker` ha `onLiveValue`, il numero in mezzo a ogni
+  momento (`snapshotFlow`), e `SamsungTimeDialog` lo usa per ore e minuti.
+  Test: `TimeDialogTest` (colpo sui minuti, "Done" a metà corsa: i minuti non
+  sono più quelli di partenza), che senza la correzione fallisce
+- Verificato sul telefono su una riga di prova in Main calendar (poi tolta):
+  spenta l'ora si spegne la notifica, accesa la notifica si accende l'ora;
+  colpo veloce sui minuti e "Done" subito, con la rotella su 15:07 → "Start
+  time 15:07", e nel database 20/10/2026 15:07 con ora e notifica. Prima
+  della correzione lo stesso gesto aveva dato 09:05. Il database del telefono
+  è identico a prima delle prove
 ### 🆕 v0.163 — 14/10/2026 · 11:35 — "---" fa un divisore, e "Move up"/"Move down" per immagini, file e divisori
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 515 test
 passati; commit solo in locale)*

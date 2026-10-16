@@ -7547,9 +7547,16 @@ private fun CardPropertyValue(
  * impostazioni dell'app.
  *
  * **"Include notification"** (dal 25/09/2026), sotto "Include time":
- * la data manda una notifica col nome della pagina, all'ora scelta o
- * alle 9:00 se l'ora non c'è; con una data di fine, il primo giorno e
- * l'ultimo. Vedi `data/notify/Reminders.kt`.
+ * la data manda una notifica col nome della pagina, all'ora scelta; con
+ * una data di fine, all'inizio e alla fine. Vedi `data/notify/Reminders.kt`.
+ *
+ * **La notifica ha sempre un'ora scelta** (dal 16/10/2026, chiesto
+ * dall'utente: "Toglila, tanto l'ora manualmente la inserisco sempre").
+ * Prima, senza "Include time", suonava alle 9:00; ora accendendo la notifica
+ * si accende anche l'ora, e spegnendo l'ora si spegne la notifica. L'ora
+ * proposta non è più le 9:00 ma quella di adesso. Le date salvate prima con
+ * la notifica senza ora restano com'erano (alle 9:00) finché non le si
+ * cambia: aprendole non si tocca niente da sé.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -7567,16 +7574,17 @@ private fun DateEditorSheet(
     var withEndDate by remember { mutableStateOf(range?.end != null) }
     var includeTime by remember { mutableStateOf(range?.hasTime == true) }
     var includeNotification by remember { mutableStateOf(range?.notify == true) }
+    // Senza un'ora salvata si propone quella di adesso, al minuto, e la fine
+    // un'ora dopo.
+    val now = remember { LocalTime.now(AppSettings.zoneId).withSecond(0).withNano(0) }
     var startTime by remember {
         mutableStateOf(
-            range?.takeIf { it.hasTime }?.start?.toLocalDateTime()?.toLocalTime()
-                ?: LocalTime.of(9, 0)
+            range?.takeIf { it.hasTime }?.start?.toLocalDateTime()?.toLocalTime() ?: now
         )
     }
     var endTime by remember {
         mutableStateOf(
-            range?.takeIf { it.hasTime }?.end?.toLocalDateTime()?.toLocalTime()
-                ?: LocalTime.of(17, 0)
+            range?.takeIf { it.hasTime }?.end?.toLocalDateTime()?.toLocalTime() ?: now.plusHours(1)
         )
     }
     // Quale ora si sta scegliendo: null = nessuna finestra aperta.
@@ -7701,10 +7709,15 @@ private fun DateEditorSheet(
             }
 
             HorizontalDivider()
+            // Senza ora niente notifica: suonerebbe a un'ora non scelta.
+            fun setIncludeTime(on: Boolean) {
+                includeTime = on
+                if (!on) includeNotification = false
+            }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { includeTime = !includeTime }
+                    .clickable { setIncludeTime(!includeTime) }
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -7714,7 +7727,7 @@ private fun DateEditorSheet(
                     color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.weight(1f)
                 )
-                Switch(checked = includeTime, onCheckedChange = { includeTime = it })
+                Switch(checked = includeTime, onCheckedChange = { setIncludeTime(it) })
             }
 
             if (includeTime) {
@@ -7736,14 +7749,20 @@ private fun DateEditorSheet(
 
             // **La notifica della data**, chiesta dall'utente proprio qui:
             // sotto "Include time", perché è l'ora che decide quando suona.
+            // Accesa, accende anche l'ora (dal 16/10/2026): è quella scelta
+            // qui sopra a dire quando suona, non più le 9:00.
+            fun setIncludeNotification(on: Boolean) {
+                includeNotification = on
+                if (on) {
+                    includeTime = true
+                    NotificationPermission.request()
+                }
+            }
             HorizontalDivider()
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable {
-                        includeNotification = !includeNotification
-                        if (includeNotification) NotificationPermission.request()
-                    }
+                    .clickable { setIncludeNotification(!includeNotification) }
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -7766,10 +7785,7 @@ private fun DateEditorSheet(
                 }
                 Switch(
                     checked = includeNotification,
-                    onCheckedChange = {
-                        includeNotification = it
-                        if (it) NotificationPermission.request()
-                    }
+                    onCheckedChange = { setIncludeNotification(it) }
                 )
             }
 

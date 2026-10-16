@@ -40,6 +40,8 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -107,6 +109,9 @@ private const val WHEEL_REPEATS = 1_000
  * ferma**, non a ogni numero che passa; e se cambia da fuori (un altro
  * mese, un timer riportato alle rotelle) la rotella ci va da sola. Se
  * cambia `range` (i giorni di un mese diverso) la rotella rinasce.
+ *
+ * `onLiveValue`, se c'è, sa invece **il numero in mezzo a ogni momento**,
+ * anche mentre la rotella gira o si sta assestando: vedi `SamsungTimeDialog`.
  */
 @Composable
 internal fun WheelPicker(
@@ -114,6 +119,7 @@ internal fun WheelPicker(
     value: Int,
     onValueChange: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    onLiveValue: ((Int) -> Unit)? = null,
     label: (Int) -> String = { "%02d".format(it) },
     selectedColor: Color = NotionWhite,
     otherColor: Color = NotionGray400.copy(alpha = 0.45f),
@@ -122,7 +128,7 @@ internal fun WheelPicker(
     wraps: Boolean = true
 ) {
     key(range, wraps) {
-        WheelPickerContent(range, value, onValueChange, modifier, label, selectedColor, otherColor, selectedSize, otherSize, wraps)
+        WheelPickerContent(range, value, onValueChange, modifier, label, selectedColor, otherColor, selectedSize, otherSize, wraps, onLiveValue)
     }
 }
 
@@ -138,7 +144,8 @@ private fun WheelPickerContent(
     otherColor: Color,
     selectedSize: TextUnit,
     otherSize: TextUnit,
-    wraps: Boolean
+    wraps: Boolean,
+    onLiveValue: ((Int) -> Unit)?
 ) {
     // Senza fine: tante copie, e si parte da quella in mezzo. Con i capi:
     // un posto vuoto sopra il primo e sotto l'ultimo, così anche loro
@@ -161,6 +168,14 @@ private fun WheelPickerContent(
         if (!listState.isScrollInProgress) {
             val picked = valueAt(centerIndex)?.coerceIn(0, range - 1) ?: return@LaunchedEffect
             if (picked != safeValue) onValueChange(picked)
+        }
+    }
+    if (onLiveValue != null) {
+        val live by rememberUpdatedState(onLiveValue)
+        LaunchedEffect(Unit) {
+            snapshotFlow { valueAt(centerIndex) }.collect { shown ->
+                if (shown != null) live(shown.coerceIn(0, range - 1))
+            }
         }
     }
     LaunchedEffect(safeValue) {
@@ -614,7 +629,16 @@ internal fun SamsungDateDialog(
     }
 }
 
-/** "Set time": ore e minuti a rotelle, un minuto alla volta, sulle ventiquattro ore. */
+/**
+ * "Set time": ore e minuti a rotelle, un minuto alla volta, sulle
+ * ventiquattro ore.
+ *
+ * **"Done" prende i numeri che si vedono in mezzo** (dal 16/10/2026), anche
+ * se la rotella si sta ancora fermando. Prima valeva il numero di quando la
+ * rotella si era fermata del tutto: con un colpo veloce e "Done" subito
+ * dopo restava quello di prima — "scelgo l'ora precisa ma rimane sempre
+ * alle 9:00", e poi "non mi fa mettere le 15:01" (l'utente).
+ */
 @Composable
 internal fun SamsungTimeDialog(
     initial: LocalTime,
@@ -635,9 +659,9 @@ internal fun SamsungTimeDialog(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 48.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            WheelPicker(range = 24, value = hour, onValueChange = { hour = it }, modifier = Modifier.weight(1f), selectedSize = 32.sp, otherSize = 26.sp)
+            WheelPicker(range = 24, value = hour, onValueChange = { hour = it }, onLiveValue = { hour = it }, modifier = Modifier.weight(1f), selectedSize = 32.sp, otherSize = 26.sp)
             Text(":", color = NotionWhite, fontSize = 28.sp, fontWeight = FontWeight.Bold)
-            WheelPicker(range = 60, value = minute, onValueChange = { minute = it }, modifier = Modifier.weight(1f), selectedSize = 32.sp, otherSize = 26.sp)
+            WheelPicker(range = 60, value = minute, onValueChange = { minute = it }, onLiveValue = { minute = it }, modifier = Modifier.weight(1f), selectedSize = 32.sp, otherSize = 26.sp)
         }
     }
 }
