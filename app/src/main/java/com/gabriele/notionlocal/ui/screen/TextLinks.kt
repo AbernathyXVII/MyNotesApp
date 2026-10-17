@@ -1,11 +1,5 @@
 package com.gabriele.notionlocal.ui.screen
 
-import android.app.Activity
-import android.content.Context
-import android.content.ContextWrapper
-import android.content.Intent
-import android.net.Uri
-import android.os.Bundle
 import android.widget.Toast
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -115,55 +109,19 @@ internal fun Modifier.linkTaps(
 }
 
 /**
- * Apre un collegamento; se non si può, lo dice.
- *
- * **Le pagine web si aprono in una "Custom Tab"**: il riquadro del browser
- * che si posa sopra l'app, come in Notion e nella maggior parte delle app.
- * Aperto come scheda normale, il browser andava per conto suo e "indietro"
- * chiudeva la scheda e mostrava l'app usata prima, non notE (visto sul
- * telefono il 17/10/2026 con Firefox: tornava YouTube). Una Custom Tab sta
- * nell'attività di notE, e "indietro" torna qui. Il resto (`mailto:`,
- * `tel:`) va all'app che lo sa aprire.
+ * Apre un collegamento; se non si può, lo dice. Le pagine web si aprono in
+ * una Custom Tab, e "indietro" torna a notE: vedi `BlockFiles.openUrl`.
  */
 @Composable
 internal fun rememberLinkOpener(): (String) -> Unit {
     val context = LocalContext.current
     return remember(context) {
         { url ->
-            if (!openTextLink(context, url)) {
+            if (!BlockFiles.openUrl(context, url)) {
                 Toast.makeText(context, EditorStrings.cantOpenLink, Toast.LENGTH_SHORT).show()
             }
         }
     }
-}
-
-/**
- * La chiave con cui un browser riconosce la richiesta di una Custom Tab: è
- * quella che mette `CustomTabsIntent` della libreria androidx.browser, scritta
- * qui per non aggiungere la libreria intera per una riga.
- */
-private const val CUSTOM_TABS_SESSION = "android.support.customtabs.extra.SESSION"
-
-/** Vedi `rememberLinkOpener`. Falso se nessuna app sa aprire il collegamento. */
-internal fun openTextLink(context: Context, url: String): Boolean {
-    val uri = runCatching { Uri.parse(url) }.getOrNull() ?: return false
-    val intent = Intent(Intent.ACTION_VIEW, uri)
-    if (uri.scheme?.lowercase() in setOf("http", "https")) {
-        intent.putExtras(Bundle().apply { putBinder(CUSTOM_TABS_SESSION, null) })
-    }
-    // Dall'attività, la Custom Tab resta nella sua pila; senza un'attività
-    // Android vuole un'attività nuova.
-    if (context.hostActivity() == null) intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    return runCatching {
-        context.startActivity(intent)
-        true
-    }.getOrElse { BlockFiles.openUrl(context, url) }
-}
-
-private tailrec fun Context.hostActivity(): Activity? = when (this) {
-    is Activity -> this
-    is ContextWrapper -> baseContext.hostActivity()
-    else -> null
 }
 
 private val EMAIL = Regex("""^[^@\s/:]+@[^@\s/]+\.[^@\s/]+$""")

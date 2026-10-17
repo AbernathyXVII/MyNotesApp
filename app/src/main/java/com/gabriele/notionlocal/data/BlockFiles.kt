@@ -1,11 +1,14 @@
 package com.gabriele.notionlocal.data
 
+import android.app.Activity
 import android.content.ContentValues
 import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
+import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
 import android.provider.OpenableColumns
@@ -60,16 +63,55 @@ object BlockFiles {
             .setDataAndType(contentUri(context, store, fileName), mime ?: "*/*")
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         return runCatching {
-            context.startActivity(Intent.createChooser(intent, null).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            // Dalla pila di notE, come i link (vedi `openUrl`): "indietro"
+            // dal lettore torna qui.
+            context.startActivity(Intent.createChooser(intent, null).withTaskFor(context))
             true
         }.getOrElse { false }
     }
 
-    /** Apre un indirizzo nel browser, o nell'app che lo sa aprire (YouTube per un video di YouTube). */
-    fun openUrl(context: Context, url: String): Boolean = runCatching {
-        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-        true
-    }.getOrDefault(false)
+    /**
+     * **Apre un indirizzo**: una pagina web nel riquadro del browser sopra
+     * l'app (una "Custom Tab", come in Notion e nella maggior parte delle
+     * app), il resto (`mailto:`, `tel:`…) con l'app che lo sa aprire. Se c'è
+     * un'app fatta apposta per quel sito (YouTube per un video di YouTube),
+     * Android apre quella. Falso se nessuna app lo sa aprire.
+     *
+     * Fino al 17/10/2026 si apriva come scheda normale del browser, in
+     * un'attività a parte: con Firefox "indietro" chiudeva la scheda e
+     * mostrava l'app usata prima di notE (sul telefono dell'utente, YouTube).
+     * La Custom Tab sta nella pila di notE, e "indietro" torna qui. Vale per
+     * i link sul testo, i segnalibri, i video e gli audio con un indirizzo e
+     * le celle URL, email e telefono dei database.
+     */
+    fun openUrl(context: Context, url: String): Boolean {
+        val uri = runCatching { Uri.parse(url) }.getOrNull() ?: return false
+        val intent = Intent(Intent.ACTION_VIEW, uri)
+        if (uri.scheme?.lowercase() in setOf("http", "https")) {
+            intent.putExtras(Bundle().apply { putBinder(CUSTOM_TABS_SESSION, null) })
+        }
+        return runCatching {
+            context.startActivity(intent.withTaskFor(context))
+            true
+        }.getOrDefault(false)
+    }
+
+    /**
+     * La chiave con cui un browser riconosce la richiesta di una Custom Tab:
+     * è quella che mette `CustomTabsIntent` della libreria androidx.browser,
+     * scritta qui per non aggiungere la libreria intera per una riga.
+     */
+    private const val CUSTOM_TABS_SESSION = "android.support.customtabs.extra.SESSION"
+
+    /** Dall'attività di notE l'app aperta resta nella sua pila; senza un'attività Android ne vuole una nuova. */
+    private fun Intent.withTaskFor(context: Context): Intent =
+        if (context.hostActivity() == null) addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) else this
+
+    private tailrec fun Context.hostActivity(): Activity? = when (this) {
+        is Activity -> this
+        is ContextWrapper -> baseContext.hostActivity()
+        else -> null
+    }
 
     /**
      * **Salva un'immagine nella Galleria**, nella cartella "Pictures/notE":

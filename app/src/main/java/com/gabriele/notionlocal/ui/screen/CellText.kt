@@ -1,11 +1,8 @@
 package com.gabriele.notionlocal.ui.screen
 
-import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
-import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -59,6 +56,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
+import com.gabriele.notionlocal.data.BlockFiles
 import com.gabriele.notionlocal.data.entity.CellAlignment
 import com.gabriele.notionlocal.ui.i18n.DbStrings
 import com.gabriele.notionlocal.ui.theme.DarkSheet
@@ -373,12 +371,13 @@ internal fun linkUri(raw: String): String {
     return if (hasScheme) link else "https://$link"
 }
 
-/** Apre il link col browser (o l'app che lo sa aprire); se nessuna può, lo dice. */
+/**
+ * Apre il link col browser (o l'app che lo sa aprire); se nessuna può, lo
+ * dice. Una pagina web si apre in una Custom Tab, e "indietro" torna a notE:
+ * vedi `BlockFiles.openUrl`.
+ */
 internal fun openLink(context: Context, raw: String) {
-    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(linkUri(raw))).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-    try {
-        context.startActivity(intent)
-    } catch (e: ActivityNotFoundException) {
+    if (!BlockFiles.openUrl(context, linkUri(raw))) {
         Toast.makeText(context, DbStrings.cantOpenLink, Toast.LENGTH_SHORT).show()
     }
 }

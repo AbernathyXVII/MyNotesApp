@@ -2070,6 +2070,32 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🔧 v0.168.1 — 17/10/2026 · 09:46 — Anche segnalibri, video e celle URL si aprono sopra l'app
+*(Claude Code sul PC; verificato sul telefono; 539 test passati; commit solo
+in locale)*
+
+L'utente, parola per parola:
+> «Sì, fallo anche per segnalibri e video»
+
+- **[Modificato]** **Segnalibri web, video e audio con un indirizzo e le
+  celle URL, email e telefono dei database si aprono come i link sul
+  testo**: le pagine web nel riquadro del browser sopra l'app, e "indietro"
+  torna a notE. Prima si aprivano come scheda normale del browser, e
+  "indietro" poteva mostrare un'altra app. Un indirizzo che ha un'app sua
+  (un video di YouTube con l'app YouTube) si apre ancora in quella. Anche i
+  file (video, PDF…) aperti "con un'altra app" partono ora da notE, così
+  "indietro" dal lettore torna qui
+- **[Progetto]** Un modo solo di aprire gli indirizzi: `BlockFiles.openUrl`,
+  che apre come Custom Tab (fino alla v0.168 stava in `TextLinks.kt`). Lo
+  usano `rememberLinkOpener` dei link sul testo e `openLink` delle celle.
+  Senza un'attività, che nell'app non succede, chiede un'attività nuova come
+  prima. Test: `OpenUrlTest`
+- Verificato sul telefono in una riga di prova di Main calendar, poi
+  cancellata: un segnalibro di example.com si apre nel riquadro di Firefox,
+  e "indietro" torna alla pagina. Alla fine il database del telefono è
+  uguale a prima della prova. Video e celle URL passano dalla stessa
+  funzione, provata dai test; sul telefono non li ho aperti, perché un video
+  di YouTube avrebbe aperto l'app YouTube
 ### 🆕 v0.168 — 17/10/2026 · 09:39 — I link sul testo selezionato
 *(Claude Code sul PC; verificato sul telefono; 536 test passati; commit solo
 in locale)*
