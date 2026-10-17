@@ -164,6 +164,9 @@ import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material.icons.filled.Title
 import androidx.compose.material.icons.filled.ViewTimeline
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.FormatListNumbered
 import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
@@ -225,6 +228,7 @@ import com.gabriele.notionlocal.data.entity.parseFitColumns
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -285,6 +289,9 @@ import com.gabriele.notionlocal.data.entity.RecurrenceCodec
 import com.gabriele.notionlocal.data.entity.RecurrenceEnd
 import com.gabriele.notionlocal.data.entity.RecurrenceFreq
 import com.gabriele.notionlocal.data.entity.SORT_BY_NAME
+import com.gabriele.notionlocal.data.entity.SortRuleSpec
+import com.gabriele.notionlocal.data.entity.existingIn
+import com.gabriele.notionlocal.data.entity.sortRules
 import com.gabriele.notionlocal.data.entity.SelectOption
 import com.gabriele.notionlocal.data.entity.TAG_COLORS
 import com.gabriele.notionlocal.data.entity.TimelineZoom
@@ -1295,7 +1302,7 @@ private fun DatabaseViewBody(
         } else ViewToolbar(
             layout = layout,
             viewName = page?.viewName,
-            sortActive = page?.sortColumnId != null,
+            sortActive = page?.sortRules().orEmpty().existingIn(state.columns).isNotEmpty(),
             filterActive = viewModel.filterColumn() != null,
             // Cercare non cambia niente di come è fatto il database: c'è
             // anche con "Lock view".
@@ -1744,33 +1751,25 @@ private fun DatabaseViewBody(
     }
 
     if (showSort) {
+        val rules = page?.sortRules().orEmpty().existingIn(state.columns)
         SortSheet(
             columns = state.columns,
-            sortColumnId = page?.sortColumnId,
-            descending = page?.sortDescending == true,
-            thenSortColumnId = page?.thenSortColumnId,
-            thenDescending = page?.thenSortDescending == true,
-            onPick = { columnId ->
-                // Scegliendo una proprietà si parte sempre dal
-                // crescente: è il verso che ci si aspetta, e per
-                // l'altro basta un tocco in più. La finestra resta
-                // aperta (dal 05/10/2026): sotto c'è la seconda regola.
-                viewModel.setSort(columnId, descending = false)
+            rules = rules,
+            onPickFirst = { columnId ->
+                // Scegliendo una proprietà si parte sempre dal crescente: è
+                // il verso che ci si aspetta. Ritoccando quella che è già la
+                // prima, il verso si rovescia.
+                if (rules.firstOrNull()?.column == columnId) {
+                    viewModel.toggleSortRule(columnId)
+                } else {
+                    viewModel.setSort(columnId, descending = false)
+                }
             },
-            onToggleDirection = {
-                viewModel.setSort(page?.sortColumnId, descending = page?.sortDescending != true)
-            },
-            onClear = {
-                // Se c'è, la seconda regola sale al posto della prima.
-                val promoted = page?.thenSortColumnId != null
-                viewModel.setSort(null, descending = false)
-                if (!promoted) showSort = false
-            },
-            onPickThen = { columnId -> viewModel.setThenSort(columnId, descending = false) },
-            onToggleThenDirection = {
-                viewModel.setThenSort(page?.thenSortColumnId, descending = page?.thenSortDescending != true)
-            },
-            onClearThen = { viewModel.setThenSort(null, descending = false) },
+            onAdd = { viewModel.addSortRule(it) },
+            onToggle = { viewModel.toggleSortRule(it) },
+            onMove = { columnId, by -> viewModel.moveSortRule(columnId, by) },
+            onRemove = { viewModel.removeSortRule(it) },
+            onRemoveAll = { viewModel.clearSortRules() },
             onDismiss = { showSort = false }
         )
     }
@@ -1844,7 +1843,7 @@ private fun DatabaseViewBody(
         val index = level?.indexOfFirst { it.id == live.id } ?: -1
         // Con un ordinamento le righe stanno dove dice lui: spostarle a mano
         // non si vedrebbe. Con il database bloccato non si spostano.
-        val sorted = page?.sortColumnId != null
+        val sorted = page?.sortRules().orEmpty().existingIn(state.columns).isNotEmpty()
         val canMove = !sorted && !contentLocked && index >= 0
         val move = level?.let {
             RowMoveActions(
@@ -5316,40 +5315,52 @@ internal fun SettingsToggleRow(
     }
 }
 
+/** Quale pagina della finestra dell'ordinamento si vede. */
+private enum class SortSheetPage { MAIN, RULES, ADD }
+
 /**
- * La finestra dell'ordinamento: prima quello attivo, poi le proprietà
- * fra cui scegliere.
+ * La finestra dell'ordinamento.
  *
- * Il verso si cambia toccando l'ordinamento attivo, non con due voci
- * separate per crescente e decrescente: sono due stati della stessa
- * cosa, e un interruttore dice meglio di una lista che si può
- * rovesciare.
+ * **Le regole, quante se ne vogliono** (dal 17/10/2026, chiesto
+ * dall'utente). In cima, "Sort rules" apre una finestra a parte con tutte le
+ * regole, numerate nell'ordine in cui contano. "Add a sort rule" sta sempre
+ * in alto, sopra l'elenco: aggiungerne tante non vuol dire scendere in
+ * fondo. Ogni regola: un tocco ne rovescia il verso; il menu ⋮ la sposta su
+ * o giù o la toglie. Prima c'erano solo la prima regola e "Then sort by"
+ * (dal 05/10/2026).
  *
- * **La seconda regola** (dal 05/10/2026, chiesto dall'utente): sotto la
- * prima, "Then sort by" con la seconda — il verso si cambia allo stesso
- * modo, e si toglie da sola — o, se non c'è, "Add a second sort", che
- * mostra le proprietà fra cui sceglierla (tutte tranne quella della
- * prima). Vale solo fra le righe che per la prima sono pari.
+ * Sotto "Sort rules", le proprietà come prima: toccandone una diventa la
+ * prima regola; accanto, il posto e il verso di quelle che sono già in una
+ * regola ("1 ↑").
+ *
+ * Il verso si cambia toccando la regola, non con due voci separate per
+ * crescente e decrescente: sono due stati della stessa cosa.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SortSheet(
     columns: List<DatabaseColumnEntity>,
-    sortColumnId: String?,
-    descending: Boolean,
-    thenSortColumnId: String?,
-    thenDescending: Boolean,
-    onPick: (String) -> Unit,
-    onToggleDirection: () -> Unit,
-    onClear: () -> Unit,
-    onPickThen: (String) -> Unit,
-    onToggleThenDirection: () -> Unit,
-    onClearThen: () -> Unit,
+    /** Le regole, nell'ordine in cui contano. */
+    rules: List<SortRuleSpec>,
+    onPickFirst: (String) -> Unit,
+    onAdd: (String) -> Unit,
+    onToggle: (String) -> Unit,
+    onMove: (String, Int) -> Unit,
+    onRemove: (String) -> Unit,
+    onRemoveAll: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    // Si sta scegliendo la proprietà della seconda regola: al posto del
-    // resto, l'elenco delle proprietà con in cima "Then sort by".
-    var pickingThen by remember { mutableStateOf(false) }
+    var shown by remember { mutableStateOf(SortSheetPage.MAIN) }
+    val rulesScroll = rememberScrollState()
+    // Appena aggiunta una regola, l'elenco scende fino a lei: sta in fondo.
+    var revealLast by remember { mutableStateOf(false) }
+    LaunchedEffect(revealLast, rules.size, shown) {
+        if (revealLast && shown == SortSheetPage.RULES) {
+            withFrameNanos { }
+            rulesScroll.animateScrollTo(rulesScroll.maxValue)
+            revealLast = false
+        }
+    }
 
     fun nameOf(id: String): String = if (id == SORT_BY_NAME) {
         DbStrings.name
@@ -5357,54 +5368,106 @@ private fun SortSheet(
         columns.find { it.id == id }?.name?.let(DbStrings::columnName) ?: DbStrings.name
     }
 
-    /** Il Nome per primo, poi le proprietà; `except` resta fuori. */
+    /** "1 ↑": il posto e il verso della regola su questa proprietà, se c'è. */
+    fun badgeOf(id: String): String {
+        val index = rules.indexOfFirst { it.column == id }
+        if (index < 0) return ""
+        return "${index + 1} ${if (rules[index].descending) "↓" else "↑"}"
+    }
+
+    /** Il Nome per primo, poi le proprietà; quelle in `except` restano fuori. */
     @Composable
-    fun PropertyList(except: String?, onChoose: (String) -> Unit) {
+    fun PropertyList(except: Set<String>, badges: Boolean, onChoose: (String) -> Unit) {
         SheetGroup {
             var first = true
             // Il nome della pagina è una colonna della tabella ma non una
             // proprietà: va elencato a mano, e per primo, perché è quello
             // per cui si ordina più spesso.
-            if (except != SORT_BY_NAME) {
+            if (SORT_BY_NAME !in except) {
                 SettingsRow(
                     icon = Icons.Filled.Notes,
                     label = DbStrings.name,
-                    value = "",
+                    value = if (badges) badgeOf(SORT_BY_NAME) else "",
                     onClick = { onChoose(SORT_BY_NAME) }
                 )
                 first = false
             }
-            columns.filter { it.id != except }.forEach { column ->
+            columns.filter { it.id !in except }.forEach { column ->
                 if (!first) HorizontalDivider()
                 first = false
                 SettingsRow(
                     icon = column.type.icon(),
                     label = DbStrings.columnName(column.name),
-                    value = "",
+                    value = if (badges) badgeOf(column.id) else "",
                     onClick = { onChoose(column.id) }
                 )
             }
         }
     }
 
-    /** Una regola attiva: tocco = cambia verso; sotto, "Remove sort". */
+    /** Una regola: il suo numero, il verso (tocco = lo rovescia) e il menu ⋮. */
     @Composable
-    fun ActiveRule(id: String, down: Boolean, onToggle: () -> Unit, onRemove: () -> Unit) {
-        SheetGroup {
-            SettingsRow(
-                icon = if (down) Icons.Filled.ArrowDownward else Icons.Filled.ArrowUpward,
-                label = nameOf(id),
-                value = if (down) Strings.descending else Strings.ascending,
-                onClick = onToggle
+    fun RuleRow(index: Int, rule: SortRuleSpec) {
+        var menu by remember(rule.column) { mutableStateOf(false) }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onToggle(rule.column) }
+                .padding(vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "${index + 1}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.width(22.dp)
             )
-            HorizontalDivider()
-            SettingsRow(
-                icon = Icons.Filled.Delete,
-                label = DbStrings.removeSort,
-                value = "",
-                onClick = onRemove,
-                danger = true
+            Icon(
+                if (rule.descending) Icons.Filled.ArrowDownward else Icons.Filled.ArrowUpward,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            Spacer(modifier = Modifier.size(14.dp))
+            Text(text = nameOf(rule.column), modifier = Modifier.weight(1f))
+            Text(
+                text = if (rule.descending) Strings.descending else Strings.ascending,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Box {
+                IconButton(onClick = { menu = true }) {
+                    Icon(Icons.Filled.MoreVert, contentDescription = DbStrings.moreOptions)
+                }
+                DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
+                    DropdownMenuItem(
+                        text = { Text(EditorStrings.moveUp) },
+                        leadingIcon = { Icon(Icons.Filled.KeyboardArrowUp, contentDescription = null) },
+                        enabled = index > 0,
+                        onClick = {
+                            menu = false
+                            onMove(rule.column, -1)
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(EditorStrings.moveDown) },
+                        leadingIcon = { Icon(Icons.Filled.KeyboardArrowDown, contentDescription = null) },
+                        enabled = index < rules.lastIndex,
+                        onClick = {
+                            menu = false
+                            onMove(rule.column, 1)
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(DbStrings.removeSort, color = MaterialTheme.colorScheme.error) },
+                        leadingIcon = { Icon(Icons.Filled.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                        onClick = {
+                            menu = false
+                            onRemove(rule.column)
+                        }
+                    )
+                }
+            }
         }
     }
 
@@ -5417,75 +5480,127 @@ private fun SortSheet(
         )
     }
 
+    /** Il titolo della pagina della finestra; con [onBack], la freccia per tornare indietro. */
+    @Composable
+    fun Header(title: String, onBack: (() -> Unit)?) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (onBack != null) {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.Filled.ArrowBack, contentDescription = Strings.back)
+                }
+            }
+            Text(text = title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        }
+    }
+
     NoteBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         containerColor = DarkSheet
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 200.dp)
-                .padding(horizontal = 16.dp)
-                .verticalScroll(rememberScrollState())
-        ) {
-            if (pickingThen && sortColumnId != null) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = { pickingThen = false }) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = Strings.back)
-                    }
-                    Text(
-                        text = DbStrings.thenSortBy,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+        when (shown) {
+            SortSheetPage.MAIN -> Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 200.dp)
+                    .padding(horizontal = 16.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                Header(DbStrings.sort, onBack = null)
+                Spacer(modifier = Modifier.size(12.dp))
+                // In cima, le regole tutte insieme.
+                SheetGroup {
+                    SettingsRow(
+                        icon = Icons.Filled.FormatListNumbered,
+                        label = DbStrings.sortRules,
+                        value = if (rules.isEmpty()) DbStrings.none else DbStrings.sortRuleCount(rules.size),
+                        onClick = { shown = SortSheetPage.RULES }
                     )
                 }
+                Spacer(modifier = Modifier.size(16.dp))
+                Caption(DbStrings.sortBy)
+                Spacer(modifier = Modifier.size(8.dp))
+                PropertyList(except = emptySet(), badges = true, onChoose = onPickFirst)
+                Spacer(modifier = Modifier.size(24.dp))
+            }
+
+            // L'intestazione e "Add a sort rule" stanno ferme; scorre solo
+            // l'elenco delle regole.
+            SortSheetPage.RULES -> Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 200.dp)
+                    .padding(horizontal = 16.dp)
+            ) {
+                Header(DbStrings.sortRules) { shown = SortSheetPage.MAIN }
                 Spacer(modifier = Modifier.size(4.dp))
-                Caption(DbStrings.thenSortNote)
+                Caption(DbStrings.sortRulesNote)
                 Spacer(modifier = Modifier.size(12.dp))
-                PropertyList(except = sortColumnId) { id ->
-                    // Come la prima: si parte dal crescente.
-                    onPickThen(id)
-                    pickingThen = false
+                // Quando tutte le proprietà sono già in una regola non c'è
+                // altro da aggiungere.
+                val used = rules.mapTo(HashSet()) { it.column }
+                val canAdd = SORT_BY_NAME !in used || columns.any { it.id !in used }
+                SheetGroup {
+                    SettingsRow(
+                        icon = Icons.Filled.Add,
+                        label = DbStrings.addSortRule,
+                        value = "",
+                        onClick = { shown = SortSheetPage.ADD },
+                        enabled = canAdd
+                    )
+                }
+                Spacer(modifier = Modifier.size(12.dp))
+                Column(
+                    modifier = Modifier
+                        .weight(1f, fill = false)
+                        .verticalScroll(rulesScroll)
+                ) {
+                    if (rules.isEmpty()) {
+                        Text(
+                            text = DbStrings.noSortRules,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)
+                        )
+                    } else {
+                        SheetGroup {
+                            rules.forEachIndexed { index, rule ->
+                                if (index > 0) HorizontalDivider()
+                                key(rule.column) { RuleRow(index, rule) }
+                            }
+                        }
+                        Spacer(modifier = Modifier.size(16.dp))
+                        SheetGroup {
+                            SettingsRow(
+                                icon = Icons.Filled.Delete,
+                                label = DbStrings.removeAllSorts,
+                                value = "",
+                                onClick = onRemoveAll,
+                                danger = true
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.size(24.dp))
+                }
+            }
+
+            SortSheetPage.ADD -> Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 200.dp)
+                    .padding(horizontal = 16.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                Header(DbStrings.addSortRule) { shown = SortSheetPage.RULES }
+                Spacer(modifier = Modifier.size(12.dp))
+                // Una regola nuova va in fondo, in verso crescente.
+                PropertyList(except = rules.mapTo(HashSet()) { it.column }, badges = false) { id ->
+                    onAdd(id)
+                    revealLast = true
+                    shown = SortSheetPage.RULES
                 }
                 Spacer(modifier = Modifier.size(24.dp))
-                return@Column
             }
-
-            Text(
-                text = DbStrings.sort,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Spacer(modifier = Modifier.size(12.dp))
-
-            if (sortColumnId != null) {
-                ActiveRule(sortColumnId, descending, onToggleDirection, onClear)
-
-                // La seconda regola, o il modo di aggiungerla.
-                Spacer(modifier = Modifier.size(16.dp))
-                Caption(DbStrings.thenSortBy)
-                Spacer(modifier = Modifier.size(8.dp))
-                if (thenSortColumnId != null && thenSortColumnId != sortColumnId) {
-                    ActiveRule(thenSortColumnId, thenDescending, onToggleThenDirection, onClearThen)
-                } else {
-                    SheetGroup {
-                        SettingsRow(
-                            icon = Icons.Filled.Add,
-                            label = DbStrings.addThenSort,
-                            value = "",
-                            onClick = { pickingThen = true }
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.size(16.dp))
-                Caption(DbStrings.sortByAnother)
-                Spacer(modifier = Modifier.size(8.dp))
-            }
-
-            PropertyList(except = null, onChoose = onPick)
-            Spacer(modifier = Modifier.size(24.dp))
         }
     }
 }

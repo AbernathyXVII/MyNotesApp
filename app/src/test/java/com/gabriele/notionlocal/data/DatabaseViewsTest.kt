@@ -2,6 +2,9 @@ package com.gabriele.notionlocal.data
 
 import org.junit.Assert.assertFalse
 import com.gabriele.notionlocal.data.entity.DatabaseColumnEntity
+import com.gabriele.notionlocal.data.entity.sortRules
+import com.gabriele.notionlocal.data.entity.encodeSortRules
+import com.gabriele.notionlocal.data.entity.SortRuleSpec
 import com.gabriele.notionlocal.data.entity.ColumnType
 import android.app.Application
 import androidx.room.Room
@@ -68,7 +71,7 @@ class DatabaseViewsTest {
         assertTrue(view.isDatabase)
         // Da zero: niente filtro, ordinamento o gruppi del database.
         assertNull(view.filterColumnId)
-        assertNull(view.sortColumnId)
+        assertEquals(emptyList<SortRuleSpec>(), view.sortRules())
         assertEquals(id, page(database.id)!!.activeViewId)
         // Il database resta com'era.
         assertEquals(DatabaseLayout.BOARD, page(database.id)!!.databaseLayout)
@@ -171,7 +174,8 @@ class DatabaseViewsTest {
         val list = pages.createView(database.id, "Lista", DatabaseLayout.LIST)!!
         db.pageDao().update(
             page(list)!!.copy(
-                sortColumnId = level.id, sortDescending = true, filterColumnId = level.id, filterValue = "B2",
+                sortRulesJson = encodeSortRules(listOf(SortRuleSpec(level.id, descending = true))),
+                filterColumnId = level.id, filterValue = "B2",
                 viewHiddenColumnIds = title.id, freezeFirstColumn = true, freezeFirstRow = true
             )
         )
@@ -182,8 +186,7 @@ class DatabaseViewsTest {
         val host = page(database.id)!!
         assertEquals(DatabaseLayout.LIST, host.databaseLayout)
         assertEquals("Lista", host.viewName)
-        assertEquals(level.id, host.sortColumnId)
-        assertTrue(host.sortDescending)
+        assertEquals(listOf(SortRuleSpec(level.id, descending = true)), host.sortRules())
         assertEquals("B2", host.filterValue)
         assertTrue(host.freezeFirstColumn)
         assertTrue(host.freezeFirstRow)

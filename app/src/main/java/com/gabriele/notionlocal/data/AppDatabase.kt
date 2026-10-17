@@ -25,6 +25,8 @@ import com.gabriele.notionlocal.data.entity.PageEditEntity
 import com.gabriele.notionlocal.data.entity.PageEntity
 import com.gabriele.notionlocal.data.entity.PersonalWordEntity
 import com.gabriele.notionlocal.data.entity.RichTextSpan
+import com.gabriele.notionlocal.data.entity.SortRuleSpec
+import com.gabriele.notionlocal.data.entity.encodeSortRules
 import com.gabriele.notionlocal.data.entity.TableCellEntity
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -58,7 +60,7 @@ import kotlinx.serialization.json.Json
         NotebookSectionEntity::class,
         PersonalWordEntity::class
     ],
-    version = 56,
+    version = 57,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -769,6 +771,38 @@ abstract class AppDatabase : RoomDatabase() {
         }
 
         /**
+         * Le regole di ordinamento, quante se ne vogliono (17/10/2026): tutte
+         * in un elenco solo, `pages.sortRulesJson`. La prima e la seconda
+         * regola di ogni pagina ci passano dentro, nello stesso ordine e
+         * verso, e i loro campi di prima si svuotano.
+         */
+        private val MIGRATION_56_57 = object : Migration(56, 57) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE pages ADD COLUMN sortRulesJson TEXT DEFAULT NULL")
+                val moved = mutableListOf<Pair<String, String>>()
+                db.query(
+                    "SELECT id, sortColumnId, sortDescending, thenSortColumnId, thenSortDescending " +
+                        "FROM pages WHERE sortColumnId IS NOT NULL"
+                ).use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val rules = buildList {
+                            add(SortRuleSpec(cursor.getString(1), cursor.getInt(2) != 0))
+                            if (!cursor.isNull(3)) add(SortRuleSpec(cursor.getString(3), cursor.getInt(4) != 0))
+                        }
+                        encodeSortRules(rules)?.let { moved += cursor.getString(0) to it }
+                    }
+                }
+                moved.forEach { (id, json) ->
+                    db.execSQL("UPDATE pages SET sortRulesJson = ? WHERE id = ?", arrayOf<Any>(json, id))
+                }
+                db.execSQL(
+                    "UPDATE pages SET sortColumnId = NULL, sortDescending = 0, " +
+                        "thenSortColumnId = NULL, thenSortDescending = 0"
+                )
+            }
+        }
+
+        /**
          * I sottogruppi della bacheca (14/10/2026): nessuna bacheca li ha, e
          * le fasce vuote, quando ci saranno, si nascondono come nella tabella.
          */
@@ -880,7 +914,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_52_53,
                         MIGRATION_53_54,
                         MIGRATION_54_55,
-                        MIGRATION_55_56
+                        MIGRATION_55_56,
+                        MIGRATION_56_57
                     )
                     .build()
                 INSTANCE = instance

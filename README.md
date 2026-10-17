@@ -2070,6 +2070,63 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.169 — 17/10/2026 · 10:09 — Regole di ordinamento quante se ne vogliono, in "Sort rules"
+*(Claude Code sul PC; verificato sul telefono; 548 test passati; database alla
+versione 57; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Aggiungimi tante regole del sorting quante voglio che ce ne siano.
+> Verranno raggruppate insieme tutte dentro un'opzione che apre una finestra
+> singola a parte in alto aggiuntiva della schermata Sort, cosicché se ne
+> voglio creare tante regole del sorting, non devo andare troppo in fondo per
+> aggiungerne una nuova»
+
+E poi:
+> «Ho letto che vuoi mettere nell'ozpione che ti ho detto solo dalla terza in
+> poi. No. Metti anche tutte le altre. Per essere sicuro di non rompere l'app
+> come dici te, hai il permesso di rimuovere tutte le regole del sorting che
+> trovi»
+
+- **[Nuova funzionalità]** **"Sort rules" in cima alla finestra Sort**, col
+  numero di regole. Apre una finestra a parte con tutte le regole, dalla
+  prima all'ultima, numerate nell'ordine in cui contano: ognuna ordina solo
+  le righe pari per quelle sopra. "Add a sort rule" sta sempre in alto,
+  sopra l'elenco, e propone le proprietà non ancora usate; la regola nuova
+  va in fondo, in verso crescente, e l'elenco scende fino a lei. Un tocco su
+  una regola ne rovescia il verso. Il menu ⋮ ha Move up, Move down e Remove
+  sort. In fondo c'è "Remove all sorts". Quando tutte le proprietà sono già
+  in una regola, "Add a sort rule" si spegne
+- **[Modificato]** Sotto "Sort rules", "Sort by" con le proprietà come
+  prima: toccandone una diventa la prima regola, al posto di quella che
+  c'era; toccando quella che è già la prima se ne rovescia il verso. Accanto
+  alle proprietà già usate, il loro posto e verso ("1 ↓"). "Then sort by" e
+  "Add a second sort" non ci sono più: la seconda regola è una regola come
+  le altre
+- **[Progetto]** Tutte le regole in un elenco solo, `pages.sortRulesJson`
+  (`SortRuleSpec`, `SortRules.kt`). La migrazione 56→57 sposta la prima e la
+  seconda regola di ogni pagina nell'elenco, nello stesso ordine e verso, e
+  svuota i campi di prima (`sortColumnId`, `thenSortColumnId`): restano nella
+  tabella, ma non li legge più nessuno. Non è servito cancellare nessuna
+  regola: le cinque che c'erano (Videogames, Food e la sua vista nella
+  pagina iniziale, Pokédex, Habit tracker 2026) sono passate tutte. Nel
+  ViewModel `addSortRule`, `toggleSortRule`, `moveSortRule`,
+  `removeSortRule` e `clearSortRules`; `setSort` e `setThenSort` lavorano
+  sull'elenco; le regole su proprietà cancellate cadono alla prima modifica.
+  Test: `SortRulesTest`, `ManySortRulesTest` (con quattro regole conta anche
+  la quarta), `MigrationTest.from56TheTwoSortRulesMoveIntoTheList` con
+  `schema/v56.sql`, e `SecondSortTest` aggiornato
+- Verificato sul telefono, con una copia di sicurezza del database fatta
+  prima. Dopo l'aggiornamento i cinque ordinamenti sono nell'elenco, con lo
+  stesso ordine e verso. In Food "Sort rules" diceva "2 rules"; aggiunte
+  Name, Supermercato e Tipologia prodotto (cinque regole, e "Add a sort
+  rule" spento), Name rovesciata, Tipologia prodotto spostata su: salvate in
+  quell'ordine. Tolte le tre di prova, Food è tornato com'era. Il tasto
+  indietro chiude tutta la finestra, come le altre finestre che salgono dal
+  basso; per tornare alla pagina prima c'è la freccia ← in alto. Questa
+  versione compilata non è installata: alla fine il telefono non era più
+  collegato. Sul telefono c'è quella provata, uguale tranne due righe tolte
+  (un `BackHandler` che nella finestra non poteva funzionare) e il numero di
+  versione, che lì è ancora 0.168.1
 ### 🔧 v0.168.1 — 17/10/2026 · 09:46 — Anche segnalibri, video e celle URL si aprono sopra l'app
 *(Claude Code sul PC; verificato sul telefono; 539 test passati; commit solo
 in locale)*

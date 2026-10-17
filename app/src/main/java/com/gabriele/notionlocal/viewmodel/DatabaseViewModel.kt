@@ -48,6 +48,10 @@ import com.gabriele.notionlocal.data.entity.CellAlignment
 import com.gabriele.notionlocal.data.entity.withNumberSettings
 import com.gabriele.notionlocal.data.security.AppLock
 import com.gabriele.notionlocal.data.entity.SORT_BY_NAME
+import com.gabriele.notionlocal.data.entity.SortRuleSpec
+import com.gabriele.notionlocal.data.entity.existingIn
+import com.gabriele.notionlocal.data.entity.sortRules
+import com.gabriele.notionlocal.data.entity.withSortRules
 import com.gabriele.notionlocal.data.entity.parseDateRange
 import com.gabriele.notionlocal.data.entity.SelectOption
 import com.gabriele.notionlocal.data.entity.TAG_COLORS
@@ -821,22 +825,17 @@ class DatabaseViewModel(
     private class SortRule(val column: DatabaseColumnEntity?, val descending: Boolean)
 
     /**
-     * Le regole che valgono, nell'ordine: la prima e, se c'è, la seconda.
-     * Una regola su una proprietà che non c'è più non conta; senza la
-     * prima non conta nemmeno la seconda, come prima di lei.
+     * Le regole che valgono, nell'ordine in cui contano: tutte quelle della
+     * pagina (dal 17/10/2026 quante se ne vogliono, vedi `SortRules.kt`).
+     * Una regola su una proprietà che non c'è più non conta.
      */
-    private fun sortRulesOf(page: PageEntity?, columns: List<DatabaseColumnEntity>): List<SortRule> {
-        fun ruleOf(id: String?, descending: Boolean): SortRule? = when (id) {
-            null -> null
-            SORT_BY_NAME -> SortRule(null, descending)
-            else -> columns.find { it.id == id }?.let { SortRule(it, descending) }
+    private fun sortRulesOf(page: PageEntity?, columns: List<DatabaseColumnEntity>): List<SortRule> =
+        page?.sortRules().orEmpty().mapNotNull { rule ->
+            when (rule.column) {
+                SORT_BY_NAME -> SortRule(null, rule.descending)
+                else -> columns.find { it.id == rule.column }?.let { SortRule(it, rule.descending) }
+            }
         }
-        val first = ruleOf(page?.sortColumnId, page?.sortDescending == true) ?: return emptyList()
-        val then = page?.thenSortColumnId
-            ?.takeIf { it != page.sortColumnId }
-            ?.let { ruleOf(it, page.thenSortDescending) }
-        return listOfNotNull(first, then)
-    }
 
     /**
      * Due valori della stessa regola. **Le celle vuote stanno in fondo in
@@ -1107,49 +1106,78 @@ class DatabaseViewModel(
     }
 
     /**
-     * Sceglie la proprietà su cui ordinare, o null per togliere la regola.
+     * **La prima regola**: la proprietà su cui ordinare prima di tutto, o
+     * null per toglierla.
      *
-     * Con la seconda regola (dal 05/10/2026): togliendo la prima, **la
-     * seconda sale al suo posto**, col suo verso; senza nessuna delle due si
-     * torna all'ordine di creazione. Scegliendo per la prima la stessa
-     * proprietà della seconda, la seconda se ne va: ordinerebbe due volte
-     * per la stessa cosa.
+     * Togliendo la prima, **le altre salgono di un posto**, col loro verso;
+     * senza nessuna si torna all'ordine di creazione. Scegliendo per la prima
+     * una proprietà che era già in un'altra regola, quella se ne va:
+     * ordinerebbe due volte per la stessa cosa.
      */
-    fun setSort(columnId: String?, descending: Boolean) {
-        releaseCheckboxHold()
-        val current = _page.value ?: return
-        val updated = when {
-            columnId == null -> current.copy(
-                sortColumnId = current.thenSortColumnId,
-                sortDescending = current.thenSortColumnId != null && current.thenSortDescending,
-                thenSortColumnId = null,
-                thenSortDescending = false
-            )
-            columnId == current.thenSortColumnId -> current.copy(
-                sortColumnId = columnId,
-                sortDescending = descending,
-                thenSortColumnId = null,
-                thenSortDescending = false
-            )
-            else -> current.copy(sortColumnId = columnId, sortDescending = descending)
+    fun setSort(columnId: String?, descending: Boolean) = updateSortRules { rules ->
+        when (columnId) {
+            // Le altre salgono di un posto.
+            null -> rules.drop(1)
+            // Se la proprietà era già in un'altra regola, quella se ne va:
+            // ordinerebbe due volte per la stessa cosa.
+            else -> listOf(SortRuleSpec(columnId, descending)) + rules.drop(1).filter { it.column != columnId }
         }
-        _page.value = updated
-        viewModelScope.launch { pageRepository.updatePage(updated) }
     }
 
     /**
      * **La seconda regola** (dal 05/10/2026): fra le righe che per la prima
-     * sono pari, l'ordine lo dà questa. null la toglie. Senza una prima
-     * regola, o sulla sua stessa proprietà, non si mette.
+     * sono pari, l'ordine lo dà questa. null la toglie, e le altre salgono.
+     * Senza una prima regola, o sulla sua stessa proprietà, non si mette.
      */
-    fun setThenSort(columnId: String?, descending: Boolean) {
+    fun setThenSort(columnId: String?, descending: Boolean) = updateSortRules { rules ->
+        when {
+            rules.isEmpty() -> rules
+            columnId == null -> rules.take(1) + rules.drop(2)
+            columnId == rules[0].column -> rules
+            else -> rules.take(1) + SortRuleSpec(columnId, descending) + rules.drop(2).filter { it.column != columnId }
+        }
+    }
+
+    // --- Le regole di ordinamento, quante se ne vogliono (dal 17/10/2026) ---
+    //
+    // Ognuna si indica con la sua proprietà: in una pagina una proprietà sta
+    // in una regola sola.
+
+    /** Una regola nuova, in fondo (conta per ultima), in verso crescente. */
+    fun addSortRule(columnId: String) = updateSortRules { rules ->
+        if (rules.any { it.column == columnId }) rules else rules + SortRuleSpec(columnId)
+    }
+
+    /** Rovescia il verso della regola su [columnId]. */
+    fun toggleSortRule(columnId: String) = updateSortRules { rules ->
+        rules.map { if (it.column == columnId) it.copy(descending = !it.descending) else it }
+    }
+
+    /** Toglie la regola su [columnId]; quelle sotto salgono. */
+    fun removeSortRule(columnId: String) = updateSortRules { rules -> rules.filter { it.column != columnId } }
+
+    /** Sposta la regola su [columnId] di un posto: -1 su (conta di più), +1 giù. */
+    fun moveSortRule(columnId: String, by: Int) = updateSortRules { rules ->
+        val from = rules.indexOfFirst { it.column == columnId }
+        val to = from + by
+        if (from < 0 || to !in rules.indices) rules else rules.toMutableList().also { java.util.Collections.swap(it, from, to) }
+    }
+
+    /** Nessuna regola: le righe tornano nell'ordine di creazione. */
+    fun clearSortRules() = updateSortRules { emptyList() }
+
+    /**
+     * Cambia le regole della pagina tutte insieme. Prima si lasciano cadere
+     * quelle su proprietà che non ci sono più: invisibili, terrebbero un
+     * posto nella fila.
+     */
+    private fun updateSortRules(change: (List<SortRuleSpec>) -> List<SortRuleSpec>) {
         releaseCheckboxHold()
         val current = _page.value ?: return
-        if (columnId != null && (current.sortColumnId == null || columnId == current.sortColumnId)) return
-        val updated = current.copy(
-            thenSortColumnId = columnId,
-            thenSortDescending = columnId != null && descending
-        )
+        val columns = _tableState.value.columns
+        val before = current.sortRules().let { if (columns.isEmpty()) it else it.existingIn(columns) }
+        val updated = current.withSortRules(change(before))
+        if (updated == current) return
         _page.value = updated
         viewModelScope.launch { pageRepository.updatePage(updated) }
     }

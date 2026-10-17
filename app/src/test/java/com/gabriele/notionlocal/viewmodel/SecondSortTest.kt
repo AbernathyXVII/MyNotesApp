@@ -11,6 +11,8 @@ import com.gabriele.notionlocal.data.entity.DatabaseColumnEntity
 import com.gabriele.notionlocal.data.entity.DatabaseRowEntity
 import com.gabriele.notionlocal.data.entity.PageEntity
 import com.gabriele.notionlocal.data.entity.SORT_BY_NAME
+import com.gabriele.notionlocal.data.entity.sortRules
+import com.gabriele.notionlocal.data.entity.SortRuleSpec
 import com.gabriele.notionlocal.data.repository.DatabaseRepository
 import com.gabriele.notionlocal.data.repository.PageRepository
 import kotlinx.coroutines.runBlocking
@@ -95,10 +97,8 @@ class SecondSortTest {
         viewModel.setThenSort(score.id, descending = true)
         // PC prima di PS5 resta; dentro ognuna, dal voto più alto.
         waitFor("poi per voto") { titles() == listOf("Celeste", "Hades", "Astro Bot", "Bloodborne", "Returnal") }
-        waitFor("salvata") { savedPage().thenSortColumnId == score.id }
-        val saved = savedPage()
-        assertEquals(score.id, saved.thenSortColumnId)
-        assertEquals(true, saved.thenSortDescending)
+        waitFor("salvata") { savedPage().sortRules().getOrNull(1)?.column == score.id }
+        assertEquals(SortRuleSpec(score.id, descending = true), savedPage().sortRules()[1])
     }
 
     @Test
@@ -119,26 +119,23 @@ class SecondSortTest {
         viewModel.setSort(null, descending = false)
         waitFor("solo per voto") { titles().take(2).toSet() == setOf("Astro Bot", "Celeste") && titles().last() in setOf("Hades", "Returnal") }
         // Il salvataggio arriva in sottofondo.
-        waitFor("salvata") { savedPage().sortColumnId == score.id }
-        val saved = savedPage()
-        assertEquals(score.id, saved.sortColumnId)
-        assertEquals(true, saved.sortDescending)
-        assertNull(saved.thenSortColumnId)
+        waitFor("salvata") { savedPage().sortRules().firstOrNull()?.column == score.id }
+        assertEquals(listOf(SortRuleSpec(score.id, descending = true)), savedPage().sortRules())
     }
 
     @Test
     fun theSecondRuleNeedsAFirstAndADifferentProperty() {
         // Senza la prima non si mette.
         viewModel.setThenSort(score.id, descending = false)
-        assertNull(viewModel.page.value!!.thenSortColumnId)
+        assertNull(viewModel.page.value!!.sortRules().getOrNull(1))
         // Sulla stessa proprietà della prima nemmeno.
         viewModel.setSort(score.id, descending = false)
         viewModel.setThenSort(score.id, descending = true)
-        assertNull(viewModel.page.value!!.thenSortColumnId)
+        assertNull(viewModel.page.value!!.sortRules().getOrNull(1))
         // E se la prima diventa quella della seconda, la seconda se ne va.
         viewModel.setThenSort(platform.id, descending = false)
-        assertEquals(platform.id, viewModel.page.value!!.thenSortColumnId)
+        assertEquals(platform.id, viewModel.page.value!!.sortRules()[1].column)
         viewModel.setSort(platform.id, descending = false)
-        assertNull(viewModel.page.value!!.thenSortColumnId)
+        assertNull(viewModel.page.value!!.sortRules().getOrNull(1))
     }
 }

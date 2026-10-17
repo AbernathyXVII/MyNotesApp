@@ -276,20 +276,27 @@ object DbStrings {
     val openFullPage get() = t("Open as full page", "Apri a pagina intera", "Als ganze Seite öffnen", "Ouvrir en pleine page", "Abrir a página completa", "以整页打开", "전체 페이지로 열기", "フルページで開く")
     val databaseSettings get() = t("Database settings", "Impostazioni del database", "Datenbankeinstellungen", "Paramètres de la base de données", "Ajustes de la base de datos", "数据库设置", "데이터베이스 설정", "データベースの設定")
     val removeSort get() = t("Remove sort", "Rimuovi ordinamento", "Sortierung entfernen", "Supprimer le tri", "Quitar orden", "移除排序", "정렬 제거", "並べ替えを解除")
-    val sortByAnother get() = t("Sort by another property", "Ordina per un'altra proprietà", "Nach anderer Eigenschaft sortieren", "Trier par une autre propriété", "Ordenar por otra propiedad", "按其他属性排序", "다른 속성으로 정렬", "別のプロパティで並べ替え")
-    // La seconda regola di ordinamento (dal 05/10/2026).
-    val thenSortBy get() = t("Then sort by", "Poi ordina per", "Danach sortieren nach", "Puis trier par", "Después ordenar por", "然后排序依据", "다음 정렬 기준", "次の並べ替え")
-    val addThenSort get() = t("Add a second sort", "Aggiungi un secondo ordinamento", "Zweite Sortierung hinzufügen", "Ajouter un second tri", "Añadir un segundo orden", "添加第二个排序", "두 번째 정렬 추가", "2つ目の並べ替えを追加")
-    val thenSortNote get() = t(
-        "Only for the rows that are equal for the first sort.",
-        "Solo per le righe che per il primo ordinamento sono pari.",
-        "Nur für Zeilen, die bei der ersten Sortierung gleich sind.",
-        "Seulement pour les lignes égales selon le premier tri.",
-        "Solo para las filas iguales según el primer orden.",
-        "仅用于按第一个排序相同的行。",
-        "첫 번째 정렬에서 같은 행에만 적용돼요.",
-        "最初の並べ替えで同じ行にだけ使われます。"
+    // Le regole di ordinamento, quante se ne vogliono (dal 17/10/2026).
+    val sortBy get() = t("Sort by", "Ordina per", "Sortieren nach", "Trier par", "Ordenar por", "排序依据", "정렬 기준", "並べ替えの基準")
+    val sortRules get() = t("Sort rules", "Regole di ordinamento", "Sortierregeln", "Règles de tri", "Reglas de orden", "排序规则", "정렬 규칙", "並べ替えルール")
+    val addSortRule get() = t("Add a sort rule", "Aggiungi una regola", "Sortierregel hinzufügen", "Ajouter une règle de tri", "Añadir una regla de orden", "添加排序规则", "정렬 규칙 추가", "並べ替えルールを追加")
+    val noSortRules get() = t("No sort rules yet", "Ancora nessuna regola", "Noch keine Sortierregeln", "Aucune règle de tri pour l'instant", "Aún no hay reglas de orden", "还没有排序规则", "아직 정렬 규칙이 없어요", "並べ替えルールはまだありません")
+    val removeAllSorts get() = t("Remove all sorts", "Togli tutti gli ordinamenti", "Alle Sortierungen entfernen", "Supprimer tous les tris", "Quitar todos los órdenes", "移除所有排序", "모든 정렬 제거", "すべての並べ替えを解除")
+    val sortRulesNote get() = t(
+        "The first rule counts most: each one after it only orders the rows that are equal for the ones above.",
+        "La prima regola conta di più: ognuna delle seguenti ordina solo le righe che per quelle sopra sono pari.",
+        "Die erste Regel zählt am meisten: Jede weitere sortiert nur Zeilen, die bei den Regeln darüber gleich sind.",
+        "La première règle compte le plus : chacune des suivantes ne trie que les lignes égales selon celles du dessus.",
+        "La primera regla cuenta más: cada una de las siguientes solo ordena las filas iguales según las de arriba.",
+        "第一条规则最优先：之后的每条规则只对按上面规则相同的行排序。",
+        "첫 번째 규칙이 가장 우선이에요. 다음 규칙은 위 규칙에서 같은 행에만 적용돼요.",
+        "最初のルールが最優先です。次のルールは、上のルールで同じになった行だけを並べ替えます。"
     )
+    fun sortRuleCount(n: Int) = if (n == 1) {
+        t("1 rule", "1 regola", "1 Regel", "1 règle", "1 regla", "1 条规则", "규칙 1개", "1 件のルール")
+    } else {
+        t("$n rules", "$n regole", "$n Regeln", "$n règles", "$n reglas", "$n 条规则", "규칙 ${n}개", "$n 件のルール")
+    }
 
     // --- Filtro ---
 

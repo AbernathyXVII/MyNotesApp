@@ -338,19 +338,22 @@ data class PageEntity(
     // rifare la tabella delle pagine.
     var pageFont: PageFont? = null,
     var pageFontSize: Int? = null,
-    // In base a quale proprietà sono ordinate le righe, e in che verso.
-    // null = nell'ordine in cui sono state create, che è come stavano
-    // prima che l'ordinamento esistesse. Il valore speciale
-    // SORT_BY_NAME ordina per nome della pagina, che è una colonna
-    // della tabella ma non una proprietà nel database.
+    // La prima e la seconda regola di ordinamento, fino al 17/10/2026: la
+    // migrazione 56→57 le ha spostate in `sortRulesJson` e le ha svuotate.
+    // Restano solo per non rifare la tabella delle pagine; non le legge
+    // più nessuno.
     var sortColumnId: String? = null,
     var sortDescending: Boolean = false,
-    // **La seconda regola di ordinamento** (dal 05/10/2026, chiesto
-    // dall'utente): fra le righe che per la prima sono pari, l'ordine lo
-    // dà questa. null = nessuna. Senza la prima non vale; togliendo la
-    // prima, questa sale al suo posto. Vedi `DatabaseViewModel.sortRows`.
     var thenSortColumnId: String? = null,
     var thenSortDescending: Boolean = false,
+    // **Le regole di ordinamento, quante se ne vogliono** (dal 17/10/2026,
+    // chiesto dall'utente: "tante regole del sorting quante voglio"): un
+    // elenco JSON di `SortRuleSpec`, nell'ordine in cui contano. null =
+    // nessuna, cioè le righe nell'ordine in cui sono state create. Il valore
+    // speciale SORT_BY_NAME ordina per nome della pagina, che è una colonna
+    // della tabella ma non una proprietà nel database. Si legge e si scrive
+    // con `sortRules()` e `withSortRules()`: vedi `SortRules.kt`.
+    var sortRulesJson: String? = null,
     // In base a quale proprietà sono filtrate le righe, e su quale
     // valore. null = nessun filtro, cioè tutte le pagine — che è come
     // stavano prima che il filtro esistesse.

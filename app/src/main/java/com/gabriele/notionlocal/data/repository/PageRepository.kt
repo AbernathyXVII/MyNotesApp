@@ -11,6 +11,8 @@ import com.gabriele.notionlocal.data.textStatsOf
 import com.gabriele.notionlocal.data.entity.BlockEntity
 import com.gabriele.notionlocal.data.entity.ColumnType
 import com.gabriele.notionlocal.data.entity.encodeColumnWidths
+import com.gabriele.notionlocal.data.entity.encodeSortRules
+import com.gabriele.notionlocal.data.entity.parseSortRules
 import com.gabriele.notionlocal.data.entity.encodeFitColumns
 import com.gabriele.notionlocal.data.entity.parseColumnWidths
 import com.gabriele.notionlocal.data.entity.parseFitColumns
@@ -1403,8 +1405,9 @@ class PageRepository(private val db: AppDatabase) {
                     tableSubGroupColumnId = column(original.tableSubGroupColumnId),
                     boardSubGroupColumnId = column(original.boardSubGroupColumnId),
                     calendarDateColumnId = column(original.calendarDateColumnId),
-                    sortColumnId = column(original.sortColumnId),
-                    thenSortColumnId = column(original.thenSortColumnId),
+                    sortRulesJson = original.sortRulesJson?.let { json ->
+                        encodeSortRules(parseSortRules(json).map { it.copy(column = column(it.column) ?: it.column) })
+                    },
                     filterColumnId = column(original.filterColumnId),
                     // Anche le larghezze delle colonne sono per id.
                     columnWidths = encodeColumnWidths(
@@ -2311,10 +2314,7 @@ class PageRepository(private val db: AppDatabase) {
                 timelineZoom = next.timelineZoom,
                 galleryCardPreview = next.galleryCardPreview,
                 galleryCardSize = next.galleryCardSize,
-                sortColumnId = next.sortColumnId,
-                sortDescending = next.sortDescending,
-                thenSortColumnId = next.thenSortColumnId,
-                thenSortDescending = next.thenSortDescending,
+                sortRulesJson = next.sortRulesJson,
                 filterColumnId = next.filterColumnId,
                 filterValue = next.filterValue,
                 viewCalculations = next.viewCalculations,

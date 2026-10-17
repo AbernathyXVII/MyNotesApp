@@ -2,6 +2,9 @@ package com.gabriele.notionlocal.data.repository
 
 import kotlinx.coroutines.flow.first
 import com.gabriele.notionlocal.data.entity.ignoredWords
+import com.gabriele.notionlocal.data.entity.sortRules
+import com.gabriele.notionlocal.data.entity.encodeSortRules
+import com.gabriele.notionlocal.data.entity.SortRuleSpec
 import com.gabriele.notionlocal.data.entity.PROOFING_ON
 import android.app.Application
 import androidx.room.Room
@@ -444,7 +447,7 @@ class PageRepositoryTest {
                 tableGroupColumnId = status.id,
                 filterColumnId = status.id,
                 filterValue = "Done",
-                sortDescending = true
+                sortRulesJson = encodeSortRules(listOf(SortRuleSpec(status.id, descending = true)))
             )
         )
 
@@ -456,7 +459,7 @@ class PageRepositoryTest {
         assertEquals(status.id, view.tableGroupColumnId)
         assertEquals(status.id, view.filterColumnId)
         assertEquals("Done", view.filterValue)
-        assertTrue(view.sortDescending)
+        assertEquals(listOf(SortRuleSpec(status.id, descending = true)), view.sortRules())
         assertEquals(secret.id, view.viewHiddenColumnIds)
         assertEquals("Database", view.title)
         // Nessun dato suo: righe e colonne restano quelle dell'origine.
