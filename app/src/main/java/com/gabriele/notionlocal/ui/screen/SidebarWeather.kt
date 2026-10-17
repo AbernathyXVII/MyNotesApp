@@ -50,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import java.util.Locale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -191,7 +192,7 @@ private fun CityWeatherPage(city: WeatherCity, report: WeatherReport?, now: Long
         }
         if (report == null) {
             Text(
-                text = if (failed) WidgetStrings.noConnection else WidgetStrings.loadingWeather,
+                text = if (failed) WidgetStrings.noConnection else WidgetStrings.loading,
                 color = NotionGray400,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(vertical = 16.dp)
@@ -500,6 +501,10 @@ private fun CitySearch(title: String, onBack: (() -> Unit)?, onPick: (CityResult
     var results by remember { mutableStateOf<List<CityResult>?>(emptyList()) }
     var searching by remember { mutableStateOf(false) }
     val focus = remember { FocusRequester() }
+    // La lingua dell'app e quella del telefono (deciso dall'utente il
+    // 17/10/2026): con tutti e due in inglese si cerca "Milan"; con uno dei
+    // due in italiano "Milano" trova Milano, Lombardia.
+    val searchLanguages = remember { listOf(AppSettings.language.locale.language, Locale.getDefault().language).distinct() }
     LaunchedEffect(Unit) { focus.requestFocus() }
     LaunchedEffect(query) {
         if (query.trim().length < 2) {
@@ -509,7 +514,7 @@ private fun CitySearch(title: String, onBack: (() -> Unit)?, onPick: (CityResult
         }
         searching = true
         delay(350)
-        results = WeatherApi.searchCities(query, AppSettings.language.locale.language)
+        results = WeatherApi.searchCities(query, searchLanguages)
         searching = false
     }
 
@@ -534,6 +539,8 @@ private fun CitySearch(title: String, onBack: (() -> Unit)?, onPick: (CityResult
     Spacer(modifier = Modifier.height(8.dp))
     val found = results
     when {
+        // Senza niente da mostrare intanto: la risposta può metterci qualche secondo.
+        searching && found.isNullOrEmpty() -> Text(WidgetStrings.loading, color = NotionGray400, modifier = Modifier.padding(8.dp))
         found == null -> Text(WidgetStrings.noConnection, color = NotionGray400, modifier = Modifier.padding(8.dp))
         found.isEmpty() && query.trim().length >= 2 && !searching ->
             Text(WidgetStrings.noCityFound, color = NotionGray400, modifier = Modifier.padding(8.dp))

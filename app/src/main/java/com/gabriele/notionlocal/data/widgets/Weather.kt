@@ -96,8 +96,14 @@ data class WeatherDay(
     val rainChance: Int? = null
 )
 
-/** Una città trovata cercandola per nome. */
-data class CityResult(val name: String, val region: String, val latitude: Double, val longitude: Double) {
+/** Una città trovata cercandola per nome; `population` serve a mettere prima le città grandi. */
+data class CityResult(
+    val name: String,
+    val region: String,
+    val latitude: Double,
+    val longitude: Double,
+    val population: Long? = null
+) {
     fun toCity(): WeatherCity = WeatherCity(name = name, region = region, latitude = latitude, longitude = longitude)
 }
 
@@ -230,10 +236,26 @@ fun parseCitySearch(json: String): List<CityResult> = runCatching {
             name = name,
             region = region,
             latitude = city.double("latitude") ?: return@mapNotNull null,
-            longitude = city.double("longitude") ?: return@mapNotNull null
+            longitude = city.double("longitude") ?: return@mapNotNull null,
+            population = city.double("population")?.toLong()
         )
     }
 }.getOrDefault(emptyList())
+
+/**
+ * **Le città trovate in più lingue, insieme** (dal 17/10/2026): si cerca
+ * nella lingua dell'app e in quella del telefono — in inglese Milano si
+ * chiama "Milan", e "Milano" trova solo le Milano del Texas e del Perù — e si
+ * mettono insieme le risposte: la stessa città (stesso punto sulla mappa) una
+ * volta sola, col nome della prima lingua, e **prima le città con più
+ * abitanti**.
+ */
+fun mergeCityResults(lists: List<List<CityResult>>): List<CityResult> {
+    fun place(c: CityResult) = Math.round(c.latitude * 100) to Math.round(c.longitude * 100)
+    return lists.flatten()
+        .distinctBy { place(it) }
+        .sortedByDescending { it.population ?: -1 }
+}
 
 private fun JsonObject.obj(key: String): JsonObject? = this[key] as? JsonObject
 private fun JsonObject.array(key: String): List<JsonElement> = (this[key] as? JsonArray)?.jsonArray.orEmpty()

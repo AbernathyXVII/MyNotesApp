@@ -97,6 +97,10 @@ import com.gabriele.notionlocal.data.widgets.Widget
 import com.gabriele.notionlocal.data.widgets.WidgetKind
 import com.gabriele.notionlocal.data.widgets.WidgetStore
 import com.gabriele.notionlocal.data.widgets.WeatherUpdates
+import com.gabriele.notionlocal.data.widgets.SportsUpdates
+import com.gabriele.notionlocal.data.widgets.SportsWidget
+import com.gabriele.notionlocal.data.widgets.StocksUpdates
+import com.gabriele.notionlocal.data.widgets.StocksWidget
 import com.gabriele.notionlocal.data.widgets.WeatherWidget
 import com.gabriele.notionlocal.data.widgets.cityName
 import com.gabriele.notionlocal.data.widgets.fractionAt
@@ -233,6 +237,10 @@ private fun WidgetCard(widget: Widget, index: Int, count: Int, now: Long, active
     // La finestra delle città del meteo: si apre tenendo premuta una città
     // o dai tre puntini.
     var weatherCities by remember(widget.id) { mutableStateOf(false) }
+    // Lo stesso per le competizioni dello sport.
+    var sportsCompetitions by remember(widget.id) { mutableStateOf(false) }
+    // E per i titoli della borsa.
+    var stockList by remember(widget.id) { mutableStateOf(false) }
     Column(
         modifier = Modifier
             .padding(horizontal = 12.dp, vertical = 5.dp)
@@ -291,6 +299,28 @@ private fun WidgetCard(widget: Widget, index: Int, count: Int, now: Long, active
                             onClick = { menuOpen = false; WeatherUpdates.refresh(widget, force = true) }
                         )
                     }
+                    if (widget is SportsWidget) {
+                        DropdownMenuItem(
+                            text = { Text(WidgetStrings.competitions) },
+                            onClick = { menuOpen = false; sportsCompetitions = true }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(WidgetStrings.refresh) },
+                            enabled = widget.competitions.isNotEmpty(),
+                            onClick = { menuOpen = false; SportsUpdates.refresh(widget, AppSettings.zoneId, force = true) }
+                        )
+                    }
+                    if (widget is StocksWidget) {
+                        DropdownMenuItem(
+                            text = { Text(WidgetStrings.stockList) },
+                            onClick = { menuOpen = false; stockList = true }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(WidgetStrings.refresh) },
+                            enabled = widget.items.isNotEmpty(),
+                            onClick = { menuOpen = false; StocksUpdates.refresh(widget, force = true) }
+                        )
+                    }
                     // **Il decimale sulle percentuali** (dal 29/09/2026).
                     if (widget is LifeProgressWidget) {
                         DropdownMenuItem(
@@ -325,6 +355,19 @@ private fun WidgetCard(widget: Widget, index: Int, count: Int, now: Long, active
                     now = now,
                     managing = weatherCities,
                     onManagingChange = { weatherCities = it }
+                )
+                is SportsWidget -> SportsView(
+                    widget = widget,
+                    active = active,
+                    now = now,
+                    managing = sportsCompetitions,
+                    onManagingChange = { sportsCompetitions = it }
+                )
+                is StocksWidget -> StocksView(
+                    widget = widget,
+                    active = active,
+                    managing = stockList,
+                    onManagingChange = { stockList = it }
                 )
             }
         }
@@ -361,6 +404,8 @@ private fun Widget.kind(): WidgetKind = when (this) {
     is StopwatchWidget -> WidgetKind.STOPWATCH
     is TimerWidget -> WidgetKind.TIMER
     is WeatherWidget -> WidgetKind.WEATHER
+    is SportsWidget -> WidgetKind.SPORTS
+    is StocksWidget -> WidgetKind.STOCKS
 }
 
 @Composable

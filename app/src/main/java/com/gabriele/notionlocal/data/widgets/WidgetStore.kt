@@ -137,6 +137,8 @@ object WidgetStore {
             WidgetKind.STOPWATCH -> StopwatchWidget()
             WidgetKind.TIMER -> TimerWidget()
             WidgetKind.WEATHER -> WeatherWidget()
+            WidgetKind.SPORTS -> SportsWidget()
+            WidgetKind.STOCKS -> StocksWidget()
         }
         s.copy(widgets = s.widgets + widget)
     }
@@ -205,6 +207,59 @@ object WidgetStore {
     /** Il meteo appena scaricato di una città (se c'è ancora). */
     fun setWeatherReport(widgetId: String, cityId: String, report: WeatherReport) = updateWidget<WeatherWidget>(widgetId) { w ->
         if (w.cities.none { it.id == cityId }) w else w.copy(reports = w.reports + (cityId to report))
+    }
+
+    // --- Sport (dal 17/10/2026) ---
+
+    /** Una competizione in fondo, se non c'è già. Non più di `MAX_SPORT_COMPETITIONS`. */
+    fun addSportCompetition(widgetId: String, competition: SportCompetition) = updateWidget<SportsWidget>(widgetId) { w ->
+        val already = w.competitions.any { it.sport == competition.sport && it.league == competition.league }
+        if (already || w.competitions.size >= MAX_SPORT_COMPETITIONS) w else w.copy(competitions = w.competitions + competition)
+    }
+
+    fun removeSportCompetition(widgetId: String, competitionId: String) = updateWidget<SportsWidget>(widgetId) { w ->
+        w.copy(competitions = w.competitions.filterNot { it.id == competitionId }, reports = w.reports - competitionId)
+    }
+
+    /** Su (-1) o giù (+1) di un posto; in cima è quella che si vede per prima. */
+    fun moveSportCompetition(widgetId: String, competitionId: String, delta: Int) = updateWidget<SportsWidget>(widgetId) { w ->
+        val list = w.competitions.toMutableList()
+        val from = list.indexOfFirst { it.id == competitionId }
+        val to = from + delta
+        if (from < 0 || to !in list.indices) return@updateWidget w
+        list.add(to, list.removeAt(from))
+        w.copy(competitions = list)
+    }
+
+    fun setSportReport(widgetId: String, competitionId: String, report: SportReport) = updateWidget<SportsWidget>(widgetId) { w ->
+        if (w.competitions.none { it.id == competitionId }) w else w.copy(reports = w.reports + (competitionId to report))
+    }
+
+    // --- Borsa (dal 17/10/2026) ---
+
+    /** Un titolo in fondo, se non c'è già. Non più di `MAX_STOCKS`. */
+    fun addStock(widgetId: String, item: StockItem) = updateWidget<StocksWidget>(widgetId) { w ->
+        if (w.items.any { it.symbol == item.symbol } || w.items.size >= MAX_STOCKS) w else w.copy(items = w.items + item)
+    }
+
+    fun removeStock(widgetId: String, symbol: String) = updateWidget<StocksWidget>(widgetId) { w ->
+        w.copy(items = w.items.filterNot { it.symbol == symbol }, quotes = w.quotes - symbol)
+    }
+
+    /** Su (-1) o giù (+1) di un posto. */
+    fun moveStock(widgetId: String, symbol: String, delta: Int) = updateWidget<StocksWidget>(widgetId) { w ->
+        val list = w.items.toMutableList()
+        val from = list.indexOfFirst { it.symbol == symbol }
+        val to = from + delta
+        if (from < 0 || to !in list.indices) return@updateWidget w
+        list.add(to, list.removeAt(from))
+        w.copy(items = list)
+    }
+
+    /** I prezzi appena scaricati: quelli che non sono arrivati restano quelli di prima. */
+    fun setStockQuotes(widgetId: String, quotes: Map<String, StockQuote>, at: Long) = updateWidget<StocksWidget>(widgetId) { w ->
+        val symbols = w.items.map { it.symbol }.toSet()
+        w.copy(quotes = (w.quotes + quotes).filterKeys { it in symbols }, fetchedAt = at)
     }
 
     // --- Avanzamento ---
@@ -430,4 +485,4 @@ object WidgetStore {
 }
 
 /** I widget che si possono aggiungere, nell'ordine del menu. */
-enum class WidgetKind { TIME_ZONES, LIFE_PROGRESS, COUNTER, POMODORO, STOPWATCH, TIMER, WEATHER }
+enum class WidgetKind { TIME_ZONES, LIFE_PROGRESS, COUNTER, POMODORO, STOPWATCH, TIMER, WEATHER, SPORTS, STOCKS }

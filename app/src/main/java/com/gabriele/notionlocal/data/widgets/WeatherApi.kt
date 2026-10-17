@@ -1,9 +1,9 @@
 package com.gabriele.notionlocal.data.widgets
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.withContext
-import java.net.HttpURLConnection
-import java.net.URL
 import java.net.URLEncoder
 import java.util.Locale
 
@@ -14,9 +14,6 @@ import java.util.Locale
  */
 object WeatherApi {
 
-    private const val TIMEOUT_MS = 10_000
-    private const val MAX_BYTES = 256 * 1024
-
     /** Adesso, le prossime 48 ore e i prossimi sette giorni, con le ore della città. */
     suspend fun forecast(city: WeatherCity): WeatherReport? = withContext(Dispatchers.IO) {
         val url = "https://api.open-meteo.com/v1/forecast" +
@@ -25,42 +22,28 @@ object WeatherApi {
             "&hourly=temperature_2m,weather_code,precipitation_probability,is_day" +
             "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max" +
             "&timezone=auto&forecast_days=7&forecast_hours=48"
-        get(url)?.let { parseForecast(it, System.currentTimeMillis()) }
+        WidgetHttp.get(url, maxBytes = 256 * 1024)?.let { parseForecast(it, System.currentTimeMillis()) }
     }
 
     /**
-     * Le città che si chiamano così, coi nomi nella lingua dell'app ("Monaco
-     * di Baviera"). Null senza rete; vuota se non ce n'è nessuna.
+     * Le città che si chiamano così in una di [languages] — la lingua
+     * dell'app e quella del telefono —, coi nomi della prima ("Monaco di
+     * Baviera"), le più grandi per prime (vedi `mergeCityResults`). Le
+     * lingue si chiedono insieme. Null senza rete; vuota se non ce n'è
+     * nessuna.
      */
-    suspend fun searchCities(query: String, language: String): List<CityResult>? = withContext(Dispatchers.IO) {
+    suspend fun searchCities(query: String, languages: List<String>): List<CityResult>? = withContext(Dispatchers.IO) {
         val text = query.trim()
         if (text.length < 2) return@withContext emptyList()
-        val url = "https://geocoding-api.open-meteo.com/v1/search" +
-            "?name=${URLEncoder.encode(text, "UTF-8")}&count=10&language=$language&format=json"
-        get(url)?.let { parseCitySearch(it) }
+        val answers = languages.distinct().map { language ->
+            async {
+                val url = "https://geocoding-api.open-meteo.com/v1/search" +
+                    "?name=${URLEncoder.encode(text, "UTF-8")}&count=10&language=$language&format=json"
+                WidgetHttp.get(url, maxBytes = 256 * 1024)?.let { parseCitySearch(it) }
+            }
+        }.awaitAll()
+        if (answers.all { it == null }) null else mergeCityResults(answers.filterNotNull()).take(15)
     }
 
     private fun coordinate(value: Double): String = String.format(Locale.ROOT, "%.4f", value)
-
-    private fun get(url: String): String? = runCatching {
-        val connection = URL(url).openConnection() as HttpURLConnection
-        try {
-            connection.connectTimeout = TIMEOUT_MS
-            connection.readTimeout = TIMEOUT_MS
-            connection.setRequestProperty("Accept", "application/json")
-            if (connection.responseCode !in 200..299) return@runCatching null
-            val out = java.io.ByteArrayOutputStream()
-            connection.inputStream.use { input ->
-                val buffer = ByteArray(16 * 1024)
-                while (out.size() < MAX_BYTES) {
-                    val read = input.read(buffer)
-                    if (read < 0) break
-                    out.write(buffer, 0, read)
-                }
-            }
-            String(out.toByteArray(), Charsets.UTF_8)
-        } finally {
-            connection.disconnect()
-        }
-    }.getOrNull()
 }

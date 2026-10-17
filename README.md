@@ -2070,6 +2070,81 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.171 — 17/10/2026 · 14:50 — I widget dello sport e della borsa
+*(Claude Code sul PC; provato sul telefono con internet; 569 test passati;
+commit solo in locale)*
+
+La richiesta dei tre widget è quella della v0.170. Sul meteo, poi, l'utente,
+parola per parola:
+> «Invece che ammattirti, facciamo che devo cercare le città in inglese (dato
+> che ho telefono e lingua dell'app in inglese). Se un giorno dovessi cambiare
+> lingua di uno dei due o di entrambi, allora cercando Milano troverò Milano -
+> Lombardia. Ora per i testo cerca Milan e rispetta la regola dell'ordine
+> degli abitanti»
+
+E durante la prova dello sport:
+> «Ci mette troppo a caricarsi. Come mai?»
+
+- **[Nuova funzionalità]** **"Sports" fra i widget della barra laterale**.
+  Una pagina per competizione, fino a dieci, che si sfogliano col dito:
+  calcio (Serie A, Serie B, Coppa Italia, Champions, Europa e Conference
+  League, Premier League, LaLiga, Bundesliga, Ligue 1, Nations League,
+  Mondiali e qualificazioni UEFA), tennis (ATP, WTA), basket (NBA, WNBA,
+  NCAA), baseball (MLB) e football americano (NFL, college). Sulla pagina le
+  ultime partite finite, quelle in corso col minuto in rosso e le prossime.
+  **Un tocco** apre la finestra con due schede: "Matches", tutte le partite
+  divise per giorno, e "Standings" (nel tennis "Ranking"), la classifica.
+  **Tenendo premuto** si apre l'elenco delle competizioni: "Add a
+  competition" in cima, e per ognuna, dal menu ⋮, Show first, Move up,
+  Move down e Remove
+- **[Nuova funzionalità]** **"Stocks" fra i widget**: la lista dei titoli
+  come nella foto dell'utente, con sigla, nome, prezzo e variazione del
+  giorno in verde o in rosso, fino a trenta titoli. Si cercano per nome o
+  sigla (azioni, indici, cambi, fondi), con borsa e tipo nella lingua
+  dell'app ("Milan · Equity"). **Un tocco** su un titolo apre i dettagli:
+  prezzo e valuta, chiusura precedente, minimo e massimo del giorno e
+  dell'anno, ultimo scambio (con data e ora come in Settings). **Tenendo
+  premuto** si apre la lista per aggiungere, spostare e togliere i titoli
+- **[Nuova funzionalità]** Come il meteo, sport e borsa si scaricano **solo
+  con la barra aperta**: lo sport ogni cinque minuti (ogni minuto con una
+  partita in corso, la classifica ogni mezz'ora), la borsa ogni cinque
+  minuti, o subito con "Refresh" nei tre puntini. Senza rete resta l'ultimo
+  dato salvato, con "No connection" accanto all'ora
+- **[Modificato]** **Le città si cercano nella lingua dell'app e in quella
+  del telefono**, come ha deciso l'utente: con tutti e due in inglese si
+  cerca "Milan"; con uno dei due in italiano anche "Milano" trova Milano,
+  Lombardia. Le città trovate vengono **dalla più abitata alla meno
+  abitata**, e la stessa città una volta sola
+- **[Bug fix]** **Lo sport non fa più aspettare minuti**. Sul telefono il
+  DNS privato (AdGuard) ogni tanto impiega 16 secondi a trovare un sito, e
+  il widget faceva sei domande a ESPN una dopo l'altra: la Serie A ci ha
+  messo più di due minuti. Ora le domande partono tutte insieme, e la prima
+  volta le partite compaiono appena arriva la prima risposta: la Premier
+  League si è caricata in pochi secondi. Anche le ricerche e i prezzi dei
+  titoli chiedono tutto insieme
+- **[Modificato]** Le ricerche di città e titoli mostrano **"Loading…"**
+  mentre aspettano la risposta, invece di una finestra vuota
+- **[Modificato]** Nella finestra delle partite il giorno sta solo nel
+  titolo sopra le partite, e la scheda non scelta è grigia. L'avviso "Remove
+  this widget?" non elenca più orologi e contatori, che non c'entrano coi
+  widget nuovi
+- **[Progetto]** Le partite e le classifiche da **ESPN**, i prezzi e la
+  ricerca da **Yahoo Finance**: gratuiti, senza account né chiave, ma non
+  ufficiali (possono cambiare senza preavviso), e i prezzi possono essere
+  in ritardo fino a quindici minuti. `SportsWidget` e la lettura delle
+  risposte in `Sports.kt`, le domande in `SportsApi.kt`, il widget in
+  `SidebarSports.kt`; la borsa in `Stocks.kt` e `SidebarStocks.kt`; la
+  richiesta comune in `WidgetHttp.kt`. Test: `SportsTest`, `StocksTest`,
+  `SportsWidgetTest`, `StocksWidgetTest` e un test nuovo in `WeatherTest`,
+  con risposte vere salvate in `resources/sports`, `resources/stocks` e
+  `resources/weather`
+- Provato sul telefono, con internet: il meteo di Milano (cercando "Milan",
+  Milano, Lombardia era la prima) e il tempo ora per ora; la Serie A con
+  partite e classifica e la Premier League con una partita in corso; la
+  ricerca "leonardo", Leonardo (LDO.MI) a +4,73% con i dettagli, e la
+  ricerca "enel" in inglese con "Loading…". Poi i tre widget di prova sono
+  stati tolti, e i widget, le impostazioni e il database sono tornati
+  identici a prima
 ### 🆕 v0.170 — 17/10/2026 · 14:01 — Il widget del meteo
 *(Claude Code sul PC; provato sul telefono senza rete, con la rete dal PC e
 nei test; 554 test passati; commit solo in locale)*

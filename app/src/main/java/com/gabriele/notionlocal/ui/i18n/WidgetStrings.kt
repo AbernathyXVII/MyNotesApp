@@ -21,14 +21,14 @@ object WidgetStrings {
     val remove get() = t("Remove", "Rimuovi", "Entfernen", "Retirer", "Quitar", "移除", "제거", "削除")
     val removeWidgetTitle get() = t("Remove this widget?", "Rimuovere questo widget?", "Dieses Widget entfernen?", "Retirer ce widget ?", "¿Quitar este widget?", "移除此小组件？", "이 위젯을 제거할까요?", "このウィジェットを削除しますか？")
     val removeWidgetText get() = t(
-        "What it contains goes away with it: clocks, dates, the counter's number, the timer.",
-        "Se ne va con quello che contiene: orologi, date, il numero del contatore, il timer.",
-        "Sein Inhalt geht mit: Uhren, Daten, der Zählerstand, der Timer.",
-        "Son contenu part avec lui : horloges, dates, le nombre du compteur, le minuteur.",
-        "Se va con lo que contiene: relojes, fechas, el número del contador, el temporizador.",
-        "其中的内容会一起删除：时钟、日期、计数器的数字、计时器。",
-        "안에 있는 내용도 함께 사라집니다: 시계, 날짜, 카운터 숫자, 타이머.",
-        "中身も一緒に消えます：時計、日付、カウンターの数、タイマー。"
+        "What it contains goes away with it.",
+        "Se ne va con quello che contiene.",
+        "Sein Inhalt geht mit.",
+        "Son contenu part avec lui.",
+        "Se va con lo que contiene.",
+        "其中的内容会一起删除。",
+        "안에 있는 내용도 함께 사라집니다.",
+        "中身も一緒に消えます。"
     )
 
     fun kindName(kind: com.gabriele.notionlocal.data.widgets.WidgetKind): String = when (kind) {
@@ -39,6 +39,68 @@ object WidgetStrings {
         com.gabriele.notionlocal.data.widgets.WidgetKind.STOPWATCH -> stopwatch
         com.gabriele.notionlocal.data.widgets.WidgetKind.TIMER -> timer
         com.gabriele.notionlocal.data.widgets.WidgetKind.WEATHER -> weather
+        com.gabriele.notionlocal.data.widgets.WidgetKind.SPORTS -> sports
+        com.gabriele.notionlocal.data.widgets.WidgetKind.STOCKS -> stocks
+    }
+    val stocks get() = t("Stocks", "Borsa", "Börse", "Bourse", "Bolsa", "股票", "주식", "株式")
+
+    // --- Borsa (dal 17/10/2026) ---
+
+    val addStock get() = t("Add a stock", "Aggiungi un titolo", "Wertpapier hinzufügen", "Ajouter un titre", "Añadir un valor", "添加股票", "종목 추가", "銘柄を追加")
+    val stockList get() = t("Stocks", "Titoli", "Wertpapiere", "Titres", "Valores", "股票", "종목", "銘柄")
+    val stockListNote get() = t(
+        "In the order you choose. Prices can be up to 15 minutes late.",
+        "Nell'ordine che scegli. I prezzi possono arrivare fino a 15 minuti in ritardo.",
+        "In deiner Reihenfolge. Kurse können bis zu 15 Minuten verzögert sein.",
+        "Dans l'ordre que vous choisissez. Les cours peuvent avoir jusqu'à 15 minutes de retard.",
+        "En el orden que elijas. Los precios pueden llegar hasta 15 minutos tarde.",
+        "按你选择的顺序。价格可能延迟最多 15 分钟。",
+        "원하는 순서대로. 가격은 최대 15분 늦을 수 있어요.",
+        "好きな順番で。価格は最大15分遅れることがあります。"
+    )
+    val searchStock get() = t("Search by name or symbol", "Cerca per nome o sigla", "Nach Name oder Kürzel suchen", "Rechercher par nom ou symbole", "Buscar por nombre o símbolo", "按名称或代码搜索", "이름 또는 기호로 검색", "名前またはシンボルで検索")
+    val noStockFound get() = t("Nothing found", "Niente trovato", "Nichts gefunden", "Rien trouvé", "Nada encontrado", "未找到", "찾을 수 없어요", "見つかりません")
+    val removeStock get() = t("Remove", "Togli", "Entfernen", "Retirer", "Quitar", "移除", "제거", "削除")
+    val previousClose get() = t("Previous close", "Chiusura precedente", "Vortagesschluss", "Clôture précédente", "Cierre anterior", "前收盘价", "전일 종가", "前日終値")
+    val dayRange get() = t("Day range", "Minimo e massimo di oggi", "Tagesspanne", "Fourchette du jour", "Rango del día", "日内区间", "일일 범위", "1日の値幅")
+    val yearRange get() = t("52-week range", "Minimo e massimo di un anno", "52-Wochen-Spanne", "Fourchette sur 52 semaines", "Rango de 52 semanas", "52 周区间", "52주 범위", "52週の値幅")
+    val lastTrade get() = t("Last trade", "Ultimo scambio", "Letzter Handel", "Dernière transaction", "Última operación", "最后交易", "마지막 거래", "最終取引")
+    val stocksSource get() = t("Data: Yahoo Finance · may be delayed", "Dati: Yahoo Finance · possono essere in ritardo", "Daten: Yahoo Finance · ggf. verzögert", "Données : Yahoo Finance · peuvent être différées", "Datos: Yahoo Finance · pueden llegar tarde", "数据：Yahoo Finance · 可能延迟", "데이터: Yahoo Finance · 지연될 수 있음", "データ：Yahoo Finance · 遅延の可能性あり")
+    val sports get() = t("Sports", "Sport", "Sport", "Sports", "Deportes", "体育", "스포츠", "スポーツ")
+
+    // --- Sport (dal 17/10/2026) ---
+
+    val addCompetition get() = t("Add a competition", "Aggiungi una competizione", "Wettbewerb hinzufügen", "Ajouter une compétition", "Añadir una competición", "添加赛事", "대회 추가", "大会を追加")
+    val competitions get() = t("Competitions", "Competizioni", "Wettbewerbe", "Compétitions", "Competiciones", "赛事", "대회", "大会")
+    val competitionsNote get() = t(
+        "The first one is the one you see first. Up to 10.",
+        "La prima è quella che si vede per prima. Fino a 10.",
+        "Der erste wird zuerst angezeigt. Bis zu 10.",
+        "La première est celle qu'on voit en premier. Jusqu'à 10.",
+        "La primera es la que se ve primero. Hasta 10.",
+        "第一个最先显示。最多 10 个。",
+        "첫 번째가 먼저 보여요. 최대 10개.",
+        "最初のものが最初に表示されます。最大10件。"
+    )
+    val makeFirst get() = t("Show first", "Mostra per prima", "Zuerst zeigen", "Afficher en premier", "Mostrar primero", "首先显示", "먼저 표시", "最初に表示")
+    val removeCompetition get() = t("Remove competition", "Togli la competizione", "Wettbewerb entfernen", "Retirer la compétition", "Quitar competición", "移除赛事", "대회 제거", "大会を削除")
+    val matches get() = t("Matches", "Partite", "Spiele", "Matchs", "Partidos", "比赛", "경기", "試合")
+    val standings get() = t("Standings", "Classifica", "Tabelle", "Classement", "Clasificación", "积分榜", "순위", "順位表")
+    val ranking get() = t("Ranking", "Classifica", "Rangliste", "Classement", "Ranking", "排名", "랭킹", "ランキング")
+    val noStandings get() = t("No standings for this competition", "Nessuna classifica per questa competizione", "Keine Tabelle für diesen Wettbewerb", "Pas de classement pour cette compétition", "Sin clasificación para esta competición", "此赛事没有积分榜", "이 대회는 순위가 없어요", "この大会には順位表がありません")
+    val noMatches get() = t("No matches in these days", "Nessuna partita in questi giorni", "Keine Spiele in diesen Tagen", "Aucun match ces jours-ci", "Ningún partido estos días", "这几天没有比赛", "요즘 경기가 없어요", "この数日は試合がありません")
+    val finalScore get() = t("Final", "Finale", "Ende", "Terminé", "Final", "完赛", "종료", "終了")
+    val postponed get() = t("Postponed", "Rinviata", "Verschoben", "Reporté", "Aplazado", "延期", "연기", "延期")
+    val team get() = t("Team", "Squadra", "Team", "Équipe", "Equipo", "球队", "팀", "チーム")
+    val player get() = t("Player", "Giocatore", "Spieler", "Joueur", "Jugador", "球员", "선수", "選手")
+    val sportsSource get() = t("Data: ESPN", "Dati: ESPN", "Daten: ESPN", "Données : ESPN", "Datos: ESPN", "数据：ESPN", "데이터: ESPN", "データ：ESPN")
+
+    fun sportName(sport: com.gabriele.notionlocal.data.widgets.Sport): String = when (sport) {
+        com.gabriele.notionlocal.data.widgets.Sport.SOCCER -> t("Football", "Calcio", "Fußball", "Football", "Fútbol", "足球", "축구", "サッカー")
+        com.gabriele.notionlocal.data.widgets.Sport.TENNIS -> t("Tennis", "Tennis", "Tennis", "Tennis", "Tenis", "网球", "테니스", "テニス")
+        com.gabriele.notionlocal.data.widgets.Sport.BASKETBALL -> t("Basketball", "Basket", "Basketball", "Basket", "Baloncesto", "篮球", "농구", "バスケットボール")
+        com.gabriele.notionlocal.data.widgets.Sport.BASEBALL -> t("Baseball", "Baseball", "Baseball", "Baseball", "Béisbol", "棒球", "야구", "野球")
+        com.gabriele.notionlocal.data.widgets.Sport.FOOTBALL -> t("American football", "Football americano", "American Football", "Football américain", "Fútbol americano", "美式橄榄球", "미식축구", "アメリカンフットボール")
     }
     val weather get() = t("Weather", "Meteo", "Wetter", "Météo", "Tiempo", "天气", "날씨", "天気")
 
@@ -63,7 +125,7 @@ object WidgetStrings {
     val searchWeatherCity get() = t("Search a city", "Cerca una città", "Stadt suchen", "Rechercher une ville", "Buscar una ciudad", "搜索城市", "도시 검색", "都市を検索")
     val noCityFound get() = t("No city with this name", "Nessuna città con questo nome", "Keine Stadt mit diesem Namen", "Aucune ville de ce nom", "Ninguna ciudad con este nombre", "没有这个名字的城市", "이 이름의 도시가 없어요", "この名前の都市はありません")
     val noConnection get() = t("No connection", "Nessuna connessione", "Keine Verbindung", "Pas de connexion", "Sin conexión", "无网络连接", "연결 없음", "接続なし")
-    val loadingWeather get() = t("Loading…", "Caricamento…", "Wird geladen…", "Chargement…", "Cargando…", "正在加载…", "불러오는 중…", "読み込み中…")
+    val loading get() = t("Loading…", "Caricamento…", "Wird geladen…", "Chargement…", "Cargando…", "正在加载…", "불러오는 중…", "読み込み中…")
     val refresh get() = t("Refresh", "Aggiorna", "Aktualisieren", "Actualiser", "Actualizar", "刷新", "새로고침", "更新")
     fun updatedAt(time: String) = t("Updated $time", "Aggiornato alle $time", "Aktualisiert $time", "Mis à jour à $time", "Actualizado a las $time", "更新于 $time", "$time 업데이트", "$time 更新")
     fun maxMin(max: String, min: String) = t("H $max · L $min", "Max $max · Min $min", "H $max · T $min", "Max $max · Min $min", "Máx $max · Mín $min", "最高 $max · 最低 $min", "최고 $max · 최저 $min", "最高 $max · 最低 $min")

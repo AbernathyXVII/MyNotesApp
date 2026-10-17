@@ -62,6 +62,21 @@ class WeatherTest {
     }
 
     @Test
+    fun milanoAlsoWithTheAppInEnglish() {
+        // In inglese "Milano" trova solo le Milano piccole: Milano è "Milan".
+        val english = parseCitySearch(resource("search_milano_en.json"))
+        assertTrue(english.none { it.region.startsWith("Lombard") })
+        // Insieme alla ricerca in italiano, Milano (Lombardia) viene per prima, e una volta sola.
+        val merged = mergeCityResults(listOf(english, parseCitySearch(resource("search_milano_it.json"))))
+        assertEquals("Milano", merged.first().name)
+        assertEquals("Lombardia, Italia", merged.first().region)
+        assertEquals(merged.size, merged.distinctBy { Math.round(it.latitude * 100) to Math.round(it.longitude * 100) }.size)
+        // Le stesse città di tutte e due le lingue col nome della prima (l'inglese).
+        assertTrue(merged.any { it.region == "Texas, United States" })
+        assertFalse(merged.any { it.region == "Texas, Stati Uniti" })
+    }
+
+    @Test
     fun skiesTemperaturesAndWhenToRefresh() {
         assertEquals(WeatherSky.CLEAR, WeatherSky.of(0))
         assertEquals("🌙", WeatherSky.of(0).icon(isDay = false))
