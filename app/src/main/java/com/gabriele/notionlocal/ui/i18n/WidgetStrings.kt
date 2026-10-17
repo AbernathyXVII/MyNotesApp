@@ -38,6 +38,59 @@ object WidgetStrings {
         com.gabriele.notionlocal.data.widgets.WidgetKind.POMODORO -> pomodoro
         com.gabriele.notionlocal.data.widgets.WidgetKind.STOPWATCH -> stopwatch
         com.gabriele.notionlocal.data.widgets.WidgetKind.TIMER -> timer
+        com.gabriele.notionlocal.data.widgets.WidgetKind.WEATHER -> weather
+    }
+    val weather get() = t("Weather", "Meteo", "Wetter", "Météo", "Tiempo", "天气", "날씨", "天気")
+
+    // --- Meteo (dal 17/10/2026) ---
+
+    val addCity get() = t("Add a city", "Aggiungi una città", "Stadt hinzufügen", "Ajouter une ville", "Añadir una ciudad", "添加城市", "도시 추가", "都市を追加")
+    val weatherCities get() = t("Cities", "Città", "Städte", "Villes", "Ciudades", "城市", "도시", "都市")
+    val weatherCitiesNote get() = t(
+        "The first one is the main city. Up to 10.",
+        "La prima è la città principale. Fino a 10.",
+        "Die erste ist die Hauptstadt. Bis zu 10.",
+        "La première est la ville principale. Jusqu'à 10.",
+        "La primera es la ciudad principal. Hasta 10.",
+        "第一个是主要城市。最多 10 个。",
+        "첫 번째가 기본 도시예요. 최대 10개.",
+        "最初がメインの都市です。最大10件。"
+    )
+    val mainCity get() = t("Main", "Principale", "Haupt", "Principale", "Principal", "主要", "기본", "メイン")
+    val changeCity get() = t("Change city", "Cambia città", "Stadt ändern", "Changer de ville", "Cambiar ciudad", "更换城市", "도시 변경", "都市を変更")
+    val makeMainCity get() = t("Make main city", "Rendi principale", "Zur Hauptstadt machen", "Définir comme principale", "Hacer principal", "设为主要城市", "기본 도시로 설정", "メインにする")
+    val removeCity get() = t("Remove city", "Togli la città", "Stadt entfernen", "Retirer la ville", "Quitar ciudad", "移除城市", "도시 제거", "都市を削除")
+    val searchWeatherCity get() = t("Search a city", "Cerca una città", "Stadt suchen", "Rechercher une ville", "Buscar una ciudad", "搜索城市", "도시 검색", "都市を検索")
+    val noCityFound get() = t("No city with this name", "Nessuna città con questo nome", "Keine Stadt mit diesem Namen", "Aucune ville de ce nom", "Ninguna ciudad con este nombre", "没有这个名字的城市", "이 이름의 도시가 없어요", "この名前の都市はありません")
+    val noConnection get() = t("No connection", "Nessuna connessione", "Keine Verbindung", "Pas de connexion", "Sin conexión", "无网络连接", "연결 없음", "接続なし")
+    val loadingWeather get() = t("Loading…", "Caricamento…", "Wird geladen…", "Chargement…", "Cargando…", "正在加载…", "불러오는 중…", "読み込み中…")
+    val refresh get() = t("Refresh", "Aggiorna", "Aktualisieren", "Actualiser", "Actualizar", "刷新", "새로고침", "更新")
+    fun updatedAt(time: String) = t("Updated $time", "Aggiornato alle $time", "Aktualisiert $time", "Mis à jour à $time", "Actualizado a las $time", "更新于 $time", "$time 업데이트", "$time 更新")
+    fun maxMin(max: String, min: String) = t("H $max · L $min", "Max $max · Min $min", "H $max · T $min", "Max $max · Min $min", "Máx $max · Mín $min", "最高 $max · 最低 $min", "최고 $max · 최저 $min", "最高 $max · 最低 $min")
+    fun feelsLike(value: String) = t("Feels like $value", "Percepita $value", "Gefühlt $value", "Ressenti $value", "Sensación $value", "体感 $value", "체감 $value", "体感 $value")
+    fun humidity(value: Int) = t("Humidity $value%", "Umidità $value%", "Feuchte $value%", "Humidité $value%", "Humedad $value%", "湿度 $value%", "습도 $value%", "湿度 $value%")
+    fun wind(kmh: Int) = t("Wind $kmh km/h", "Vento $kmh km/h", "Wind $kmh km/h", "Vent $kmh km/h", "Viento $kmh km/h", "风速 $kmh km/h", "바람 $kmh km/h", "風 $kmh km/h")
+    val hourByHour get() = t("Hour by hour", "Ora per ora", "Stündlich", "Heure par heure", "Hora a hora", "逐小时", "시간별", "1時間ごと")
+    val today get() = t("Today", "Oggi", "Heute", "Aujourd'hui", "Hoy", "今天", "오늘", "今日")
+    val tomorrow get() = t("Tomorrow", "Domani", "Morgen", "Demain", "Mañana", "明天", "내일", "明日")
+    val weatherSource get() = t("Data: Open-Meteo", "Dati: Open-Meteo", "Daten: Open-Meteo", "Données : Open-Meteo", "Datos: Open-Meteo", "数据：Open-Meteo", "데이터: Open-Meteo", "データ：Open-Meteo")
+
+    fun skyName(sky: com.gabriele.notionlocal.data.widgets.WeatherSky): String = when (sky) {
+        com.gabriele.notionlocal.data.widgets.WeatherSky.CLEAR -> t("Clear", "Sereno", "Klar", "Dégagé", "Despejado", "晴", "맑음", "快晴")
+        com.gabriele.notionlocal.data.widgets.WeatherSky.MAINLY_CLEAR -> t("Mostly clear", "Quasi sereno", "Überwiegend klar", "Plutôt dégagé", "Mayormente despejado", "大部晴朗", "대체로 맑음", "晴れ")
+        com.gabriele.notionlocal.data.widgets.WeatherSky.PARTLY_CLOUDY -> t("Partly cloudy", "Poco nuvoloso", "Teilweise bewölkt", "Partiellement nuageux", "Parcialmente nublado", "局部多云", "구름 조금", "所により曇り")
+        com.gabriele.notionlocal.data.widgets.WeatherSky.OVERCAST -> t("Cloudy", "Nuvoloso", "Bewölkt", "Couvert", "Nublado", "阴", "흐림", "曇り")
+        com.gabriele.notionlocal.data.widgets.WeatherSky.FOG -> t("Fog", "Nebbia", "Nebel", "Brouillard", "Niebla", "雾", "안개", "霧")
+        com.gabriele.notionlocal.data.widgets.WeatherSky.DRIZZLE -> t("Drizzle", "Pioviggine", "Nieselregen", "Bruine", "Llovizna", "毛毛雨", "이슬비", "霧雨")
+        com.gabriele.notionlocal.data.widgets.WeatherSky.FREEZING_DRIZZLE -> t("Freezing drizzle", "Pioviggine gelata", "Gefrierender Niesel", "Bruine verglaçante", "Llovizna helada", "冻毛毛雨", "어는 이슬비", "着氷性の霧雨")
+        com.gabriele.notionlocal.data.widgets.WeatherSky.RAIN -> t("Rain", "Pioggia", "Regen", "Pluie", "Lluvia", "雨", "비", "雨")
+        com.gabriele.notionlocal.data.widgets.WeatherSky.FREEZING_RAIN -> t("Freezing rain", "Pioggia gelata", "Gefrierender Regen", "Pluie verglaçante", "Lluvia helada", "冻雨", "어는 비", "着氷性の雨")
+        com.gabriele.notionlocal.data.widgets.WeatherSky.SNOW -> t("Snow", "Neve", "Schnee", "Neige", "Nieve", "雪", "눈", "雪")
+        com.gabriele.notionlocal.data.widgets.WeatherSky.SNOW_GRAINS -> t("Snow grains", "Granelli di neve", "Schneegriesel", "Neige en grains", "Granos de nieve", "米雪", "싸락눈", "霧雪")
+        com.gabriele.notionlocal.data.widgets.WeatherSky.RAIN_SHOWERS -> t("Showers", "Rovesci", "Schauer", "Averses", "Chubascos", "阵雨", "소나기", "にわか雨")
+        com.gabriele.notionlocal.data.widgets.WeatherSky.SNOW_SHOWERS -> t("Snow showers", "Rovesci di neve", "Schneeschauer", "Averses de neige", "Chubascos de nieve", "阵雪", "소낙눈", "にわか雪")
+        com.gabriele.notionlocal.data.widgets.WeatherSky.THUNDERSTORM -> t("Thunderstorm", "Temporale", "Gewitter", "Orage", "Tormenta", "雷雨", "뇌우", "雷雨")
+        com.gabriele.notionlocal.data.widgets.WeatherSky.THUNDERSTORM_HAIL -> t("Thunderstorm with hail", "Temporale con grandine", "Gewitter mit Hagel", "Orage avec grêle", "Tormenta con granizo", "雷雨伴冰雹", "우박을 동반한 뇌우", "雹を伴う雷雨")
     }
     val stopwatch get() = t("Stopwatch", "Cronometro", "Stoppuhr", "Chronomètre", "Cronómetro", "秒表", "스톱워치", "ストップウォッチ")
     val timer get() = t("Timer", "Timer", "Timer", "Minuteur", "Temporizador", "计时器", "타이머", "タイマー")

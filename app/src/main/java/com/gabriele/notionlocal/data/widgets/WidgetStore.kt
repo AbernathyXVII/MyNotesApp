@@ -136,6 +136,7 @@ object WidgetStore {
             WidgetKind.POMODORO -> PomodoroWidget()
             WidgetKind.STOPWATCH -> StopwatchWidget()
             WidgetKind.TIMER -> TimerWidget()
+            WidgetKind.WEATHER -> WeatherWidget()
         }
         s.copy(widgets = s.widgets + widget)
     }
@@ -173,6 +174,37 @@ object WidgetStore {
 
     fun removeFromZoneList(widgetId: String, zoneId: String) = updateWidget<TimeZonesWidget>(widgetId) { w ->
         w.copy(list = w.list - zoneId)
+    }
+
+    // --- Meteo (dal 17/10/2026) ---
+
+    /** Una città in fondo; la prima aggiunta è la principale. Non più di `MAX_WEATHER_CITIES`. */
+    fun addWeatherCity(widgetId: String, city: WeatherCity) = updateWidget<WeatherWidget>(widgetId) { w ->
+        if (w.cities.size >= MAX_WEATHER_CITIES) w else w.copy(cities = w.cities + city)
+    }
+
+    /** Un'altra città al posto di questa, nello stesso posto; il meteo di quella di prima se ne va. */
+    fun replaceWeatherCity(widgetId: String, cityId: String, city: WeatherCity) = updateWidget<WeatherWidget>(widgetId) { w ->
+        w.copy(cities = w.cities.map { if (it.id == cityId) city else it }, reports = w.reports - cityId)
+    }
+
+    fun removeWeatherCity(widgetId: String, cityId: String) = updateWidget<WeatherWidget>(widgetId) { w ->
+        w.copy(cities = w.cities.filterNot { it.id == cityId }, reports = w.reports - cityId)
+    }
+
+    /** Su (-1) o giù (+1) di un posto; in cima diventa la principale. */
+    fun moveWeatherCity(widgetId: String, cityId: String, delta: Int) = updateWidget<WeatherWidget>(widgetId) { w ->
+        val list = w.cities.toMutableList()
+        val from = list.indexOfFirst { it.id == cityId }
+        val to = from + delta
+        if (from < 0 || to !in list.indices) return@updateWidget w
+        list.add(to, list.removeAt(from))
+        w.copy(cities = list)
+    }
+
+    /** Il meteo appena scaricato di una città (se c'è ancora). */
+    fun setWeatherReport(widgetId: String, cityId: String, report: WeatherReport) = updateWidget<WeatherWidget>(widgetId) { w ->
+        if (w.cities.none { it.id == cityId }) w else w.copy(reports = w.reports + (cityId to report))
     }
 
     // --- Avanzamento ---
@@ -398,4 +430,4 @@ object WidgetStore {
 }
 
 /** I widget che si possono aggiungere, nell'ordine del menu. */
-enum class WidgetKind { TIME_ZONES, LIFE_PROGRESS, COUNTER, POMODORO, STOPWATCH, TIMER }
+enum class WidgetKind { TIME_ZONES, LIFE_PROGRESS, COUNTER, POMODORO, STOPWATCH, TIMER, WEATHER }

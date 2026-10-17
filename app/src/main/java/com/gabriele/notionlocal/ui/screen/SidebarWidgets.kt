@@ -96,6 +96,8 @@ import com.gabriele.notionlocal.data.widgets.TimeZonesWidget
 import com.gabriele.notionlocal.data.widgets.Widget
 import com.gabriele.notionlocal.data.widgets.WidgetKind
 import com.gabriele.notionlocal.data.widgets.WidgetStore
+import com.gabriele.notionlocal.data.widgets.WeatherUpdates
+import com.gabriele.notionlocal.data.widgets.WeatherWidget
 import com.gabriele.notionlocal.data.widgets.cityName
 import com.gabriele.notionlocal.data.widgets.fractionAt
 import com.gabriele.notionlocal.data.widgets.gmtLabel
@@ -228,6 +230,9 @@ private fun WidgetCard(widget: Widget, index: Int, count: Int, now: Long, active
     var menuOpen by remember(widget.id) { mutableStateOf(false) }
     var confirmRemove by remember(widget.id) { mutableStateOf(false) }
     var renaming by remember(widget.id) { mutableStateOf(false) }
+    // La finestra delle città del meteo: si apre tenendo premuta una città
+    // o dai tre puntini.
+    var weatherCities by remember(widget.id) { mutableStateOf(false) }
     Column(
         modifier = Modifier
             .padding(horizontal = 12.dp, vertical = 5.dp)
@@ -275,6 +280,17 @@ private fun WidgetCard(widget: Widget, index: Int, count: Int, now: Long, active
                             onClick = { menuOpen = false; renaming = true }
                         )
                     }
+                    if (widget is WeatherWidget) {
+                        DropdownMenuItem(
+                            text = { Text(WidgetStrings.weatherCities) },
+                            onClick = { menuOpen = false; weatherCities = true }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(WidgetStrings.refresh) },
+                            enabled = widget.cities.isNotEmpty(),
+                            onClick = { menuOpen = false; WeatherUpdates.refresh(widget, force = true) }
+                        )
+                    }
                     // **Il decimale sulle percentuali** (dal 29/09/2026).
                     if (widget is LifeProgressWidget) {
                         DropdownMenuItem(
@@ -303,6 +319,13 @@ private fun WidgetCard(widget: Widget, index: Int, count: Int, now: Long, active
                 is PomodoroWidget -> PomodoroView(widget, active)
                 is StopwatchWidget -> StopwatchView(widget, active)
                 is TimerWidget -> TimerView(widget, active)
+                is WeatherWidget -> WeatherView(
+                    widget = widget,
+                    active = active,
+                    now = now,
+                    managing = weatherCities,
+                    onManagingChange = { weatherCities = it }
+                )
             }
         }
     }
@@ -337,6 +360,7 @@ private fun Widget.kind(): WidgetKind = when (this) {
     is PomodoroWidget -> WidgetKind.POMODORO
     is StopwatchWidget -> WidgetKind.STOPWATCH
     is TimerWidget -> WidgetKind.TIMER
+    is WeatherWidget -> WidgetKind.WEATHER
 }
 
 @Composable
@@ -355,9 +379,9 @@ private fun AddWidgetButton() {
     }
 }
 
-/** Una riga "+ qualcosa": aggiungere un widget, un orologio, un fuso, una data. */
+/** Una riga "+ qualcosa": aggiungere un widget, un orologio, un fuso, una data, una città. */
 @Composable
-private fun AddRow(label: String, onClick: () -> Unit) {
+internal fun AddRow(label: String, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()

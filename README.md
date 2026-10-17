@@ -2070,6 +2070,61 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.170 — 17/10/2026 · 14:01 — Il widget del meteo
+*(Claude Code sul PC; provato sul telefono senza rete, con la rete dal PC e
+nei test; 554 test passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Puoi dirmi se riesci a farmi tre Widget: quello del Tempo, degli Sport e
+> delle azioni in borsa? Avrei pensato ad una città che scelgo io per il
+> tempo (che è quella che si vede con il widget e con la possibilità di
+> sceglierne altre nove selezionabili manualmente da me), ad una competizione
+> specifica che scelgo per lo sport (come per il tempo, qui posso scegliere
+> competizioni diverse di sport diversi, tra cui calcio, tennis, basket,
+> baseball, football americano, e per il momento basta) e una lista delle
+> azioni in borsa come vedi nella foto . Ovviamente, tutti e due funzionano
+> solo con internet. Saresti in grado?»
+
+E poi, alle domande su come farli:
+> «1. Nella sezione Widgets della barra laterale
+> 2. Se tocco una città, mi fa vedere il tempo ora per ora. Se tengo premuto
+> mi fa aggiungere, modificare o rimuovere le città da visualizzare. Se
+> scorro mi fa vedere le altre città.
+> 3. Sì anche la classifica.
+> 4. Sì»
+
+- **[Nuova funzionalità]** **"Weather" fra i widget della barra laterale**.
+  Una pagina per città: la principale e fino ad altre nove, che si
+  sfogliano col dito. Ogni pagina ha temperatura, cielo, massima e minima
+  di oggi, i prossimi cinque giorni e l'ora dell'ultimo aggiornamento. **Un
+  tocco** apre il tempo ora per ora: adesso (percepita, umidità, vento),
+  poi le prossime 48 ore divise per giorno, con la probabilità di pioggia,
+  e i prossimi sette giorni. **Tenendo premuto** si apre la finestra delle
+  città: "Add a city" in cima, e per ognuna, dal menu ⋮, Change city, Make
+  main city, Move up, Move down e Remove city. Le città si cercano per nome,
+  con regione e paese per distinguerle. Le stesse voci, "Cities" e
+  "Refresh", stanno nei tre puntini del widget
+- **[Nuova funzionalità]** Il meteo si scarica **solo con la barra aperta**,
+  e per ogni città al massimo ogni mezz'ora (o subito, con "Refresh").
+  Senza rete il widget mostra l'ultimo meteo salvato con "No connection"
+  accanto all'ora, e la ricerca dice "No connection"
+- **[Progetto]** I dati da **Open-Meteo**, gratuito e senza account né
+  chiave: le previsioni e la ricerca delle città, coi nomi nella lingua
+  dell'app. `WeatherWidget` e la lettura delle risposte in `Weather.kt`, le
+  domande in `WeatherApi.kt`, quando riscaricare in `WeatherUpdates.kt`, il
+  widget in `SidebarWeather.kt`. Le città e l'ultimo meteo stanno coi
+  widget, nelle preferenze del telefono. Il cielo viene dal codice WMO, con
+  un'emoji per il giorno e una per la notte e il nome tradotto. Test:
+  `WeatherTest`, con due risposte vere di Open-Meteo salvate in
+  `resources/weather`, e `WeatherWidgetTest` (città, limite di dieci, e il
+  disegno della pagina di Bergamo)
+- Provato sul telefono: il widget si aggiunge da "Add widget", e i tre
+  puntini hanno "Cities" e "Refresh". Il telefono non aveva internet (Wi-Fi
+  spento, nessuna rete attiva): cercando "Bergamo" la ricerca ha detto "No
+  connection". Poi il widget è stato tolto, e i widget e il database sono
+  tornati identici a prima. Con la rete il meteo è stato provato dal PC
+  (Open-Meteo risponde, e le risposte si leggono giuste nei test); sul
+  telefono va riprovato quando c'è internet
 ### 🆕 v0.169 — 17/10/2026 · 10:09 — Regole di ordinamento quante se ne vogliono, in "Sort rules"
 *(Claude Code sul PC; verificato sul telefono; 548 test passati; database alla
 versione 57; commit solo in locale)*
