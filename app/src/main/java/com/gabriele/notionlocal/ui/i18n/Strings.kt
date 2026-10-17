@@ -447,6 +447,16 @@ object Strings {
     val animationsReduced get() = t("Reduced", "Ridotte", "Reduziert", "Réduites", "Reducidas", "减少", "줄이기", "控えめ")
     val animationsOff get() = t("Off", "Disattivate", "Aus", "Désactivées", "Desactivadas", "关闭", "끄기", "オフ")
     val numberFormat get() = t("Number format", "Formato dei numeri", "Zahlenformat", "Format des nombres", "Formato de números", "数字格式", "숫자 형식", "数値の形式")
+    val numberFormatNote get() = t(
+        "How numbers with more than three digits are written in the whole app. Under each, the same with decimals.",
+        "Come si scrivono in tutta l'app i numeri con più di tre cifre. Sotto ognuno, lo stesso coi decimali.",
+        "Wie Zahlen mit mehr als drei Ziffern in der ganzen App geschrieben werden. Darunter jeweils mit Dezimalstellen.",
+        "Comment s'écrivent les nombres de plus de trois chiffres dans toute l'app. Sous chacun, le même avec des décimales.",
+        "Cómo se escriben en toda la app los números de más de tres cifras. Debajo de cada uno, el mismo con decimales.",
+        "整个应用中超过三位的数字如何书写。每项下方为带小数的写法。",
+        "앱 전체에서 세 자리가 넘는 숫자를 쓰는 방식입니다. 각 항목 아래는 소수가 있을 때입니다.",
+        "アプリ全体で3桁を超える数字の書き方。それぞれの下は小数がある場合です。"
+    )
     val dateFormat get() = t("Date format", "Formato della data", "Datumsformat", "Format de date", "Formato de fecha", "日期格式", "날짜 형식", "日付の形式")
     val dateFull get() = t("Full date", "Data completa", "Vollständiges Datum", "Date complète", "Fecha completa", "完整日期", "전체 날짜", "完全な日付")
     val dateShort get() = t("Short date", "Data breve", "Kurzes Datum", "Date courte", "Fecha corta", "简短日期", "짧은 날짜", "短い日付")

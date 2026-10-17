@@ -32,8 +32,22 @@ enum class TitlePosition { BELOW_ICON, BESIDE_ICON, HIDDEN }
  */
 enum class NotificationPriority { LOW, NORMAL, HIGH }
 
-/** Come si raggruppano le cifre: 1.000.000 (virgola per i decimali) o 1,000,000 (punto per i decimali). */
-enum class NumberStyle { DOT_GROUPS, COMMA_GROUPS }
+/**
+ * **Come si scrivono i numeri con più di tre cifre**: `grouping` è il segno
+ * fra un gruppo di tre cifre e l'altro (null = nessuno), `decimal` quello
+ * prima dei decimali. Fino al 16/10/2026 c'erano solo 1.000.000 e
+ * 1,000,000; dal 17/10 (chiesto dall'utente: "2 026", "2026", "2.026" e il
+ * 2 col puntino in alto) anche lo spazio, niente e il punto in alto, tutti
+ * con la virgola per i decimali. Lo spazio non va a capo, come quello di
+ * "2 026" scritto dall'utente.
+ */
+enum class NumberStyle(val grouping: Char?, val decimal: Char) {
+    SPACE_GROUPS('\u00A0', ','),
+    NO_GROUPS(null, ','),
+    DOT_GROUPS('.', ','),
+    MIDDLE_DOT_GROUPS('\u00B7', ','),
+    COMMA_GROUPS(',', '.')
+}
 
 /** Come si scrive una data. L'ora, quando c'è, segue sempre in 24 ore. */
 enum class DateStyle {

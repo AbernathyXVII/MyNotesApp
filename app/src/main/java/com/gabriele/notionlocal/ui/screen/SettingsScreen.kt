@@ -278,7 +278,11 @@ fun SettingsScreen(onBack: () -> Unit, onOpenPatchNotes: () -> Unit = {}) {
         )
         SettingsDialog.NUMBER -> ChoiceDialog(
             title = Strings.numberFormat,
+            subtitle = Strings.numberFormatNote,
+            // Nell'ordine dell'utente: spazio, niente, punto, punto in alto;
+            // in fondo quello all'inglese, con la virgola.
             options = NumberStyle.entries.map { it to Formats.numberSample(it) },
+            details = NumberStyle.entries.associateWith { Formats.numberDecimalSample(it) },
             selected = AppSettings.numberStyle,
             onSelect = { AppSettings.numberStyle = it },
             onDismiss = { dialog = null }

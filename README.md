@@ -2070,6 +2070,32 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.167 — 17/10/2026 · 09:05 — I numeri con più di tre cifre: 2 026, 2026, 2.026 o 2·026
+*(Claude Code sul PC; verificato sul telefono; 526 test passati; commit solo
+in locale)*
+
+L'utente, parola per parola:
+> «Nel database Habit Tracker ho scritto 2026 per l'anno, ma c'è un punto
+> tra il 2 e lo 0. In settings, mettimi un'opzione che mi consente di
+> scegliere se vedere i numeri con più di tre cifre in questi modi:
+> - 2 026
+> - 2026
+> - 2.026
+> - 2 (con il puntino in alto) 026»
+
+- **[Nuova funzionalità]** **"Number format" in Settings ha cinque scelte
+  invece di due**: 1 000 000, 1000000, 1.000.000, 1·000·000 e, come prima,
+  1,000,000. Sotto ognuna lo stesso numero coi decimali: con le prime
+  quattro i decimali vanno dopo la virgola (1 234,56), con l'ultima dopo il
+  punto (1,234.56). Vale in tutta l'app: celle Number, calcoli in fondo
+  alle colonne, grafici, filtri, conteggio delle parole, widget. Lo spazio
+  non va a capo. Il numero salvato non cambia: cambia solo come si legge
+- **[Progetto]** `NumberStyle` dice il segno fra i gruppi di tre cifre
+  (`grouping`, null = nessuno) e quello dei decimali; `Formats.number(raw,
+  style)` scrive anche gli esempi del menu. Test: `NumberStyleTest`
+- Verificato sul telefono: il menu mostra le cinque scritture; in "Habit
+  tracker 2026" la colonna Year si legge "2·026", "2 026" e "2026" a
+  seconda della scelta. Poi rimesso 1.000.000, com'era
 ### 🆕 v0.166 — 17/10/2026 · 08:50 — Nella pagina di una riga, le frecce per la pagina prima e quella dopo
 *(Claude Code sul PC; verificato sul telefono; 523 test passati; commit solo
 in locale)*

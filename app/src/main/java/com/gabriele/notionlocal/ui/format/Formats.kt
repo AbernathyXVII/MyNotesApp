@@ -151,29 +151,34 @@ object Formats {
      * calcoli (ordinamenti, filtri) continuano a leggerlo sempre uguale.
      * Se il testo non è un numero lo si lascia com'è.
      */
-    fun number(raw: String): String {
+    fun number(raw: String): String = number(raw, AppSettings.numberStyle)
+
+    /** Come `number`, con uno stile scelto: per gli esempi del menu delle impostazioni. */
+    fun number(raw: String, style: NumberStyle): String {
         val trimmed = raw.trim()
         if (trimmed.isEmpty()) return raw
         val value = trimmed.toBigDecimalOrNull() ?: return raw
         val symbols = DecimalFormatSymbols().apply {
-            when (AppSettings.numberStyle) {
-                NumberStyle.DOT_GROUPS -> { groupingSeparator = '.'; decimalSeparator = ',' }
-                NumberStyle.COMMA_GROUPS -> { groupingSeparator = ','; decimalSeparator = '.' }
-            }
+            // Senza separatore il segno dei gruppi non si scrive: basta
+            // che non sia quello dei decimali.
+            groupingSeparator = style.grouping ?: '\u00A0'
+            decimalSeparator = style.decimal
         }
         // Tante cifre decimali quante ne aveva scritte l'utente, non di
         // più e non di meno: 2.50 resta 2,50.
         val decimals = value.scale().coerceAtLeast(0)
         val pattern = if (decimals > 0) "#,##0." + "0".repeat(decimals) else "#,##0"
-        return DecimalFormat(pattern, symbols).apply { isParseBigDecimal = true }
-            .format(value)
+        return DecimalFormat(pattern, symbols).apply {
+            isParseBigDecimal = true
+            isGroupingUsed = style.grouping != null
+        }.format(value)
     }
 
-    /** L'esempio fisso dei due formati di numero, per il menu delle impostazioni. */
-    fun numberSample(style: NumberStyle): String = when (style) {
-        NumberStyle.DOT_GROUPS -> "1.000.000"
-        NumberStyle.COMMA_GROUPS -> "1,000,000"
-    }
+    /** L'esempio di uno stile, per il menu delle impostazioni: "1 000 000", "1.000.000"… */
+    fun numberSample(style: NumberStyle): String = number("1000000", style)
+
+    /** Lo stesso stile con i decimali, sotto l'esempio: "1 234,56". */
+    fun numberDecimalSample(style: NumberStyle): String = number("1234.56", style)
 
     private fun String.toBigDecimalOrNull(): BigDecimal? = runCatching { BigDecimal(this) }.getOrNull()
 }
