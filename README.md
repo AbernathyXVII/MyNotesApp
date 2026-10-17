@@ -2122,11 +2122,11 @@ E poi:
   rule" spento), Name rovesciata, Tipologia prodotto spostata su: salvate in
   quell'ordine. Tolte le tre di prova, Food è tornato com'era. Il tasto
   indietro chiude tutta la finestra, come le altre finestre che salgono dal
-  basso; per tornare alla pagina prima c'è la freccia ← in alto. Questa
-  versione compilata non è installata: alla fine il telefono non era più
-  collegato. Sul telefono c'è quella provata, uguale tranne due righe tolte
-  (un `BackHandler` che nella finestra non poteva funzionare) e il numero di
-  versione, che lì è ancora 0.168.1
+  basso; per tornare alla pagina prima c'è la freccia ← in alto. A fine
+  prova il telefono si era scollegato: questa versione è stata installata
+  quando l'utente l'ha ricollegato. Rispetto a quella provata cambiano solo
+  due righe tolte (un `BackHandler` che nella finestra non poteva
+  funzionare) e il numero di versione
 ### 🔧 v0.168.1 — 17/10/2026 · 09:46 — Anche segnalibri, video e celle URL si aprono sopra l'app
 *(Claude Code sul PC; verificato sul telefono; 539 test passati; commit solo
 in locale)*
