@@ -17,13 +17,17 @@ internal object WidgetHttp {
     private const val USER_AGENT =
         "Mozilla/5.0 (Linux; Android 16) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0 Mobile Safari/537.36"
 
-    fun get(url: String, maxBytes: Int = 2 * 1024 * 1024): String? = runCatching {
+    fun get(url: String, maxBytes: Int = 2 * 1024 * 1024): String? =
+        bytes(url, maxBytes, accept = "application/json")?.let { String(it, Charsets.UTF_8) }
+
+    /** La risposta così com'è: le immagini (gli stemmi dello sport). */
+    fun bytes(url: String, maxBytes: Int, accept: String = "*/*"): ByteArray? = runCatching {
         val connection = URL(url).openConnection() as HttpURLConnection
         try {
             connection.connectTimeout = TIMEOUT_MS
             connection.readTimeout = TIMEOUT_MS
             connection.setRequestProperty("User-Agent", USER_AGENT)
-            connection.setRequestProperty("Accept", "application/json")
+            connection.setRequestProperty("Accept", accept)
             if (connection.responseCode !in 200..299) return@runCatching null
             val out = ByteArrayOutputStream()
             connection.inputStream.use { input ->
@@ -35,7 +39,7 @@ internal object WidgetHttp {
                     if (out.size() > maxBytes) return@runCatching null
                 }
             }
-            String(out.toByteArray(), Charsets.UTF_8)
+            out.toByteArray()
         } finally {
             connection.disconnect()
         }

@@ -307,7 +307,7 @@ private fun WidgetCard(widget: Widget, index: Int, count: Int, now: Long, active
                         DropdownMenuItem(
                             text = { Text(WidgetStrings.refresh) },
                             enabled = widget.competitions.isNotEmpty(),
-                            onClick = { menuOpen = false; SportsUpdates.refresh(widget, AppSettings.zoneId, force = true) }
+                            onClick = { menuOpen = false; SportsUpdates.refreshShown(widget, AppSettings.zoneId) }
                         )
                     }
                     if (widget is StocksWidget) {

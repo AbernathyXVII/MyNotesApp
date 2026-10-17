@@ -11,15 +11,18 @@ import java.time.LocalDate
 /**
  * **Lo sport** (17/10/2026): risposte vere di ESPN (scaricate quel giorno,
  * alleggerite dei campi che l'app non legge, in `resources/sports`) lette
- * come si deve, e la scelta delle partite da mostrare nel widget.
+ * come si deve — partite, stemmi, classifiche, calendari — e le giornate
+ * che se ne ricavano.
  */
 class SportsTest {
 
     private fun resource(name: String): String =
         javaClass.classLoader!!.getResourceAsStream("sports/$name")!!.bufferedReader().readText()
 
+    private fun day(text: String) = LocalDate.parse(text)
+
     @Test
-    fun serieAToday() {
+    fun serieATodayWithLogos() {
         val board = parseScoreboard(resource("seriea_scoreboard.json"), Sport.SOCCER)!!
         assertEquals(3, board.matches.size)
         val first = board.matches.first()
@@ -29,12 +32,50 @@ class SportsTest {
         // Prima della partita niente "0 - 0".
         assertNull(first.home.score)
         assertEquals(Instant.parse("2026-10-17T13:00:00Z").toEpochMilli(), first.start)
+        // Gli stemmi.
+        assertEquals("https://a.espncdn.com/i/teamlogos/soccer/500/17530.png", first.home.logo)
+        assertEquals("https://a.espncdn.com/i/teamlogos/soccer/500/114.png", first.away.logo)
         // Il calendario della stagione, a giorni.
         assertEquals(82, board.matchDays.size)
+        // Il giorno prima: Frosinone-Sassuolo 4-2.
+        val friday = parseScoreboard(resource("seriea_20261016.json"), Sport.SOCCER)!!.matches.single()
+        assertEquals("4", friday.home.score)
+        assertTrue(friday.home.winner)
     }
 
     @Test
-    fun nbaResultsAndNflWeek() {
+    fun theRoundsOfSerieA() {
+        val rounds = buildRounds(parseScoreboard(resource("seriea_scoreboard.json"), Sport.SOCCER)!!, Sport.SOCCER)
+        // Le 38 giornate, dai giorni del calendario.
+        assertEquals(38, rounds.size)
+        assertEquals("2026-08-22" to "2026-08-24", rounds.first().from to rounds.first().to)
+        // Oggi, sabato 17: la giornata da venerdì 16 a lunedì 19, la settima.
+        val today = currentRound(rounds, day("2026-10-17"))
+        assertEquals(6, today)
+        assertEquals(listOf("2026-10-16", "2026-10-17", "2026-10-18", "2026-10-19"), rounds[today].days)
+        // Martedì si vedono ancora i risultati; mercoledì la giornata dopo.
+        assertEquals(6, currentRound(rounds, day("2026-10-20")))
+        assertEquals(7, currentRound(rounds, day("2026-10-21")))
+        // A stagione finita, l'ultima.
+        assertEquals(37, currentRound(rounds, day("2027-07-01")))
+        // "Giornata 7": 38 giornate con venti squadre tornano; 37 no.
+        val standings = parseStandings(resource("soccer_ita_1_standings.json"), Sport.SOCCER)
+        assertTrue(hasMatchdayNumbers(rounds, standings, Sport.SOCCER))
+        assertFalse(hasMatchdayNumbers(rounds.drop(1), standings, Sport.SOCCER))
+    }
+
+    @Test
+    fun longStretchesSplitIntoMidweekAndWeekend() {
+        // LaLiga ad agosto 2026: una giornata, poi tredici giorni di fila.
+        val days = (15..17).map { LocalDate.of(2026, 8, it) } + (19..31).map { LocalDate.of(2026, 8, it) }
+        val rounds = soccerRounds(days).map { it.first().dayOfMonth to it.last().dayOfMonth }
+        assertEquals(listOf(15 to 17, 19 to 20, 21 to 24, 25 to 27, 28 to 31), rounds)
+        // Venerdì-lunedì resta una giornata sola.
+        assertEquals(1, soccerRounds((16..19).map { LocalDate.of(2026, 10, it) }).size)
+    }
+
+    @Test
+    fun nbaByDayAndNflByWeek() {
         val nba = parseScoreboard(resource("basketball_nba_scoreboard.json"), Sport.BASKETBALL)!!
         assertEquals(12, nba.matches.size)
         val game = nba.matches.first()
@@ -44,15 +85,60 @@ class SportsTest {
         assertEquals("115", game.away.score)
         assertFalse(game.away.winner)
         assertEquals(MatchState.POST, game.state)
-        // La NFL va a settimane: il calendario non è fatto di giorni, basta la risposta di partenza.
+        assertEquals("https://a.espncdn.com/i/teamlogos/nba/500/scoreboard/orl.png", game.home.logo)
+        // Nel basket una giornata è un giorno.
+        val nbaRounds = buildRounds(nba, Sport.BASKETBALL)
+        assertEquals(174, nbaRounds.size)
+        assertTrue(nbaRounds.all { it.days.size == 1 })
+
+        // La NFL va a settimane, e si chiede per settimana.
         val nfl = parseScoreboard(resource("football_nfl_scoreboard.json"), Sport.FOOTBALL)!!
         assertEquals(14, nfl.matches.size)
         assertEquals(13, nfl.matches.count { it.state == MatchState.PRE })
         assertTrue(nfl.matchDays.isEmpty())
+        val weeks = buildRounds(nfl, Sport.FOOTBALL)
+        assertEquals(26, weeks.size)
+        assertEquals("Hall of Fame Weekend", weeks.first().label)
+        val week7 = weeks.single { it.label == "Week 7" }
+        assertEquals("2026-10-21" to "2026-10-27", week7.from to week7.to)
+        assertEquals(2, week7.seasonType)
+        assertEquals(7, week7.week)
+        assertTrue(week7.days.isEmpty())
+        assertEquals("Week 6", weeks[currentRound(weeks, day("2026-10-17"))].label)
     }
 
     @Test
-    fun tennisSinglesWithSets() {
+    fun baseballCalendarListsTheDaysWithoutGames() {
+        // Il calendario del baseball elenca i giorni di riposo (l'All-Star break), non quelli di partita.
+        val json = """{"events":[],"leagues":[{"calendarType":"day","calendarIsWhitelist":false,
+            "calendarStartDate":"2026-07-10T07:00Z","calendarEndDate":"2026-07-18T07:00Z",
+            "calendar":["2026-07-13T07:00Z","2026-07-14T07:00Z","2026-07-15T07:00Z"]}]}"""
+        val board = parseScoreboard(json, Sport.BASEBALL)!!
+        assertEquals(listOf(10, 11, 12, 16, 17).map { LocalDate.of(2026, 7, it) }, board.matchDays)
+    }
+
+    @Test
+    fun championsLeagueRoundsFromTheMonths() {
+        // Per le coppe ESPN dà solo le fasi.
+        val board = parseScoreboard(resource("champions_scoreboard.json"), Sport.SOCCER)!!
+        assertTrue(board.matchDays.isEmpty())
+        assertEquals(
+            listOf("League Phase", "Knockout Round Playoffs", "Rd of 16", "Quarterfinals", "Semifinals", "Final"),
+            board.stages.map { it.label }
+        )
+        assertEquals(day("2027-02-14"), board.stages.first().to)
+        // I giorni di partita vengono dai mesi: a ottobre due giornate, martedì e mercoledì.
+        val october = parseScoreboard(resource("champions_202610.json"), Sport.SOCCER)!!.matches
+        assertEquals(36, october.size)
+        val rounds = buildRounds(board, Sport.SOCCER, october.map { espnDay(it.start) })
+        assertEquals(listOf("2026-10-13" to "2026-10-14", "2026-10-20" to "2026-10-21"), rounds.map { it.from to it.to })
+        assertEquals(listOf("League Phase", "League Phase"), rounds.map { it.label })
+        // Le coppe non hanno "Giornata 7".
+        assertFalse(hasMatchdayNumbers(rounds, emptyList(), Sport.SOCCER))
+    }
+
+    @Test
+    fun tennisSinglesWithSetsAndFlags() {
         val board = parseScoreboard(resource("tennis_atp_scoreboard.json"), Sport.TENNIS)!!
         assertEquals(209, board.matches.size)
         val match = board.matches.single { it.id == "186308" }
@@ -62,74 +148,83 @@ class SportsTest {
         assertEquals(listOf(6, 6, 7), match.away.sets)
         assertTrue(match.away.winner)
         assertEquals("Rolex Shanghai Masters · Qualifying 1st Round", match.note)
+        assertEquals("Rolex Shanghai Masters", match.tournament)
+        // Al posto dello stemma, la bandiera del giocatore.
+        assertEquals("https://a.espncdn.com/i/teamlogos/countries/500/usa.png", match.home.logo)
+        assertEquals("https://a.espncdn.com/i/teamlogos/countries/500/geo.png", match.away.logo)
+        // Il giorno chiesto, dei tornei interi: 22 incontri.
+        assertEquals(22, onDays(board.matches, setOf(day("2026-10-17"))).size)
+        // Nel tennis una giornata è un giorno.
+        assertEquals(304, buildRounds(board, Sport.TENNIS).size)
     }
 
     @Test
-    fun standingsInOrder() {
+    fun standingsInOrderWithLogos() {
         val serieA = parseStandings(resource("soccer_ita_1_standings.json"), Sport.SOCCER)
         assertEquals(1, serieA.size)
         assertEquals(listOf("GP", "W", "D", "L", "GD", "P"), serieA.single().columns)
         assertEquals(20, serieA.single().rows.size)
         assertEquals(listOf("Inter Milan", "Lazio", "AS Roma"), serieA.single().rows.take(3).map { it.team })
         assertEquals(listOf("6", "5", "1", "0", "+10", "16"), serieA.single().rows.first().values)
+        assertEquals("https://a.espncdn.com/i/teamlogos/soccer/500/110.png", serieA.single().rows.first().logo)
         // NBA: due conferenze, ognuna dalla prima testa di serie (ESPN le dà in un altro ordine).
         val nba = parseStandings(resource("basketball_nba_standings.json"), Sport.BASKETBALL)
         assertEquals(listOf("Eastern Conference", "Western Conference"), nba.map { it.name })
         assertEquals("Celtics", nba[0].rows.first().team)
         assertEquals(listOf("4", "0", "1.000", "-"), nba[0].rows.first().values)
+        assertEquals("https://a.espncdn.com/i/teamlogos/nba/500/bos.png", nba[0].rows.first().logo)
         assertEquals("Grizzlies", nba[1].rows.first().team)
-        // Tennis: la classifica dei giocatori, coi punti.
+        // Tennis: la classifica dei giocatori, coi punti e la bandiera.
         val atp = parseTennisRankings(resource("tennis_atp_rankings.json"))
         assertEquals("Jannik Sinner", atp.single().rows.first().team)
         assertEquals(listOf("11000"), atp.single().rows.first().values)
+        assertEquals("https://a.espncdn.com/i/teamlogos/countries/500/ita.png", atp.single().rows.first().logo)
         assertEquals(emptyList<StandingGroup>(), parseStandings("non è json", Sport.SOCCER))
     }
 
     @Test
-    fun theMatchDaysToAskFor() {
-        val days = listOf("2026-10-10", "2026-10-11", "2026-10-17", "2026-10-18", "2026-10-24", "2026-10-25").map(LocalDate::parse)
-        // Oggi è un giorno di partita: l'ultimo prima, oggi, i due dopo.
-        assertEquals(
-            listOf("2026-10-11", "2026-10-17", "2026-10-18", "2026-10-24").map(LocalDate::parse),
-            matchDaysAround(days, LocalDate.parse("2026-10-17"))
-        )
-        // Oggi no: l'ultimo prima e i due dopo.
-        assertEquals(
-            listOf("2026-10-11", "2026-10-17", "2026-10-18").map(LocalDate::parse),
-            matchDaysAround(days, LocalDate.parse("2026-10-12"))
-        )
+    fun flagsOfTheCompetitions() {
+        assertEquals("🇮🇹", competitionFlag("ita.1"))
+        assertEquals("🇮🇹", competitionFlag("ita.coppa_italia"))
+        assertEquals("🏴󠁧󠁢󠁥󠁮󠁧󠁿", competitionFlag("eng.1"))
+        assertEquals("🇪🇸", competitionFlag("esp.1"))
+        assertEquals("🇩🇪", competitionFlag("ger.1"))
+        assertEquals("🇫🇷", competitionFlag("fra.1"))
+        // Le competizioni continentali: il globo col continente.
+        assertEquals("🌍", competitionFlag("uefa.champions"))
+        assertEquals("🌍", competitionFlag("fifa.worldq.uefa"))
+        assertEquals("🌎", competitionFlag("conmebol.libertadores"))
+        assertEquals("🌍", competitionFlag("caf.nations"))
+        assertEquals("🌏", competitionFlag("afc.champions"))
+        // Quelle mondiali: il globo intero.
+        assertEquals("🌐", competitionFlag("fifa.world"))
+        assertEquals("🌐", competitionFlag("atp"))
+        assertEquals("🇺🇸", competitionFlag("nba"))
+        assertEquals("", competitionFlag("boh"))
+        // Tutte quelle che si possono scegliere ne hanno una.
+        assertTrue(SPORT_CATALOG.all { competitionFlag(it.league).isNotEmpty() })
     }
 
-    private fun match(id: String, startHours: Long, state: MatchState) = SportMatch(
+    private fun match(id: String, state: MatchState) = SportMatch(
         id = id,
-        start = startHours * 60 * MINUTE_MS,
+        start = 0,
         state = state,
         home = MatchSide("A"),
         away = MatchSide("B")
     )
 
     @Test
-    fun whatTheWidgetShows() {
+    fun whenToRefresh() {
         val now = 100 * 60 * MINUTE_MS
-        val matches = listOf(
-            match("vecchia", 70, MatchState.POST),
-            match("ieri", 80, MatchState.POST),
-            match("stamattina", 95, MatchState.POST),
-            match("adesso", 99, MatchState.IN),
-            match("stasera", 104, MatchState.PRE),
-            match("domani", 124, MatchState.PRE),
-            match("dopodomani", 148, MatchState.PRE)
-        )
-        // Le ultime due finite, quella in corso, le prossime: cinque, in ordine di tempo.
-        assertEquals(listOf("ieri", "stamattina", "adesso", "stasera", "domani"), matchesForWidget(matches, now).map { it.id })
-        // Stagione finita: solo risultati, i più recenti.
-        val over = matches.filter { it.state == MatchState.POST }
-        assertEquals(listOf("vecchia", "ieri", "stamattina"), matchesForWidget(over, now).map { it.id })
         // Con una partita in corso si riscarica ogni minuto, altrimenti ogni cinque.
-        val live = SportReport(fetchedAt = now, matches = matches)
+        val live = SportReport(fetchedAt = now, matches = listOf(match("adesso", MatchState.IN), match("dopo", MatchState.PRE)))
+        assertFalse(live.isStale(now + 30_000))
         assertTrue(live.isStale(now + MINUTE_MS))
-        val quiet = SportReport(fetchedAt = now, matches = matches.filter { it.state != MatchState.IN })
+        val quiet = SportReport(fetchedAt = now, matches = listOf(match("dopo", MatchState.PRE)))
         assertFalse(quiet.isStale(now + MINUTE_MS))
         assertTrue(quiet.isStale(now + 5 * MINUTE_MS))
+        assertTrue((null as SportReport?).isStale(now))
+        // Senza giornate niente giornata di adesso.
+        assertEquals(-1, currentRound(emptyList(), LocalDate.of(2026, 10, 17)))
     }
 }

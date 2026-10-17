@@ -2070,6 +2070,74 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.172 — 17/10/2026 · 19:00 — Lo sport a giornate, con stemmi e bandiere
+*(Claude Code sul PC; verificato sul telefono; 574 test passati; commit solo
+in locale)*
+
+L'utente, parola per parola:
+> «Tre modifiche del widget sport:
+> 1) a sinistra di ogni nome di squadra, metti lo stemma. Nella lista delle
+> partite e nella classifica
+> 2) nel widget fammi vedere l'intera giornata di una competizione, e
+> scorrendo a destra e sinistra mi fa vedere tutte le giornate precedenti e
+> successive. Per cambiare competizione (tra quelle che io ho manualmente
+> aggiunto) dovrò premere delle freccette a destra o a sinistra (se quella
+> che vedo è la prima, la freccetta a sinistra è grigia, altrimenti se è
+> l'ultima la freccetta a destra è grigia, se è l'unica saranno grigie
+> entrambe le freccette)
+> 3) a sinistra della scritta di ogni competizione, aggiungici l'icona di
+> una bandiera, quindi quella dell'Italia su Serie A e Serie B, eccetera. Se
+> sono competizioni continentali, cerca di metterci l'icona dei continenti
+> (europa, sud america, africa, eccetera)»
+
+- **[Nuova funzionalità]** **Gli stemmi** a sinistra di ogni squadra, nelle
+  partite e nella classifica; nel tennis la bandiera del giocatore. Sono
+  quelli di ESPN nella versione per i fondi scuri (la J della Juventus è
+  bianca), scaricati piccoli (64×64, circa 4 KB) e tenuti nella cache
+  dell'app: ognuno si scarica una volta sola
+- **[Modificato]** **Il widget mostra una giornata intera** di una
+  competizione alla volta, con i giorni separati ("Friday 16", "Today",
+  "Tomorrow"), e **scorrendo** si vedono le giornate prima e dopo, tutta la
+  stagione. Si apre sulla giornata di adesso (il giorno dopo l'ultima
+  partita si vedono ancora i risultati). Le giornate: nel calcio i giorni di
+  partita vicini, nella NFL e nel college la settimana ("Week 6"), nel
+  basket, nel baseball e nel tennis il giorno (il tennis diviso per torneo).
+  Dove il conto torna (Serie A, Serie B, Premier, Bundesliga, Ligue 1)
+  "Matchday 7"; altrove (LaLiga con recuperi e anticipi, le coppe) le date,
+  col nome della fase se ESPN lo dà ("League Phase")
+- **[Nuova funzionalità]** **Le frecce** ai lati del nome cambiano
+  competizione: grigia la sinistra sulla prima, la destra sull'ultima,
+  tutte e due se ce n'è una sola. Aprendo la barra si vede la prima
+- **[Nuova funzionalità]** **La bandiera** a sinistra del nome di ogni
+  competizione (nel widget, nella finestra, nell'elenco e nel catalogo):
+  🇮🇹 Serie A, Serie B, Coppa Italia, la croce di San Giorgio per la
+  Premier, 🇪🇸 🇩🇪 🇫🇷, 🇺🇸 per le leghe americane. Per le competizioni
+  continentali il globo col continente: 🌍 Europa e Africa (non c'è
+  un'emoji della sola Europa), 🌎 le Americhe, 🌏 l'Asia; per Mondiali, ATP
+  e WTA il globo intero 🌐
+- **[Modificato]** Un tocco su una giornata apre la sua finestra: le partite
+  e la classifica, ora con gli stemmi. Si scarica solo la competizione che
+  si vede: le giornate due volte al giorno, la giornata di adesso ogni
+  cinque minuti (ogni minuto con una partita in corso), le altre quando ci
+  si arriva scorrendo; "Refresh" riscarica tutto
+- **[Progetto]** ESPN non dice il numero della giornata: le giornate si
+  ricavano dal suo calendario (`buildRounds`, `soccerRounds`,
+  `currentRound` in `Sports.kt`). Il baseball elenca i giorni senza
+  partite; per le coppe, che hanno solo le fasi, i giorni si cercano mese
+  per mese. Gli stemmi in `TeamLogos.kt`. I dati salvati dalla versione di
+  prima si riscaricano subito (`SPORT_REPORT_VERSION`). Test: `SportsTest`
+  (Serie A a 38 giornate, LaLiga, NBA, NFL a settimane, baseball,
+  Champions dai mesi, tennis con le bandiere, stemmi e bandiere delle
+  competizioni) e `SportsWidgetTest` (la giornata disegnata, le frecce),
+  con risposte nuove di ESPN in `resources/sports`
+- Verificato sul telefono, sul widget Sports dell'utente (Serie A, solo
+  guardando): Matchday 7 da venerdì 16 a lunedì 19 con tutte le partite,
+  i risultati, l'intervallo in rosso e gli stemmi; le giornate 6 e 8
+  scorrendo; la classifica con gli stemmi; tutte e due le frecce grigie.
+  Con un widget di prova (Champions League, ATP, NFL): la League Phase di
+  martedì 20 e mercoledì 21, l'ATP di oggi coi tornei e le bandiere, la Week
+  6 della NFL, le frecce grigie alla prima e all'ultima. Poi il widget di
+  prova è stato tolto: widget, impostazioni e database come prima
 ### 🆕 v0.171 — 17/10/2026 · 14:50 — I widget dello sport e della borsa
 *(Claude Code sul PC; provato sul telefono con internet; 569 test passati;
 commit solo in locale)*

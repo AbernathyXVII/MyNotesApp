@@ -11,18 +11,24 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
+import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.time.ZoneId
+import java.time.ZoneOffset
+import java.time.temporal.ChronoUnit
+import java.time.temporal.TemporalAdjusters
 
 /**
  * **Lo sport** (dal 17/10/2026, chiesto dall'utente): una o più competizioni
- * di sport diversi — calcio, tennis, basket, baseball, football americano —
- * una per pagina, che si sfogliano come le città del meteo. Ogni pagina
- * mostra le partite più vicine ad adesso (i risultati appena finiti, quelle
- * in corso, le prossime); un tocco apre tutte le partite e la classifica;
- * tenendo premuto si scelgono le competizioni.
+ * di sport diversi — calcio, tennis, basket, baseball, football americano.
+ *
+ * Dalla v0.172 il widget mostra **una competizione alla volta**, che si
+ * cambia con le frecce, e **una giornata intera per pagina**: scorrendo si
+ * vedono le giornate prima e dopo, tutta la stagione. Un tocco apre le
+ * partite della giornata e la classifica; tenendo premuto si scelgono le
+ * competizioni.
  *
  * I dati vengono da **ESPN** (site.api.espn.com): gratuito e senza chiave,
  * ma non è un servizio ufficiale per le app, e potrebbe cambiare. L'ultimo
@@ -46,6 +52,9 @@ const val SPORTS_LIVE_REFRESH_MS = MINUTE_MS
 
 /** La classifica cambia meno: si riscarica al massimo ogni mezz'ora. */
 const val STANDINGS_REFRESH_MS = 30 * MINUTE_MS
+
+/** Le giornate della stagione cambiano di rado (un rinvio, una data fissata): due volte al giorno. */
+const val ROUNDS_REFRESH_MS = 12 * 60 * MINUTE_MS
 
 enum class Sport(val path: String, val emoji: String) {
     SOCCER("soccer", "⚽"),
@@ -99,13 +108,86 @@ val SPORT_CATALOG: List<CatalogEntry> = listOf(
     CatalogEntry(Sport.FOOTBALL, "college-football", "NCAA Football")
 )
 
+/** Il globo che mostra l'Europa e l'Africa (non c'è un'emoji della sola Europa). */
+const val GLOBE_EUROPE_AFRICA = "🌍"
+const val GLOBE_AMERICAS = "🌎"
+const val GLOBE_ASIA = "🌏"
+const val GLOBE_WORLD = "🌐"
+
+/**
+ * **La bandiera di una competizione** (dal 17/10/2026, chiesto dall'utente):
+ * quella del paese del campionato; per le competizioni continentali il
+ * globo col continente (le coppe UEFA, le qualificazioni europee); per
+ * quelle mondiali (i Mondiali, ATP e WTA) il globo intero. Vuota se non si
+ * sa.
+ */
+fun competitionFlag(league: String): String {
+    val country = league.substringBefore('.')
+    val continent = league.substringAfterLast('.')
+    return when {
+        country == "ita" -> "🇮🇹"
+        // L'Inghilterra (non il Regno Unito): la croce di San Giorgio.
+        country == "eng" -> "🏴󠁧󠁢󠁥󠁮󠁧󠁿"
+        country == "esp" -> "🇪🇸"
+        country == "ger" -> "🇩🇪"
+        country == "fra" -> "🇫🇷"
+        country == "uefa" || continent == "uefa" || country == "caf" || continent == "caf" -> GLOBE_EUROPE_AFRICA
+        country == "conmebol" || continent == "conmebol" || country == "concacaf" || continent == "concacaf" -> GLOBE_AMERICAS
+        country == "afc" || continent == "afc" || country == "ofc" || continent == "ofc" -> GLOBE_ASIA
+        country == "fifa" || league == "atp" || league == "wta" -> GLOBE_WORLD
+        league in setOf("nba", "wnba", "mens-college-basketball", "mlb", "nfl", "college-football") ->
+            "🇺🇸"
+        else -> ""
+    }
+}
+
 @Serializable
 data class SportReport(
+    /** Quando sono state scaricate [matches]. */
     val fetchedAt: Long,
+    /** Le partite della giornata di adesso, [round]. */
     val matches: List<SportMatch>,
     val standings: List<StandingGroup> = emptyList(),
-    val standingsFetchedAt: Long? = null
+    val standingsFetchedAt: Long? = null,
+    /** Le giornate della stagione, in ordine. */
+    val rounds: List<SportRound> = emptyList(),
+    val roundsFetchedAt: Long? = null,
+    /** La giornata di [matches], in [rounds]; -1 senza giornate. */
+    val round: Int = -1,
+    /** Com'era fatto quando è stato scaricato: se è più vecchio di `SPORT_REPORT_VERSION` si riscarica tutto. */
+    val version: Int = 1
 )
+
+/**
+ * La versione di `SportReport` (2 dalla v0.172: giornate, stemmi). Quelli
+ * salvati prima (1) si riscaricano subito, altrimenti la classifica restava
+ * senza stemmi fino alla mezz'ora dopo.
+ */
+const val SPORT_REPORT_VERSION = 2
+
+/**
+ * **Una giornata**: i giorni (quelli di ESPN, cioè americani) in cui si gioca.
+ * Nei campionati di calcio i giorni di partita vicini (venerdì-lunedì, o il
+ * turno infrasettimanale); nella NFL la settimana; nel basket, nel baseball e
+ * nel tennis il giorno.
+ */
+@Serializable
+data class SportRound(
+    /** Il primo e l'ultimo giorno, "2026-10-16". */
+    val from: String,
+    val to: String,
+    /** I giorni da chiedere a ESPN uno per uno; vuoto se si chiede la settimana ([week]). */
+    val days: List<String> = emptyList(),
+    /** Il nome che le dà ESPN: "Week 7", "League Phase"; vuoto nei campionati. */
+    val label: String = "",
+    /** NFL e college: la parte della stagione (1 precampionato, 2 regolare, 3 playoff) e la settimana. */
+    val seasonType: Int? = null,
+    val week: Int? = null
+) {
+    val key: String get() = "$from/$to"
+    val firstDay: LocalDate get() = LocalDate.parse(from)
+    val lastDay: LocalDate get() = LocalDate.parse(to)
+}
 
 enum class MatchState { PRE, IN, POST }
 
@@ -120,7 +202,9 @@ data class SportMatch(
     val home: MatchSide,
     val away: MatchSide,
     /** Tennis: il torneo e il turno ("Shanghai Masters · Final"). */
-    val note: String = ""
+    val note: String = "",
+    /** Tennis: il torneo, per dividere le partite di una giornata. */
+    val tournament: String = ""
 ) {
     val postponed: Boolean get() = status.contains("postpon", ignoreCase = true) || status.contains("cancel", ignoreCase = true)
 }
@@ -131,7 +215,9 @@ data class MatchSide(
     /** Il punteggio; nel tennis i set, uno per numero. */
     val score: String? = null,
     val sets: List<Int> = emptyList(),
-    val winner: Boolean = false
+    val winner: Boolean = false,
+    /** Lo stemma della squadra (nel tennis la bandiera del giocatore), un indirizzo di ESPN. */
+    val logo: String = ""
 )
 
 /** Un gruppo della classifica: il campionato intero, o una conferenza, un girone. */
@@ -144,37 +230,138 @@ data class StandingGroup(
 )
 
 @Serializable
-data class StandingRow(val rank: Int, val team: String, val values: List<String>)
+data class StandingRow(val rank: Int, val team: String, val values: List<String>, val logo: String = "")
 
 /** Va riscaricata: non c'è, o è vecchia (più in fretta se c'è una partita in corso). */
-fun SportReport?.isStale(now: Long): Boolean {
-    if (this == null) return true
+fun SportReport?.isStale(now: Long): Boolean = this == null || matchesStale(matches, fetchedAt, now)
+
+fun matchesStale(matches: List<SportMatch>, fetchedAt: Long, now: Long): Boolean {
     val every = if (matches.any { it.state == MatchState.IN }) SPORTS_LIVE_REFRESH_MS else SPORTS_REFRESH_MS
     return now - fetchedAt >= every
 }
 
+/** Il giorno di oggi nel fuso dell'app, per scegliere la giornata. */
+fun todayIn(zone: ZoneId, now: Long): LocalDate = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
+
 /**
- * **Le partite del widget**, al massimo [limit]: le ultime due finite, quelle
- * in corso e le prossime, in ordine di tempo. Le rinviate stanno con le
- * prossime solo se il loro giorno non è passato.
+ * Il giorno di ESPN di una partita: quello americano (le partite NBA delle
+ * 1:30 italiane sono della sera prima), come nelle sue domande per giorno.
  */
-fun matchesForWidget(matches: List<SportMatch>, now: Long, limit: Int = 5): List<SportMatch> {
-    val live = matches.filter { it.state == MatchState.IN }.sortedBy { it.start }.take(limit)
-    val room = limit - live.size
-    val finished = matches.filter { it.state == MatchState.POST && !it.postponed }.sortedByDescending { it.start }
-    val upcoming = matches.filter { it.state == MatchState.PRE && it.start >= now - 6 * 60 * MINUTE_MS }.sortedBy { it.start }
-    // Senza partite in arrivo (stagione finita) tutto il posto va ai risultati.
-    val recent = finished.take(if (upcoming.isEmpty()) room else minOf(2, room))
-    val next = upcoming.take(room - recent.size)
-    return (recent + live + next).sortedBy { it.start }
+fun espnDay(start: Long): LocalDate = Instant.ofEpochMilli(start).atOffset(ZoneOffset.ofHours(-5)).toLocalDate()
+
+/** Le partite di quei giorni di ESPN: per un giorno, ESPN dà i tornei di tennis interi. */
+fun onDays(matches: List<SportMatch>, days: Collection<LocalDate>): List<SportMatch> = matches.filter { espnDay(it.start) in days }
+
+// --- Le giornate ---
+
+/**
+ * **Le giornate della stagione** dal calendario di ESPN:
+ * - NFL e college a settimane ("Week 7"), come le dà ESPN;
+ * - basket, baseball e tennis: un giorno per pagina;
+ * - calcio: i giorni di partita vicini (vedi `soccerRounds`), col nome della
+ *   fase se ESPN lo dà ("League Phase"). Per le coppe ESPN dà solo le fasi:
+ *   i giorni di partita ([extraDays]) si cercano a parte, mese per mese.
+ *
+ * Senza calendario (succede fuori stagione) restano i giorni delle partite
+ * della risposta.
+ */
+fun buildRounds(board: Scoreboard, sport: Sport, extraDays: List<LocalDate> = emptyList()): List<SportRound> {
+    if (sport == Sport.FOOTBALL && board.stages.any { it.week != null }) {
+        return board.stages.filter { it.week != null }.map { stage ->
+            SportRound(from = stage.from.toString(), to = stage.to.toString(), label = stage.label, seasonType = stage.seasonType, week = stage.week)
+        }
+    }
+    val days = (board.matchDays + extraDays).ifEmpty { board.matches.map { espnDay(it.start) } }.distinct().sorted()
+    val groups = if (sport == Sport.SOCCER) soccerRounds(days) else days.map { listOf(it) }
+    return groups.map { group ->
+        val stage = board.stages.find { group.first() in it.from..it.to }
+        SportRound(
+            from = group.first().toString(),
+            to = group.last().toString(),
+            days = group.map { it.toString() },
+            label = stage?.label.orEmpty()
+        )
+    }
+}
+
+/**
+ * **Le giornate del calcio**: ESPN non dice il numero della giornata, solo i
+ * giorni in cui si gioca. Giorni attaccati sono una giornata (Serie A,
+ * Premier, Bundesliga, Ligue 1: tornano 38 e 34). Se il gruppo dura più di
+ * quattro giorni (LaLiga con i recuperi a metà settimana, un torneo che
+ * gioca ogni giorno) si divide in turno infrasettimanale (martedì-giovedì) e
+ * turno del fine settimana (venerdì-lunedì).
+ */
+fun soccerRounds(days: List<LocalDate>): List<List<LocalDate>> {
+    val groups = mutableListOf<MutableList<LocalDate>>()
+    days.distinct().sorted().forEach { day ->
+        val last = groups.lastOrNull()
+        if (last != null && ChronoUnit.DAYS.between(last.last(), day) <= 1) last += day else groups += mutableListOf(day)
+    }
+    return groups.flatMap { group ->
+        if (ChronoUnit.DAYS.between(group.first(), group.last()) <= 3) {
+            listOf(group)
+        } else {
+            val split = mutableListOf<MutableList<LocalDate>>()
+            group.forEach { day ->
+                val last = split.lastOrNull()
+                if (last != null && slotOf(last.last()) == slotOf(day)) last += day else split += mutableListOf(day)
+            }
+            split
+        }
+    }
+}
+
+/** Il turno di un giorno: il martedì del turno infrasettimanale o il venerdì del fine settimana. */
+private fun slotOf(day: LocalDate): LocalDate = when (day.dayOfWeek) {
+    DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY, DayOfWeek.THURSDAY -> day.with(TemporalAdjusters.previousOrSame(DayOfWeek.TUESDAY))
+    DayOfWeek.MONDAY -> day.minusDays(3)
+    else -> day.with(TemporalAdjusters.previousOrSame(DayOfWeek.FRIDAY))
+}
+
+/**
+ * **La giornata di adesso**: quella di oggi, o la prossima. Una giornata di
+ * più giorni resta anche il giorno dopo l'ultima partita (il martedì si
+ * vedono i risultati della giornata finita il lunedì). A stagione finita,
+ * l'ultima.
+ */
+fun currentRound(rounds: List<SportRound>, today: LocalDate): Int {
+    if (rounds.isEmpty()) return -1
+    val index = rounds.indexOfFirst { round ->
+        round.lastDay >= today || (round.firstDay != round.lastDay && round.lastDay == today.minusDays(1))
+    }
+    return if (index == -1) rounds.lastIndex else index
+}
+
+/**
+ * **"Giornata 7"** solo dove torna: un campionato di calcio con andata e
+ * ritorno, dove le giornate trovate sono proprio due per ogni avversaria
+ * (38 con venti squadre). Altrimenti (LaLiga con i recuperi, le coppe) le
+ * pagine hanno solo le date.
+ */
+fun hasMatchdayNumbers(rounds: List<SportRound>, standings: List<StandingGroup>, sport: Sport): Boolean {
+    if (sport != Sport.SOCCER || rounds.any { it.label.isNotEmpty() }) return false
+    val teams = standings.singleOrNull()?.rows?.size ?: return false
+    return teams > 2 && rounds.size == 2 * (teams - 1)
 }
 
 // --- Le risposte di ESPN, lette ---
 
 private val lenientJson = Json { ignoreUnknownKeys = true }
 
-/** Le partite di una risposta "scoreboard", e i giorni di partita della stagione (se li dà). */
-data class Scoreboard(val matches: List<SportMatch>, val matchDays: List<LocalDate>)
+/**
+ * Una risposta "scoreboard": le partite, e il calendario della stagione — i
+ * giorni di partita ([matchDays]) se ESPN lo dà a giorni, le settimane o le
+ * fasi ([stages]) se lo dà a liste (NFL, coppe).
+ */
+data class Scoreboard(
+    val matches: List<SportMatch>,
+    val matchDays: List<LocalDate> = emptyList(),
+    val stages: List<CalendarStage> = emptyList()
+)
+
+/** Una settimana (NFL: "Week 7") o una fase ("League Phase"), dal primo all'ultimo giorno. */
+data class CalendarStage(val label: String, val from: LocalDate, val to: LocalDate, val seasonType: Int? = null, val week: Int? = null)
 
 fun parseScoreboard(json: String, sport: Sport): Scoreboard? = runCatching {
     val root = lenientJson.parseToJsonElement(json).jsonObject
@@ -185,12 +372,39 @@ fun parseScoreboard(json: String, sport: Sport): Scoreboard? = runCatching {
         events.mapNotNull { teamMatch(it as? JsonObject ?: return@mapNotNull null) }
     }
     val league = root.array("leagues").firstOrNull() as? JsonObject
-    // Il calendario "a giorni" è una lista di date; quello "a settimane"
-    // (NFL, coppe) è fatto di oggetti, e lì basta la risposta di partenza.
-    val days = league?.array("calendar").orEmpty().mapNotNull { day ->
-        day.string()?.let { parseDate(it)?.atOffset(java.time.ZoneOffset.UTC)?.toLocalDate() }
+    val calendar = league?.array("calendar").orEmpty()
+    // Il calendario "a giorni" è una lista di date: quelle con partite, o
+    // (baseball) quelle senza, fra l'inizio e la fine della stagione.
+    val listed = calendar.mapNotNull { day -> day.string()?.let { parseDate(it)?.atOffset(ZoneOffset.UTC)?.toLocalDate() } }
+    val whitelist = league?.string("calendarIsWhitelist") != "false"
+    val days = if (whitelist || listed.isEmpty()) {
+        listed
+    } else {
+        val start = league?.string("calendarStartDate")?.let { parseDate(it)?.atOffset(ZoneOffset.UTC)?.toLocalDate() }
+        val end = league?.string("calendarEndDate")?.let { parseDate(it)?.atOffset(ZoneOffset.UTC)?.toLocalDate() }
+        if (start == null || end == null || end <= start) emptyList() else {
+            val off = listed.toSet()
+            generateSequence(start) { it.plusDays(1) }.takeWhile { it < end }.filter { it !in off }.toList()
+        }
     }
-    Scoreboard(matches, days)
+    // Quello "a liste": parti della stagione con dentro le settimane (NFL) o le fasi (coppe).
+    val stages = calendar.mapNotNull { it as? JsonObject }.flatMap { section ->
+        val seasonType = section.int("value")
+        section.array("entries").mapNotNull { entry ->
+            val item = entry as? JsonObject ?: return@mapNotNull null
+            val from = item.string("startDate")?.let { parseDate(it) } ?: return@mapNotNull null
+            val to = item.string("endDate")?.let { parseDate(it) } ?: return@mapNotNull null
+            CalendarStage(
+                label = item.string("label").orEmpty(),
+                from = from.atOffset(ZoneOffset.UTC).toLocalDate(),
+                // La fine è la mezzanotte americana del giorno dopo (07:59Z).
+                to = to.atOffset(ZoneOffset.UTC).minusHours(8).toLocalDate(),
+                seasonType = seasonType,
+                week = if (sport == Sport.FOOTBALL) item.int("value") else null
+            )
+        }
+    }
+    Scoreboard(matches, days, stages)
 }.getOrNull()
 
 private fun teamMatch(event: JsonObject): SportMatch? {
@@ -216,9 +430,17 @@ private fun teamSide(side: JsonObject, state: MatchState): MatchSide {
         name = name,
         // Prima della partita ESPN scrive "0": meglio niente.
         score = side.string("score")?.takeIf { state != MatchState.PRE },
-        winner = side.boolean("winner")
+        winner = side.boolean("winner"),
+        logo = team?.let { logoOf(it) }.orEmpty()
     )
 }
+
+/** Lo stemma: "logo", o il primo di "logos"; per i giocatori la bandiera ("flag", un oggetto o un indirizzo). */
+private fun logoOf(team: JsonObject): String? =
+    team.string("logo")
+        ?: (team.array("logos").firstOrNull() as? JsonObject)?.string("href")
+        ?: team.obj("flag")?.string("href")
+        ?: team.string("flag")
 
 /** Gli incontri di singolare di un torneo di tennis, col nome del torneo e il turno. */
 private fun tennisMatches(event: JsonObject): List<SportMatch> {
@@ -239,7 +461,8 @@ private fun tennisMatches(event: JsonObject): List<SportMatch> {
                     status = statusText(match.obj("status")),
                     home = playerSide(players[0]),
                     away = playerSide(players[1]),
-                    note = listOf(tournament, round).filter { it.isNotBlank() }.joinToString(" · ")
+                    note = listOf(tournament, round).filter { it.isNotBlank() }.joinToString(" · "),
+                    tournament = tournament
                 )
             }
         }
@@ -251,7 +474,8 @@ private fun playerSide(side: JsonObject): MatchSide {
     return MatchSide(
         name = athlete?.string("shortName") ?: athlete?.string("displayName") ?: "TBD",
         sets = sets,
-        winner = side.boolean("winner")
+        winner = side.boolean("winner"),
+        logo = athlete?.let { logoOf(it) }.orEmpty()
     )
 }
 
@@ -297,7 +521,8 @@ fun parseStandings(json: String, sport: Sport): List<StandingGroup> = runCatchin
                     StandingRow(
                         rank = position + 1,
                         team = team?.string("shortDisplayName") ?: team?.string("displayName") ?: "?",
-                        values = columns.map { s[it]?.string("displayValue").orEmpty() }
+                        values = columns.map { s[it]?.string("displayValue").orEmpty() },
+                        logo = team?.let { logoOf(it) }.orEmpty()
                     )
                 }
                 groups += StandingGroup(name = child.string("name").orEmpty(), columns = header, rows = rows)
@@ -309,7 +534,7 @@ fun parseStandings(json: String, sport: Sport): List<StandingGroup> = runCatchin
     groups
 }.getOrDefault(emptyList())
 
-/** **La classifica del tennis**: i primi [limit] giocatori ATP o WTA, coi punti. */
+/** **La classifica del tennis**: i primi [limit] giocatori ATP o WTA, coi punti e la bandiera. */
 fun parseTennisRankings(json: String, limit: Int = 100): List<StandingGroup> = runCatching {
     val root = lenientJson.parseToJsonElement(json).jsonObject
     root.array("rankings").mapNotNull { it as? JsonObject }.take(1).map { ranking ->
@@ -321,27 +546,13 @@ fun parseTennisRankings(json: String, limit: Int = 100): List<StandingGroup> = r
                 StandingRow(
                     rank = entry.int("current") ?: return@mapNotNull null,
                     team = athlete.string("displayName") ?: return@mapNotNull null,
-                    values = listOf(entry.double("points")?.let { Math.round(it).toString() }.orEmpty())
+                    values = listOf(entry.double("points")?.let { Math.round(it).toString() }.orEmpty()),
+                    logo = logoOf(athlete).orEmpty()
                 )
             }
         )
     }
 }.getOrDefault(emptyList())
-
-/**
- * I giorni di partita da chiedere oltre a quello che ESPN dà da sé: l'ultimo
- * giorno di partita prima di oggi (i risultati), oggi, e i prossimi due.
- * Solo per i calendari "a giorni".
- */
-fun matchDaysAround(days: List<LocalDate>, today: LocalDate): List<LocalDate> {
-    val sorted = days.distinct().sorted()
-    val before = sorted.lastOrNull { it < today }
-    val after = sorted.filter { it > today }.take(2)
-    return listOfNotNull(before, today.takeIf { it in sorted }) + after
-}
-
-/** Il giorno di oggi nel fuso dell'app, per scegliere i giorni di partita. */
-fun todayIn(zone: ZoneId, now: Long): LocalDate = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
 
 private fun parseDate(text: String): Instant? =
     runCatching { Instant.parse(text) }.getOrNull()
@@ -352,6 +563,6 @@ private fun JsonObject.obj(key: String): JsonObject? = this[key] as? JsonObject
 private fun JsonObject.array(key: String): List<JsonElement> = (this[key] as? JsonArray).orEmpty()
 private fun JsonObject.string(key: String): String? = (this[key] as? JsonPrimitive)?.contentOrNull
 private fun JsonObject.double(key: String): Double? = (this[key] as? JsonPrimitive)?.let { it.doubleOrNull ?: it.contentOrNull?.toDoubleOrNull() }
-private fun JsonObject.int(key: String): Int? = (this[key] as? JsonPrimitive)?.let { it.intOrNull ?: it.doubleOrNull?.let { d -> Math.round(d).toInt() } }
+private fun JsonObject.int(key: String): Int? = (this[key] as? JsonPrimitive)?.let { it.intOrNull ?: it.doubleOrNull?.let { d -> Math.round(d).toInt() } ?: it.contentOrNull?.toIntOrNull() }
 private fun JsonObject.boolean(key: String): Boolean = (this[key] as? JsonPrimitive)?.contentOrNull == "true"
 private fun JsonElement.string(): String? = (this as? JsonPrimitive)?.contentOrNull

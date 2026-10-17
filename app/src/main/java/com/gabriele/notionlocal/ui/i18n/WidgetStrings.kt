@@ -94,6 +94,9 @@ object WidgetStrings {
     val team get() = t("Team", "Squadra", "Team", "Équipe", "Equipo", "球队", "팀", "チーム")
     val player get() = t("Player", "Giocatore", "Spieler", "Joueur", "Jugador", "球员", "선수", "選手")
     val sportsSource get() = t("Data: ESPN", "Dati: ESPN", "Daten: ESPN", "Données : ESPN", "Datos: ESPN", "数据：ESPN", "데이터: ESPN", "データ：ESPN")
+    fun matchday(n: Int) = t("Matchday $n", "Giornata $n", "Spieltag $n", "Journée $n", "Jornada $n", "第${n}轮", "${n}라운드", "第${n}節")
+    val previousCompetition get() = t("Previous competition", "Competizione precedente", "Vorheriger Wettbewerb", "Compétition précédente", "Competición anterior", "上一个赛事", "이전 대회", "前の大会")
+    val nextCompetition get() = t("Next competition", "Competizione successiva", "Nächster Wettbewerb", "Compétition suivante", "Competición siguiente", "下一个赛事", "다음 대회", "次の大会")
 
     fun sportName(sport: com.gabriele.notionlocal.data.widgets.Sport): String = when (sport) {
         com.gabriele.notionlocal.data.widgets.Sport.SOCCER -> t("Football", "Calcio", "Fußball", "Football", "Fútbol", "足球", "축구", "サッカー")
