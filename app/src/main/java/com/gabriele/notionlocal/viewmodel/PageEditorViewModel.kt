@@ -19,6 +19,8 @@ import com.gabriele.notionlocal.data.entity.PageEntity
 import com.gabriele.notionlocal.data.entity.PageFont
 import com.gabriele.notionlocal.data.entity.RichTextSpan
 import com.gabriele.notionlocal.data.entity.TableCellEntity
+import com.gabriele.notionlocal.data.entity.LinkRange
+import com.gabriele.notionlocal.data.entity.applyLinks
 import com.gabriele.notionlocal.data.entity.applyTextEdit
 import com.gabriele.notionlocal.data.entity.joinLines
 import com.gabriele.notionlocal.data.entity.linkInRange
@@ -1569,8 +1571,13 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
     fun splitBlockAt(
         block: BlockEntity,
         spansBeforeCursor: List<RichTextSpan>,
-        textAfterCursor: String
+        textAfterCursor: String,
+        // Il testo dopo il cursore già formattato (un incolla coi link); se
+        // non torna con [textAfterCursor] non si usa.
+        spansAfterCursor: List<RichTextSpan>? = null
     ): SplitOutcome {
+        val afterCursor = spansAfterCursor?.takeIf { it.plainText() == textAfterCursor }
+            ?: listOf(RichTextSpan(text = textAfterCursor))
         val isListType = block.type == BlockType.BULLET_LIST_ITEM ||
             block.type == BlockType.NUMBERED_LIST_ITEM ||
             block.type == BlockType.CHECKBOX
@@ -1648,7 +1655,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         if (!hasChildren && block.type != BlockType.NOTIFICATION) {
             val newBlockId = java.util.UUID.randomUUID().toString()
             val textBeforeJson = json.encodeToString(spansBeforeCursor)
-            val textAfterJson = json.encodeToString(listOf(RichTextSpan(text = textAfterCursor)))
+            val textAfterJson = json.encodeToString(afterCursor)
             // La riga di sopra si vede nello stesso fotogramma in cui il
             // campo passa al testo dopo il cursore: vedi `showBeforeSaved`.
             showBeforeSaved(newBlockId) { list ->
@@ -1676,7 +1683,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         val newBlockId = java.util.UUID.randomUUID().toString()
 
         viewModelScope.launch {
-            val afterSpans = listOf(RichTextSpan(text = textAfterCursor))
+            val afterSpans = afterCursor
             repository.applyBlockChanges(
                 shift = PageRepository.BlockShift(pageId, block.parentBlockId, newIndex, 1),
                 saved = listOf(
@@ -1706,7 +1713,16 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
      * era una lista. Incollare tre righe dentro un elenco puntato crea
      * tre punti separati, non un blocco unico con newline dentro.
      */
-    fun splitBlockAtMultiple(currentBlock: BlockEntity, lines: List<String>) {
+    fun splitBlockAtMultiple(
+        currentBlock: BlockEntity,
+        lines: List<String>,
+        // Le righe già formattate (un incolla coi link): una per riga, e
+        // ognuna si usa solo se torna col suo testo.
+        lineSpans: List<List<RichTextSpan>>? = null
+    ) {
+        fun spansFor(index: Int): List<RichTextSpan> =
+            lineSpans?.getOrNull(index)?.takeIf { it.plainText() == lines[index] }
+                ?: listOf(RichTextSpan(text = lines[index]))
         if (lines.size <= 1) {
             updateBlockText(currentBlock, lines.firstOrNull() ?: "")
             return
@@ -1723,7 +1739,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
 
         viewModelScope.launch {
             val startIndex = currentBlock.orderIndex + 1
-            val firstSpans = listOf(RichTextSpan(text = lines.first()))
+            val firstSpans = spansFor(0)
             repository.applyBlockChanges(
                 shift = PageRepository.BlockShift(
                     pageId,
@@ -1738,7 +1754,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
                             pageId = pageId,
                             parentBlockId = currentBlock.parentBlockId,
                             type = inheritedType,
-                            textJson = json.encodeToString(listOf(RichTextSpan(text = lineText))),
+                            textJson = json.encodeToString(spansFor(i + 1)),
                             orderIndex = startIndex + i
                         )
                     }
@@ -2846,7 +2862,10 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         runBlockIds: List<String>,
         newLines: List<String>,
         linesBefore: List<String>? = null,
-        caretLine: Int? = null
+        caretLine: Int? = null,
+        // I link di un incolla, nelle posizioni del testo intero (righe unite
+        // con l'a-capo): vedi `PasteLinks.kt`.
+        links: List<LinkRange> = emptyList()
     ) {
         // Qui, subito, solo quello che serve ad Annulla e alla cronologia:
         // guardano la modifica così come l'ha fatta l'utente.
@@ -2874,7 +2893,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
                 // La riga vuota di una pagina nuova non è ancora nel database.
                 val unsaved = placeholder?.takeIf { p -> p.pageId == pageId && fresh.none { it.id == p.id } }
                 val runBlocks = resolveRun(runBlockIds, fresh + listOfNotNull(unsaved)) ?: return@withLock
-                writeRunChange(pageId, runBlocks, unsaved, newLines, linesBefore, caretLine)
+                writeRunChange(pageId, runBlocks, unsaved, newLines, linesBefore, caretLine, links)
             }
         }
     }
@@ -2929,7 +2948,8 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         unsaved: BlockEntity?,
         newLines: List<String>,
         linesBefore: List<String>?,
-        caretLine: Int?
+        caretLine: Int?,
+        links: List<LinkRange> = emptyList()
     ) {
         val stored = runBlocks.map { plainTextOf(it) }
         if (stored == newLines) return
@@ -2988,10 +3008,16 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         // una frase, la metà che scende tiene il suo formato.
         val oldMiddleSpans = oldMiddleBlocks.map { spansOf(it) }.joinLines()
         val oldMiddleText = oldMiddleBlocks.joinToString("\n") { plainTextOf(it) }
-        val newMiddleSpans = applyTextEdit(
-            oldMiddleSpans,
-            oldMiddleText,
-            newMiddleLines.joinToString("\n")
+        // I link di un incolla vanno sulla zona modificata: le posizioni si
+        // contano da dove comincia.
+        val middleOffset = newLines.take(prefixCount).sumOf { it.length + 1 }
+        val newMiddleSpans = applyLinks(
+            applyTextEdit(
+                oldMiddleSpans,
+                oldMiddleText,
+                newMiddleLines.joinToString("\n")
+            ),
+            links.map { it.copy(start = it.start - middleOffset, end = it.end - middleOffset) }
         ).splitLines()
 
         // Rete di sicurezza: se per qualsiasi motivo il risultato non

@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import com.gabriele.notionlocal.data.PageImageStore
 import com.gabriele.notionlocal.data.repository.PageRepository
@@ -233,6 +234,7 @@ import com.gabriele.notionlocal.data.entity.BlockType
 import com.gabriele.notionlocal.data.entity.DatabaseLayout
 import com.gabriele.notionlocal.data.entity.PageEntity
 import com.gabriele.notionlocal.data.entity.RichTextSpan
+import com.gabriele.notionlocal.data.entity.applyLinks
 import com.gabriele.notionlocal.data.entity.applyTextEdit
 import com.gabriele.notionlocal.data.entity.plainText
 import com.gabriele.notionlocal.data.entity.splitLines
@@ -1078,7 +1080,9 @@ fun PageEditorScreen(
         LocalInNotebook provides (page?.notebookSectionId != null),
         LocalKeyboardCloseWatch provides keyboardWatch,
         // Il correttore della pagina, se è acceso: vedi `ProofingUi.kt`.
-        LocalProofing provides rememberPageProofing(page, viewModel)
+        LocalProofing provides rememberPageProofing(page, viewModel),
+        // Il testo incollato da un'altra app porta i suoi link: vedi `PasteLinks.kt`.
+        LocalClipboardManager provides rememberLinkClipboard()
     ) {
         PageEditorContent(
             pageId = pageId,
@@ -4870,7 +4874,11 @@ private fun MergedTextRunField(
         BasicTextField(
             value = fieldValue,
             onTextLayout = { textLayout = it },
-            onValueChange = { newValue ->
+            onValueChange = { pastedValue ->
+                // I link di un incolla (vedi `PasteLinks.kt`): si tengono da
+                // parte, e il campo resta col testo e basta.
+                val pastedLinks = pastedValue.pastedLinks(RUN_LEAD.length)
+                val newValue = pastedValue.withoutPastedLinks()
                 val oldText = fieldValue.text
                 val oldBody = bodyOf(oldText)
                 proofTyping = if (newValue.text != oldText) newValue.selection.end - RUN_LEAD.length else null
@@ -5137,7 +5145,8 @@ private fun MergedTextRunField(
                             // E dov'è il cursore: senza, una riga vuota
                             // inserita in mezzo ad altre righe vuote è
                             // indistinguibile da una aggiunta in fondo.
-                            lineIndex
+                            lineIndex,
+                            links = pastedLinks
                         )
 
                         val currentLineId = runBlocks.getOrNull(lineIndex)?.id
@@ -5920,7 +5929,10 @@ private fun BlockRow(
         AutoCaps {
             BasicTextField(
                 value = editState.fieldValue,
-                onValueChange = { newFieldValue ->
+                onValueChange = { pastedFieldValue ->
+                    // I link di un incolla, come nel campo unito.
+                    val pastedLinks = pastedFieldValue.pastedLinks(RUN_LEAD.length)
+                    val newFieldValue = pastedFieldValue.withoutPastedLinks()
                     val oldText = bodyOf(editState.fieldValue.text)
                     proofTyping = if (bodyOf(newFieldValue.text) != oldText) newFieldValue.selection.end - RUN_LEAD.length else null
                     noteLog(
@@ -5985,7 +5997,7 @@ private fun BlockRow(
                             )
                             viewModel.leaveMultilineBlock(block, kept)
                         } else {
-                            val newSpans = applyTextEdit(editState.spans, oldText, newText)
+                            val newSpans = applyLinks(applyTextEdit(editState.spans, oldText, newText), pastedLinks)
                             editState = BlockEditState(newSpans, newFieldValue)
                             viewModel.updateBlockSpans(block, newSpans)
                         }
@@ -6028,7 +6040,16 @@ private fun BlockRow(
                         }
                         lastSplit = SplitEcho(movedAway, transition, now)
                         val firstLine = lines.first()
-                        val spansForFirstLine = applyTextEdit(editState.spans, oldText, firstLine)
+                        // Con dei link incollati, il testo di ogni riga viene
+                        // dallo stesso conto sul testo intero: così i link
+                        // delle righe nuove non si perdono.
+                        val pastedLines = if (pastedLinks.isEmpty()) {
+                            null
+                        } else {
+                            applyLinks(applyTextEdit(editState.spans, oldText, newText), pastedLinks).splitLines()
+                                .takeIf { split -> split.size == lines.size && split.indices.all { split[it].plainText() == lines[it] } }
+                        }
+                        val spansForFirstLine = pastedLines?.first() ?: applyTextEdit(editState.spans, oldText, firstLine)
                         if (block.type == BlockType.TOGGLE && lines.size == 2) {
                             // **Invio nel titolo di un toggle**: la riga nuova
                             // va dentro (toggle aperto) o sotto (chiuso), e il
@@ -6059,7 +6080,7 @@ private fun BlockRow(
                             viewModel.makeNotification(block, command)
                             NotificationPermission.request()
                         } else if (lines.size == 2) {
-                            val outcome = viewModel.splitBlockAt(block, spansForFirstLine, lines[1])
+                            val outcome = viewModel.splitBlockAt(block, spansForFirstLine, lines[1], pastedLines?.get(1))
                             // La riga nuova è finita sopra e questo campo
                             // resta vivo col fuoco: deve mostrare il testo
                             // dopo il cursore, col cursore all'inizio. È
@@ -6085,7 +6106,7 @@ private fun BlockRow(
                                 )
                             } else if (outcome == SplitOutcome.SPLIT_ABOVE) {
                                 BlockEditState(
-                                    listOf(RichTextSpan(text = lines[1])),
+                                    pastedLines?.get(1) ?: listOf(RichTextSpan(text = lines[1])),
                                     TextFieldValue(RUN_LEAD + lines[1], TextRange(RUN_LEAD.length))
                                 )
                             } else {
@@ -6117,7 +6138,7 @@ private fun BlockRow(
                                     TextRange(RUN_LEAD.length + firstLine.length)
                                 )
                             )
-                            viewModel.splitBlockAtMultiple(block, lines)
+                            viewModel.splitBlockAtMultiple(block, lines, pastedLines)
                         }
                     } else if (newText == oldText) {
                         editState = editState.copy(fieldValue = newFieldValue)
@@ -6198,7 +6219,7 @@ private fun BlockRow(
                             )
                             viewModel.updateBlockSpans(block, newSpans)
                         } else {
-                            val newSpans = applyTextEdit(editState.spans, oldText, newText)
+                            val newSpans = applyLinks(applyTextEdit(editState.spans, oldText, newText), pastedLinks)
                             editState = BlockEditState(newSpans, newFieldValue)
                             viewModel.updateBlockSpans(block, newSpans)
                         }

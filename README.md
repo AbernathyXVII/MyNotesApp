@@ -2070,6 +2070,56 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.173 — 17/10/2026 · 19:19 — Incollare coi link; Inter e Roma; stemmi più svelti
+*(Claude Code sul PC; nomi e stemmi verificati sul telefono, l'incolla nei
+test; 582 test passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Perché così lenti a caricare gli stemmi delle squadre?
+>
+> Nel widget dello sport, invece che Inter Milan chiamala semplicemente
+> Inter e invece che AS Roma chiamale semplicemente Roma
+>
+> Se copio del testo con dei link da qualche altra parte (per esempio
+> OneNote) e la incollo in una pagina, puoi far sì che venga incollato con i
+> link compresi?»
+
+- **[Nuova funzionalità]** **Il testo incollato da un'altra app tiene i suoi
+  link**, sulle stesse parole: OneNote, un browser, qualsiasi app che metta
+  negli appunti, accanto al testo, l'HTML o un testo coi link. Vale nei
+  paragrafi, negli elenchi, nelle caselle, nei riquadri e nelle citazioni,
+  anche quando l'incolla fa più righe (i link delle righe nuove restano
+  sulle loro righe). Il testo incollato è lo stesso di prima: cambiano solo
+  i link. Funziona con "Paste" del menu che si apre tenendo premuto (o
+  Ctrl+V); quello che la tastiera incolla dal suo pannello degli appunti
+  arriva senza link
+- **[Modificato]** Nel widget dello sport **"Inter" e "Roma"** invece di
+  "Inter Milan" e "AS Roma", nelle partite (anche di Champions) e in
+  classifica
+- **[Bug fix]** **Gli stemmi arrivano prima.** Erano lenti perché ogni
+  immagine apriva una connessione nuova verso il server delle immagini di
+  ESPN (con la ricerca dell'indirizzo, che col DNS privato del telefono a
+  volte è lenta) e la chiudeva subito; e uno stemma non arrivato non si
+  riprovava per dieci minuti. Adesso le connessioni si riusano (vale per
+  tutti i widget: meteo, sport, borsa), gli stemmi di tutta la competizione
+  si scaricano appena la si guarda, e uno mancato si riprova dopo un minuto,
+  da solo. Una volta scaricati restano sul telefono e compaiono subito
+- **[Progetto]** L'incolla in `PasteLinks.kt`: `LinkClipboard` dà
+  all'incolla di Compose il testo con i link segnati sopra; i due campi
+  dell'editor li raccolgono (`pastedLinks`) e li mettono nel testo ricco con
+  `applyLinks` (`RichText.kt`), anche in `updateRun`, `splitBlockAt` e
+  `splitBlockAtMultiple`. I nomi corti in `teamDisplayName` (`Sports.kt`).
+  Test: `PasteLinksTest` (appunti con l'HTML come OneNote, testo coi link,
+  testo semplice, parole ripetute, link sul testo ricco) e
+  `PasteLinksSaveTest` (i link salvati nel testo condiviso su due righe e
+  in tre caselle)
+- Verificato sul telefono: sulla Serie A dell'utente "Inter" e "Roma", e gli
+  stemmi subito, già salvati; con un widget di prova sulla Bundesliga, mai
+  vista, quasi tutti gli stemmi in 3 secondi e gli ultimi cinque in 8 (le
+  stesse immagini dal PC rispondono subito: il ritardo è del server delle
+  immagini di ESPN). Il widget di prova è stato tolto: widget, impostazioni
+  e database come prima. L'incolla coi link non è stato provato sul
+  telefono: avrebbe voluto dire sovrascrivere gli appunti dell'utente
 ### 🆕 v0.172 — 17/10/2026 · 19:00 — Lo sport a giornate, con stemmi e bandiere
 *(Claude Code sul PC; verificato sul telefono; 574 test passati; commit solo
 in locale)*

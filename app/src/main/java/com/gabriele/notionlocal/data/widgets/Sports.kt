@@ -220,6 +220,18 @@ data class MatchSide(
     val logo: String = ""
 )
 
+/**
+ * **Il nome di una squadra come lo vuole l'utente** (dal 17/10/2026): "Inter"
+ * e "Roma", non "Inter Milan" e "AS Roma" come li scrive ESPN. Solo nel
+ * disegno: i dati restano quelli di ESPN.
+ */
+fun teamDisplayName(name: String): String = SHORT_TEAM_NAMES[name] ?: name
+
+private val SHORT_TEAM_NAMES = mapOf(
+    "Inter Milan" to "Inter",
+    "AS Roma" to "Roma"
+)
+
 /** Un gruppo della classifica: il campionato intero, o una conferenza, un girone. */
 @Serializable
 data class StandingGroup(

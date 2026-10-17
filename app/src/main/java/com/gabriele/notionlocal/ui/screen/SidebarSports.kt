@@ -53,6 +53,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -77,6 +78,7 @@ import com.gabriele.notionlocal.data.widgets.StandingGroup
 import com.gabriele.notionlocal.data.widgets.WidgetStore
 import com.gabriele.notionlocal.data.widgets.competitionFlag
 import com.gabriele.notionlocal.data.widgets.hasMatchdayNumbers
+import com.gabriele.notionlocal.data.widgets.teamDisplayName
 import com.gabriele.notionlocal.data.widgets.todayIn
 import com.gabriele.notionlocal.ui.format.Formats
 import com.gabriele.notionlocal.ui.i18n.Strings
@@ -228,6 +230,16 @@ private fun CompetitionRounds(widget: SportsWidget, competition: SportCompetitio
     }
     var detail by remember(competition.id) { mutableStateOf<Int?>(null) }
     val numbered = hasMatchdayNumbers(report.rounds, report.standings, sport)
+    // Gli stemmi di tutte le squadre (la classifica) e della giornata, in
+    // anticipo: scorrendo, o aprendo la classifica, ci sono già.
+    val cacheDir = LocalContext.current.cacheDir
+    LaunchedEffect(competition.id, report.standings, report.matches) {
+        TeamLogos.prefetch(
+            cacheDir,
+            report.standings.flatMap { group -> group.rows.map { it.logo } } +
+                report.matches.flatMap { listOf(it.home.logo, it.away.logo) }
+        )
+    }
     key(competition.id) {
         val pagerState = rememberPagerState(initialPage = report.round.coerceIn(0, report.rounds.lastIndex)) { report.rounds.size }
         // La giornata su cui ci si ferma scorrendo si scarica (quella di adesso si aggiorna da sé).
@@ -412,7 +424,7 @@ private fun SideLine(side: MatchSide, state: MatchState, sport: Sport) {
         TeamLogo(side.logo, 16.dp)
         Spacer(modifier = Modifier.width(6.dp))
         Text(
-            side.name,
+            teamDisplayName(side.name),
             color = NotionWhite,
             fontSize = 13.sp,
             fontWeight = weight,
@@ -537,7 +549,7 @@ private fun StandingsTable(groups: List<StandingGroup>, sport: Sport) {
                 HorizontalDivider()
             }
             items(group.rows, key = { "g$g-${it.rank}-${it.team}" }) { row ->
-                StandingLine(rank = row.rank.toString(), team = row.team, values = row.values, logo = row.logo)
+                StandingLine(rank = row.rank.toString(), team = teamDisplayName(row.team), values = row.values, logo = row.logo)
             }
         }
         item { Spacer(modifier = Modifier.height(24.dp)) }

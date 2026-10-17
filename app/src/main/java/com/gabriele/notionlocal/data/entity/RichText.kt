@@ -398,6 +398,24 @@ fun setSizeInRange(spans: List<RichTextSpan>, start: Int, end: Int, size: Int?, 
 fun setLinkInRange(spans: List<RichTextSpan>, start: Int, end: Int, link: String?): List<RichTextSpan> =
     transformRange(spans, start, end) { it.copy(link = link) }
 
+/** Un collegamento su un pezzo di testo: da [start] a [end], all'indirizzo [url]. */
+data class LinkRange(val start: Int, val end: Int, val url: String)
+
+/**
+ * **I collegamenti arrivati con un incolla** (dal 17/10/2026): ognuno sul
+ * suo pezzo di testo. Quelli che cadono fuori dal testo (anche solo in
+ * parte) si accorciano o si saltano, invece di sbagliare posto.
+ */
+fun applyLinks(spans: List<RichTextSpan>, links: List<LinkRange>): List<RichTextSpan> {
+    if (links.isEmpty()) return spans
+    val length = spans.plainText().length
+    return links.fold(spans) { current, link ->
+        val start = link.start.coerceAtLeast(0)
+        val end = link.end.coerceAtMost(length)
+        if (start < end && link.url.isNotBlank()) setLinkInRange(current, start, end, link.url) else current
+    }
+}
+
 /** Il primo collegamento nell'intervallo [start, end), o null se non ce n'è. */
 fun linkInRange(spans: List<RichTextSpan>, start: Int, end: Int): String? {
     var pos = 0
