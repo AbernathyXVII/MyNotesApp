@@ -39,13 +39,14 @@ enum class NotificationPriority { LOW, NORMAL, HIGH }
  * 1,000,000; dal 17/10 (chiesto dall'utente: "2 026", "2026", "2.026" e il
  * 2 col puntino in alto) anche lo spazio, niente e il punto in alto, tutti
  * con la virgola per i decimali. Lo spazio non va a capo, come quello di
- * "2 026" scritto dall'utente.
+ * "2 026" scritto dall'utente. Il punto in alto è "˙", in cima alle cifre:
+ * "·", a metà, era troppo basso ("intendevo proprio in alto").
  */
 enum class NumberStyle(val grouping: Char?, val decimal: Char) {
     SPACE_GROUPS('\u00A0', ','),
     NO_GROUPS(null, ','),
     DOT_GROUPS('.', ','),
-    MIDDLE_DOT_GROUPS('\u00B7', ','),
+    HIGH_DOT_GROUPS('\u02D9', ','),
     COMMA_GROUPS(',', '.')
 }
 

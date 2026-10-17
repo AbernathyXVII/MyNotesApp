@@ -19,7 +19,7 @@ import org.robolectric.annotation.Config
 
 /**
  * **I numeri con più di tre cifre** (17/10/2026): in Settings si sceglie se
- * scriverli "2 026", "2026", "2.026", "2·026" o, come prima, "2,026".
+ * scriverli "2 026", "2026", "2.026", "2˙026" o, come prima, "2,026".
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = Application::class)
@@ -49,7 +49,7 @@ class NumberStyleTest {
         assertEquals("2\u00A0026", Formats.number("2026", NumberStyle.SPACE_GROUPS))
         assertEquals("2026", Formats.number("2026", NumberStyle.NO_GROUPS))
         assertEquals("2.026", Formats.number("2026", NumberStyle.DOT_GROUPS))
-        assertEquals("2\u00B7026", Formats.number("2026", NumberStyle.MIDDLE_DOT_GROUPS))
+        assertEquals("2\u02D9026", Formats.number("2026", NumberStyle.HIGH_DOT_GROUPS))
         assertEquals("2,026", Formats.number("2026", NumberStyle.COMMA_GROUPS))
     }
 
@@ -57,11 +57,11 @@ class NumberStyleTest {
     fun decimalsAndBigNumbers() {
         assertEquals("1\u00A0234\u00A0567,50", Formats.number("1234567.50", NumberStyle.SPACE_GROUPS))
         assertEquals("1234567,5", Formats.number("1234567.5", NumberStyle.NO_GROUPS))
-        assertEquals("-1\u00B7234\u00B7567,5", Formats.number("-1234567.5", NumberStyle.MIDDLE_DOT_GROUPS))
+        assertEquals("-1\u02D9234\u02D9567,5", Formats.number("-1234567.5", NumberStyle.HIGH_DOT_GROUPS))
         assertEquals("1,234,567.5", Formats.number("1234567.5", NumberStyle.COMMA_GROUPS))
         // Fino a tre cifre non cambia niente; quello che non è un numero resta com'è.
         assertEquals("999", Formats.number("999", NumberStyle.SPACE_GROUPS))
-        assertEquals("abc", Formats.number("abc", NumberStyle.MIDDLE_DOT_GROUPS))
+        assertEquals("abc", Formats.number("abc", NumberStyle.HIGH_DOT_GROUPS))
     }
 
     @Test

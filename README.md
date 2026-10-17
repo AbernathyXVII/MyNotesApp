@@ -2070,6 +2070,22 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🔧 v0.167.1 — 17/10/2026 · 09:14 — Il punto in alto sta proprio in alto: 2˙026
+*(Claude Code sul PC; verificato sul telefono; 526 test passati; commit solo
+in locale)*
+
+L'utente, parola per parola:
+> «Con punto in alto intendevo proprio in alto, quelli sono a metà»
+
+- **[Bug]** **La quarta scelta di "Number format" usava "·", il punto a
+  metà altezza**: ora è "˙", in cima alle cifre. 2˙026, 1˙000˙000 e coi
+  decimali 1˙234,56
+- **[Progetto]** `NumberStyle.MIDDLE_DOT_GROUPS` diventa `HIGH_DOT_GROUPS`
+  (U+02D9). Nessuno l'aveva scelta, quindi il nome nuovo non cambia
+  niente nelle impostazioni salvate. `NumberStyleTest` aggiornato
+- Verificato sul telefono: nel menu e nella colonna Year di "Habit tracker
+  2026" il punto sta all'altezza della cima delle cifre. Poi rimessa la
+  scelta dell'utente, 2026 senza separatore
 ### 🆕 v0.167 — 17/10/2026 · 09:05 — I numeri con più di tre cifre: 2 026, 2026, 2.026 o 2·026
 *(Claude Code sul PC; verificato sul telefono; 526 test passati; commit solo
 in locale)*
