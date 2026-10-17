@@ -2070,6 +2070,111 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.175 — 17/10/2026 · 19:49 — Lo sport: la freccia, il risultato in rosso, le stagioni
+*(Claude Code sul PC; verificato sul telefono; 591 test passati; commit solo
+in locale)*
+
+L'utente, parola per parola:
+> «Due modifiche per il widget sport:
+>
+> 1. a sinistra dei tre puntini mettimi un'icona della classica freccetta che
+> aggiorna in tempo reale le partite;
+> 2. hai fatto bene a mettere in rosso il minutaggio in corso, ma ti chiedo
+> di fare la stessa cosa anche per il risultato, in modo che non mi confondo
+> con i risultati delle partite concluse in bianco
+>
+> Un'ulteriore modifica del widget dello sport: a sinistra della competizione
+> scrivici l'anno della stagione in corso (per esempio per la Serie A ci sarà
+> scritto 2026- 2027). Toccando sul nome della competizione, avrò la
+> possibilità di scegliere l'anno di quella competizione per vedere tutte le
+> statistiche di tutte le competizioni, quindi partite, gol, assist, gialli,
+> rossi, eccetera»
+
+- **[Nuova funzionalità]** **La freccia che aggiorna**, a sinistra dei tre
+  puntini del widget dello sport: riscarica subito la competizione che si
+  vede (nella stagione scelta) e le giornate guardate scorrendo. Gira mentre
+  scarica
+- **[Modificato]** **Il risultato di una partita in corso è rosso**, come il
+  minuto: nel widget, nella finestra della giornata e in quella della
+  partita. Quelli delle partite finite restano bianchi
+- **[Nuova funzionalità]** **La stagione a sinistra del nome**
+  ("2026-2027 Serie A"; per NFL, MLB e tennis un anno solo, "2026"). **Un
+  tocco** sulla stagione o sul nome apre la scelta: quella in corso e le
+  nove prima. Scelta un'altra stagione, il widget mostra le sue giornate
+  dall'ultima (scorrendo, tutte le altre), con l'anno in arancione; la
+  finestra della giornata ha le partite, la classifica di quell'anno e, nel
+  calcio, la scheda nuova **"Players"**: i primi dieci per gol, assist,
+  ammonizioni ed espulsioni, con lo stemma della squadra (anche per la
+  stagione in corso). Ogni partita si apre come sempre, con la cronaca e le
+  statistiche. Riaprendo la barra si torna alla stagione in corso
+- **[Progetto]** La stagione la dà ESPN con le partite (`SeasonInfo`,
+  `seasonLabel`); un'altra stagione si chiede con un giorno di quella
+  stagione (`seasonProbeDay`), la classifica con l'anno; i migliori
+  giocatori dall'API "core" di ESPN, coi nomi chiesti a parte, tutti insieme
+  (`SportsApi.leaders`). Le altre stagioni restano in memoria finché l'app è
+  aperta: le passate non cambiano. I dati salvati prima si riscaricano subito
+  per avere la stagione (`SPORT_REPORT_VERSION` 3). Test: `SportsTest`
+  (stagioni di Serie A, NBA e NFL; i migliori giocatori della Serie A
+  2025-26 veri) e `SportsWidgetTest` (la stagione, la freccia, la scelta)
+- Limite: ESPN non dice il numero della giornata. Nelle stagioni già giocate
+  ci sono i recuperi a metà settimana (nella Serie A 2025-26 per esempio
+  mercoledì 18 febbraio), che fanno un gruppo di date in più: lì "Matchday"
+  non si scrive e restano le date; può succedere anche alla stagione in corso
+  quando arriverà un recupero
+- Verificato sul telefono, sulla Serie A dell'utente: "2026-2027 Serie A" e
+  la freccia accanto ai tre puntini (gira toccandola); Bologna-Inter in corso
+  con l'1-3 rosso e il minuto rosso; scelta la 2025-2026 (in arancione),
+  l'ultima giornata coi risultati, la classifica finale (Inter 87 punti) e i
+  giocatori (Lautaro Martínez 17 gol, Dimarco 17 assist, i gialli, i rossi);
+  poi di nuovo la stagione in corso. Widget, impostazioni e database come
+  prima
+### 🆕 v0.174 — 17/10/2026 · 19:33 — Una partita da vicino, come Sofascore
+*(Claude Code sul PC; verificato sul telefono; 589 test passati; commit solo in locale)*
+
+L'utente, parola per parola (con la foto della cronaca di Frosinone-Sassuolo
+su Sofascore):
+> «Una quarta modifica: come vedi nella foto, vorrei che toccando una
+> partita mi facesse vedere le statistiche come le fa Sofascore, chi ha
+> segnato e quando con chi ha fatto l'assist, mi dice quanti minuti sono
+> stati dati per il recupero di ogni tempo, chi è stato sostituito per chi e
+> quando, chi è stato ammonito o espulso con il motivo e quando.»
+
+- **[Nuova funzionalità]** **Un tocco su una partita** (nel widget o nella
+  finestra della giornata) apre la partita: in alto le due squadre con lo
+  stemma e il risultato (o l'ora d'inizio), il minuto in rosso se è in
+  corso. Nel calcio due schede:
+  - **"Events"**, la cronaca come Sofascore, dall'ultimo evento al primo, la
+    squadra di casa a sinistra e gli ospiti a destra: i gol col minuto, il
+    punteggio, il marcatore e l'assist (autogol e rigori segnati a parte);
+    i rigori sbagliati; le sostituzioni, chi entra e chi esce; i cartellini
+    gialli, rossi e il secondo giallo, col motivo ("Foul", "Handball",
+    "Violent conduct"…, tradotti); i gol annullati dal VAR; la fine di ogni
+    tempo col punteggio ("HT 3 - 2", "FT 4 - 2") e il recupero annunciato
+    ("Additional time 4")
+  - **"Statistics"**: possesso palla, tiri, tiri in porta, calci d'angolo,
+    fuorigioco, falli, cartellini, parate, passaggi e passaggi riusciti (con
+    la percentuale), contrasti, intercetti, con la barra delle due squadre
+- **[Nuova funzionalità]** Negli altri sport: i punti per quarto o inning
+  (e le azioni da punti nella NFL) e le statistiche (NBA: tiri, tiri da
+  tre, liberi, rimbalzi, assist, palle rubate, stoppate, palle perse; NFL:
+  first down, yard, penalità, possesso). Nel tennis i set dei due giocatori.
+  Una partita in corso si aggiorna ogni minuto finché è aperta
+- **[Modificato]** Il tocco sul titolo della giornata apre ancora la
+  finestra con tutte le partite e la classifica; tenendo premuto si
+  scelgono le competizioni, come prima
+- **[Progetto]** Dal "summary" di ESPN: gli eventi principali e, per il
+  recupero annunciato e il VAR, la cronaca. `SportsMatch.kt` (`MatchDetail`,
+  `parseMatchSummary`, `MatchDetails` che le tiene in memoria),
+  `SportsMatchSheet.kt` (la finestra). I nomi corti dei giocatori ("D.
+  Berardi") li fa l'app: ESPN dà quelli interi. Test: `SportsMatchTest`
+  (Frosinone-Sassuolo 4-2 vero: gol, assist, punteggi, VAR, recuperi, cambi,
+  ammonizione col motivo, statistiche; NBA e NFL per periodo) e
+  `SportsWidgetTest.aMatchLikeSofascore` (la partita aperta col tocco)
+- Verificato sul telefono, sulla Serie A dell'utente (solo guardando):
+  Bologna-Inter in corso all'86', 1-3, con i gol e gli assist (Bonny su
+  assist di Augusto, Augusto su assist di Zielinski), i cambi, i gialli col
+  motivo, e le statistiche (possesso 33%-67%, passaggi riusciti 244 (80%) e
+  586 (92%)). Installata insieme alla v0.175
 ### 🆕 v0.173 — 17/10/2026 · 19:19 — Incollare coi link; Inter e Roma; stemmi più svelti
 *(Claude Code sul PC; nomi e stemmi verificati sul telefono, l'incolla nei
 test; 582 test passati; commit solo in locale)*

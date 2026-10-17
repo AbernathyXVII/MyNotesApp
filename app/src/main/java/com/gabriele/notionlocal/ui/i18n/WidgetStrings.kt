@@ -98,6 +98,72 @@ object WidgetStrings {
     val previousCompetition get() = t("Previous competition", "Competizione precedente", "Vorheriger Wettbewerb", "Compétition précédente", "Competición anterior", "上一个赛事", "이전 대회", "前の大会")
     val nextCompetition get() = t("Next competition", "Competizione successiva", "Nächster Wettbewerb", "Compétition suivante", "Competición siguiente", "下一个赛事", "다음 대회", "次の大会")
 
+    // --- Le stagioni e i migliori giocatori (dal 17/10/2026) ---
+    val season get() = t("Season", "Stagione", "Saison", "Saison", "Temporada", "赛季", "시즌", "シーズン")
+    val currentSeason get() = t("current", "in corso", "laufend", "en cours", "en curso", "本赛季", "현재", "今季")
+    val players get() = t("Players", "Giocatori", "Spieler", "Joueurs", "Jugadores", "球员", "선수", "選手")
+    val goalsLabel get() = t("Goals", "Gol", "Tore", "Buts", "Goles", "进球", "골", "ゴール")
+
+    // --- Una partita da vicino (dal 17/10/2026) ---
+    val events get() = t("Events", "Eventi", "Ereignisse", "Événements", "Eventos", "事件", "이벤트", "イベント")
+    val statistics get() = t("Statistics", "Statistiche", "Statistiken", "Statistiques", "Estadísticas", "统计", "통계", "スタッツ")
+    val scoreTab get() = t("Score", "Punteggio", "Spielstand", "Score", "Marcador", "比分", "점수", "スコア")
+    fun additionalTime(n: Int) = t("Additional time $n", "Recupero $n'", "Nachspielzeit $n", "Temps additionnel $n", "Tiempo añadido $n", "补时 $n 分钟", "추가 시간 ${n}분", "アディショナルタイム $n")
+    val halfTimeShort get() = t("HT", "INT", "HZ", "MT", "DESC", "半场", "하프타임", "HT")
+    val fullTimeShort get() = t("FT", "FIN", "Ende", "FIN", "FIN", "全场", "종료", "FT")
+    val goalCancelled get() = t("Goal cancelled", "Gol annullato", "Tor aberkannt", "But annulé", "Gol anulado", "进球无效", "골 취소", "ゴール取り消し")
+    val missedPenalty get() = t("Missed penalty", "Rigore sbagliato", "Elfmeter verschossen", "Penalty manqué", "Penalti fallado", "点球未进", "페널티킥 실축", "PK失敗")
+    val ownGoalMark get() = t("OG", "AG", "ET", "CSC", "PP", "乌龙", "자책골", "OG")
+    val penaltyMark get() = t("Pen", "Rig", "Elfm.", "Pén.", "Pen.", "点球", "PK", "PK")
+    fun assistBy(name: String) = t("Assist: $name", "Assist: $name", "Vorlage: $name", "Passe déc. : $name", "Asistencia: $name", "助攻：$name", "어시스트: $name", "アシスト: $name")
+    val noEvents get() = t("No events yet", "Ancora nessun evento", "Noch keine Ereignisse", "Aucun événement pour l'instant", "Aún no hay eventos", "暂无事件", "아직 이벤트가 없어요", "まだイベントはありません")
+    val noStats get() = t("No statistics for this match", "Nessuna statistica per questa partita", "Keine Statistiken für dieses Spiel", "Aucune statistique pour ce match", "Sin estadísticas para este partido", "此比赛没有统计", "이 경기는 통계가 없어요", "この試合のスタッツはありません")
+    val totalShort get() = t("T", "Tot", "Ges.", "T", "T", "总", "합계", "計")
+
+    fun cardReason(reason: com.gabriele.notionlocal.data.widgets.CardReason): String = when (reason) {
+        com.gabriele.notionlocal.data.widgets.CardReason.FOUL -> t("Foul", "Fallo", "Foul", "Faute", "Falta", "犯规", "파울", "ファウル")
+        com.gabriele.notionlocal.data.widgets.CardReason.HANDBALL -> t("Handball", "Fallo di mano", "Handspiel", "Main", "Mano", "手球", "핸드볼", "ハンド")
+        com.gabriele.notionlocal.data.widgets.CardReason.VIOLENT_CONDUCT -> t("Violent conduct", "Condotta violenta", "Tätlichkeit", "Comportement violent", "Conducta violenta", "暴力行为", "폭력 행위", "乱暴な行為")
+        com.gabriele.notionlocal.data.widgets.CardReason.EXCESSIVE_CELEBRATION -> t("Excessive celebration", "Esultanza eccessiva", "Übertriebener Torjubel", "Célébration excessive", "Celebración excesiva", "庆祝过度", "과도한 세리머니", "過度な喜び")
+        com.gabriele.notionlocal.data.widgets.CardReason.DANGEROUS_PLAY -> t("Dangerous play", "Gioco pericoloso", "Gefährliches Spiel", "Jeu dangereux", "Juego peligroso", "危险动作", "위험한 플레이", "危険なプレー")
+        com.gabriele.notionlocal.data.widgets.CardReason.TIME_WASTING -> t("Time wasting", "Perdita di tempo", "Zeitspiel", "Gain de temps", "Pérdida de tiempo", "拖延时间", "시간 지연", "遅延行為")
+        com.gabriele.notionlocal.data.widgets.CardReason.UNSPORTING -> t("Unsporting behaviour", "Comportamento antisportivo", "Unsportliches Verhalten", "Comportement antisportif", "Conducta antideportiva", "非体育道德行为", "비신사적 행위", "非紳士的行為")
+        com.gabriele.notionlocal.data.widgets.CardReason.DISSENT -> t("Dissent", "Proteste", "Meckern", "Contestation", "Protestas", "异议", "항의", "異議")
+        com.gabriele.notionlocal.data.widgets.CardReason.SIMULATION -> t("Simulation", "Simulazione", "Schwalbe", "Simulation", "Simulación", "假摔", "시뮬레이션", "シミュレーション")
+    }
+
+    /** Il nome di una statistica di ESPN; null se non è fra quelle tradotte. */
+    fun statLabel(key: String): String? = when (key) {
+        "possessionPct" -> t("Ball possession", "Possesso palla", "Ballbesitz", "Possession", "Posesión", "控球率", "점유율", "ボール支配率")
+        "totalShots" -> t("Total shots", "Tiri totali", "Schüsse", "Tirs", "Tiros totales", "射门", "슈팅", "シュート")
+        "shotsOnTarget" -> t("Shots on target", "Tiri in porta", "Schüsse aufs Tor", "Tirs cadrés", "Tiros a puerta", "射正", "유효 슈팅", "枠内シュート")
+        "wonCorners" -> t("Corner kicks", "Calci d'angolo", "Ecken", "Corners", "Saques de esquina", "角球", "코너킥", "コーナーキック")
+        "offsides" -> t("Offsides", "Fuorigioco", "Abseits", "Hors-jeu", "Fueras de juego", "越位", "오프사이드", "オフサイド")
+        "foulsCommitted" -> t("Fouls", "Falli", "Fouls", "Fautes", "Faltas", "犯规", "파울", "ファウル")
+        "yellowCards" -> t("Yellow cards", "Cartellini gialli", "Gelbe Karten", "Cartons jaunes", "Tarjetas amarillas", "黄牌", "옐로카드", "イエローカード")
+        "redCards" -> t("Red cards", "Cartellini rossi", "Rote Karten", "Cartons rouges", "Tarjetas rojas", "红牌", "레드카드", "レッドカード")
+        "saves" -> t("Goalkeeper saves", "Parate", "Paraden", "Arrêts", "Paradas", "扑救", "선방", "セーブ")
+        "totalPasses" -> t("Passes", "Passaggi", "Pässe", "Passes", "Pases", "传球", "패스", "パス")
+        "accuratePasses" -> t("Accurate passes", "Passaggi riusciti", "Angekommene Pässe", "Passes réussies", "Pases precisos", "成功传球", "정확한 패스", "パス成功")
+        "totalTackles" -> t("Tackles", "Contrasti", "Zweikämpfe", "Tacles", "Entradas", "抢断", "태클", "タックル")
+        "interceptions" -> t("Interceptions", "Intercetti", "Abgefangene Bälle", "Interceptions", "Intercepciones", "拦截", "인터셉트", "インターセプト")
+        "fieldGoalsMade-fieldGoalsAttempted" -> t("Field goals", "Tiri dal campo", "Würfe aus dem Feld", "Tirs", "Tiros de campo", "投篮", "야투", "フィールドゴール")
+        "threePointFieldGoalsMade-threePointFieldGoalsAttempted" -> t("3-pointers", "Tiri da tre", "Dreier", "Tirs à 3 points", "Triples", "三分球", "3점슛", "3ポイント")
+        "freeThrowsMade-freeThrowsAttempted" -> t("Free throws", "Tiri liberi", "Freiwürfe", "Lancers francs", "Tiros libres", "罚球", "자유투", "フリースロー")
+        "totalRebounds" -> t("Rebounds", "Rimbalzi", "Rebounds", "Rebonds", "Rebotes", "篮板", "리바운드", "リバウンド")
+        "assists" -> t("Assists", "Assist", "Assists", "Passes décisives", "Asistencias", "助攻", "어시스트", "アシスト")
+        "steals" -> t("Steals", "Palle rubate", "Steals", "Interceptions", "Robos", "抢断", "스틸", "スティール")
+        "blocks" -> t("Blocks", "Stoppate", "Blocks", "Contres", "Tapones", "盖帽", "블록", "ブロック")
+        "turnovers" -> t("Turnovers", "Palle perse", "Ballverluste", "Pertes de balle", "Pérdidas", "失误", "턴오버", "ターンオーバー")
+        "firstDowns" -> t("First downs", "Primi down", "First Downs", "Premiers essais", "Primeros downs", "首攻", "퍼스트 다운", "ファーストダウン")
+        "totalYards" -> t("Total yards", "Yard totali", "Raumgewinn", "Yards totaux", "Yardas totales", "总码数", "총 야드", "総獲得ヤード")
+        "netPassingYards" -> t("Passing yards", "Yard su passaggio", "Passing-Yards", "Yards à la passe", "Yardas por pase", "传球码数", "패싱 야드", "パスヤード")
+        "rushingYards" -> t("Rushing yards", "Yard su corsa", "Rushing-Yards", "Yards à la course", "Yardas por tierra", "冲球码数", "러싱 야드", "ランヤード")
+        "totalPenaltiesYards" -> t("Penalties", "Penalità", "Strafen", "Pénalités", "Castigos", "罚码", "페널티", "反則")
+        "possessionTime" -> t("Time of possession", "Tempo di possesso", "Ballbesitzzeit", "Temps de possession", "Tiempo de posesión", "控球时间", "점유 시간", "ボール保持時間")
+        else -> null
+    }
+
     fun sportName(sport: com.gabriele.notionlocal.data.widgets.Sport): String = when (sport) {
         com.gabriele.notionlocal.data.widgets.Sport.SOCCER -> t("Football", "Calcio", "Fußball", "Football", "Fútbol", "足球", "축구", "サッカー")
         com.gabriele.notionlocal.data.widgets.Sport.TENNIS -> t("Tennis", "Tennis", "Tennis", "Tennis", "Tenis", "网球", "테니스", "テニス")

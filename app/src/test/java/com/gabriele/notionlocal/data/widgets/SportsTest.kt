@@ -183,6 +183,44 @@ class SportsTest {
     }
 
     @Test
+    fun theSeasonAndTheOthers() {
+        // La stagione come la dà ESPN nella risposta della Serie A.
+        val info = parseScoreboard(resource("seriea_scoreboard.json"), Sport.SOCCER)!!.season!!
+        assertEquals(2026, info.year)
+        // Per l'utente: "2026-2027", e le nove prima.
+        assertEquals("2026-2027", seasonLabel(info))
+        assertEquals("2025-2026", seasonLabel(info, 2025))
+        assertEquals((2026 downTo 2017).toList(), seasonYears(info))
+        // Per chiedere a ESPN la stagione 2025-26: la metà della stagione, un anno prima.
+        assertEquals(LocalDate.of(2025, 12, 17), seasonProbeDay(info, 2025))
+        // La NBA 2026-27 per ESPN è il 2027.
+        val nba = SeasonInfo(year = 2027, name = "2026-27", start = "2026-09-30T07:00Z", end = "2027-06-26T06:59Z")
+        assertEquals("2026-2027", seasonLabel(nba))
+        assertEquals("2025-2026", seasonLabel(nba, 2026))
+        // NFL, MLB, tennis: un anno solo.
+        val nfl = SeasonInfo(year = 2026, name = "2026", start = "2026-08-06T07:00Z", end = "2027-02-16T07:59Z")
+        assertEquals("2026", seasonLabel(nfl))
+        assertEquals("2024", seasonLabel(nfl, 2024))
+    }
+
+    @Test
+    fun theBestPlayersOfASeason() {
+        val refs = parseLeaderRefs(resource("leaders_ita_2025.json"))
+        assertEquals(LEADER_KEYS.toSet(), refs.keys)
+        // I primi dieci di ogni classifica.
+        assertTrue(refs.values.all { it.size == 10 })
+        val scorer = refs.getValue("goals").first()
+        assertEquals("17", scorer.value)
+        assertTrue(scorer.athleteUrl.startsWith("https://"))
+        // Lo stemma dal numero della squadra (l'Inter è la 110).
+        assertEquals("https://a.espncdn.com/i/teamlogos/soccer/500/110.png", scorer.teamLogo)
+        assertEquals("12", refs.getValue("yellowCards").first().value)
+        assertEquals("2", refs.getValue("redCards").first().value)
+        assertEquals("L. Martínez", parseAthleteName(resource("athlete_top_scorer.json")))
+        assertEquals(emptyMap<String, List<LeaderRef>>(), parseLeaderRefs("non è json"))
+    }
+
+    @Test
     fun flagsOfTheCompetitions() {
         assertEquals("🇮🇹", competitionFlag("ita.1"))
         assertEquals("🇮🇹", competitionFlag("ita.coppa_italia"))

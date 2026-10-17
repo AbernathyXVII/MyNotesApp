@@ -1,5 +1,10 @@
 package com.gabriele.notionlocal.ui.screen
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -20,6 +25,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -28,6 +34,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -51,6 +58,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -71,12 +79,16 @@ import com.gabriele.notionlocal.data.widgets.Sport
 import com.gabriele.notionlocal.data.widgets.SportCompetition
 import com.gabriele.notionlocal.data.widgets.SportMatch
 import com.gabriele.notionlocal.data.widgets.SportReport
+import com.gabriele.notionlocal.data.widgets.SeasonInfo
 import com.gabriele.notionlocal.data.widgets.SportRound
 import com.gabriele.notionlocal.data.widgets.SportsUpdates
 import com.gabriele.notionlocal.data.widgets.SportsWidget
 import com.gabriele.notionlocal.data.widgets.StandingGroup
 import com.gabriele.notionlocal.data.widgets.WidgetStore
 import com.gabriele.notionlocal.data.widgets.competitionFlag
+import com.gabriele.notionlocal.data.widgets.currentRound
+import com.gabriele.notionlocal.data.widgets.seasonLabel
+import com.gabriele.notionlocal.data.widgets.seasonYears
 import com.gabriele.notionlocal.data.widgets.hasMatchdayNumbers
 import com.gabriele.notionlocal.data.widgets.teamDisplayName
 import com.gabriele.notionlocal.data.widgets.todayIn
@@ -113,10 +125,14 @@ internal fun SportsView(
     onManagingChange: (Boolean) -> Unit
 ) {
     var adding by remember(widget.id) { mutableStateOf(false) }
+    var pickingSeason by remember(widget.id) { mutableStateOf(false) }
 
-    // Aprendo la barra si vede la prima competizione.
+    // Aprendo la barra si vede la prima competizione, nella stagione in corso.
     LaunchedEffect(widget.id, active) {
-        if (active) widget.competitions.firstOrNull()?.let { SportsUpdates.shown[widget.id] = it.id }
+        if (active) {
+            widget.competitions.firstOrNull()?.let { SportsUpdates.shown[widget.id] = it.id }
+            widget.competitions.forEach { SportsUpdates.season.remove(it.id) }
+        }
     }
     val index = widget.competitions.indexOfFirst { it.id == SportsUpdates.shown[widget.id] }.coerceAtLeast(0)
     val competition = widget.competitions.getOrNull(index)
@@ -133,14 +149,43 @@ internal fun SportsView(
                 delay(30_000)
             }
         }
+        val report = widget.reports[competition.id]
+        val info = report?.season
+        // Un'altra stagione scelta toccando il nome (null: quella in corso).
+        val chosen = SportsUpdates.season[competition.id]?.takeIf { info != null && it != info.year }
+        LaunchedEffect(competition.id, chosen) {
+            if (chosen != null && info != null) SportsUpdates.loadSeason(competition, info, chosen)
+        }
         Column(modifier = Modifier.fillMaxWidth()) {
             CompetitionHeader(
                 competition = competition,
                 index = index,
                 count = widget.competitions.size,
-                onMove = { delta -> widget.competitions.getOrNull(index + delta)?.let { SportsUpdates.shown[widget.id] = it.id } }
+                season = info?.let { seasonLabel(it, chosen ?: it.year) },
+                pastSeason = chosen != null,
+                onMove = { delta -> widget.competitions.getOrNull(index + delta)?.let { SportsUpdates.shown[widget.id] = it.id } },
+                onPickSeason = { if (info != null) pickingSeason = true }
             )
-            CompetitionRounds(widget, competition, active, now, onManage = { onManagingChange(true) })
+            val view = if (chosen != null) pastSeasonView(competition, chosen, now) else currentSeasonView(competition, report)
+            CompetitionRounds(
+                competition,
+                view,
+                seasonName = info?.let { seasonLabel(it, chosen ?: it.year) },
+                active = active,
+                now = now,
+                onManage = { onManagingChange(true) }
+            )
+        }
+        if (pickingSeason && info != null) {
+            SeasonPicker(
+                info = info,
+                selected = chosen ?: info.year,
+                onPick = { year ->
+                    if (year == info.year) SportsUpdates.season.remove(competition.id) else SportsUpdates.season[competition.id] = year
+                    pickingSeason = false
+                },
+                onDismiss = { pickingSeason = false }
+            )
         }
     }
 
@@ -152,27 +197,94 @@ internal fun SportsView(
     }
 }
 
-/** La bandiera e il nome in mezzo, le frecce ai lati: grigie se non c'è una competizione da quella parte. */
+/** Il colore della stagione quando non è quella in corso: si vede subito che si guarda il passato. */
+private val PastSeasonColor = Color(0xFFE5A04C)
+
+/**
+ * La bandiera, la stagione e il nome in mezzo — un tocco lì sceglie la
+ * stagione —, le frecce ai lati: grigie se non c'è una competizione da
+ * quella parte.
+ */
 @Composable
-private fun CompetitionHeader(competition: SportCompetition, index: Int, count: Int, onMove: (Int) -> Unit) {
+private fun CompetitionHeader(
+    competition: SportCompetition,
+    index: Int,
+    count: Int,
+    season: String?,
+    pastSeason: Boolean,
+    onMove: (Int) -> Unit,
+    onPickSeason: () -> Unit
+) {
     Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         ArrowButton(Icons.Filled.KeyboardArrowLeft, WidgetStrings.previousCompetition, enabled = index > 0) { onMove(-1) }
         Row(
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .weight(1f)
+                .clip(RoundedCornerShape(8.dp))
+                .clickable(onClick = onPickSeason)
+                .padding(vertical = 4.dp),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
             CompetitionFlag(competition.league, 18.sp)
+            if (season != null) {
+                Text(
+                    season,
+                    color = if (pastSeason) PastSeasonColor else NotionGray400,
+                    fontSize = 12.sp,
+                    fontWeight = if (pastSeason) FontWeight.SemiBold else null,
+                    maxLines = 1
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+            }
             Text(
                 competition.name,
                 color = NotionWhite,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
             )
         }
         ArrowButton(Icons.Filled.KeyboardArrowRight, WidgetStrings.nextCompetition, enabled = index < count - 1) { onMove(1) }
+    }
+}
+
+/** La scelta della stagione: quella in corso e le nove prima. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SeasonPicker(info: SeasonInfo, selected: Int, onPick: (Int) -> Unit, onDismiss: () -> Unit) {
+    NoteBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = DarkSheet
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).navigationBarsPadding()) {
+            Text(WidgetStrings.season, color = NotionWhite, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(8.dp))
+            LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 520.dp)) {
+                items(seasonYears(info)) { year ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable { onPick(year) }
+                            .padding(horizontal = 8.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(seasonLabel(info, year), color = NotionWhite, style = MaterialTheme.typography.bodyLarge)
+                        if (year == info.year) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(WidgetStrings.currentSeason, color = NotionGray400, style = MaterialTheme.typography.bodySmall)
+                        }
+                        Spacer(modifier = Modifier.weight(1f))
+                        if (year == selected) Icon(Icons.Filled.Check, contentDescription = null, tint = NotionWhite, modifier = Modifier.size(18.dp))
+                    }
+                }
+                item { Spacer(modifier = Modifier.height(24.dp)) }
+            }
+        }
     }
 }
 
@@ -185,7 +297,7 @@ private fun ArrowButton(icon: ImageVector, description: String, enabled: Boolean
 
 /** La bandiera della competizione (vedi `competitionFlag`), con lo spazio dopo; niente se non c'è. */
 @Composable
-private fun CompetitionFlag(league: String, size: TextUnit) {
+internal fun CompetitionFlag(league: String, size: TextUnit) {
     val flag = competitionFlag(league)
     if (flag.isNotEmpty()) {
         Text(flag, fontSize = size)
@@ -193,32 +305,121 @@ private fun CompetitionFlag(league: String, size: TextUnit) {
     }
 }
 
+/**
+ * **La freccia che aggiorna** (dal 17/10/2026, chiesto dall'utente), accanto
+ * ai tre puntini: riscarica subito la competizione che si vede. Gira mentre
+ * si scarica.
+ */
+@Composable
+internal fun SportsRefreshButton(widget: SportsWidget) {
+    val busy = SportsUpdates.busy(widget)
+    val angle = if (busy) {
+        val turning = rememberInfiniteTransition(label = "refresh")
+        val value by turning.animateFloat(
+            initialValue = 0f,
+            targetValue = 360f,
+            animationSpec = infiniteRepeatable(tween(900, easing = LinearEasing)),
+            label = "angle"
+        )
+        value
+    } else {
+        0f
+    }
+    Box(
+        modifier = Modifier
+            .size(32.dp)
+            .clip(CircleShape)
+            .clickable { SportsUpdates.refreshShown(widget, AppSettings.zoneId) },
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(Icons.Filled.Refresh, contentDescription = WidgetStrings.refresh, tint = NotionGray400, modifier = Modifier.size(18.dp).rotate(angle))
+    }
+}
+
+/**
+ * Quello che il widget mostra di una stagione: le giornate, quella da cui si
+ * parte, quella le cui partite stanno nel widget (-1: tutte in memoria), la
+ * classifica; o, al posto delle giornate, un testo ("Loading…").
+ */
+private data class RoundsView(
+    val key: String,
+    val rounds: List<SportRound> = emptyList(),
+    val start: Int = 0,
+    val livePage: Int = -1,
+    val liveMatches: List<SportMatch> = emptyList(),
+    val liveFetchedAt: Long = 0L,
+    val liveFailed: Boolean = false,
+    val standings: List<StandingGroup> = emptyList(),
+    val seasonYear: Int? = null,
+    val current: Boolean = true,
+    val message: String? = null
+)
+
+/** La stagione in corso: quella salvata nel widget. */
+private fun currentSeasonView(competition: SportCompetition, report: SportReport?): RoundsView = when {
+    report == null -> RoundsView(
+        key = competition.id,
+        message = if (competition.id in SportsUpdates.failed) WidgetStrings.noConnection else WidgetStrings.loading
+    )
+    report.rounds.isEmpty() -> RoundsView(key = competition.id, message = WidgetStrings.noMatches)
+    else -> RoundsView(
+        key = competition.id,
+        rounds = report.rounds,
+        start = report.round.coerceIn(0, report.rounds.lastIndex),
+        livePage = report.round,
+        liveMatches = report.matches,
+        liveFetchedAt = report.fetchedAt,
+        liveFailed = competition.id in SportsUpdates.failed,
+        standings = report.standings,
+        seasonYear = report.season?.year,
+        current = true
+    )
+}
+
+/** Un'altra stagione: tutto in memoria, si parte dall'ultima giornata (o da quella di oggi). */
+private fun pastSeasonView(competition: SportCompetition, year: Int, now: Long): RoundsView {
+    val key = SportsUpdates.seasonKey(competition.id, year)
+    val past = SportsUpdates.pastSeason(competition.id, year)
+        ?: return RoundsView(key = key, message = if (key in SportsUpdates.failed) WidgetStrings.noConnection else WidgetStrings.loading)
+    if (past.rounds.isEmpty()) return RoundsView(key = key, message = WidgetStrings.noMatches)
+    return RoundsView(
+        key = key,
+        rounds = past.rounds,
+        start = currentRound(past.rounds, todayIn(AppSettings.zoneId, now)).coerceIn(0, past.rounds.lastIndex),
+        standings = past.standings,
+        seasonYear = year,
+        current = false
+    )
+}
+
 /** Le partite di una giornata: null finché non arrivano. */
 private data class RoundContent(val matches: List<SportMatch>?, val fetchedAt: Long, val failed: Boolean)
 
 /** La giornata di adesso sta nel widget; le altre nella memoria di `SportsUpdates`. */
-private fun roundContent(report: SportReport, competitionId: String, page: Int, round: SportRound): RoundContent =
-    if (page == report.round) {
-        RoundContent(report.matches.takeIf { report.fetchedAt > 0 }, report.fetchedAt, competitionId in SportsUpdates.failed)
+private fun roundContent(view: RoundsView, competitionId: String, page: Int, round: SportRound): RoundContent =
+    if (page == view.livePage) {
+        RoundContent(view.liveMatches.takeIf { view.liveFetchedAt > 0 }, view.liveFetchedAt, view.liveFailed)
     } else {
         val cached = SportsUpdates.cachedRound(competitionId, round)
         RoundContent(cached?.matches, cached?.fetchedAt ?: 0L, SportsUpdates.roundKey(competitionId, round) in SportsUpdates.failed)
     }
 
-/** Le giornate della competizione, una per pagina, a partire da quella di adesso. */
+/** Le giornate della stagione, una per pagina, a partire da quella di adesso (o dall'ultima). */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun CompetitionRounds(widget: SportsWidget, competition: SportCompetition, active: Boolean, now: Long, onManage: () -> Unit) {
+private fun CompetitionRounds(
+    competition: SportCompetition,
+    view: RoundsView,
+    // La stagione ("2025-2026"), nel titolo della finestra della giornata.
+    seasonName: String?,
+    active: Boolean,
+    now: Long,
+    onManage: () -> Unit
+) {
     val sport = Sport.of(competition.sport)
-    val report = widget.reports[competition.id]
-    if (report == null || report.rounds.isEmpty()) {
-        val text = when {
-            report != null -> WidgetStrings.noMatches
-            competition.id in SportsUpdates.failed -> WidgetStrings.noConnection
-            else -> WidgetStrings.loading
-        }
+    if (view.message != null) {
         Text(
-            text = text,
+            text = view.message,
             color = NotionGray400,
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier
@@ -228,27 +429,29 @@ private fun CompetitionRounds(widget: SportsWidget, competition: SportCompetitio
         )
         return
     }
-    var detail by remember(competition.id) { mutableStateOf<Int?>(null) }
-    val numbered = hasMatchdayNumbers(report.rounds, report.standings, sport)
+    var detail by remember(view.key) { mutableStateOf<Int?>(null) }
+    // La partita toccata (la pagina e l'id): vedi `MatchSheet`.
+    var openMatch by remember(view.key) { mutableStateOf<Pair<Int, String>?>(null) }
+    val numbered = hasMatchdayNumbers(view.rounds, view.standings, sport)
     // Gli stemmi di tutte le squadre (la classifica) e della giornata, in
     // anticipo: scorrendo, o aprendo la classifica, ci sono già.
     val cacheDir = LocalContext.current.cacheDir
-    LaunchedEffect(competition.id, report.standings, report.matches) {
+    LaunchedEffect(view.key, view.standings, view.liveMatches) {
         TeamLogos.prefetch(
             cacheDir,
-            report.standings.flatMap { group -> group.rows.map { it.logo } } +
-                report.matches.flatMap { listOf(it.home.logo, it.away.logo) }
+            view.standings.flatMap { group -> group.rows.map { it.logo } } +
+                view.liveMatches.flatMap { listOf(it.home.logo, it.away.logo) }
         )
     }
-    key(competition.id) {
-        val pagerState = rememberPagerState(initialPage = report.round.coerceIn(0, report.rounds.lastIndex)) { report.rounds.size }
+    key(view.key) {
+        val pagerState = rememberPagerState(initialPage = view.start) { view.rounds.size }
         // La giornata su cui ci si ferma scorrendo si scarica (quella di adesso si aggiorna da sé).
-        val latest by rememberUpdatedState(report)
+        val latest by rememberUpdatedState(view)
         LaunchedEffect(active, pagerState.settledPage) {
             while (active) {
                 val page = pagerState.settledPage
                 val shown = latest
-                if (page != shown.round) {
+                if (page != shown.livePage) {
                     shown.rounds.getOrNull(page)?.let { round ->
                         SportsUpdates.loadRound(competition, round, todayIn(AppSettings.zoneId, System.currentTimeMillis()))
                     }
@@ -258,16 +461,18 @@ private fun CompetitionRounds(widget: SportsWidget, competition: SportCompetitio
         }
         HorizontalPager(
             state = pagerState,
-            key = { page -> report.rounds.getOrNull(page)?.key ?: page },
+            key = { page -> view.rounds.getOrNull(page)?.key ?: page },
             verticalAlignment = Alignment.Top,
             modifier = Modifier.fillMaxWidth()
         ) { page ->
-            val round = report.rounds.getOrNull(page) ?: return@HorizontalPager
+            val round = view.rounds.getOrNull(page) ?: return@HorizontalPager
             RoundPage(
                 title = roundTitle(round, page, numbered),
-                content = roundContent(report, competition.id, page, round),
+                content = roundContent(view, competition.id, page, round),
                 sport = sport,
                 now = now,
+                onMatchClick = { openMatch = page to it.id },
+                onMatchLongClick = onManage,
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(8.dp))
@@ -276,24 +481,51 @@ private fun CompetitionRounds(widget: SportsWidget, competition: SportCompetitio
         }
     }
     detail?.let { page ->
-        val round = report.rounds.getOrNull(page)
+        val round = view.rounds.getOrNull(page)
         if (round == null) {
             detail = null
         } else {
             CompetitionSheet(
                 competition = competition,
-                title = roundTitle(round, page, numbered),
-                content = roundContent(report, competition.id, page, round),
-                standings = report.standings,
+                title = listOfNotNull(seasonName, roundTitle(round, page, numbered)).joinToString(" · "),
+                content = roundContent(view, competition.id, page, round),
+                standings = view.standings,
+                seasonYear = view.seasonYear,
+                currentSeason = view.current,
                 now = now,
+                // Dalla finestra della giornata alla partita: una finestra per volta.
+                onMatchClick = { match ->
+                    detail = null
+                    openMatch = page to match.id
+                },
                 onDismiss = { detail = null }
             )
         }
     }
+    openMatch?.let { (page, id) ->
+        // La partita com'è adesso (il punteggio cambia mentre è aperta).
+        val match = view.rounds.getOrNull(page)
+            ?.let { roundContent(view, competition.id, page, it).matches }
+            ?.find { it.id == id }
+        if (match == null) {
+            openMatch = null
+        } else {
+            MatchSheet(competition, match, now, onDismiss = { openMatch = null })
+        }
+    }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun RoundPage(title: String, content: RoundContent, sport: Sport, now: Long, modifier: Modifier) {
+private fun RoundPage(
+    title: String,
+    content: RoundContent,
+    sport: Sport,
+    now: Long,
+    onMatchClick: (SportMatch) -> Unit,
+    onMatchLongClick: () -> Unit,
+    modifier: Modifier
+) {
     Column(modifier = modifier.padding(vertical = 4.dp)) {
         Text(title, color = NotionGray400, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
         val matches = content.matches
@@ -312,7 +544,7 @@ private fun RoundPage(title: String, content: RoundContent, sport: Sport, now: L
             )
             else -> {
                 Spacer(modifier = Modifier.height(4.dp))
-                MatchList(matches, sport, now, compact = true)
+                MatchList(matches, sport, now, compact = true, onMatchClick = onMatchClick, onMatchLongClick = onMatchLongClick)
             }
         }
         if (content.fetchedAt > 0) {
@@ -365,7 +597,16 @@ private fun roundDates(from: LocalDate, to: LocalDate): String {
  * (col nome del giorno solo se sono più d'uno); nel tennis per torneo.
  */
 @Composable
-private fun MatchList(matches: List<SportMatch>, sport: Sport, now: Long, compact: Boolean) {
+@OptIn(ExperimentalFoundationApi::class)
+private fun MatchList(
+    matches: List<SportMatch>,
+    sport: Sport,
+    now: Long,
+    compact: Boolean,
+    // Un tocco su una partita la apre (vedi `MatchSheet`); tenendo premuto, nel widget, si scelgono le competizioni.
+    onMatchClick: (SportMatch) -> Unit,
+    onMatchLongClick: (() -> Unit)? = null
+) {
     val zone = AppSettings.zoneId
     val today = todayIn(zone, now)
     val sorted = matches.sortedBy { it.start }
@@ -386,7 +627,16 @@ private fun MatchList(matches: List<SportMatch>, sport: Sport, now: Long, compac
                 modifier = Modifier.padding(top = if (i == 0) 2.dp else 10.dp, bottom = 2.dp)
             )
         }
-        list.forEach { match -> MatchRow(match, sport, compact) }
+        list.forEach { match ->
+            MatchRow(
+                match,
+                sport,
+                compact,
+                Modifier
+                    .clip(RoundedCornerShape(6.dp))
+                    .combinedClickable(onClick = { onMatchClick(match) }, onLongClick = onMatchLongClick)
+            )
+        }
     }
 }
 
@@ -396,8 +646,8 @@ private fun MatchList(matches: List<SportMatch>, sport: Sport, now: Long, compac
  * grassetto. Prima: l'ora, o il minuto in rosso se è in corso, o "Finale".
  */
 @Composable
-private fun MatchRow(match: SportMatch, sport: Sport, compact: Boolean) {
-    Row(modifier = Modifier.fillMaxWidth().padding(vertical = if (compact) 3.dp else 6.dp), verticalAlignment = Alignment.CenterVertically) {
+private fun MatchRow(match: SportMatch, sport: Sport, compact: Boolean, modifier: Modifier = Modifier) {
+    Row(modifier = modifier.fillMaxWidth().padding(vertical = if (compact) 3.dp else 6.dp), verticalAlignment = Alignment.CenterVertically) {
         val (status, live) = statusOf(match)
         Text(
             status,
@@ -434,7 +684,8 @@ private fun SideLine(side: MatchSide, state: MatchState, sport: Sport) {
         )
         val score = if (sport == Sport.TENNIS) side.sets.joinToString(" ") else side.score.orEmpty()
         if (score.isNotEmpty()) {
-            Text(score, color = NotionWhite, fontSize = 13.sp, fontWeight = weight, textAlign = TextAlign.End)
+            // In rosso mentre si gioca, come il minuto: non si confonde coi risultati finali.
+            Text(score, color = if (state == MatchState.IN) LiveRed else NotionWhite, fontSize = 13.sp, fontWeight = weight, textAlign = TextAlign.End)
         }
     }
 }
@@ -466,11 +717,16 @@ private fun CompetitionSheet(
     title: String,
     content: RoundContent,
     standings: List<StandingGroup>,
+    seasonYear: Int?,
+    currentSeason: Boolean,
     now: Long,
+    onMatchClick: (SportMatch) -> Unit,
     onDismiss: () -> Unit
 ) {
     val sport = Sport.of(competition.sport)
     var tab by remember { mutableIntStateOf(0) }
+    // Marcatori, assist e cartellini: solo nel calcio, e serve sapere la stagione.
+    val withPlayers = sport == Sport.SOCCER && seasonYear != null
     NoteBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
@@ -491,9 +747,16 @@ private fun CompetitionSheet(
                     unselectedContentColor = NotionGray400,
                     text = { Text(if (sport == Sport.TENNIS) WidgetStrings.ranking else WidgetStrings.standings) }
                 )
+                if (withPlayers) {
+                    Tab(selected = tab == 2, onClick = { tab = 2 }, text = { Text(WidgetStrings.players) }, unselectedContentColor = NotionGray400)
+                }
             }
             if (tab == 1) {
                 StandingsTable(standings, sport)
+                return@Column
+            }
+            if (tab == 2 && seasonYear != null) {
+                PlayersTable(competition, seasonYear, currentSeason)
                 return@Column
             }
             val matches = content.matches
@@ -506,7 +769,7 @@ private fun CompetitionSheet(
                 matches.isEmpty() -> Text(WidgetStrings.noMatches, color = NotionGray400, modifier = Modifier.padding(vertical = 24.dp))
                 else -> Column(modifier = Modifier.fillMaxWidth().heightIn(max = 640.dp).verticalScroll(rememberScrollState())) {
                     Spacer(modifier = Modifier.height(8.dp))
-                    MatchList(matches, sport, now, compact = false)
+                    MatchList(matches, sport, now, compact = false, onMatchClick = onMatchClick)
                     Text(
                         WidgetStrings.updatedAt(clockAt(content.fetchedAt)) + " · " + WidgetStrings.sportsSource,
                         color = NotionGray400,
@@ -517,6 +780,58 @@ private fun CompetitionSheet(
             }
         }
     }
+}
+
+/**
+ * **I migliori giocatori della stagione** (dal 17/10/2026, chiesto
+ * dall'utente): i primi dieci per gol, assist, ammonizioni ed espulsioni,
+ * con lo stemma della squadra.
+ */
+@Composable
+private fun PlayersTable(competition: SportCompetition, seasonYear: Int, currentSeason: Boolean) {
+    LaunchedEffect(competition.id, seasonYear) { SportsUpdates.loadLeaders(competition, seasonYear, currentSeason) }
+    val categories = SportsUpdates.leaders(competition.id, seasonYear)
+    if (categories == null) {
+        Text(
+            if (SportsUpdates.leadersFailed(competition.id, seasonYear)) WidgetStrings.noConnection else WidgetStrings.loading,
+            color = NotionGray400,
+            modifier = Modifier.padding(vertical = 24.dp)
+        )
+        return
+    }
+    if (categories.all { it.leaders.isEmpty() }) {
+        Text(WidgetStrings.noStats, color = NotionGray400, modifier = Modifier.padding(vertical = 24.dp))
+        return
+    }
+    LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 640.dp)) {
+        categories.filter { it.leaders.isNotEmpty() }.forEach { category ->
+            item(key = "head-${category.key}") {
+                Text(
+                    leaderTitle(category.key),
+                    color = NotionWhite,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(top = 16.dp, bottom = 4.dp)
+                )
+                HorizontalDivider()
+            }
+            items(category.leaders.withIndex().toList(), key = { "${category.key}-${it.index}" }) { (i, leader) ->
+                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Text("${i + 1}", color = NotionGray400, fontSize = 13.sp, modifier = Modifier.width(28.dp))
+                    TeamLogo(leader.teamLogo, 16.dp)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(leader.name, color = NotionWhite, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                    Text(leader.value, color = NotionWhite, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+        item { Spacer(modifier = Modifier.height(24.dp)) }
+    }
+}
+
+private fun leaderTitle(key: String): String = when (key) {
+    "goals" -> WidgetStrings.goalsLabel
+    else -> WidgetStrings.statLabel(key) ?: key
 }
 
 /** La classifica: una tabella per gruppo, col nome del gruppo se ce n'è più d'uno, e gli stemmi. */

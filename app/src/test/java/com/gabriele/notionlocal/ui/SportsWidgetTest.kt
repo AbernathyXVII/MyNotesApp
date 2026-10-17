@@ -13,11 +13,14 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import com.gabriele.notionlocal.data.settings.AppSettings
 import com.gabriele.notionlocal.data.widgets.MAX_SPORT_COMPETITIONS
+import com.gabriele.notionlocal.data.widgets.MatchDetails
+import com.gabriele.notionlocal.data.widgets.parseMatchSummary
 import com.gabriele.notionlocal.data.widgets.SPORT_CATALOG
 import com.gabriele.notionlocal.data.widgets.Sport
 import com.gabriele.notionlocal.data.widgets.SportReport
@@ -116,7 +119,8 @@ class SportsWidgetTest {
                 standingsFetchedAt = now,
                 rounds = serieARounds,
                 roundsFetchedAt = now,
-                round = currentRound(serieARounds, LocalDate.of(2026, 10, 17))
+                round = currentRound(serieARounds, LocalDate.of(2026, 10, 17)),
+                season = serieABoard.season
             )
         )
         val nbaBoard = parseScoreboard(resource("basketball_nba_scoreboard.json"), Sport.BASKETBALL)!!
@@ -151,7 +155,21 @@ class SportsWidgetTest {
         // La prima: la freccia a sinistra è grigia.
         compose.onNodeWithContentDescription("Previous competition").assertIsNotEnabled()
         compose.onNodeWithContentDescription("Next competition").assertIsEnabled()
+        // La stagione a sinistra del nome, e la freccia che aggiorna accanto ai tre puntini.
+        assertTrue(shows("2026-2027"))
+        compose.onNodeWithContentDescription("Refresh").assertIsEnabled()
         saveScreenshot("sports.png")
+        // Un tocco sul nome: le stagioni fra cui scegliere.
+        compose.onNodeWithText("Serie A").performClick()
+        compose.waitForIdle()
+        assertTrue(shows("Season"))
+        assertTrue(shows("current"))
+        assertTrue(shows("2025-2026"))
+        assertTrue(shows("2017-2018"))
+        // Si torna alla stagione in corso (e la finestra si chiude).
+        compose.onNodeWithText("current").performClick()
+        compose.waitForIdle()
+        assertTrue(compose.onAllNodesWithText("2017-2018").fetchSemanticsNodes().isEmpty())
 
         // A destra c'è l'NBA, l'ultima: ora è grigia la freccia a destra.
         compose.onNodeWithContentDescription("Next competition").performClick()
@@ -174,12 +192,55 @@ class SportsWidgetTest {
         assertEquals("https://example.com/a.png", TeamLogos.smallUrl("https://example.com/a.png"))
     }
 
-    private fun saveScreenshot(name: String) {
+    @Test
+    fun aMatchLikeSofascore() {
+        WidgetStore.addSportCompetition(widgetId, SPORT_CATALOG.first { it.league == "ita.1" }.toCompetition())
+        val serieA = sports().competitions.single()
+        val now = System.currentTimeMillis()
+        val board = parseScoreboard(resource("seriea_scoreboard.json"), Sport.SOCCER)!!
+        val rounds = buildRounds(board, Sport.SOCCER)
+        WidgetStore.setSportReport(
+            widgetId,
+            serieA.id,
+            SportReport(fetchedAt = now, matches = board.matches, rounds = rounds, roundsFetchedAt = now, round = currentRound(rounds, LocalDate.of(2026, 10, 17)))
+        )
+        WidgetStore.state.widgets.filter { it.id != widgetId }.forEach { WidgetStore.remove(it.id) }
+        // Senza rete: la cronaca di Frosinone-Sassuolo, data alla prima partita della giornata.
+        MatchDetails.preload(board.matches.first().id, parseMatchSummary(resource("summary_frosinone_sassuolo.json"), Sport.SOCCER)!!)
+
+        compose.setContent {
+            NotionLocalTheme {
+                Column(modifier = Modifier.width(300.dp).background(SidebarBackground)) { WidgetsSection(active = false) }
+            }
+        }
+        compose.waitForIdle()
+        // Un tocco sulla partita la apre.
+        compose.onNodeWithText("Venezia").performClick()
+        compose.waitForIdle()
+        fun shows(text: String) = compose.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()
+        assertTrue(shows("Events"))
+        assertTrue(shows("FT 4 - 2"))
+        assertTrue(shows("HT 3 - 2"))
+        assertTrue(shows("Additional time 4"))
+        assertTrue(shows("Assist: D. Bakola"))
+        assertTrue(shows("Goal cancelled"))
+        assertTrue(shows("Foul"))
+        // Le statistiche.
+        compose.onNodeWithText("Statistics").performClick()
+        compose.waitForIdle()
+        assertTrue(shows("Ball possession"))
+        assertTrue(shows("42%"))
+        assertTrue(shows("246 (74%)"))
+    }
+
+    private fun saveScreenshot(name: String) = saveScreenshot(name, 900)
+
+    private fun saveScreenshot(name: String, height: Int) {
         val root = compose.activity.window.decorView.rootView as android.view.ViewGroup
         val bitmap = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
         root.draw(android.graphics.Canvas(bitmap))
         val dir = File("build/widget-screenshots").apply { mkdirs() }
-        val crop = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, minOf(bitmap.height, 900))
+        val crop = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, minOf(bitmap.height, height))
         File(dir, name).outputStream().use { crop.compress(Bitmap.CompressFormat.PNG, 100, it) }
     }
 }

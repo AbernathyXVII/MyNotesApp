@@ -256,6 +256,11 @@ private fun WidgetCard(widget: Widget, index: Int, count: Int, now: Long, active
                 style = MaterialTheme.typography.labelMedium,
                 modifier = Modifier.weight(1f)
             )
+            // **La freccia che aggiorna lo sport** (dal 17/10/2026), a
+            // sinistra dei tre puntini.
+            if (widget is SportsWidget && widget.competitions.isNotEmpty()) {
+                SportsRefreshButton(widget)
+            }
             Box {
                 Box(
                     modifier = Modifier

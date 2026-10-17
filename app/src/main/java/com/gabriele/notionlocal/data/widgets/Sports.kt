@@ -154,16 +154,60 @@ data class SportReport(
     val roundsFetchedAt: Long? = null,
     /** La giornata di [matches], in [rounds]; -1 senza giornate. */
     val round: Int = -1,
+    /** La stagione in corso, come la dà ESPN. */
+    val season: SeasonInfo? = null,
     /** Com'era fatto quando è stato scaricato: se è più vecchio di `SPORT_REPORT_VERSION` si riscarica tutto. */
     val version: Int = 1
 )
 
 /**
- * La versione di `SportReport` (2 dalla v0.172: giornate, stemmi). Quelli
- * salvati prima (1) si riscaricano subito, altrimenti la classifica restava
- * senza stemmi fino alla mezz'ora dopo.
+ * La versione di `SportReport` (2 dalla v0.172: giornate, stemmi; 3 dalla
+ * v0.175: la stagione). Quelli salvati prima si riscaricano subito,
+ * altrimenti la classifica restava senza stemmi fino alla mezz'ora dopo (e
+ * la stagione senza anno fino al giorno dopo).
  */
-const val SPORT_REPORT_VERSION = 2
+const val SPORT_REPORT_VERSION = 3
+
+/**
+ * **Una stagione** (dal 17/10/2026): l'anno con cui la chiede ESPN (per la
+ * Serie A 2026-27 è 2026, per la NBA 2026-27 è 2027), il nome che le dà
+ * ("2026-27 Italian Serie A", "2026-27", "2026") e il primo e l'ultimo giorno.
+ */
+@Serializable
+data class SeasonInfo(val year: Int, val name: String = "", val start: String = "", val end: String = "")
+
+/** Il primo anno scritto nel nome ("2026-27 Italian Serie A" → 2026), se c'è. */
+private fun SeasonInfo.firstYearInName(): Int? = Regex("^(\\d{4})").find(name.trim())?.groupValues?.get(1)?.toIntOrNull()
+
+/** Se la stagione va a cavallo di due anni ("2026-27"). */
+private fun SeasonInfo.spansTwoYears(): Boolean = Regex("^\\d{4}-\\d{2,4}").containsMatchIn(name.trim())
+
+/**
+ * **Il nome di una stagione per l'utente** (dal 17/10/2026, chiesto
+ * dall'utente): "2026-2027" per i campionati a cavallo di due anni, "2026"
+ * per gli altri. [year] è l'anno di ESPN di un'altra stagione della stessa
+ * competizione.
+ */
+fun seasonLabel(info: SeasonInfo, year: Int = info.year): String {
+    if (!info.spansTwoYears()) return year.toString()
+    val first = year + ((info.firstYearInName() ?: info.year) - info.year)
+    return "$first-${first + 1}"
+}
+
+/** Le stagioni fra cui scegliere: quella in corso e le nove prima. */
+fun seasonYears(info: SeasonInfo, count: Int = 10): List<Int> = (info.year downTo info.year - count + 1).toList()
+
+/**
+ * **Un giorno dentro un'altra stagione**: la metà di quella in corso, tanti
+ * anni prima. Chiedendo a ESPN le partite di quel giorno arriva il calendario
+ * di quella stagione.
+ */
+fun seasonProbeDay(info: SeasonInfo, year: Int): LocalDate? {
+    val start = runCatching { LocalDate.parse(info.start.take(10)) }.getOrNull() ?: return null
+    val end = runCatching { LocalDate.parse(info.end.take(10)) }.getOrNull() ?: return null
+    val middle = start.plusDays(ChronoUnit.DAYS.between(start, end) / 2)
+    return middle.minusYears((info.year - year).toLong())
+}
 
 /**
  * **Una giornata**: i giorni (quelli di ESPN, cioè americani) in cui si gioca.
@@ -182,7 +226,9 @@ data class SportRound(
     val label: String = "",
     /** NFL e college: la parte della stagione (1 precampionato, 2 regolare, 3 playoff) e la settimana. */
     val seasonType: Int? = null,
-    val week: Int? = null
+    val week: Int? = null,
+    /** NFL e college: l'anno della stagione, perché la settimana si chiede per stagione. */
+    val season: Int? = null
 ) {
     val key: String get() = "$from/$to"
     val firstDay: LocalDate get() = LocalDate.parse(from)
@@ -280,7 +326,14 @@ fun onDays(matches: List<SportMatch>, days: Collection<LocalDate>): List<SportMa
 fun buildRounds(board: Scoreboard, sport: Sport, extraDays: List<LocalDate> = emptyList()): List<SportRound> {
     if (sport == Sport.FOOTBALL && board.stages.any { it.week != null }) {
         return board.stages.filter { it.week != null }.map { stage ->
-            SportRound(from = stage.from.toString(), to = stage.to.toString(), label = stage.label, seasonType = stage.seasonType, week = stage.week)
+            SportRound(
+                from = stage.from.toString(),
+                to = stage.to.toString(),
+                label = stage.label,
+                seasonType = stage.seasonType,
+                week = stage.week,
+                season = board.season?.year
+            )
         }
     }
     val days = (board.matchDays + extraDays).ifEmpty { board.matches.map { espnDay(it.start) } }.distinct().sorted()
@@ -369,7 +422,8 @@ private val lenientJson = Json { ignoreUnknownKeys = true }
 data class Scoreboard(
     val matches: List<SportMatch>,
     val matchDays: List<LocalDate> = emptyList(),
-    val stages: List<CalendarStage> = emptyList()
+    val stages: List<CalendarStage> = emptyList(),
+    val season: SeasonInfo? = null
 )
 
 /** Una settimana (NFL: "Week 7") o una fase ("League Phase"), dal primo all'ultimo giorno. */
@@ -416,7 +470,17 @@ fun parseScoreboard(json: String, sport: Sport): Scoreboard? = runCatching {
             )
         }
     }
-    Scoreboard(matches, days, stages)
+    val season = league?.obj("season")?.let { info ->
+        info.int("year")?.let { year ->
+            SeasonInfo(
+                year = year,
+                name = info.string("displayName").orEmpty(),
+                start = info.string("startDate").orEmpty(),
+                end = info.string("endDate").orEmpty()
+            )
+        }
+    }
+    Scoreboard(matches, days, stages, season)
 }.getOrNull()
 
 private fun teamMatch(event: JsonObject): SportMatch? {
