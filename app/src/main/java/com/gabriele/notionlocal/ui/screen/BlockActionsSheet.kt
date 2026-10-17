@@ -391,9 +391,9 @@ internal fun BlockActionsHost(
                         onTurnIntoPage = {
                             onDismiss()
                             // Come dalle impostazioni del database: il
-                            // blocco diventa un collegamento e il database
-                            // si apre a schermo intero.
-                            viewModel.turnDatabaseIntoPage(block) { onNavigateToDatabase(page.id) }
+                            // blocco diventa un collegamento, e si resta
+                            // nella pagina.
+                            viewModel.turnDatabaseIntoPage(block)
                         },
                         onTurnIntoDatabase = {
                             onDismiss()

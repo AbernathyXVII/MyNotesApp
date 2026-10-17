@@ -2070,6 +2070,31 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.176 — 17/10/2026 · 23:45 — "Turn into page" e si resta dove si è
+*(Claude Code sul PC; verificato nei test; 592 test passati; commit solo in
+locale)*
+
+L'utente, parola per parola:
+> «Quando trasformo un database in una pagina, automaticamente mi apre la
+> pagina e mi fa vedere il database in formato pagina. Togli questa cosa per
+> favore. Quando faccio Turn into page, la trasforma in una pagina e
+> nient'altro, rimango lì dove sono»
+
+- **[Modificato]** **"Turn into page"** su un database dentro una pagina (dalle
+  impostazioni del database o dal menu del blocco) lo trasforma in un
+  collegamento alla pagina del database **e basta**: si resta nella pagina in
+  cui si era, col collegamento al posto del database. Prima il database si
+  apriva anche a schermo intero. Per aprirlo basta toccare il collegamento;
+  per rimetterlo dentro la pagina c'è sempre "Turn into database"
+- **[Progetto]** `turnDatabaseIntoPage` non prende più l'azione da fare dopo;
+  le due voci (`PageEditorScreen`, `BlockActionsSheet`) non aprono più il
+  database. Test: `TurnDatabaseIntoPageTest` (il blocco diventa un
+  collegamento allo stesso database, le altre righe e il database non
+  cambiano)
+- Non provato sul telefono: nelle pagine dove si possono fare prove (Food,
+  Main calendar) non c'è un database dentro la pagina, e crearne uno di prova
+  l'avrebbe lasciato nel Cestino. Il telefono era scollegato: va installata
+  quando torna
 ### 🆕 v0.175 — 17/10/2026 · 19:49 — Lo sport: la freccia, il risultato in rosso, le stagioni
 *(Claude Code sul PC; verificato sul telefono; 591 test passati; commit solo
 in locale)*

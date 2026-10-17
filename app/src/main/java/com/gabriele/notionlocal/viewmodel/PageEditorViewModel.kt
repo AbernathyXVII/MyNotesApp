@@ -1414,15 +1414,15 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
 
     /**
      * "Turn into page" dalle impostazioni di un database dentro questa
-     * pagina: il blocco diventa un collegamento, e `onDone` apre il
-     * database a schermo intero — è il senso della voce, vederlo come
-     * una pagina a sé.
+     * pagina, o dal menu del blocco: il blocco diventa un collegamento, e
+     * si resta qui. Fino al 17/10/2026 il database si apriva anche a
+     * schermo intero; l'utente ha chiesto di no: «la trasforma in una
+     * pagina e nient'altro, rimango lì dove sono».
      */
-    fun turnDatabaseIntoPage(block: BlockEntity, onDone: () -> Unit) {
+    fun turnDatabaseIntoPage(block: BlockEntity) {
         snapshotForStructuralChange()
         viewModelScope.launch {
             repository.turnDatabaseBlockIntoPage(block.id)
-            onDone()
         }
     }
 

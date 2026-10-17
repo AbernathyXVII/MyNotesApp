@@ -5518,13 +5518,11 @@ private fun BlockRow(
             // I sei puntini nella riga degli strumenti: il menu del
             // blocco, con in cima le voci del database.
             onOpenBlockMenu = onOpenBlockMenu?.let { open -> { open(block.id) } },
-            // "Turn into page": il blocco diventa un collegamento e il
-            // database si apre subito a schermo intero, che è come lo si
-            // vedrà da qui in poi. Per rimetterlo dentro la pagina c'è
-            // "Turn into database" nei tre puntini, da lì.
-            onTurnIntoPage = {
-                viewModel.turnDatabaseIntoPage(block) { onNavigateToDatabase(databasePageId) }
-            },
+            // "Turn into page": il blocco diventa un collegamento, e si
+            // resta nella pagina (dal 17/10/2026, chiesto dall'utente;
+            // prima il database si apriva anche a schermo intero). Per
+            // rimetterlo dentro la pagina c'è "Turn into database".
+            onTurnIntoPage = { viewModel.turnDatabaseIntoPage(block) },
             // Nessun margine laterale, a differenza degli altri blocchi:
             // una tabella deve poter usare tutta la larghezza, e il
             // rientro della pagina la farebbe partire staccata dal bordo
