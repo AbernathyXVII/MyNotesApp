@@ -21,10 +21,13 @@ import com.gabriele.notionlocal.data.entity.RichTextSpan
 import com.gabriele.notionlocal.data.entity.TableCellEntity
 import com.gabriele.notionlocal.data.entity.applyTextEdit
 import com.gabriele.notionlocal.data.entity.joinLines
+import com.gabriele.notionlocal.data.entity.linkInRange
+import com.gabriele.notionlocal.data.entity.linkRunAt
 import com.gabriele.notionlocal.data.entity.plainText
 import com.gabriele.notionlocal.data.entity.setColorInRange
 import com.gabriele.notionlocal.data.entity.setFontInRange
 import com.gabriele.notionlocal.data.entity.setFormatInRange
+import com.gabriele.notionlocal.data.entity.setLinkInRange
 import com.gabriele.notionlocal.data.entity.setSizeInRange
 import com.gabriele.notionlocal.data.entity.spanAt
 import com.gabriele.notionlocal.data.entity.splitLines
@@ -450,6 +453,10 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         val selection = SelectionSnapshot(blockIds, start, end)
         liveSelection = selection
         _selectionTypography.value = typographyAt(selection)
+        _selectionLink.value = SelectionLink(
+            hasText = start < end,
+            link = linkSelection(selection)?.let { linkOf(it) }
+        )
     }
 
     /**
@@ -527,6 +534,72 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
             pos += length + 1 // +1 per l'a-capo che separa i blocchi
         }
         return SelectionTypography(null, null)
+    }
+
+    // --- Il collegamento del testo selezionato (dal 17/10/2026) ---
+    //
+    // L'icona del collegamento nella barra sopra la tastiera compare quando
+    // c'è del testo selezionato, o quando il cursore sta in un testo che ha
+    // già un collegamento (per cambiarlo o toglierlo). Come per il pennello,
+    // la selezione si mette da parte prima di aprire la finestrella.
+
+    /** `hasText` = c'è del testo selezionato; `link` = il collegamento che c'è già lì, se c'è. */
+    data class SelectionLink(val hasText: Boolean, val link: String?)
+
+    private val _selectionLink = MutableStateFlow(SelectionLink(hasText = false, link = null))
+    val selectionLink: StateFlow<SelectionLink> = _selectionLink
+
+    /**
+     * Il testo a cui va il collegamento: quello selezionato o, con il solo
+     * cursore dentro un collegamento, tutto quel collegamento. Null se non
+     * c'è né l'uno né l'altro.
+     */
+    private fun linkSelection(selection: SelectionSnapshot): SelectionSnapshot? {
+        if (selection.start < selection.end) return selection
+        val all = _blocks.value
+        var pos = 0
+        for (id in selection.blockIds) {
+            val block = all.find { it.id == id } ?: continue
+            val spans = spansOf(block)
+            val length = spans.plainText().length
+            if (selection.start <= pos + length) {
+                val run = linkRunAt(spans, selection.start - pos) ?: return null
+                return selection.copy(start = pos + run.first, end = pos + run.last + 1)
+            }
+            pos += length + 1 // +1 per l'a-capo che separa i blocchi
+        }
+        return null
+    }
+
+    /** Il primo collegamento dentro la selezione, o null. */
+    private fun linkOf(selection: SelectionSnapshot): String? {
+        val all = _blocks.value
+        var pos = 0
+        for (id in selection.blockIds) {
+            val block = all.find { it.id == id } ?: continue
+            val spans = spansOf(block)
+            val length = spans.plainText().length
+            val from = (selection.start - pos).coerceAtLeast(0)
+            val to = (selection.end - pos).coerceAtMost(length)
+            if (from < to) linkInRange(spans, from, to)?.let { return it }
+            pos += length + 1
+        }
+        return null
+    }
+
+    /** Il collegamento che c'è già nel testo messo da parte, per riempire la finestrella. */
+    fun capturedLink(): String? = capturedSelection?.let { linkSelection(it) }?.let { linkOf(it) }
+
+    /**
+     * Mette il collegamento [url] al testo messo da parte, o lo toglie con
+     * null. Falso se non c'era testo selezionato né un collegamento sotto il
+     * cursore.
+     */
+    fun applyLinkToCapturedSelection(url: String?): Boolean {
+        val selection = capturedSelection?.let { linkSelection(it) } ?: return false
+        transformRun(selection) { spans, from, to -> setLinkInRange(spans, from, to, url) }
+        _selectionLink.value = _selectionLink.value.copy(link = url)
+        return true
     }
 
     /** Il font sul testo messo da parte; falso se non c'era testo selezionato. */

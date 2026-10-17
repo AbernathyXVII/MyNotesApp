@@ -2070,6 +2070,51 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.168 — 17/10/2026 · 09:39 — I link sul testo selezionato
+*(Claude Code sul PC; verificato sul telefono; 536 test passati; commit solo
+in locale)*
+
+L'utente, parola per parola:
+> «Consentimi di mettere dei link a del testo che seleziono. Nella Toolbar
+> metti un'icona di un collegamento quando tengo premuto del testo, cosicché
+> io possa mettere il link a quel testo selezionato in modo che semplicemente
+> toccando quel testo a cui ho messo il link si apre quest'ultimo.»
+
+- **[Nuova funzionalità]** **L'icona del collegamento nella barra sopra la
+  tastiera**, accanto al pennello. Compare quando c'è del testo selezionato
+  (tenendo premuta una parola) o quando il cursore sta dentro un link, e
+  apre la finestrella "Link" dove incollare o scrivere l'indirizzo:
+  "google.com" basta (diventa https://google.com), un indirizzo email
+  diventa un link per scrivere una mail. Se il testo ha già un link, la
+  finestrella lo mostra e ha "Remove link". Col solo cursore dentro un link
+  si cambia o si toglie il link intero
+- **[Nuova funzionalità]** **Il testo con un link è blu e sottolineato, e
+  toccandolo si apre**, senza mettere il cursore né aprire la tastiera.
+  Tenendolo premuto, invece, si seleziona come sempre, per cambiare o
+  togliere il link. Le pagine web si aprono nel riquadro del browser sopra
+  l'app (Custom Tab), e "indietro" torna alla pagina di notE. Scrivendo
+  subito prima o subito dopo un link, il testo nuovo non entra nel link;
+  scrivendo dentro sì. Un link dentro uno spoiler coperto non si apre: il
+  tocco lo scopre, come sempre
+- **[Progetto]** `RichTextSpan.link`: il testo salvato prima non ha la
+  chiave e vale null, niente migrazione. In `RichText.kt` `setLinkInRange`,
+  `linkInRange` e `linkRunAt`; il nuovo `TextLinks.kt` ha il colore, il
+  segno sul testo mostrato, `linkTaps` (prende il tocco prima del campo),
+  `LinkDialog` e l'apertura come Custom Tab, senza aggiungere la libreria
+  androidx.browser. Nel ViewModel `selectionLink`, `capturedLink` e
+  `applyLinkToCapturedSelection`, sulla selezione messa da parte come per il
+  pennello. Vale nei due campi dell'editor: le righe di testo, elenchi e
+  caselle, e i blocchi a sé come citazioni, toggle e callout. Test:
+  `RichTextLinkTest`, `TextLinkTest` e `TextLinkTapTest` (fallisce se il
+  tocco sul link arriva al campo)
+- Verificato sul telefono in una riga di prova di Main calendar, poi
+  cancellata. Tenendo premuto "Google" compare l'icona; con "example.com"
+  "Google" diventa blu e sottolineato e resta così dopo aver riaperto l'app.
+  Toccandolo si apre la pagina, e "indietro" torna a notE senza tastiera;
+  "Remove link" lo toglie; lo stesso in una citazione. Il primo tentativo
+  apriva il link come scheda normale di Firefox, e "indietro" mostrava
+  l'app usata prima (YouTube) invece di notE: da qui la Custom Tab. Alla
+  fine il database del telefono è uguale a prima della prova
 ### 🔧 v0.167.1 — 17/10/2026 · 09:14 — Il punto in alto sta proprio in alto: 2˙026
 *(Claude Code sul PC; verificato sul telefono; 526 test passati; commit solo
 in locale)*

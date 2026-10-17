@@ -108,6 +108,11 @@ object EditorStrings {
     // --- La barra sopra la tastiera ---
 
     val spoiler get() = t("Spoiler", "Spoiler", "Spoiler", "Spoiler", "Spoiler", "剧透", "스포일러", "ネタバレ")
+    /** Il collegamento sul testo selezionato (dal 17/10/2026): l'icona e la sua finestrella. */
+    val link get() = t("Link", "Link", "Link", "Lien", "Enlace", "链接", "링크", "リンク")
+    val linkHint get() = t("Paste or type a link", "Incolla o scrivi un link", "Link einfügen oder eingeben", "Collez ou saisissez un lien", "Pega o escribe un enlace", "粘贴或输入链接", "링크를 붙여넣거나 입력하세요", "リンクを貼り付けるか入力")
+    val removeLink get() = t("Remove link", "Togli il link", "Link entfernen", "Supprimer le lien", "Quitar enlace", "移除链接", "링크 삭제", "リンクを削除")
+    val cantOpenLink get() = t("Can't open this link", "Impossibile aprire questo link", "Dieser Link lässt sich nicht öffnen", "Impossible d'ouvrir ce lien", "No se puede abrir este enlace", "无法打开此链接", "이 링크를 열 수 없습니다", "このリンクを開けません")
     val subscript get() = t("Subscript", "Pedice", "Tiefgestellt", "Indice", "Subíndice", "下标", "아래 첨자", "下付き文字")
     val superscript get() = t("Superscript", "Apice", "Hochgestellt", "Exposant", "Superíndice", "上标", "위 첨자", "上付き文字")
     val outdent get() = t("Outdent", "Riduci rientro", "Einzug verkleinern", "Diminuer le retrait", "Reducir sangría", "减少缩进", "내어쓰기", "インデントを減らす")

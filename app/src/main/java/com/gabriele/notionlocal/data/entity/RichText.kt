@@ -58,7 +58,15 @@ data class RichTextSpan(
      * migrazione 30→31 li ha spostati sul testo delle pagine che li usavano.
      */
     val font: String? = null,
-    val size: Int? = null
+    val size: Int? = null,
+    /**
+     * **Il collegamento di questo pezzo di testo** (dal 17/10/2026, chiesto
+     * dall'utente): l'indirizzo che si apre toccandolo, messo dall'icona
+     * del collegamento nella barra sopra la tastiera. Null = testo normale.
+     * Come gli altri campi, il testo salvato prima non ha la chiave e vale
+     * null.
+     */
+    val link: String? = null
 )
 
 /** Accende o spegne il pedice; accenderlo spegne l'apice, perché un pezzo di testo non può stare sotto e sopra insieme. */
@@ -103,11 +111,22 @@ private fun List<RichTextSpan>.merged(): List<RichTextSpan> {
  * la formattazione del punto in cui viene inserito (scrivere in mezzo a
  * una parola in grassetto resta grassetto, come in qualsiasi editor).
  */
-private fun formatAtPosition(spans: List<RichTextSpan>, position: Int): RichTextSpan {
+private fun formatAtPosition(spans: List<RichTextSpan>, position: Int, replacing: Boolean = false): RichTextSpan {
     var pos = 0
+    var previous: RichTextSpan? = null
     for (span in spans) {
+        val spanStart = pos
         val spanEnd = pos + span.text.length
-        if (position < spanEnd) return span
+        if (position < spanEnd) {
+            // **Un collegamento non si allunga dai bordi**, come su Notion:
+            // scrivendo subito prima il testo nuovo non diventa parte del
+            // link. Dentro sì (si corregge il testo del link), e anche
+            // quando si sostituisce un pezzo che comincia lì.
+            val atLinkStart = position == spanStart && !replacing &&
+                span.link != null && previous?.link != span.link
+            return if (atLinkStart) span.copy(link = null) else span
+        }
+        previous = span
         pos = spanEnd
     }
     // **In fondo al testo lo spoiler non si eredita.** Per tutto il
@@ -116,7 +135,9 @@ private fun formatAtPosition(spans: List<RichTextSpan>, position: Int): RichText
     // finito di scriverlo il cursore resta subito dopo, e la parola
     // seguente diventerebbe invisibile senza che nessuno l'abbia chiesto.
     // Per allungare uno spoiler si seleziona e si tocca il pulsante.
-    return spans.lastOrNull()?.copy(spoiler = false) ?: RichTextSpan(text = "")
+    // Lo stesso per il collegamento: finito di scriverlo, la parola dopo
+    // non ci finisce dentro.
+    return spans.lastOrNull()?.copy(spoiler = false, link = null) ?: RichTextSpan(text = "")
 }
 
 /**
@@ -153,7 +174,7 @@ fun applyTextEdit(spans: List<RichTextSpan>, oldText: String, newText: String): 
  * inserito eredita la formattazione dello span che copre deleteStart.
  */
 fun spliceSpans(spans: List<RichTextSpan>, deleteStart: Int, deleteEnd: Int, insertText: String): List<RichTextSpan> {
-    val inheritedFormat = if (insertText.isNotEmpty()) formatAtPosition(spans, deleteStart) else null
+    val inheritedFormat = if (insertText.isNotEmpty()) formatAtPosition(spans, deleteStart, replacing = deleteEnd > deleteStart) else null
 
     val result = mutableListOf<RichTextSpan>()
     var pos = 0
@@ -372,6 +393,45 @@ fun setFontInRange(spans: List<RichTextSpan>, start: Int, end: Int, font: String
 /** Il corpo di un intervallo, in punti; null (o 16, quello di sempre) lo riporta al normale. */
 fun setSizeInRange(spans: List<RichTextSpan>, start: Int, end: Int, size: Int?, defaultSize: Int): List<RichTextSpan> =
     transformRange(spans, start, end) { it.copy(size = size?.takeIf { s -> s != defaultSize }) }
+
+/** Il collegamento di un intervallo; null lo toglie. */
+fun setLinkInRange(spans: List<RichTextSpan>, start: Int, end: Int, link: String?): List<RichTextSpan> =
+    transformRange(spans, start, end) { it.copy(link = link) }
+
+/** Il primo collegamento nell'intervallo [start, end), o null se non ce n'è. */
+fun linkInRange(spans: List<RichTextSpan>, start: Int, end: Int): String? {
+    var pos = 0
+    for (span in spans) {
+        val spanStart = pos
+        pos += span.text.length
+        if (span.link != null && spanStart < end && pos > start) return span.link
+    }
+    return null
+}
+
+/**
+ * **Il collegamento in cui sta il cursore**, da dove a dove: quello della
+ * lettera subito prima del cursore o, se quella non ne ha, della lettera
+ * subito dopo. Tutti i pezzi attaccati con lo stesso indirizzo contano come
+ * uno (un link con una parola in grassetto è sempre un link solo). Null se
+ * il cursore non tocca nessun collegamento.
+ */
+fun linkRunAt(spans: List<RichTextSpan>, caret: Int): IntRange? {
+    val anchor = if (spanAt(spans, caret - 1)?.link != null) caret - 1 else caret
+    val link = spanAt(spans, anchor)?.link ?: return null
+    val starts = IntArray(spans.size)
+    var pos = 0
+    spans.forEachIndexed { i, span ->
+        starts[i] = pos
+        pos += span.text.length
+    }
+    val index = spans.indices.first { anchor >= starts[it] && anchor < starts[it] + spans[it].text.length }
+    var first = index
+    while (first > 0 && spans[first - 1].link == link) first--
+    var last = index
+    while (last < spans.lastIndex && spans[last + 1].link == link) last++
+    return starts[first] until starts[last] + spans[last].text.length
+}
 
 /** Lo span che contiene il carattere in posizione `index`, o null fuori dal testo. */
 fun spanAt(spans: List<RichTextSpan>, index: Int): RichTextSpan? {

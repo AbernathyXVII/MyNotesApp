@@ -63,6 +63,11 @@ val NotebookBand: Color get() = themed(0xFF1E2A38, 0xFFE3EEFA)
 val SpoilerCover: Color get() = themed(0xFF4A4A4A, 0xFFBDBDBA)
 val SpoilerRevealed = Color(0x2E7A7A7A)
 
+// Il testo con un collegamento (dal 17/10/2026): il blu del testo di
+// Notion, quello del tema scuro e quello del tema chiaro. Sottolineato,
+// così si riconosce anche da chi non distingue i colori.
+val TextLinkColor: Color get() = themed(0xFF529CCA, 0xFF0B6E99)
+
 // La stellina dei preferiti da accesa. Da spenta resta del colore del
 // testo, come tutte le altre icone della barra: il giallo serve a dire
 // "questa è accesa", e se lo avesse sempre non direbbe niente.

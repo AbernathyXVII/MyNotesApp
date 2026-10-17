@@ -1132,6 +1132,7 @@ private fun PageEditorContent(
     val focusRequestBlockId by viewModel.focusRequestBlockId.collectAsStateWithLifecycle()
     val formatRequest by viewModel.formatRequest.collectAsStateWithLifecycle()
     val selectionTypography by viewModel.selectionTypography.collectAsStateWithLifecycle()
+    val selectionLink by viewModel.selectionLink.collectAsStateWithLifecycle()
     val canUndo by viewModel.canUndo.collectAsStateWithLifecycle()
     val canRedo by viewModel.canRedo.collectAsStateWithLifecycle()
 
@@ -1148,6 +1149,9 @@ private fun PageEditorContent(
     // La finestra dove si scrive il corpo del testo: sta qui e non nella
     // barra per la ragione spiegata in `FontSizeChip`.
     var showFontSizeDialog by remember { mutableStateOf(false) }
+    // La finestrella del collegamento: null chiusa, altrimenti l'indirizzo
+    // che c'è già ("" se non ce n'è uno).
+    var linkDialogFor by remember { mutableStateOf<String?>(null) }
     var colorForBlockId by remember { mutableStateOf<String?>(null) }
     var colorOnBackground by remember { mutableStateOf(false) }
     var lastPickedHex by remember { mutableStateOf<String?>(null) }
@@ -2305,6 +2309,26 @@ private fun PageEditorContent(
                                     modifier = Modifier.size(BAR_ICON_SIZE)
                                 )
                             }
+                            // **Il collegamento** (dal 17/10/2026, chiesto
+                            // dall'utente), accanto al pennello: compare
+                            // quando c'è del testo selezionato, o quando il
+                            // cursore sta in un link (per cambiarlo o
+                            // toglierlo). La selezione si mette da parte
+                            // come per il pennello: la finestrella porta via
+                            // il fuoco.
+                            if (selectionLink.hasText || selectionLink.link != null) {
+                                BarButton(onClick = {
+                                    viewModel.captureSelection()
+                                    linkDialogFor = viewModel.capturedLink().orEmpty()
+                                }) {
+                                    Icon(
+                                        Icons.Filled.Link,
+                                        contentDescription = EditorStrings.link,
+                                        tint = NotionWhite,
+                                        modifier = Modifier.size(BAR_ICON_SIZE)
+                                    )
+                                }
+                            }
                         }
                         BarButton(onClick = { viewModel.undo() }, enabled = canUndo) {
                             Icon(
@@ -2493,6 +2517,23 @@ private fun PageEditorContent(
                 null
             },
             onDismiss = { editingImage = null }
+        )
+    }
+
+    linkDialogFor?.let { current ->
+        LinkDialog(
+            current = current.ifEmpty { null },
+            onDismiss = { linkDialogFor = null },
+            onSave = { url ->
+                linkDialogFor = null
+                if (!viewModel.applyLinkToCapturedSelection(url)) {
+                    Toast.makeText(context, EditorStrings.selectTextFirst, Toast.LENGTH_SHORT).show()
+                }
+            },
+            onRemove = {
+                linkDialogFor = null
+                viewModel.applyLinkToCapturedSelection(null)
+            }
         )
     }
 
@@ -4248,9 +4289,10 @@ private class MergedRunVisualTransformation(
                         val s = contentStart + spanPos
                         val e = s + span.text.length
                         spanPos += span.text.length
-                        if (span.bold || span.italic || span.underline || span.strikethrough) {
+                        if (span.bold || span.italic || span.underline || span.strikethrough || span.link != null) {
                             val decorations = mutableListOf<TextDecoration>()
-                            if (span.underline) decorations.add(TextDecoration.Underline)
+                            // Un collegamento è sempre sottolineato.
+                            if (span.underline || span.link != null) decorations.add(TextDecoration.Underline)
                             if (span.strikethrough) decorations.add(TextDecoration.LineThrough)
                             builder.addStyle(
                                 SpanStyle(
@@ -4262,6 +4304,9 @@ private class MergedRunVisualTransformation(
                                 e
                             )
                         }
+                        // Il blu del collegamento prima del pennello: un
+                        // colore scelto apposta vince.
+                        linkStyleOf(span)?.let { builder.addStyle(it, s, e) }
                         // I colori **prima** dello spoiler: coperto, il
                         // velo deve vincere su tutto, altrimenti si
                         // leggerebbe il testo colorato attraverso.
@@ -4274,11 +4319,13 @@ private class MergedRunVisualTransformation(
                             // numero) davanti alla riga esiste solo a
                             // schermo e qui va scontato.
                             val fromBody = lineBodyStart + (s - contentStart)
-                            builder.addStyle(
-                                spoilerStyle(revealed = touchesCaret(fromBody, fromBody + span.text.length)),
-                                s,
-                                e
-                            )
+                            val revealed = touchesCaret(fromBody, fromBody + span.text.length)
+                            builder.addStyle(spoilerStyle(revealed), s, e)
+                            // Un link coperto non si apre: il tocco
+                            // serve a scoprirlo.
+                            if (revealed) builder.markLink(span, s, e)
+                        } else {
+                            builder.markLink(span, s, e)
                         }
                     }
                 }
@@ -4796,6 +4843,7 @@ private fun MergedTextRunField(
     val proofing = LocalProofing.current
     val misspellings = rememberMisspellings(if (proofing == null) emptyList() else bodyOf(fieldValue.text).split('\n'))
     val pageLocked = LocalPageLocked.current
+    val openLink = rememberLinkOpener()
 
     // Una parola scelta dal menu del correttore prende il posto di quella
     // sbagliata, come se la si fosse scritta: stesso giro di `applySlashEntry`.
@@ -5168,6 +5216,10 @@ private fun MergedTextRunField(
             modifier = Modifier
                 .fillMaxWidth()
                 .drawBehind { drawMisspellings(textLayout) }
+                // Un tocco su un testo con un collegamento lo apre (vedi
+                // `TextLinks.kt`): prima del correttore, che così non apre
+                // il suo menu sopra il link.
+                .linkTaps(layout = { textLayout }, onLink = openLink)
                 .proofingTaps(enabled = proofing != null && !pageLocked, layout = { textLayout }) { word, at ->
                     proofMenu = word to at
                 }
@@ -5640,6 +5692,7 @@ private fun BlockRow(
     val rowImageStore = remember(rowContext) { PageImageStore(rowContext) }
     var editingCalloutIcon by remember(block.id) { mutableStateOf(false) }
     val pageLocked = LocalPageLocked.current
+    val openLink = rememberLinkOpener()
 
     LaunchedEffect(focusRequestBlockId) {
         if (focusRequestBlockId == block.id) {
@@ -6214,6 +6267,7 @@ private fun BlockRow(
                 modifier = Modifier
                     .weight(1f)
                     .drawBehind { drawMisspellings(islandLayout) }
+                    .linkTaps(layout = { islandLayout }, onLink = openLink)
                     .proofingTaps(enabled = proofing != null && !pageLocked, layout = { islandLayout }) { word, at ->
                         proofMenu = word to at
                     }
@@ -6413,9 +6467,10 @@ private class RichTextVisualTransformation(
             val start = pos
             builder.append(span.text)
             pos += span.text.length
-            if (span.bold || span.italic || span.underline || span.strikethrough) {
+            if (span.bold || span.italic || span.underline || span.strikethrough || span.link != null) {
                 val decorations = mutableListOf<TextDecoration>()
-                if (span.underline) decorations.add(TextDecoration.Underline)
+                // Vedi il gemello nel campo unito: un collegamento è sottolineato.
+                if (span.underline || span.link != null) decorations.add(TextDecoration.Underline)
                 if (span.strikethrough) decorations.add(TextDecoration.LineThrough)
                 builder.addStyle(
                     SpanStyle(
@@ -6427,6 +6482,7 @@ private class RichTextVisualTransformation(
                     pos
                 )
             }
+            linkStyleOf(span)?.let { builder.addStyle(it, start, pos) }
             colorStyleOf(span)?.let { builder.addStyle(it, start, pos) }
             fontStyleOf(span)?.let { builder.addStyle(it, start, pos) }
             scriptStyleOf(span)?.let { builder.addStyle(it, start, pos) }
@@ -6434,6 +6490,9 @@ private class RichTextVisualTransformation(
                 // Dentro, non sui bordi: vedi il gemello nel campo unito.
                 val revealed = caret != null && caret.first < pos && caret.last > start
                 builder.addStyle(spoilerStyle(revealed), start, pos)
+                if (revealed) builder.markLink(span, start, pos)
+            } else {
+                builder.markLink(span, start, pos)
             }
         }
         proof?.let { p -> builder.markMisspellings(0, p(body), 0, effective, typingAt?.takeIf { it in 0..body.length }) }
