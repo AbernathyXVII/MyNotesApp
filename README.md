@@ -2070,6 +2070,40 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.166 — 17/10/2026 · 08:50 — Nella pagina di una riga, le frecce per la pagina prima e quella dopo
+*(Claude Code sul PC; verificato sul telefono; 523 test passati; commit solo
+in locale)*
+
+L'utente, parola per parola:
+> «Quando apro una pagina di un database, metti da qualche parte due icone
+> per andare o alla precedente o alla successiva pagina di quello stesso
+> database. Ovviamente fai sì che l'ordine corrente con i vari filtri,
+> grouping eccetera vengano rispettati»
+
+- **[Nuova funzionalità]** **˄ e ˅ in alto a destra nella pagina di una
+  riga**, accanto ai tre puntini, come le frecce di Notion: la pagina prima
+  e quella dopo dello stesso database. L'ordine è quello della vista da cui
+  la si è aperta: filtro, ordinamento, ricerca, gruppi e sottogruppi della
+  tabella (con le sotto-righe aperte sotto la loro riga), colonne e fasce
+  della bacheca, date del calendario e della timeline (e in fondo le righe
+  senza data). In cima ˄ è spenta, in fondo ˅. La pagina nuova prende il
+  posto di quella di prima: "indietro" torna al database, non a tutte le
+  pagine scorse
+- **[Progetto]** `RowNavigation.kt`: l'ordine si fotografa quando si apre
+  la riga dalla vista (`displayedRowIds`, una regola per vista, che usa
+  `buildRowGroups` e `rowTree` come le viste stesse) e resta quello mentre
+  si scorre. Aprendo la pagina da altrove (ricerca, collegamenti, dopo aver
+  chiuso l'app) vale il filtro e l'ordinamento del database. Una riga che
+  compare in più gruppi (selezione multipla) conta la prima volta. Test:
+  `RowOrderTest` (tabella semplice, con gruppi e sottogruppi, bacheca con
+  colonne e fasce, calendario)
+- Verificato sul telefono il 16 e il 17/10, in Main calendar con tre righe di
+  prova "Prova 1–3" (poi tolte): con la ricerca "Prova", da "Prova 2" ˅ →
+  "Prova 3" con ˅ spenta; ˄ due volte → "Prova 1" con ˄ spenta; "indietro"
+  torna subito alla tabella. Con l'ordinamento per nome decrescente, da
+  "Prova 2" ˅ → "Prova 1". Tolti l'ordinamento e le righe di prova; nel
+  database del telefono restano solo le modifiche fatte nel frattempo
+  dall'utente
 ### 🆕 v0.165 — 16/10/2026 · 17:40 — Anche "Time format" in Settings, uno solo per tutta l'app
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 519 test
 passati; commit solo in locale)*

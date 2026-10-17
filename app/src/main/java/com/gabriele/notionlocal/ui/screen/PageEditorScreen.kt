@@ -1060,6 +1060,12 @@ fun PageEditorScreen(
     onNavigateToPage: (String) -> Unit,
     onNavigateToDatabase: (String) -> Unit,
     onOpenSidebar: () -> Unit = {},
+    /**
+     * Le frecce della pagina di una riga (dal 16/10/2026): apre al posto di
+     * questa la pagina di un'altra riga dello stesso database. Null dove non
+     * servono.
+     */
+    onOpenSiblingRow: ((rowId: String) -> Unit)? = null,
     viewModel: PageEditorViewModel = viewModel(factory = factory)
 ) {
     // **Una pagina di un quaderno** (dal 26/09/2026) è la stessa pagina con
@@ -1083,6 +1089,7 @@ fun PageEditorScreen(
             onNavigateToPage = onNavigateToPage,
             onNavigateToDatabase = onNavigateToDatabase,
             onOpenSidebar = onOpenSidebar,
+            onOpenSiblingRow = onOpenSiblingRow,
             viewModel = viewModel
         )
     }
@@ -1099,6 +1106,7 @@ private fun PageEditorContent(
     onNavigateToPage: (String) -> Unit,
     onNavigateToDatabase: (String) -> Unit,
     onOpenSidebar: () -> Unit,
+    onOpenSiblingRow: ((rowId: String) -> Unit)?,
     viewModel: PageEditorViewModel
 ) {
     val inNotebook = LocalInNotebook.current
@@ -2386,6 +2394,23 @@ private fun PageEditorContent(
                     .padding(top = padding.calculateTopPadding() + FLOATING_BUTTON_MARGIN, end = FLOATING_BUTTON_MARGIN),
                 horizontalArrangement = Arrangement.spacedBy(FLOATING_BUTTON_GAP)
             ) {
+                // **La pagina prima e quella dopo** nel database (dal
+                // 16/10/2026, chiesto dall'utente), nell'ordine della vista da
+                // cui la si è aperta: vedi `RowNavigation`.
+                if (page?.isRowPage == true && !inNotebook && onOpenSiblingRow != null) {
+                    RowNavigationButtons(
+                        pageId = pageId,
+                        factory = factory,
+                        buttonSize = FLOATING_BUTTON_SIZE,
+                        iconSize = FLOATING_ICON_SIZE,
+                        background = FloatingButtonBackground,
+                        tint = NotionWhite,
+                        onOpenRow = { rowId ->
+                            focusManager.clearFocus()
+                            onOpenSiblingRow(rowId)
+                        }
+                    )
+                }
                 // **Il lucchetto chiuso** (dal 26/09/2026, chiesto
                 // dall'utente): stesso cerchio dei tre puntini, alla loro
                 // sinistra, sulle pagine bloccate con la password. Dice che

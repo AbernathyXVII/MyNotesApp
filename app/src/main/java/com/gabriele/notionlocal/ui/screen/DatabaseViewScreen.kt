@@ -1084,7 +1084,30 @@ private fun DatabaseViewBody(
             rowActionsFor = row
         }
     } else {
-        { row -> viewModel.openRow(row) { onOpenRowPage(it) } }
+        { row ->
+            // **L'ordine in cui si vedono le righe**, per le frecce "pagina
+            // prima" e "pagina dopo" della pagina che si apre (dal 16/10/2026):
+            // vedi `RowNavigation`.
+            val shown = page
+            RowNavigation.remember(
+                row.pageId,
+                displayedRowIds(
+                    state,
+                    ViewArrangement(
+                        layout = shown?.databaseLayout ?: DatabaseLayout.TABLE,
+                        tableGroup = viewModel.tableGroupColumn(),
+                        tableSubGroup = viewModel.tableSubGroupColumn(),
+                        hideEmptyGroups = shown?.hideEmptyGroups != false,
+                        hideEmptySubGroups = shown?.hideEmptySubGroups != false,
+                        boardGroup = viewModel.boardGroupColumn(),
+                        boardSubGroup = viewModel.boardSubGroupColumn(),
+                        boardHideEmptySubGroups = shown?.boardHideEmptySubGroups != false,
+                        dateColumn = viewModel.calendarDateColumn()
+                    )
+                )
+            )
+            viewModel.openRow(row) { onOpenRowPage(it) }
+        }
     }
 
     // La ricerca (la lente accanto a Sort): vive nel ViewModel, così
@@ -2913,7 +2936,7 @@ private fun GroupHeaderRow(
  * bacheca: il valore che lo definisce, come si legge, il colore se è un
  * tag, e le righe che ci stanno dentro.
  */
-private data class RowGroup(
+internal data class RowGroup(
     val key: String,
     val label: String,
     val color: String?,
@@ -2935,7 +2958,7 @@ private data class RowGroup(
  * anche le colonne della bacheca vengono da qui, e una scheda sta nella
  * colonna di ognuno dei suoi tag.
  */
-private fun buildRowGroups(
+internal fun buildRowGroups(
     state: DatabaseTableState,
     column: DatabaseColumnEntity,
     hideEmpty: Boolean,

@@ -369,7 +369,15 @@ private fun AppRoutes(
                 onOpenUpdates = { id -> navController.navigate(Routes.updates(id)) },
                 onNavigateToPage = { linkedId -> navController.navigate(Routes.pageEditor(linkedId)) },
                 onNavigateToDatabase = { linkedId -> navController.navigate(Routes.databaseView(linkedId)) },
-                onOpenSidebar = onOpenSidebar
+                onOpenSidebar = onOpenSidebar,
+                // La pagina dopo prende il posto di questa: "indietro" torna
+                // al database, non a tutte le pagine scorse con le frecce.
+                onOpenSiblingRow = { rowId ->
+                    onOpenRowPage(rowId) { id ->
+                        navController.popBackStack()
+                        navController.navigate(Routes.pageEditor(id))
+                    }
+                }
             )
             }
         }
