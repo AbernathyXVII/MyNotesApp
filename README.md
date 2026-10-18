@@ -2071,7 +2071,7 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 gg/mm/aaaa)" accanto al titolo.
 
 ### 🆕 v0.180 — 18/10/2026 · 14:00 — Il volume dei click del Counter, il backspace negli elenchi come su Word
-*(Claude Code sul PC; non ancora installata: il telefono chiede di autorizzare il PC; 616 test passati; commit solo in locale)*
+*(Claude Code sul PC; verificata sul telefono; 616 test passati; commit solo in locale)*
 
 L'utente, parola per parola:
 > «Nelle impostazioni dei suoni del widget Counter, aggiungimi anche una
@@ -2116,7 +2116,18 @@ a inizio del quinto elemento, dopo il secondo):
   `ListIndentBackspaceTest` (i due passi, i pallini, la riga nuova, il
   cambio di tipo, il rientro, il toggle, la casella), `CounterVolumeTest`
   (la barra nel pannello), `CounterSoundsTest` (volume e guadagno)
-- Non ancora provata sul telefono (in attesa del permesso per il debug USB)
+- Prima di installarla l'utente l'ha provata sul telefono, dove c'era ancora
+  la 0.179 (il PC aspettava il permesso per il debug USB): il testo andava
+  subito a sinistra, com'era prima ("Non funziona"). Riavviato adb il
+  permesso è arrivato, e con la 0.180 installata: in una riga di prova del
+  Main calendar, un elenco 1–6 di "A"; col cursore fra "5." e la "A" il
+  primo backspace toglie il numero e la "A" resta allineata alle altre, col
+  cursore davanti, e sotto c'è il 5; il secondo la porta a sinistra, sotto
+  sempre il 5 — come nelle foto di Word. Il pannello "Sounds" del Counter
+  mostra la barra al 100% con la nota sul volume "Sistema" (solo guardato:
+  i suoni scelti dall'utente restano Soft click e Drop). Riga di prova
+  eliminata; database identico a prima, nei widget solo i dati scaricati e
+  il volume nuovo del Counter a 100
 ### 🆕 v0.179 — 18/10/2026 · 09:21 — Marcatori e stadio, i suoni del Counter, colonne libere, la riga dopo i database, copia e incolla nella barra
 *(Claude Code sul PC; verificata sul telefono; 607 test passati; commit solo in locale)*
 
