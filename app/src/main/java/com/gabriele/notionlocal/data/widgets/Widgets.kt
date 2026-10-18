@@ -111,7 +111,16 @@ data class CounterWidget(
     override val id: String = newWidgetId(),
     val value: Int = 0,
     /** Facoltativo: cosa si sta contando, scritto sopra al numero. */
-    val name: String = ""
+    val name: String = "",
+    /**
+     * **I suoni** (dal 18/10/2026, chiesti dall'utente): un click su +, uno
+     * più lieve su −, da spegnere o cambiare (vedi `CounterSound`). I
+     * contatori di prima non hanno queste chiavi: suoni accesi, quelli di
+     * partenza.
+     */
+    val soundsOn: Boolean = true,
+    val plusSound: String = CounterSound.CLICK.name,
+    val minusSound: String = CounterSound.SOFT_CLICK.name
 ) : Widget()
 
 enum class PomodoroPhase { SESSION, BREAK }

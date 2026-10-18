@@ -218,6 +218,7 @@ import com.gabriele.notionlocal.data.entity.DEFAULT_NAME_COLUMN_WIDTH_DP
 import com.gabriele.notionlocal.data.entity.MAX_COLUMN_WIDTH_DP
 import com.gabriele.notionlocal.data.entity.snapColumnWidth
 import com.gabriele.notionlocal.data.entity.MIN_COLUMN_WIDTH_DP
+import com.gabriele.notionlocal.data.entity.fitMinColumnWidth
 import com.gabriele.notionlocal.data.entity.namePosition
 import com.gabriele.notionlocal.data.entity.minColumnWidth
 import androidx.compose.material.icons.filled.WrapText
@@ -2099,16 +2100,18 @@ private fun TableLayout(
     // salvate prima, più strette, si allargano fin lì.
     fun widthOf(key: String, default: Dp, min: Int): Dp {
         val dragging = resize.draft?.takeIf { key == resize.key }
+        val fit = fitted[key]?.takeIf { key in fitColumns && dragging == null }
         val chosen = dragging
-            ?: fitted[key]?.takeIf { key in fitColumns }
+            ?: fit
             ?: columnWidths[key]?.dp
             ?: default
         // Mentre si trascina comanda il dito, anche con "Widen the column".
-        return shownColumnWidth(chosen, fitted[key], widen && dragging == null, min.dp)
+        // Il minimo vale solo per "Fit to content": a mano si stringe fino a niente.
+        return shownColumnWidth(chosen, fitted[key], widen && dragging == null, if (fit != null) min.dp else 0.dp)
     }
     val widths = TableWidths(
-        name = widthOf(NAME_COLUMN_KEY, NAME_COLUMN_WIDTH, minColumnWidth(NAME_COLUMN_KEY)),
-        byKey = shownColumns.associate { it.id to widthOf(it.id, defaultColumnWidth(it.id, it.type).dp, minColumnWidth(it.id, it.type)) }
+        name = widthOf(NAME_COLUMN_KEY, NAME_COLUMN_WIDTH, fitMinColumnWidth(NAME_COLUMN_KEY)),
+        byKey = shownColumns.associate { it.id to widthOf(it.id, defaultColumnWidth(it.id, it.type).dp, fitMinColumnWidth(it.id, it.type)) }
     )
     val tableWidth = widths.name + SEPARATOR_WIDTH +
         shownColumns.fold(0.dp) { sum, column -> sum + widths.of(column) + SEPARATOR_WIDTH } +
@@ -6122,6 +6125,7 @@ private fun NameHeaderCell(
     Row(
         modifier = Modifier
             .width(LocalTableWidths.current.name)
+            .clipToBounds()
             .then(if (wrap) Modifier.heightIn(min = ROW_HEIGHT).fillMaxHeight() else Modifier.height(ROW_HEIGHT))
             // Un tocco rinomina, come sulle altre proprietà apre le loro impostazioni.
             .combinedClickable(onClick = { if (rename != null) renaming = true }, onLongClick = { menuOpen = true })
@@ -6331,6 +6335,7 @@ private fun PropertyHeaderCell(
         Row(
             modifier = Modifier
                 .width(LocalTableWidths.current.of(column))
+                .clipToBounds()
                 .then(if (wrap) Modifier.heightIn(min = ROW_HEIGHT).fillMaxHeight() else Modifier.height(ROW_HEIGHT))
                 .combinedClickable(
                     onClick = onClick,
@@ -6587,6 +6592,7 @@ private fun NameCell(
     Row(
         modifier = Modifier
             .width(LocalTableWidths.current.name)
+            .clipToBounds()
             .then(if (wrap) Modifier.heightIn(min = ROW_HEIGHT).fillMaxHeight() else Modifier.height(ROW_HEIGHT)),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -6779,6 +6785,7 @@ private fun CellEditor(
     Box(
         modifier = Modifier
             .width(LocalTableWidths.current.of(column))
+            .clipToBounds()
             .then(if (LocalWrapCells.current) Modifier.heightIn(min = ROW_HEIGHT).fillMaxHeight() else Modifier.height(ROW_HEIGHT))
             // **La cella si mangia i tocchi che non colpiscono niente.**
             // Senza, il tocco sullo spazio vuoto accanto a una casella

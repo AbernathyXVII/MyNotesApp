@@ -5,6 +5,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -21,6 +23,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Stadium
 import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -39,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -51,6 +56,8 @@ import com.gabriele.notionlocal.data.widgets.MatchEvent
 import com.gabriele.notionlocal.data.widgets.MatchEventKind
 import com.gabriele.notionlocal.data.widgets.MatchSide
 import com.gabriele.notionlocal.data.widgets.MatchStat
+import com.gabriele.notionlocal.data.widgets.ScorerLine
+import com.gabriele.notionlocal.data.widgets.scorersOf
 import com.gabriele.notionlocal.data.widgets.MatchState
 import com.gabriele.notionlocal.data.widgets.Side
 import com.gabriele.notionlocal.data.widgets.Sport
@@ -100,18 +107,17 @@ internal fun MatchSheet(competition: SportCompetition, match: SportMatch, now: L
         containerColor = DarkSheet
     ) {
         Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                CompetitionFlag(competition.league, 14.sp)
-                Text(
-                    listOf(competition.name, match.note).filter { it.isNotBlank() }.joinToString(" · "),
-                    color = NotionGray400,
-                    style = MaterialTheme.typography.bodySmall,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+            Spacer(modifier = Modifier.height(4.dp))
+            MatchHeader(match, sport)
+            // Sotto il risultato, come Sofascore: chi ha segnato e quando, poi
+            // data, competizione e stadio (dal 18/10/2026, chiesto dall'utente).
+            val goals = MatchDetails.of(match.id)?.detail?.events?.let(::scorersOf)
+            if (goals != null && (goals.first.isNotEmpty() || goals.second.isNotEmpty())) {
+                Spacer(modifier = Modifier.height(10.dp))
+                ScorersRow(goals.first, goals.second)
             }
             Spacer(modifier = Modifier.height(12.dp))
-            MatchHeader(match, sport)
+            MatchInfoRow(competition, match)
             Spacer(modifier = Modifier.height(12.dp))
             if (sport == Sport.TENNIS) {
                 TennisSets(match)
@@ -142,6 +148,77 @@ internal fun MatchSheet(competition: SportCompetition, match: SportMatch, now: L
                 Spacer(modifier = Modifier.height(24.dp))
             }
         }
+    }
+}
+
+/**
+ * **I marcatori**, come su Sofascore: quelli della casa a sinistra, allineati
+ * verso il centro, quelli degli ospiti a destra, e in mezzo il pallone.
+ */
+@Composable
+private fun ScorersRow(home: List<ScorerLine>, away: List<ScorerLine>) {
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+        Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.End) {
+            home.forEach { ScorerText(it, TextAlign.End) }
+        }
+        Icon(
+            Icons.Filled.SportsSoccer,
+            contentDescription = null,
+            tint = NotionGray400,
+            modifier = Modifier.padding(horizontal = 10.dp).size(14.dp)
+        )
+        Column(modifier = Modifier.weight(1f), horizontalAlignment = Alignment.Start) {
+            away.forEach { ScorerText(it, TextAlign.Start) }
+        }
+    }
+}
+
+@Composable
+private fun ScorerText(line: ScorerLine, align: TextAlign) {
+    val minutes = line.minutes.mapIndexed { i, minute ->
+        when (line.marks.getOrNull(i)) {
+            MatchEventKind.PENALTY_GOAL -> "$minute (${WidgetStrings.penaltyMark})"
+            MatchEventKind.OWN_GOAL -> "$minute (${WidgetStrings.ownGoalMark})"
+            else -> minute
+        }
+    }.joinToString(", ")
+    Text(
+        "${line.name} $minutes",
+        color = NotionGray400,
+        fontSize = 12.sp,
+        textAlign = align,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis
+    )
+}
+
+/** **Data, competizione e stadio**, sotto i marcatori, ognuno con la sua icona (la piattaforma no). */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun MatchInfoRow(competition: SportCompetition, match: SportMatch) {
+    val zone = AppSettings.zoneId
+    val start = Instant.ofEpochMilli(match.start).atZone(zone)
+    val competitionText = listOf(competition.name, match.note).filter { it.isNotBlank() }.joinToString(" · ")
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        InfoItem(Icons.Filled.CalendarToday, "${Formats.date(match.start)} • ${Formats.timeFormatter().format(start)}")
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            CompetitionFlag(competition.league, 12.sp)
+            Text(competitionText, color = NotionGray400, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        if (match.venue.isNotBlank()) InfoItem(Icons.Filled.Stadium, match.venue)
+    }
+}
+
+@Composable
+private fun InfoItem(icon: ImageVector, text: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(icon, contentDescription = null, tint = NotionGray400, modifier = Modifier.size(14.dp))
+        Spacer(modifier = Modifier.width(5.dp))
+        Text(text, color = NotionGray400, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 

@@ -288,6 +288,10 @@ object WidgetStore {
     fun resetCounter(widgetId: String) = updateWidget<CounterWidget>(widgetId) { it.copy(value = 0) }
     fun renameCounter(widgetId: String, name: String) = updateWidget<CounterWidget>(widgetId) { it.copy(name = name) }
 
+    /** I suoni del contatore: accesi o spenti, e quale per + e quale per −. */
+    fun setCounterSounds(widgetId: String, on: Boolean, plus: CounterSound, minus: CounterSound) =
+        updateWidget<CounterWidget>(widgetId) { it.copy(soundsOn = on, plusSound = plus.name, minusSound = minus.name) }
+
     // --- Pomodoro ---
 
     fun pomodoroStart(widgetId: String) = updateWidget<PomodoroWidget>(widgetId) { p ->

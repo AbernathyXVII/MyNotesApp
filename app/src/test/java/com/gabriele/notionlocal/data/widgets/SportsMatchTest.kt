@@ -2,6 +2,7 @@ package com.gabriele.notionlocal.data.widgets
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -73,6 +74,39 @@ class SportsMatchTest {
         assertEquals("K. Bowie", card.player)
         assertEquals(CardReason.FOUL, card.reason)
         assertEquals(Side.AWAY, card.side)
+    }
+
+    @Test
+    fun theScorersUnderTheScoreLikeSofascore() {
+        // Frosinone-Sassuolo 4-2: coi nomi interi e i minuti, uno per giocatore.
+        val (home, away) = scorersOf(frosinone.events)
+        assertEquals(
+            listOf("Giacomo Calo" to listOf("9'"), "Antonio Raimondo" to listOf("26'", "30'", "57'")),
+            home.map { it.name to it.minutes }
+        )
+        assertEquals(
+            listOf("Domenico Berardi" to listOf("15'"), "Kristian Thorstvedt" to listOf("37'")),
+            away.map { it.name to it.minutes }
+        )
+        // Il gol annullato dal VAR non c'è.
+        assertTrue(home.none { it.name.contains("Kvernadze") })
+        // L'autogol va alla squadra che ne approfitta, segnato.
+        val ownGoal = MatchEvent(MatchEventKind.OWN_GOAL, "25'", Side.AWAY, "M. Dituro", playerFull = "Matías Dituro", homeScore = 0, awayScore = 1)
+        val (_, withOwnGoal) = scorersOf(listOf(ownGoal))
+        assertEquals(listOf(MatchEventKind.OWN_GOAL), withOwnGoal.single().marks)
+    }
+
+    @Test
+    fun theStadiumComesWithTheMatch() {
+        val json = """{"events":[{"id":"1","date":"2026-10-17T16:00Z","competitions":[{
+            "venue":{"fullName":"Stadio Renato Dall'Ara","address":{"city":"Bologna"}},
+            "status":{"type":{"state":"post","shortDetail":"FT"}},
+            "competitors":[{"homeAway":"home","score":"1","team":{"shortDisplayName":"Bologna"}},
+                           {"homeAway":"away","score":"3","team":{"shortDisplayName":"Inter Milan"}}]}]}]}"""
+        val match = parseScoreboard(json, Sport.SOCCER)!!.matches.single()
+        assertEquals("Stadio Renato Dall'Ara", match.venue)
+        // Senza stadio: vuoto, e la riga non lo mostra.
+        assertEquals("", parseScoreboard(json.replace(""""venue":{"fullName":"Stadio Renato Dall'Ara","address":{"city":"Bologna"}},""", ""), Sport.SOCCER)!!.matches.single().venue)
     }
 
     @Test

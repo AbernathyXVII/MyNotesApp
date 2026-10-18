@@ -112,6 +112,13 @@ import com.gabriele.notionlocal.data.widgets.sortedWestToEast
 import com.gabriele.notionlocal.data.settings.AppSettings
 import com.gabriele.notionlocal.ui.format.Formats
 import androidx.compose.material3.Switch
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.FilterChip
+import com.gabriele.notionlocal.data.widgets.CounterSound
+import com.gabriele.notionlocal.data.widgets.CounterSounds
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.platform.LocalDensity
@@ -234,6 +241,7 @@ private fun WidgetCard(widget: Widget, index: Int, count: Int, now: Long, active
     var menuOpen by remember(widget.id) { mutableStateOf(false) }
     var confirmRemove by remember(widget.id) { mutableStateOf(false) }
     var renaming by remember(widget.id) { mutableStateOf(false) }
+    var counterSounds by remember(widget.id) { mutableStateOf(false) }
     // La finestra delle città del meteo: si apre tenendo premuta una città
     // o dai tre puntini.
     var weatherCities by remember(widget.id) { mutableStateOf(false) }
@@ -291,6 +299,10 @@ private fun WidgetCard(widget: Widget, index: Int, count: Int, now: Long, active
                         DropdownMenuItem(
                             text = { Text(WidgetStrings.rename) },
                             onClick = { menuOpen = false; renaming = true }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(WidgetStrings.sounds) },
+                            onClick = { menuOpen = false; counterSounds = true }
                         )
                     }
                     if (widget is WeatherWidget) {
@@ -390,6 +402,9 @@ private fun WidgetCard(widget: Widget, index: Int, count: Int, now: Long, active
             },
             dismissButton = { TextButton(onClick = { confirmRemove = false }) { Text(Strings.cancel) } }
         )
+    }
+    if (counterSounds && widget is CounterWidget) {
+        CounterSoundsSheet(widget, onDismiss = { counterSounds = false })
     }
     if (renaming && widget is CounterWidget) {
         TextInputDialog(
@@ -993,7 +1008,10 @@ private fun CounterView(widget: CounterWidget) {
             Spacer(modifier = Modifier.height(4.dp))
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            SquareButton(Icons.Filled.Remove, WidgetStrings.decrease) { WidgetStore.changeCounter(widget.id, -1) }
+            SquareButton(Icons.Filled.Remove, WidgetStrings.decrease) {
+                if (widget.soundsOn) CounterSounds.play(CounterSound.of(widget.minusSound))
+                WidgetStore.changeCounter(widget.id, -1)
+            }
             Text(
                 text = Formats.number(widget.value.toString()),
                 color = NotionWhite,
@@ -1002,7 +1020,10 @@ private fun CounterView(widget: CounterWidget) {
                 textAlign = TextAlign.Center,
                 modifier = Modifier.widthIn(min = 72.dp).padding(horizontal = 8.dp)
             )
-            SquareButton(Icons.Filled.Add, WidgetStrings.increase) { WidgetStore.changeCounter(widget.id, +1) }
+            SquareButton(Icons.Filled.Add, WidgetStrings.increase) {
+                if (widget.soundsOn) CounterSounds.play(CounterSound.of(widget.plusSound))
+                WidgetStore.changeCounter(widget.id, +1)
+            }
         }
         Spacer(modifier = Modifier.height(4.dp))
         // La freccetta che gira: rimette a zero.
@@ -1014,6 +1035,74 @@ private fun CounterView(widget: CounterWidget) {
             contentAlignment = Alignment.Center
         ) {
             Icon(Icons.Filled.Refresh, contentDescription = WidgetStrings.reset, tint = NotionGray400, modifier = Modifier.size(20.dp))
+        }
+    }
+}
+
+/**
+ * **I suoni del contatore** (dal 18/10/2026, chiesti dall'utente): accesi o
+ * spenti, e quale per + e quale per −. Toccando un suono lo si sente.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CounterSoundsSheet(widget: CounterWidget, onDismiss: () -> Unit) {
+    val plus = CounterSound.of(widget.plusSound)
+    val minus = CounterSound.of(widget.minusSound)
+    NoteBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = DarkSheet
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .navigationBarsPadding()
+                .verticalScroll(rememberScrollState())
+        ) {
+            Text(WidgetStrings.sounds, color = NotionWhite, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+            Text(WidgetStrings.soundsNote, color = NotionGray400, style = MaterialTheme.typography.bodySmall)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable { WidgetStore.setCounterSounds(widget.id, !widget.soundsOn, plus, minus) }
+                    .padding(vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(WidgetStrings.soundsOn, color = NotionWhite, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                Switch(checked = widget.soundsOn, onCheckedChange = { WidgetStore.setCounterSounds(widget.id, it, plus, minus) })
+            }
+            SoundChoices(WidgetStrings.plusSound, plus, enabled = widget.soundsOn) {
+                CounterSounds.play(it)
+                WidgetStore.setCounterSounds(widget.id, widget.soundsOn, it, minus)
+            }
+            SoundChoices(WidgetStrings.minusSound, minus, enabled = widget.soundsOn) {
+                CounterSounds.play(it)
+                WidgetStore.setCounterSounds(widget.id, widget.soundsOn, plus, it)
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SoundChoices(title: String, selected: CounterSound, enabled: Boolean, onPick: (CounterSound) -> Unit) {
+    Text(
+        title,
+        color = NotionGray400,
+        style = MaterialTheme.typography.labelLarge,
+        modifier = Modifier.padding(top = 14.dp, bottom = 6.dp)
+    )
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        CounterSound.entries.forEach { sound ->
+            FilterChip(
+                selected = sound == selected,
+                onClick = { onPick(sound) },
+                enabled = enabled,
+                label = { Text(WidgetStrings.soundName(sound)) }
+            )
         }
     }
 }

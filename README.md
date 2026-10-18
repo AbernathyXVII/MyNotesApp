@@ -2070,6 +2070,90 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.179 — 18/10/2026 · 09:21 — Marcatori e stadio, i suoni del Counter, colonne libere, la riga dopo i database, copia e incolla nella barra
+*(Claude Code sul PC; non ancora installata: il telefono chiede di autorizzare il PC; 606 test passati; commit solo in locale)*
+
+L'utente, parola per parola (con la foto dell'intestazione di Bologna-Inter
+su Sofascore):
+> «Sotto ogni partita, in corso, finita o ancora da giocare, mettimi con lo
+> stile di Sofascore i giocatori che hanno segnato e a che minutaggio. Poi
+> sotto mettici data, competizione e stadio (su quale piattaforma non mi
+> interessa)
+>
+> Nel widget Counter, mettimi il suono di un click quando faccio + e uno
+> diverso, magari più lieve, quando faccio -. Non so come me li puoi
+> procurare, dammi anche la possibilità di disattivare i suoni e di cambiarli
+> in altre alternative
+>
+> Permettimi di rimpicciolire la lunghezza delle colonne quanto voglio, anche
+> fino al massimo tutto verso sinistra (cosa che non farò mai, però almeno ad
+> avere la libertà di farlo)
+>
+> Alla fine di ogni database (semplice o complesso) mettimi una riga stile
+> divider che mi consente di non confondermi con altro contenuto di testo o
+> altro che sembra essere troppo attaccato al database
+>
+> Nella Toolbar che appare con la tastiera, mettimi tra l'icona dei sei
+> puntini (tre verticali in due colonne) e quella dell'indentazione a
+> sinistra quattro icone nuove: copia, incolla, cut e select all. Sai
+> ovviamente quello che devono fare, quando ho del testo selezionato.
+> Inoltre, se tengo premuto l'icona incolla mi appariranno delle opzioni che
+> mi chiederanno se voglio incollare con il metodo 'Keep Source Formatting',
+> 'Match Destination Formatting', oppure 'Keep Text Only' (come lo ha Word)»
+
+- **[Nuova funzionalità]** **Nella finestra della partita, sotto il
+  risultato, i marcatori come su Sofascore**: quelli della casa a sinistra,
+  quelli degli ospiti a destra, col pallone in mezzo; nome intero e minuti
+  ("Antonio Raimondo 26', 30', 57'"), rigori e autogol segnati (l'autogol va
+  alla squadra che ne approfitta). Sotto, **data e ora, competizione (con la
+  bandiera) e stadio**, ognuno con la sua icona; la piattaforma no. Vale per
+  le partite in corso, finite e da giocare (che hanno solo la seconda riga).
+  La riga in cima con la competizione è sparita: ora sta qui
+- **[Nuova funzionalità]** **I suoni del Counter**: un click su + e uno più
+  lieve su −. L'app li disegna da sé (nessun file da scaricare) e li suona
+  come i suoni dei tasti: col telefono in silenzioso non si sentono. Nei tre
+  puntini del widget c'è "Sounds": un interruttore per spegnerli e, per + e
+  per −, la scelta fra Click, Soft click, Tick, Pop, Drop, Wood, Beep e Coin
+  (toccandone uno lo si sente). Ogni contatore ha i suoi
+- **[Modificato]** **Le colonne dei database si stringono quanto si vuole**,
+  trascinando il segnalino, fino a sparire del tutto. Prima avevano un minimo
+  (Name 120, quelle in cui si scrive 80, le altre 48); resta solo per "Fit
+  to content". Il contenuto di una colonna stretta non sborda più in quella
+  accanto
+- **[Nuova funzionalità]** **Una riga sottile alla fine di ogni database
+  dentro una pagina** (semplice o no, anche le viste collegate), come il
+  divisore: il testo che segue non sembra più attaccato alla tabella
+- **[Nuova funzionalità]** **Copia, incolla, taglia e seleziona tutto nella
+  barra sopra la tastiera**, fra i sei puntini e la freccia del rientro.
+  Fanno quello che fanno Ctrl+C, Ctrl+V, Ctrl+X e Ctrl+A su una tastiera
+  vera, sul testo dove sta il cursore. Copiando del testo formattato, negli
+  appunti va anche la sua formattazione (grassetto, corsivo, sottolineato,
+  barrato, link), anche col "Copy" del menu che si apre tenendo premuto
+- **[Nuova funzionalità]** **Tenendo premuto "incolla", i tre modi di Word**:
+  "Keep Source Formatting" (anche il tocco semplice) toglie la formattazione
+  del punto in cui si incolla e mette quella di chi ha copiato — grassetto,
+  corsivo, sottolineato, barrato e link, da notE o da un'altra app (OneNote,
+  Word, Google Docs, un browser); "Match Destination Formatting" incolla il
+  testo con la formattazione del punto in cui arriva; "Keep Text Only" solo
+  il testo, senza formattazione. Il "Paste" del menu che si apre tenendo
+  premuto resta com'era (i link sì)
+- **[Progetto]** Sport: `SportMatch.venue` dal tabellone di ESPN,
+  `scorersOf` e `MatchEvent.playerFull` in `SportsMatch.kt`, `ScorersRow` e
+  `MatchInfoRow` in `SportsMatchSheet.kt`. Counter: `CounterSounds.kt`
+  (onde a 44,1 kHz in `AudioTrack`, uso "sonification"),
+  `CounterWidget.soundsOn/plusSound/minusSound`, `CounterSoundsSheet`.
+  Colonne: `minColumnWidth` è 0, i minimi di prima in `fitMinColumnWidth`;
+  `clipToBounds` sulle celle. La riga dopo il database in
+  `PageEditorScreen`. Barra: `ClipboardBarButtons`,
+  `View.sendCtrlShortcut` (un tasto senza carattere, così non si scrive la
+  lettera), `PasteMode` e `LinkClipboard.nextPasteMode`, `PasteFormat`,
+  `applyPaste` e `sliceSpans` in `RichText.kt`, `htmlStyleRuns` (gli stili
+  dell'HTML, anche quelli negli `span` come li scrivono OneNote, Word e
+  Google Docs). Test: `ClipboardBarTest` (i quattro pulsanti su un campo
+  vero, i tre modi, lo stile copiato in HTML), `CounterSoundsTest`,
+  `SportsMatchTest` (marcatori, stadio), `WrapCellsTest` e `ColumnWidthTest`
+  aggiornati
+- Non ancora provata sul telefono (in attesa del permesso per il debug USB)
 ### 🆕 v0.178 — 18/10/2026 · 08:51 — Il nome della proprietà principale
 *(Claude Code sul PC; non ancora installata: telefono scollegato; 596 test passati; database alla versione
 58; commit solo in locale)*

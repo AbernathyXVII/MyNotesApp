@@ -416,6 +416,80 @@ fun applyLinks(spans: List<RichTextSpan>, links: List<LinkRange>): List<RichText
     }
 }
 
+/** Un pezzo di testo incollato con il suo stile: grassetto, corsivo, sottolineato, barrato. */
+data class StyleRange(
+    val start: Int,
+    val end: Int,
+    val bold: Boolean = false,
+    val italic: Boolean = false,
+    val underline: Boolean = false,
+    val strikethrough: Boolean = false
+)
+
+/**
+ * **Come va messo nel testo quello che si incolla** (dal 18/10/2026): i
+ * pezzi [plain] perdono la formattazione che avrebbero preso da dove si
+ * incolla (come "Keep Text Only" e "Keep Source Formatting" di Word), poi
+ * prendono gli stili [styles] e i collegamenti [links] di chi li ha copiati.
+ * Tutte le posizioni sono nel testo intero del campo.
+ */
+data class PasteFormat(
+    val links: List<LinkRange> = emptyList(),
+    val styles: List<StyleRange> = emptyList(),
+    val plain: List<IntRange> = emptyList()
+) {
+    val isEmpty: Boolean get() = links.isEmpty() && styles.isEmpty() && plain.isEmpty()
+
+    /** Le stesse posizioni spostate di [delta] (in un pezzo del testo che comincia più avanti). */
+    fun shifted(delta: Int): PasteFormat = PasteFormat(
+        links = links.map { it.copy(start = it.start + delta, end = it.end + delta) },
+        styles = styles.map { it.copy(start = it.start + delta, end = it.end + delta) },
+        plain = plain.map { (it.first + delta)..(it.last + delta) }
+    )
+}
+
+/** Mette nel testo quello che dice [format]: prima i pezzi senza formattazione, poi gli stili, poi i link. */
+fun applyPaste(spans: List<RichTextSpan>, format: PasteFormat): List<RichTextSpan> {
+    if (format.isEmpty) return spans
+    val length = spans.plainText().length
+    fun inside(start: Int, end: Int): IntRange? {
+        val from = start.coerceAtLeast(0)
+        val to = end.coerceAtMost(length)
+        return if (from < to) from until to else null
+    }
+    var result = format.plain.fold(spans) { current, range ->
+        inside(range.first, range.last + 1)?.let { r -> transformRange(current, r.first, r.last + 1) { RichTextSpan(text = it.text) } } ?: current
+    }
+    result = format.styles.fold(result) { current, style ->
+        inside(style.start, style.end)?.let { r ->
+            transformRange(current, r.first, r.last + 1) {
+                it.copy(
+                    bold = it.bold || style.bold,
+                    italic = it.italic || style.italic,
+                    underline = it.underline || style.underline,
+                    strikethrough = it.strikethrough || style.strikethrough
+                )
+            }
+        } ?: current
+    }
+    return applyLinks(result, format.links)
+}
+
+/** Il pezzo [start, end) del testo, con la sua formattazione: per copiare. */
+fun sliceSpans(spans: List<RichTextSpan>, start: Int, end: Int): List<RichTextSpan> {
+    val result = mutableListOf<RichTextSpan>()
+    var pos = 0
+    for (span in spans) {
+        val spanStart = pos
+        val spanEnd = pos + span.text.length
+        pos = spanEnd
+        val from = maxOf(spanStart, start)
+        val to = minOf(spanEnd, end)
+        if (from < to) result.add(span.copy(text = span.text.substring(from - spanStart, to - spanStart)))
+    }
+    return result
+}
+
 /** Il primo collegamento nell'intervallo [start, end), o null se non ce n'è. */
 fun linkInRange(spans: List<RichTextSpan>, start: Int, end: Int): String? {
     var pos = 0

@@ -31,6 +31,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import com.gabriele.notionlocal.data.entity.PageFont
 import com.gabriele.notionlocal.ui.theme.PageFontGroup
@@ -86,6 +87,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.material.icons.filled.DragIndicator
+import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.ContentCut
+import androidx.compose.material.icons.filled.ContentPaste
+import androidx.compose.material.icons.filled.SelectAll
+import androidx.compose.ui.platform.LocalView
+import android.view.KeyEvent
 import kotlinx.coroutines.flow.flowOf
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -234,7 +241,7 @@ import com.gabriele.notionlocal.data.entity.BlockType
 import com.gabriele.notionlocal.data.entity.DatabaseLayout
 import com.gabriele.notionlocal.data.entity.PageEntity
 import com.gabriele.notionlocal.data.entity.RichTextSpan
-import com.gabriele.notionlocal.data.entity.applyLinks
+import com.gabriele.notionlocal.data.entity.applyPaste
 import com.gabriele.notionlocal.data.entity.applyTextEdit
 import com.gabriele.notionlocal.data.entity.plainText
 import com.gabriele.notionlocal.data.entity.splitLines
@@ -480,6 +487,75 @@ private fun BarButton(
         modifier = Modifier.size(BAR_BUTTON_SIZE)
     ) {
         content()
+    }
+}
+
+/**
+ * **Copia, incolla, taglia e seleziona tutto**, nella barra sopra la
+ * tastiera (dal 18/10/2026, chiesti dall'utente). Fanno quello che fanno
+ * Ctrl+C, Ctrl+V, Ctrl+X e Ctrl+A su una tastiera vera, sul testo dove sta
+ * il cursore: i tasti si mandano proprio così, e il campo li tratta come
+ * sempre (i link incollati, la riga che si divide…).
+ *
+ * Tenendo premuto "incolla" si sceglie come, come in Word: Keep Source
+ * Formatting (anche il tocco semplice), Match Destination Formatting, Keep
+ * Text Only. Vedi `PasteMode`. Il menu non prende il fuoco: il cursore
+ * resta nel testo, e l'incolla sa dove andare.
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun ClipboardBarButtons() {
+    val view = LocalView.current
+    val clipboard = LocalClipboardManager.current as? LinkClipboard
+    var pasteMenu by remember { mutableStateOf(false) }
+    fun shortcut(keyCode: Int) = view.sendCtrlShortcut(keyCode)
+    fun paste(mode: PasteMode) {
+        clipboard?.nextPasteMode = mode
+        shortcut(KeyEvent.KEYCODE_V)
+    }
+    BarButton(onClick = { shortcut(KeyEvent.KEYCODE_C) }) {
+        Icon(Icons.Filled.ContentCopy, contentDescription = EditorStrings.copy, tint = NotionWhite, modifier = Modifier.size(BAR_ICON_SIZE))
+    }
+    Box {
+        Box(
+            modifier = Modifier
+                .size(BAR_BUTTON_SIZE)
+                .clip(CircleShape)
+                .combinedClickable(
+                    onClick = { paste(PasteMode.KEEP_SOURCE) },
+                    onLongClick = { pasteMenu = true }
+                )
+                .semantics { contentDescription = EditorStrings.paste },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(Icons.Filled.ContentPaste, contentDescription = null, tint = NotionWhite, modifier = Modifier.size(BAR_ICON_SIZE))
+        }
+        DropdownMenu(
+            expanded = pasteMenu,
+            onDismissRequest = { pasteMenu = false },
+            properties = PopupProperties(focusable = false),
+            modifier = Modifier.background(DarkSheet)
+        ) {
+            listOf(
+                PasteMode.KEEP_SOURCE to EditorStrings.pasteKeepSource,
+                PasteMode.MATCH_DESTINATION to EditorStrings.pasteMatchDestination,
+                PasteMode.TEXT_ONLY to EditorStrings.pasteTextOnly
+            ).forEach { (mode, label) ->
+                DropdownMenuItem(
+                    text = { Text(label) },
+                    onClick = {
+                        pasteMenu = false
+                        paste(mode)
+                    }
+                )
+            }
+        }
+    }
+    BarButton(onClick = { shortcut(KeyEvent.KEYCODE_X) }) {
+        Icon(Icons.Filled.ContentCut, contentDescription = EditorStrings.cut, tint = NotionWhite, modifier = Modifier.size(BAR_ICON_SIZE))
+    }
+    BarButton(onClick = { shortcut(KeyEvent.KEYCODE_A) }) {
+        Icon(Icons.Filled.SelectAll, contentDescription = EditorStrings.selectAll, tint = NotionWhite, modifier = Modifier.size(BAR_ICON_SIZE))
     }
 }
 
@@ -1082,7 +1158,7 @@ fun PageEditorScreen(
         // Il correttore della pagina, se è acceso: vedi `ProofingUi.kt`.
         LocalProofing provides rememberPageProofing(page, viewModel),
         // Il testo incollato da un'altra app porta i suoi link: vedi `PasteLinks.kt`.
-        LocalClipboardManager provides rememberLinkClipboard()
+        LocalClipboardManager provides rememberLinkClipboard(richSelection = viewModel::selectedRichText)
     ) {
         PageEditorContent(
             pageId = pageId,
@@ -2231,6 +2307,9 @@ private fun PageEditorContent(
                         }) {
                             Icon(Icons.Filled.DragIndicator, contentDescription = EditorStrings.blockOptions, tint = NotionWhite, modifier = Modifier.size(BAR_ICON_SIZE))
                         }
+                        // **Copia, incolla, taglia, seleziona tutto** (dal
+                        // 18/10/2026, chiesti dall'utente): vedi `ClipboardBarButtons`.
+                        ClipboardBarButtons()
                         BarButton(onClick = { focusedBlock?.let { viewModel.outdentBlock(it) } }) {
                             Icon(Icons.Filled.FormatIndentDecrease, contentDescription = EditorStrings.outdent, tint = NotionWhite, modifier = Modifier.size(BAR_ICON_SIZE))
                         }
@@ -4877,7 +4956,7 @@ private fun MergedTextRunField(
             onValueChange = { pastedValue ->
                 // I link di un incolla (vedi `PasteLinks.kt`): si tengono da
                 // parte, e il campo resta col testo e basta.
-                val pastedLinks = pastedValue.pastedLinks(RUN_LEAD.length)
+                val pasted = pastedValue.pastedFormat(RUN_LEAD.length)
                 val newValue = pastedValue.withoutPastedLinks()
                 val oldText = fieldValue.text
                 val oldBody = bodyOf(oldText)
@@ -5146,7 +5225,7 @@ private fun MergedTextRunField(
                             // inserita in mezzo ad altre righe vuote è
                             // indistinguibile da una aggiunta in fondo.
                             lineIndex,
-                            links = pastedLinks
+                            paste = pasted
                         )
 
                         val currentLineId = runBlocks.getOrNull(lineIndex)?.id
@@ -5530,6 +5609,14 @@ private fun BlockRow(
             modifier = Modifier.padding(start = (depth * 20).dp, top = 8.dp, bottom = 8.dp)
         )
         }
+        // **La riga alla fine del database** (dal 18/10/2026, chiesto
+        // dall'utente): il testo che viene dopo non sembra più attaccato
+        // alla tabella. Come il divisore delle pagine.
+        HorizontalDivider(
+            modifier = Modifier
+                .padding(start = PAGE_SIDE_PADDING + (depth * 20).dp, end = PAGE_SIDE_PADDING, bottom = 8.dp)
+                .testTag("database-end-divider")
+        )
 
         if (confirmDatabaseDeletion) {
             AlertDialog(
@@ -5929,7 +6016,7 @@ private fun BlockRow(
                 value = editState.fieldValue,
                 onValueChange = { pastedFieldValue ->
                     // I link di un incolla, come nel campo unito.
-                    val pastedLinks = pastedFieldValue.pastedLinks(RUN_LEAD.length)
+                    val pasted = pastedFieldValue.pastedFormat(RUN_LEAD.length)
                     val newFieldValue = pastedFieldValue.withoutPastedLinks()
                     val oldText = bodyOf(editState.fieldValue.text)
                     proofTyping = if (bodyOf(newFieldValue.text) != oldText) newFieldValue.selection.end - RUN_LEAD.length else null
@@ -5995,7 +6082,7 @@ private fun BlockRow(
                             )
                             viewModel.leaveMultilineBlock(block, kept)
                         } else {
-                            val newSpans = applyLinks(applyTextEdit(editState.spans, oldText, newText), pastedLinks)
+                            val newSpans = applyPaste(applyTextEdit(editState.spans, oldText, newText), pasted)
                             editState = BlockEditState(newSpans, newFieldValue)
                             viewModel.updateBlockSpans(block, newSpans)
                         }
@@ -6041,10 +6128,10 @@ private fun BlockRow(
                         // Con dei link incollati, il testo di ogni riga viene
                         // dallo stesso conto sul testo intero: così i link
                         // delle righe nuove non si perdono.
-                        val pastedLines = if (pastedLinks.isEmpty()) {
+                        val pastedLines = if (pasted.isEmpty) {
                             null
                         } else {
-                            applyLinks(applyTextEdit(editState.spans, oldText, newText), pastedLinks).splitLines()
+                            applyPaste(applyTextEdit(editState.spans, oldText, newText), pasted).splitLines()
                                 .takeIf { split -> split.size == lines.size && split.indices.all { split[it].plainText() == lines[it] } }
                         }
                         val spansForFirstLine = pastedLines?.first() ?: applyTextEdit(editState.spans, oldText, firstLine)
@@ -6217,7 +6304,7 @@ private fun BlockRow(
                             )
                             viewModel.updateBlockSpans(block, newSpans)
                         } else {
-                            val newSpans = applyLinks(applyTextEdit(editState.spans, oldText, newText), pastedLinks)
+                            val newSpans = applyPaste(applyTextEdit(editState.spans, oldText, newText), pasted)
                             editState = BlockEditState(newSpans, newFieldValue)
                             viewModel.updateBlockSpans(block, newSpans)
                         }

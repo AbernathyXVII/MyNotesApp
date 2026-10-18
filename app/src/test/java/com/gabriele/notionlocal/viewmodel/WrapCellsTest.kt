@@ -14,6 +14,7 @@ import com.gabriele.notionlocal.data.entity.MIN_NAME_COLUMN_WIDTH_DP
 import com.gabriele.notionlocal.data.entity.MIN_WRITABLE_COLUMN_WIDTH_DP
 import com.gabriele.notionlocal.data.entity.NAME_COLUMN_KEY
 import com.gabriele.notionlocal.data.entity.PageEntity
+import com.gabriele.notionlocal.data.entity.fitMinColumnWidth
 import com.gabriele.notionlocal.data.entity.minColumnWidth
 import com.gabriele.notionlocal.data.entity.parseColumnWidths
 import com.gabriele.notionlocal.data.repository.DatabaseRepository
@@ -120,24 +121,27 @@ class WrapCellsTest {
     }
 
     @Test
-    fun theMinimumWidths() {
-        assertEquals(MIN_NAME_COLUMN_WIDTH_DP, minColumnWidth(NAME_COLUMN_KEY))
+    fun theMinimumWidthsOfFitToContent() {
+        // A mano si stringe fino a niente (dal 18/10/2026); i minimi restano per "Fit to content".
+        assertEquals(0, minColumnWidth(NAME_COLUMN_KEY))
+        assertEquals(0, minColumnWidth("c", ColumnType.TEXT))
+        assertEquals(MIN_NAME_COLUMN_WIDTH_DP, fitMinColumnWidth(NAME_COLUMN_KEY))
         listOf(ColumnType.TEXT, ColumnType.NUMBER, ColumnType.URL, ColumnType.EMAIL, ColumnType.PHONE, ColumnType.COLOR).forEach {
-            assertEquals(it.name, MIN_WRITABLE_COLUMN_WIDTH_DP, minColumnWidth("c", it))
+            assertEquals(it.name, MIN_WRITABLE_COLUMN_WIDTH_DP, fitMinColumnWidth("c", it))
         }
-        assertEquals(MIN_COLUMN_WIDTH_DP, minColumnWidth("c", ColumnType.CHECKBOX))
+        assertEquals(MIN_COLUMN_WIDTH_DP, fitMinColumnWidth("c", ColumnType.CHECKBOX))
         // "Image" resta quadrata: il minimo non la allarga.
-        assertEquals(DEFAULT_IMAGE_COLUMN_WIDTH_DP, minColumnWidth("c", ColumnType.IMAGE))
+        assertEquals(DEFAULT_IMAGE_COLUMN_WIDTH_DP, fitMinColumnWidth("c", ColumnType.IMAGE))
     }
 
     @Test
-    fun aWritableColumnStopsAtItsMinimum() {
+    fun anyColumnShrinksAsMuchAsYouWant() {
+        // Dal 18/10/2026, chiesto dall'utente: niente minimo trascinando.
         viewModel.setColumnWidth(notes.id, 10)
-        waitFor("il minimo del testo") { parseColumnWidths(saved().columnWidths)[notes.id] == MIN_WRITABLE_COLUMN_WIDTH_DP }
-        viewModel.setColumnWidth(NAME_COLUMN_KEY, 10)
-        waitFor("il minimo di Name") { parseColumnWidths(saved().columnWidths)[NAME_COLUMN_KEY] == MIN_NAME_COLUMN_WIDTH_DP }
-        // Una casella da spuntare può restare stretta come prima.
-        viewModel.setColumnWidth(done.id, 10)
-        waitFor("il minimo di sempre") { parseColumnWidths(saved().columnWidths)[done.id] == MIN_COLUMN_WIDTH_DP }
+        waitFor("il testo a 10") { parseColumnWidths(saved().columnWidths)[notes.id] == 10 }
+        viewModel.setColumnWidth(NAME_COLUMN_KEY, 0)
+        waitFor("Name a niente") { parseColumnWidths(saved().columnWidths)[NAME_COLUMN_KEY] == 0 }
+        viewModel.setColumnWidth(done.id, 3)
+        waitFor("la casella a 3") { parseColumnWidths(saved().columnWidths)[done.id] == 3 }
     }
 }

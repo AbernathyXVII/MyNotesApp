@@ -263,6 +263,23 @@ object WidgetStrings {
     val reset get() = t("Reset", "Azzera", "Zurücksetzen", "Réinitialiser", "Reiniciar", "重置", "초기화", "リセット")
     val rename get() = EditorStrings.rename
 
+    // --- I suoni del contatore (dal 18/10/2026) ---
+    val sounds get() = t("Sounds", "Suoni", "Töne", "Sons", "Sonidos", "声音", "소리", "サウンド")
+    val soundsOn get() = t("Play sounds", "Suoni attivi", "Töne abspielen", "Jouer les sons", "Reproducir sonidos", "播放声音", "소리 재생", "サウンドを再生")
+    val plusSound get() = t("Sound for +", "Suono del +", "Ton für +", "Son pour +", "Sonido para +", "+ 的声音", "+ 소리", "+ の音")
+    val minusSound get() = t("Sound for −", "Suono del −", "Ton für −", "Son pour −", "Sonido para −", "− 的声音", "− 소리", "− の音")
+    val soundsNote get() = t("Tap a sound to hear it. In silent mode they don't play.", "Tocca un suono per sentirlo. Col telefono in silenzioso non si sentono.", "Tippe auf einen Ton, um ihn zu hören. Im Lautlos-Modus sind sie stumm.", "Touchez un son pour l'écouter. En mode silencieux, ils ne sont pas joués.", "Toca un sonido para oírlo. En modo silencio no suenan.", "点按声音即可试听。静音模式下不会播放。", "소리를 탭하면 들을 수 있어요. 무음 모드에서는 재생되지 않아요.", "音をタップすると試聴できます。マナーモードでは鳴りません。")
+    fun soundName(sound: com.gabriele.notionlocal.data.widgets.CounterSound): String = when (sound) {
+        com.gabriele.notionlocal.data.widgets.CounterSound.CLICK -> t("Click", "Click", "Klick", "Clic", "Clic", "咔哒", "클릭", "クリック")
+        com.gabriele.notionlocal.data.widgets.CounterSound.SOFT_CLICK -> t("Soft click", "Click lieve", "Leiser Klick", "Clic doux", "Clic suave", "轻咔哒", "부드러운 클릭", "ソフトクリック")
+        com.gabriele.notionlocal.data.widgets.CounterSound.TICK -> t("Tick", "Tic", "Tick", "Tic", "Tic", "滴答", "틱", "チック")
+        com.gabriele.notionlocal.data.widgets.CounterSound.POP -> t("Pop", "Pop", "Plopp", "Pop", "Pop", "啵", "팝", "ポン")
+        com.gabriele.notionlocal.data.widgets.CounterSound.BUBBLE -> t("Drop", "Goccia", "Tropfen", "Goutte", "Gota", "水滴", "물방울", "しずく")
+        com.gabriele.notionlocal.data.widgets.CounterSound.WOOD -> t("Wood", "Legno", "Holz", "Bois", "Madera", "木块", "나무", "ウッド")
+        com.gabriele.notionlocal.data.widgets.CounterSound.BEEP -> t("Beep", "Bip", "Piep", "Bip", "Bip", "哔", "삐", "ビープ")
+        com.gabriele.notionlocal.data.widgets.CounterSound.COIN -> t("Coin", "Moneta", "Münze", "Pièce", "Moneda", "硬币", "동전", "コイン")
+    }
+
     // --- Pomodoro ---
 
     val session get() = t("Session", "Sessione", "Sitzung", "Session", "Sesión", "专注", "세션", "セッション")

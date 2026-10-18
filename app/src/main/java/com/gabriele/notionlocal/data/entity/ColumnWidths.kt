@@ -56,8 +56,17 @@ private val WRITABLE_COLUMN_TYPES = setOf(
     ColumnType.COLOR
 )
 
-/** Più stretta di così questa colonna non va, né trascinandola né con "Fit to content". */
-fun minColumnWidth(key: String, type: ColumnType? = null): Int = when {
+/**
+ * **Quanto si può stringere una colonna trascinandola: fino a niente** (dal
+ * 18/10/2026, chiesto dall'utente: «rimpicciolire la lunghezza delle colonne
+ * quanto voglio, anche fino al massimo tutto verso sinistra»). Prima ogni
+ * colonna aveva un minimo (Name 120, quelle in cui si scrive 80, le altre
+ * 48); restano per "Fit to content" (vedi `fitMinColumnWidth`).
+ */
+fun minColumnWidth(key: String, type: ColumnType? = null): Int = 0
+
+/** Più stretta di così "Fit to content" non fa una colonna: si legge ancora qualcosa. */
+fun fitMinColumnWidth(key: String, type: ColumnType? = null): Int = when {
     key == NAME_COLUMN_KEY -> MIN_NAME_COLUMN_WIDTH_DP
     type in WRITABLE_COLUMN_TYPES -> MIN_WRITABLE_COLUMN_WIDTH_DP
     // "Image" nasce quadrata a 44: il minimo non la allarga.

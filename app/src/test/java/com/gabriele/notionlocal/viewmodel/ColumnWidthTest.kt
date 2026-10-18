@@ -116,9 +116,11 @@ class ColumnWidthTest {
         settled("la prima") { parseColumnWidths(it.columnWidths)[platform.id] == 220 }
         viewModel.setColumnWidth(NAME_COLUMN_KEY, 310)
         settled("salvate") { parseColumnWidths(it.columnWidths) == mapOf(platform.id to 220, NAME_COLUMN_KEY to 310) }
-        // Dentro i limiti.
+        // Dentro i limiti: a mano fino a niente (dal 18/10/2026), non oltre la massima.
         viewModel.setColumnWidth(platform.id, 5)
-        settled("la minima") { parseColumnWidths(it.columnWidths)[platform.id] == MIN_COLUMN_WIDTH_DP }
+        settled("stretta stretta") { parseColumnWidths(it.columnWidths)[platform.id] == 5 }
+        viewModel.setColumnWidth(platform.id, -20)
+        settled("niente") { parseColumnWidths(it.columnWidths)[platform.id] == 0 }
         viewModel.setColumnWidth(platform.id, 99_999)
         settled("la massima") { parseColumnWidths(it.columnWidths)[platform.id] == MAX_COLUMN_WIDTH_DP }
     }

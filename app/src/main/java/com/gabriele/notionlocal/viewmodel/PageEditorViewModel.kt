@@ -20,7 +20,9 @@ import com.gabriele.notionlocal.data.entity.PageFont
 import com.gabriele.notionlocal.data.entity.RichTextSpan
 import com.gabriele.notionlocal.data.entity.TableCellEntity
 import com.gabriele.notionlocal.data.entity.LinkRange
-import com.gabriele.notionlocal.data.entity.applyLinks
+import com.gabriele.notionlocal.data.entity.PasteFormat
+import com.gabriele.notionlocal.data.entity.applyPaste
+import com.gabriele.notionlocal.data.entity.sliceSpans
 import com.gabriele.notionlocal.data.entity.applyTextEdit
 import com.gabriele.notionlocal.data.entity.joinLines
 import com.gabriele.notionlocal.data.entity.linkInRange
@@ -459,6 +461,20 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
             hasText = start < end,
             link = linkSelection(selection)?.let { linkOf(it) }
         )
+    }
+
+    /**
+     * **Il testo selezionato con la sua formattazione** (dal 18/10/2026): per
+     * copiarlo con lo stile. Le righe sono unite dall'a-capo. Null senza
+     * testo selezionato.
+     */
+    fun selectedRichText(): List<RichTextSpan>? {
+        val selection = liveSelection ?: return null
+        if (selection.start >= selection.end) return null
+        val all = _blocks.value
+        val blocks = selection.blockIds.mapNotNull { id -> all.find { it.id == id } }
+        if (blocks.isEmpty()) return null
+        return sliceSpans(blocks.map { spansOf(it) }.joinLines(), selection.start, selection.end)
     }
 
     /**
@@ -2865,7 +2881,9 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         caretLine: Int? = null,
         // I link di un incolla, nelle posizioni del testo intero (righe unite
         // con l'a-capo): vedi `PasteLinks.kt`.
-        links: List<LinkRange> = emptyList()
+        links: List<LinkRange> = emptyList(),
+        // Il resto di un incolla (dal 18/10/2026): stili e pezzi da ripulire.
+        paste: PasteFormat = PasteFormat()
     ) {
         // Qui, subito, solo quello che serve ad Annulla e alla cronologia:
         // guardano la modifica così come l'ha fatta l'utente.
@@ -2893,7 +2911,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
                 // La riga vuota di una pagina nuova non è ancora nel database.
                 val unsaved = placeholder?.takeIf { p -> p.pageId == pageId && fresh.none { it.id == p.id } }
                 val runBlocks = resolveRun(runBlockIds, fresh + listOfNotNull(unsaved)) ?: return@withLock
-                writeRunChange(pageId, runBlocks, unsaved, newLines, linesBefore, caretLine, links)
+                writeRunChange(pageId, runBlocks, unsaved, newLines, linesBefore, caretLine, paste.copy(links = paste.links + links))
             }
         }
     }
@@ -2949,7 +2967,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         newLines: List<String>,
         linesBefore: List<String>?,
         caretLine: Int?,
-        links: List<LinkRange> = emptyList()
+        paste: PasteFormat = PasteFormat()
     ) {
         val stored = runBlocks.map { plainTextOf(it) }
         if (stored == newLines) return
@@ -3008,16 +3026,16 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         // una frase, la metà che scende tiene il suo formato.
         val oldMiddleSpans = oldMiddleBlocks.map { spansOf(it) }.joinLines()
         val oldMiddleText = oldMiddleBlocks.joinToString("\n") { plainTextOf(it) }
-        // I link di un incolla vanno sulla zona modificata: le posizioni si
-        // contano da dove comincia.
+        // Quello che porta un incolla (link, stili) va sulla zona modificata:
+        // le posizioni si contano da dove comincia.
         val middleOffset = newLines.take(prefixCount).sumOf { it.length + 1 }
-        val newMiddleSpans = applyLinks(
+        val newMiddleSpans = applyPaste(
             applyTextEdit(
                 oldMiddleSpans,
                 oldMiddleText,
                 newMiddleLines.joinToString("\n")
             ),
-            links.map { it.copy(start = it.start - middleOffset, end = it.end - middleOffset) }
+            paste.shifted(-middleOffset)
         ).splitLines()
 
         // Rete di sicurezza: se per qualsiasi motivo il risultato non

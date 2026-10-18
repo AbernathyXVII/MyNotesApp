@@ -250,7 +250,9 @@ data class SportMatch(
     /** Tennis: il torneo e il turno ("Shanghai Masters · Final"). */
     val note: String = "",
     /** Tennis: il torneo, per dividere le partite di una giornata. */
-    val tournament: String = ""
+    val tournament: String = "",
+    /** Lo stadio (dal 18/10/2026), per la finestra della partita. */
+    val venue: String = ""
 ) {
     val postponed: Boolean get() = status.contains("postpon", ignoreCase = true) || status.contains("cancel", ignoreCase = true)
 }
@@ -495,7 +497,8 @@ private fun teamMatch(event: JsonObject): SportMatch? {
         state = state,
         status = statusText(event.obj("status") ?: competition.obj("status")),
         home = teamSide(home, state),
-        away = teamSide(away, state)
+        away = teamSide(away, state),
+        venue = competition.obj("venue")?.string("fullName") ?: event.obj("venue")?.string("displayName").orEmpty()
     )
 }
 

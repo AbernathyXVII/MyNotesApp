@@ -59,7 +59,7 @@ data class MatchEvent(
     val minute: String,
     /** Di chi è: null per gli eventi di tutti (fine tempo, recupero). */
     val side: Side? = null,
-    /** Chi ha segnato, chi entra, chi è ammonito. */
+    /** Chi ha segnato, chi entra, chi è ammonito ("D. Berardi"). */
     val player: String = "",
     /** L'assist, o chi esce. */
     val other: String = "",
@@ -70,8 +70,27 @@ data class MatchEvent(
     val homeScore: Int = 0,
     val awayScore: Int = 0,
     /** I minuti di recupero annunciati. */
-    val added: Int = 0
+    val added: Int = 0,
+    /** [player] col nome intero ("Domenico Berardi"), per i marcatori sotto il risultato. */
+    val playerFull: String = ""
 )
+
+/**
+ * **I marcatori di una squadra, come li scrive Sofascore** (dal 18/10/2026,
+ * chiesto dall'utente): uno per riga, col nome intero e i minuti dei suoi
+ * gol ("Antonio Raimondo 26', 30', 57'"); [marks] dice quali minuti erano
+ * un rigore o un autogol, nello stesso ordine. In ordine del primo gol.
+ */
+data class ScorerLine(val name: String, val minutes: List<String>, val marks: List<MatchEventKind>)
+
+/** I marcatori della casa e degli ospiti; l'autogol va alla squadra che ne approfitta, come su Sofascore. */
+fun scorersOf(events: List<MatchEvent>): Pair<List<ScorerLine>, List<ScorerLine>> {
+    val goals = events.filter { it.kind == MatchEventKind.GOAL || it.kind == MatchEventKind.PENALTY_GOAL || it.kind == MatchEventKind.OWN_GOAL }
+    fun linesOf(side: Side): List<ScorerLine> = goals.filter { it.side == side }
+        .groupBy { it.playerFull.ifEmpty { it.player } }
+        .map { (name, list) -> ScorerLine(name, list.map { it.minute }, list.map { it.kind }) }
+    return linesOf(Side.HOME) to linesOf(Side.AWAY)
+}
 
 /** Una statistica: la chiave di ESPN ("possessionPct") e i due valori già scritti. */
 data class MatchStat(val key: String, val home: String, val away: String, val homeShare: Float?)
@@ -214,7 +233,8 @@ private fun soccerEvents(
         val minute = key.obj("clock")?.string("displayValue").orEmpty()
         val half = key.obj("period")?.int("number") ?: halfOf(minute)
         val side = sideOf(key.obj("team")?.string("id"))
-        val people = key.array("participants").mapNotNull { (it as? JsonObject)?.obj("athlete")?.string("displayName") }.map(::shortPlayerName)
+        val fullNames = key.array("participants").mapNotNull { (it as? JsonObject)?.obj("athlete")?.string("displayName") }
+        val people = fullNames.map(::shortPlayerName)
         val text = key.string("text").orEmpty()
         val event = when {
             key.boolean("scoringPlay") -> {
@@ -229,6 +249,7 @@ private fun soccerEvents(
                     minute = minute,
                     side = side,
                     player = people.getOrElse(0) { "" },
+                    playerFull = fullNames.getOrElse(0) { "" },
                     other = if (kind == MatchEventKind.GOAL) people.getOrElse(1) { "" } else "",
                     homeScore = homeGoals,
                     awayScore = awayGoals
