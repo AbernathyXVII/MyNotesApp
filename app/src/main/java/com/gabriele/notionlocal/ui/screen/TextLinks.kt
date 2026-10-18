@@ -109,8 +109,8 @@ internal fun Modifier.linkTaps(
 }
 
 /**
- * Apre un collegamento; se non si può, lo dice. Le pagine web si aprono in
- * una Custom Tab, e "indietro" torna a notE: vedi `BlockFiles.openUrl`.
+ * Apre un collegamento; se non si può, lo dice. Le pagine web si aprono nel
+ * browser predefinito: vedi `BlockFiles.openUrl`.
  */
 @Composable
 internal fun rememberLinkOpener(): (String) -> Unit {

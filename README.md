@@ -2070,6 +2070,30 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.177 — 18/10/2026 · 08:40 — I link si aprono in Firefox
+*(Claude Code sul PC; verificato sul telefono; 592 test passati; commit solo
+in locale)*
+
+L'utente, parola per parola:
+> «Quando apro un link, vorrei che me lo facesse aprire nel browser di
+> default che nel mio caso è Firefox. Ora me lo apre nel browser stock
+> dell'app come fa ora»
+
+- **[Modificato]** **Le pagine web si aprono nel browser predefinito del
+  telefono** (per l'utente Firefox), con la sua barra degli indirizzi e le
+  sue schede, e non più nel riquadro del browser sopra l'app (la "Custom
+  Tab" della v0.168). Vale per i link sul testo, i segnalibri, i video e gli
+  audio con un indirizzo e le celle URL dei database. Email e numeri di
+  telefono si aprono come prima con la posta e il telefono, e un indirizzo
+  che ha un'app sua (un video di YouTube) si apre ancora in quella
+- **[Progetto]** `BlockFiles.openUrl`: niente più la richiesta di Custom Tab,
+  solo l'indirizzo "da aprire nel browser" (`CATEGORY_BROWSABLE`). Test:
+  `OpenUrlTest` aggiornato (nessuna Custom Tab)
+- Verificato sul telefono, in una riga di prova di Main calendar poi
+  cancellata: un segnalibro di Wikipedia si apre in Firefox, e "indietro" da
+  Firefox torna alla pagina di notE (nella v0.168, con la scheda normale,
+  aveva mostrato un'altra app: oggi no). Alla fine il database è uguale a
+  prima della prova
 ### 🆕 v0.176 — 17/10/2026 · 23:45 — "Turn into page" e si resta dove si è
 *(Claude Code sul PC; verificato nei test; 592 test passati; commit solo in
 locale)*

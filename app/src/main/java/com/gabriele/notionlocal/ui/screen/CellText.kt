@@ -373,8 +373,8 @@ internal fun linkUri(raw: String): String {
 
 /**
  * Apre il link col browser (o l'app che lo sa aprire); se nessuna può, lo
- * dice. Una pagina web si apre in una Custom Tab, e "indietro" torna a notE:
- * vedi `BlockFiles.openUrl`.
+ * dice. Una pagina web si apre nel browser predefinito: vedi
+ * `BlockFiles.openUrl`.
  */
 internal fun openLink(context: Context, raw: String) {
     if (!BlockFiles.openUrl(context, linkUri(raw))) {

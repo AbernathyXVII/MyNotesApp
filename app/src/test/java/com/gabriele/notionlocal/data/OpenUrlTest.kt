@@ -15,9 +15,9 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
- * **Gli indirizzi si aprono in una Custom Tab, nella pila di notE**
- * (17/10/2026): "indietro" dal browser torna all'app, non a quella usata
- * prima. Vale per link sul testo, segnalibri, video e celle URL.
+ * **Gli indirizzi si aprono nel browser predefinito** (dal 18/10/2026,
+ * chiesto dall'utente: Firefox, non la Custom Tab sopra l'app). Vale per
+ * link sul testo, segnalibri, video e celle URL.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = Application::class)
@@ -26,18 +26,20 @@ class OpenUrlTest {
     private val session = "android.support.customtabs.extra.SESSION"
 
     @Test
-    fun aWebPageFromTheAppIsACustomTabInItsOwnStack() {
+    fun aWebPageGoesToTheDefaultBrowserNotACustomTab() {
         val activity = Robolectric.buildActivity(Activity::class.java).setup().get()
         assertTrue(BlockFiles.openUrl(activity, "https://example.com"))
         val started = shadowOf(activity).nextStartedActivity
         assertEquals(Intent.ACTION_VIEW, started.action)
         assertEquals("https://example.com", started.dataString)
-        assertTrue(started.extras!!.containsKey(session))
+        assertTrue(started.hasCategory(Intent.CATEGORY_BROWSABLE))
+        // Niente Custom Tab: la pagina si apre nel browser vero.
+        assertFalse(started.extras?.containsKey(session) == true)
         assertEquals(0, started.flags and Intent.FLAG_ACTIVITY_NEW_TASK)
     }
 
     @Test
-    fun anEmailIsNotACustomTab() {
+    fun anEmailGoesToTheMailApp() {
         val activity = Robolectric.buildActivity(Activity::class.java).setup().get()
         assertTrue(BlockFiles.openUrl(activity, "mailto:mario@example.com"))
         val started = shadowOf(activity).nextStartedActivity

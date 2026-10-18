@@ -8,7 +8,6 @@ import android.content.Intent
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
-import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
 import android.provider.OpenableColumns
@@ -71,37 +70,31 @@ object BlockFiles {
     }
 
     /**
-     * **Apre un indirizzo**: una pagina web nel riquadro del browser sopra
-     * l'app (una "Custom Tab", come in Notion e nella maggior parte delle
-     * app), il resto (`mailto:`, `tel:`…) con l'app che lo sa aprire. Se c'è
-     * un'app fatta apposta per quel sito (YouTube per un video di YouTube),
-     * Android apre quella. Falso se nessuna app lo sa aprire.
+     * **Apre un indirizzo** con l'app che lo sa aprire: una pagina web **nel
+     * browser predefinito del telefono** (per l'utente Firefox), `mailto:`
+     * con la posta, `tel:` col telefono. Se c'è un'app fatta apposta per quel
+     * sito (YouTube per un video di YouTube), Android apre quella. Falso se
+     * nessuna app lo sa aprire. Vale per i link sul testo, i segnalibri, i
+     * video e gli audio con un indirizzo e le celle URL, email e telefono dei
+     * database.
      *
-     * Fino al 17/10/2026 si apriva come scheda normale del browser, in
-     * un'attività a parte: con Firefox "indietro" chiudeva la scheda e
-     * mostrava l'app usata prima di notE (sul telefono dell'utente, YouTube).
-     * La Custom Tab sta nella pila di notE, e "indietro" torna qui. Vale per
-     * i link sul testo, i segnalibri, i video e gli audio con un indirizzo e
-     * le celle URL, email e telefono dei database.
+     * Dal 17/10/2026 le pagine web si aprivano in una "Custom Tab", il
+     * riquadro del browser sopra l'app, perché con la scheda normale di
+     * Firefox "indietro" aveva mostrato l'app usata prima di notE. Il
+     * 18/10/2026 l'utente ha chiesto il browser vero: «vorrei che me lo
+     * facesse aprire nel browser di default che nel mio caso è Firefox».
      */
     fun openUrl(context: Context, url: String): Boolean {
         val uri = runCatching { Uri.parse(url) }.getOrNull() ?: return false
         val intent = Intent(Intent.ACTION_VIEW, uri)
         if (uri.scheme?.lowercase() in setOf("http", "https")) {
-            intent.putExtras(Bundle().apply { putBinder(CUSTOM_TABS_SESSION, null) })
+            intent.addCategory(Intent.CATEGORY_BROWSABLE)
         }
         return runCatching {
             context.startActivity(intent.withTaskFor(context))
             true
         }.getOrDefault(false)
     }
-
-    /**
-     * La chiave con cui un browser riconosce la richiesta di una Custom Tab:
-     * è quella che mette `CustomTabsIntent` della libreria androidx.browser,
-     * scritta qui per non aggiungere la libreria intera per una riga.
-     */
-    private const val CUSTOM_TABS_SESSION = "android.support.customtabs.extra.SESSION"
 
     /** Dall'attività di notE l'app aperta resta nella sua pila; senza un'attività Android ne vuole una nuova. */
     private fun Intent.withTaskFor(context: Context): Intent =
