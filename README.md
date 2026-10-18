@@ -2093,8 +2093,8 @@ L'utente, parola per parola:
   cambiano)
 - Non provato sul telefono: nelle pagine dove si possono fare prove (Food,
   Main calendar) non c'è un database dentro la pagina, e crearne uno di prova
-  l'avrebbe lasciato nel Cestino. Il telefono era scollegato: va installata
-  quando torna
+  l'avrebbe lasciato nel Cestino. Installata la mattina dopo, a telefono
+  ricollegato: l'app si apre normalmente
 ### 🆕 v0.175 — 17/10/2026 · 19:49 — Lo sport: la freccia, il risultato in rosso, le stagioni
 *(Claude Code sul PC; verificato sul telefono; 591 test passati; commit solo
 in locale)*
