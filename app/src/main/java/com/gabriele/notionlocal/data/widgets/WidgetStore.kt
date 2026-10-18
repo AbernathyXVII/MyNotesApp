@@ -292,6 +292,10 @@ object WidgetStore {
     fun setCounterSounds(widgetId: String, on: Boolean, plus: CounterSound, minus: CounterSound) =
         updateWidget<CounterWidget>(widgetId) { it.copy(soundsOn = on, plusSound = plus.name, minusSound = minus.name) }
 
+    /** Il volume dei click del contatore, da 0 a 100. */
+    fun setCounterVolume(widgetId: String, volume: Int) =
+        updateWidget<CounterWidget>(widgetId) { it.copy(volume = volume.coerceIn(0, 100)) }
+
     // --- Pomodoro ---
 
     fun pomodoroStart(widgetId: String) = updateWidget<PomodoroWidget>(widgetId) { p ->

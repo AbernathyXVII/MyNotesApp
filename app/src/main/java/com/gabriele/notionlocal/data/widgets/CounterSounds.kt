@@ -104,14 +104,30 @@ object CounterSounds {
     /** Il punto più forte dell'onda, fra 0 e 1: per i test (il meno è più lieve del più). */
     fun peak(sound: CounterSound): Double = samples(sound).maxOf { abs(it.toInt()) } / Short.MAX_VALUE.toDouble()
 
+    /**
+     * Dalla barra del volume (da 0 a 100) al guadagno della traccia (da 0 a
+     * 1): al quadrato, perché l'orecchio non sente il volume in linea retta.
+     * Dritto, quasi tutta la barra suonerebbe forte uguale e il piano
+     * starebbe tutto in fondo.
+     */
+    fun gain(volume: Int): Float {
+        val share = volume.coerceIn(0, 100) / 100f
+        return share * share
+    }
+
     private val tracks = mutableMapOf<CounterSound, AudioTrack>()
 
-    /** Suona [sound]; se stava ancora suonando, ricomincia. Senza audio non fa niente. */
+    /**
+     * Suona [sound] a [volume] (da 0 a 100, vedi [gain]); se stava ancora
+     * suonando, ricomincia. A zero, o senza audio, non fa niente.
+     */
     @Synchronized
-    fun play(sound: CounterSound) {
+    fun play(sound: CounterSound, volume: Int = 100) {
+        if (volume <= 0) return
         runCatching {
             val track = tracks.getOrPut(sound) { trackFor(samples(sound)) }
             if (track.playState == AudioTrack.PLAYSTATE_PLAYING) track.stop()
+            track.setVolume(gain(volume))
             track.reloadStaticData()
             track.play()
         }

@@ -120,7 +120,13 @@ data class CounterWidget(
      */
     val soundsOn: Boolean = true,
     val plusSound: String = CounterSound.CLICK.name,
-    val minusSound: String = CounterSound.SOFT_CLICK.name
+    val minusSound: String = CounterSound.SOFT_CLICK.name,
+    /**
+     * **Il volume dei click**, da 0 a 100 (dal 18/10/2026, chiesto
+     * dall'utente): 100 è il volume "Sistema" del telefono. I contatori di
+     * prima suonano a 100, come prima.
+     */
+    val volume: Int = 100
 ) : Widget()
 
 enum class PomodoroPhase { SESSION, BREAK }

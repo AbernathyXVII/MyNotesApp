@@ -117,6 +117,11 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Slider
+import androidx.compose.material.icons.automirrored.filled.VolumeDown
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.ui.platform.testTag
+import kotlin.math.roundToInt
 import com.gabriele.notionlocal.data.widgets.CounterSound
 import com.gabriele.notionlocal.data.widgets.CounterSounds
 import androidx.compose.ui.draw.scale
@@ -1009,7 +1014,7 @@ private fun CounterView(widget: CounterWidget) {
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             SquareButton(Icons.Filled.Remove, WidgetStrings.decrease) {
-                if (widget.soundsOn) CounterSounds.play(CounterSound.of(widget.minusSound))
+                if (widget.soundsOn) CounterSounds.play(CounterSound.of(widget.minusSound), widget.volume)
                 WidgetStore.changeCounter(widget.id, -1)
             }
             Text(
@@ -1021,7 +1026,7 @@ private fun CounterView(widget: CounterWidget) {
                 modifier = Modifier.widthIn(min = 72.dp).padding(horizontal = 8.dp)
             )
             SquareButton(Icons.Filled.Add, WidgetStrings.increase) {
-                if (widget.soundsOn) CounterSounds.play(CounterSound.of(widget.plusSound))
+                if (widget.soundsOn) CounterSounds.play(CounterSound.of(widget.plusSound), widget.volume)
                 WidgetStore.changeCounter(widget.id, +1)
             }
         }
@@ -1073,16 +1078,57 @@ private fun CounterSoundsSheet(widget: CounterWidget, onDismiss: () -> Unit) {
                 Text(WidgetStrings.soundsOn, color = NotionWhite, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
                 Switch(checked = widget.soundsOn, onCheckedChange = { WidgetStore.setCounterSounds(widget.id, it, plus, minus) })
             }
+            CounterVolume(widget, preview = plus)
             SoundChoices(WidgetStrings.plusSound, plus, enabled = widget.soundsOn) {
-                CounterSounds.play(it)
+                CounterSounds.play(it, widget.volume)
                 WidgetStore.setCounterSounds(widget.id, widget.soundsOn, it, minus)
             }
             SoundChoices(WidgetStrings.minusSound, minus, enabled = widget.soundsOn) {
-                CounterSounds.play(it)
+                CounterSounds.play(it, widget.volume)
                 WidgetStore.setCounterSounds(widget.id, widget.soundsOn, plus, it)
             }
             Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+}
+
+/**
+ * **La barra del volume dei click** (dal 18/10/2026, chiesta dall'utente):
+ * mentre la si trascina cambia solo il numero; lasciandola si salva e si
+ * sente [preview] a quel volume.
+ */
+@Composable
+private fun CounterVolume(widget: CounterWidget, preview: CounterSound) {
+    var dragging by remember { mutableStateOf<Float?>(null) }
+    val shown = dragging ?: widget.volume.toFloat()
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(WidgetStrings.volume, color = NotionGray400, style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
+        Text("${shown.roundToInt()}%", color = NotionGray400, style = MaterialTheme.typography.labelLarge)
+    }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(Icons.AutoMirrored.Filled.VolumeDown, contentDescription = null, tint = NotionGray400, modifier = Modifier.size(20.dp))
+        Slider(
+            value = shown,
+            onValueChange = { dragging = it },
+            onValueChangeFinished = {
+                dragging?.let { value ->
+                    val volume = value.roundToInt()
+                    WidgetStore.setCounterVolume(widget.id, volume)
+                    CounterSounds.play(preview, volume)
+                }
+                dragging = null
+            },
+            valueRange = 0f..100f,
+            enabled = widget.soundsOn,
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 8.dp)
+                .testTag("counter-volume")
+        )
+        Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = null, tint = NotionGray400, modifier = Modifier.size(20.dp))
     }
 }
 

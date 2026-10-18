@@ -10,8 +10,11 @@ import androidx.lifecycle.viewModelScope
 import com.gabriele.notionlocal.data.PageImageStore
 import com.gabriele.notionlocal.data.entity.BlockEntity
 import com.gabriele.notionlocal.data.entity.BlockAttrs
+import com.gabriele.notionlocal.data.entity.LIST_INDENT_TYPES
 import com.gabriele.notionlocal.data.entity.MEDIA_TYPES
 import com.gabriele.notionlocal.data.entity.MULTILINE_TYPES
+import com.gabriele.notionlocal.data.entity.attrsForNewLine
+import com.gabriele.notionlocal.data.entity.heldListType
 import com.gabriele.notionlocal.data.entity.BlockType
 import com.gabriele.notionlocal.data.entity.DatabaseLayout
 import com.gabriele.notionlocal.data.entity.PageEditEntity
@@ -253,6 +256,14 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
             blockIds.forEach { saved(it) }; repository.setBlockTypes(blockIds, type)
         }
 
+        suspend fun makeListText(blockId: String, listType: BlockType) {
+            saved(blockId); repository.makeListText(blockId, listType)
+        }
+
+        suspend fun releaseListIndent(blockId: String) {
+            saved(blockId); repository.releaseListIndent(blockId)
+        }
+
         suspend fun setBlockExpanded(blockId: String, expanded: Boolean) {
             saved(blockId); repository.setBlockExpanded(blockId, expanded)
         }
@@ -346,7 +357,8 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
             textJson = textBeforeJson,
             isChecked = current.isChecked,
             numberStartsAt = current.numberStartsAt,
-            indentLevel = current.indentLevel
+            indentLevel = current.indentLevel,
+            attrsJson = current.attrsForNewLine()
         )
         return (shifted + above).sortedBy { it.orderIndex }
     }
@@ -2386,7 +2398,10 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
      * Backspace premuto a inizio di una riga del testo unito. Invece di
      * fondere subito la riga con quella sopra, il gesto la "smonta" un
      * gradino alla volta, come in Notion:
-     *  1. se è un elemento di elenco, ne toglie il marcatore;
+     *  1. se è un elemento di elenco, ne toglie il marcatore — e il testo
+     *     **resta dov'era**, allineato agli altri elementi (dal 18/10/2026,
+     *     come su Word, vedi `BlockAttrs.listIndent`); un altro backspace lo
+     *     porta a sinistra;
      *  2. altrimenti, se è rientrata, le toglie un rientro — e si può
      *     continuare, un livello per volta, fino al margine;
      *  3. quando non c'è più niente da togliere restituisce false, e la
@@ -2418,16 +2433,27 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
     ): BackspaceOutcome {
         val block = resolveRun(runBlockIds)?.getOrNull(lineIndex)
             ?: return BackspaceOutcome.NOTHING
-        val isListItem = block.type == BlockType.BULLET_LIST_ITEM ||
-            block.type == BlockType.NUMBERED_LIST_ITEM ||
+
+        when {
+            // Il numero o il pallino se ne vanno, il testo resta al suo posto.
+            block.type in LIST_INDENT_TYPES -> {
+                snapshotForStructuralChange()
+                viewModelScope.launch {
+                    blocksDb.makeListText(block.id, block.type)
+                }
+            }
+            // Il backspace dopo: il testo lascia il posto dell'elenco.
+            block.heldListType != null -> {
+                snapshotForStructuralChange()
+                viewModelScope.launch {
+                    blocksDb.releaseListIndent(block.id)
+                }
+            }
             // Backspace a inizio di una casella toglie il quadratino e
             // lascia il testo, come per gli altri marcatori. Prima era
             // un ramo a parte (`backspaceAtIslandStart`) perché la
             // casella viveva fuori dal campo condiviso.
-            block.type == BlockType.CHECKBOX
-
-        when {
-            isListItem -> {
+            block.type == BlockType.CHECKBOX -> {
                 snapshotForStructuralChange()
                 viewModelScope.launch {
                     blocksDb.setBlockType(block.id, BlockType.PARAGRAPH)
@@ -2611,6 +2637,22 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
     fun backspaceAtIslandStart(block: BlockEntity): Boolean {
         if (block.type == BlockType.TOGGLE) return unmakeToggle(block)
         if (block.type in MULTILINE_TYPES) return unmakeMultiline(block)
+        // Un elemento di elenco dentro un toggle (dal 18/10/2026): come nel
+        // testo unito, prima se ne va il marcatore e il testo resta al suo
+        // posto, poi va a sinistra. La riga resta la stessa casella di
+        // scrittura, quindi il fuoco non si sposta.
+        val current = _blocks.value.find { it.id == block.id } ?: block
+        if (current.type in LIST_INDENT_TYPES || current.heldListType != null) {
+            snapshotForStructuralChange()
+            viewModelScope.launch {
+                if (current.type in LIST_INDENT_TYPES) {
+                    blocksDb.makeListText(current.id, current.type)
+                } else {
+                    blocksDb.releaseListIndent(current.id)
+                }
+            }
+            return false
+        }
         // La riga-notifica, col backspace a inizio riga, torna testo come
         // la casella da spuntare: la notifica se ne va, il testo resta.
         if (block.type != BlockType.CHECKBOX && block.type != BlockType.NOTIFICATION) {
@@ -3008,6 +3050,9 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
             BlockType.CHECKBOX -> referenceBlock.type
             else -> BlockType.PARAGRAPH
         }
+        // Andando a capo da una riga che tiene il posto di un elenco, anche
+        // la nuova lo tiene: resta allineata, come su Word.
+        val inheritedAttrs = referenceBlock?.attrsForNewLine() ?: "{}"
 
         // **La formattazione sopravvive alla scrittura.**
         //
@@ -3095,7 +3140,8 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
                             textJson = json.encodeToString(
                                 spansForLine(oldMiddleBlocks.size + i, line)
                             ),
-                            orderIndex = shiftFromIndex + i
+                            orderIndex = shiftFromIndex + i,
+                            attrsJson = inheritedAttrs
                         )
                     }
                 )

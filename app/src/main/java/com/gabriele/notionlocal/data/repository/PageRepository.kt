@@ -28,6 +28,7 @@ import com.gabriele.notionlocal.data.entity.TableCellEntity
 import com.gabriele.notionlocal.data.entity.plainText
 import com.gabriele.notionlocal.data.entity.splitLines
 import com.gabriele.notionlocal.data.entity.BlockAttrs
+import com.gabriele.notionlocal.data.entity.attrsForNewLine
 import com.gabriele.notionlocal.data.entity.MULTILINE_TYPES
 import com.gabriele.notionlocal.data.entity.attrs
 import com.gabriele.notionlocal.data.ink.remapAnchor
@@ -1839,7 +1840,9 @@ class PageRepository(private val db: AppDatabase) {
                     // riga di sopra, che continua quella che c'era.
                     isChecked = current.isChecked,
                     numberStartsAt = current.numberStartsAt,
-                    indentLevel = current.indentLevel
+                    indentLevel = current.indentLevel,
+                    // Il posto di un elenco, se la riga lo tiene: vedi `BlockAttrs.listIndent`.
+                    attrsJson = current.attrsForNewLine()
                 ),
                 current.copy(
                     orderIndex = current.orderIndex + 1,
@@ -2383,9 +2386,38 @@ class PageRepository(private val db: AppDatabase) {
     suspend fun setBlockExpanded(blockId: String, expanded: Boolean) =
         blockDao.setExpanded(blockId, expanded)
 
-    /** Cambia solo il tipo di un blocco, senza riscriverne il testo. */
-    suspend fun setBlockType(blockId: String, type: BlockType) =
+    /**
+     * Cambia solo il tipo di un blocco, senza riscriverne il testo. Il posto
+     * di un elenco che il blocco teneva (`BlockAttrs.listIndent`) se ne va:
+     * diventato altro e poi di nuovo testo, non deve tornare rientrato.
+     */
+    suspend fun setBlockType(blockId: String, type: BlockType) = db.withTransaction {
         blockDao.setType(blockId, type)
+        dropListIndent(blockId)
+    }
+
+    /** Toglie a un blocco il posto dell'elenco, se lo teneva. */
+    private suspend fun dropListIndent(blockId: String) {
+        val block = blockDao.getById(blockId) ?: return
+        val attrs = BlockAttrs.parse(block.attrsJson)
+        if (attrs.listIndent != null) blockDao.setAttrs(blockId, BlockAttrs.encode(attrs.copy(listIndent = null)))
+    }
+
+    /**
+     * **Il primo backspace a inizio di un elemento di elenco** (dal
+     * 18/10/2026, come su Word): diventa testo, ma tiene il posto
+     * dell'elenco — il numero o il pallino non ci sono più e il testo resta
+     * allineato agli altri. Vedi `BlockAttrs.listIndent`.
+     */
+    suspend fun makeListText(blockId: String, listType: BlockType) = db.withTransaction {
+        val block = blockDao.getById(blockId) ?: return@withTransaction
+        blockDao.setType(blockId, BlockType.PARAGRAPH)
+        val attrs = BlockAttrs.parse(block.attrsJson).copy(listIndent = listType.name)
+        blockDao.setAttrs(blockId, BlockAttrs.encode(attrs))
+    }
+
+    /** Il secondo backspace: il testo lascia il posto dell'elenco e va a sinistra. */
+    suspend fun releaseListIndent(blockId: String) = db.withTransaction { dropListIndent(blockId) }
 
     /**
      * **Più righe cambiano tipo insieme** (dal 14/10/2026, il "+" su del testo
@@ -2400,6 +2432,7 @@ class PageRepository(private val db: AppDatabase) {
             if (block.type == type) continue
             if (type != BlockType.TOGGLE) unnestChildren(id)
             blockDao.setType(id, type)
+            dropListIndent(id)
             if (type == BlockType.TOGGLE) blockDao.setExpanded(id, true)
         }
     }

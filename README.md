@@ -2070,6 +2070,53 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.180 — 18/10/2026 · 14:00 — Il volume dei click del Counter, il backspace negli elenchi come su Word
+*(Claude Code sul PC; non ancora installata: il telefono chiede di autorizzare il PC; 616 test passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Nelle impostazioni dei suoni del widget Counter, aggiungimi anche una
+> barra del volume per regolare il volume dei click»
+
+e poi (con tre foto di un elenco numerato su Word: com'è, dopo un backspace
+a inizio del quinto elemento, dopo il secondo):
+> «Quando creo una lista numerata o bulleted, e quando il text cursor si
+> trova esattamente tra il numero a sinistra e il primo carattere a destra e
+> cancello con Backspace, consenti al testo di rimanere lì dov'è, rispettando
+> il posizionamento delle scritte in base alle liste numbered o bulleted. Se
+> poi ricancello con Backspace, allora lo metti tutto in fondo a sinistra
+> come fa Word e come vedi nelle foto»
+
+- **[Nuova funzionalità]** **La barra del volume nei suoni del Counter**, fra
+  l'interruttore e la scelta dei suoni: da 0 a 100%, col numero accanto e le
+  icone dell'altoparlante ai capi. Mentre la si trascina cambia il numero;
+  lasciandola si salva e si sente il suono del + a quel volume. Il 100% è il
+  volume "Sistema" del telefono (sul telefono dell'utente è un volume a sé,
+  nelle impostazioni dei suoni), e la nota del pannello ora lo dice. La
+  barra segue l'orecchio: a metà si sente circa a metà. Coi suoni spenti è
+  grigia. Ogni contatore ha il suo; quelli di prima partono da 100%
+- **[Modificato]** **Il backspace a inizio di un elemento di elenco, come su
+  Word**: il primo toglie il numero o il pallino ma **il testo resta dov'era**,
+  allineato agli altri elementi; il secondo lo porta a sinistra (nel punto
+  in cui c'era il numero, e con altri backspace si toglie un rientro alla
+  volta, poi la riga si unisce a quella sopra, come prima). La numerazione
+  dopo continua: tolto il numero al quinto, quello che segue resta 5, come
+  nelle foto. Andando a capo da una riga senza numero, anche la nuova resta
+  allineata, come su Word. Vale anche negli elenchi dentro un toggle. La
+  casella da spuntare resta com'era: il primo backspace la fa diventare
+  testo
+- **[Progetto]** Counter: `CounterWidget.volume`, `WidgetStore.setCounterVolume`,
+  `CounterSounds.gain` (il quadrato della barra) e `play(sound, volume)` con
+  `AudioTrack.setVolume`; `CounterVolume` nel pannello. Elenchi:
+  `BlockAttrs.listIndent` (l'elenco di cui il paragrafo tiene il posto, nelle
+  voci del blocco: nessun cambio al database), `heldListType`,
+  `attrsForNewLine`; `PageRepository.makeListText` e `releaseListIndent`, e
+  `setBlockType` lo toglie quando il blocco cambia tipo. Nel testo unito il
+  marcatore si scrive trasparente (`LinePrefix.hidden`), così il testo resta
+  dove sarebbe; dentro un toggle è un `Text` trasparente. Test:
+  `ListIndentBackspaceTest` (i due passi, i pallini, la riga nuova, il
+  cambio di tipo, il rientro, il toggle, la casella), `CounterVolumeTest`
+  (la barra nel pannello), `CounterSoundsTest` (volume e guadagno)
+- Non ancora provata sul telefono (in attesa del permesso per il debug USB)
 ### 🆕 v0.179 — 18/10/2026 · 09:21 — Marcatori e stadio, i suoni del Counter, colonne libere, la riga dopo i database, copia e incolla nella barra
 *(Claude Code sul PC; verificata sul telefono; 607 test passati; commit solo in locale)*
 

@@ -48,8 +48,22 @@ data class BlockAttrs(
     /** Il segnalibro: la descrizione del sito. */
     val description: String? = null,
     /** Il segnalibro: l'immagine di anteprima del sito, scaricata nell'app. */
-    val image: String? = null
+    val image: String? = null,
+    /**
+     * **Testo che tiene il posto di un elenco** (dal 18/10/2026, chiesto
+     * dall'utente, come su Word): il tipo dell'elenco da cui viene
+     * ("BULLET_LIST_ITEM" o "NUMBERED_LIST_ITEM"). Il primo backspace a
+     * inizio di un elemento toglie il numero o il pallino ma il testo resta
+     * dov'era, allineato agli altri; il secondo lo porta a sinistra. Conta
+     * solo su un paragrafo, e cambiando tipo se ne va (vedi
+     * `PageRepository.setBlockType`).
+     */
+    val listIndent: String? = null
 ) {
+    /** L'elenco di cui questo paragrafo tiene il posto, o null. */
+    val listIndentType: BlockType?
+        get() = listIndent?.let { name -> LIST_INDENT_TYPES.find { it.name == name } }
+
     /** I file dell'app che questo blocco usa: vanno copiati con lui e cancellati con lui. */
     val files: List<String> get() = listOfNotNull(file, iconImage, image)
 
@@ -68,6 +82,24 @@ data class BlockAttrs(
 
 /** Le voci in più di un blocco: vedi `BlockAttrs`. */
 val BlockEntity.attrs: BlockAttrs get() = BlockAttrs.parse(attrsJson)
+
+/** Gli elenchi di cui un paragrafo può tenere il posto: vedi `BlockAttrs.listIndent`. */
+val LIST_INDENT_TYPES = setOf(BlockType.BULLET_LIST_ITEM, BlockType.NUMBERED_LIST_ITEM)
+
+/**
+ * L'elenco di cui questo blocco tiene il posto, se è un paragrafo che lo
+ * tiene; null per tutti gli altri.
+ */
+val BlockEntity.heldListType: BlockType?
+    get() = if (type == BlockType.PARAGRAPH) attrs.listIndentType else null
+
+/**
+ * Le voci di una riga nuova nata andando a capo da questa: il posto
+ * dell'elenco, se questa lo tiene (resta allineata anche lei, come su
+ * Word); nient'altro.
+ */
+fun BlockEntity.attrsForNewLine(): String =
+    heldListType?.let { BlockAttrs.encode(BlockAttrs(listIndent = it.name)) } ?: "{}"
 
 /** L'emoji di riserva di un riquadro, quella con cui nasce: la lampadina, come su Notion. */
 const val DEFAULT_CALLOUT_ICON = "💡"

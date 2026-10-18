@@ -235,6 +235,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gabriele.notionlocal.data.entity.BlockEntity
 import com.gabriele.notionlocal.data.entity.MULTILINE_TYPES
 import com.gabriele.notionlocal.data.entity.attrs
+import com.gabriele.notionlocal.data.entity.heldListType
 import com.gabriele.notionlocal.ui.i18n.BlockStrings
 import com.gabriele.notionlocal.ui.theme.CalloutBackground
 import com.gabriele.notionlocal.data.entity.BlockType
@@ -4058,7 +4059,16 @@ private fun bulletMarkerSizeFor(indent: Int): TextUnit = BULLET_MARKER_SIZES[bul
  * distinti perché la zona toccabile deve coprire il solo marcatore, non
  * anche il rientro.
  */
-private data class LinePrefix(val indent: String, val marker: String) {
+internal data class LinePrefix(
+    val indent: String,
+    val marker: String,
+    /**
+     * Il marcatore c'è ma non si vede: la riga tiene il posto di un elenco
+     * (vedi `BlockAttrs.listIndent`), e scritto trasparente occupa proprio
+     * lo spazio del numero o del pallino, così il testo resta allineato.
+     */
+    val hidden: Boolean = false
+) {
     val text: String get() = indent + marker
 }
 
@@ -4205,7 +4215,7 @@ private fun predictedLineSpans(
     return emptyMap()
 }
 
-private fun runPrefixes(
+internal fun runPrefixes(
     lines: List<String>,
     runBlocks: List<BlockEntity>,
     allBlocks: List<BlockEntity>,
@@ -4214,6 +4224,13 @@ private fun runPrefixes(
     var carriedType: BlockType? = null
     var carriedIndent = 0
     var carriedOrdinal: Int? = null
+    // L'elenco di cui la riga sopra teneva il posto: una riga appena nata
+    // sotto, che il database non conosce ancora, lo tiene anche lei.
+    var carriedHeld: BlockType? = null
+    // L'ultimo numero mostrato a ogni rientro: la riga che tiene il posto
+    // di un elenco numerato ci scrive (invisibile) il numero dopo, che è
+    // largo come quelli intorno.
+    val lastNumberAt = mutableMapOf<Int, Int>()
 
     // Il blocco di ogni riga, anche nell'istante in cui il database è
     // indietro di un Invio o di un backspace: vedi `blocksOfLines`. La
@@ -4224,6 +4241,7 @@ private fun runPrefixes(
         val block = lineBlocks[i]
         val type = block?.type ?: inheritedListType(carriedType)
         val indent = (block?.indentLevel ?: carriedIndent).coerceAtLeast(0)
+        val held = if (block != null) block.heldListType else carriedHeld.takeIf { type == BlockType.PARAGRAPH }
         // A che numero è arrivata questa riga. Per una riga che il
         // database non conosce ancora — appena creata con un Invio — si
         // prevede: è quella dopo la riga sopra, se quella era un elenco
@@ -4238,10 +4256,21 @@ private fun runPrefixes(
             null
         }
         val label = ordinal?.let { numberedMarkerFor(indent, it) }
+        if (ordinal != null) lastNumberAt[indent] = ordinal
 
         carriedType = type
         carriedIndent = indent
         carriedOrdinal = ordinal
+        carriedHeld = held
+
+        if (held != null) {
+            // Il posto dell'elenco: lo stesso marcatore, invisibile.
+            val ghost = when (held) {
+                BlockType.BULLET_LIST_ITEM -> bulletMarkerFor(indent) + "  "
+                else -> numberedMarkerFor(indent, (lastNumberAt[indent] ?: 0) + 1) + "  "
+            }
+            return@map LinePrefix(indent = INDENT_SPACES.repeat(indent), marker = ghost, hidden = true)
+        }
 
         val marker = when (type) {
             BlockType.BULLET_LIST_ITEM -> bulletMarkerFor(indent) + "  "
@@ -4319,6 +4348,15 @@ private class MergedRunVisualTransformation(
                     ),
                     symbolStart,
                     symbolStart + 1
+                )
+            }
+            // Il posto di un elenco: il marcatore c'è, largo uguale, ma
+            // non si vede (vedi `LinePrefix.hidden`).
+            if (prefix.hidden) {
+                builder.addStyle(
+                    SpanStyle(color = Color.Transparent),
+                    lineStart + prefix.indent.length,
+                    lineStart + prefix.text.length
                 )
             }
             builder.append(line)
@@ -6021,6 +6059,36 @@ private fun BlockRow(
                     )
                 }
                 Spacer(modifier = Modifier.size(10.dp))
+            }
+
+            // Il posto di un elenco (vedi `BlockAttrs.listIndent`): lo
+            // stesso marcatore degli elementi intorno, invisibile, così il
+            // testo resta allineato al loro.
+            BlockType.PARAGRAPH -> when (block.heldListType) {
+                BlockType.BULLET_LIST_ITEM -> Text(
+                    bulletMarkerFor(block.indentLevel),
+                    style = textStyle.copy(
+                        fontSize = bulletMarkerSizeFor(block.indentLevel),
+                        baselineShift = BULLET_MARKER_DROP,
+                        color = Color.Transparent
+                    ),
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+                BlockType.NUMBERED_LIST_ITEM -> {
+                    // Il numero che verrebbe dopo quello di sopra: largo come i vicini.
+                    val above = allBlocks
+                        .filter {
+                            it.parentBlockId == block.parentBlockId && it.orderIndex < block.orderIndex &&
+                                it.type == BlockType.NUMBERED_LIST_ITEM && it.indentLevel == block.indentLevel
+                        }
+                        .maxByOrNull { it.orderIndex }
+                    Text(
+                        numberedMarkerFor(block.indentLevel, (above?.let { viewModel.numberedListOrdinal(allBlocks, it) } ?: 0) + 1),
+                        style = textStyle.copy(color = Color.Transparent),
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                }
+                else -> {}
             }
 
             else -> { /* PARAGRAPH has no prefix */ }
