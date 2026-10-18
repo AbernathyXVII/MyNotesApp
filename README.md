@@ -2071,7 +2071,7 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 gg/mm/aaaa)" accanto al titolo.
 
 ### 🆕 v0.179 — 18/10/2026 · 09:21 — Marcatori e stadio, i suoni del Counter, colonne libere, la riga dopo i database, copia e incolla nella barra
-*(Claude Code sul PC; non ancora installata: il telefono chiede di autorizzare il PC; 606 test passati; commit solo in locale)*
+*(Claude Code sul PC; verificata sul telefono; 607 test passati; commit solo in locale)*
 
 L'utente, parola per parola (con la foto dell'intestazione di Bologna-Inter
 su Sofascore):
@@ -2137,6 +2137,12 @@ su Sofascore):
   testo con la formattazione del punto in cui arriva; "Keep Text Only" solo
   il testo, senza formattazione. Il "Paste" del menu che si apre tenendo
   premuto resta com'era (i link sì)
+- **[Bug fix]** **"Select all" prendeva anche l'a-capo nascosto** che ogni
+  riga di testo ha in testa (serve a sentire il backspace a inizio riga):
+  copiato e incollato in fondo, il testo finiva in una riga nuova invece di
+  attaccarsi; tagliato, valeva un backspace a inizio riga. Visto provando la
+  barra sul telefono; succedeva anche col "Select all" del menu che si apre
+  tenendo premuto. Ora la selezione si ferma al testo vero
 - **[Progetto]** Sport: `SportMatch.venue` dal tabellone di ESPN,
   `scorersOf` e `MatchEvent.playerFull` in `SportsMatch.kt`, `ScorersRow` e
   `MatchInfoRow` in `SportsMatchSheet.kt`. Counter: `CounterSounds.kt`
@@ -2149,14 +2155,25 @@ su Sofascore):
   lettera), `PasteMode` e `LinkClipboard.nextPasteMode`, `PasteFormat`,
   `applyPaste` e `sliceSpans` in `RichText.kt`, `htmlStyleRuns` (gli stili
   dell'HTML, anche quelli negli `span` come li scrivono OneNote, Word e
-  Google Docs). Test: `ClipboardBarTest` (i quattro pulsanti su un campo
-  vero, i tre modi, lo stile copiato in HTML), `CounterSoundsTest`,
-  `SportsMatchTest` (marcatori, stadio), `WrapCellsTest` e `ColumnWidthTest`
-  aggiornati
-- Non ancora provata sul telefono (in attesa del permesso per il debug USB)
+  Google Docs). `TextFieldValue.leadOutOfSelection` nei due campi di testo
+  della pagina. Test: `ClipboardBarTest` (i quattro pulsanti su un campo
+  vero, i tre modi, lo stile copiato in HTML, l'a-capo nascosto fuori dalla
+  selezione), `CounterSoundsTest`, `SportsMatchTest` (marcatori, stadio),
+  `WrapCellsTest` e `ColumnWidthTest` aggiornati
+- Provata sul telefono: Bologna-Inter 1-3 mostra Pobega 10' a sinistra e
+  Thuram 44', Carlos Augusto 69', Bonny 83' a destra, poi "17.10.2026 •
+  18:00", la bandiera con Serie A e "Renato Dall'Ara". Il pannello "Sounds"
+  del Counter si apre con l'interruttore acceso, Click per + e Soft click
+  per − (solo guardato: il contatore è rimasto a 0). La riga dopo Notebook,
+  Main calendar e 家計簿 nella home. In una riga di prova del Main calendar:
+  seleziona tutto, copia, incolla, taglia, e tenendo premuto incolla il menu
+  dei tre modi (la tastiera resta aperta), con "Keep Text Only" che attacca
+  il testo in fondo alla riga; la riga di prova poi eliminata. Database
+  identico a prima delle prove; nei widget cambiano solo meteo e partite
+  scaricati e i tre campi nuovi del Counter coi valori di partenza
 ### 🆕 v0.178 — 18/10/2026 · 08:51 — Il nome della proprietà principale
-*(Claude Code sul PC; non ancora installata: telefono scollegato; 596 test passati; database alla versione
-58; commit solo in locale)*
+*(Claude Code sul PC; installata insieme alla v0.179 e verificata sul telefono; 596 test passati; database alla
+versione 58; commit solo in locale)*
 
 L'utente, parola per parola:
 > «Dammi la possibilità di rinominare il nome della proprietà principale di
@@ -2180,8 +2197,12 @@ L'utente, parola per parola:
   collegata; vuoto torna "Name"; tradotto solo quello dell'app) e
   `MigrationTest.from57TheMainPropertyIsStillName`, con il nuovo
   `schema/v57.sql`
-- Non ancora provata sul telefono, che si era scollegato: prima di installare
-  va fatta la copia del database, perché cambia versione
+- Provata sul telefono: prima la copia del database (versione 57: 78
+  pagine, 152 righe, 798 blocchi), poi l'installazione. Il database passa
+  alla 58 con gli stessi numeri, e per tutti resta "Name". In Food un tocco
+  su "Aa Name" apre "Rename the main property"; con "Prodotto" cambia
+  l'intestazione di entrambi i gruppi (ALDI e IPERPOLI), e svuotato il
+  campo torna "Name" (rimesso com'era)
 ### 🆕 v0.177 — 18/10/2026 · 08:40 — I link si aprono in Firefox
 *(Claude Code sul PC; verificato sul telefono; 592 test passati; commit solo
 in locale)*

@@ -379,6 +379,21 @@ private val PAGE_SIDE_PADDING = 20.dp
 private const val RUN_LEAD = "\n"
 
 /**
+ * **L'a-capo nascosto in testa resta fuori da una selezione** (18/10/2026).
+ * "Select all", dalla barra sopra la tastiera o dal menu che si apre
+ * tenendo premuto, prendeva anche lui: copiato e incollato diventava una
+ * riga in più (visto sul telefono), tagliato valeva un backspace a inizio
+ * riga. Il cursore senza selezione non si tocca: a zero è il backspace che
+ * il campo unito aspetta.
+ */
+internal fun TextFieldValue.leadOutOfSelection(lead: String = RUN_LEAD): TextFieldValue {
+    if (selection.collapsed || selection.min >= lead.length || !text.startsWith(lead)) return this
+    return copy(
+        selection = TextRange(selection.start.coerceAtLeast(lead.length), selection.end.coerceAtLeast(lead.length))
+    )
+}
+
+/**
  * Quante voci della lista vengono prima dei blocchi: l'intestazione
  * (copertina, icona, titolo), che è una sola.
  *
@@ -4957,7 +4972,7 @@ private fun MergedTextRunField(
                 // I link di un incolla (vedi `PasteLinks.kt`): si tengono da
                 // parte, e il campo resta col testo e basta.
                 val pasted = pastedValue.pastedFormat(RUN_LEAD.length)
-                val newValue = pastedValue.withoutPastedLinks()
+                val newValue = pastedValue.withoutPastedLinks().leadOutOfSelection()
                 val oldText = fieldValue.text
                 val oldBody = bodyOf(oldText)
                 proofTyping = if (newValue.text != oldText) newValue.selection.end - RUN_LEAD.length else null
@@ -6017,7 +6032,7 @@ private fun BlockRow(
                 onValueChange = { pastedFieldValue ->
                     // I link di un incolla, come nel campo unito.
                     val pasted = pastedFieldValue.pastedFormat(RUN_LEAD.length)
-                    val newFieldValue = pastedFieldValue.withoutPastedLinks()
+                    val newFieldValue = pastedFieldValue.withoutPastedLinks().leadOutOfSelection()
                     val oldText = bodyOf(editState.fieldValue.text)
                     proofTyping = if (bodyOf(newFieldValue.text) != oldText) newFieldValue.selection.end - RUN_LEAD.length else null
                     noteLog(

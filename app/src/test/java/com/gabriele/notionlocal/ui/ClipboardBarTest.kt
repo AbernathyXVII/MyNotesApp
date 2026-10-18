@@ -32,6 +32,7 @@ import com.gabriele.notionlocal.data.entity.sliceSpans
 import com.gabriele.notionlocal.ui.screen.LinkClipboard
 import com.gabriele.notionlocal.ui.screen.PasteMode
 import com.gabriele.notionlocal.ui.screen.htmlStyleRuns
+import com.gabriele.notionlocal.ui.screen.leadOutOfSelection
 import com.gabriele.notionlocal.ui.screen.pastedFormat
 import com.gabriele.notionlocal.ui.screen.sendCtrlShortcut
 import com.gabriele.notionlocal.ui.screen.spansToHtml
@@ -72,13 +73,17 @@ class ClipboardBarTest {
     private var value by mutableStateOf(TextFieldValue(""))
     private lateinit var clipboard: LinkClipboard
 
-    private fun showField(start: String, rich: List<RichTextSpan>? = null) {
+    private fun showField(
+        start: String,
+        rich: List<RichTextSpan>? = null,
+        adjust: (TextFieldValue) -> TextFieldValue = { it }
+    ) {
         value = TextFieldValue(start, TextRange(start.length))
         clipboard = LinkClipboard(context, emptyBase) { rich }
         compose.setContent {
             val focus = remember { FocusRequester() }
             CompositionLocalProvider(LocalClipboardManager provides clipboard) {
-                BasicTextField(value = value, onValueChange = { value = it }, modifier = Modifier.focusRequester(focus))
+                BasicTextField(value = value, onValueChange = { value = adjust(it) }, modifier = Modifier.focusRequester(focus))
             }
             LaunchedEffect(Unit) { focus.requestFocus() }
         }
@@ -110,6 +115,26 @@ class ClipboardBarTest {
         assertEquals("Ciao mondo", value.text)
         // Dopo un incolla si torna al modo di sempre.
         assertEquals(PasteMode.LINKS_ONLY, clipboard.nextPasteMode)
+    }
+
+    @Test
+    fun selectAllLeavesTheHiddenLineBreakAlone() {
+        // Come i campi dell'editor, con l'a-capo nascosto in testa. Sul
+        // telefono "Select all" lo prendeva: copiato e incollato in fondo
+        // faceva una riga nuova.
+        showField("\nCiao mondo", adjust = { it.leadOutOfSelection("\n") })
+        press(KeyEvent.KEYCODE_A)
+        assertEquals(TextRange(1, 11), value.selection)
+        press(KeyEvent.KEYCODE_C)
+        assertEquals("Ciao mondo", system.primaryClip!!.getItemAt(0).text.toString())
+        // Tagliato tutto, l'a-capo resta: non è un backspace a inizio riga.
+        press(KeyEvent.KEYCODE_X)
+        assertEquals("\n", value.text)
+        // Il cursore da solo non si tocca, nemmeno a zero.
+        val atZero = TextFieldValue("\nx", TextRange(0))
+        assertEquals(atZero, atZero.leadOutOfSelection("\n"))
+        // Una selezione all'indietro resta all'indietro.
+        assertEquals(TextRange(3, 1), TextFieldValue("\nxy", TextRange(3, 0)).leadOutOfSelection("\n").selection)
     }
 
     @Test
