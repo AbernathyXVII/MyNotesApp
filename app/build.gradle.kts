@@ -65,6 +65,12 @@ android {
 
     buildTypes {
         release {
+            // **La versione da usare è questa** (dal 18/10/2026): la versione di
+            // prova gira molto più lenta (misurato: tre volte, scrivendo in una
+            // pagina lunga). Firmata con la stessa chiave della versione di
+            // prova, si installa sopra e i dati restano; per leggere il
+            // database dal PC si rimette la versione di prova.
+            signingConfig = signingConfigs.getByName("debug")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

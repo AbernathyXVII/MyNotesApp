@@ -151,6 +151,17 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         // andato altrove (nel nome di una pagina, nella prima cella di una
         // tabella).
         private const val EMPTY_TEXT_JSON = """[{"text":""}]"""
+
+        // **Quanto è grande un pezzo di testo** (vedi `chunkMembers`): oltre
+        // queste righe o queste lettere ne comincia un altro. Un pezzo più
+        // grande si rifà più lentamente a ogni tasto; uno più piccolo
+        // lascia selezionare meno righe insieme.
+        internal const val CHUNK_MAX_LINES = 50
+        internal const val CHUNK_MAX_CHARS = 3_500
+
+        // Quanto si aspetta, smesso di scrivere, prima di ridividere in
+        // pezzi: il tempo che l'ultima battuta arrivi al database.
+        private const val RECHUNK_DELAY_MS = 1_200L
     }
 
     /**
@@ -320,9 +331,152 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         // partiamo con un paragrafo vuoto pronto per scrivere,
         // così l'utente non vede una schermata completamente bianca
         // senza cursore.
-        _blocks.value = shown.ifEmpty {
+        val published = shown.ifEmpty {
             listOf(placeholderFor(currentPageId ?: return))
         }
+        // I pezzi della pagina appena aperta si fanno prima di mostrarla,
+        // così il primo disegno non è già un campo enorme; dopo, solo
+        // quando non si scrive (vedi `chunkMembers`).
+        if (chunkedPageId != currentPageId) {
+            chunkedPageId = currentPageId
+            rechunk(published)
+        } else if (!editing) {
+            scheduleRechunk()
+        }
+        _blocks.value = published
+    }
+
+    // --- I pezzi delle pagine lunghe (dal 18/10/2026) ---
+
+    /**
+     * **Le righe di testo di fila si dividono in pezzi**, ognuno un campo di
+     * testo a sé (dal 18/10/2026). Erano un campo solo, e in una pagina di
+     * 689 righe ogni tasto lo rifaceva tutto: la tastiera restava indietro,
+     * cancellare era lentissimo, scorrere a tastiera aperta scattava
+     * (chiesto dall'utente: "l'app deve reggere tante scritte"). Scrivendo
+     * si rifà solo il pezzo in cui si scrive.
+     *
+     * **I confini non si spostano mai sotto il campo in cui si scrive**:
+     * campo e database devono parlare delle stesse righe (vedi
+     * `resolveRun`). Per questo ogni pezzo ricorda le sue righe, nell'ordine,
+     * e comincia dalla prima che c'è ancora: cancellata o unita a quella
+     * sopra la sua prima riga, il pezzo continua dalla seconda. Una riga
+     * nuova messa in cima al pezzo (Invio a inizio della prima riga) diventa
+     * lei la prima (`writeRunChange`). Le righe scritte dentro allungano il
+     * pezzo; lo si ridivide solo quando non si scrive (`rechunk`).
+     *
+     * Il primo pezzo di un gruppo di righe non è qui: comincia dove
+     * comincia il gruppo, e la sua chiave resta quella di sempre.
+     */
+    private var chunkMembers: Map<String, List<String>> = emptyMap()
+    private val _chunkVersion = MutableStateFlow(0)
+
+    /** Cambia quando cambiano i pezzi senza che cambino le righe. */
+    val chunkVersion: StateFlow<Int> = _chunkVersion
+    private var chunkedPageId: String? = null
+    private var editing = false
+    private var rechunkJob: Job? = null
+
+    /**
+     * Dove comincia ogni pezzo fra queste righe, che sono quelle in cima
+     * alla pagina e nel loro ordine: id della prima riga → chiave del pezzo.
+     * La stessa risposta per la schermata e per `resolveRun`, data la stessa
+     * lista: anche quando la schermata è indietro di un tasto.
+     */
+    fun chunkStartsOf(blocks: List<BlockEntity>): Map<String, String> {
+        val members = chunkMembers
+        if (members.isEmpty()) return emptyMap()
+        val present = HashSet<String>(blocks.size * 2)
+        for (b in blocks) present += b.id
+        val starts = HashMap<String, String>()
+        for ((key, ids) in members) {
+            val first = ids.firstOrNull { it in present } ?: continue
+            if (first !in starts) starts[first] = key
+        }
+        return starts
+    }
+
+    /** La schermata dice se si sta scrivendo: i pezzi si ridividono solo quando no. */
+    fun setEditing(active: Boolean) {
+        editing = active
+        if (active) rechunkJob?.cancel() else scheduleRechunk()
+    }
+
+    private fun scheduleRechunk() {
+        rechunkJob?.cancel()
+        rechunkJob = viewModelScope.launch {
+            delay(RECHUNK_DELAY_MS)
+            if (!editing) rechunk(_blocks.value)
+        }
+    }
+
+    /**
+     * Ridivide in pezzi: quelli che ci sono restano dove sono, e un pezzo
+     * troppo grande (`CHUNK_MAX_LINES`, `CHUNK_MAX_CHARS`) se ne fa un altro
+     * dopo. Le righe ricordate da ogni pezzo diventano quelle di adesso.
+     */
+    private fun rechunk(all: List<BlockEntity>) {
+        val top = all.filter { it.parentBlockId == null }
+        val starts = chunkStartsOf(top)
+        val next = LinkedHashMap<String, List<String>>()
+        var key: String? = null
+        var members = ArrayList<String>()
+        var lines = 0
+        var chars = 0
+        var inRun = false
+        fun close() {
+            key?.let { next[it] = members }
+            key = null
+            members = ArrayList()
+        }
+        for (block in top) {
+            if (!isFlowingTextType(block.type)) {
+                close()
+                inRun = false
+                continue
+            }
+            val length = plainTextOf(block).length + 1
+            if (!inRun) {
+                // Il primo pezzo del gruppo: comincia col gruppo.
+                inRun = true
+                lines = 0
+                chars = 0
+            } else {
+                val existing = starts[block.id]
+                if (existing != null || lines >= CHUNK_MAX_LINES || chars + length > CHUNK_MAX_CHARS) {
+                    close()
+                    key = existing ?: ("chunk:" + block.id)
+                    lines = 0
+                    chars = 0
+                }
+            }
+            if (key != null) members += block.id
+            lines++
+            chars += length
+        }
+        close()
+        if (next != chunkMembers) {
+            chunkMembers = next
+            _chunkVersion.value++
+        }
+    }
+
+    /**
+     * Le righe nuove di un pezzo entrano nella sua lista: messe in cima a
+     * quello che comincia con `firstId` (`afterId` null) ne diventano
+     * l'inizio, altrimenti vanno dopo `afterId`. Così, cancellata una riga,
+     * il pezzo sa sempre qual è la successiva.
+     */
+    private fun noteNewChunkLines(firstId: String, afterId: String?, newIds: List<String>) {
+        if (newIds.isEmpty() || chunkMembers.isEmpty()) return
+        if (afterId == null) {
+            val key = chunkStartsOf(_blocks.value.filter { it.parentBlockId == null })[firstId] ?: return
+            chunkMembers = chunkMembers + (key to (newIds + chunkMembers.getValue(key)))
+            return
+        }
+        val (key, ids) = chunkMembers.entries.firstOrNull { afterId in it.value } ?: return
+        val at = ids.indexOf(afterId) + 1
+        chunkMembers = chunkMembers + (key to (ids.take(at) + newIds + ids.drop(at)))
     }
 
     /** `splitBlockAbove` del repository, fatto sulla lista in memoria. */
@@ -1546,6 +1700,34 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
      * blocchi di altro tipo intercalati (un paragrafo in mezzo
      * all'elenco) non interrompono il conteggio — come in Notion.
      */
+    /**
+     * **I numeri di tutti gli elenchi numerati, in un giro solo** (dal
+     * 18/10/2026): id → numero, con le stesse regole di
+     * [numberedListOrdinal]. Chiederlo riga per riga rileggeva tutta la
+     * pagina per ogni numero, e in una pagina lunga a ogni tasto.
+     */
+    fun numberedOrdinals(allBlocks: List<BlockEntity>): Map<String, Int> {
+        val result = HashMap<String, Int>()
+        allBlocks
+            .filter { it.type == BlockType.NUMBERED_LIST_ITEM }
+            .groupBy { it.parentBlockId }
+            .forEach { (_, siblings) ->
+                val counters = mutableListOf<Int>()
+                for (sibling in siblings.sortedBy { it.orderIndex }) {
+                    val level = sibling.indentLevel.coerceIn(0, MAX_INDENT_LEVEL)
+                    while (counters.size < level) counters.add(1)
+                    if (counters.size > level) {
+                        while (counters.size > level + 1) counters.removeAt(counters.size - 1)
+                        counters[level] = sibling.numberStartsAt ?: (counters[level] + 1)
+                    } else {
+                        counters.add(sibling.numberStartsAt ?: 1)
+                    }
+                    result[sibling.id] = counters[level]
+                }
+            }
+        return result
+    }
+
     fun numberedListOrdinal(allBlocks: List<BlockEntity>, block: BlockEntity): Int {
         val siblings = allBlocks
             .filter { it.parentBlockId == block.parentBlockId && it.type == BlockType.NUMBERED_LIST_ITEM }
@@ -2380,17 +2562,24 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
      * quelli indicati.
      */
     private fun resolveRun(runBlockIds: List<String>, all: List<BlockEntity> = _blocks.value): List<BlockEntity>? {
-        val anchor = runBlockIds.firstNotNullOfOrNull { id -> all.find { it.id == id } } ?: return null
+        val byId = all.associateBy { it.id }
+        val anchor = runBlockIds.firstNotNullOfOrNull { id -> byId[id] } ?: return null
         val siblings = all
             .filter { it.parentBlockId == anchor.parentBlockId }
             .sortedBy { it.orderIndex }
         val anchorPos = siblings.indexOfFirst { it.id == anchor.id }
         if (anchorPos < 0) return null
+        // **Il gruppo si ferma ai confini dei pezzi** (dal 18/10/2026), gli
+        // stessi che vede la schermata: vedi `chunkMembers`.
+        val starts = if (anchor.parentBlockId == null) chunkStartsOf(siblings).keys else emptySet()
 
         var start = anchorPos
-        while (start > 0 && isFlowingTextType(siblings[start - 1].type)) start--
+        while (start > 0 && siblings[start].id !in starts && isFlowingTextType(siblings[start - 1].type)) start--
         var endExclusive = anchorPos
-        while (endExclusive < siblings.size && isFlowingTextType(siblings[endExclusive].type)) endExclusive++
+        while (endExclusive < siblings.size &&
+            isFlowingTextType(siblings[endExclusive].type) &&
+            (endExclusive == anchorPos || siblings[endExclusive].id !in starts)
+        ) endExclusive++
         return siblings.subList(start, endExclusive).ifEmpty { null }
     }
 
@@ -2501,8 +2690,12 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         // non si fa niente, come prima.
         // Riquadro e citazione (dal 06/10/2026) si fondono come il toggle:
         // la riga va in fondo al loro testo.
+        // **E l'ultima riga del pezzo di sopra** (dal 18/10/2026): è testo
+        // come questa, solo in un altro campo (vedi `chunkMembers`). Questo
+        // pezzo continua dalla sua seconda riga.
         if (above.type != BlockType.CHECKBOX && above.type != BlockType.TOGGLE &&
-            above.type != BlockType.CALLOUT && above.type != BlockType.QUOTE
+            above.type != BlockType.CALLOUT && above.type != BlockType.QUOTE &&
+            !isFlowingTextType(above.type)
         ) {
             return BackspaceOutcome.NOTHING
         }
@@ -3118,6 +3311,24 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
                 val shiftFromIndex = referenceBlock?.let { it.orderIndex + 1 }
                     ?: runBlocks.getOrNull(oldMiddleStart)?.orderIndex
                     ?: 0
+                val newBlocks = extraLines.mapIndexed { i, line ->
+                    BlockEntity(
+                        pageId = pageId,
+                        parentBlockId = parentBlockId,
+                        type = inheritedType,
+                        indentLevel = indentLevel,
+                        textJson = json.encodeToString(
+                            spansForLine(oldMiddleBlocks.size + i, line)
+                        ),
+                        orderIndex = shiftFromIndex + i,
+                        attrsJson = inheritedAttrs
+                    )
+                }
+                // Le righe nuove restano nel pezzo in cui si scrive (vedi
+                // `chunkMembers`); messe in cima, ne diventano l'inizio.
+                if (parentBlockId == null) {
+                    noteNewChunkLines(runBlocks.first().id, referenceBlock?.id, newBlocks.map { it.id })
+                }
                 repository.applyBlockChanges(
                     shift = if (extraLines.isEmpty()) {
                         null
@@ -3131,19 +3342,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
                     },
                     ensured = listOfNotNull(placeholderToSave),
                     texts = rewritten,
-                    saved = extraLines.mapIndexed { i, line ->
-                        BlockEntity(
-                            pageId = pageId,
-                            parentBlockId = parentBlockId,
-                            type = inheritedType,
-                            indentLevel = indentLevel,
-                            textJson = json.encodeToString(
-                                spansForLine(oldMiddleBlocks.size + i, line)
-                            ),
-                            orderIndex = shiftFromIndex + i,
-                            attrsJson = inheritedAttrs
-                        )
-                    }
+                    saved = newBlocks
                 )
             } else {
                 repository.applyBlockChanges(
@@ -3160,13 +3359,27 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
     /** Se un blocco ha righe dentro di sé: in pratica, un toggle non vuoto. */
     private fun hasChildren(blockId: String): Boolean = _blocks.value.any { it.parentBlockId == blockId }
 
+    /**
+     * **Le righe già lette** (dal 18/10/2026): lo stesso JSON dà sempre gli
+     * stessi span, e la pagina li chiede per ogni riga più volte a ogni
+     * fotogramma. Le ultime usate restano qui; una riga cambiata ha un altro
+     * JSON e si rilegge.
+     */
+    private val spansCache = object : LinkedHashMap<String, List<RichTextSpan>>(512, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, List<RichTextSpan>>?) = size > 6_000
+    }
+
     /** Gli span (testo + formattazione) di un blocco, decodificati dal JSON salvato. */
     fun spansOf(block: BlockEntity): List<RichTextSpan> {
-        return try {
-            json.decodeFromString<List<RichTextSpan>>(block.textJson)
+        val textJson = block.textJson
+        synchronized(spansCache) { spansCache[textJson]?.let { return it } }
+        val spans = try {
+            json.decodeFromString<List<RichTextSpan>>(textJson)
         } catch (e: Exception) {
             listOf(RichTextSpan(text = ""))
         }
+        synchronized(spansCache) { spansCache[textJson] = spans }
+        return spans
     }
 
     /** Estrae il testo semplice da un blocco, per mostrarlo nell'editor. */

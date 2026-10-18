@@ -2070,6 +2070,70 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.181 — 18/10/2026 · 18:45 — Le pagine lunghe veloci
+*(Claude Code sul PC; installata sul telefono e misurata, in parte verificata: il telefono si è scollegato a metà; 622 test passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Sto iniziando a spostare le prime note da OneNote a notE, e già vedo che
+> non regge tanto testo scritto. In Permanent Notes, guarda quanto testo
+> c'è: considerando che avrei il mio personale dizionario di parole che ho
+> studiato con Anki (che arriveranno anche a 8k, se non più di 10k parole,
+> persino in un database semplice), reputo inaccettabile che lagghi così
+> tanto, specialmente la tastiera e quando cancello. Hai l'abilità di
+> rendere notE estremamente veloce e fluida anche davanti a tanto testo?
+> Peraltro, se la tastiera è aperta quando scorro scatta tanto, ma se la
+> chiudo scorre normalmente
+> EDIT: la tastiera e lo scorrimento laggano anche nel menu principale.
+> L'app deve reggere tante scritte e database, per forza di cose»
+
+- **[Modificato]** **Le pagine lunghe si dividono in pezzi**: Permanent
+  notes ha 689 righe e 31.600 lettere, ed era tutta un campo di testo solo,
+  che a ogni tasto si rifaceva per intero (e la tastiera Samsung se lo
+  faceva rimandare tutto). Ora ogni pezzo di 50 righe (o 3.500 lettere) è un
+  campo a sé, e scrivendo si rifà solo quello in cui si scrive. Da fuori non
+  si vede: i pezzi si toccano senza spazio in mezzo. Il backspace a inizio
+  pezzo unisce la riga a quella sopra come prima, Invio e le righe nuove
+  restano nel pezzo in cui si scrive, e i pezzi si rifanno solo un attimo
+  dopo che si è smesso di scrivere, mai sotto le dita. **"Select all" (e la
+  selezione col dito) arriva fino ai bordi del pezzo**, non a tutta la
+  pagina (detto all'utente prima di cominciare)
+- **[Modificato]** **A ogni tasto si ridisegna solo quello che cambia**:
+  prima ogni pezzo della pagina già visto, i database dentro la pagina e la
+  testata (copertina, icona, titolo, proprietà) si rifacevano a ogni
+  lettera; ora ognuno riceve solo quello che mostra e si salta se non è
+  cambiato. I numeri degli elenchi si contano una volta per tutta la pagina
+  (prima riga per riga, rileggendo la pagina per ogni numero), e il testo di
+  ogni riga si legge dal database una volta sola
+- **[Modificato]** **Sul telefono c'è la versione "release"**, quella che
+  si usa davvero: la versione di prova, che c'era finora, è più lenta di
+  circa tre volte per come è costruita (misurato). Ha la stessa firma, si
+  installa sopra e i dati restano
+- **[Progetto]** Le misure, sul telefono (Galaxy S25 Ultra, schermo a 120
+  Hz, 8 ms per fotogramma), in una copia di Permanent notes nel Main
+  calendar: **scrivere e cancellare 30 lettere**, prima 150 ms per
+  fotogramma (99% dei fotogrammi in ritardo), dopo 9 ms di mediana e 19–23
+  al massimo; **scorrere a tastiera aperta**, prima 6,8% di fotogrammi in
+  ritardo e punte di 48 ms, dopo 3,8% e il 95% entro 9 ms (come a tastiera
+  chiusa); la home scorreva già bene (2,6%). Dove andava il tempo l'ha detto
+  una traccia di sistema (`atrace`, coi nomi delle funzioni di Compose
+  accesi solo per la prova): i profilatori normali sul telefono non
+  registrano niente. Codice: `PageEditorViewModel.chunkMembers`,
+  `chunkStartsOf`, `rechunk`, `setEditing`, `noteNewChunkLines`,
+  `numberedOrdinals`, la cache di `spansOf`; `resolveRun` si ferma ai
+  bordi dei pezzi e `mergeIntoIslandAbove` unisce anche all'ultima riga del
+  pezzo sopra. Nella pagina: `groupIntoRenderItems(…, chunkStarts)`,
+  `RunContent`/`IslandContent`, `PageItemEnv`, `RunItem`/`IslandItem`,
+  `pageHeader`, `joinsAbove`/`joinsBelow`. Release firmata con la chiave di
+  prova in `build.gradle.kts`. Test: `PageChunksTest` (i pezzi, la
+  scrittura in un pezzo, Invio e backspace ai bordi, i pezzi rifatti solo
+  quando non si scrive, i numeri in un giro)
+- Provata sul telefono nella copia di Permanent notes: i pezzi non si
+  vedono, il backspace a inizio del secondo pezzo unisce "32." alla riga
+  "31." col cursore nel punto giusto e la tastiera aperta, Invio la ridivide
+  e "xyz" finisce davanti a "32.". Poi il telefono si è scollegato: **la riga
+  di prova "Untitled" del Main calendar (creata alle 14:29) è ancora da
+  eliminare**, e il confronto del database è da fare. Prima di cominciare
+  Permanent notes era identico a com'era
 ### 🆕 v0.180 — 18/10/2026 · 14:00 — Il volume dei click del Counter, il backspace negli elenchi come su Word
 *(Claude Code sul PC; verificata sul telefono; 616 test passati; commit solo in locale)*
 

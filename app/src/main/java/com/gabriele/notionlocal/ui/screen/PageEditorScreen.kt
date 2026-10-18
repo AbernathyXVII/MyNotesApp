@@ -268,6 +268,10 @@ import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.LocalPinnableContainer
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.foundation.shape.CircleShape
 import com.gabriele.notionlocal.ui.theme.NotionGray400
@@ -1092,6 +1096,147 @@ private fun KeepComposed() {
     }
 }
 
+/**
+ * **Quello che mostra un gruppo di righe**, confrontabile (dal 18/10/2026):
+ * se è uguale a prima la voce non si ridisegna. Le righe e i numeri dei loro
+ * elenchi; non tutta la pagina, che a ogni tasto è un'altra.
+ */
+@Immutable
+internal data class RunContent(val blocks: List<BlockEntity>, val ordinals: Map<String, Int>)
+
+/** **Quello che mostra un'isola**: il blocco e le righe che ha dentro (un toggle). */
+@Immutable
+internal data class IslandContent(val block: BlockEntity, val scope: List<BlockEntity>)
+
+/** Come comincia la chiave di un pezzo che continua un gruppo: vedi `PageEditorViewModel.rechunk`. */
+private const val CHUNK_KEY_PREFIX = "chunk:"
+
+/** I numeri delle righe di elenco numerato di queste righe. */
+private fun List<BlockEntity>.numbersFrom(ordinals: Map<String, Int>): Map<String, Int> {
+    if (none { it.type == BlockType.NUMBERED_LIST_ITEM }) return emptyMap()
+    return filter { it.type == BlockType.NUMBERED_LIST_ITEM }.associate { it.id to (ordinals[it.id] ?: 1) }
+}
+
+/** Il blocco e tutte le righe che ha dentro, a qualunque profondità. */
+private fun scopeOf(block: BlockEntity, childrenOf: Map<String?, List<BlockEntity>>): List<BlockEntity> {
+    if (childrenOf[block.id].isNullOrEmpty()) return listOf(block)
+    val result = mutableListOf(block)
+    var i = 0
+    while (i < result.size) {
+        childrenOf[result[i].id]?.let { result.addAll(it) }
+        i++
+    }
+    return result
+}
+
+/**
+ * **Gli attrezzi della pagina per le sue voci**, sempre gli stessi (dal
+ * 18/10/2026): così una voce non si ridisegna solo perché la pagina ha rifatto
+ * le sue funzioni. Chiamano sempre l'ultima versione di quelle della pagina.
+ */
+@Stable
+internal class PageItemEnv(
+    val viewModel: PageEditorViewModel,
+    val factory: ViewModelFactory,
+    private val focusChanged: State<(String, Boolean) -> Unit>,
+    private val slashAction: State<(BlockEntity, SlashAction) -> Unit>,
+    private val navigateToPage: State<(String) -> Unit>,
+    private val navigateToDatabase: State<(String) -> Unit>,
+    private val blockMenu: State<((String) -> Unit)?>
+) {
+    val onFocusChanged: (String, Boolean) -> Unit = { id, focused -> focusChanged.value(id, focused) }
+    val onSlashAction: (BlockEntity, SlashAction) -> Unit = { block, action -> slashAction.value(block, action) }
+    val onNavigateToPage: (String) -> Unit = { navigateToPage.value(it) }
+    val onNavigateToDatabase: (String) -> Unit = { navigateToDatabase.value(it) }
+    private val openMenu: (String) -> Unit = { id -> blockMenu.value?.invoke(id) }
+
+    /** Null su una pagina bloccata, come prima. */
+    val onOpenBlockMenu: ((String) -> Unit)? get() = if (blockMenu.value == null) null else openMenu
+}
+
+@Composable
+private fun rememberPageItemEnv(
+    viewModel: PageEditorViewModel,
+    factory: ViewModelFactory,
+    onFocusChanged: (String, Boolean) -> Unit,
+    onSlashAction: (BlockEntity, SlashAction) -> Unit,
+    onNavigateToPage: (String) -> Unit,
+    onNavigateToDatabase: (String) -> Unit,
+    onOpenBlockMenu: ((String) -> Unit)?
+): PageItemEnv {
+    val focusChanged = rememberUpdatedState(onFocusChanged)
+    val slashAction = rememberUpdatedState(onSlashAction)
+    val navigateToPage = rememberUpdatedState(onNavigateToPage)
+    val navigateToDatabase = rememberUpdatedState(onNavigateToDatabase)
+    val blockMenu = rememberUpdatedState(onOpenBlockMenu)
+    return remember(viewModel, factory) {
+        PageItemEnv(viewModel, factory, focusChanged, slashAction, navigateToPage, navigateToDatabase, blockMenu)
+    }
+}
+
+/** I valori della pagina che la testata usa e che non sono già stati: vedi `pageHeader`. */
+private data class PageHeaderArgs(
+    val isTrashed: Boolean,
+    val readOnlyPage: Boolean,
+    val inNotebook: Boolean,
+    val showTemplatePicker: Boolean,
+    val onNavigateToPage: (String) -> Unit
+)
+
+/** La testata della pagina come voce della lista: si salta se è la stessa. */
+@Composable
+private fun PageHeaderSlot(content: @Composable () -> Unit) {
+    content()
+}
+
+/** Un gruppo di righe come voce della pagina: si salta se non è cambiato. */
+@Composable
+private fun RunItem(
+    content: RunContent,
+    runKey: String,
+    joinsAbove: Boolean,
+    joinsBelow: Boolean,
+    env: PageItemEnv,
+    focusRequestBlockId: String?,
+    formatRequest: Pair<String, FormatType>?
+) {
+    MergedTextRunField(
+        runBlocks = content.blocks,
+        runKey = runKey,
+        ordinals = content.ordinals,
+        joinsAbove = joinsAbove,
+        joinsBelow = joinsBelow,
+        viewModel = env.viewModel,
+        focusRequestBlockId = focusRequestBlockId,
+        formatRequest = formatRequest,
+        onFocusChanged = env.onFocusChanged,
+        onSlashAction = env.onSlashAction
+    )
+}
+
+/** Un'isola come voce della pagina: si salta se non è cambiata. */
+@Composable
+private fun IslandItem(
+    content: IslandContent,
+    env: PageItemEnv,
+    focusRequestBlockId: String?,
+    formatRequest: Pair<String, FormatType>?
+) {
+    BlockRow(
+        block = content.block,
+        allBlocks = content.scope,
+        depth = 0,
+        viewModel = env.viewModel,
+        factory = env.factory,
+        focusRequestBlockId = focusRequestBlockId,
+        formatRequest = formatRequest,
+        onFocusChanged = env.onFocusChanged,
+        onNavigateToPage = env.onNavigateToPage,
+        onNavigateToDatabase = env.onNavigateToDatabase,
+        onOpenBlockMenu = env.onOpenBlockMenu
+    )
+}
+
 /** La chiave della testata (copertina, icona, titolo) nella lista della pagina. */
 private const val PAGE_HEADER_KEY = "page-header"
 
@@ -1121,18 +1266,35 @@ private fun renderItemBlockIds(item: RenderItem): List<String> = when (item) {
  * possono avere la stessa isola sopra, né stare tutti e due in cima:
  * fra due gruppi c'è sempre un'isola, altrimenti sarebbero uno solo.
  */
-internal fun groupIntoRenderItems(blocks: List<BlockEntity>): List<RenderItem> {
+internal fun groupIntoRenderItems(
+    blocks: List<BlockEntity>,
+    /**
+     * **Dove comincia un pezzo** (dal 18/10/2026): id della riga → chiave
+     * del pezzo, da `PageEditorViewModel.chunkStartsOf`. Un gruppo di righe
+     * lungo diventa più campi di testo, uno per pezzo; il primo tiene la
+     * chiave del gruppo, gli altri quella del loro pezzo, che non cambia
+     * anche quando cambia la loro prima riga.
+     */
+    chunkStarts: Map<String, String> = emptyMap()
+): List<RenderItem> {
     val result = mutableListOf<RenderItem>()
     var currentRun = mutableListOf<BlockEntity>()
+    var currentKey: String? = null
     var islandAbove: BlockEntity? = null
     fun closeRun() {
         if (currentRun.isEmpty()) return
-        val key = "run:" + (islandAbove?.id ?: ("top:" + currentRun.first().pageId))
+        val key = currentKey ?: ("run:" + (islandAbove?.id ?: ("top:" + currentRun.first().pageId)))
         result.add(RenderItem.Run(currentRun.toList(), key))
         currentRun = mutableListOf()
+        currentKey = null
     }
     for (block in blocks) {
         if (block.type in FLOWING_TYPES) {
+            val chunkKey = chunkStarts[block.id]
+            if (chunkKey != null && currentRun.isNotEmpty()) {
+                closeRun()
+                currentKey = chunkKey
+            }
             currentRun.add(block)
         } else {
             closeRun()
@@ -1385,6 +1547,9 @@ private fun PageEditorContent(
             focusedBlockId = null
         }
     }
+    // I pezzi delle pagine lunghe si ridividono solo quando non si scrive:
+    // vedi `PageEditorViewModel.chunkMembers`.
+    LaunchedEffect(focusedBlockId) { viewModel.setEditing(focusedBlockId != null) }
 
     // Chiusa la tastiera, il cursore si spegne.
     //
@@ -1488,8 +1653,23 @@ private fun PageEditorContent(
                     onDeleteForever = { confirmDeleteForever = true }
                 )
             }
-            val topLevelBlocks = blocks.filter { it.parentBlockId == null }
-            val renderItems = remember(topLevelBlocks) { groupIntoRenderItems(topLevelBlocks) }
+            val topLevelBlocks = remember(blocks) { blocks.filter { it.parentBlockId == null } }
+            // I pezzi delle pagine lunghe: vedi `PageEditorViewModel.chunkMembers`.
+            val chunkVersion by viewModel.chunkVersion.collectAsStateWithLifecycle()
+            val renderItems = remember(topLevelBlocks, chunkVersion) {
+                groupIntoRenderItems(topLevelBlocks, viewModel.chunkStartsOf(topLevelBlocks))
+            }
+            // I numeri degli elenchi e le righe dentro ogni riga, una volta
+            // per tutta la pagina: ogni voce prende solo i suoi (vedi `RunContent`).
+            val ordinals = remember(blocks) { viewModel.numberedOrdinals(blocks) }
+            val childrenOf = remember(blocks) { blocks.groupBy { it.parentBlockId } }
+            // I gruppi di righe seguiti da un altro pezzo dello stesso gruppo.
+            val continuedRuns = remember(renderItems) {
+                renderItems.zipWithNext()
+                    .filter { (_, next) -> next is RenderItem.Run && next.key.startsWith(CHUNK_KEY_PREFIX) }
+                    .map { (item, _) -> renderItemKey(item) }
+                    .toSet()
+            }
             val listState = rememberLazyListState()
             // **La riga dei titoli dei database resta in cima** ("Freeze first
             // row", dal 08/10/2026): la pagina dice alla tabella quando scorre,
@@ -1764,56 +1944,17 @@ private fun PageEditorContent(
                 // della pagina intera, `LocalPageTypography`: ora stanno sul
                 // testo selezionato, dentro gli span — vedi `fontStyleOf`.)
             ) {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .stickyViewport(stickyViewport)
-                    // Tocco sullo spazio vuoto sotto l'ultimo blocco per
-                    // continuare a scrivere. Deve rispondere SOLO a tocchi
-                    // veri: con Modifier.clickable rispondeva anche al tasto
-                    // Invio (Compose lo tratta come attivazione quando un
-                    // elemento interno ha il focus), quindi ogni a-capo
-                    // faceva anche ripartire focusLastBlock, che riportava
-                    // il cursore sull'ultimo blocco *noto prima* che l'a-capo
-                    // creasse quello nuovo — il carattere successivo finiva
-                    // sulla riga precedente.
-                    .pointerInput(Unit) {
-                        detectTapGestures { tap ->
-                            // **Solo il vuoto sotto l'ultimo blocco.**
-                            // Il gestore copre tutta la lista, quindi
-                            // prendeva anche lo spazio accanto al
-                            // titolo e i buchi fra una riga e l'altra:
-                            // toccandoli, il cursore saltava in fondo
-                            // alla pagina e si apriva la tastiera, che
-                            // non è mai quello che si voleva fare.
-                            val info = listState.layoutInfo
-                            val last = info.visibleItemsInfo.lastOrNull()
-                            if (last != null &&
-                                last.index == info.totalItemsCount - 1 &&
-                                tap.y > last.offset + last.size
-                            ) {
-                                viewModel.focusLastBlock()
-                            }
-                        }
-                    }
-            ) {
-                // **La copertina e il titolo scorrono col resto.**
-                //
-                // Stavano fuori dalla lista, quindi restavano
-                // inchiodati in cima mentre il testo scorreva
-                // sotto: con una copertina alta si mangiavano
-                // mezza schermata che non si poteva recuperare.
-                // Messi qui dentro come prima voce se ne vanno
-                // scorrendo, come su Notion.
-                //
-                // Sono **una voce sola** di proposito: gli indici
-                // della lista servono altrove per portare in vista
-                // la riga che prende il cursore, e uno scarto fisso
-                // di uno e' molto piu' facile da tenere giusto di
-                // uno variabile.
-                item(key = PAGE_HEADER_KEY) {
-                    KeepComposed()
+            // **La testata si fa una volta sola** (dal 18/10/2026): copertina,
+            // icona, titolo e proprietà della riga. Dentro la lista la si
+            // rifaceva a ogni tasto scritto nella pagina, perché a ogni tasto
+            // la lista si rifà; così si ridisegna solo quando cambia quello che
+            // mostra (la pagina, i suoi stati, e questi valori qui sotto).
+            val headerArgs = rememberUpdatedState(
+                PageHeaderArgs(isTrashed, readOnlyPage, inNotebook, showTemplatePicker, onNavigateToPage)
+            )
+            val pageHeader: @Composable () -> Unit = remember(pageId) {
+                {
+                    val (isTrashed, readOnlyPage, inNotebook, showTemplatePicker, onNavigateToPage) = headerArgs.value
                     Column {
                 // La copertina sta sopra a tutto, a tutta larghezza, e si
                 // tocca per cambiarla. Senza copertina non occupa spazio:
@@ -2121,36 +2262,100 @@ private fun PageEditorContent(
                 }
 
                 Spacer(modifier = Modifier.size(12.dp))
-
                     }
+                }
+            }
+            val itemEnv = rememberPageItemEnv(
+                viewModel = viewModel,
+                factory = factory,
+                onFocusChanged = onFocusChangedCallback,
+                onSlashAction = applyInsertAction,
+                onNavigateToPage = onNavigateToPage,
+                onNavigateToDatabase = onNavigateToDatabase,
+                onOpenBlockMenu = openBlockMenu
+            )
+            LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .stickyViewport(stickyViewport)
+                    // Tocco sullo spazio vuoto sotto l'ultimo blocco per
+                    // continuare a scrivere. Deve rispondere SOLO a tocchi
+                    // veri: con Modifier.clickable rispondeva anche al tasto
+                    // Invio (Compose lo tratta come attivazione quando un
+                    // elemento interno ha il focus), quindi ogni a-capo
+                    // faceva anche ripartire focusLastBlock, che riportava
+                    // il cursore sull'ultimo blocco *noto prima* che l'a-capo
+                    // creasse quello nuovo — il carattere successivo finiva
+                    // sulla riga precedente.
+                    .pointerInput(Unit) {
+                        detectTapGestures { tap ->
+                            // **Solo il vuoto sotto l'ultimo blocco.**
+                            // Il gestore copre tutta la lista, quindi
+                            // prendeva anche lo spazio accanto al
+                            // titolo e i buchi fra una riga e l'altra:
+                            // toccandoli, il cursore saltava in fondo
+                            // alla pagina e si apriva la tastiera, che
+                            // non è mai quello che si voleva fare.
+                            val info = listState.layoutInfo
+                            val last = info.visibleItemsInfo.lastOrNull()
+                            if (last != null &&
+                                last.index == info.totalItemsCount - 1 &&
+                                tap.y > last.offset + last.size
+                            ) {
+                                viewModel.focusLastBlock()
+                            }
+                        }
+                    }
+            ) {
+                // **La copertina e il titolo scorrono col resto.**
+                //
+                // Stavano fuori dalla lista, quindi restavano
+                // inchiodati in cima mentre il testo scorreva
+                // sotto: con una copertina alta si mangiavano
+                // mezza schermata che non si poteva recuperare.
+                // Messi qui dentro come prima voce se ne vanno
+                // scorrendo, come su Notion.
+                //
+                // Sono **una voce sola** di proposito: gli indici
+                // della lista servono altrove per portare in vista
+                // la riga che prende il cursore, e uno scarto fisso
+                // di uno e' molto piu' facile da tenere giusto di
+                // uno variabile.
+                item(key = PAGE_HEADER_KEY) {
+                    KeepComposed()
+                    PageHeaderSlot(pageHeader)
                 }
 
                 items(renderItems, key = { item -> renderItemKey(item) }) { item ->
                     KeepComposed()
+                    // **Ogni voce si ridisegna solo se è cambiata** (dal
+                    // 18/10/2026): riceve solo quello che mostra, e le
+                    // richieste di fuoco e di formato solo se sono per lei.
+                    // Prima riceveva tutta la pagina, e a ogni tasto si
+                    // rifacevano tutte le voci già viste, database compresi.
                     when (item) {
-                        is RenderItem.Run -> MergedTextRunField(
-                            runBlocks = item.blocks,
-                            runKey = item.key,
-                            allBlocks = blocks,
-                            viewModel = viewModel,
-                            focusRequestBlockId = focusRequestBlockId,
-                            formatRequest = formatRequest,
-                            onFocusChanged = onFocusChangedCallback,
-                            onSlashAction = applyInsertAction
-                        )
-                        is RenderItem.Island -> BlockRow(
-                            block = item.block,
-                            allBlocks = blocks,
-                            depth = 0,
-                            viewModel = viewModel,
-                            factory = factory,
-                            focusRequestBlockId = focusRequestBlockId,
-                            formatRequest = formatRequest,
-                            onFocusChanged = onFocusChangedCallback,
-                            onNavigateToPage = onNavigateToPage,
-                            onNavigateToDatabase = onNavigateToDatabase,
-                            onOpenBlockMenu = openBlockMenu
-                        )
+                        is RenderItem.Run -> {
+                            val content = RunContent(item.blocks, item.blocks.numbersFrom(ordinals))
+                            RunItem(
+                                content = content,
+                                runKey = item.key,
+                                joinsAbove = item.key.startsWith(CHUNK_KEY_PREFIX),
+                                joinsBelow = item.key in continuedRuns,
+                                env = itemEnv,
+                                focusRequestBlockId = focusRequestBlockId?.takeIf { id -> item.blocks.any { it.id == id } },
+                                formatRequest = formatRequest?.takeIf { r -> item.blocks.any { it.id == r.first } }
+                            )
+                        }
+                        is RenderItem.Island -> {
+                            val content = IslandContent(item.block, scopeOf(item.block, childrenOf))
+                            IslandItem(
+                                content = content,
+                                env = itemEnv,
+                                focusRequestBlockId = focusRequestBlockId?.takeIf { id -> content.scope.any { it.id == id } },
+                                formatRequest = formatRequest?.takeIf { r -> content.scope.any { it.id == r.first } }
+                            )
+                        }
                     }
                 }
             }
@@ -4218,7 +4423,8 @@ private fun predictedLineSpans(
 internal fun runPrefixes(
     lines: List<String>,
     runBlocks: List<BlockEntity>,
-    allBlocks: List<BlockEntity>,
+    /** Il numero di ogni riga di elenco numerato: vedi `PageEditorViewModel.numberedOrdinals`. */
+    ordinals: Map<String, Int>,
     viewModel: PageEditorViewModel
 ): List<LinePrefix> {
     var carriedType: BlockType? = null
@@ -4248,7 +4454,7 @@ internal fun runPrefixes(
         // numerato allo stesso rientro.
         val ordinal = if (type == BlockType.NUMBERED_LIST_ITEM) {
             when {
-                block != null -> viewModel.numberedListOrdinal(allBlocks, block)
+                block != null -> ordinals[block.id] ?: 1
                 carriedOrdinal != null && carriedIndent == indent -> carriedOrdinal!! + 1
                 else -> 1
             }
@@ -4292,7 +4498,7 @@ internal fun runPrefixes(
  */
 private class MergedRunVisualTransformation(
     private val runBlocks: List<BlockEntity>,
-    private val allBlocks: List<BlockEntity>,
+    private val ordinals: Map<String, Int>,
     private val viewModel: PageEditorViewModel,
     /**
      * Dove sta il cursore, in posizioni del testo senza l'a-capo
@@ -4311,7 +4517,7 @@ private class MergedRunVisualTransformation(
     override fun filter(text: AnnotatedString): TransformedText {
         val hasLead = text.text.startsWith(RUN_LEAD)
         val lines = bodyOf(text.text).split('\n')
-        val prefixes = runPrefixes(lines, runBlocks, allBlocks, viewModel)
+        val prefixes = runPrefixes(lines, runBlocks, ordinals, viewModel)
         // Il blocco di ogni riga anche mentre il database è indietro, e la
         // formattazione prevista delle righe appena divise o unite: vedi
         // `blocksOfLines`.
@@ -4709,7 +4915,15 @@ private fun MergedTextRunField(
     runBlocks: List<BlockEntity>,
     /** Chi è questo campo: la chiave del gruppo, vedi `groupIntoRenderItems`. */
     runKey: String,
-    allBlocks: List<BlockEntity>,
+    /** I numeri delle righe di elenco numerato di questo campo. */
+    ordinals: Map<String, Int>,
+    /**
+     * Questo pezzo continua quello di sopra, o quello di sotto continua lui
+     * (vedi `PageEditorViewModel.chunkMembers`): lì niente margine, e le righe
+     * scorrono come in un campo solo.
+     */
+    joinsAbove: Boolean = false,
+    joinsBelow: Boolean = false,
     viewModel: PageEditorViewModel,
     focusRequestBlockId: String?,
     formatRequest: Pair<String, FormatType>?,
@@ -4868,7 +5082,7 @@ private fun MergedTextRunField(
 
         val body = bodyOf(fieldValue.text)
         val caretInBody = (fieldValue.selection.end - 1).coerceIn(0, body.length)
-        val prefixes = runPrefixes(body.split('\n'), runBlocks, allBlocks, viewModel)
+        val prefixes = runPrefixes(body.split('\n'), runBlocks, ordinals, viewModel)
         val displayed = displayedCaretOffset(body, caretInBody, prefixes)
             .coerceIn(0, layout.layoutInput.text.length)
         val caret = layout.getCursorRect(displayed)
@@ -5000,7 +5214,12 @@ private fun MergedTextRunField(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = PAGE_SIDE_PADDING, vertical = 4.dp)
+            .padding(
+                start = PAGE_SIDE_PADDING,
+                end = PAGE_SIDE_PADDING,
+                top = if (joinsAbove) 0.dp else 4.dp,
+                bottom = if (joinsBelow) 0.dp else 4.dp
+            )
     ) {
     AutoCaps {
         BasicTextField(
@@ -5341,7 +5560,7 @@ private fun MergedTextRunField(
             ),
             visualTransformation = MergedRunVisualTransformation(
                 runBlocks,
-                allBlocks,
+                ordinals,
                 viewModel,
                 // Il cursore serve solo a scoprire gli spoiler che tocca, e
                 // senza fuoco non c'è nessun cursore da guardare.
@@ -5374,7 +5593,7 @@ private fun MergedTextRunField(
                     // Da dove a dove sta la riga nel testo **mostrato**, coi
                     // prefissi: lo stesso conto di `displayedCaretOffset`.
                     val lines = bodyOf(fieldValue.text).split('\n')
-                    val prefixes = runPrefixes(lines, runBlocks, allBlocks, viewModel)
+                    val prefixes = runPrefixes(lines, runBlocks, ordinals, viewModel)
                     fun shownLength(i: Int) = (prefixes.getOrNull(i)?.text?.length ?: 0) + (lines.getOrNull(i)?.length ?: 0)
                     val start = (0 until line).sumOf { shownLength(it) + 1 }
                     val last = layout.layoutInput.text.length
@@ -5448,7 +5667,7 @@ private fun MergedTextRunField(
     if (layout != null) {
         val density = LocalDensity.current
         val lines = bodyOf(fieldValue.text).split('\n')
-        val prefixes = runPrefixes(lines, runBlocks, allBlocks, viewModel)
+        val prefixes = runPrefixes(lines, runBlocks, ordinals, viewModel)
         val lineBlocks = blocksOfLines(lines, runBlocks) { viewModel.plainTextOf(it) }.blocks
         var displayStart = 0
         lines.forEachIndexed { i, line ->

@@ -93,7 +93,7 @@ class ListIndentBackspaceTest {
 
     /** I prefissi come li disegna il testo unito. */
     private fun prefixes(ids: List<String>) =
-        run(ids).let { blocks -> runPrefixes(blocks.map { viewModel.plainTextOf(it) }, blocks, viewModel.blocks.value, viewModel) }
+        run(ids).let { blocks -> runPrefixes(blocks.map { viewModel.plainTextOf(it) }, blocks, viewModel.numberedOrdinals(viewModel.blocks.value), viewModel) }
 
     @Test
     fun likeWordTheFirstBackspaceKeepsThePlaceTheSecondGoesLeft() {
