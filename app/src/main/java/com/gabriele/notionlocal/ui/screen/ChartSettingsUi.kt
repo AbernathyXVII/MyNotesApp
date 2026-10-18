@@ -91,8 +91,8 @@ internal fun ChartType.icon(): ImageVector = when (this) {
 }
 
 /** "Name", o il nome della proprietà per cui si raggruppa. */
-private fun groupName(settings: ChartSettings, columns: List<DatabaseColumnEntity>): String =
-    settings.groupColumnId?.let { id -> columns.find { it.id == id } }?.let { DbStrings.columnName(it.name) } ?: DbStrings.name
+private fun groupName(settings: ChartSettings, columns: List<DatabaseColumnEntity>, nameLabel: String): String =
+    settings.groupColumnId?.let { id -> columns.find { it.id == id } }?.let { DbStrings.columnName(it.name) } ?: nameLabel
 
 private fun valueColumn(settings: ChartSettings, columns: List<DatabaseColumnEntity>): DatabaseColumnEntity? =
     settings.valueColumnId?.let { id -> columns.find { it.id == id && it.type == ColumnType.NUMBER } }
@@ -101,8 +101,8 @@ private fun valueColumn(settings: ChartSettings, columns: List<DatabaseColumnEnt
 private fun valueName(settings: ChartSettings, columns: List<DatabaseColumnEntity>): String =
     valueColumn(settings, columns)?.let { ChartStrings.valueName(DbStrings.columnName(it.name), settings.aggregation) } ?: ChartStrings.count
 
-private fun sortName(sort: ChartSort, settings: ChartSettings, columns: List<DatabaseColumnEntity>): String {
-    val group = groupName(settings, columns)
+private fun sortName(sort: ChartSort, settings: ChartSettings, columns: List<DatabaseColumnEntity>, nameLabel: String): String {
+    val group = groupName(settings, columns, nameLabel)
     val value = valueColumn(settings, columns)?.let { DbStrings.columnName(it.name) } ?: ChartStrings.count
     return when (sort) {
         ChartSort.LABEL_ASC -> ChartStrings.sortLabelAsc(group)
@@ -148,9 +148,9 @@ internal fun ChartSettingsSection(
 
     @Composable
     fun groupRows() {
-        SettingsRow(Icons.Filled.Category, ChartStrings.whatToShow, groupName(settings, columns), { onOpenPage(ChartSettingsPage.GROUP) }, enabled = enabled)
+        SettingsRow(Icons.Filled.Category, ChartStrings.whatToShow, groupName(settings, columns, nameColumnLabel()), { onOpenPage(ChartSettingsPage.GROUP) }, enabled = enabled)
         HorizontalDivider()
-        SettingsRow(Icons.Filled.SwapVert, ChartStrings.sortBy, sortName(settings.sort, settings, columns), { onOpenPage(ChartSettingsPage.SORT) }, enabled = enabled)
+        SettingsRow(Icons.Filled.SwapVert, ChartStrings.sortBy, sortName(settings.sort, settings, columns, nameColumnLabel()), { onOpenPage(ChartSettingsPage.SORT) }, enabled = enabled)
         HorizontalDivider()
         SettingsToggleRow(Icons.Filled.VisibilityOff, ChartStrings.omitZeroValues, settings.omitZero) { if (enabled) onChange(settings.copy(omitZero = it)) }
     }
@@ -201,11 +201,11 @@ internal fun ChartSettingsSection(
         ChartType.DONUT -> {
             ChartSectionTitle(ChartStrings.data)
             SheetGroup {
-                SettingsRow(Icons.Filled.Category, ChartStrings.whatToShow, groupName(settings, columns), { onOpenPage(ChartSettingsPage.GROUP) }, enabled = enabled)
+                SettingsRow(Icons.Filled.Category, ChartStrings.whatToShow, groupName(settings, columns, nameColumnLabel()), { onOpenPage(ChartSettingsPage.GROUP) }, enabled = enabled)
                 HorizontalDivider()
                 SettingsRow(Icons.Filled.PieChart, ChartStrings.sliceBy, valueName(settings, columns), { onOpenPage(ChartSettingsPage.VALUE) }, enabled = enabled)
                 HorizontalDivider()
-                SettingsRow(Icons.Filled.SwapVert, ChartStrings.sortBy, sortName(settings.sort, settings, columns), { onOpenPage(ChartSettingsPage.SORT) }, enabled = enabled)
+                SettingsRow(Icons.Filled.SwapVert, ChartStrings.sortBy, sortName(settings.sort, settings, columns, nameColumnLabel()), { onOpenPage(ChartSettingsPage.SORT) }, enabled = enabled)
             }
         }
     }
@@ -249,7 +249,7 @@ internal fun ChartSettingsDetail(
     var addingLine by remember { mutableStateOf(false) }
     when (page) {
         ChartSettingsPage.GROUP -> SheetGroup {
-            ChoiceRow(Icons.Filled.TextFields, DbStrings.name, settings.groupColumnId == null) {
+            ChoiceRow(Icons.Filled.TextFields, nameColumnLabel(), settings.groupColumnId == null) {
                 onChange(settings.copy(groupColumnId = null))
             }
             // "Page link" no: le barre si chiamerebbero con l'id della pagina.
@@ -291,7 +291,7 @@ internal fun ChartSettingsDetail(
         ChartSettingsPage.SORT -> SheetGroup {
             ChartSort.entries.forEachIndexed { index, sort ->
                 if (index > 0) HorizontalDivider()
-                ChoiceRow(Icons.Filled.SwapVert, sortName(sort, settings, columns), settings.sort == sort) {
+                ChoiceRow(Icons.Filled.SwapVert, sortName(sort, settings, columns, nameColumnLabel()), settings.sort == sort) {
                     onChange(settings.copy(sort = sort))
                 }
             }

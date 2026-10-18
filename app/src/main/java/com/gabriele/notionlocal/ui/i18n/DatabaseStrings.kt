@@ -151,6 +151,12 @@ object DbStrings {
     // --- Contenuto ---
 
     val name get() = t("Name", "Nome", "Name", "Nom", "Nombre", "名称", "이름", "名前")
+
+    /** Il nome della proprietà principale: quello scelto per il database, o "Name". */
+    fun nameColumn(custom: String?): String = custom?.trim()?.takeIf { it.isNotEmpty() } ?: name
+    val renameProperty get() = t("Rename", "Rinomina", "Umbenennen", "Renommer", "Cambiar nombre", "重命名", "이름 바꾸기", "名前を変更")
+    val renameMainProperty get() = t("Rename the main property", "Rinomina la proprietà principale", "Haupteigenschaft umbenennen", "Renommer la propriété principale", "Cambiar nombre de la propiedad principal", "重命名主属性", "기본 속성 이름 바꾸기", "メインプロパティの名前を変更")
+    val mainPropertyHint get() = t("Empty: back to \"Name\"", "Vuoto: torna \"Name\"", "Leer: wieder \"Name\"", "Vide : de nouveau \"Name\"", "Vacío: vuelve a \"Name\"", "留空：恢复为“Name”", "비우면 \"Name\"으로", "空欄で「Name」に戻る")
     val none get() = t("None", "Nessuno", "Keine", "Aucun", "Ninguno", "无", "없음", "なし")
     val newPage get() = t("New page", "Nuova pagina", "Neue Seite", "Nouvelle page", "Nueva página", "新建页面", "새 페이지", "新規ページ")
     // Database semplice: le righe non sono pagine, e i pulsanti lo dicono.

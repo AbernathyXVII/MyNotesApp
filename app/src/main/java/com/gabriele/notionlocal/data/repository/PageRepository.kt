@@ -2261,6 +2261,10 @@ class PageRepository(private val db: AppDatabase) {
         view.id
     }
 
+    /** Il nome della proprietà principale di un database: vedi `PageEntity.nameColumnTitle`. */
+    suspend fun setNameColumnTitle(databaseId: String, title: String?) =
+        pageDao.setNameColumnTitle(databaseId, title)
+
     /** Quale vista di un database si vede: null (o il database stesso) = la sua. */
     suspend fun setActiveView(hostId: String, viewId: String?) =
         pageDao.setActiveView(hostId, viewId?.takeIf { it != hostId })

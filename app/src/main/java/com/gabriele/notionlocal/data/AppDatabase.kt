@@ -60,7 +60,7 @@ import kotlinx.serialization.json.Json
         NotebookSectionEntity::class,
         PersonalWordEntity::class
     ],
-    version = 57,
+    version = 58,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -802,6 +802,13 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** Il nome della proprietà principale dei database (18/10/2026): per tutti "Name", come prima. */
+        private val MIGRATION_57_58 = object : Migration(57, 58) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE pages ADD COLUMN nameColumnTitle TEXT DEFAULT NULL")
+            }
+        }
+
         /**
          * I sottogruppi della bacheca (14/10/2026): nessuna bacheca li ha, e
          * le fasce vuote, quando ci saranno, si nascondono come nella tabella.
@@ -915,7 +922,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_53_54,
                         MIGRATION_54_55,
                         MIGRATION_55_56,
-                        MIGRATION_56_57
+                        MIGRATION_56_57,
+                        MIGRATION_57_58
                     )
                     .build()
                 INSTANCE = instance

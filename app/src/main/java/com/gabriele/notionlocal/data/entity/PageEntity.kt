@@ -277,6 +277,11 @@ data class PageEntity(
     // dati: subito prima della prima colonna con `orderIndex` uguale o più
     // alto. -1 = la prima, com'è sempre stata. Vedi `NameColumn.kt`.
     var nameColumnOrder: Int = -1,
+    // **Il nome della proprietà principale** (dal 18/10/2026, chiesto
+    // dall'utente): quello della colonna "Aa Name", per questo database.
+    // Null = "Name", tradotto nella lingua dell'app. Sta nel database, non
+    // nella vista: le viste collegate mostrano quello della loro origine.
+    var nameColumnTitle: String? = null,
     // **Il testo lungo nelle celle** (dal 30/09/2026), di questa vista: tre
     // puntini, colonna allargata o a capo. Vedi `CellOverflow`. La colonna
     // del database si chiama ancora `wrapCells`: nata sì/no, il suo 0 e il

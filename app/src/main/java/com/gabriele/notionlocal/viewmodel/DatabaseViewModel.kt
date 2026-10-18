@@ -1288,6 +1288,17 @@ class DatabaseViewModel(
         viewModelScope.launch { pageRepository.updatePage(updated) }
     }
 
+    /**
+     * **Rinomina la proprietà principale** (dal 18/10/2026, chiesto
+     * dall'utente): la colonna "Aa Name" di questo database. Vuoto torna a
+     * "Name". Si scrive nel database, anche da una vista collegata.
+     */
+    fun renameNameColumn(title: String) {
+        val pageId = dataPageId ?: return
+        val clean = title.replace("\n", " ").trim().ifEmpty { null }
+        viewModelScope.launch { pageRepository.setNameColumnTitle(pageId, clean) }
+    }
+
     /** **"Freeze first column"** della tabella (dal 08/10/2026), di questa vista. */
     fun setFreezeFirstColumn(freeze: Boolean) {
         val current = _page.value ?: return

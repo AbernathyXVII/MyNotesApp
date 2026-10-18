@@ -2070,6 +2070,34 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.178 — 18/10/2026 · 08:51 — Il nome della proprietà principale
+*(Claude Code sul PC; non ancora installata: telefono scollegato; 596 test passati; database alla versione
+58; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Dammi la possibilità di rinominare il nome della proprietà principale di
+> ogni database»
+
+- **[Nuova funzionalità]** **La proprietà principale ("Aa Name") si può
+  rinominare**, database per database: un tocco sull'intestazione della
+  colonna, o "Rename" in cima al menu che si apre tenendola premuta. La
+  finestrella mostra il nome di adesso; lasciandola vuota torna "Name" (nella
+  lingua dell'app). Il nome nuovo compare dappertutto: nell'intestazione
+  della tabella, nella finestra della riga di un database semplice, in
+  "Sort" e nelle sue regole, nei calcoli in fondo alla colonna, nel grafico
+  ("What to show", "Sort by"); e "Fit to content" misura la colonna col nome
+  nuovo. Con il database bloccato non si rinomina
+- **[Progetto]** `PageEntity.nameColumnTitle`, nel database e non nella
+  vista: le viste collegate mostrano (e cambiano) quello della loro origine.
+  Database alla versione 58 (`MIGRATION_57_58`: per tutti resta "Name").
+  `DbStrings.nameColumn`, `LocalNameColumnTitle` e `nameColumnLabel()` in
+  `DatabaseViewScreen.kt`; `DatabaseViewModel.renameNameColumn`. Test:
+  `MainPropertyNameTest` (il nome nel database giusto, anche da una vista
+  collegata; vuoto torna "Name"; tradotto solo quello dell'app) e
+  `MigrationTest.from57TheMainPropertyIsStillName`, con il nuovo
+  `schema/v57.sql`
+- Non ancora provata sul telefono, che si era scollegato: prima di installare
+  va fatta la copia del database, perché cambia versione
 ### 🆕 v0.177 — 18/10/2026 · 08:40 — I link si aprono in Firefox
 *(Claude Code sul PC; verificato sul telefono; 592 test passati; commit solo
 in locale)*

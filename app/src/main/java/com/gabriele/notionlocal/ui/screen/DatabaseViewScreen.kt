@@ -210,6 +210,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.material3.DividerDefaults
 import kotlin.math.roundToInt
 import androidx.compose.material.icons.filled.UnfoldMore
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FitScreen
 import androidx.compose.material.icons.filled.SettingsEthernet
 import com.gabriele.notionlocal.data.entity.DEFAULT_COLUMN_WIDTH_DP
@@ -337,6 +338,19 @@ private class TableWidths(val name: Dp, private val byKey: Map<String, Dp>) {
 }
 
 private val LocalTableWidths = compositionLocalOf { TableWidths(NAME_COLUMN_WIDTH, emptyMap()) }
+
+/**
+ * **Il nome della proprietà principale** del database aperto (dal
+ * 18/10/2026): "Name", o quello che l'utente le ha dato (vedi
+ * `PageEntity.nameColumnTitle`). Passa da qui per la stessa ragione di
+ * `LocalDatabaseLocked`: lo usano l'intestazione, la finestra della riga,
+ * l'ordinamento, i calcoli e il grafico, in fondo a catene lunghe.
+ */
+internal val LocalNameColumnTitle = compositionLocalOf<String?> { null }
+
+/** "Name", o il nome dato alla proprietà principale del database aperto. */
+@Composable
+internal fun nameColumnLabel(): String = DbStrings.nameColumn(LocalNameColumnTitle.current)
 
 /**
  * **Il segnalino per allargare una colonna** ("Resize column" tenendo
@@ -1144,6 +1158,7 @@ private fun DatabaseViewBody(
 
     CompositionLocalProvider(
         LocalDatabaseLocked provides contentLocked,
+        LocalNameColumnTitle provides dataPage?.nameColumnTitle,
         LocalRowIcons provides rowIcons,
         LocalSimpleDatabase provides simple,
         LocalRowSearch provides state.search,
@@ -1372,6 +1387,7 @@ private fun DatabaseViewBody(
                     onMoveProperty = { column, delta -> viewModel.moveColumn(column.id, delta) },
                     nameColumnOrder = dataPage?.nameColumnOrder ?: -1,
                     onMoveName = { delta -> viewModel.moveColumn(NAME_COLUMN_KEY, delta) },
+                    onRenameName = viewModel::renameNameColumn,
                     onHideProperty = { viewModel.setColumnHidden(it.id, true) },
                     onToggleCenterProperty = { column, alignment ->
                         viewModel.setColumnAlignment(column.id, alignment)
@@ -2005,6 +2021,8 @@ private fun TableLayout(
     nameColumnOrder: Int = -1,
     /** "Move to left" (-1) / "Move to right" (+1) di Name. */
     onMoveName: (Int) -> Unit = {},
+    /** Rinomina la proprietà principale (vedi `NameHeaderCell`). */
+    onRenameName: ((String) -> Unit)? = null,
     onHideProperty: (DatabaseColumnEntity) -> Unit,
     onToggleCenterProperty: (DatabaseColumnEntity, CellAlignment) -> Unit,
     onAddProperty: () -> Unit,
@@ -2137,6 +2155,7 @@ private fun TableLayout(
                 onMoveProperty = onMoveProperty,
                 namePlace = namePlace,
                 onMoveName = onMoveName,
+                onRenameName = onRenameName,
                 onHideProperty = onHideProperty,
                 onToggleCenterProperty = onToggleCenterProperty,
                 onAddProperty = onAddProperty,
@@ -2196,6 +2215,7 @@ private fun TableLayout(
                 onMoveProperty = onMoveProperty,
                 namePlace = namePlace,
                 onMoveName = onMoveName,
+                onRenameName = onRenameName,
                 onHideProperty = onHideProperty,
                 onToggleCenterProperty = onToggleCenterProperty,
                 onAddProperty = onAddProperty,
@@ -2316,7 +2336,8 @@ private fun fitWidths(
     val simple = LocalSimpleDatabase.current
     val icons = LocalRowIcons.current
     val linkedPages = LocalLinkedPages.current
-    return remember(state, columns, keys, calculations, subRowKeys, typography, density, simple, icons, linkedPages) {
+    val nameLabel = nameColumnLabel()
+    return remember(state, columns, keys, calculations, subRowKeys, typography, density, simple, icons, linkedPages, nameLabel) {
         if (keys.isEmpty()) return@remember emptyMap()
         val measure: (String, ComposeTextStyle) -> Dp = { text, style ->
             if (text.isEmpty()) {
@@ -2340,7 +2361,7 @@ private fun fitWidths(
                 val tree = rowTree(state.rows)
                 val depths = tree.associate { it.row.id to it.depth }
                 val slot = if (hasSubRows(state.rows)) SUB_ROW_ARROW_SLOT + 4.dp else 0.dp
-                val names = nameFitWidth(tree.map { it.row }, simple, icons.keys, typography, measure) { row ->
+                val names = nameFitWidth(tree.map { it.row }, simple, icons.keys, typography, measure, nameLabel) { row ->
                     SUB_ROW_INDENT * (depths[row.id] ?: 0) + slot
                 }
                 put(NAME_COLUMN_KEY, maxOf(names, calc))
@@ -2369,10 +2390,12 @@ internal fun nameFitWidth(
     withIcon: Set<String>,
     typography: Typography,
     measure: (String, ComposeTextStyle) -> Dp,
+    /** Il nome della colonna: "Name", o quello dato dall'utente. */
+    nameLabel: String = DbStrings.name,
     /** Quanto rientra il nome di una riga: le sotto-righe, e il posto della freccia. */
     extraStart: (DatabaseRowEntity) -> Dp = { 0.dp }
 ): Dp {
-    val header = 12.dp + measure("Aa", typography.labelLarge) + 8.dp + measure(DbStrings.name, typography.labelLarge) + 12.dp
+    val header = 12.dp + measure("Aa", typography.labelLarge) + 8.dp + measure(nameLabel, typography.labelLarge) + 12.dp
     val open = if (simple) 0.dp else measure(DbStrings.open, typography.labelSmall) + 16.dp + 8.dp
     val cells = rows.maxOfOrNull { row ->
         12.dp + extraStart(row) + (if (row.id in withIcon) ROW_ICON_SIZE + 6.dp else 0.dp) +
@@ -2533,6 +2556,7 @@ private fun TableHeaderRow(
     /** Dove sta Name fra `columns`: 0 = prima di tutte, `columns.size` = in fondo. */
     namePlace: Int = 0,
     onMoveName: (Int) -> Unit = {},
+    onRenameName: ((String) -> Unit)? = null,
     onHideProperty: (DatabaseColumnEntity) -> Unit,
     onToggleCenterProperty: (DatabaseColumnEntity, CellAlignment) -> Unit,
     onAddProperty: () -> Unit,
@@ -2545,6 +2569,7 @@ private fun TableHeaderRow(
 ) {
     val resize = LocalColumnResize.current
     val widths = LocalTableWidths.current
+    val nameLabel = nameColumnLabel()
     // Il posto di ogni colonna nella tabella, Name compresa.
     fun place(index: Int) = if (index < namePlace) index else index + 1
     // **Con "Wrap in the cell" vanno a capo anche i titoli delle colonne**
@@ -2558,7 +2583,8 @@ private fun TableHeaderRow(
             namePlace = namePlace,
             name = {
                 NameHeaderCell(
-                    onCalculate = { onCalculate(CalculateTarget(NAME_CALCULATION_KEY, null, DbStrings.name)) },
+                    onCalculate = { onCalculate(CalculateTarget(NAME_CALCULATION_KEY, null, nameLabel)) },
+                    onRename = onRenameName,
                     canMoveLeft = !viewLocked && namePlace > 0,
                     canMoveRight = !viewLocked && namePlace < columns.size,
                     onMove = onMoveName,
@@ -2645,6 +2671,7 @@ private fun CalculationFooter(
     val columnCalcs = columns.associate { it.id to validCalculation(calculations, it.id, it.type) }
     if (nameCalc == null && columnCalcs.values.all { it == null }) return
     val widths = LocalTableWidths.current
+    val nameLabel = nameColumnLabel()
 
     Row {
         TableSlots(
@@ -2654,7 +2681,7 @@ private fun CalculationFooter(
                 CalculationCell(
                     width = widths.name,
                     alignment = alignments[NAME_CALCULATION_KEY] ?: CellAlignment.RIGHT,
-                    onClick = { onCalculate(CalculateTarget(NAME_CALCULATION_KEY, null, DbStrings.name)) },
+                    onClick = { onCalculate(CalculateTarget(NAME_CALCULATION_KEY, null, nameLabel)) },
                     onAlign = { onAlign(NAME_CALCULATION_KEY, it) }
                 ) {
                     if (nameCalc != null) {
@@ -5362,10 +5389,11 @@ private fun SortSheet(
         }
     }
 
+    val nameLabel = nameColumnLabel()
     fun nameOf(id: String): String = if (id == SORT_BY_NAME) {
-        DbStrings.name
+        nameLabel
     } else {
-        columns.find { it.id == id }?.name?.let(DbStrings::columnName) ?: DbStrings.name
+        columns.find { it.id == id }?.name?.let(DbStrings::columnName) ?: nameLabel
     }
 
     /** "1 ↑": il posto e il verso della regola su questa proprietà, se c'è. */
@@ -5386,7 +5414,7 @@ private fun SortSheet(
             if (SORT_BY_NAME !in except) {
                 SettingsRow(
                     icon = Icons.Filled.Notes,
-                    label = DbStrings.name,
+                    label = nameLabel,
                     value = if (badges) badgeOf(SORT_BY_NAME) else "",
                     onClick = { onChoose(SORT_BY_NAME) }
                 )
@@ -6071,6 +6099,8 @@ private fun CellSeparator(
 @Composable
 private fun NameHeaderCell(
     onCalculate: () -> Unit = {},
+    /** Rinomina la proprietà principale (dal 18/10/2026); null se non si può. */
+    onRename: ((String) -> Unit)? = null,
     /** Name si sposta anche lei (dal 29/09/2026); grigie in fondo, in testa e con "Lock view". */
     canMoveLeft: Boolean = false,
     canMoveRight: Boolean = false,
@@ -6082,13 +6112,19 @@ private fun NameHeaderCell(
     onFitChange: (Boolean) -> Unit = {}
 ) {
     var menuOpen by remember { mutableStateOf(false) }
+    var renaming by remember { mutableStateOf(false) }
+    val label = nameColumnLabel()
+    val custom = LocalNameColumnTitle.current
+    // Bloccato il database, il nome resta com'è.
+    val rename = onRename?.takeIf { !LocalDatabaseLocked.current }
     val wrap = LocalWrapCells.current
     Box(modifier = if (wrap) Modifier.fillMaxHeight() else Modifier) {
     Row(
         modifier = Modifier
             .width(LocalTableWidths.current.name)
             .then(if (wrap) Modifier.heightIn(min = ROW_HEIGHT).fillMaxHeight() else Modifier.height(ROW_HEIGHT))
-            .combinedClickable(onClick = {}, onLongClick = { menuOpen = true })
+            // Un tocco rinomina, come sulle altre proprietà apre le loro impostazioni.
+            .combinedClickable(onClick = { if (rename != null) renaming = true }, onLongClick = { menuOpen = true })
             .padding(horizontal = 12.dp)
             .cellWrapPadding(),
         verticalAlignment = Alignment.CenterVertically
@@ -6100,9 +6136,12 @@ private fun NameHeaderCell(
         )
         Spacer(modifier = Modifier.size(8.dp))
         Text(
-            DbStrings.name,
+            label,
             style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            // Con "Wrap in the cell" va a capo come gli altri titoli; senza, tre puntini.
+            maxLines = if (wrap) Int.MAX_VALUE else 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
     // Anche il nome ha il suo calcolo (quante pagine, quante col nome…).
@@ -6111,6 +6150,17 @@ private fun NameHeaderCell(
         onDismissRequest = { menuOpen = false },
         modifier = Modifier.background(DarkSheet)
     ) {
+        // **Rename** (dal 18/10/2026, chiesto dall'utente): il nome della
+        // proprietà principale di questo database.
+        DropdownMenuItem(
+            text = { Text(DbStrings.renameProperty) },
+            leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) },
+            enabled = rename != null,
+            onClick = {
+                menuOpen = false
+                renaming = true
+            }
+        )
         // **Name si sposta** (dal 29/09/2026: "permettimi di spostare
         // ovunque io voglia anche la colonna Name"): in cima, come nel menu
         // delle altre colonne.
@@ -6154,6 +6204,47 @@ private fun NameHeaderCell(
         )
     }
     }
+    if (renaming && rename != null) {
+        RenameMainPropertyDialog(
+            current = custom.orEmpty(),
+            onDismiss = { renaming = false },
+            onSave = { title ->
+                renaming = false
+                rename(title)
+            }
+        )
+    }
+}
+
+/**
+ * **La finestrella per rinominare la proprietà principale** (dal
+ * 18/10/2026): il nome di adesso, da cambiare; vuoto torna "Name".
+ */
+@Composable
+private fun RenameMainPropertyDialog(current: String, onDismiss: () -> Unit, onSave: (String) -> Unit) {
+    var text by remember { mutableStateOf(TextFieldValue(current, TextRange(current.length))) }
+    val focus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { focus.requestFocus() }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(DbStrings.renameMainProperty) },
+        text = {
+            AutoCaps {
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { text = it.copy(text = it.text.replace("\n", "")) },
+                    singleLine = true,
+                    placeholder = { Text(DbStrings.name) },
+                    supportingText = { Text(DbStrings.mainPropertyHint) },
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { onSave(text.text) }),
+                    modifier = Modifier.fillMaxWidth().focusRequester(focus)
+                )
+            }
+        },
+        confirmButton = { TextButton(onClick = { onSave(text.text) }) { Text(EditorStrings.save) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(Strings.cancel) } }
+    )
 }
 
 /**
@@ -9030,7 +9121,7 @@ internal fun RowPageProperties(
     val linkedPages by viewModel.linkedPages.collectAsStateWithLifecycle()
 
     PageLinkHost(factory = factory, linkedPages = linkedPages, onOpenPage = onOpenPage) {
-    CompositionLocalProvider(LocalDatabaseLocked provides !canEdit) {
+    CompositionLocalProvider(LocalDatabaseLocked provides !canEdit, LocalNameColumnTitle provides dataPage?.nameColumnTitle) {
         Column(
             modifier = modifier
                 .fillMaxWidth()
@@ -9176,7 +9267,7 @@ private fun SimpleRowNameField(
                 name = singleLine
                 onTitleChange(singleLine)
             },
-            label = { Text(DbStrings.name) },
+            label = { Text(nameColumnLabel()) },
             placeholder = { Text(Strings.untitled) },
             singleLine = true,
             readOnly = !editable,
