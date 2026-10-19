@@ -120,6 +120,7 @@ object AppSettings {
         themeModeState.value = enumOr(KEY_THEME, ThemeMode.DARK)
         animationsState.value = enumOr(KEY_ANIMATIONS, AnimationLevel.FULL)
         titlePositionState.value = enumOr(KEY_TITLE_POSITION, TitlePosition.BELOW_ICON)
+        fullLineViewState.value = prefs.getBoolean(KEY_FULL_LINE_VIEW, true)
         numberStyleState.value = enumOr(KEY_NUMBER_STYLE, NumberStyle.DOT_GROUPS)
         dateStyleState.value = enumOr(KEY_DATE_STYLE, DateStyle.DAY_MONTH_YEAR_DOT)
         timeFormatState.value = enumOr(KEY_TIME_FORMAT, TimeFormatKind.H24)
@@ -192,6 +193,20 @@ object AppSettings {
     var titlePosition: TitlePosition
         get() = titlePositionState.value
         set(value) { titlePositionState.value = value; putEnum(KEY_TITLE_POSITION, value) }
+
+    private val fullLineViewState = mutableStateOf(true)
+
+    /**
+     * **"Full line view"** (dal 19/10/2026, chiesto dall'utente): le righe
+     * lunghe delle pagine non vanno a capo e si scorrono di lato, tutte
+     * insieme. Acceso di partenza, come ha chiesto. Vedi `FullLineView.kt`.
+     */
+    var fullLineView: Boolean
+        get() = fullLineViewState.value
+        set(value) {
+            fullLineViewState.value = value
+            if (::prefs.isInitialized) prefs.edit().putBoolean(KEY_FULL_LINE_VIEW, value).apply()
+        }
 
     // --- Formati ---
 
@@ -470,6 +485,7 @@ object AppSettings {
     private const val KEY_THEME = "theme"
     private const val KEY_ANIMATIONS = "animations"
     private const val KEY_TITLE_POSITION = "title_position"
+    private const val KEY_FULL_LINE_VIEW = "full_line_view"
     private const val KEY_NUMBER_STYLE = "number_style"
     private const val KEY_DATE_STYLE = "date_style"
     private const val KEY_TIME_FORMAT = "time_format"

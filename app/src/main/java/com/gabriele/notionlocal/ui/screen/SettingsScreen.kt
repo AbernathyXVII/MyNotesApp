@@ -50,6 +50,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Animation
 import androidx.compose.material.icons.filled.Title
+import androidx.compose.material.icons.filled.SettingsEthernet
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Language
@@ -152,6 +153,18 @@ fun SettingsScreen(onBack: () -> Unit, onOpenPatchNotes: () -> Unit = {}) {
                 icon = Icons.Filled.Title,
                 value = titlePositionLabel(AppSettings.titlePosition),
                 onClick = { dialog = SettingsDialog.TITLE_POSITION }
+            )
+            // **"Full line view"** (dal 19/10/2026, chiesto dall'utente), sotto
+            // la posizione del titolo: le righe lunghe non vanno a capo e si
+            // scorrono di lato. Acceso di partenza.
+            SettingsItem(
+                Strings.fullLineView,
+                icon = Icons.Filled.SettingsEthernet,
+                value = Strings.fullLineViewNote,
+                onClick = { AppSettings.fullLineView = !AppSettings.fullLineView },
+                trailing = {
+                    Switch(checked = AppSettings.fullLineView, onCheckedChange = { AppSettings.fullLineView = it })
+                }
             )
             SettingsItem(
                 Strings.animations,

@@ -2073,6 +2073,75 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.184 — 19/10/2026 · 23:20 — Le righe lunghe non vanno più a capo
+*(Claude Code sul PC; verificata sul telefono; 643 test passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «In Permanent Notes ci sono dei blocchi di testo che sono così lunghi che il
+> testo va a capo. Non mi piace tantissimo come cosa, ma posso capire quando è
+> utile e quando non lo è. Ti chiedo di mettere in Settings un'impostazione che
+> rende attivabile o disattivabile (di default è attiva) la modalità
+> visualizzazione totale, in modo che posso scorrere in orizzontale finché
+> finisce il testo così ogni campo si distribuisce per intero senza andare a
+> capo. Mi raccomando falla bene, perché Notion non ha questa cosa e OneNote ce
+> l'ha ma è fatta malissimo (anche sulla questione della feature dello zoom in
+> e out, di cui poi ne parleremo più in là)»
+
+- **[Nuova funzionalità]** **Settings → "Full line view"** ("Visualizzazione
+  totale" in italiano), sotto "Title position", accesa di partenza: le righe
+  lunghe delle pagine non vanno più a capo, e col dito si scorrono di lato
+  fino alla loro fine. Le righe scorrono **tutte insieme**, come su un foglio
+  largo, e restano allineate fra loro. Il titolo, le proprietà, i database, le
+  immagini e gli altri blocchi che non sono testo restano fermi. Vale per il
+  testo della pagina (paragrafi, elenchi, caselle) e per quello di toggle,
+  riquadri, citazioni, notifiche e codice, che scorre dentro il suo riquadro.
+  Spenta, tutto è come prima
+- **[Nuova funzionalità]** **Fatta per non avere i difetti di OneNote**:
+  - il dito va in verticale **oppure** di lato, mai di sbieco: il primo verso
+    in cui si muove decide per tutto il gesto;
+  - di lato si va solo fin dove finisce la riga più lunga fra quelle sullo
+    schermo, più un po' d'aria, mai oltre;
+  - scrivendo, il cursore resta sempre in vista anche di lato; andando a capo
+    si torna all'inizio delle righe;
+  - mentre si scorre di lato compare in fondo una barretta blu che dice dove
+    si è, e svanisce poco dopo;
+  - una tabella di un database arrivata al suo bordo non si trascina dietro il
+    testo intorno;
+  - i tratti a penna sul testo si spostano col testo; mentre si disegna le
+    righe tornano all'inizio
+- **🔴 [Da rivedere]** **Scorrendo in giù verso righe più corte, la pagina
+  torna di lato da sola**, quanto basta per vedere la fine della riga più
+  lunga sullo schermo, invece di lasciare lo schermo vuoto. **L'alternativa**:
+  restare dove si è finché non la si sposta col dito, come OneNote e gli
+  editor di codice. Risalendo si ritroverebbe la stessa posizione, ma si può
+  finire su uno schermo vuoto
+- **[Progetto]** `FullLineView.kt`: `SideScroll` (lo spostamento comune, in
+  px, e `reach`, fin dove si può andare, contato sulle voci della lista che si
+  vedono), `SideLane` (ogni campo di testo è una corsia: si misura senza
+  limite di larghezza e si posa spostato; lo spostamento si legge solo nel
+  momento di posare, quindi scorrere di lato non rifà né il testo né la sua
+  misura), `SideResponder` (il cursore in vista anche di lato; un rettangolo
+  più largo dello spazio, cioè tutto il campo, non sposta niente),
+  `KeepSidewaysInside` sulle isole, `SideScrollEffects`,
+  `SideScrollIndicator`. `AppSettings.fullLineView` (`full_line_view`),
+  `Strings.fullLineView`/`fullLineViewNote`, `InkPageState.slidingItems` e
+  `sideOffset`. Test: `FullLineViewTest` (le righe non vanno a capo; di lato
+  fino alla fine della riga e non oltre, col riquadro fermo che resta fermo; il
+  primo verso decide il gesto; scesi fra righe corte si torna all'inizio; il
+  cursore resta in vista e a capo si torna all'inizio; l'impostazione)
+- Provata sul telefono. In Permanent notes, solo guardata e scorsa: le righe
+  lunghe non vanno più a capo, si scorrono di lato fino alla fine della riga
+  più lunga sullo schermo, in verticale la pagina non si sposta di lato, e
+  risalendo in cima torna di lato quanto basta. In una riga di prova del Main
+  calendar: una riga lunga scritta con la tastiera, col cursore sempre in
+  vista; a capo si torna all'inizio; trascinata di lato con la tastiera
+  aperta; un riquadro con un testo lungo scorre dentro il suo riquadro,
+  allineato al testo sopra. La prima barretta, grigia e appena sopra la barra
+  di sistema, sembrava una seconda barra di sistema: ora è blu, su una
+  traccia, più in alto. Sulla release, dieci trascinate di lato in Permanent
+  notes: 295 fotogrammi, metà sotto i 6 ms, il 95% sotto i 9 ms, nessuno
+  lento per colpa dell'app. Riga di prova eliminata: database, impostazioni e
+  widget identici a prima
 ### 🆕 v0.183 — 19/10/2026 · 22:44 — Le caselle copiate si incollano come caselle
 *(Claude Code sul PC; verificata sul telefono; 637 test passati; commit solo in locale)*
 

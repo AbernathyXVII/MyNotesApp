@@ -442,6 +442,18 @@ object Strings {
         "메인 메뉴를 포함한 모든 페이지에 적용돼요. 아이콘 옆에 두면 본문 공간이 넓어져요.",
         "メインメニューを含むすべてのページに適用されます。アイコンの横にすると本文の場所が広がります。"
     )
+    // Le righe lunghe che non vanno a capo (dal 19/10/2026): vedi `FullLineView.kt`.
+    val fullLineView get() = t("Full line view", "Visualizzazione totale", "Ganze Zeilen", "Lignes entières", "Líneas completas", "整行显示", "줄 전체 보기", "行全体を表示")
+    val fullLineViewNote get() = t(
+        "Long lines don't wrap: swipe sideways to read them to the end",
+        "Le righe lunghe non vanno a capo: scorri di lato per leggerle fino in fondo",
+        "Lange Zeilen werden nicht umbrochen: zur Seite wischen, um sie bis zum Ende zu lesen",
+        "Les longues lignes ne passent pas à la ligne : faites glisser sur le côté pour les lire jusqu'au bout",
+        "Las líneas largas no se parten: desliza de lado para leerlas hasta el final",
+        "长行不换行：左右滑动即可读到行尾",
+        "긴 줄이 줄바꿈되지 않아요. 옆으로 밀어 끝까지 읽으세요",
+        "長い行を折り返しません。横にスワイプすると最後まで読めます"
+    )
     val animations get() = t("Animations", "Animazioni", "Animationen", "Animations", "Animaciones", "动画", "애니메이션", "アニメーション")
     val animationsOn get() = t("On", "Attive", "An", "Activées", "Activadas", "开启", "켜기", "オン")
     val animationsReduced get() = t("Reduced", "Ridotte", "Reduziert", "Réduites", "Reducidas", "减少", "줄이기", "控えめ")

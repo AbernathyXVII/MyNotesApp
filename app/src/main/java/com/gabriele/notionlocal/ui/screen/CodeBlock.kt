@@ -31,6 +31,10 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -95,6 +99,7 @@ private object CodeLeadMapping : OffsetMapping {
  * maiuscole né corregge le parole: nel codice farebbe solo danni. Backspace
  * a inizio di un codice vuoto lo fa tornare una riga di testo.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun CodeBlockContent(
     block: BlockEntity,
@@ -119,6 +124,17 @@ internal fun CodeBlockContent(
     var choosingLanguage by remember(block.id) { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
     val transformation = remember(language) { CodeTransformation(language) }
+    // **Le righe intere** (dal 19/10/2026, "Full line view"): il codice scorre
+    // di lato con il testo della pagina, e scrivendo il cursore resta in vista.
+    val sideLane = rememberSideLane()
+    val caretIntoView = remember { BringIntoViewRequester() }
+    var codeLayout by remember(block.id) { mutableStateOf<TextLayoutResult?>(null) }
+    LaunchedEffect(value.selection, codeLayout, focused) {
+        if (sideLane == null || !focused) return@LaunchedEffect
+        val layout = codeLayout ?: return@LaunchedEffect
+        val at = (value.selection.end - CODE_LEAD.length).coerceIn(0, layout.layoutInput.text.length)
+        caretIntoView.bringIntoView(layout.getCursorRect(at))
+    }
 
     // Cambiato da fuori (Annulla, "Turn into"): il campo lo rilegge, ma solo
     // mentre non ci si scrive dentro.
@@ -201,10 +217,13 @@ internal fun CodeBlockContent(
                     keyboardType = KeyboardType.Ascii
                 ),
                 visualTransformation = transformation,
+                onTextLayout = { codeLayout = it },
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 21.dp)
                     .padding(end = 8.dp)
+                    .sideLane(sideLane)
+                    .bringIntoViewRequester(caretIntoView)
                     .focusRequester(focusRequester)
                     .onFocusChanged {
                         focused = it.isFocused

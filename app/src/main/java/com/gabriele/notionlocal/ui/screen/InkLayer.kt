@@ -122,6 +122,15 @@ class InkPageState(val listState: LazyListState) {
     /** L'ancoraggio di ogni voce: quello che prende un tratto cominciato lì. */
     var anchorOfItem: List<String> = emptyList()
 
+    /**
+     * **Le voci di testo che scorrono di lato** con "Full line view" (dal
+     * 19/10/2026), come indici della lista, e di quanto: un tratto attaccato
+     * al testo si sposta con lui. Mentre si disegna le righe tornano
+     * all'inizio, quindi i tratti nuovi si salvano dove il testo sta fermo.
+     */
+    var slidingItems: Set<Int> = emptySet()
+    var sideOffset: () -> Float = { 0f }
+
     /** Quanto è alta la copertina, in px: sopra non si disegna. 0 senza copertina. */
     var coverHeightPx: Float = 0f
 
@@ -315,7 +324,8 @@ fun Modifier.inkLayer(
                 val index = resolveAnchor(stroke.entity.anchor, state.itemOfBlock) ?: continue
                 val top = state.itemTop(info, index) ?: continue
                 if (top + stroke.bounds.bottom * density < boundary || top + stroke.bounds.top * density > size.height) continue
-                translate(top = top) {
+                val left = if (index in state.slidingItems) -state.sideOffset() else 0f
+                translate(left = left, top = top) {
                     drawInk(cache.pathOf(stroke, density), stroke.entity.tool, stroke.entity.width, inkColor(stroke.entity.color, textColor))
                 }
             }

@@ -133,6 +133,8 @@ import androidx.compose.material.icons.filled.Notes
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import com.gabriele.notionlocal.data.entity.InkStrokeEntity
 import com.gabriele.notionlocal.data.ink.InkPrefs
 import com.gabriele.notionlocal.data.ink.resolveAnchor
@@ -1677,6 +1679,15 @@ private fun PageEditorContent(
                     .toSet()
             }
             val listState = rememberLazyListState()
+            // **Le righe intere** (dal 19/10/2026, Settings → "Full line
+            // view"): le righe lunghe non vanno a capo e scorrono di lato,
+            // tutte insieme. Vedi `FullLineView.kt`.
+            val sideOffset = rememberSaveable(pageId) { mutableFloatStateOf(0f) }
+            val sideScroll = if (AppSettings.fullLineView) {
+                remember(listState, sideOffset) { SideScroll(listState, sideOffset) }
+            } else {
+                null
+            }
             // **La riga dei titoli dei database resta in cima** ("Freeze first
             // row", dal 08/10/2026): la pagina dice alla tabella quando scorre,
             // e dove fermarsi, sotto i pulsanti sospesi (vedi `FrozenTable.kt`).
@@ -1696,6 +1707,12 @@ private fun PageEditorContent(
                         renderItemBlockIds(item).forEach { put(it, index + 1) }
                     }
                 }
+                inkState.slidingItems = renderItems.indices.filter { renderItems[it] is RenderItem.Run }.map { it + 1 }.toSet()
+            }
+            inkState.sideOffset = if (sideScroll == null) {
+                { 0f }
+            } else {
+                { sideScroll.offset }
             }
             inkState.coverHeightPx = if (page?.coverImage != null) with(inkDensity) { COVER_HEIGHT.toPx() } else 0f
             val focusPark = remember { FocusRequester() }
@@ -1944,6 +1961,7 @@ private fun PageEditorContent(
             CompositionLocalProvider(
                 LocalStickyViewport provides stickyViewport,
                 LocalFocusPark provides focusPark,
+                LocalSideScroll provides sideScroll,
                 // Mentre si disegna, il testo si legge e basta.
                 LocalPageLocked provides (readOnlyPage || drawingMode)
                 // (Fino al 25/09/2026 qui passavano anche il font e il corpo
@@ -2285,6 +2303,9 @@ private fun PageEditorContent(
                 modifier = Modifier
                     .fillMaxSize()
                     .stickyViewport(stickyViewport)
+                    // Di lato, con "Full line view": il primo verso in cui si
+                    // muove il dito decide per tutto il gesto.
+                    .sideScrollGestures(sideScroll, enabled = !drawingMode)
                     // Tocco sullo spazio vuoto sotto l'ultimo blocco per
                     // continuare a scrivere. Deve rispondere SOLO a tocchi
                     // veri: con Modifier.clickable rispondeva anche al tasto
@@ -2335,6 +2356,9 @@ private fun PageEditorContent(
 
                 items(renderItems, key = { item -> renderItemKey(item) }) { item ->
                     KeepComposed()
+                    // I campi di testo della voce sanno in quale voce stanno:
+                    // con "Full line view" serve a sapere se si vedono.
+                    CompositionLocalProvider(LocalSideItemKey provides renderItemKey(item)) {
                     // **Ogni voce si ridisegna solo se è cambiata** (dal
                     // 18/10/2026): riceve solo quello che mostra, e le
                     // richieste di fuoco e di formato solo se sono per lei.
@@ -2355,15 +2379,29 @@ private fun PageEditorContent(
                         }
                         is RenderItem.Island -> {
                             val content = IslandContent(item.block, scopeOf(item.block, childrenOf))
-                            IslandItem(
-                                content = content,
-                                env = itemEnv,
-                                focusRequestBlockId = focusRequestBlockId?.takeIf { id -> content.scope.any { it.id == id } },
-                                formatRequest = formatRequest?.takeIf { r -> content.scope.any { it.id == r.first } }
-                            )
+                            // Una tabella arrivata al suo bordo non si trascina
+                            // dietro il testo della pagina (vedi `KeepSidewaysInside`).
+                            Box(if (sideScroll != null) Modifier.nestedScroll(KeepSidewaysInside) else Modifier) {
+                                IslandItem(
+                                    content = content,
+                                    env = itemEnv,
+                                    focusRequestBlockId = focusRequestBlockId?.takeIf { id -> content.scope.any { it.id == id } },
+                                    formatRequest = formatRequest?.takeIf { r -> content.scope.any { it.id == r.first } }
+                                )
+                            }
                         }
                     }
+                    }
                 }
+            }
+            if (sideScroll != null) {
+                SideScrollEffects(sideScroll, drawing = drawingMode)
+                SideScrollIndicator(
+                    sideScroll,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(start = 20.dp, end = 20.dp, bottom = 14.dp)
+                )
             }
             }
 
@@ -5083,6 +5121,25 @@ private fun MergedTextRunField(
     // **La pagina segue il cursore, non tutto il campo** (dal 19/10/2026):
     // vedi `CaretInView`. Letto ogni volta da capo, così è sempre quello di adesso.
     val caretInView = remember(runKey) { CaretInView() }
+    // **Le righe intere** (dal 19/10/2026, "Full line view"): il campo scorre
+    // di lato con gli altri, e dice fin dove arrivano le sue righe che si
+    // vedono, così la pagina scorre fin lì e non oltre. Vedi `FullLineView.kt`.
+    val sideLane = rememberSideLane()
+    val sidePadPx = with(LocalDensity.current) { PAGE_SIDE_PADDING.toPx() }
+    val sideTopPx = with(LocalDensity.current) { (if (joinsAbove) 0.dp else 4.dp).toPx() }
+    if (sideLane != null) {
+        sideLane.rightEdge = edge@{ top, bottom ->
+            val layout = textLayout ?: return@edge 0f
+            if (layout.lineCount == 0) return@edge 0f
+            val first = layout.getLineForVerticalPosition((top - sideTopPx).coerceAtLeast(0f))
+            val last = layout.getLineForVerticalPosition((bottom - sideTopPx).coerceAtLeast(0f))
+            var right = 0f
+            for (line in first..last) right = maxOf(right, layout.getLineRight(line))
+            val end = sidePadPx + right
+            // Righe che stanno nello spazio di sempre: niente da scorrere.
+            if (end <= sideLane.viewport - sidePadPx) 0f else end
+        }
+    }
     caretInView.caretRect = caret@{
         val layout = textLayout ?: return@caret null
         val body = bodyOf(fieldValue.text)
@@ -5227,6 +5284,8 @@ private fun MergedTextRunField(
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            // Prima dei margini: le righe scorrono fino al bordo dello schermo.
+            .sideLane(sideLane)
             .padding(
                 start = PAGE_SIDE_PADDING,
                 end = PAGE_SIDE_PADDING,
@@ -5591,6 +5650,7 @@ private fun MergedTextRunField(
             ),
             modifier = Modifier
                 .fillMaxWidth()
+                .atLeastLane(sideLane, (2 * sidePadPx).roundToInt())
                 .drawBehind { drawMisspellings(textLayout) }
                 // Un tocco su un testo con un collegamento lo apre (vedi
                 // `TextLinks.kt`): prima del correttore, che così non apre
@@ -5819,7 +5879,7 @@ private fun NumberedListMenuItem(
  * restano blocchi separati anche se di tipo testo scorrevole — unirli
  * in un campo condiviso anche lì è un passo successivo).
  */
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
 @Composable
 private fun BlockRow(
     block: BlockEntity,
@@ -6075,6 +6135,18 @@ private fun BlockRow(
     var editingCalloutIcon by remember(block.id) { mutableStateOf(false) }
     val pageLocked = LocalPageLocked.current
     val openLink = rememberLinkOpener()
+
+    // **Le righe intere** (dal 19/10/2026, "Full line view"): il testo scorre
+    // di lato con quello della pagina, e scrivendo il cursore resta in vista.
+    // Il campo di un'isola, di suo, lo chiede solo quando prende il fuoco.
+    val sideLane = rememberSideLane()
+    val islandCaret = remember { BringIntoViewRequester() }
+    LaunchedEffect(editState.fieldValue.selection, islandLayout, fieldFocused) {
+        if (sideLane == null || !fieldFocused) return@LaunchedEffect
+        val layout = islandLayout ?: return@LaunchedEffect
+        val at = (editState.fieldValue.selection.end - RUN_LEAD.length).coerceIn(0, layout.layoutInput.text.length)
+        islandCaret.bringIntoView(layout.getCursorRect(at))
+    }
 
     LaunchedEffect(focusRequestBlockId) {
         if (focusRequestBlockId == block.id) {
@@ -6696,6 +6768,8 @@ private fun BlockRow(
                 },
                 modifier = Modifier
                     .weight(1f)
+                    .sideLane(sideLane)
+                    .bringIntoViewRequester(islandCaret)
                     .drawBehind { drawMisspellings(islandLayout) }
                     .linkTaps(layout = { islandLayout }, onLink = openLink)
                     .proofingTaps(enabled = proofing != null && !pageLocked, layout = { islandLayout }) { word, at ->
