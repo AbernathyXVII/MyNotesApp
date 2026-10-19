@@ -19,8 +19,11 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.TextFieldValue
+import com.gabriele.notionlocal.data.entity.BlockType
+import com.gabriele.notionlocal.data.entity.CopiedLine
 import com.gabriele.notionlocal.data.entity.LinkRange
 import com.gabriele.notionlocal.data.entity.PasteFormat
+import com.gabriele.notionlocal.data.entity.PastedLine
 import com.gabriele.notionlocal.data.entity.RichTextSpan
 import com.gabriele.notionlocal.data.entity.StyleRange
 import com.gabriele.notionlocal.data.entity.plainText
@@ -50,11 +53,22 @@ import com.gabriele.notionlocal.data.entity.plainText
 // **Copiando** da notE (sia con la barra sia col menu) negli appunti va anche
 // l'HTML del testo con la sua formattazione, così si incolla altrove — o qui,
 // con "Keep Source Formatting" — com'era.
+//
+// **E il tipo delle righe** (dal 19/10/2026, chiesto dall'utente): copiate
+// intere, le caselle da spuntare (spuntate o no), gli elenchi puntati e
+// numerati e il rientro vanno negli appunti in un commento dell'HTML
+// (`<!--notE-lines:…-->`), che le altre app non vedono. Incollando in notE
+// tornano sulle righe (`PastedLine`), tranne con "Keep Text Only".
 // ---------------------------------------------------------------------------
 
 private const val PASTED_LINK_TAG = "pasted-link"
 private const val PASTED_STYLE_TAG = "pasted-style"
 private const val PASTED_PLAIN_TAG = "pasted-plain"
+private const val PASTED_LINES_TAG = "pasted-lines"
+
+/** Il commento con il tipo delle righe copiate, nell'HTML degli appunti. */
+private const val LINES_MARKER = "notE-lines:"
+
 
 /** Come si incolla (vedi sopra). */
 enum class PasteMode { LINKS_ONLY, KEEP_SOURCE, MATCH_DESTINATION, TEXT_ONLY }
@@ -64,7 +78,9 @@ internal class LinkClipboard(
     private val context: Context,
     private val base: ClipboardManager,
     /** La selezione di adesso col suo stile, per copiare con la formattazione; null se non c'è. */
-    private val richSelection: () -> List<RichTextSpan>? = { null }
+    private val richSelection: () -> List<RichTextSpan>? = { null },
+    /** Le righe della selezione di adesso col loro tipo, una per riga (vedi [CopiedLine]). */
+    private val selectedLines: () -> List<CopiedLine?>? = { null }
 ) : ClipboardManager by base {
 
     /** Il modo del prossimo incolla; poi si torna a quello di sempre. */
@@ -79,7 +95,6 @@ internal class LinkClipboard(
         }.getOrNull() ?: return base.getText()
         val raw: CharSequence = item.text ?: item.htmlText?.let { htmlToSpanned(it).toString().trimEnd() } ?: return base.getText()
         val plain = raw.toString()
-        if (mode == PasteMode.MATCH_DESTINATION) return AnnotatedString(plain)
         val builder = AnnotatedString.Builder(plain)
         if (mode == PasteMode.KEEP_SOURCE || mode == PasteMode.TEXT_ONLY) {
             builder.addStringAnnotation(PASTED_PLAIN_TAG, "", 0, plain.length)
@@ -93,14 +108,27 @@ internal class LinkClipboard(
                 builder.addStringAnnotation(PASTED_STYLE_TAG, styleCode(it), it.start, it.end)
             }
         }
+        // Il tipo delle righe copiate da notE: su tutto il testo, una voce per riga.
+        if (mode != PasteMode.TEXT_ONLY) {
+            linesMarkerOf(item.htmlText)?.takeIf { it.split(';').size == plain.split('\n').size }?.let {
+                builder.addStringAnnotation(PASTED_LINES_TAG, it, 0, plain.length)
+            }
+        }
         return builder.toAnnotatedString()
     }
 
-    /** Copiando: col testo semplice anche l'HTML con la formattazione, se la selezione ne ha. */
+    /**
+     * Copiando: col testo semplice anche l'HTML con la formattazione, se la
+     * selezione ne ha, e il tipo delle righe, se ce n'è una che non è testo
+     * normale (vedi [CopiedLine]).
+     */
     override fun setText(annotatedString: AnnotatedString) {
-        val rich = runCatching { richSelection() }.getOrNull()
-            ?.takeIf { spans -> spans.plainText() == annotatedString.text && spans.any { it.hasStyle() } }
-        if (rich == null) {
+        val text = annotatedString.text
+        val selection = runCatching { richSelection() }.getOrNull()?.takeIf { it.plainText() == text }
+        val rich = selection?.takeIf { spans -> spans.any { it.hasStyle() } }
+        val lines = selection?.let { runCatching { selectedLines() }.getOrNull() }
+            ?.takeIf { lines -> lines.size == text.split('\n').size && lines.any { it != null && (it.type != BlockType.PARAGRAPH || it.indent > 0) } }
+        if (rich == null && lines == null) {
             base.setText(annotatedString)
             return
         }
@@ -109,7 +137,8 @@ internal class LinkClipboard(
             base.setText(annotatedString)
             return
         }
-        clipboard.setPrimaryClip(ClipData.newHtmlText("notE", annotatedString.text, spansToHtml(rich)))
+        val html = spansToHtml(rich ?: listOf(RichTextSpan(text = text))) + (lines?.let { linesMarker(it) } ?: "")
+        clipboard.setPrimaryClip(ClipData.newHtmlText("notE", text, html))
     }
 
     /** I link di un elemento degli appunti, nelle posizioni di [plain]. */
@@ -145,6 +174,34 @@ internal class LinkClipboard(
 }
 
 private fun htmlToSpanned(html: String): Spanned = Html.fromHtml(html, Html.FROM_HTML_MODE_COMPACT)
+
+/**
+ * Il commento col tipo delle righe: `TIPO,spuntata,rientro` per riga, `x` per
+ * una riga presa in parte (non `-`: accanto alla chiusura `-->` del commento
+ * la chiuderebbe un carattere prima).
+ */
+internal fun linesMarker(lines: List<CopiedLine?>): String =
+    "<!--" + LINES_MARKER + lines.joinToString(";") { line ->
+        if (line == null) "x" else "${line.type.name},${if (line.checked) 1 else 0},${line.indent}"
+    } + "-->"
+
+/** Le voci del commento col tipo delle righe, se l'HTML ce l'ha. */
+private fun linesMarkerOf(html: String?): String? {
+    if (html == null) return null
+    val start = html.indexOf("<!--$LINES_MARKER")
+    if (start < 0) return null
+    val from = start + 4 + LINES_MARKER.length
+    val end = html.indexOf("-->", from)
+    return if (end < 0) null else html.substring(from, end)
+}
+
+/** Una voce del commento: la riga col suo tipo, o null. */
+private fun copiedLineOf(entry: String): CopiedLine? {
+    val parts = entry.split(',')
+    if (parts.size != 3) return null
+    val type = BlockType.entries.find { it.name == parts[0] } ?: return null
+    return CopiedLine(type, parts[1] == "1", parts[2].toIntOrNull()?.coerceIn(0, 10) ?: 0)
+}
 
 /** Niente link che eseguono codice, né vuoti. */
 private fun usableLink(url: String): Boolean = url.isNotBlank() && !url.trim().startsWith("javascript:", ignoreCase = true)
@@ -329,12 +386,18 @@ private class ShortcutKey(time: Long, action: Int, code: Int) :
     override fun getUnicodeChar(metaState: Int): Int = 0
 }
 
-/** Gli appunti coi link per i campi dell'editor; [richSelection] dà lo stile della selezione per copiare. */
+/**
+ * Gli appunti coi link per i campi dell'editor; [richSelection] dà lo stile
+ * della selezione e [selectedLines] il tipo delle sue righe, per copiare.
+ */
 @Composable
-internal fun rememberLinkClipboard(richSelection: () -> List<RichTextSpan>? = { null }): ClipboardManager {
+internal fun rememberLinkClipboard(
+    richSelection: () -> List<RichTextSpan>? = { null },
+    selectedLines: () -> List<CopiedLine?>? = { null }
+): ClipboardManager {
     val context = LocalContext.current
     val base = LocalClipboardManager.current
-    return remember(context, base) { if (base is LinkClipboard) base else LinkClipboard(context, base, richSelection) }
+    return remember(context, base) { if (base is LinkClipboard) base else LinkClipboard(context, base, richSelection, selectedLines) }
 }
 
 /**
@@ -353,7 +416,19 @@ internal fun TextFieldValue.pastedFormat(lead: Int): PasteFormat {
     val plain = all.getStringAnnotations(PASTED_PLAIN_TAG, 0, text.length)
         .map { (it.start - lead) until (it.end - lead) }
         .filter { it.first >= 0 && !it.isEmpty() }
-    return PasteFormat(links, styles, plain)
+    // Le righe col loro tipo: si ritrovano dividendo il testo incollato agli a-capo.
+    val lines = all.getStringAnnotations(PASTED_LINES_TAG, 0, text.length).flatMap { mark ->
+        val entries = mark.item.split(';')
+        val pieces = text.substring(mark.start, mark.end).split('\n')
+        if (entries.size != pieces.size) return@flatMap emptyList()
+        var at = mark.start - lead
+        pieces.indices.mapNotNull { i ->
+            val start = at
+            at += pieces[i].length + 1
+            copiedLineOf(entries[i])?.takeIf { start >= 0 }?.let { PastedLine(start, start + pieces[i].length, it.type, it.checked, it.indent) }
+        }
+    }
+    return PasteFormat(links, styles, plain, lines)
 }
 
 /** Solo i link incollati (vedi `pastedFormat`). */
@@ -365,7 +440,7 @@ internal fun TextFieldValue.pastedLinks(lead: Int): List<LinkRange> = pastedForm
  * non disturbare la tastiera mentre si scrive).
  */
 internal fun TextFieldValue.withoutPastedLinks(): TextFieldValue {
-    val tags = setOf(PASTED_LINK_TAG, PASTED_STYLE_TAG, PASTED_PLAIN_TAG)
+    val tags = setOf(PASTED_LINK_TAG, PASTED_STYLE_TAG, PASTED_PLAIN_TAG, PASTED_LINES_TAG)
     val marked = annotatedString.getStringAnnotations(0, text.length).any { it.tag in tags }
     return if (marked) copy(annotatedString = AnnotatedString(text)) else this
 }

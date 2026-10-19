@@ -1339,7 +1339,10 @@ fun PageEditorScreen(
         // Il correttore della pagina, se è acceso: vedi `ProofingUi.kt`.
         LocalProofing provides rememberPageProofing(page, viewModel),
         // Il testo incollato da un'altra app porta i suoi link: vedi `PasteLinks.kt`.
-        LocalClipboardManager provides rememberLinkClipboard(richSelection = viewModel::selectedRichText)
+        LocalClipboardManager provides rememberLinkClipboard(
+            richSelection = viewModel::selectedRichText,
+            selectedLines = viewModel::selectedLines
+        )
     ) {
         PageEditorContent(
             pageId = pageId,
@@ -6479,7 +6482,7 @@ private fun BlockRow(
                             )
                             viewModel.makeNotification(block, command)
                             NotificationPermission.request()
-                        } else if (lines.size == 2) {
+                        } else if (lines.size == 2 && pasted.lines.isEmpty()) {
                             val outcome = viewModel.splitBlockAt(block, spansForFirstLine, lines[1], pastedLines?.get(1))
                             // La riga nuova è finita sopra e questo campo
                             // resta vivo col fuoco: deve mostrare il testo
@@ -6530,7 +6533,8 @@ private fun BlockRow(
                         } else {
                             // Più righe in un colpo solo (un incolla): le
                             // altre diventano blocchi sotto e questo tiene
-                            // la prima, come sempre.
+                            // la prima, come sempre. Anche due sole, se sono
+                            // righe copiate col loro tipo (vedi `PastedLine`).
                             editState = BlockEditState(
                                 spansForFirstLine,
                                 TextFieldValue(
@@ -6538,7 +6542,12 @@ private fun BlockRow(
                                     TextRange(RUN_LEAD.length + firstLine.length)
                                 )
                             )
-                            viewModel.splitBlockAtMultiple(block, lines, pastedLines)
+                            // Il tipo delle righe copiate intere da notE.
+                            var lineAt = 0
+                            val lineKinds = lines.map { line ->
+                                pasted.lineAt(lineAt, lineAt + line.length).also { lineAt += line.length + 1 }
+                            }
+                            viewModel.splitBlockAtMultiple(block, lines, pastedLines, lineKinds)
                         }
                     } else if (newText == oldText) {
                         editState = editState.copy(fieldValue = newFieldValue)

@@ -436,17 +436,44 @@ data class StyleRange(
 data class PasteFormat(
     val links: List<LinkRange> = emptyList(),
     val styles: List<StyleRange> = emptyList(),
-    val plain: List<IntRange> = emptyList()
+    val plain: List<IntRange> = emptyList(),
+    /** Le righe copiate intere da notE, col loro tipo: vedi [PastedLine]. */
+    val lines: List<PastedLine> = emptyList()
 ) {
-    val isEmpty: Boolean get() = links.isEmpty() && styles.isEmpty() && plain.isEmpty()
+    val isEmpty: Boolean get() = links.isEmpty() && styles.isEmpty() && plain.isEmpty() && lines.isEmpty()
 
     /** Le stesse posizioni spostate di [delta] (in un pezzo del testo che comincia più avanti). */
     fun shifted(delta: Int): PasteFormat = PasteFormat(
         links = links.map { it.copy(start = it.start + delta, end = it.end + delta) },
         styles = styles.map { it.copy(start = it.start + delta, end = it.end + delta) },
-        plain = plain.map { (it.first + delta)..(it.last + delta) }
+        plain = plain.map { (it.first + delta)..(it.last + delta) },
+        lines = lines.map { it.copy(start = it.start + delta, end = it.end + delta) }
     )
+
+    /** La riga incollata che va **esattamente** da [start] a [end], se c'è. */
+    fun lineAt(start: Int, end: Int): PastedLine? = lines.firstOrNull { it.start == start && it.end == end }
 }
+
+/**
+ * **Una riga incollata col suo tipo** (dal 19/10/2026, chiesto dall'utente:
+ * copiando delle caselle da spuntare si incollava testo normale). Copiata
+ * intera da notE, una casella (spuntata o no), un elemento di un elenco
+ * puntato o numerato tornano tali, col loro rientro. Posizioni nel testo
+ * incollato, senza l'a-capo.
+ */
+data class PastedLine(
+    val start: Int,
+    val end: Int,
+    val type: BlockType,
+    val checked: Boolean = false,
+    val indent: Int = 0
+)
+
+/**
+ * Una riga copiata intera, col suo tipo (vedi [PastedLine]): negli appunti ce
+ * n'è una per ogni riga del testo copiato, null per una presa solo in parte.
+ */
+data class CopiedLine(val type: BlockType, val checked: Boolean = false, val indent: Int = 0)
 
 /** Mette nel testo quello che dice [format]: prima i pezzi senza formattazione, poi gli stili, poi i link. */
 fun applyPaste(spans: List<RichTextSpan>, format: PasteFormat): List<RichTextSpan> {

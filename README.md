@@ -2073,6 +2073,41 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.183 — 19/10/2026 · 22:44 — Le caselle copiate si incollano come caselle
+*(Claude Code sul PC; verificata sul telefono; 637 test passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Se copio del testo che aveva per esempio delle checkbox e lo incollo da
+> qualche altra parte, le checkbox non vengono incollate e rimane solo testo
+> normale»
+
+- **[Nuova funzionalità]** **Copiando delle righe da notE, ognuna porta con
+  sé il suo tipo**: le caselle da spuntare (spuntate o no), gli elenchi
+  puntati e numerati e il rientro. Incollandole in notE tornano com'erano: le
+  righe incollate che erano state copiate intere riprendono il loro tipo, e
+  il rientro si conta da quello della riga in cui si incolla. Incollando in
+  una riga vuota anche lei diventa quello che era; incollando dopo del
+  testo, la prima riga copiata si unisce a quel testo e resta com'è. Una riga
+  copiata solo in parte (la selezione che comincia o finisce a metà) è testo
+  come prima. Vale col copia della barra sopra la tastiera, col "Copy" del
+  menu e col taglia, e per l'incolla in tutti i modi tranne "Keep Text Only".
+  Anche dentro un toggle
+- **[Progetto]** Il tipo delle righe va negli appunti in un commento dell'HTML
+  (`<!--notE-lines:CHECKBOX,1,0;…-->`, `x` per una riga presa in parte), che
+  le altre app non mostrano: per loro il testo copiato è quello di sempre.
+  `PageEditorViewModel.selectedLines` (il tipo delle righe della selezione),
+  `CopiedLine` e `PastedLine` in `RichText.kt`, `PasteFormat.lines`;
+  `LinkClipboard` lo scrive e lo rilegge (`PASTED_LINES_TAG`).
+  `writeRunChange` dà il tipo alle righe nuove e a quella in cui si incolla
+  quando è tutta e solo una riga copiata; `splitBlockAtMultiple` lo stesso
+  dentro i toggle (non al titolo di un toggle). Test: `PasteLineTypesTest`,
+  e in `ClipboardBarTest` gli appunti andata e ritorno e le righe di solo
+  testo, che si copiano come prima
+- Provata sul telefono in una riga di prova del Main calendar: tre caselle
+  latte (spuntata), pane e uova, copiate e incollate in una riga vuota più
+  sotto, sono tornate tre caselle con latte spuntata; nel database le righe
+  nuove erano CHECKBOX con la spunta giusta. Riga di prova eliminata:
+  database, impostazioni e widget identici a prima
 ### 🔧 v0.182.1 — 19/10/2026 · 17:53 — La pagina segue il cursore e non salta più
 *(Claude Code sul PC; verificata sul telefono; 630 test passati; commit solo in locale)*
 

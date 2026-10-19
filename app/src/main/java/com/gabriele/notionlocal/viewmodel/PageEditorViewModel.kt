@@ -24,6 +24,8 @@ import com.gabriele.notionlocal.data.entity.RichTextSpan
 import com.gabriele.notionlocal.data.entity.TableCellEntity
 import com.gabriele.notionlocal.data.entity.LinkRange
 import com.gabriele.notionlocal.data.entity.PasteFormat
+import com.gabriele.notionlocal.data.entity.PastedLine
+import com.gabriele.notionlocal.data.entity.CopiedLine
 import com.gabriele.notionlocal.data.entity.applyPaste
 import com.gabriele.notionlocal.data.entity.sliceSpans
 import com.gabriele.notionlocal.data.entity.applyTextEdit
@@ -145,6 +147,12 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         // che l'ultima battuta faccia il giro fino al database e torni
         // indietro. Vedi `PageRepository.recordEditAfterSettling`.
         private const val EDIT_SETTLE_MS = 400L
+
+        // I tipi di riga che una copia porta con sé: vedi `selectedLines`.
+        private val COPIED_LINE_TYPES = setOf(BlockType.CHECKBOX, BlockType.BULLET_LIST_ITEM, BlockType.NUMBERED_LIST_ITEM)
+
+        // Le righe che, incollandoci sopra una riga copiata, ne prendono il tipo.
+        private val RETYPABLE_ON_PASTE = COPIED_LINE_TYPES + BlockType.PARAGRAPH
 
         // Il testo di una riga vuota, come lo scrive il resto dell'app:
         // uno span senza lettere. Serve a svuotare una riga il cui testo è
@@ -641,6 +649,42 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         val blocks = selection.blockIds.mapNotNull { id -> all.find { it.id == id } }
         if (blocks.isEmpty()) return null
         return sliceSpans(blocks.map { spansOf(it) }.joinLines(), selection.start, selection.end)
+    }
+
+    /**
+     * **Le righe della selezione col loro tipo** (dal 19/10/2026): una voce per
+     * ogni riga toccata dalla selezione, come le righe del testo copiato. Una
+     * riga presa intera dice se è una casella (e se è spuntata), un elemento
+     * di elenco o testo, e quanto è rientrata; una presa solo in parte è null.
+     * Per copiarle col loro tipo: vedi `LinkClipboard`.
+     */
+    fun selectedLines(): List<CopiedLine?>? {
+        val selection = liveSelection ?: return null
+        if (selection.start >= selection.end) return null
+        val all = _blocks.value
+        val blocks = selection.blockIds.mapNotNull { id -> all.find { it.id == id } }
+        if (blocks.isEmpty()) return null
+        val result = mutableListOf<CopiedLine?>()
+        var lineStart = 0
+        for (block in blocks) {
+            val lineEnd = lineStart + plainTextOf(block).length
+            if (lineEnd >= selection.start && lineStart <= selection.end) {
+                // Una riga vuota è presa intera solo se la selezione la attraversa.
+                val whole = selection.start <= lineStart && selection.end >= lineEnd &&
+                    (lineEnd > lineStart || (selection.start < lineStart && selection.end > lineEnd))
+                result += if (whole) {
+                    CopiedLine(
+                        type = if (block.type in COPIED_LINE_TYPES) block.type else BlockType.PARAGRAPH,
+                        checked = block.type == BlockType.CHECKBOX && block.isChecked,
+                        indent = block.indentLevel
+                    )
+                } else {
+                    null
+                }
+            }
+            lineStart = lineEnd + 1
+        }
+        return result
     }
 
     /**
@@ -1928,7 +1972,10 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         lines: List<String>,
         // Le righe già formattate (un incolla coi link): una per riga, e
         // ognuna si usa solo se torna col suo testo.
-        lineSpans: List<List<RichTextSpan>>? = null
+        lineSpans: List<List<RichTextSpan>>? = null,
+        // Il tipo delle righe incollate, una voce per riga (vedi `PastedLine`):
+        // le righe nuove lo prendono, la prima resta questo blocco.
+        lineKinds: List<PastedLine?>? = null
     ) {
         fun spansFor(index: Int): List<RichTextSpan> =
             lineSpans?.getOrNull(index)?.takeIf { it.plainText() == lines[index] }
@@ -1957,13 +2004,18 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
                     startIndex,
                     lines.size - 1
                 ),
-                saved = listOf(currentBlock.copy(textJson = json.encodeToString(firstSpans))) +
-                    lines.drop(1).mapIndexed { i, lineText ->
+                saved = listOf(retypedFirst(currentBlock, lineKinds?.getOrNull(0), lineKinds).copy(textJson = json.encodeToString(firstSpans))) +
+                    lines.drop(1).mapIndexed { i, _ ->
+                        val kind = lineKinds?.getOrNull(i + 1)
+                        val minIndent = lineKinds?.filterNotNull()?.minOfOrNull { it.indent } ?: 0
                         BlockEntity(
                             id = newBlockIds[i],
                             pageId = pageId,
                             parentBlockId = currentBlock.parentBlockId,
-                            type = inheritedType,
+                            type = kind?.type ?: inheritedType,
+                            isChecked = kind?.checked ?: false,
+                            indentLevel = kind?.let { (currentBlock.indentLevel + it.indent - minIndent).coerceIn(0, MAX_INDENT_LEVEL) }
+                                ?: 0,
                             textJson = json.encodeToString(spansFor(i + 1)),
                             orderIndex = startIndex + i
                         )
@@ -1973,6 +2025,22 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
             delay(IME_SETTLE_DELAY_MS)
             _focusRequestBlockId.value = newBlockIds.last()
         }
+    }
+
+    /**
+     * La riga in cui si incolla, se è tutta e solo una riga copiata col suo
+     * tipo (vedi `PastedLine`): lo prende, come nel testo normale. Non il
+     * titolo di un toggle, né un riquadro o una citazione, che restano quello
+     * che sono.
+     */
+    private fun retypedFirst(block: BlockEntity, kind: PastedLine?, all: List<PastedLine?>?): BlockEntity {
+        if (kind == null || block.type !in RETYPABLE_ON_PASTE) return block
+        val minIndent = all?.filterNotNull()?.minOfOrNull { it.indent } ?: 0
+        return block.copy(
+            type = kind.type,
+            isChecked = kind.checked,
+            indentLevel = (block.indentLevel + kind.indent - minIndent).coerceIn(0, MAX_INDENT_LEVEL)
+        )
     }
 
     /** Aggiunge un blocco figlio in coda dentro un toggle (es. il primo, se è ancora vuoto). */
@@ -3267,14 +3335,44 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         // Quello che porta un incolla (link, stili) va sulla zona modificata:
         // le posizioni si contano da dove comincia.
         val middleOffset = newLines.take(prefixCount).sumOf { it.length + 1 }
+        val middlePaste = paste.shifted(-middleOffset)
         val newMiddleSpans = applyPaste(
             applyTextEdit(
                 oldMiddleSpans,
                 oldMiddleText,
                 newMiddleLines.joinToString("\n")
             ),
-            paste.shifted(-middleOffset)
+            middlePaste
         ).splitLines()
+
+        // **Le righe incollate col loro tipo** (dal 19/10/2026): una riga che è
+        // tutta e solo una riga copiata intera da notE prende il suo tipo
+        // (casella, spuntata o no, elenco puntato o numerato) e il suo
+        // rientro, contato da quello della riga in cui si incolla. Vedi
+        // `PastedLine`. Le altre restano come sempre.
+        val lineKinds: List<PastedLine?> = run {
+            var at = 0
+            newMiddleLines.map { line ->
+                val kind = middlePaste.lineAt(at, at + line.length)
+                at += line.length + 1
+                kind
+            }
+        }
+        val minPastedIndent = lineKinds.filterNotNull().minOfOrNull { it.indent } ?: 0
+        fun pastedIndent(kind: PastedLine): Int =
+            (indentLevel + kind.indent - minPastedIndent).coerceIn(0, MAX_INDENT_LEVEL)
+
+        /** Una riga che c'era già e diventa quella incollata, col suo tipo; null se resta com'è. */
+        fun retyped(block: BlockEntity, index: Int, textJson: String): BlockEntity? {
+            val kind = lineKinds.getOrNull(index) ?: return null
+            return block.copy(
+                type = kind.type,
+                isChecked = kind.checked,
+                indentLevel = pastedIndent(kind),
+                textJson = textJson,
+                attrsJson = BlockAttrs.encode(BlockAttrs.parse(block.attrsJson).copy(listIndent = null))
+            )
+        }
 
         // Rete di sicurezza: se per qualsiasi motivo il risultato non
         // corrisponde più alla riga che deve descrivere, si scrive la
@@ -3299,9 +3397,13 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         // riscrive **solo il testo** (`texts`).
         run {
             if (newMiddleLines.size >= oldMiddleBlocks.size) {
+                val retypedBlocks = oldMiddleBlocks.mapIndexedNotNull { i, block ->
+                    retyped(block, i, json.encodeToString(spansForLine(i, newMiddleLines[i])))
+                }
+                val retypedIds = retypedBlocks.mapTo(HashSet()) { it.id }
                 val rewritten = oldMiddleBlocks.mapIndexed { i, block ->
                     block.id to json.encodeToString(spansForLine(i, newMiddleLines[i]))
-                }.toMap()
+                }.filter { it.first !in retypedIds }.toMap()
                 val extraLines = newMiddleLines.drop(oldMiddleBlocks.size)
                 // Senza un blocco prima (Invio a inizio della prima riga)
                 // le righe nuove vanno al posto di quella prima riga, non
@@ -3312,16 +3414,18 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
                     ?: runBlocks.getOrNull(oldMiddleStart)?.orderIndex
                     ?: 0
                 val newBlocks = extraLines.mapIndexed { i, line ->
+                    val kind = lineKinds.getOrNull(oldMiddleBlocks.size + i)
                     BlockEntity(
                         pageId = pageId,
                         parentBlockId = parentBlockId,
-                        type = inheritedType,
-                        indentLevel = indentLevel,
+                        type = kind?.type ?: inheritedType,
+                        isChecked = kind?.checked ?: false,
+                        indentLevel = kind?.let { pastedIndent(it) } ?: indentLevel,
                         textJson = json.encodeToString(
                             spansForLine(oldMiddleBlocks.size + i, line)
                         ),
                         orderIndex = shiftFromIndex + i,
-                        attrsJson = inheritedAttrs
+                        attrsJson = if (kind != null) "{}" else inheritedAttrs
                     )
                 }
                 // Le righe nuove restano nel pezzo in cui si scrive (vedi
@@ -3342,14 +3446,19 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
                     },
                     ensured = listOfNotNull(placeholderToSave),
                     texts = rewritten,
-                    saved = newBlocks
+                    saved = retypedBlocks + newBlocks
                 )
             } else {
+                val retypedBlocks = newMiddleLines.indices.mapNotNull { i ->
+                    retyped(oldMiddleBlocks[i], i, json.encodeToString(spansForLine(i, newMiddleLines[i])))
+                }
+                val retypedIds = retypedBlocks.mapTo(HashSet()) { it.id }
                 repository.applyBlockChanges(
                     ensured = listOfNotNull(placeholderToSave),
                     texts = newMiddleLines.mapIndexed { i, line ->
                         oldMiddleBlocks[i].id to json.encodeToString(spansForLine(i, line))
-                    }.toMap(),
+                    }.filter { it.first !in retypedIds }.toMap(),
+                    saved = retypedBlocks,
                     deleted = oldMiddleBlocks.drop(newMiddleLines.size)
                 )
             }

@@ -22,7 +22,10 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.test.core.app.ApplicationProvider
+import com.gabriele.notionlocal.data.entity.BlockType
+import com.gabriele.notionlocal.data.entity.CopiedLine
 import com.gabriele.notionlocal.data.entity.LinkRange
+import com.gabriele.notionlocal.data.entity.PastedLine
 import com.gabriele.notionlocal.data.entity.PasteFormat
 import com.gabriele.notionlocal.data.entity.RichTextSpan
 import com.gabriele.notionlocal.data.entity.StyleRange
@@ -76,10 +79,11 @@ class ClipboardBarTest {
     private fun showField(
         start: String,
         rich: List<RichTextSpan>? = null,
-        adjust: (TextFieldValue) -> TextFieldValue = { it }
+        adjust: (TextFieldValue) -> TextFieldValue = { it },
+        lines: List<CopiedLine?>? = null
     ) {
         value = TextFieldValue(start, TextRange(start.length))
-        clipboard = LinkClipboard(context, emptyBase) { rich }
+        clipboard = LinkClipboard(context, emptyBase, richSelection = { rich }, selectedLines = { lines })
         compose.setContent {
             val focus = remember { FocusRequester() }
             CompositionLocalProvider(LocalClipboardManager provides clipboard) {
@@ -135,6 +139,57 @@ class ClipboardBarTest {
         assertEquals(atZero, atZero.leadOutOfSelection("\n"))
         // Una selezione all'indietro resta all'indietro.
         assertEquals(TextRange(3, 1), TextFieldValue("\nxy", TextRange(3, 0)).leadOutOfSelection("\n").selection)
+    }
+
+    @Test
+    fun copiedCheckboxesComeBackAsCheckboxes() {
+        // 19/10/2026, chiesto dall'utente: due caselle (una spuntata, una
+        // rientrata) e un elenco preso solo in parte, copiati con la barra.
+        val text = "Latte\nPane\nUova"
+        showField(
+            text,
+            rich = listOf(RichTextSpan(text)),
+            lines = listOf(
+                CopiedLine(BlockType.CHECKBOX, checked = true),
+                CopiedLine(BlockType.CHECKBOX, indent = 1),
+                null
+            )
+        )
+        press(KeyEvent.KEYCODE_A)
+        press(KeyEvent.KEYCODE_C)
+        val item = system.primaryClip!!.getItemAt(0)
+        // Per le altre app il testo di sempre; il tipo delle righe in un commento dell'HTML.
+        assertEquals(text, item.text.toString())
+        assertTrue(item.htmlText, item.htmlText.endsWith("<!--notE-lines:CHECKBOX,1,0;CHECKBOX,0,1;x-->"))
+        // Incollato in notE, tornano caselle; la riga presa in parte no.
+        clear()
+        press(KeyEvent.KEYCODE_V)
+        val expected = listOf(
+            PastedLine(0, 5, BlockType.CHECKBOX, checked = true),
+            PastedLine(6, 10, BlockType.CHECKBOX, indent = 1)
+        )
+        assertEquals(expected, value.pastedFormat(0).lines)
+        // Anche con "Match Destination Formatting"...
+        clear()
+        clipboard.nextPasteMode = PasteMode.MATCH_DESTINATION
+        press(KeyEvent.KEYCODE_V)
+        assertEquals(expected, value.pastedFormat(0).lines)
+        // ...non con "Keep Text Only".
+        clear()
+        clipboard.nextPasteMode = PasteMode.TEXT_ONLY
+        press(KeyEvent.KEYCODE_V)
+        assertTrue(value.pastedFormat(0).lines.isEmpty())
+        // E i segni dell'incolla non restano nel campo.
+        assertTrue(value.withoutPastedLinks().pastedFormat(0).isEmpty)
+    }
+
+    @Test
+    fun plainTextRowsCopyAsBefore() {
+        // Solo righe di testo normale e senza stile: gli appunti di sempre, senza HTML.
+        showField("Uno\nDue", rich = listOf(RichTextSpan("Uno\nDue")), lines = listOf(CopiedLine(BlockType.PARAGRAPH), CopiedLine(BlockType.PARAGRAPH)))
+        press(KeyEvent.KEYCODE_A)
+        press(KeyEvent.KEYCODE_C)
+        assertEquals(null, system.primaryClip!!.getItemAt(0).htmlText)
     }
 
     @Test
