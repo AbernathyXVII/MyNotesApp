@@ -449,6 +449,9 @@ private val FLOATING_BUTTON_GAP = 8.dp
  */
 private val FLOATING_BAR_CLEARANCE = FLOATING_BUTTON_SIZE + FLOATING_BUTTON_MARGIN * 2
 
+/** Lo spazio fra il cursore e la barra sopra la tastiera, quando la pagina lo porta in vista. */
+private val CARET_KEYBOARD_MARGIN = 12.dp
+
 /**
  * Un pulsante tondo sospeso sopra la pagina.
  *
@@ -5073,20 +5076,27 @@ private fun MergedTextRunField(
     // barra laterale. Succedeva con la freccia su che porta una riga sopra
     // un database: la pagina la seguiva, ma la lasciava lì sotto.
     val barClearancePx = with(LocalDensity.current) { FLOATING_BAR_CLEARANCE.toPx() }
-    LaunchedEffect(fieldValue.selection, textLayout, imeVisible) {
-        val layout = textLayout ?: return@LaunchedEffect
-        // lastLineBlockId è valorizzato solo mentre questo campo ha il
-        // fuoco: senza, faremmo scorrere la pagina anche per i campi su
-        // cui nessuno sta scrivendo.
-        if (lastLineBlockId == null) return@LaunchedEffect
-
+    val caretMarginPx = with(LocalDensity.current) { CARET_KEYBOARD_MARGIN.toPx() }
+    // **La pagina segue il cursore, non tutto il campo** (dal 19/10/2026):
+    // vedi `CaretInView`. Letto ogni volta da capo, così è sempre quello di adesso.
+    val caretInView = remember(runKey) { CaretInView() }
+    caretInView.caretRect = caret@{
+        val layout = textLayout ?: return@caret null
         val body = bodyOf(fieldValue.text)
         val caretInBody = (fieldValue.selection.end - 1).coerceIn(0, body.length)
         val prefixes = runPrefixes(body.split('\n'), runBlocks, ordinals, viewModel)
         val displayed = displayedCaretOffset(body, caretInBody, prefixes)
             .coerceIn(0, layout.layoutInput.text.length)
         val caret = layout.getCursorRect(displayed)
-        caretIntoView.bringIntoView(caret.copy(top = caret.top - barClearancePx))
+        Rect(caret.left, caret.top - barClearancePx, caret.right + 1f, caret.bottom + caretMarginPx)
+    }
+    LaunchedEffect(fieldValue.selection, textLayout, imeVisible) {
+        // lastLineBlockId è valorizzato solo mentre questo campo ha il
+        // fuoco: senza, faremmo scorrere la pagina anche per i campi su
+        // cui nessuno sta scrivendo.
+        if (lastLineBlockId == null || textLayout == null) return@LaunchedEffect
+        // Quello che si porta in vista lo decide `followCaretOnly`: il cursore.
+        caretIntoView.bringIntoView()
     }
 
     LaunchedEffect(focusRequestBlockId) {
@@ -5220,7 +5230,10 @@ private fun MergedTextRunField(
                 top = if (joinsAbove) 0.dp else 4.dp,
                 bottom = if (joinsBelow) 0.dp else 4.dp
             )
+            // Dopo i margini: le coordinate sono quelle del campo.
+            .followCaretOnly(caretInView)
     ) {
+    CaretAnchor(caretInView)
     AutoCaps {
         BasicTextField(
             value = fieldValue,

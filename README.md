@@ -2073,6 +2073,54 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🔧 v0.182.1 — 19/10/2026 · 17:53 — La pagina segue il cursore e non salta più
+*(Claude Code sul PC; verificata sul telefono; 630 test passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Qualche giorno fa ti ho chiesto se potessi spostarmi tutta la pagina in
+> alto se, aprendo la tastiera, il text cursor si trovava in un punto che
+> sarebbe stato coperto dalla tastiera. Ma noto che si comporta strano. Noto
+> che se il text cursor si trova nettamente sopra la tastiera, comunque la
+> pagina viene spostata, e spesso quando scrivo o modifico del testo si sposta
+> da solo senza senso.
+> Un esempio, io sto su Permanent Notes per sistemare la numbered list, tocco
+> a metà pagina per far sì di modificare una scritta ma mi viene spostato
+> tutto troppo sopra. Io risposto la visuale a metà, uso backspace per mettere
+> sopra quel testo che avevo, ma appena il testo viene messo sopra la visuale
+> mi viene spostata tutto in basso fino ad appena sopra la tastiera.
+> Cerca di di sistemare questa cosa per favore»
+
+- **[Bug fix]** **La pagina si sposta solo se la tastiera coprirebbe il
+  cursore, e solo di quanto basta.** Toccando una riga a metà pagina, la
+  pagina saliva fino a portare in cima l'inizio del suo pezzo di testo;
+  unendo col backspace una riga a quella del pezzo sopra, scendeva fino a
+  mettere la fine di quel pezzo appena sopra la tastiera. Colpa della v0.181:
+  le pagine lunghe sono divise in pezzi di 50 righe, e quando un campo di
+  testo prende il cursore (o la tastiera accorcia lo schermo) Compose porta
+  in vista **tutto il campo**, cioè tutto il pezzo. Prima, con un campo solo
+  alto quanto la pagina, non si notava. Ora chi fa scorrere la pagina sente
+  dove sta il **cursore**, non il pezzo: se il cursore si vede, la pagina sta
+  ferma; se la tastiera lo coprirebbe, sale finché il cursore è appena sopra
+  la barra; andando a capo in fondo lo segue
+- **[Progetto]** `CaretInView.kt`: `followCaretOnly` sul riquadro del campo
+  (un `BringIntoViewResponder` che a chiunque chieda di portare in vista
+  qualcosa del campo risponde col rettangolo del cursore) e `CaretAnchor`, un
+  segnaposto grande quanto il cursore che la pagina tiene in vista quando la
+  tastiera sale, al posto di tutto il campo. Per questo secondo usa
+  `ModifierLocalFocusedBoundsObserver`, interno a Compose: un aggiornamento
+  di Compose potrebbe romperlo, e lo direbbe la compilazione. Il cursore ha
+  12 dp di spazio sotto (`CARET_KEYBOARD_MARGIN`) e sopra quello dei
+  pulsanti sospesi. Test: `CaretInViewTest` (senza: la pagina saltava di
+  oltre 250 dp; con: un tocco in vista non muove niente, la tastiera che non
+  copre il cursore nemmeno, quella che lo copre fa salire di quanto basta)
+- Provata sul telefono in una riga di prova del Main calendar con 120 righe
+  (tre pezzi): toccata riga63, a metà schermo, la pagina resta ferma (prima
+  saliva fino a riga51); backspace a inizio di riga51 la unisce a riga50 e
+  la pagina resta ferma; toccata riga84, che la tastiera avrebbe coperto, la
+  pagina sale e la mette appena sopra la barra; tre "a capo" scrivendo, la
+  pagina segue il cursore. Riga di prova eliminata: database, impostazioni e
+  widget identici a prima. In Permanent notes solo toccate due righe, senza
+  scrivere
 ### 🆕 v0.182 — 19/10/2026 · 17:28 — I database da diecimila righe
 *(Claude Code sul PC; verificata sul telefono con un database di prova da 10.000 righe; 627 test passati; commit solo in locale)*
 
