@@ -463,7 +463,10 @@ cosa tolta, ogni bug trovato (anche se non ancora corretto), e anche i
 cambiamenti che non toccano l'app (configurazione, repository, questo
 stesso README). Per questi ultimi si usano due etichette in più:
 `[Rimosso]` per ciò che viene tolto dall'app e `[Progetto]` per ciò che
-sta attorno al codice. Nelle sessioni cloud si trascrivono anche **le
+sta attorno al codice. Dal 19/10/2026 (chiesto dall'utente) c'è anche
+**🔴 [Da rivedere]**, rossa: una scelta fatta fra due strade, che l'utente
+vuole riguardare più avanti per decidere se tenerla, con l'altra strada
+scritta accanto. Nelle Patch Notes dell'app la scritta è rossa. Nelle sessioni cloud si trascrivono anche **le
 richieste dell'utente** (vedi "Diario delle sessioni cloud"). Lo scopo
 dichiarato: tornando su Claude Code non si deve ricominciare niente da
 capo.
@@ -2070,6 +2073,73 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.182 — 19/10/2026 · 17:28 — I database da diecimila righe
+*(Claude Code sul PC; verificata sul telefono con un database di prova da 10.000 righe; 627 test passati; commit solo in locale)*
+
+Dopo la v0.181 l'utente aveva chiesto che l'app reggesse "tante scritte e
+database", pensando al suo dizionario di parole studiate con Anki ("arriveranno
+anche a 8k, se non più di 10k parole, persino in un database semplice").
+Un database disegnava tutte le righe in una volta: con diecimila voleva dire
+secondi per aprirlo e rifarle tutte a ogni modifica. Gli sono state proposte
+due strade, e ha scelto la prima.
+
+L'utente, parola per parola:
+> «Come Notion. Nel ReadMe metti un tag rosso a questo cambiamento, così in
+> futuro mi ricorderò di vedere se mi va bene così oppure l'altra opzione
+> (che scriverai come papabile alternativa in futuro)»
+
+- **🔴 [Da rivedere]** **I database come Notion: dentro una pagina le prime 50
+  righe e "Load more"**, che ne aggiunge altre 50, col numero di quelle che
+  restano fuori accanto. Vale per la tabella (e per ogni gruppo e
+  sottogruppo, ognuno per conto suo), l'elenco e la galleria. Una riga creata
+  con "New page" si vede sempre, anche oltre il limite. Tornando sulla pagina
+  si riparte dalle prime 50. Calendario, timeline e grafico restano come
+  prima. **A pagina intera scorrono tutte**, senza limite: tabella, elenco e
+  galleria sono una lista che disegna solo le righe sullo schermo, e "New
+  page" è in fondo alla lista ("Freeze first row" tiene ferma l'intestazione,
+  una per gruppo). **La bacheca** ha le prime 50 schede per colonna e "Load
+  more" anche a pagina intera, come su Notion: non è una lista che disegna
+  solo quello che si vede.
+  **L'alternativa, se questa non va bene**: tutte le righe scorrevoli anche
+  dentro la pagina, senza "Load more", disegnando solo quelle sullo schermo
+  come a pagina intera. Da fuori non cambierebbe niente, ma è molto più
+  lavoro: dentro una pagina il database è un pezzo della lista della pagina,
+  e le sue righe dovrebbero diventare pezzi di quella lista, con gruppi,
+  intestazioni ferme, calcoli e lo scorrimento orizzontale delle colonne da
+  rifare
+- **[Modificato]** **Scrivere in un database grande non ferma più lo
+  schermo**: il filtro, la ricerca e l'ordinamento di tutte le righe, che si
+  rifanno a ogni lettera scritta in una cella, ora girano in background e
+  non sul thread che disegna; e l'albero delle sotto-righe, quando nessuna
+  riga ne ha, non si costruisce più
+- **[Nuova funzionalità]** **L'etichetta rossa "🔴 [Da rivedere]"** nella
+  Cronologia, chiesta dall'utente: segna una scelta fatta fra due, da
+  riguardare più avanti, con l'altra strada scritta accanto. Nelle Patch
+  Notes dell'app la scritta è rossa; su GitHub il colore lo dà 🔴
+- **[Progetto]** `RowLimits.kt` (`RowLimits`, `LoadMoreButton`, `LazyBody`,
+  `LAZY_FULL_PAGE_LAYOUTS`), `DatabaseViewModel.createdHere`; in
+  `DatabaseViewScreen.kt` il ramo `lazy` di `TableLayout` (`LazyColumn`
+  dentro lo scorrimento orizzontale, `stickyHeader` per "Freeze first
+  row"), `ListRow`, `GalleryRow`, `GroupNewRowButton`, e il limite in
+  `BoardColumnCards`. Il calcolo della tabella con `flowOn(Dispatchers.Default)`;
+  `rowTree` e `hasSubRows` tornano subito senza sotto-righe. `REVIEW_TAG`
+  in `PatchNotesScreen.kt`. Test: `DatabaseRowLimitsTest` (1.200 righe in un
+  database vero: le prime 50 e "Load more"; a pagina intera fatte solo
+  quelle sullo schermo, anche nell'elenco; le righe create sempre visibili),
+  `PatchNotesTest.theReviewTagIsRed`. Per la prova sul telefono, un comando
+  della sola versione di prova riempiva di righe un database chiamato
+  "Prova velocita" (nessun altro): tolto dopo la prova
+- Provata sul telefono, in un database semplice "Prova velocita" da 10.000
+  righe dentro una riga di prova del Main calendar: nella pagina le prime 50
+  e "Load more 9950", che porta la 51, la 52…; a pagina intera scorrendo in
+  fretta solo lo 0,8% dei fotogrammi in ritardo (versione di prova); scrivendo
+  e cancellando 30 lettere nel nome di una riga (release), a pagina intera
+  5 ms di mediana e 17–25 al massimo (prima di spostare il calcolo in
+  background 8 e 18), dentro la pagina 7 e 18. Poi la riga di prova
+  eliminata (con la copia di Permanent notes della v0.181 e il database):
+  database identico a com'era prima delle prove, a parte quella riga, la
+  sua pagina, le sue 689 righe e tre voci della sua cronologia; impostazioni
+  e widget identici
 ### 🆕 v0.181 — 18/10/2026 · 18:45 — Le pagine lunghe veloci
 *(Claude Code sul PC; installata sul telefono e misurata, in parte verificata: il telefono si è scollegato a metà; 622 test passati; commit solo in locale)*
 
@@ -2130,10 +2200,10 @@ L'utente, parola per parola:
 - Provata sul telefono nella copia di Permanent notes: i pezzi non si
   vedono, il backspace a inizio del secondo pezzo unisce "32." alla riga
   "31." col cursore nel punto giusto e la tastiera aperta, Invio la ridivide
-  e "xyz" finisce davanti a "32.". Poi il telefono si è scollegato: **la riga
-  di prova "Untitled" del Main calendar (creata alle 14:29) è ancora da
-  eliminare**, e il confronto del database è da fare. Prima di cominciare
-  Permanent notes era identico a com'era
+  e "xyz" finisce davanti a "32.". Poi il telefono si è scollegato, e la
+  riga di prova "Untitled" del Main calendar (creata alle 14:28) è stata
+  eliminata il giorno dopo, con le prove della v0.182 (vedi lì). Prima di
+  cominciare Permanent notes era identico a com'era
 ### 🆕 v0.180 — 18/10/2026 · 14:00 — Il volume dei click del Counter, il backspace negli elenchi come su Word
 *(Claude Code sul PC; verificata sul telefono; 616 test passati; commit solo in locale)*
 

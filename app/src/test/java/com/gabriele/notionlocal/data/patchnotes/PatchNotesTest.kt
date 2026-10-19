@@ -2,6 +2,7 @@ package com.gabriele.notionlocal.data.patchnotes
 
 import android.app.Application
 import android.content.Context
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -167,5 +168,16 @@ class PatchNotesTest {
         val nested = inlineMarkdown("*(schema alla **31**)*")
         assertEquals("(schema alla 31)", nested.text)
         assertTrue(nested.spanStyles.any { it.item.fontWeight == FontWeight.Bold && it.item.fontStyle == FontStyle.Italic })
+    }
+
+    @Test
+    fun theReviewTagIsRed() {
+        // 18/10/2026, chiesto dall'utente: le scelte da rivedere, in rosso e in grassetto.
+        val text = inlineMarkdown("**🔴 [Da rivedere]** Come Notion")
+        val tag = text.text.indexOf("[Da rivedere]")
+        val styles = text.spanStyles.filter { tag in it.start until it.end }.map { it.item }
+        assertTrue(styles.any { it.color != Color.Unspecified && it.fontWeight == FontWeight.Bold })
+        // Il resto no.
+        assertTrue(text.spanStyles.filter { text.text.indexOf("Come") in it.start until it.end }.none { it.item.color != Color.Unspecified })
     }
 }

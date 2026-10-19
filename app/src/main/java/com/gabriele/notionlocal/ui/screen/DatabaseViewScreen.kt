@@ -55,6 +55,12 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import com.gabriele.notionlocal.data.entity.TreeRow
+import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.material.icons.filled.DragIndicator
 import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.lerp
@@ -1007,6 +1013,11 @@ private fun DatabaseViewBody(
     val rowCovers by viewModel.rowCovers.collectAsStateWithLifecycle()
     val rowPreviews by viewModel.rowPreviews.collectAsStateWithLifecycle()
     val lockedRows by viewModel.lockedRows.collectAsStateWithLifecycle()
+    // Le prime righe e "Load more" (vedi `RowLimits`): quante se ne vedono
+    // per ogni elenco, e le righe create qui, che si vedono sempre.
+    val createdHere by viewModel.createdHere.collectAsStateWithLifecycle()
+    val rowLimits = remember(pageId) { RowLimits() }
+    rowLimits.created = createdHere
     // La riga di cui si sta scegliendo l'icona, dalla finestra delle azioni.
     var iconForRow by remember { mutableStateOf<DatabaseRowEntity?>(null) }
 
@@ -1163,7 +1174,8 @@ private fun DatabaseViewBody(
         LocalRowIcons provides rowIcons,
         LocalSimpleDatabase provides simple,
         LocalRowSearch provides state.search,
-        LocalTitleEditRequest provides TitleEditRequest(editTitleOf, viewModel::consumeEditTitle)
+        LocalTitleEditRequest provides TitleEditRequest(editTitleOf, viewModel::consumeEditTitle),
+        LocalRowLimits provides rowLimits
     ) {
     Column(
         modifier = modifier
@@ -1365,10 +1377,66 @@ private fun DatabaseViewBody(
         // pagina scorre la pagina, che lo dice da sé.
         val bodyScroll = rememberScrollState()
         val ownViewport = remember(bodyScroll) { StickyViewport.forScroll(bodyScroll) }
+
+        // Se la vista non ha la proprietà su cui si regge, non
+        // mostra nulla: un pulsante che crea pagine invisibili è
+        // peggio di nessun pulsante. Il messaggio sopra dice cosa
+        // manca e offre di crearlo.
+        val canShowNewRows = !contentLocked && when (layout) {
+            // Il calendario non ha bisogno di una proprietà data
+            // già pronta: se manca, la crea la pagina stessa
+            // appena la si mette su un giorno.
+            DatabaseLayout.TIMELINE -> viewModel.calendarDateColumn() != null
+            DatabaseLayout.BOARD -> viewModel.boardGroupColumn() != null
+            else -> true
+        }
+        val newRowsButton: @Composable () -> Unit = {
+            if (canShowNewRows) {
+            TextButton(
+                onClick = {
+                    // Una pagina creata da qui deve comparire dove la si
+                    // sta guardando. Nella tabella e nell'elenco basta
+                    // aggiungerla in fondo; nel calendario finirebbe fra
+                    // quelle senza data, e nella bacheca nella colonna in
+                    // fondo a destra — cioè fuori da quello che si ha
+                    // davanti, che è esattamente il motivo per cui
+                    // sembrava non venisse creata.
+                    if (layout == DatabaseLayout.CALENDAR) {
+                        // Datata oggi, creando la proprietà data se il
+                        // database non ne ha ancora una.
+                        viewModel.addRowOnDateCreatingColumn(todayAtStartOfDay())
+                    } else if (layout == DatabaseLayout.TIMELINE) {
+                        val dateColumn = viewModel.calendarDateColumn()
+                        if (dateColumn != null) {
+                            viewModel.addRowOnDate(dateColumn.id, todayAtStartOfDay())
+                        } else {
+                            viewModel.addRow()
+                        }
+                    } else {
+                        viewModel.addRow()
+                    }
+                    newRowTick++
+                },
+                modifier = Modifier.padding(start = 8.dp, top = 4.dp)
+            ) {
+                Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.size(8.dp))
+                Text(if (simple) DbStrings.newRow else DbStrings.newPage)
+            }
+            }
+        }
+        // **A pagina intera, solo le righe sullo schermo** (dal 18/10/2026):
+        // tabella, elenco e galleria sono una lista che disegna quello che si
+        // vede, e il pulsante delle righe nuove è il suo ultimo pezzo. Le altre
+        // viste, e tutte dentro una pagina, sono come prima (vedi `RowLimits`).
+        val lazyBody = if (!embedded && layout in LAZY_FULL_PAGE_LAYOUTS) LazyBody(newRowTick, newRowsButton) else null
+
         CompositionLocalProvider(LocalStickyViewport provides (if (embedded) LocalStickyViewport.current else ownViewport)) {
         Column(
             modifier = if (embedded) {
                 Modifier.fillMaxWidth()
+            } else if (lazyBody != null) {
+                Modifier.weight(1f)
             } else {
                 Modifier
                     .weight(1f)
@@ -1458,7 +1526,8 @@ private fun DatabaseViewBody(
                             viewModel.addRowInSubGroup(group.id, groupValue, sub.id, subValue)
                         }
                         newRowTick++
-                    }
+                    },
+                    lazy = lazyBody
                 )
 
                 DatabaseLayout.BOARD -> BoardLayout(
@@ -1545,7 +1614,8 @@ private fun DatabaseViewBody(
                     onRowLongPress = { row ->
                         focusManager.clearFocus()
                         rowActionsFor = row
-                    }
+                    },
+                    lazy = lazyBody
                 )
 
                 DatabaseLayout.CHART -> ChartLayout(state = state, settings = chartSettings)
@@ -1574,56 +1644,13 @@ private fun DatabaseViewBody(
                         viewModel.setRowCardCover(row, scale, offset.x, offset.y)
                         repositioningRowId = null
                     },
-                    onRepositionCancel = { repositioningRowId = null }
+                    onRepositionCancel = { repositioningRowId = null },
+                    lazy = lazyBody
                 )
             }
 
-            // Se la vista non ha la proprietà su cui si regge, non
-            // mostra nulla: un pulsante che crea pagine invisibili è
-            // peggio di nessun pulsante. Il messaggio sopra dice cosa
-            // manca e offre di crearlo.
-            val canShowNewRows = !contentLocked && when (layout) {
-                // Il calendario non ha bisogno di una proprietà data
-                // già pronta: se manca, la crea la pagina stessa
-                // appena la si mette su un giorno.
-                DatabaseLayout.TIMELINE -> viewModel.calendarDateColumn() != null
-                DatabaseLayout.BOARD -> viewModel.boardGroupColumn() != null
-                else -> true
-            }
-
-            if (canShowNewRows) {
-            TextButton(
-                onClick = {
-                    // Una pagina creata da qui deve comparire dove la si
-                    // sta guardando. Nella tabella e nell'elenco basta
-                    // aggiungerla in fondo; nel calendario finirebbe fra
-                    // quelle senza data, e nella bacheca nella colonna in
-                    // fondo a destra — cioè fuori da quello che si ha
-                    // davanti, che è esattamente il motivo per cui
-                    // sembrava non venisse creata.
-                    if (layout == DatabaseLayout.CALENDAR) {
-                        // Datata oggi, creando la proprietà data se il
-                        // database non ne ha ancora una.
-                        viewModel.addRowOnDateCreatingColumn(todayAtStartOfDay())
-                    } else if (layout == DatabaseLayout.TIMELINE) {
-                        val dateColumn = viewModel.calendarDateColumn()
-                        if (dateColumn != null) {
-                            viewModel.addRowOnDate(dateColumn.id, todayAtStartOfDay())
-                        } else {
-                            viewModel.addRow()
-                        }
-                    } else {
-                        viewModel.addRow()
-                    }
-                    newRowTick++
-                },
-                modifier = Modifier.padding(start = 8.dp, top = 4.dp)
-            ) {
-                Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.size(8.dp))
-                Text(if (simple) DbStrings.newRow else DbStrings.newPage)
-            }
-            }
+            // A pagina intera tabella, elenco e galleria l'hanno già in fondo.
+            if (lazyBody == null) newRowsButton()
         }
         }
     }
@@ -2006,6 +2033,7 @@ private fun DatabaseViewBody(
  * La visualizzazione a tabella: la griglia classica, con le colonne che
  * scorrono in orizzontale.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun TableLayout(
     state: DatabaseTableState,
@@ -2067,7 +2095,9 @@ private fun TableLayout(
     /** "Freeze first column" (dal 08/10/2026): la prima colonna resta a sinistra (vedi `FrozenTable.kt`). */
     freezeFirstColumn: Boolean = false,
     /** "Freeze first row": la riga dei titoli resta in cima scorrendo in giù. */
-    freezeFirstRow: Boolean = false
+    freezeFirstRow: Boolean = false,
+    /** A pagina intera: una lista che disegna solo le righe sullo schermo (vedi `LazyBody`). */
+    lazy: LazyBody? = null
 ) {
     // Dentro un contenitore che scorre in orizzontale la larghezza
     // disponibile è illimitata: una linea che chiede "tutta la
@@ -2132,6 +2162,164 @@ private fun TableLayout(
         LocalWrapCells provides (cellOverflow == CellOverflow.WRAP),
         LocalFrozenColumn provides frozenColumn
     ) {
+    // **A pagina intera, solo le righe sullo schermo** (dal 18/10/2026): con
+    // diecimila righe disegnarle tutte voleva dire secondi. Le stesse righe,
+    // intestazioni e calcoli, ma ognuno un pezzo di una lista che fa solo
+    // quelli che si vedono; la lista sta dentro lo scorrimento orizzontale,
+    // così le colonne restano allineate. "Freeze first row" è l'intestazione
+    // ferma della lista, una per gruppo.
+    if (lazy != null) {
+        val listState = rememberLazyListState()
+        // Una riga nuova da "New page" in fondo: la lista scende fin lì.
+        val rowCount by rememberUpdatedState(state.rows.size)
+        var seenTick by remember { mutableStateOf(lazy.newRowTick) }
+        LaunchedEffect(lazy.newRowTick) {
+            if (lazy.newRowTick == seenTick) return@LaunchedEffect
+            seenTick = lazy.newRowTick
+            if (groupColumn != null) return@LaunchedEffect
+            val before = rowCount
+            withTimeoutOrNull(2_000) { snapshotFlow { rowCount }.first { it > before } } ?: return@LaunchedEffect
+            listState.animateScrollToItem((listState.layoutInfo.totalItemsCount - 1).coerceAtLeast(0))
+        }
+
+        @Composable
+        fun HeaderRow() {
+            TableHeaderRow(
+                columns = shownColumns,
+                viewLocked = viewLocked,
+                onEditProperty = onEditProperty,
+                onMoveProperty = onMoveProperty,
+                namePlace = namePlace,
+                onMoveName = onMoveName,
+                onRenameName = onRenameName,
+                onHideProperty = onHideProperty,
+                onToggleCenterProperty = onToggleCenterProperty,
+                onAddProperty = onAddProperty,
+                onChangeTypeProperty = onChangeTypeProperty,
+                onCalculate = onCalculate,
+                onSetAllChecked = onSetAllChecked,
+                fitColumns = fitColumns,
+                onSetColumnWidth = onSetColumnWidth,
+                onSetFitToContent = onSetFitToContent
+            )
+            HorizontalDivider(modifier = Modifier.width(tableWidth))
+        }
+
+        @Composable
+        fun BodyRow(item: TreeRow, place: RowPlace) {
+            val row = item.row
+            TableBodyRow(
+                row = row,
+                depth = item.depth,
+                hasSubRows = item.hasChildren,
+                toggleSlot = treeShown,
+                onToggleSubRows = { onToggleSubRows(row) },
+                state = state,
+                columns = shownColumns,
+                onTitleChange = onTitleChange,
+                onOpenRow = onOpenRow,
+                onRowLongPress = { onRowLongPress(it, place) },
+                onSetCellValue = onSetCellValue,
+                onAddOption = onAddOption,
+                onRenameOption = onRenameOption,
+                onSetOptionColor = onSetOptionColor,
+                onDeleteOption = onDeleteOption,
+                onTitleEditing = onTitleEditing,
+                namePlace = namePlace
+            )
+            HorizontalDivider(modifier = Modifier.width(tableWidth))
+        }
+
+        // Un elenco di righe (la tabella, o un gruppo): l'intestazione, le
+        // righe, i calcoli, e "New page" se è un gruppo.
+        val headerBackground = MaterialTheme.colorScheme.background
+        fun LazyListScope.section(prefix: String, rows: List<DatabaseRowEntity>, place: RowPlace, onAddRow: (() -> Unit)?) {
+            if (freezeFirstRow) {
+                stickyHeader(key = "$prefix:header") {
+                    Column(modifier = Modifier.background(headerBackground)) { HeaderRow() }
+                }
+            } else {
+                item(key = "$prefix:header") { HeaderRow() }
+            }
+            items(rowTree(rows), key = { "$prefix:row:" + it.row.id }) { item -> BodyRow(item, place) }
+            item(key = "$prefix:calc") {
+                CalculationFooter(rows, state, shownColumns, calculations, onCalculate, calculationAlignments, onCalculationAlign, calculationSubRows, namePlace = namePlace)
+            }
+            if (onAddRow != null) item(key = "$prefix:add") { GroupNewRowButton(onAddRow) }
+        }
+
+        val groups = if (groupColumn == null) emptyList() else buildRowGroups(state, groupColumn, hideEmptyGroups)
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            val viewport = maxWidth
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    // Toccando la tabella fuori dal segnalino, il segnalino se ne va.
+                    .pointerInput(resize) {
+                        awaitPointerEventScope {
+                            while (true) {
+                                val event = awaitPointerEvent()
+                                if (event.type == PointerEventType.Press) {
+                                    if (!resize.handleTouched && resize.key != null) resize.stop()
+                                    resize.handleTouched = false
+                                }
+                            }
+                        }
+                    }
+                    .horizontalScroll(horizontal)
+            ) {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .width(maxOf(tableWidth, viewport))
+                        .fillMaxHeight()
+                        .keepFocusedAboveKeyboard()
+                ) {
+                    if (groupColumn == null) {
+                        section("table", state.rows, RowPlace(), null)
+                    } else {
+                        groups.forEach { group ->
+                            val isCollapsed = collapsed[group.key] == true
+                            item(key = "group:" + group.key) {
+                                GroupHeaderRow(
+                                    group = group,
+                                    collapsed = isCollapsed,
+                                    width = tableWidth,
+                                    onToggle = { collapsed[group.key] = !isCollapsed }
+                                )
+                            }
+                            if (!isCollapsed) {
+                                if (subGroupColumn == null) {
+                                    section("g:" + group.key, group.rows, RowPlace(group.key)) { onAddRowInGroup(group.key) }
+                                } else {
+                                    buildRowGroups(state, subGroupColumn, hideEmptySubGroups, group.rows).forEach { sub ->
+                                        val subKey = group.key + SUB_GROUP_KEY_SEPARATOR + sub.key
+                                        val subCollapsed = collapsed[subKey] == true
+                                        item(key = "sub:$subKey") {
+                                            GroupHeaderRow(
+                                                group = sub,
+                                                collapsed = subCollapsed,
+                                                width = tableWidth,
+                                                indent = SUB_GROUP_INDENT,
+                                                onToggle = { collapsed[subKey] = !subCollapsed }
+                                            )
+                                        }
+                                        if (!subCollapsed) {
+                                            section("s:$subKey", sub.rows, RowPlace(group.key, sub.key)) { onAddRowInSubGroup(group.key, sub.key) }
+                                        }
+                                        item(key = "subgap:$subKey") { Spacer(modifier = Modifier.size(8.dp)) }
+                                    }
+                                }
+                            }
+                        }
+                        item(key = "groups-end") { Spacer(modifier = Modifier.size(12.dp)) }
+                    }
+                    item(key = "trailing") { lazy.trailing() }
+                }
+            }
+        }
+        return@CompositionLocalProvider
+    }
     Column(
         modifier = Modifier
             // Toccando la tabella fuori dal segnalino, il segnalino se ne va.
@@ -2175,7 +2363,10 @@ private fun TableLayout(
             // una riga cambia posto, e senza l'id il campo in cui si stava
             // scrivendo finiva su un'altra riga, si chiudeva e la tastiera
             // spariva.
-            rowTree(state.rows).forEach { item ->
+            // Le prime righe e "Load more" (vedi `RowLimits`).
+            val limits = LocalRowLimits.current
+            val shown = limits.limit("table", rowTree(state.rows)) { it.row.id }
+            shown.items.forEach { item ->
                 val row = item.row
                 key(row.id) {
                 TableBodyRow(
@@ -2200,6 +2391,7 @@ private fun TableLayout(
                 HorizontalDivider(modifier = Modifier.width(tableWidth))
                 }
             }
+            if (shown.hidden > 0) LoadMoreButton(shown.hidden, onClick = { limits?.more("table") })
             CalculationFooter(state.rows, state, shownColumns, calculations, onCalculate, calculationAlignments, onCalculationAlign, calculationSubRows, namePlace = namePlace)
             }
             return@Column
@@ -2231,7 +2423,10 @@ private fun TableLayout(
             )
             HorizontalDivider(modifier = Modifier.width(tableWidth))
             }) {
-            rowTree(rows).forEach { item ->
+            val limits = LocalRowLimits.current
+            val limitKey = "group:$place"
+            val shown = limits.limit(limitKey, rowTree(rows)) { it.row.id }
+            shown.items.forEach { item ->
                 val row = item.row
                 key(row.id) {
                 TableBodyRow(
@@ -2256,6 +2451,7 @@ private fun TableLayout(
                 HorizontalDivider(modifier = Modifier.width(tableWidth))
                 }
             }
+            if (shown.hidden > 0) LoadMoreButton(shown.hidden, onClick = { limits?.more(limitKey) })
             // I calcoli di questo gruppo, sotto le sue righe.
             CalculationFooter(rows, state, shownColumns, calculations, onCalculate, calculationAlignments, onCalculationAlign, calculationSubRows, namePlace = namePlace)
             // Una pagina creata da dentro un gruppo nasce già con
@@ -2842,6 +3038,26 @@ private fun TableSlots(
     if (namePlace >= columns.size) key(NAME_COLUMN_KEY) { if (columns.isEmpty()) first(name) else name() }
 }
 
+/** "New page" in fondo a un gruppo della tabella. */
+@Composable
+private fun GroupNewRowButton(onClick: () -> Unit) {
+    TextButton(
+        onClick = onClick,
+        modifier = Modifier.padding(start = 8.dp)
+    ) {
+        Icon(
+            Icons.Filled.Add,
+            contentDescription = null,
+            modifier = Modifier.size(16.dp)
+        )
+        Spacer(modifier = Modifier.size(8.dp))
+        Text(
+            if (LocalSimpleDatabase.current) DbStrings.newRow else DbStrings.newPage,
+            style = MaterialTheme.typography.labelLarge
+        )
+    }
+}
+
 /** Una riga della tabella: nome, celle, e lo spazio sotto la colonna "+". */
 @Composable
 private fun TableBodyRow(
@@ -3174,6 +3390,7 @@ internal fun BoardLayout(
                     BoardColumnHeader(group, tagged, tint, accentOf(tint))
                     BoardColumnCards(
                         rows = group.rows,
+                        limitKey = "board:" + group.key,
                         state = state,
                         hiddenColumnIds = hidden,
                         tint = tint,
@@ -3223,6 +3440,7 @@ internal fun BoardLayout(
                         BoardColumnBox(tint, top = if (tint != null) 8.dp else 0.dp) {
                             BoardColumnCards(
                                 rows = group.rows.filter { it.id in inSub },
+                                limitKey = "board:" + sub.key + SUB_GROUP_KEY_SEPARATOR + group.key,
                                 state = state,
                                 hiddenColumnIds = hidden,
                                 tint = tint,
@@ -3298,6 +3516,8 @@ private fun BoardColumnHeader(group: RowGroup, tagged: Boolean, tint: Color?, ac
 @Composable
 private fun BoardColumnCards(
     rows: List<DatabaseRowEntity>,
+    /** Quale colonna (e fascia): le sue prime schede e "Load more", vedi `RowLimits`. */
+    limitKey: String,
     state: DatabaseTableState,
     hiddenColumnIds: Set<String>,
     tint: Color?,
@@ -3307,7 +3527,12 @@ private fun BoardColumnCards(
     onAdd: () -> Unit
 ) {
     val pageBackground = MaterialTheme.colorScheme.background
-    rows.forEach { row ->
+    // **Le prime schede e "Load more"**, anche a pagina intera (dal
+    // 18/10/2026, come su Notion): la bacheca non è una lista che disegna
+    // solo quello che si vede. Vedi `RowLimits`.
+    val limits = LocalRowLimits.current
+    val shown = limits.limit(limitKey, rows) { it.id }
+    shown.items.forEach { row ->
         BoardCard(
             row = row,
             state = state,
@@ -3318,6 +3543,7 @@ private fun BoardColumnCards(
         )
         Spacer(modifier = Modifier.size(8.dp))
     }
+    if (shown.hidden > 0) LoadMoreButton(shown.hidden, onClick = { limits?.more(limitKey) })
 
     if (tint != null && accent != null) {
         // Come su Notion: "New" largo quanto la colonna, col
@@ -4369,52 +4595,74 @@ private fun CalendarWeekRow(
 private fun ListLayout(
     state: DatabaseTableState,
     onOpenRow: (DatabaseRowEntity) -> Unit,
+    onRowLongPress: (DatabaseRowEntity) -> Unit,
+    /** A pagina intera: solo le righe sullo schermo (vedi `LazyBody`). */
+    lazy: LazyBody? = null
+) {
+    if (lazy != null) {
+        LazyColumn(modifier = Modifier.fillMaxSize().keepFocusedAboveKeyboard()) {
+            items(state.rows, key = { it.id }) { row -> ListRow(row, state, onOpenRow, onRowLongPress) }
+            item(key = "trailing") { lazy.trailing() }
+        }
+        return
+    }
+    // Dentro una pagina: le prime righe e "Load more" (vedi `RowLimits`).
+    val limits = LocalRowLimits.current
+    val shown = limits.limit("list", state.rows) { it.id }
+    Column(modifier = Modifier.fillMaxWidth()) {
+        shown.items.forEach { row -> ListRow(row, state, onOpenRow, onRowLongPress) }
+        if (shown.hidden > 0) LoadMoreButton(shown.hidden, onClick = { limits?.more("list") })
+    }
+}
+
+/** Una riga dell'elenco: l'icona, il nome, e a destra i primi due valori. */
+@Composable
+private fun ListRow(
+    row: DatabaseRowEntity,
+    state: DatabaseTableState,
+    onOpenRow: (DatabaseRowEntity) -> Unit,
     onRowLongPress: (DatabaseRowEntity) -> Unit
 ) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        state.rows.forEach { row ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .foundInside(row.id)
-                    .pointerInput(row.id) {
-                        detectTapGestures(
-                            onTap = { onOpenRow(row) },
-                            onLongPress = { onRowLongPress(row) }
-                        )
-                    }
-                    .padding(horizontal = 16.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                RowIconBadge(row.id, ROW_ICON_SIZE)
-                Text(
-                    text = highlightedTitle(row.title),
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = if (row.title.isBlank()) {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    } else {
-                        MaterialTheme.colorScheme.onBackground
-                    },
-                    maxLines = 1,
-                    modifier = Modifier.weight(1f)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .foundInside(row.id)
+            .pointerInput(row.id) {
+                detectTapGestures(
+                    onTap = { onOpenRow(row) },
+                    onLongPress = { onRowLongPress(row) }
                 )
-
-                // A destra i valori che ci stanno, come fa Notion: solo
-                // quelli valorizzati, altrimenti la riga si riempirebbe
-                // di trattini.
-                state.visibleColumns.take(2).forEach { column ->
-                    val value = state.cellValues[row.id to column.id].orEmpty()
-                    if (value.isNotBlank()) {
-                        Spacer(modifier = Modifier.size(10.dp))
-                        CardPropertyValue(column, value)
-                    }
-                }
             }
-            // Niente linea fra una riga e l'altra (tolta il 05/10/2026,
-            // chiesto dall'utente): come su Notion, le righe si separano
-            // con lo spazio e basta.
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        RowIconBadge(row.id, ROW_ICON_SIZE)
+        Text(
+            text = highlightedTitle(row.title),
+            style = MaterialTheme.typography.bodyLarge,
+            color = if (row.title.isBlank()) {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            } else {
+                MaterialTheme.colorScheme.onBackground
+            },
+            maxLines = 1,
+            modifier = Modifier.weight(1f)
+        )
+
+        // A destra i valori che ci stanno, come fa Notion: solo
+        // quelli valorizzati, altrimenti la riga si riempirebbe
+        // di trattini.
+        state.visibleColumns.take(2).forEach { column ->
+            val value = state.cellValues[row.id to column.id].orEmpty()
+            if (value.isNotBlank()) {
+                Spacer(modifier = Modifier.size(10.dp))
+                CardPropertyValue(column, value)
+            }
         }
     }
+    // Niente linea fra una riga e l'altra (tolta il 05/10/2026,
+    // chiesto dall'utente): come su Notion, le righe si separano
+    // con lo spazio e basta.
 }
 
 /**
@@ -4481,8 +4729,33 @@ private fun GalleryLayout(
     /** La scheda di cui si sta spostando la copertina, se ce n'è una: vedi `GalleryCard`. */
     repositioningRowId: String? = null,
     onRepositionSave: (DatabaseRowEntity, Float, Offset) -> Unit = { _, _, _ -> },
-    onRepositionCancel: () -> Unit = {}
+    onRepositionCancel: () -> Unit = {},
+    /** A pagina intera: solo le schede sullo schermo (vedi `LazyBody`). */
+    lazy: LazyBody? = null
 ) {
+    @Composable
+    fun CardRow(cardsInRow: List<DatabaseRowEntity>, columns: Int, modifier: Modifier = Modifier) {
+        GalleryRow(
+            cardsInRow, columns, state, preview, size, covers, contentPreviews, lockedRows,
+            onOpenRow, onRowLongPress, repositioningRowId, onRepositionSave, onRepositionCancel, modifier
+        )
+    }
+    if (lazy != null) {
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            // Le stesse schede per riga di sempre: i margini ai lati non contano.
+            val columns = galleryColumnsFor(maxWidth - 32.dp, size)
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                items(state.rows.chunked(columns), key = { "cards:" + it.first().id }) { cardsInRow ->
+                    CardRow(cardsInRow, columns, Modifier.padding(start = 16.dp, end = 16.dp, bottom = GALLERY_GAP))
+                }
+                item(key = "trailing") { lazy.trailing() }
+            }
+        }
+        return
+    }
+    // Dentro una pagina: le prime schede e "Load more" (vedi `RowLimits`).
+    val limits = LocalRowLimits.current
+    val shown = limits.limit("gallery", state.rows) { it.id }
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxWidth()
@@ -4490,41 +4763,61 @@ private fun GalleryLayout(
     ) {
         val columns = galleryColumnsFor(maxWidth, size)
         Column(verticalArrangement = Arrangement.spacedBy(GALLERY_GAP)) {
-            state.rows.chunked(columns).forEach { cardsInRow ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(IntrinsicSize.Max),
-                    horizontalArrangement = Arrangement.spacedBy(GALLERY_GAP)
-                ) {
-                    cardsInRow.forEach { row ->
-                        GalleryCard(
-                            row = row,
-                            state = state,
-                            preview = preview,
-                            size = size,
-                            cover = covers[row.id],
-                            contentLines = contentPreviews[row.id],
-                            locked = row.id in lockedRows,
-                            onOpen = { onOpenRow(row) },
-                            onLongPress = { onRowLongPress(row) },
-                            repositioning = row.id == repositioningRowId,
-                            onRepositionSave = { scale, offset -> onRepositionSave(row, scale, offset) },
-                            onRepositionCancel = onRepositionCancel,
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight()
-                        )
-                    }
-                    // L'ultima riga, se non è piena, tiene le schede
-                    // larghe come le altre invece di allargarle a
-                    // riempire lo spazio: una scheda grande il doppio in
-                    // fondo sembrerebbe più importante delle altre.
-                    repeat(columns - cardsInRow.size) {
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
-                }
-            }
+            shown.items.chunked(columns).forEach { cardsInRow -> CardRow(cardsInRow, columns) }
+        }
+    }
+    if (shown.hidden > 0) LoadMoreButton(shown.hidden, onClick = { limits?.more("gallery") })
+}
+
+/** Una riga di schede della galleria, alte uguali. */
+@Composable
+private fun GalleryRow(
+    cardsInRow: List<DatabaseRowEntity>,
+    columns: Int,
+    state: DatabaseTableState,
+    preview: GalleryCardPreview,
+    size: GalleryCardSize,
+    covers: Map<String, RowCover>,
+    contentPreviews: Map<String, List<RowPreviewLine>>,
+    lockedRows: Set<String>,
+    onOpenRow: (DatabaseRowEntity) -> Unit,
+    onRowLongPress: (DatabaseRowEntity) -> Unit,
+    repositioningRowId: String?,
+    onRepositionSave: (DatabaseRowEntity, Float, Offset) -> Unit,
+    onRepositionCancel: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(IntrinsicSize.Max),
+        horizontalArrangement = Arrangement.spacedBy(GALLERY_GAP)
+    ) {
+        cardsInRow.forEach { row ->
+            GalleryCard(
+                row = row,
+                state = state,
+                preview = preview,
+                size = size,
+                cover = covers[row.id],
+                contentLines = contentPreviews[row.id],
+                locked = row.id in lockedRows,
+                onOpen = { onOpenRow(row) },
+                onLongPress = { onRowLongPress(row) },
+                repositioning = row.id == repositioningRowId,
+                onRepositionSave = { scale, offset -> onRepositionSave(row, scale, offset) },
+                onRepositionCancel = onRepositionCancel,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+            )
+        }
+        // L'ultima riga, se non è piena, tiene le schede
+        // larghe come le altre invece di allargarle a
+        // riempire lo spazio: una scheda grande il doppio in
+        // fondo sembrerebbe più importante delle altre.
+        repeat(columns - cardsInRow.size) {
+            Spacer(modifier = Modifier.weight(1f))
         }
     }
 }

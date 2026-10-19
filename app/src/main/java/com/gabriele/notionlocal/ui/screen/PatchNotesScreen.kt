@@ -330,6 +330,7 @@ private fun NoteBlockView(block: NoteBlock) {
 /**
  * Grassetto (`**`), corsivo (`*`), barrato (`~~`) e codice (`` ` ``) dentro
  * una riga, come li mostra GitHub. Un `*` fra due spazi resta un asterisco.
+ * L'etichetta [REVIEW_TAG] è rossa (vedi lì).
  */
 internal fun inlineMarkdown(text: String, codeBackground: Color = CODE_BACKGROUND): AnnotatedString = buildAnnotatedString {
     var bold = false
@@ -353,6 +354,11 @@ internal fun inlineMarkdown(text: String, codeBackground: Color = CODE_BACKGROUN
     while (i < text.length) {
         val c = text[i]
         when {
+            text.startsWith(REVIEW_TAG, i) -> {
+                flush()
+                withStyle(style().merge(SpanStyle(color = ReviewRed))) { append(REVIEW_TAG) }
+                i += REVIEW_TAG.length
+            }
             text.startsWith("**", i) -> {
                 flush()
                 bold = !bold
@@ -395,3 +401,12 @@ internal fun inlineMarkdown(text: String, codeBackground: Color = CODE_BACKGROUN
 }
 
 private val CODE_BACKGROUND = Color(0x33878787)
+
+/**
+ * **L'etichetta rossa delle scelte da rivedere** (dal 18/10/2026, chiesta
+ * dall'utente): una cosa fatta in un modo fra due, che l'utente vuole
+ * ritrovare per decidere se tenerla o passare all'altra, scritta accanto. Nel
+ * README ha davanti 🔴, perché su GitHub il testo non si colora.
+ */
+internal const val REVIEW_TAG = "[Da rivedere]"
+private val ReviewRed = Color(0xFFE5484D)

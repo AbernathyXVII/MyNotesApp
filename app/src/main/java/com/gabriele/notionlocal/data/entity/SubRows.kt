@@ -21,6 +21,9 @@ data class TreeRow(val row: DatabaseRowEntity, val depth: Int, val hasChildren: 
  * vedere.
  */
 fun rowTree(rows: List<DatabaseRowEntity>): List<TreeRow> {
+    // Quasi sempre nessuna riga ne ha sotto: l'albero è l'elenco così com'è.
+    // Con un dizionario di diecimila parole, e a ogni lettera scritta, conta.
+    if (rows.none { it.parentRowId != null }) return rows.map { TreeRow(it, 0, false) }
     val ids = rows.mapTo(HashSet()) { it.id }
     fun parentOf(row: DatabaseRowEntity) = row.parentRowId?.takeIf { it in ids && it != row.id }
     val children = rows.groupBy { parentOf(it) }
@@ -51,6 +54,7 @@ fun rowTree(rows: List<DatabaseRowEntity>): List<TreeRow> {
 
 /** Se fra queste righe qualcuna ha sotto di sé un'altra di loro: allora nella tabella c'è l'albero. */
 fun hasSubRows(rows: List<DatabaseRowEntity>): Boolean {
+    if (rows.none { it.parentRowId != null }) return false
     val ids = rows.mapTo(HashSet()) { it.id }
     return rows.any { it.parentRowId != null && it.parentRowId != it.id && it.parentRowId in ids }
 }

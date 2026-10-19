@@ -59,6 +59,7 @@ import com.gabriele.notionlocal.data.entity.TimelineZoom
 import com.gabriele.notionlocal.data.repository.DatabaseRepository
 import com.gabriele.notionlocal.data.repository.PageRepository
 import com.gabriele.notionlocal.data.repository.RowPreviewLine
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -70,6 +71,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -314,9 +316,12 @@ class DatabaseViewModel(
      * quelle scriverebbe il "nascosto" della vista dentro l'origine, dove
      * lo vedrebbero tutti. Chi modifica una colonna parte da qui.
      */
+    // Scritte dal calcolo della tabella, che gira in background (vedi `load`).
+    @Volatile
     private var rawColumns: List<DatabaseColumnEntity> = emptyList()
 
     /** Il numero d'ordine più alto fra **tutte** le righe, anche quelle che il filtro o la ricerca nascondono. */
+    @Volatile
     private var lastRowOrderIndex: Int = -1
     private fun rawColumn(id: String): DatabaseColumnEntity? = rawColumns.find { it.id == id }
 
@@ -396,7 +401,18 @@ class DatabaseViewModel(
 
     private fun keepVisibleWhileSearching(rowId: String) {
         if (_searchQuery.value.isNotBlank()) _addedWhileSearching.value = _addedWhileSearching.value + rowId
+        _createdHere.value = _createdHere.value + rowId
     }
+
+    private val _createdHere = MutableStateFlow<Set<String>>(emptySet())
+
+    /**
+     * **Le righe create da questa vista** (dal 18/10/2026): dentro una
+     * pagina se ne vedono le prime 50 ("Load more" per le altre, come su
+     * Notion), ma una riga appena creata va vista anche se cade oltre, se no
+     * "New page" sembrerebbe non fare niente. Vedi `RowLimits`.
+     */
+    val createdHere: StateFlow<Set<String>> = _createdHere
 
     /**
      * **Una riga nuova nasce già col valore del filtro**, come su Notion:
@@ -598,9 +614,14 @@ class DatabaseViewModel(
                     cellValues = cellValues,
                     search = search
                 )
-            }.collect { state ->
-                _tableState.value = state
             }
+                // **In background** (dal 18/10/2026): con un dizionario di
+                // diecimila parole, filtrare, cercare e ordinare tutte le righe
+                // a ogni lettera scritta in una cella fermava lo schermo.
+                .flowOn(Dispatchers.Default)
+                .collect { state ->
+                    _tableState.value = state
+                }
         }
     }
 

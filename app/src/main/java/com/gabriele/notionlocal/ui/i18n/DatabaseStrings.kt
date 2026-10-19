@@ -161,6 +161,8 @@ object DbStrings {
     val newPage get() = t("New page", "Nuova pagina", "Neue Seite", "Nouvelle page", "Nueva página", "新建页面", "새 페이지", "新規ページ")
     // Database semplice: le righe non sono pagine, e i pulsanti lo dicono.
     val newRow get() = t("New row", "Nuova riga", "Neue Zeile", "Nouvelle ligne", "Nueva fila", "新建行", "새 행", "新規行")
+    /** Sotto le prime righe di un database dentro una pagina (dal 18/10/2026, come su Notion). */
+    val loadMore get() = t("Load more", "Carica altre", "Mehr laden", "Charger plus", "Cargar más", "加载更多", "더 불러오기", "さらに読み込む")
     val row get() = t("Row", "Riga", "Zeile", "Ligne", "Fila", "行", "행", "行")
     val simpleDatabaseNote get() = t(
         "Simple database: rows are just text, they don't open as pages.",
