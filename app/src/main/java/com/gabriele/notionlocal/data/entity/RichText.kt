@@ -423,7 +423,13 @@ data class StyleRange(
     val bold: Boolean = false,
     val italic: Boolean = false,
     val underline: Boolean = false,
-    val strikethrough: Boolean = false
+    val strikethrough: Boolean = false,
+    /**
+     * **La grandezza della fonte** (dal 20/10/2026, "Keep Source
+     * Formatting"), già in punti di notE (vedi `RichTextSpan.size`); null =
+     * quella normale.
+     */
+    val size: Int? = null
 )
 
 /**
@@ -466,7 +472,13 @@ data class PastedLine(
     val end: Int,
     val type: BlockType,
     val checked: Boolean = false,
-    val indent: Int = 0
+    val indent: Int = 0,
+    /**
+     * **Una tabella copiata** (dal 20/10/2026, da OneNote o da una pagina
+     * web): le celle, riga per riga. La riga incollata diventa una tabella
+     * semplice di notE con queste celle; il suo testo è solo un segnaposto.
+     */
+    val table: List<List<String>>? = null
 )
 
 /**
@@ -494,7 +506,8 @@ fun applyPaste(spans: List<RichTextSpan>, format: PasteFormat): List<RichTextSpa
                     bold = it.bold || style.bold,
                     italic = it.italic || style.italic,
                     underline = it.underline || style.underline,
-                    strikethrough = it.strikethrough || style.strikethrough
+                    strikethrough = it.strikethrough || style.strikethrough,
+                    size = style.size ?: it.size
                 )
             }
         } ?: current

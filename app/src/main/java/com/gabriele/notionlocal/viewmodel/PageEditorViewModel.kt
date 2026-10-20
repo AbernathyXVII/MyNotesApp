@@ -3529,13 +3529,28 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         /** Una riga che c'era già e diventa quella incollata, col suo tipo; null se resta com'è. */
         fun retyped(block: BlockEntity, index: Int, textJson: String): BlockEntity? {
             val kind = lineKinds.getOrNull(index) ?: return null
+            // Una tabella incollata (dal 20/10/2026): il testo della riga era
+            // solo un segnaposto, le celle arrivano dopo (`writePastedCells`).
+            val table = kind.table
             return block.copy(
                 type = kind.type,
                 isChecked = kind.checked,
                 indentLevel = pastedIndent(kind),
-                textJson = textJson,
+                textJson = if (table != null) EMPTY_TEXT_JSON else textJson,
+                tableRows = table?.size ?: block.tableRows,
+                tableCols = table?.maxOfOrNull { it.size } ?: block.tableCols,
                 attrsJson = BlockAttrs.encode(BlockAttrs.parse(block.attrsJson).copy(listIndent = null))
             )
+        }
+
+        /** Le celle delle tabelle incollate, quando le tabelle ci sono già: una riga per blocco. */
+        suspend fun writePastedCells(blocks: List<Pair<String, PastedLine?>>) {
+            for ((blockId, kind) in blocks) {
+                val table = kind?.table ?: continue
+                table.forEachIndexed { r, row ->
+                    row.forEachIndexed { c, text -> if (text.isNotEmpty()) repository.setTableCellText(blockId, r, c, text) }
+                }
+            }
         }
 
         // Rete di sicurezza: se per qualsiasi motivo il risultato non
@@ -3579,15 +3594,20 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
                     ?: 0
                 val newBlocks = extraLines.mapIndexed { i, line ->
                     val kind = lineKinds.getOrNull(oldMiddleBlocks.size + i)
+                    val table = kind?.table
                     BlockEntity(
                         pageId = pageId,
                         parentBlockId = parentBlockId,
                         type = kind?.type ?: inheritedType,
                         isChecked = kind?.checked ?: false,
                         indentLevel = kind?.let { pastedIndent(it) } ?: indentLevel,
-                        textJson = json.encodeToString(
-                            spansForLine(oldMiddleBlocks.size + i, line)
-                        ),
+                        textJson = if (table != null) {
+                            EMPTY_TEXT_JSON
+                        } else {
+                            json.encodeToString(spansForLine(oldMiddleBlocks.size + i, line))
+                        },
+                        tableRows = table?.size ?: 2,
+                        tableCols = table?.maxOfOrNull { it.size } ?: 2,
                         orderIndex = shiftFromIndex + i,
                         attrsJson = if (kind != null) "{}" else inheritedAttrs
                     )
@@ -3612,6 +3632,10 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
                     texts = rewritten,
                     saved = retypedBlocks + newBlocks
                 )
+                writePastedCells(
+                    oldMiddleBlocks.mapIndexed { i, block -> block.id to lineKinds.getOrNull(i) } +
+                        newBlocks.mapIndexed { i, block -> block.id to lineKinds.getOrNull(oldMiddleBlocks.size + i) }
+                )
             } else {
                 val retypedBlocks = newMiddleLines.indices.mapNotNull { i ->
                     retyped(oldMiddleBlocks[i], i, json.encodeToString(spansForLine(i, newMiddleLines[i])))
@@ -3625,6 +3649,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
                     saved = retypedBlocks,
                     deleted = oldMiddleBlocks.drop(newMiddleLines.size)
                 )
+                writePastedCells(newMiddleLines.indices.map { i -> oldMiddleBlocks[i].id to lineKinds.getOrNull(i) })
             }
         }
     }

@@ -65,6 +65,11 @@ private const val PASTED_LINK_TAG = "pasted-link"
 private const val PASTED_STYLE_TAG = "pasted-style"
 private const val PASTED_PLAIN_TAG = "pasted-plain"
 private const val PASTED_LINES_TAG = "pasted-lines"
+private const val PASTED_TABLE_TAG = "pasted-table"
+
+/** Fra le righe e fra le celle di una tabella incollata, nell'etichetta: caratteri che nel testo non ci sono. */
+private const val TABLE_ROW_SEPARATOR = '\u001E'
+private const val TABLE_CELL_SEPARATOR = '\u001F'
 
 /** Il commento con il tipo delle righe copiate, nell'HTML degli appunti. */
 private const val LINES_MARKER = "notE-lines:"
@@ -93,6 +98,14 @@ internal class LinkClipboard(
             context.getSystemService(android.content.ClipboardManager::class.java)?.primaryClip
                 ?.takeIf { it.itemCount > 0 }?.getItemAt(0)
         }.getOrNull() ?: return base.getText()
+        // **Com'era fatto nella fonte** (dal 20/10/2026): da un'altra app con
+        // l'HTML, righe, elenchi, tabelle e grandezze (vedi `ClipHtml.kt`).
+        // Da notE stesso il tipo delle righe c'è già, nel commento.
+        val html = item.htmlText
+        if (mode == PasteMode.KEEP_SOURCE && html != null && linesMarkerOf(html) == null) {
+            val lines = runCatching { parseClipHtml(html) }.getOrNull()
+            if (!lines.isNullOrEmpty()) return sourceFormatted(lines)
+        }
         val raw: CharSequence = item.text ?: item.htmlText?.let { htmlToSpanned(it).toString().trimEnd() } ?: return base.getText()
         val plain = raw.toString()
         val builder = AnnotatedString.Builder(plain)
@@ -139,6 +152,43 @@ internal class LinkClipboard(
         }
         val html = spansToHtml(rich ?: listOf(RichTextSpan(text = text))) + (lines?.let { linesMarker(it) } ?: "")
         clipboard.setPrimaryClip(ClipData.newHtmlText("notE", text, html))
+    }
+
+    /**
+     * Il testo copiato com'era nella fonte: le righe una sotto l'altra, e
+     * sopra gli stili (con la grandezza in punti di notE, vedi `noteSizes`), i
+     * collegamenti, il tipo delle righe (solo se c'è un elenco o una tabella:
+     * altrimenti le righe nuove fanno come sempre) e le celle delle tabelle.
+     */
+    private fun sourceFormatted(lines: List<ClipLine>): AnnotatedString {
+        val sizeOf = noteSizes(lines)
+        val plain = lines.joinToString("\n") { it.text }
+        val builder = AnnotatedString.Builder(plain)
+        if (plain.isNotEmpty()) builder.addStringAnnotation(PASTED_PLAIN_TAG, "", 0, plain.length)
+        var lineStart = 0
+        for (line in lines) {
+            var at = lineStart
+            for (run in line.runs) {
+                val end = at + run.text.length
+                if (end > at && line.table == null) {
+                    val style = StyleRange(at, end, run.bold, run.italic, run.underline, run.strikethrough, sizeOf(run.sizePt))
+                    if (style.bold || style.italic || style.underline || style.strikethrough || style.size != null) {
+                        builder.addStringAnnotation(PASTED_STYLE_TAG, styleCode(style), at, end)
+                    }
+                    run.link?.let { builder.addStringAnnotation(PASTED_LINK_TAG, it.trim(), at, end) }
+                }
+                at = end
+            }
+            val length = line.text.length
+            if (line.table != null && length > 0) {
+                builder.addStringAnnotation(PASTED_TABLE_TAG, encodeTable(line.table), lineStart, lineStart + length)
+            }
+            lineStart += length + 1
+        }
+        if (plain.isNotEmpty() && lines.any { it.type != BlockType.PARAGRAPH }) {
+            builder.addStringAnnotation(PASTED_LINES_TAG, lines.joinToString(";") { "${it.type.name},0,${it.indent}" }, 0, plain.length)
+        }
+        return builder.toAnnotatedString()
     }
 
     /** I link di un elemento degli appunti, nelle posizioni di [plain]. */
@@ -204,7 +254,7 @@ private fun copiedLineOf(entry: String): CopiedLine? {
 }
 
 /** Niente link che eseguono codice, né vuoti. */
-private fun usableLink(url: String): Boolean = url.isNotBlank() && !url.trim().startsWith("javascript:", ignoreCase = true)
+internal fun usableLink(url: String): Boolean = url.isNotBlank() && !url.trim().startsWith("javascript:", ignoreCase = true)
 
 private fun RichTextSpan.hasStyle(): Boolean = bold || italic || underline || strikethrough || link != null
 
@@ -213,7 +263,20 @@ private fun styleCode(style: StyleRange): String = buildString {
     if (style.italic) append('i')
     if (style.underline) append('u')
     if (style.strikethrough) append('s')
+    style.size?.let { append('z').append(it) }
 }
+
+/** La grandezza nel codice di uno stile ("bz24"), o null. */
+private fun sizeOfCode(code: String): Int? = Regex("z(\\d+)").find(code)?.groupValues?.get(1)?.toIntOrNull()
+
+/** Le celle di una tabella nell'etichetta dell'incolla, e ritorno. */
+private fun encodeTable(cells: List<List<String>>): String =
+    cells.joinToString(TABLE_ROW_SEPARATOR.toString()) { row ->
+        row.joinToString(TABLE_CELL_SEPARATOR.toString()) { it.filterNot { c -> c == TABLE_ROW_SEPARATOR || c == TABLE_CELL_SEPARATOR } }
+    }
+
+private fun decodeTable(code: String): List<List<String>> =
+    code.split(TABLE_ROW_SEPARATOR).map { it.split(TABLE_CELL_SEPARATOR) }
 
 /** Gli stili di un testo con gli stili dentro (un'app che copia un testo formattato). */
 private fun stylesOfSpanned(spanned: Spanned): List<StyleRange> {
@@ -336,7 +399,7 @@ internal fun htmlStyleRuns(html: String): List<StyledRun> {
     return runs
 }
 
-private fun decodeEntities(text: String): String =
+internal fun decodeEntities(text: String): String =
     Regex("&(#x?[0-9a-fA-F]+|[a-zA-Z]+);").replace(text) { m ->
         val code = m.groupValues[1]
         when {
@@ -411,8 +474,10 @@ internal fun TextFieldValue.pastedFormat(lead: Int): PasteFormat {
         .map { LinkRange(it.start - lead, it.end - lead, it.item) }
         .filter { it.start >= 0 && it.end > it.start }
     val styles = all.getStringAnnotations(PASTED_STYLE_TAG, 0, text.length)
-        .map { StyleRange(it.start - lead, it.end - lead, 'b' in it.item, 'i' in it.item, 'u' in it.item, 's' in it.item) }
+        .map { StyleRange(it.start - lead, it.end - lead, 'b' in it.item, 'i' in it.item, 'u' in it.item, 's' in it.item, sizeOfCode(it.item)) }
         .filter { it.start >= 0 && it.end > it.start }
+    // Le celle delle tabelle incollate, per dove comincia la loro riga.
+    val tables = all.getStringAnnotations(PASTED_TABLE_TAG, 0, text.length).associate { (it.start - lead) to decodeTable(it.item) }
     val plain = all.getStringAnnotations(PASTED_PLAIN_TAG, 0, text.length)
         .map { (it.start - lead) until (it.end - lead) }
         .filter { it.first >= 0 && !it.isEmpty() }
@@ -425,9 +490,11 @@ internal fun TextFieldValue.pastedFormat(lead: Int): PasteFormat {
         pieces.indices.mapNotNull { i ->
             val start = at
             at += pieces[i].length + 1
-            copiedLineOf(entries[i])?.takeIf { start >= 0 }?.let { PastedLine(start, start + pieces[i].length, it.type, it.checked, it.indent) }
+            copiedLineOf(entries[i])?.takeIf { start >= 0 }?.let {
+                PastedLine(start, start + pieces[i].length, it.type, it.checked, it.indent, tables[start])
+            }
         }
-    }
+    }.filter { it.type != BlockType.TABLE || it.table != null }
     return PasteFormat(links, styles, plain, lines)
 }
 
@@ -440,7 +507,7 @@ internal fun TextFieldValue.pastedLinks(lead: Int): List<LinkRange> = pastedForm
  * non disturbare la tastiera mentre si scrive).
  */
 internal fun TextFieldValue.withoutPastedLinks(): TextFieldValue {
-    val tags = setOf(PASTED_LINK_TAG, PASTED_STYLE_TAG, PASTED_PLAIN_TAG, PASTED_LINES_TAG)
+    val tags = setOf(PASTED_LINK_TAG, PASTED_STYLE_TAG, PASTED_PLAIN_TAG, PASTED_LINES_TAG, PASTED_TABLE_TAG)
     val marked = annotatedString.getStringAnnotations(0, text.length).any { it.tag in tags }
     return if (marked) copy(annotatedString = AnnotatedString(text)) else this
 }

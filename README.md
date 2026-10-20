@@ -2073,6 +2073,47 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.189 — 20/10/2026 · 13:59 — "Keep Source Formatting" porta grandezze, elenchi e tabelle da OneNote e dal web
+*(Claude Code sul PC; non ancora provata sul telefono; 685 test passati)*
+
+L'utente, parola per parola:
+> «Quando tengo premuto sull'icona Paste e tocco Keep source formatting,
+> saresti in grado di rilevare la grandezza del font dalla fonte e metterla
+> nella pagina dove incollo il contenuto, sempre rispettando gli standard di
+> notE? Vorrei che facesse la stessa cosa per numbered list, bulleted list e
+> tabelle semplici. Tutto questo solo perché sto copiando tutto da OneNote.
+> Magari anche se copio qualche tabella o liste da internet e incollo
+> nell'app mi piacerebbe che rilevasse come le scritte sono state divise
+> nella tabella che copio»
+
+- **[Nuova funzionalità]** **La grandezza del testo**, con "Keep Source
+  Formatting": il corpo più usato nel testo copiato diventa quello normale di
+  notE, e il resto in proporzione. Il testo normale di OneNote (11 punti)
+  resta normale; un titolo a 20 punti diventa 29, grande quanto lo era lì
+  rispetto al resto. Dal web, il testo che non dice la sua grandezza vale
+  quella di sempre dei browser, e i titoli (H1–H6) arrivano grandi e in
+  grassetto come sulla pagina. Una riga che arriva tutta da 20 punti in su fa
+  da punto di arrivo dell'indice (v0.188)
+- **[Nuova funzionalità]** **Gli elenchi puntati e numerati** arrivano come
+  elenchi di notE, col loro rientro (un elenco dentro l'altro), senza i
+  pallini o i numeri scritti come testo
+- **[Nuova funzionalità]** **Le tabelle** arrivano come tabelle semplici di
+  notE, con le righe, le colonne e il testo diviso cella per cella come nella
+  tabella copiata (da OneNote o da una pagina web, intestazioni comprese). Una
+  "tabella" di una cella sola, che sui siti serve solo a impaginare, arriva
+  come testo. Le celle sono di solo testo, come sempre nelle tabelle semplici
+- **[Nuova funzionalità]** Le righe, i paragrafi vuoti messi apposta e i
+  collegamenti arrivano come erano nella fonte. "Paste", "Match Destination
+  Formatting" e "Keep Text Only" restano come prima, e da notE a notE il tipo
+  delle righe arriva come prima
+- **[Progetto]** `ClipHtml.kt`: `parseClipHtml` (righe, elenchi, tabelle,
+  stili e grandezze dall'HTML degli appunti; il carattere scritto sul
+  `<body>` da OneNote vale per tutto), `noteSizes`. `LinkClipboard.
+  sourceFormatted` con l'etichetta `pasted-table` per le celle,
+  `StyleRange.size`, `PastedLine.table`, e in `PageEditorViewModel.updateRun`
+  la riga diventa una tabella (`writePastedCells`). Test: `ClipHtmlTest`,
+  `PasteSourceStructureTest`
+
 ### 🔧 v0.188.2 — 20/10/2026 · 13:46 — La riga alla fine del database torna sotto il database
 *(Claude Code sul PC; non ancora provata sul telefono; 678 test passati)*
 
