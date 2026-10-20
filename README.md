@@ -2073,6 +2073,30 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🔧 v0.186.2 — 20/10/2026 · 08:58 — "Today" passa alla giornata dopo a mezzanotte
+*(Claude Code sul PC; non ancora provata sul telefono; 661 test passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Funzioa tutto. Ottimo lavoro. Una piccola modifica però (non è colpa tua,
+> anzi, sono io che avrei dovuto dirtelo): se la giornata di una competizione
+> è conclusa, e tutte le partite sono giocate, il Today mi andrà alla
+> successiva, quella immediatamente dopo quella che si è da poco conclusa. Per
+> esempio, la settima giornata della Serie A si è conclusa ieri sera con Parma
+> Torino 0-3. Adesso se faccio today, mi andrà all'ottava giornata. Questo SOLO
+> quando premo today quando mi trovo nel giorno esatto dell'ultima partita
+> della giornata in corso. Se l'avessi fatto ieri sera alle 23:59, sarebbe
+> rimasto alla settima. Se l'avessi fatto alle 00:00 di oggi, mi andava
+> all'ottava»
+
+- **[Bug fix]** **"Today" non tiene più la giornata finita il giorno dopo**:
+  fino alle 23:59 del giorno dell'ultima partita resta quella giornata, da
+  mezzanotte va alla successiva. Nell'esempio: lunedì 19/10 la settima della
+  Serie A, da martedì 20 l'ottava. Aprendo il widget, invece, il martedì si
+  vedono ancora i risultati della giornata finita il lunedì, come prima
+- **[Progetto]** `todayRound` in `Sports.kt`, come `currentRound` ma senza il
+  giorno dopo; lo usa "Today" in `CompetitionRounds`. Test: `SportsTest` (le
+  date dell'esempio)
+
 ### 🔧 v0.186.1 — 20/10/2026 · 08:57 — La selezione non si ferma più fra un pezzo e l'altro delle pagine lunghe
 *(Claude Code sul PC; verificata sul telefono dall'utente il 20/10/2026; 661 test passati; commit solo in locale)*
 

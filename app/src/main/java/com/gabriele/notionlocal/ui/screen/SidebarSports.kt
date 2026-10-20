@@ -93,6 +93,7 @@ import com.gabriele.notionlocal.data.widgets.seasonYears
 import com.gabriele.notionlocal.data.widgets.hasMatchdayNumbers
 import com.gabriele.notionlocal.data.widgets.teamDisplayName
 import com.gabriele.notionlocal.data.widgets.todayIn
+import com.gabriele.notionlocal.data.widgets.todayRound
 import com.gabriele.notionlocal.ui.format.Formats
 import com.gabriele.notionlocal.ui.i18n.Strings
 import com.gabriele.notionlocal.ui.i18n.WidgetStrings
@@ -468,7 +469,7 @@ private fun CompetitionRounds(
         LaunchedEffect(todayTick) {
             if (todayTick == handledToday) return@LaunchedEffect
             handledToday = todayTick
-            val target = currentRound(view.rounds, todayIn(AppSettings.zoneId, System.currentTimeMillis()))
+            val target = todayRound(view.rounds, todayIn(AppSettings.zoneId, System.currentTimeMillis()))
             if (target >= 0) pagerState.animateScrollToPage(target)
         }
         // La giornata su cui ci si ferma scorrendo si scarica (quella di adesso si aggiorna da sé).

@@ -58,6 +58,13 @@ class SportsTest {
         assertEquals(7, currentRound(rounds, day("2026-10-21")))
         // A stagione finita, l'ultima.
         assertEquals(37, currentRound(rounds, day("2027-07-01")))
+        // "Today" non ha il giorno dopo: lunedì 19 (Parma-Torino) la settima,
+        // da martedì 20 l'ottava.
+        assertEquals(6, todayRound(rounds, day("2026-10-17")))
+        assertEquals(6, todayRound(rounds, day("2026-10-19")))
+        assertEquals(7, todayRound(rounds, day("2026-10-20")))
+        assertEquals(37, todayRound(rounds, day("2027-07-01")))
+        assertEquals(-1, todayRound(emptyList(), day("2026-10-20")))
         // "Giornata 7": 38 giornate con venti squadre tornano; 37 no.
         val standings = parseStandings(resource("soccer_ita_1_standings.json"), Sport.SOCCER)
         assertTrue(hasMatchdayNumbers(rounds, standings, Sport.SOCCER))

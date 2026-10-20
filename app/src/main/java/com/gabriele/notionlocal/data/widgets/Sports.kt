@@ -401,6 +401,18 @@ fun currentRound(rounds: List<SportRound>, today: LocalDate): Int {
 }
 
 /**
+ * **La giornata di "Today"** (dal 20/10/2026, chiesto dall'utente): quella di
+ * oggi, o la prossima. A differenza di `currentRound` non c'è il giorno dopo:
+ * fino alle 23:59 del giorno dell'ultima partita resta quella giornata, da
+ * mezzanotte si va alla successiva. A stagione finita, l'ultima.
+ */
+fun todayRound(rounds: List<SportRound>, today: LocalDate): Int {
+    if (rounds.isEmpty()) return -1
+    val index = rounds.indexOfFirst { it.lastDay >= today }
+    return if (index == -1) rounds.lastIndex else index
+}
+
+/**
  * **"Giornata 7"** solo dove torna: un campionato di calcio con andata e
  * ritorno, dove le giornate trovate sono proprio due per ogni avversaria
  * (38 con venti squadre). Altrimenti (LaLiga con i recuperi, le coppe) le
