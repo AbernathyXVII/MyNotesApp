@@ -12,6 +12,11 @@
             android:name=".WebClipUiProbeActivity"
             android:exported="true"
             android:theme="@style/Theme.NotionLocal" />
+        <!-- Solo nella build di debug: la pagina di prova del "Paragraph" (vedi `ParagraphProbeActivity`). -->
+        <activity
+            android:name=".ParagraphProbeActivity"
+            android:exported="true"
+            android:theme="@style/Theme.NotionLocal" />
     </application>
 
 </manifest>

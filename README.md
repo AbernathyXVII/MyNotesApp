@@ -2073,6 +2073,64 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.196 — 21/10/2026 · 00:59 — "Paragraph": lo spazio fra i blocchi e dopo numeri, pallini e caselle, come su Word
+*(Claude Code sul PC; provata sul telefono su una pagina di prova, "Paragraph – prova", col database confrontato prima e dopo; 728 test passati)*
+
+L'utente, parola per parola:
+> «Implementa su notE una feature per quanto riguarda lo spacing del
+> Paragraph che c'è su Word, ed implementa anche quanto spazio c'è tra un
+> campo ed un altro. In Settings, mi creerai due opzioni in cui una mi
+> consente di scegliere quanto spazio c'è tra numero/ simbolino/ checkbox e il
+> primo carattere in una numbered/ bulleted/ to-do list, e nell'altra mi
+> consente di scegliere quanto spazio c'è tra un blocco ed un altro. Ogni
+> pagina avrà le stesse opzioni, con l'aggiunta di scegliere se lasciarla come
+> di default in tutta l'app oppure di modificarla solo per quella pagina.
+> Ovviamente permettimi di impostare queste opzioni specifiche per determinati
+> gruppi di testo, invece che per l'intera pagina. Inoltre mettimi un'opzione
+> che mi consente di scegliere se il Paragraph sarà uguale per numbered,
+> bulleted e to-do list»
+
+- **[Nuova funzionalità]** **Settings → "Paragraph"**, sotto "Full line
+  view", con le due misure in punti, scelte con "−" e "+":
+  - **"Space between blocks"**: lo spazio in più fra un blocco e l'altro
+    (da 0 a 32 pt; 0 è com'erano sempre le pagine), metà sopra e metà sotto
+    ogni blocco, anche dentro i toggle;
+  - **"Space after number, bullet or checkbox"**: lo spazio fra il numero,
+    il pallino o la casella di un elenco e il primo carattere ("Default",
+    com'era sempre, poi da 0 a 32 pt). Con **"Same for numbered, bulleted
+    and to-do lists"** acceso è uno solo per tutti e tre gli elenchi; spento,
+    ognuno ha il suo
+- **[Nuova funzionalità]** **"Paragraph" nei tre puntini di ogni pagina**,
+  sotto "Proofing": per ognuna delle due misure "As in Settings" oppure
+  "Only this page", con le stesse scelte di Settings
+- **[Nuova funzionalità]** **"Paragraph" per un gruppo di righe**: dal nuovo
+  pulsante ¶ della barra sopra la tastiera (le righe toccate dal testo
+  selezionato, o quella del cursore) e dalla voce "Paragraph" del menu del
+  blocco (sei puntini). "As in the page" oppure "Only these lines"; con più
+  tipi di elenco fra le righe c'è anche lì "uguale per tutti". Come su Word,
+  le righe nuove fatte con Invio dentro il gruppo ne tengono le misure.
+  Ogni scelta si vede subito nella pagina e si annulla con Annulla
+- **[Nota]** "Uguale per numbered, bulleted e to-do" l'ho letto come lo
+  spazio dopo il marcatore, l'unica delle due misure che riguarda solo gli
+  elenchi. Con uno spazio grande fra i blocchi il cursore diventa alto
+  quanto la riga: è lo stesso limite delle caselle da spuntare (vedi
+  `CHECKBOX_LINE_HEIGHT`)
+- **[Progetto]** `data/entity/Paragraph.kt`: `ListGaps`, `PageParagraph`
+  (colonna `pages.paragraphJson`, migrazione 58→59), `ParagraphLook`
+  (vince la riga, poi la pagina, poi Settings) e `spacingStartsOf`;
+  `BlockAttrs.spacing` e `BlockAttrs.markerGap`, che `attrsForNewLine`
+  passa alla riga nuova; `AppSettings.blockSpacing` e `listGaps`. Nel campo
+  di testo condiviso lo spazio fra i blocchi è **l'altezza di riga
+  dell'intero campo**, la strada che "Strade già tentate" dice sicura: un
+  gruppo con uno spazio suo diventa un campo a sé, e `resolveRun` si ferma
+  agli stessi confini della schermata. Lo spazio dopo il marcatore allarga
+  o stringe **solo in larghezza** gli spazi già scritti nel marcatore
+  (`MarkerGapScale`): nessun carattere in più, la traduzione delle
+  posizioni resta quella. Finestre in `ParagraphUi.kt`, scritte in
+  `ParagraphStrings`. Nella build di debug `ParagraphProbeActivity` fa la
+  pagina di prova. Test: `ParagraphTest`, `ParagraphLinesTest`,
+  `ParagraphSettingsTest`, `MigrationTest` (con lo schema `v58.sql`)
+
 ### 🔧 v0.195.1 — 21/10/2026 · 00:17 — "+ Row", "+ Column" e il cestino solo mentre si scrive nella tabella
 *(Claude Code sul PC; provata sul telefono nella pagina presa da game8; 719 test passati)*
 

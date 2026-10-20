@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.Box
 import com.gabriele.notionlocal.ui.i18n.EditorStrings
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Spellcheck
+import androidx.compose.material.icons.filled.FormatLineSpacing
+import com.gabriele.notionlocal.ui.i18n.ParagraphStrings
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
@@ -161,6 +163,14 @@ fun PageOptionsSheet(
      */
     proofingValue: String? = null,
     onProofing: (() -> Unit)? = null,
+    /**
+     * **"Paragraph"** (dal 21/10/2026, chiesto dall'utente): lo spazio fra i
+     * blocchi e dopo i marcatori degli elenchi di questa pagina, con le
+     * misure che valgono adesso ([paragraphValue]). Null per i database:
+     * allora la voce non c'è.
+     */
+    paragraphValue: String? = null,
+    onParagraph: (() -> Unit)? = null,
     /**
      * **"Web Clipper"** (dal 20/10/2026, chiesto dall'utente): la foto di un
      * sito nella pagina, come OneNote Web Clipper. Null per i database e le
@@ -344,6 +354,21 @@ fun PageOptionsSheet(
                         },
                         onClick = onProofing
                     )
+                    if (onParagraph != null) {
+                        HorizontalDivider()
+                        OptionRow(
+                            icon = Icons.Filled.FormatLineSpacing,
+                            label = ParagraphStrings.paragraph,
+                            trailing = {
+                                Text(
+                                    paragraphValue.orEmpty(),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            onClick = onParagraph
+                        )
+                    }
                 }
             }
 

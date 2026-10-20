@@ -75,7 +75,18 @@ data class BlockAttrs(
      * sei puntini, compare in "In this page" nella finestra del collegamento.
      * Vedi `BlockLinks.kt`.
      */
-    val linkTarget: Boolean = false
+    val linkTarget: Boolean = false,
+    /**
+     * **"Paragraph" di un gruppo di righe** (dal 21/10/2026, chiesto
+     * dall'utente, come su Word): lo spazio in più fra questo blocco e quelli
+     * vicini, in punti; null = quello della pagina. Vedi `ParagraphLook`.
+     */
+    val spacing: Int? = null,
+    /**
+     * Lo spazio fra il numero, il pallino o la casella e il primo carattere,
+     * in punti; null = quello della pagina. Vedi `ParagraphLook`.
+     */
+    val markerGap: Int? = null
 ) {
     /** L'elenco di cui questo paragrafo tiene il posto, o null. */
     val listIndentType: BlockType?
@@ -113,10 +124,26 @@ val BlockEntity.heldListType: BlockType?
 /**
  * Le voci di una riga nuova nata andando a capo da questa: il posto
  * dell'elenco, se questa lo tiene (resta allineata anche lei, come su
- * Word); nient'altro.
+ * Word), e il suo "Paragraph" (dal 21/10/2026: come su Word, il paragrafo
+ * nuovo ha le misure di quello da cui nasce); nient'altro.
  */
-fun BlockEntity.attrsForNewLine(): String =
-    heldListType?.let { BlockAttrs.encode(BlockAttrs(listIndent = it.name)) } ?: "{}"
+fun BlockEntity.attrsForNewLine(): String {
+    val paragraph = paragraphAttrs
+    val kept = BlockAttrs(
+        listIndent = heldListType?.name,
+        spacing = paragraph?.spacing,
+        markerGap = paragraph?.markerGap
+    )
+    return if (kept == BlockAttrs()) "{}" else BlockAttrs.encode(kept)
+}
+
+/**
+ * Le voci del blocco, solo se ha un "Paragraph" suo; null altrimenti. Si
+ * legge per ogni riga a ogni tasto: senza quelle due parole nel testo il
+ * JSON non si apre nemmeno.
+ */
+val BlockEntity.paragraphAttrs: BlockAttrs?
+    get() = if (attrsJson.contains("\"spacing\"") || attrsJson.contains("\"markerGap\"")) attrs else null
 
 /** L'emoji di riserva di un riquadro, quella con cui nasce: la lampadina, come su Notion. */
 const val DEFAULT_CALLOUT_ICON = "💡"

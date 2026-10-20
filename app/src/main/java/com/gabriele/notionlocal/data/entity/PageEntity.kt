@@ -301,6 +301,10 @@ data class PageEntity(
     var proofingMode: Int = PROOFING_DEFAULT,
     var proofingLanguage: String? = null,
     var proofingIgnored: String? = null,
+    // **Il "Paragraph" di questa pagina** (dal 21/10/2026, chiesto
+    // dall'utente), dai tre puntini: lo spazio fra i blocchi e dopo i
+    // marcatori degli elenchi. Null = come Settings. Vedi `PageParagraph`.
+    var paragraphJson: String? = null,
     // **"Color columns"** della bacheca (dal 30/09/2026), di questa vista:
     // ogni colonna, con le sue schede, del colore del suo tag.
     var colorBoardCards: Boolean = false,

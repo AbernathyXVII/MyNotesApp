@@ -32,6 +32,8 @@ import androidx.compose.material.icons.filled.TableRows
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.EmojiEmotions
 import androidx.compose.material.icons.filled.FormatColorFill
+import androidx.compose.material.icons.filled.FormatLineSpacing
+import com.gabriele.notionlocal.ui.i18n.ParagraphStrings
 import androidx.compose.material.icons.filled.GridOn
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
@@ -160,6 +162,8 @@ internal fun BlockActionsHost(
     onNavigateToDatabase: (String) -> Unit,
     /** "Open" di un "Link to page" (dal 06/10/2026). */
     onNavigateToPage: (String) -> Unit = {},
+    /** "Paragraph" di questa riga (dal 21/10/2026): lo apre la schermata. Null = la voce non c'è. */
+    onParagraph: ((BlockEntity) -> Unit)? = null,
     onDismiss: () -> Unit
 ) {
     val block = blocks.find { it.id == blockId }
@@ -392,6 +396,12 @@ internal fun BlockActionsHost(
                         onTogglePin = {
                             onDismiss()
                             viewModel.setLinkTarget(block, !block.attrs.linkTarget)
+                        },
+                        onParagraph = onParagraph?.let { open ->
+                            {
+                                onDismiss()
+                                open(block)
+                            }
                         }
                     )
                 } else {
@@ -902,7 +912,9 @@ private fun TextBlockMenu(
     onDelete: (() -> Unit)? = null,
     /** Se la riga è un punto di arrivo dei collegamenti (vedi `BlockLinks.kt`). */
     pinned: Boolean = false,
-    onTogglePin: () -> Unit = {}
+    onTogglePin: () -> Unit = {},
+    /** "Paragraph" (dal 21/10/2026): lo spazio fra i blocchi e dopo il marcatore di questa riga. */
+    onParagraph: (() -> Unit)? = null
 ) {
     MenuTitle(title)
     AddLineGroup(onAddLine)
@@ -925,6 +937,10 @@ private fun TextBlockMenu(
         if (onBackground != null) {
             HorizontalDivider()
             OptionRow(icon = Icons.Filled.FormatColorFill, label = EditorStrings.backgroundColor, trailing = { Chevron() }, onClick = onBackground)
+        }
+        if (onParagraph != null) {
+            HorizontalDivider()
+            OptionRow(icon = Icons.Filled.FormatLineSpacing, label = ParagraphStrings.paragraph, trailing = { Chevron() }, onClick = onParagraph)
         }
     }
     Spacer(modifier = Modifier.size(12.dp))

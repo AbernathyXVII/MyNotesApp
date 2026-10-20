@@ -3,6 +3,8 @@ package com.gabriele.notionlocal.data.settings
 import com.gabriele.notionlocal.data.proofing.ProofingLanguage
 import com.gabriele.notionlocal.data.SKIN_TONE_COUNT
 import com.gabriele.notionlocal.data.entity.TimeFormatKind
+import com.gabriele.notionlocal.data.entity.BLOCK_SPACING_STEPS
+import com.gabriele.notionlocal.data.entity.ListGaps
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.compose.runtime.getValue
@@ -166,6 +168,8 @@ object AppSettings {
         proofingLanguageState.value = ProofingLanguage.fromCode(prefs.getString(KEY_PROOFING_LANGUAGE, null))
             ?.takeIf { it.available }
             ?: ProofingLanguage.forApp(languageState.value)
+        blockSpacingState.value = prefs.getInt(KEY_BLOCK_SPACING, 0).coerceIn(0, BLOCK_SPACING_STEPS.last())
+        listGapsState.value = ListGaps.parse(prefs.getString(KEY_LIST_GAPS, null)) ?: ListGaps()
     }
 
     // --- Aspetto ---
@@ -514,6 +518,34 @@ object AppSettings {
             if (::prefs.isInitialized) prefs.edit().putString(KEY_PROOFING_LANGUAGE, value.code).apply()
         }
 
+    // --- "Paragraph" (dal 21/10/2026, chiesto dall'utente, come su Word) ---
+
+    private val blockSpacingState = mutableStateOf(0)
+
+    /**
+     * Lo spazio in più fra un blocco e l'altro in tutte le pagine che non
+     * dicono altro dai loro tre puntini, in punti. 0 = com'era.
+     */
+    var blockSpacing: Int
+        get() = blockSpacingState.value
+        set(value) {
+            blockSpacingState.value = value.coerceIn(0, BLOCK_SPACING_STEPS.last())
+            if (::prefs.isInitialized) prefs.edit().putInt(KEY_BLOCK_SPACING, blockSpacingState.value).apply()
+        }
+
+    private val listGapsState = mutableStateOf(ListGaps())
+
+    /**
+     * Lo spazio fra il numero, il pallino o la casella e il primo carattere
+     * degli elenchi, uno per tutti o uno per tipo. Tutti null = com'era.
+     */
+    var listGaps: ListGaps
+        get() = listGapsState.value
+        set(value) {
+            listGapsState.value = value
+            if (::prefs.isInitialized) prefs.edit().putString(KEY_LIST_GAPS, ListGaps.encode(value)).apply()
+        }
+
     // --- Utilità ---
 
     private inline fun <reified T : Enum<T>> enumOr(key: String, default: T): T =
@@ -558,6 +590,8 @@ object AppSettings {
     private const val KEY_WEB_CLIP_DARK = "web_clip_dark"
     private const val KEY_PROOFING = "proofing"
     private const val KEY_PROOFING_LANGUAGE = "proofing_language"
+    private const val KEY_BLOCK_SPACING = "paragraph_block_spacing"
+    private const val KEY_LIST_GAPS = "paragraph_list_gaps"
 }
 
 private val HEX_COLOR = Regex("#[0-9A-F]{6}")

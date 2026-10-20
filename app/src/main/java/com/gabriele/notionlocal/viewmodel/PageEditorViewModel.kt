@@ -20,6 +20,12 @@ import com.gabriele.notionlocal.data.entity.MEDIA_TYPES
 import com.gabriele.notionlocal.data.entity.MULTILINE_TYPES
 import com.gabriele.notionlocal.data.entity.attrsForNewLine
 import com.gabriele.notionlocal.data.entity.heldListType
+import com.gabriele.notionlocal.data.entity.MARKER_LIST_TYPES
+import com.gabriele.notionlocal.data.entity.PageParagraph
+import com.gabriele.notionlocal.data.entity.ParagraphLook
+import com.gabriele.notionlocal.data.entity.paragraph
+import com.gabriele.notionlocal.data.entity.paragraphAttrs
+import com.gabriele.notionlocal.data.entity.spacingStartsOf
 import com.gabriele.notionlocal.data.entity.BlockType
 import com.gabriele.notionlocal.data.entity.DatabaseLayout
 import com.gabriele.notionlocal.data.entity.PageEditEntity
@@ -1567,6 +1573,51 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         viewModelScope.launch { repository.setPageProofing(current.id, mode, language) }
     }
 
+    // --- "Paragraph" (dal 21/10/2026): vedi `ParagraphLook` ---
+
+    /** Le misure di questa pagina: quelle sue, o quelle di Settings. */
+    fun paragraphLook(page: PageEntity? = _page.value): ParagraphLook = ParagraphLook(
+        page = page?.paragraph ?: PageParagraph(),
+        appSpacing = AppSettings.blockSpacing,
+        appGaps = AppSettings.listGaps
+    )
+
+    /**
+     * Dove comincia un gruppo di righe con uno spazio suo (vedi
+     * `spacingStartsOf`): la stessa risposta per la schermata, che lo
+     * disegna come un campo a sé, e per `resolveRun`, che deve sapere quali
+     * righe ha in mano quel campo.
+     */
+    fun spacingStartsOf(blocks: List<BlockEntity>): Map<String, String> {
+        val look = paragraphLook()
+        if (look.isPlain && blocks.none { it.paragraphAttrs?.spacing != null }) return emptyMap()
+        return spacingStartsOf(blocks, look, ::isFlowingTextType)
+    }
+
+    /** "Paragraph" dai tre puntini: le misure di questa pagina (le parti null seguono Settings). */
+    fun setPageParagraph(paragraph: PageParagraph) {
+        val current = _page.value ?: return
+        _page.value = current.copy(paragraphJson = PageParagraph.encode(paragraph))
+        viewModelScope.launch { repository.setPageParagraph(current.id, paragraph) }
+    }
+
+    /**
+     * **"Paragraph" di un gruppo di righe**: lo spazio fra i blocchi
+     * ([spacing], null = come la pagina) e quello dopo il marcatore di ogni
+     * elenco ([gapFor] per tipo, null = come la pagina). Si annulla come le
+     * altre modifiche, e tocca solo le voci dei blocchi, non il testo.
+     */
+    fun setLinesParagraph(lines: List<BlockEntity>, spacing: Int?, gapFor: (BlockType) -> Int?) {
+        if (lines.isEmpty()) return
+        snapshotForStructuralChange()
+        val changes = lines.associate { line ->
+            val listType = line.type.takeIf { it in MARKER_LIST_TYPES } ?: line.heldListType
+            val gap = listType?.let(gapFor)
+            line.id to { attrs: BlockAttrs -> attrs.copy(spacing = spacing, markerGap = gap) }
+        }
+        viewModelScope.launch { repository.updateBlocksAttrs(changes) }
+    }
+
     /** "Ignore": la parola non si segna più, solo in questa pagina. */
     fun ignoreWord(word: String) = setIgnored { it + word }
 
@@ -2938,7 +2989,13 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         if (anchorPos < 0) return null
         // **Il gruppo si ferma ai confini dei pezzi** (dal 18/10/2026), gli
         // stessi che vede la schermata: vedi `chunkMembers`.
-        val starts = if (anchor.parentBlockId == null) chunkStartsOf(siblings).keys else emptySet()
+        // E a quelli dei gruppi con uno spazio fra i blocchi tutto loro
+        // (dal 21/10/2026): anche quelli sono un campo a sé.
+        val starts = if (anchor.parentBlockId == null) {
+            chunkStartsOf(siblings).keys + spacingStartsOf(siblings).keys
+        } else {
+            emptySet()
+        }
 
         var start = anchorPos
         while (start > 0 && siblings[start].id !in starts && isFlowingTextType(siblings[start - 1].type)) start--

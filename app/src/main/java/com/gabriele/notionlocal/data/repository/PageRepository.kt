@@ -22,6 +22,7 @@ import com.gabriele.notionlocal.data.entity.DatabaseCellEntity
 import com.gabriele.notionlocal.data.entity.DatabaseRowEntity
 import com.gabriele.notionlocal.data.entity.PageEditEntity
 import com.gabriele.notionlocal.data.entity.PageEntity
+import com.gabriele.notionlocal.data.entity.PageParagraph
 import com.gabriele.notionlocal.data.entity.PersonalWordEntity
 import com.gabriele.notionlocal.data.entity.RichTextSpan
 import com.gabriele.notionlocal.data.entity.TableCellEntity
@@ -2717,4 +2718,22 @@ class PageRepository(private val db: AppDatabase) {
 
     suspend fun setPageIgnoredWords(pageId: String, words: Set<String>) =
         pageDao.setProofingIgnored(pageId, words.sorted().joinToString("\n").ifEmpty { null })
+
+    /** Il "Paragraph" di una pagina: vedi `PageParagraph`. */
+    suspend fun setPageParagraph(pageId: String, paragraph: PageParagraph) =
+        pageDao.setParagraph(pageId, PageParagraph.encode(paragraph))
+
+    /**
+     * Le voci di più blocchi insieme, **in una transazione sola**: chi
+     * guarda la tabella viene avvisato una volta, non una per riga (vedi
+     * "Strade già tentate" nel README). Tocca solo `attrsJson`: il testo,
+     * che intanto si può star scrivendo, resta quello del database.
+     */
+    suspend fun updateBlocksAttrs(changes: Map<String, (BlockAttrs) -> BlockAttrs>) = db.withTransaction {
+        for ((blockId, change) in changes) {
+            val block = blockDao.getById(blockId) ?: continue
+            val updated = change(block.attrs)
+            if (updated != block.attrs) blockDao.setAttrs(blockId, BlockAttrs.encode(updated))
+        }
+    }
 }

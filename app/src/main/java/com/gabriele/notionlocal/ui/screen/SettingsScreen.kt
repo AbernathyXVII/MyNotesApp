@@ -3,6 +3,8 @@ package com.gabriele.notionlocal.ui.screen
 import androidx.compose.material.icons.filled.Fingerprint
 import androidx.compose.material.icons.filled.Spellcheck
 import com.gabriele.notionlocal.ui.i18n.ProofingStrings
+import com.gabriele.notionlocal.ui.i18n.ParagraphStrings
+import androidx.compose.material.icons.filled.FormatLineSpacing
 import androidx.compose.material3.Switch
 import androidx.compose.foundation.layout.Row
 import androidx.compose.ui.Alignment
@@ -98,7 +100,7 @@ import java.time.ZoneId
 import java.time.format.TextStyle
 
 /** Quale finestra di scelta è aperta. */
-private enum class SettingsDialog { THEME, TITLE_POSITION, ANIMATIONS, NUMBER, DATE, TIME, LANGUAGE, PROOFING, TIME_ZONE, LOCK_PASSWORD, CLEAR_CACHE, DELETE_ALL }
+private enum class SettingsDialog { THEME, TITLE_POSITION, ANIMATIONS, NUMBER, DATE, TIME, LANGUAGE, PROOFING, PARAGRAPH, TIME_ZONE, LOCK_PASSWORD, CLEAR_CACHE, DELETE_ALL }
 
 /**
  * Le impostazioni. Ogni scelta si salva appena la si fa e vale subito: il
@@ -165,6 +167,17 @@ fun SettingsScreen(onBack: () -> Unit, onOpenPatchNotes: () -> Unit = {}) {
                 trailing = {
                     Switch(checked = AppSettings.fullLineView, onCheckedChange = { AppSettings.fullLineView = it })
                 }
+            )
+            // **"Paragraph"** (dal 21/10/2026, chiesto dall'utente, come lo
+            // spacing del paragrafo di Word): lo spazio fra i blocchi e quello
+            // dopo numeri, pallini e caselle, per tutte le pagine. Ogni pagina
+            // può dire altro dai suoi tre puntini, e ogni gruppo di righe dal
+            // pulsante ¶ della barra sopra la tastiera.
+            SettingsItem(
+                ParagraphStrings.paragraph,
+                icon = Icons.Filled.FormatLineSpacing,
+                value = paragraphSettingsSummary(),
+                onClick = { dialog = SettingsDialog.PARAGRAPH }
             )
             SettingsItem(
                 Strings.animations,
@@ -330,6 +343,7 @@ fun SettingsScreen(onBack: () -> Unit, onOpenPatchNotes: () -> Unit = {}) {
             onDismiss = { dialog = null }
         )
         SettingsDialog.PROOFING -> ProofingSettingsDialog(onDismiss = { dialog = null })
+        SettingsDialog.PARAGRAPH -> ParagraphSettingsDialog(onDismiss = { dialog = null })
         SettingsDialog.TIME_ZONE -> TimeZoneDialog(onDismiss = { dialog = null })
         SettingsDialog.LOCK_PASSWORD -> LockPasswordSettings(onDismiss = { dialog = null })
         SettingsDialog.CLEAR_CACHE -> AlertDialog(

@@ -7,8 +7,14 @@ import com.gabriele.notionlocal.data.settings.AppSettings
 import com.gabriele.notionlocal.data.settings.TitlePosition
 import com.gabriele.notionlocal.ui.i18n.DbStrings
 import com.gabriele.notionlocal.ui.i18n.EditorStrings
+import com.gabriele.notionlocal.ui.i18n.ParagraphStrings
+import androidx.compose.material.icons.filled.FormatLineSpacing
 import android.widget.Toast
 import com.gabriele.notionlocal.data.entity.BlockAttrs
+import com.gabriele.notionlocal.data.entity.ParagraphLook
+import com.gabriele.notionlocal.data.entity.paragraph
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.Dp
 import com.gabriele.notionlocal.data.webclip.WebClipMode
 import com.gabriele.notionlocal.data.webclip.WebClipRequest
 import com.gabriele.notionlocal.data.webclip.webClipCaptions
@@ -1476,6 +1482,10 @@ private fun PageEditorContent(
     var showPageOptions by remember { mutableStateOf(false) }
     // "Proofing" dai tre puntini: vedi `PageProofingSheet`.
     var showProofing by remember { mutableStateOf(false) }
+    // "Paragraph" (dal 21/10/2026): della pagina dai tre puntini, o di un
+    // gruppo di righe dalla barra sopra la tastiera e dal menu del blocco.
+    var showPageParagraph by remember { mutableStateOf(false) }
+    var paragraphLines by remember { mutableStateOf<List<BlockEntity>?>(null) }
     // "Web Clipper" dai tre puntini (dal 20/10/2026): il pannello, poi la foto in corso.
     var webClipperOpen by remember { mutableStateOf(false) }
     var webClipRequest by remember { mutableStateOf<WebClipRequest?>(null) }
@@ -1698,8 +1708,18 @@ private fun PageEditorContent(
             val topLevelBlocks = remember(blocks) { blocks.filter { it.parentBlockId == null } }
             // I pezzi delle pagine lunghe: vedi `PageEditorViewModel.chunkMembers`.
             val chunkVersion by viewModel.chunkVersion.collectAsStateWithLifecycle()
-            val renderItems = remember(topLevelBlocks, chunkVersion) {
-                groupIntoRenderItems(topLevelBlocks, viewModel.chunkStartsOf(topLevelBlocks))
+            // Il "Paragraph" della pagina (dal 21/10/2026): le sue misure, o
+            // quelle di Settings. Un gruppo di righe con uno spazio fra i
+            // blocchi tutto suo è un campo a sé (vedi `spacingStartsOf`); i
+            // pezzi delle pagine lunghe, dove ci sono, tengono la loro chiave.
+            val paragraphLook = remember(page?.paragraphJson, AppSettings.blockSpacing, AppSettings.listGaps) {
+                viewModel.paragraphLook(page)
+            }
+            val renderItems = remember(topLevelBlocks, chunkVersion, paragraphLook) {
+                groupIntoRenderItems(
+                    topLevelBlocks,
+                    viewModel.spacingStartsOf(topLevelBlocks) + viewModel.chunkStartsOf(topLevelBlocks)
+                )
             }
             // I numeri degli elenchi e le righe dentro ogni riga, una volta
             // per tutta la pagina: ogni voce prende solo i suoi (vedi `RunContent`).
@@ -2496,7 +2516,10 @@ private fun PageEditorContent(
                     KeepComposed()
                     // I campi di testo della voce sanno in quale voce stanno:
                     // con "Full line view" serve a sapere se si vedono.
-                    CompositionLocalProvider(LocalSideItemKey provides renderItemKey(item)) {
+                    CompositionLocalProvider(
+                        LocalSideItemKey provides renderItemKey(item),
+                        LocalParagraphLook provides paragraphLook
+                    ) {
                     // **Ogni voce si ridisegna solo se è cambiata** (dal
                     // 18/10/2026): riceve solo quello che mostra, e le
                     // richieste di fuoco e di formato solo se sono per lei.
@@ -2526,8 +2549,12 @@ private fun PageEditorContent(
                             // disegnare più pezzi uno sotto l'altro, come il database e la
                             // riga alla sua fine; nel `Box` messo il 19/10 finivano uno
                             // sopra l'altro, e la riga stava in cima al database.
+                            // Lo spazio fra i blocchi ("Paragraph"): metà sopra e
+                            // metà sotto, come fa l'altezza di riga nei campi di testo.
+                            val islandSpacing = paragraphLook.spacingOf(item.block)
                             Column(
                                 (if (sideScroll != null) Modifier.nestedScroll(KeepSidewaysInside) else Modifier)
+                                    .padding(vertical = (islandSpacing / 2f).sp.toDpIn(LocalDensity.current))
                                     .anchorDecor(item.block.id, item.block.attrs.linkTarget, movedBlockNow, PAGE_SIDE_PADDING)
                                     .pageVeil(pageSelected, veilColor)
                             ) {
@@ -2815,6 +2842,28 @@ private fun PageEditorContent(
                                         applyInsertAction(block, action)
                                     }
                                 }
+                            )
+                        }
+                        // **"Paragraph"** (dal 21/10/2026, chiesto dall'utente):
+                        // lo spazio fra i blocchi e dopo i marcatori solo per le
+                        // righe che il testo selezionato tocca, o per quella del
+                        // cursore. La selezione si mette da parte prima, come per
+                        // il pennello; poi il cursore si spegne, perché cambiando
+                        // lo spazio quelle righe diventano un campo a sé, e un
+                        // campo che sparisce col cursore dentro fa chiudere l'app.
+                        BarButton(onClick = {
+                            viewModel.captureSelection()
+                            val lines = viewModel.capturedSelectionBlocks().ifEmpty { listOfNotNull(focusedBlock) }
+                            if (lines.isNotEmpty()) {
+                                focusManager.clearFocus()
+                                paragraphLines = lines
+                            }
+                        }) {
+                            Icon(
+                                Icons.Filled.FormatLineSpacing,
+                                contentDescription = ParagraphStrings.paragraph,
+                                tint = NotionWhite,
+                                modifier = Modifier.size(BAR_ICON_SIZE)
                             )
                         }
                         if (aaAvailable) {
@@ -3190,6 +3239,7 @@ private fun PageEditorContent(
             onTurnInto = applyTurnInto,
             onNavigateToDatabase = onNavigateToDatabase,
             onNavigateToPage = onNavigateToPage,
+            onParagraph = { block -> paragraphLines = listOf(block) },
             onDismiss = { blockMenuFor = null }
         )
     }
@@ -3292,6 +3342,14 @@ private fun PageEditorContent(
                     showPageOptions = false
                     showProofing = true
                 },
+                paragraphValue = pageParagraphSummary(viewModel.paragraphLook(current)),
+                onParagraph = {
+                    showPageOptions = false
+                    // I gruppi di righe possono diventare campi diversi: nessuno
+                    // deve sparire col cursore dentro.
+                    focusManager.clearFocus()
+                    showPageParagraph = true
+                },
                 onWebClipper = if (isTrashed) null else {
                     {
                         showPageOptions = false
@@ -3369,6 +3427,21 @@ private fun PageEditorContent(
                 onSetProofing = viewModel::setProofing,
                 onStopIgnoring = viewModel::stopIgnoring,
                 onDismiss = { showProofing = false }
+            )
+        }
+        if (showPageParagraph) {
+            PageParagraphSheet(
+                page = current,
+                onSet = viewModel::setPageParagraph,
+                onDismiss = { showPageParagraph = false }
+            )
+        }
+        paragraphLines?.let { lines ->
+            LinesParagraphSheet(
+                lines = lines,
+                look = viewModel.paragraphLook(current),
+                onApply = { spacing, gapFor -> viewModel.setLinesParagraph(lines, spacing, gapFor) },
+                onDismiss = { paragraphLines = null }
             )
         }
         passwordLockRequest?.let { wanted ->
@@ -4591,7 +4664,13 @@ internal data class LinePrefix(
      * (vedi `BlockAttrs.listIndent`), e scritto trasparente occupa proprio
      * lo spazio del numero o del pallino, così il testo resta allineato.
      */
-    val hidden: Boolean = false
+    val hidden: Boolean = false,
+    /**
+     * L'elenco di cui è il marcatore (anche quello invisibile del posto di
+     * un elenco), per lo spazio dopo di lui (vedi `ParagraphLook.gapOf`);
+     * null per le righe senza marcatore.
+     */
+    val listType: BlockType? = null
 ) {
     val text: String get() = indent + marker
 }
@@ -4794,7 +4873,7 @@ internal fun runPrefixes(
                 BlockType.BULLET_LIST_ITEM -> bulletMarkerFor(indent) + "  "
                 else -> numberedMarkerFor(indent, (lastNumberAt[indent] ?: 0) + 1) + "  "
             }
-            return@map LinePrefix(indent = INDENT_SPACES.repeat(indent), marker = ghost, hidden = true)
+            return@map LinePrefix(indent = INDENT_SPACES.repeat(indent), marker = ghost, hidden = true, listType = held)
         }
 
         val marker = when (type) {
@@ -4803,7 +4882,40 @@ internal fun runPrefixes(
             BlockType.CHECKBOX -> CHECKBOX_MARKER
             else -> ""
         }
-        LinePrefix(indent = INDENT_SPACES.repeat(indent), marker = marker)
+        LinePrefix(indent = INDENT_SPACES.repeat(indent), marker = marker, listType = type.takeIf { marker.isNotEmpty() })
+    }
+}
+
+/**
+ * Le misure per lo spazio dopo i marcatori (vedi `MarkerGapScale`): quanto
+ * sono larghi davvero, col carattere del campo, i due spazi dopo numeri e
+ * pallini e i quattro della casella, misurati una volta; e dove finisce il
+ * quadratino, che `RunCheckboxOverlay` disegna centrato in
+ * `CHECKBOX_TOUCH_SIZE` a partire dall'inizio della casella.
+ */
+@Composable
+private fun rememberMarkerGapScale(look: ParagraphLook): MarkerGapScale {
+    val measurer = rememberTextMeasurer()
+    val style = MaterialTheme.typography.bodyLarge
+    val density = LocalDensity.current
+    val widths = remember(measurer, style, density) {
+        // La posizione del carattere dopo gli spazi: la larghezza di una
+        // riga fatta di soli spazi non si misura (gli spazi in fondo non contano).
+        val pair = measurer.measure("  x", style).getHorizontalPosition(2, usePrimaryDirection = true)
+        val box = measurer.measure(CHECKBOX_MARKER + "x", style)
+            .getHorizontalPosition(CHECKBOX_MARKER.length, usePrimaryDirection = true)
+        pair to box
+    }
+    return remember(look, widths, density) {
+        with(density) {
+            MarkerGapScale(
+                look = look,
+                spacePairPx = widths.first,
+                checkboxPx = widths.second,
+                squareEndPx = (CHECKBOX_TOUCH_SIZE - (CHECKBOX_TOUCH_SIZE - CHECKBOX_SIZE) / 2).toPx(),
+                pxPerPt = 1.sp.toPx()
+            )
+        }
     }
 }
 
@@ -4831,7 +4943,9 @@ private class MergedRunVisualTransformation(
     /** Le parole sbagliate di una riga, se il correttore è acceso: vedi `ProofingUi.kt`. */
     private val proof: ((String) -> List<IntRange>)? = null,
     /** Dove finisce quello che si è appena scritto, nel testo vero: la parola lì non si segna ancora. */
-    private val typingAt: Int? = null
+    private val typingAt: Int? = null,
+    /** Lo spazio dopo i marcatori degli elenchi ("Paragraph"): vedi `MarkerGapScale`. Null = come sempre. */
+    private val gapScale: MarkerGapScale? = null
 ) : VisualTransformation {
     override fun filter(text: AnnotatedString): TransformedText {
         val hasLead = text.text.startsWith(RUN_LEAD)
@@ -4848,12 +4962,28 @@ private class MergedRunVisualTransformation(
         // Dove comincia la riga corrente nel testo vero, per tradurre le
         // posizioni degli span in posizioni del cursore.
         var lineBodyStart = 0
+        // L'ultima riga che il database conosce: una riga appena nata ha il
+        // "Paragraph" di quella da cui nasce (`attrsForNewLine`).
+        var lastKnownBlock: BlockEntity? = null
 
         lines.forEachIndexed { i, line ->
             val block = aligned.blocks[i]
             val prefix = prefixes[i]
             val lineStart = builder.length
             builder.append(prefix.text)
+            // **Lo spazio dopo il marcatore** (dal 21/10/2026, "Paragraph"):
+            // solo la larghezza degli spazi in fondo al marcatore, vedi
+            // `MarkerGapScale`. Nessun carattere cambia.
+            val listType = prefix.listType
+            if (gapScale != null && listType != null) {
+                val gap = gapScale.look.gapOf(block ?: lastKnownBlock, listType)
+                if (gap != null) {
+                    gapScale.styleFor(prefix, listType, gap, lineStart)?.let { (style, from, to) ->
+                        builder.addStyle(style, from, to)
+                    }
+                }
+            }
+            if (block != null) lastKnownBlock = block
             val contentStart = builder.length
             // Il segno dell'elenco puntato è più piccolo del testo:
             // vedi `BULLET_MARKER_SIZE`. Si applica al solo marcatore,
@@ -5612,6 +5742,15 @@ private fun MergedTextRunField(
     // righe del gruppo si allungano quanto basta per lui (vedi `lineScaleFor`).
     val lineScale = remember(runBlocks) { lineScaleFor(runBlocks.flatMap { viewModel.spansOf(it) }) }
 
+    // **"Paragraph"** (dal 21/10/2026): lo spazio fra i blocchi è lo stesso
+    // per tutte le righe del campo (un gruppo con uno spazio suo è un campo a
+    // sé, vedi `spacingStartsOf`), e va nell'altezza di riga dell'intero
+    // campo, l'unico posto dove il README dice che le misure si toccano
+    // senza rischi. Lo spazio dopo i marcatori: vedi `MarkerGapScale`.
+    val paragraphLook = LocalParagraphLook.current
+    val blockSpacing = runBlocks.firstOrNull()?.let { paragraphLook.spacingOf(it) } ?: paragraphLook.pageSpacing
+    val gapScale = rememberMarkerGapScale(paragraphLook)
+
     // Il correttore (vedi `ProofingUi.kt`): le parole sbagliate di ogni riga.
     val proofing = LocalProofing.current
     val misspellings = rememberMisspellings(if (proofing == null) emptyList() else bodyOf(fieldValue.text).split('\n'))
@@ -5960,11 +6099,13 @@ private fun MergedTextRunField(
                 // storte erano le righe. Fissandola, tutte le righe sono
                 // alte uguale e i segni si appoggiano tutti allo stesso
                 // modo, qualunque corpo abbiano.
-                lineHeight = if (runBlocks.any { it.type == BlockType.CHECKBOX }) {
-                    CHECKBOX_LINE_HEIGHT
-                } else {
-                    RUN_LINE_HEIGHT
-                } * lineScale,
+                lineHeight = (
+                    if (runBlocks.any { it.type == BlockType.CHECKBOX }) {
+                        CHECKBOX_LINE_HEIGHT
+                    } else {
+                        RUN_LINE_HEIGHT
+                    } * lineScale
+                    ).value.plus(blockSpacing).sp,
                 // **Il testo si centra nella riga alta.** Di suo Compose
                 // spartisce lo spazio in più in proporzione a quanto le
                 // lettere salgono e scendono, e il risultato è che il testo
@@ -6001,7 +6142,8 @@ private fun MergedTextRunField(
                     null
                 },
                 proof = proofing?.let { { line: String -> misspellings[line].orEmpty() } },
-                typingAt = if (fieldFocused) proofTyping else null
+                typingAt = if (fieldFocused) proofTyping else null,
+                gapScale = gapScale
             ),
             modifier = Modifier
                 .fillMaxWidth()
@@ -6618,6 +6760,16 @@ private fun BlockRow(
     // ci si scrive; la citazione è la riga spessa a sinistra, alta quanto il
     // testo. Il resto della riga è quello di ogni isola col testo.
     val quoteBarColor = NotionWhite
+    // Lo spazio dopo il marcatore ("Paragraph", dal 21/10/2026): 8 se
+    // nessuno sceglie altro, come è sempre stato. La casella ne ha già 4 di
+    // suo, fra il quadratino e il bordo della zona di tocco.
+    val paragraphLook = LocalParagraphLook.current
+    val density = LocalDensity.current
+    fun markerGap(type: BlockType, natural: Dp): Dp =
+        paragraphLook.gapOf(block, type)?.let { it.sp.toDpIn(density) } ?: natural
+    val checkboxGap = paragraphLook.gapOf(block, BlockType.CHECKBOX)
+        ?.let { (it.sp.toDpIn(density) - (CHECKBOX_TOUCH_SIZE - CHECKBOX_SIZE) / 2).coerceAtLeast(0.dp) }
+        ?: 8.dp
     val islandLook = when (block.type) {
         BlockType.CALLOUT -> Modifier
             .padding(vertical = 4.dp)
@@ -6671,7 +6823,7 @@ private fun BlockRow(
                         fontSize = bulletMarkerSizeFor(block.indentLevel),
                         baselineShift = BULLET_MARKER_DROP
                     ),
-                    modifier = Modifier.padding(end = 8.dp)
+                    modifier = Modifier.padding(end = markerGap(BlockType.BULLET_LIST_ITEM, 8.dp))
                 )
             }
 
@@ -6688,7 +6840,7 @@ private fun BlockRow(
                     // più sopra: così il numero sta sulla sua stessa riga.
                     style = textStyle,
                     modifier = Modifier
-                        .padding(end = 8.dp)
+                        .padding(end = markerGap(BlockType.NUMBERED_LIST_ITEM, 8.dp))
                         // Stesso menu del numero nel testo unito: qui
                         // ci si arriva solo per un elenco numerato
                         // dentro un toggle, ma il gesto dev'essere
@@ -6708,7 +6860,7 @@ private fun BlockRow(
                         onToggle = { viewModel.toggleCheckbox(block) }
                     )
                 }
-                Spacer(modifier = Modifier.size(8.dp))
+                Spacer(modifier = Modifier.size(checkboxGap))
             }
 
             BlockType.NOTIFICATION -> {
@@ -6745,7 +6897,7 @@ private fun BlockRow(
                         baselineShift = BULLET_MARKER_DROP,
                         color = Color.Transparent
                     ),
-                    modifier = Modifier.padding(end = 8.dp)
+                    modifier = Modifier.padding(end = markerGap(BlockType.BULLET_LIST_ITEM, 8.dp))
                 )
                 BlockType.NUMBERED_LIST_ITEM -> {
                     // Il numero che verrebbe dopo quello di sopra: largo come i vicini.
@@ -6758,7 +6910,7 @@ private fun BlockRow(
                     Text(
                         numberedMarkerFor(block.indentLevel, (above?.let { viewModel.numberedListOrdinal(allBlocks, it) } ?: 0) + 1),
                         style = textStyle.copy(color = Color.Transparent),
-                        modifier = Modifier.padding(end = 8.dp)
+                        modifier = Modifier.padding(end = markerGap(BlockType.NUMBERED_LIST_ITEM, 8.dp))
                     )
                 }
                 else -> {}
@@ -7202,19 +7354,23 @@ private fun BlockRow(
                 // Il testo di primo livello non aveva il problema perché
                 // la lista che lo contiene le chiavi le ha già.
                 key(child.id) {
-                    BlockRow(
-                        block = child,
-                        allBlocks = allBlocks,
-                        depth = depth + 1,
-                        viewModel = viewModel,
-                        factory = factory,
-                        focusRequestBlockId = focusRequestBlockId,
-                        formatRequest = formatRequest,
-                        onFocusChanged = onFocusChanged,
-                        onNavigateToPage = onNavigateToPage,
-                        onNavigateToDatabase = onNavigateToDatabase,
-                        onOpenBlockMenu = onOpenBlockMenu
-                    )
+                    // Lo spazio fra i blocchi ("Paragraph") anche fra le righe
+                    // dentro un toggle, metà sopra e metà sotto come fuori.
+                    Box(modifier = Modifier.padding(vertical = (paragraphLook.spacingOf(child) / 2f).sp.toDpIn(density))) {
+                        BlockRow(
+                            block = child,
+                            allBlocks = allBlocks,
+                            depth = depth + 1,
+                            viewModel = viewModel,
+                            factory = factory,
+                            focusRequestBlockId = focusRequestBlockId,
+                            formatRequest = formatRequest,
+                            onFocusChanged = onFocusChanged,
+                            onNavigateToPage = onNavigateToPage,
+                            onNavigateToDatabase = onNavigateToDatabase,
+                            onOpenBlockMenu = onOpenBlockMenu
+                        )
+                    }
                 }
             }
         }

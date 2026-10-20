@@ -246,4 +246,8 @@ interface PageDao {
 
     @Query("UPDATE pages SET proofingIgnored = :ignored WHERE id = :pageId")
     suspend fun setProofingIgnored(pageId: String, ignored: String?)
+
+    /** Il "Paragraph" di una pagina (vedi `PageParagraph`): come il correttore, la data resta. */
+    @Query("UPDATE pages SET paragraphJson = :paragraphJson WHERE id = :pageId")
+    suspend fun setParagraph(pageId: String, paragraphJson: String?)
 }

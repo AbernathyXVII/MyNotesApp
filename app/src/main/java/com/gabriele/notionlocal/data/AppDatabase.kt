@@ -60,7 +60,7 @@ import kotlinx.serialization.json.Json
         NotebookSectionEntity::class,
         PersonalWordEntity::class
     ],
-    version = 58,
+    version = 59,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -802,6 +802,13 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** Il "Paragraph" delle pagine (21/10/2026): tutte come Settings. */
+        private val MIGRATION_58_59 = object : Migration(58, 59) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE pages ADD COLUMN paragraphJson TEXT DEFAULT NULL")
+            }
+        }
+
         /** Il nome della proprietà principale dei database (18/10/2026): per tutti "Name", come prima. */
         private val MIGRATION_57_58 = object : Migration(57, 58) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -923,7 +930,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_54_55,
                         MIGRATION_55_56,
                         MIGRATION_56_57,
-                        MIGRATION_57_58
+                        MIGRATION_57_58,
+                        MIGRATION_58_59
                     )
                     .build()
                 INSTANCE = instance
