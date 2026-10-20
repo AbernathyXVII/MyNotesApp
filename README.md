@@ -2073,6 +2073,33 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.187 — 20/10/2026 · 10:24 — La barretta di scorrimento a destra delle pagine
+*(Claude Code sul PC; non ancora provata sul telefono; 664 test passati)*
+
+L'utente, parola per parola:
+> «Ma è normale che la barretta verticale di scorrimento nell'app a destra non
+> è presente? Quella che si vede a destra di colore chiaro quando scorro verso
+> il basso o l'alto una pagina e che scompare dopo poco? Non è una critica a
+> te, è che non pensavo che dovessi chiedertelo. La puoi mettere? Falla piccola
+> classica come le impostazioni del telefono»
+
+- **[Nuova funzionalità]** **La barretta di scorrimento** sul bordo destro
+  delle pagine: sottile, chiara (scura col tema chiaro), coi bordi tondi, come
+  nelle impostazioni del telefono. Compare mentre la pagina scorre e svanisce
+  poco meno di un secondo dopo che si è fermata. È alta quanto la parte di
+  pagina che si vede (mai meno di un dito di pagina), in cima e in fondo tocca
+  il bordo, e non prende i tocchi: sotto si continua a scrivere e a toccare
+  come prima. Non c'è se la pagina sta tutta nello schermo
+- **[Nuova funzionalità]** Le pagine sono fatte di voci di altezze diverse
+  (pezzi di testo, immagini, database) che si misurano solo quando si vedono:
+  la barretta si ricorda l'altezza di quelle già viste e dà la media alle
+  altre, quindi è esatta dove si è già passati e si assesta scorrendo
+- **[Progetto]** `PageScrollIndicator.kt`: `PageScrollIndicator` (sopra la
+  lista della pagina in `PageEditorScreen`, accanto alla barretta di lato di
+  "Full line view"), `ItemSizes`, `estimateExtent`, `scrollThumb`. Test:
+  `PageScrollIndicatorTest` (la media per le voci mai viste; altezza, minimo,
+  cima e fondo; compare scorrendo e svanisce dopo)
+
 ### 🔧 v0.186.2 — 20/10/2026 · 08:58 — "Today" passa alla giornata dopo a mezzanotte
 *(Claude Code sul PC; non ancora provata sul telefono; 661 test passati; commit solo in locale)*
 

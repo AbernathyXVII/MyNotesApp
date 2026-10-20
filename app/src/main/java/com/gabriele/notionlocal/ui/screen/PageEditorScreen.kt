@@ -2423,6 +2423,8 @@ private fun PageEditorContent(
                     }
                 }
             }
+            // **La barretta di scorrimento** (dal 20/10/2026), sul bordo destro.
+            PageScrollIndicator(listState, modifier = Modifier.align(Alignment.TopEnd))
             if (sideScroll != null) {
                 SideScrollEffects(sideScroll, drawing = drawingMode)
                 SideScrollIndicator(
