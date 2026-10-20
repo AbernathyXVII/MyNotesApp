@@ -2073,6 +2073,42 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.185 — 20/10/2026 · 08:17 — I tag si riordinano con le maniglie
+*(Claude Code sul PC; verificata sul telefono dall'utente il 20/10/2026; 650 test passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Nella selezione dei tag, metti in alto a destra un'opzione che mi consente di
+> ordinare e di spostare i tag tramite le classiche icone da tre lineette
+> orizzontali, cosa che hanno moltissime app»
+
+- **[Nuova funzionalità]** **"Reorder"** ("Riordina" in italiano) in alto a
+  destra nella finestra dei tag, accanto al titolo "Select" o "Multi-select",
+  quando i tag sono almeno due. Toccandolo, i tag compaiono tutti in fila,
+  ognuno con la maniglia a tre lineette a destra: la si tiene e la si
+  trascina, e gli altri tag fanno posto appena il tag arriva a metà di uno di
+  loro. Il tag trascinato si stacca dagli altri con un'ombra. "Done" torna
+  all'elenco di sempre
+- **[Nuova funzionalità]** L'ordine si salva a ogni rilascio: chiudere la
+  finestra non perde niente. Con tanti tag, portando quello trascinato vicino
+  al bordo di sopra o di sotto della finestra, l'elenco scorre da solo
+- **[Nuova funzionalità]** L'ordine vale ovunque si vedono i tag in elenco:
+  nella finestra dei tag, nei filtri, e nei gruppi della tabella e della
+  bacheca raggruppate per quella proprietà, che seguono l'ordine dei tag come
+  su Notion. Le celle non cambiano
+- **[Progetto]** `TagReorderList.kt`: `TagReorderList` (l'ordine sullo
+  schermo vale più di quello del database che arriva un attimo dopo il
+  rilascio, così il tag non torna per un attimo dov'era; lo scorrimento da
+  solo vicino ai bordi) e `moveWhileDragging` (oltre quali vicini è passato il
+  tag). `SelectOption.reorderedAs` in `DatabaseColumnEntity.kt` (un tag che
+  manca dall'ordine va in fondo, uno eliminato non rinasce),
+  `DatabaseViewModel.moveSelectOptions`, e `onMoveOptions` che scende fino a
+  `TagPickerSheet` per la stessa strada di `onDeleteOption`.
+  `DbStrings.reorder` e `dragToReorder`. Test: `TagReorderTest` (l'ordine
+  nuovo; oltre la metà del vicino e non prima; un trascinamento corto non
+  salva niente; il secondo parte dall'ordine salvato; "Done" torna
+  all'elenco)
+- Provata dall'utente sul telefono, con la release v0.186: funziona
+
 ### 🆕 v0.184 — 19/10/2026 · 23:20 — Le righe lunghe non vanno più a capo
 *(Claude Code sul PC; verificata sul telefono; 643 test passati; commit solo in locale)*
 

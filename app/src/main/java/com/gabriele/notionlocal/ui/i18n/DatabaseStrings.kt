@@ -397,6 +397,8 @@ object DbStrings {
     )
     val noTagMatches get() = t("No tag matches what you wrote.", "Nessun tag corrisponde a quello che hai scritto.", "Kein Tag passt zu deiner Eingabe.", "Aucun tag ne correspond à ce que vous avez écrit.", "Ninguna etiqueta coincide con lo que escribiste.", "没有与输入内容匹配的标签。", "입력한 내용과 일치하는 태그가 없습니다.", "入力内容に一致するタグはありません。")
     val editTag get() = t("Edit tag", "Modifica tag", "Tag bearbeiten", "Modifier le tag", "Editar etiqueta", "编辑标签", "태그 편집", "タグを編集")
+    val reorder get() = t("Reorder", "Riordina", "Neu ordnen", "Réorganiser", "Reordenar", "排序", "순서 변경", "並べ替え")
+    val dragToReorder get() = t("Drag to reorder", "Trascina per riordinare", "Zum Neuordnen ziehen", "Faire glisser pour réorganiser", "Arrastra para reordenar", "拖动以排序", "끌어서 순서 변경", "ドラッグして並べ替え")
 
     // --- Data e ripetizioni ---
 

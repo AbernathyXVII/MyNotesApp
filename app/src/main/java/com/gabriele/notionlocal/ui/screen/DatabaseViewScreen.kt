@@ -147,6 +147,9 @@ import androidx.compose.material.icons.filled.ViewAgenda
 import androidx.compose.material.icons.filled.ViewComfy
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -1509,6 +1512,9 @@ private fun DatabaseViewBody(
                     onDeleteOption = { columnId, label ->
                         viewModel.deleteSelectOption(columnId, label)
                     },
+                    onMoveOptions = { columnId, labels ->
+                        viewModel.moveSelectOptions(columnId, labels)
+                    },
                     groupColumn = viewModel.tableGroupColumn(),
                     hideEmptyGroups = page?.hideEmptyGroups != false,
                     hideEmptySubGroups = page?.hideEmptySubGroups != false,
@@ -1940,6 +1946,7 @@ private fun DatabaseViewBody(
                 viewModel.setSelectOptionColor(columnId, label, hex)
             },
             onDeleteOption = { columnId, label -> viewModel.deleteSelectOption(columnId, label) },
+            onMoveOptions = { columnId, labels -> viewModel.moveSelectOptions(columnId, labels) },
             hasIcon = rowIcons[live.id] != null,
             iconEditable = !contentLocked,
             simple = simple,
@@ -2064,6 +2071,7 @@ private fun TableLayout(
     onRenameOption: (String, String, String) -> Unit,
     onSetOptionColor: (String, String, String) -> Unit,
     onDeleteOption: (String, String) -> Unit,
+    onMoveOptions: (String, List<String>) -> Unit,
     /** Crea una pagina già dentro il gruppo: riceve il valore del gruppo. */
     onAddRowInGroup: (String) -> Unit,
     /** I sottogruppi dentro ogni gruppo (dal 29/09/2026); null se non ce ne sono. */
@@ -2224,6 +2232,7 @@ private fun TableLayout(
                 onRenameOption = onRenameOption,
                 onSetOptionColor = onSetOptionColor,
                 onDeleteOption = onDeleteOption,
+                onMoveOptions = onMoveOptions,
                 onTitleEditing = onTitleEditing,
                 namePlace = namePlace
             )
@@ -2385,6 +2394,7 @@ private fun TableLayout(
                     onRenameOption = onRenameOption,
                     onSetOptionColor = onSetOptionColor,
                     onDeleteOption = onDeleteOption,
+                    onMoveOptions = onMoveOptions,
                     onTitleEditing = onTitleEditing,
                     namePlace = namePlace
                 )
@@ -2445,6 +2455,7 @@ private fun TableLayout(
                     onRenameOption = onRenameOption,
                     onSetOptionColor = onSetOptionColor,
                     onDeleteOption = onDeleteOption,
+                    onMoveOptions = onMoveOptions,
                     onTitleEditing = onTitleEditing,
                     namePlace = namePlace
                 )
@@ -3080,6 +3091,7 @@ private fun TableBodyRow(
     onRenameOption: (String, String, String) -> Unit,
     onSetOptionColor: (String, String, String) -> Unit,
     onDeleteOption: (String, String) -> Unit,
+    onMoveOptions: (String, List<String>) -> Unit,
     onTitleEditing: (Boolean) -> Unit = {},
     /** Dove sta Name fra `columns` (vedi `TableHeaderRow`). */
     namePlace: Int = 0
@@ -3115,7 +3127,8 @@ private fun TableBodyRow(
                 onAddOption = { onAddOption(column, it) },
                 onRenameOption = onRenameOption,
                 onSetOptionColor = onSetOptionColor,
-                onDeleteOption = onDeleteOption
+                onDeleteOption = onDeleteOption,
+                onMoveOptions = onMoveOptions
             )
             CellSeparator(column.id, stretch = wrap)
         }
@@ -7073,7 +7086,8 @@ private fun CellEditor(
     onAddOption: (String) -> Unit,
     onRenameOption: (String, String, String) -> Unit,
     onSetOptionColor: (String, String, String) -> Unit,
-    onDeleteOption: (String, String) -> Unit
+    onDeleteOption: (String, String) -> Unit,
+    onMoveOptions: (String, List<String>) -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -7115,7 +7129,8 @@ private fun CellEditor(
             onAddOption = onAddOption,
             onRenameOption = onRenameOption,
             onSetOptionColor = onSetOptionColor,
-            onDeleteOption = onDeleteOption
+            onDeleteOption = onDeleteOption,
+            onMoveOptions = onMoveOptions
         )
         }
     }
@@ -7138,6 +7153,7 @@ private fun CellContent(
     onRenameOption: (String, String, String) -> Unit,
     onSetOptionColor: (String, String, String) -> Unit,
     onDeleteOption: (String, String) -> Unit,
+    onMoveOptions: (String, List<String>) -> Unit,
     /** Il margine laterale dentro la cella: nella tabella c'è, nella finestra delle proprietà no. */
     cellPadding: Dp = 0.dp
 ) {
@@ -7173,7 +7189,8 @@ private fun CellContent(
                 onAddOption = onAddOption,
                 onRenameOption = onRenameOption,
                 onSetOptionColor = onSetOptionColor,
-                onDeleteOption = onDeleteOption
+                onDeleteOption = onDeleteOption,
+                onMoveOptions = onMoveOptions
             )
 
             ColumnType.MULTI_SELECT -> TagCell(
@@ -7184,7 +7201,8 @@ private fun CellContent(
                 onAddOption = onAddOption,
                 onRenameOption = onRenameOption,
                 onSetOptionColor = onSetOptionColor,
-                onDeleteOption = onDeleteOption
+                onDeleteOption = onDeleteOption,
+                onMoveOptions = onMoveOptions
             )
 
             ColumnType.DATE -> DateCell(
@@ -7326,7 +7344,8 @@ internal fun TagCell(
     onAddOption: (String) -> Unit,
     onRenameOption: (String, String, String) -> Unit,
     onSetOptionColor: (String, String, String) -> Unit,
-    onDeleteOption: (String, String) -> Unit
+    onDeleteOption: (String, String) -> Unit,
+    onMoveOptions: (String, List<String>) -> Unit
 ) {
     var showSheet by remember { mutableStateOf(false) }
     val options = parseSelectOptionsFull(column.optionsJson)
@@ -7389,7 +7408,8 @@ internal fun TagCell(
             },
             onRenameOption = { old, new -> onRenameOption(columnId, old, new) },
             onSetOptionColor = { label, hex -> onSetOptionColor(columnId, label, hex) },
-            onDeleteOption = { label -> onDeleteOption(columnId, label) }
+            onDeleteOption = { label -> onDeleteOption(columnId, label) },
+            onMoveOptions = { labels -> onMoveOptions(columnId, labels) }
         )
     }
 }
@@ -7526,7 +7546,7 @@ private fun TagOptionEditor(
  * su cui il bianco non si legge), con la regola delle celle colorate.
  */
 @Composable
-private fun TagChip(label: String, color: String?) {
+internal fun TagChip(label: String, color: String?) {
     Text(
         text = label,
         style = MaterialTheme.typography.labelMedium,
@@ -7557,9 +7577,15 @@ private fun TagPickerSheet(
     onCreate: (String) -> Unit,
     onRenameOption: (String, String) -> Unit,
     onSetOptionColor: (String, String) -> Unit,
-    onDeleteOption: (String) -> Unit
+    onDeleteOption: (String) -> Unit,
+    onMoveOptions: (List<String>) -> Unit
 ) {
     var query by remember { mutableStateOf("") }
+    // "Reorder", in alto a destra: i tag con le maniglie, vedi `TagReorderList`.
+    var reordering by remember { mutableStateOf(false) }
+    val scroll = rememberScrollState()
+    var viewport by remember { mutableStateOf<Rect?>(null) }
+    val focusManager = LocalFocusManager.current
     // Quale tag si sta modificando. La schermata di modifica vive
     // dentro questa stessa finestra invece che in una sopra l'altra:
     // due finestre sovrapposte si contendono la chiusura col gesto di
@@ -7595,16 +7621,46 @@ private fun TagPickerSheet(
                 .fillMaxWidth()
                 .heightIn(min = 260.dp)
                 .padding(horizontal = 16.dp)
-                .verticalScroll(rememberScrollState())
+                .onGloballyPositioned { viewport = it.boundsInRoot() }
+                .verticalScroll(scroll)
         ) {
-            Text(
-                text = DbStrings.typeName(if (allowMultiple) ColumnType.MULTI_SELECT else ColumnType.SELECT),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center
-            )
+            // Con meno di due tag non c'è niente da mettere in ordine.
+            val canReorder = reordering || options.size >= 2
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Text(
+                    text = DbStrings.typeName(if (allowMultiple) ColumnType.MULTI_SELECT else ColumnType.SELECT),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    // Il titolo resta al centro senza finire sotto al pulsante.
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = if (canReorder) 104.dp else 0.dp),
+                    textAlign = TextAlign.Center
+                )
+                if (canReorder) {
+                    TextButton(
+                        onClick = {
+                            focusManager.clearFocus()
+                            reordering = !reordering
+                        },
+                        modifier = Modifier.align(Alignment.CenterEnd)
+                    ) { Text(if (reordering) Strings.done else DbStrings.reorder) }
+                }
+            }
             Spacer(modifier = Modifier.size(16.dp))
+
+            if (reordering) {
+                TagReorderList(
+                    options = options,
+                    onMove = onMoveOptions,
+                    scrollState = scroll,
+                    viewport = { viewport }
+                )
+                Spacer(modifier = Modifier.size(24.dp))
+                return@Column
+            }
 
             SheetTextField(
                 value = query,
@@ -9128,6 +9184,7 @@ private fun RowActionsSheet(
     onRenameOption: (String, String, String) -> Unit,
     onSetOptionColor: (String, String, String) -> Unit,
     onDeleteOption: (String, String) -> Unit,
+    onMoveOptions: (String, List<String>) -> Unit,
     /** Se la pagina della riga ha già un'icona: la voce dice "Change" invece di "None". */
     hasIcon: Boolean,
     /** Spenta con la pagina bloccata o nel cestino: l'icona fa parte del contenuto. */
@@ -9196,7 +9253,8 @@ private fun RowActionsSheet(
                         onAddOption = onAddOption,
                         onRenameOption = onRenameOption,
                         onSetOptionColor = onSetOptionColor,
-                        onDeleteOption = onDeleteOption
+                        onDeleteOption = onDeleteOption,
+                        onMoveOptions = onMoveOptions
                     )
                     Spacer(modifier = Modifier.size(16.dp))
                     if (move != null) {
@@ -9282,7 +9340,8 @@ private fun RowActionsSheet(
                     onAddOption = onAddOption,
                     onRenameOption = onRenameOption,
                     onSetOptionColor = onSetOptionColor,
-                    onDeleteOption = onDeleteOption
+                    onDeleteOption = onDeleteOption,
+                    onMoveOptions = onMoveOptions
                 )
             }
 
@@ -9332,7 +9391,8 @@ private fun RowPropertiesList(
     onAddOption: (DatabaseColumnEntity, String) -> Unit,
     onRenameOption: (String, String, String) -> Unit,
     onSetOptionColor: (String, String, String) -> Unit,
-    onDeleteOption: (String, String) -> Unit
+    onDeleteOption: (String, String) -> Unit,
+    onMoveOptions: (String, List<String>) -> Unit
 ) {
     Column {
     if (columns.isEmpty()) {
@@ -9374,7 +9434,8 @@ private fun RowPropertiesList(
                     onAddOption = { onAddOption(column, it) },
                     onRenameOption = onRenameOption,
                     onSetOptionColor = onSetOptionColor,
-                    onDeleteOption = onDeleteOption
+                    onDeleteOption = onDeleteOption,
+                    onMoveOptions = onMoveOptions
                 )
             }
         }
@@ -9492,7 +9553,8 @@ internal fun RowPageProperties(
                                 onAddOption = { viewModel.addSelectOption(column.id, it) },
                                 onRenameOption = { columnId, old, new -> viewModel.renameSelectOption(columnId, old, new) },
                                 onSetOptionColor = { columnId, label, hex -> viewModel.setSelectOptionColor(columnId, label, hex) },
-                                onDeleteOption = { columnId, label -> viewModel.deleteSelectOption(columnId, label) }
+                                onDeleteOption = { columnId, label -> viewModel.deleteSelectOption(columnId, label) },
+                                onMoveOptions = { columnId, labels -> viewModel.moveSelectOptions(columnId, labels) }
                             )
                         }
                     }

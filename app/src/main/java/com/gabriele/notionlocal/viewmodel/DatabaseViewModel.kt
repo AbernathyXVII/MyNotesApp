@@ -54,6 +54,7 @@ import com.gabriele.notionlocal.data.entity.sortRules
 import com.gabriele.notionlocal.data.entity.withSortRules
 import com.gabriele.notionlocal.data.entity.parseDateRange
 import com.gabriele.notionlocal.data.entity.SelectOption
+import com.gabriele.notionlocal.data.entity.reorderedAs
 import com.gabriele.notionlocal.data.entity.TAG_COLORS
 import com.gabriele.notionlocal.data.entity.TimelineZoom
 import com.gabriele.notionlocal.data.repository.DatabaseRepository
@@ -1797,6 +1798,15 @@ class DatabaseViewModel(
     fun deleteSelectOption(columnId: String, label: String) {
         updateOptions(columnId) { options -> options.filterNot { it.label == label } }
         rewriteCellsOfColumn(columnId) { labels -> labels.filterNot { it == label } }
+    }
+
+    /**
+     * **Il nuovo ordine dei tag** (dal 20/10/2026), trascinati per le
+     * maniglie nella finestra di scelta. Le celle non cambiano; cambia
+     * l'ordine dei gruppi e delle colonne della bacheca, che seguono i tag.
+     */
+    fun moveSelectOptions(columnId: String, labels: List<String>) {
+        updateOptions(columnId) { options -> options.reorderedAs(labels) }
     }
 
     private fun updateOptions(

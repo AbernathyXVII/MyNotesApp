@@ -79,6 +79,17 @@ data class SelectOption(
 )
 
 /**
+ * I tag nell'ordine di `labels`. Un tag che lì non c'è (creato mentre si
+ * trascinava) non si perde: va in fondo. Un'etichetta che non è più un tag
+ * (eliminato nel frattempo) non lo fa rinascere.
+ */
+fun List<SelectOption>.reorderedAs(labels: List<String>): List<SelectOption> {
+    val byLabel = associateBy { it.label }
+    val placed = labels.distinct().mapNotNull { byLabel[it] }
+    return placed + filterNot { it in placed }
+}
+
+/**
  * I valori di una colonna a selezione multipla stanno in un'unica
  * stringa, separati da questo carattere: la tabella delle celle ha una
  * colonna `value` sola, e tenere lì una lista evita di cambiare lo

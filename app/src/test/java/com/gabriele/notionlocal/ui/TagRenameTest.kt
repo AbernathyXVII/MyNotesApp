@@ -69,7 +69,8 @@ class TagRenameTest {
                         onAddOption = {},
                         onRenameOption = { id, old, new -> renames += Triple(id, old, new) },
                         onSetOptionColor = { _, _, _ -> },
-                        onDeleteOption = { _, _ -> }
+                        onDeleteOption = { _, _ -> },
+                        onMoveOptions = { _, _ -> }
                     )
                 }
             }
