@@ -63,8 +63,16 @@ class WebClipEngine(
     /** Quanto è alta la finestra da cui la si guarda, in pixel CSS. */
     val cssHeight: Int = DESKTOP_CSS_HEIGHT,
     /** Pixel veri per pixel CSS nella foto: 1,5 come lo schermo di un portatile, nitida ingrandita. */
-    val outputScale: Float = OUTPUT_SCALE
+    val outputScale: Float = OUTPUT_SCALE,
+    /**
+     * **"Dark mode"** (dal 20/10/2026): il sito vede "prefers-color-scheme:
+     * dark" (i siti che hanno un tema scuro usano il loro) e Chrome scurisce da
+     * sé quelli che non ce l'hanno; "Article" si impagina scuro.
+     */
+    val dark: Boolean = false
 ) {
+    /** Il colore sotto la pagina, dove il sito non ne disegna uno. */
+    private val pageBackground = if (dark) DARK_PAGE else Color.WHITE
     private val appContext = context.applicationContext
 
     /** Le misure del WebView in pixel veri: la pagina ci sta esattamente in larghezza. */
@@ -82,8 +90,11 @@ class WebClipEngine(
         private set
 
     val webView: WebView = WebView(
-        // Il tema chiaro: il sito vede "prefers-color-scheme: light", come OneNote.
-        ContextThemeWrapper(context, android.R.style.Theme_DeviceDefault_Light_NoActionBar)
+        // Il tema chiaro: il sito vede "prefers-color-scheme: light", come OneNote; scuro con "Dark mode".
+        ContextThemeWrapper(
+            context,
+            if (dark) android.R.style.Theme_DeviceDefault_NoActionBar else android.R.style.Theme_DeviceDefault_Light_NoActionBar
+        )
     ).apply {
         settings.javaScriptEnabled = true
         settings.domStorageEnabled = true
@@ -93,9 +104,9 @@ class WebClipEngine(
         settings.displayZoomControls = false
         settings.mediaPlaybackRequiresUserGesture = true
         settings.userAgentString = DESKTOP_USER_AGENT
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) settings.isAlgorithmicDarkeningAllowed = false
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) settings.isAlgorithmicDarkeningAllowed = dark
         setInitialScale((outputScale * 100).roundToInt())
-        setBackgroundColor(Color.WHITE)
+        setBackgroundColor(pageBackground)
         isVerticalScrollBarEnabled = false
         isHorizontalScrollBarEnabled = false
         webViewClient = object : WebViewClient() {
@@ -129,7 +140,27 @@ class WebClipEngine(
             while (evaluate("document.readyState") != "\"complete\"") delay(200)
         }
         delay(SETTLE_DELAY_MS)
+        darkenOlderWebView()
         return finalUrl ?: webView.url
+    }
+
+    /**
+     * "Dark mode" prima di Android 13, dove Chrome non sa scurire da sé le
+     * pagine: i colori si rovesciano, e le immagini si rovesciano di nuovo,
+     * così restano com'erano.
+     */
+    private suspend fun darkenOlderWebView() {
+        if (!dark || Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) return
+        evaluate(
+            """
+            (function () {
+              var s = document.createElement('style');
+              s.textContent = 'html{filter:invert(1) hue-rotate(180deg);background:#fff}' +
+                'img,video,picture,canvas,iframe,[style*="background-image"]{filter:invert(1) hue-rotate(180deg)}';
+              (document.head || document.documentElement).appendChild(s);
+            })()
+            """.trimIndent()
+        )
     }
 
     /**
@@ -141,8 +172,9 @@ class WebClipEngine(
         delay(400)
         cleanUp()
         loadLazyContent()
-        // Certi banner arrivano dopo qualche secondo, o dopo lo scorrimento.
-        cleanUp()
+        // Certi banner arrivano dopo qualche secondo, o dopo lo scorrimento; e solo ora, con
+        // le immagini arrivate, si chiudono i riquadri rimasti vuoti (la pubblicità).
+        cleanUp(collapseEmpty = true)
         delay(300)
     }
 
@@ -160,8 +192,16 @@ class WebClipEngine(
         )
     }
 
-    /** Lo script che toglie banner e barre fisse: vedi `assets/web_clipper_cleanup.js`. Il resoconto, in JSON. */
-    suspend fun cleanUp(): String? = evaluate(asset(CLEANUP_SCRIPT))
+    /**
+     * Lo script che toglie banner, barre fisse e pubblicità: vedi
+     * `assets/web_clipper_cleanup.js`. Con `collapseEmpty` chiude anche i
+     * riquadri alti rimasti vuoti: solo dopo lo scorrimento, quando le
+     * immagini che arrivano scorrendo ci sono già. Il resoconto, in JSON.
+     */
+    suspend fun cleanUp(collapseEmpty: Boolean = false): String? {
+        evaluate("window.__noteCollapseEmpty = $collapseEmpty")
+        return evaluate(asset(CLEANUP_SCRIPT))
+    }
 
     /**
      * **"Article"**: la pagina diventa solo il suo articolo, impaginato pulito
@@ -170,7 +210,7 @@ class WebClipEngine(
      */
     suspend fun keepOnlyArticle(): String? {
         evaluate(asset(READER_SCRIPT))
-        val result = evaluateJson("noteReader.render()") as? String ?: return null
+        val result = evaluateJson("noteReader.render($dark)") as? String ?: return null
         return runCatching { JSONObject(result).optString("title").trim().takeIf { it.isNotEmpty() } }.getOrNull()
     }
 
@@ -201,7 +241,7 @@ class WebClipEngine(
         val height = (area.height() * k).roundToInt().coerceIn(1, MAX_REGION_SIDE)
         val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
         try {
-            bitmap.eraseColor(Color.WHITE)
+            bitmap.eraseColor(pageBackground)
             val canvas = Canvas(bitmap)
             canvas.scale(k, k)
             canvas.translate(-area.left - webView.scrollX, -area.top - webView.scrollY)
@@ -283,7 +323,7 @@ class WebClipEngine(
                     evaluate("window.scrollTo(0, $wantedCss)")
                     delay(SCROLL_SETTLE_MS)
                     val scrolledCss = (evaluateJson("window.scrollY") as? Number)?.toDouble() ?: wantedCss
-                    bitmap.eraseColor(Color.WHITE)
+                    bitmap.eraseColor(pageBackground)
                     canvas.save()
                     canvas.scale(k, k)
                     canvas.translate(-webView.scrollX.toFloat(), -webView.scrollY.toFloat())
@@ -300,7 +340,7 @@ class WebClipEngine(
                 }
                 // Se la pagina si è accorciata mentre la si fotografava, il fondo è bianco.
                 if (row < outHeight) {
-                    java.util.Arrays.fill(pixels, Color.WHITE)
+                    java.util.Arrays.fill(pixels, pageBackground)
                     while (row < outHeight) {
                         val rows = minOf(windowRows, outHeight - row)
                         writer.writeRows(pixels, 0, rows)
@@ -341,6 +381,9 @@ class WebClipEngine(
         const val OUTPUT_SCALE = 1.5f
         const val CLEANUP_SCRIPT = "web_clipper_cleanup.js"
         const val READER_SCRIPT = "web_clipper_reader.js"
+
+        /** Lo sfondo di una pagina scura, quello del tema scuro di Notion. */
+        private const val DARK_PAGE = 0xFF191919.toInt()
 
         /** "Article" più stretto, come una colonna da leggere. */
         const val ARTICLE_CSS_WIDTH = 860

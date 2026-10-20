@@ -85,6 +85,10 @@ import com.gabriele.notionlocal.data.webclip.ClipContent
 import com.gabriele.notionlocal.data.webclip.WebClipDownloads
 import com.gabriele.notionlocal.data.webclip.WebClipEngine
 import com.gabriele.notionlocal.data.webclip.imageSources
+import com.gabriele.notionlocal.data.webclip.isPicture
+import com.gabriele.notionlocal.data.settings.AppSettings
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material3.Switch
 import com.gabriele.notionlocal.data.webclip.WebClipImage
 import com.gabriele.notionlocal.data.webclip.WebClipMode
 import com.gabriele.notionlocal.data.webclip.WebClipRequest
@@ -128,6 +132,7 @@ internal fun WebClipperSheet(onDismiss: () -> Unit, onClip: (WebClipRequest) -> 
     var title by remember { mutableStateOf("") }
     var titleTouched by remember { mutableStateOf(false) }
     var note by remember { mutableStateOf("") }
+    var dark by remember { mutableStateOf(AppSettings.webClipDark) }
     val url = webClipUrl(link)
     val clipboard = LocalClipboardManager.current
 
@@ -201,6 +206,35 @@ internal fun WebClipperSheet(onDismiss: () -> Unit, onClip: (WebClipRequest) -> 
                     mode = WebClipMode.TEXT_AND_IMAGES
                 }
             }
+            // **"Dark mode"** (dal 20/10/2026): solo per le foto, e si ricorda.
+            if (mode.isPicture) {
+                Spacer(modifier = Modifier.size(10.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable {
+                            dark = !dark
+                            AppSettings.webClipDark = dark
+                        }
+                        .padding(horizontal = 4.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Filled.DarkMode, contentDescription = null, tint = NotionWhite, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.size(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(WebClipStrings.darkMode, color = NotionWhite, fontWeight = FontWeight.SemiBold)
+                        Text(WebClipStrings.darkModeHint, style = MaterialTheme.typography.bodySmall, color = NotionGray400)
+                    }
+                    Switch(
+                        checked = dark,
+                        onCheckedChange = {
+                            dark = it
+                            AppSettings.webClipDark = it
+                        }
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.size(18.dp))
             ClipperLabel(WebClipStrings.title)
@@ -250,7 +284,7 @@ internal fun WebClipperSheet(onDismiss: () -> Unit, onClip: (WebClipRequest) -> 
                 Spacer(modifier = Modifier.size(8.dp))
                 Button(
                     enabled = url != null,
-                    onClick = { url?.let { onClip(WebClipRequest(it, mode, title.trim(), note.trim())) } }
+                    onClick = { url?.let { onClip(WebClipRequest(it, mode, title.trim(), note.trim(), dark = dark && mode.isPicture)) } }
                 ) {
                     Icon(Icons.Filled.ContentCut, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(modifier = Modifier.size(8.dp))
@@ -327,7 +361,11 @@ internal fun WebClipCaptureDialog(
     val context = LocalContext.current
     val article = request.mode == WebClipMode.ARTICLE
     val engine = rememberWebClipEngine {
-        if (article) WebClipEngine(context, cssWidth = WebClipEngine.ARTICLE_CSS_WIDTH) else WebClipEngine(context)
+        if (article) {
+            WebClipEngine(context, cssWidth = WebClipEngine.ARTICLE_CSS_WIDTH, dark = request.dark)
+        } else {
+            WebClipEngine(context, dark = request.dark)
+        }
     }
     var status by remember { mutableStateOf(WebClipStrings.stepOpening) }
     var progress by remember { mutableFloatStateOf(-1f) }
@@ -533,7 +571,7 @@ internal fun WebClipRegionDialog(
                 val heightPx = with(density) { maxHeight.toPx() }
                 val scale = widthPx / WebClipEngine.DESKTOP_CSS_WIDTH
                 val engine = rememberWebClipEngine {
-                    WebClipEngine(context, cssHeight = (heightPx / scale).roundToInt().coerceAtLeast(1), outputScale = scale)
+                    WebClipEngine(context, cssHeight = (heightPx / scale).roundToInt().coerceAtLeast(1), outputScale = scale, dark = request.dark)
                 }
                 LaunchedEffect(engine) {
                     engineRef = engine

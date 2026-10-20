@@ -11,11 +11,14 @@
   var JUNK = 'script, style, noscript, iframe, form, nav, aside, footer, button, input, select, textarea, svg, canvas, ' +
     'video, audio, object, embed, template, [hidden], [aria-hidden="true"], [role="navigation"], [role="complementary"], ' +
     '[class*="share"], [class*="social"], [class*="related"], [class*="comment"], [id*="comment"], [class*="advert"], ' +
-    '[class*="adthrive"], [class*="adsbygoogle"], [class~="ad"], [class~="ads"], [class*="ad-unit"], [class*="ad-slot"], ' +
-    '[class*="ad-container"], [id^="ad-"], [id*="google_ads"], [class*="newsletter"], [class*="promo"], ' +
-    '[class*="breadcrumb"], [class*="sponsor"], [class*="author-bio"], [class*="byline"], [class*="tags"]';
+    '[class*="adthrive"], [class*="raptive"], [class*="adsbygoogle"], [id^="AdThrive_"], [id^="ad-"], [id*="google_ads"], ' +
+    '[class*="newsletter"], [class*="promo"], [class*="breadcrumb"], [class*="sponsor"], [class*="author-bio"], ' +
+    '[class*="byline"], [class*="tags"]';
+  // Le classi "ad", "ads", "ad-slot", "ad-container"… come parole intere: "head-container" non è pubblicità.
+  var AD_CLASS = /(^|\s)(ads?|ad[-_](slot|container|wrapper|unit|box|banner|placeholder)\w*)(\s|$)/i;
   var AD_TEXT = /^(advertisement|advertisement\. keep scrolling for more|scroll to continue|story continues below( advertisement)?|continue reading below|pubblicità|annuncio|anzeige|werbung|publicité|publicidad|广告|광고|広告)\.?$/i;
   var BLOCK_TAGS = /^(P|DIV|SECTION|ARTICLE|HEADER|MAIN|FIGURE|FIGCAPTION|DL|DT|DD|ADDRESS|CENTER|DETAILS|SUMMARY|LI)$/;
+  var TOC_TITLE = /^(list of contents|table of contents|contents|in this article|on this page|jump to|indice|sommario|inhalt|inhaltsverzeichnis|sommaire|table des matières|índice|contenido)\.?:?$/i;
 
   function textOf(el) { return ((el && (el.innerText || el.textContent)) || '').replace(/\s+/g, ' ').trim(); }
   function meta(sel) { var m = document.querySelector(sel); return m ? (m.getAttribute('content') || '').trim() : ''; }
@@ -30,6 +33,7 @@
   }
   function junk(el) {
     if (el.matches && el.matches(JUNK)) return true;
+    if (AD_CLASS.test((el.getAttribute && el.getAttribute('class')) || '')) return true;
     // Il testo si guarda solo se è corto: "Advertisement" e simili.
     var raw = el.textContent || '';
     if (raw.length > 120) return false;
@@ -113,7 +117,8 @@
     try { return new URL(chosen, location.href).href; } catch (e) { return ''; }
   }
 
-  function render() {
+  // `dark`: "Dark mode", l'articolo chiaro su scuro (i colori del tema scuro di Notion).
+  function render(dark) {
     var roots = contentRoots(), title = pageTitle();
     var site = meta('meta[property="og:site_name"]') || location.hostname.replace(/^www\./, '');
     var author = meta('meta[name="author"]') || meta('meta[property="article:author"]');
@@ -140,21 +145,26 @@
 
     document.querySelectorAll('style, link[rel="stylesheet"], script').forEach(function (e) { e.remove(); });
     [document.documentElement, document.body].forEach(function (e) { e.removeAttribute('class'); e.removeAttribute('style'); });
+    var c = dark
+      ? { bg: '#191919', text: '#e3e2e0', strong: '#ffffff', muted: '#9b9a97', link: '#529cca', code: '#2f2f2f', line: '#373737', quote: '#c9c8c5' }
+      : { bg: '#ffffff', text: '#1f1f1f', strong: '#111111', muted: '#787774', link: '#0b6e99', code: '#f4f4f2', line: '#e3e2e0', quote: '#444444' };
     var css = document.createElement('style');
     css.textContent =
-      'html,body{margin:0;padding:0;background:#fff;}' +
-      'body{font-family:Georgia,"Noto Serif",serif;color:#1f1f1f;font-size:20px;line-height:1.65;}' +
+      // Detto a Chrome che la pagina ha già i suoi colori: non la scurisce di nuovo.
+      'html{color-scheme:' + (dark ? 'dark' : 'light') + ';}' +
+      'html,body{margin:0;padding:0;background:' + c.bg + ';}' +
+      'body{font-family:Georgia,"Noto Serif",serif;color:' + c.text + ';font-size:20px;line-height:1.65;}' +
       '.note-article{max-width:720px;margin:0 auto;padding:56px 36px 72px;}' +
-      '.note-site{font-family:Roboto,Arial,sans-serif;font-size:13px;color:#787774;text-transform:uppercase;letter-spacing:.09em;margin-bottom:14px;}' +
-      'h1.note-title{font-family:Roboto,Arial,sans-serif;font-size:38px;line-height:1.2;margin:0 0 12px;color:#111;}' +
-      '.note-byline{font-family:Roboto,Arial,sans-serif;font-size:15px;color:#787774;margin-bottom:36px;}' +
+      '.note-site{font-family:Roboto,Arial,sans-serif;font-size:13px;color:' + c.muted + ';text-transform:uppercase;letter-spacing:.09em;margin-bottom:14px;}' +
+      'h1.note-title{font-family:Roboto,Arial,sans-serif;font-size:38px;line-height:1.2;margin:0 0 12px;color:' + c.strong + ';}' +
+      '.note-byline{font-family:Roboto,Arial,sans-serif;font-size:15px;color:' + c.muted + ';margin-bottom:36px;}' +
       'img,picture{max-width:100%;height:auto;display:block;}' +
-      'figure{margin:28px 0;}figcaption{font-size:15px;color:#787774;}' +
-      'a{color:#0b6e99;text-decoration:none;}' +
-      'h2,h3,h4{font-family:Roboto,Arial,sans-serif;line-height:1.3;color:#111;margin:36px 0 12px;}' +
-      'pre,code{font-family:monospace;font-size:16px;background:#f4f4f2;}pre{padding:14px;white-space:pre-wrap;}' +
-      'blockquote{margin:20px 0;padding-left:18px;border-left:4px solid #e3e2e0;color:#444;}' +
-      'table{border-collapse:collapse;max-width:100%;margin:20px 0;}td,th{border:1px solid #e3e2e0;padding:6px 10px;font-size:17px;}';
+      'figure{margin:28px 0;}figcaption{font-size:15px;color:' + c.muted + ';}' +
+      'a{color:' + c.link + ';text-decoration:none;}' +
+      'h2,h3,h4{font-family:Roboto,Arial,sans-serif;line-height:1.3;color:' + c.strong + ';margin:36px 0 12px;}' +
+      'pre,code{font-family:monospace;font-size:16px;background:' + c.code + ';}pre{padding:14px;white-space:pre-wrap;}' +
+      'blockquote{margin:20px 0;padding-left:18px;border-left:4px solid ' + c.line + ';color:' + c.quote + ';}' +
+      'table{border-collapse:collapse;max-width:100%;margin:20px 0;}td,th{border:1px solid ' + c.line + ';padding:6px 10px;font-size:17px;}';
     (document.head || document.documentElement).appendChild(css);
     var wrapper = document.createElement('div');
     wrapper.className = 'note-article';
@@ -174,6 +184,8 @@
     var roots = contentRoots(), title = pageTitle();
     var blocks = [];
     var runs = [];
+    // Dentro una cella di tabella le righe orizzontali separano solo dei pezzi di testo.
+    var inCell = 0;
     var widthOfRoots = Math.max.apply(null, roots.map(function (r) { return r.getBoundingClientRect().width; }).concat([1]));
 
     function addText(text, style) {
@@ -260,21 +272,77 @@
         });
       });
     }
+    function rowsOf(el) {
+      return Array.prototype.filter.call(el.rows || [], function (tr) { return tr.closest('table') === el && !hidden(tr); });
+    }
+    function cellsOf(tr) {
+      return Array.prototype.filter.call(tr.cells, function (cell) { return !hidden(cell); });
+    }
+    function cellText(cell) { return (cell.textContent || '').replace(/[\s ]+/g, ' ').trim(); }
     function table(el) {
       var rows = [];
-      el.querySelectorAll('tr').forEach(function (tr) {
-        if (tr.closest('table') !== el) return;
-        var cells = [];
-        tr.querySelectorAll('td, th').forEach(function (cell) { if (cell.closest('tr') === tr) cells.push(textOf(cell)); });
+      rowsOf(el).forEach(function (tr) {
+        var cells = cellsOf(tr).map(cellText);
         if (cells.length) rows.push(cells);
       });
       return rows;
+    }
+    function cell(el, style) {
+      inCell++;
+      flush();
+      inline(el, style);
+      flush();
+      inCell--;
+    }
+    // **Una tabella con immagini o paragrafi dentro**, letta per righe come la si legge sulla pagina:
+    //  - una riga di sole intestazioni diventa una riga in grassetto ("Objectives");
+    //  - una riga con un'etichetta corta nella prima cella (il numero del passo, "Boss Fight",
+    //    "1F") mette l'etichetta in grassetto davanti al suo contenuto: "1. Exit the Station.";
+    //  - le altre (le griglie di schede) danno una cella alla volta, separate da una riga.
+    function richTable(el, style) {
+      flush();
+      rowsOf(el).forEach(function (tr) {
+        var cells = cellsOf(tr);
+        if (!cells.length) return;
+        var texts = cells.map(cellText);
+        var media = function (c) { return c.querySelector('img, picture, ul, ol, table'); };
+        if (cells.every(function (c) { return c.tagName === 'TH' && !media(c); })) {
+          var header = texts.filter(Boolean).join(' · ');
+          if (header) blocks.push({ k: 'p', runs: [{ t: header, b: true }] });
+          return;
+        }
+        var first = cells[0];
+        var label = texts[0];
+        var labelled = cells.length >= 2 && label && !media(first) && (first.tagName === 'TH' || label.length <= 24);
+        if (labelled) {
+          var start = blocks.length;
+          var numbered = /^\d+$/.test(label);
+          cells.slice(1).forEach(function (c) { cell(c, style); });
+          // Da solo (prima di un'immagine, o senza contenuto) il numero del passo si scrive "2.".
+          var alone = { k: 'p', runs: [{ t: numbered ? label + '.' : label, b: true }] };
+          if (blocks.length === start) {
+            blocks.push(alone);
+            return;
+          }
+          var head = blocks[start];
+          if (head.k === 'p' && head.runs) head.runs.unshift({ t: numbered ? label + '. ' : label + ': ', b: true });
+          else blocks.splice(start, 0, alone);
+          return;
+        }
+        cells.forEach(function (c) {
+          var start = blocks.length;
+          cell(c, style);
+          if (blocks.length > start) blocks.push({ k: 'hr', sep: true });
+        });
+      });
+      // Niente riga dopo l'ultima scheda.
+      if (blocks.length && blocks[blocks.length - 1].sep) blocks.pop();
     }
     function walk(el, style, depth) {
       if (junk(el) || hidden(el)) return;
       var tag = el.tagName;
       if (tag === 'BR') { flush(); return; }
-      if (tag === 'HR') { flush(); blocks.push({ k: 'hr' }); return; }
+      if (tag === 'HR') { flush(); if (!inCell) blocks.push({ k: 'hr' }); return; }
       if (tag === 'IMG') { image(el); return; }
       if (tag === 'PICTURE') { var img = el.querySelector('img'); if (img) image(img); return; }
       if (tag === 'SOURCE') return;
@@ -286,8 +354,15 @@
         return;
       }
       if (tag === 'UL' || tag === 'OL') {
-        // Un indice fatto solo di link (ai capitoli della pagina): OneNote lo lascia fuori, anche qui.
-        if (linkDensity(el) > 0.85 && el.querySelectorAll('li').length > 2) return;
+        // Un indice fatto solo di link (ai capitoli della pagina): OneNote lo lascia fuori, anche qui,
+        // e con lui il suo titolo ("List of Contents"), che da solo non direbbe niente.
+        if (linkDensity(el) > 0.85 && el.querySelectorAll('li').length > 2) {
+          flush();
+          var last = blocks[blocks.length - 1];
+          var lastText = last && last.runs ? last.runs.map(function (r) { return r.t; }).join('').trim() : '';
+          if (TOC_TITLE.test(lastText)) blocks.pop();
+          return;
+        }
         list(el, tag === 'OL', depth, style);
         return;
       }
@@ -301,10 +376,13 @@
       }
       if (tag === 'PRE') { flush(); var code = (el.innerText || el.textContent || '').replace(/\s+$/, ''); if (code) blocks.push({ k: 'code', text: code }); return; }
       if (tag === 'TABLE') {
+        var rich = el.querySelector('table, img, picture, ul, ol, p, figure');
         var rows = table(el);
         var cells = rows.reduce(function (n, r) { return n + r.length; }, 0);
-        // Una "tabella" che impagina la pagina, o di una cella sola, si legge come testo.
-        if (cells < 2 || el.querySelector('table, img, ul, ol, p')) { inline(el, style); flush(); return; }
+        var filled = rows.some(function (r) { return r.some(function (t) { return t; }); });
+        if (rich) { richTable(el, style); return; }
+        // Di una cella sola, o vuota, si legge come testo.
+        if (cells < 2 || !filled) { inline(el, style); flush(); return; }
         flush();
         blocks.push({ k: 'table', rows: rows });
         return;

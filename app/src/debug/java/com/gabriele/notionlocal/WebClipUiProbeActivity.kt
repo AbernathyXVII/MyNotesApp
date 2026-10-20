@@ -56,6 +56,7 @@ class WebClipUiProbeActivity : ComponentActivity() {
             else -> WebClipMode.FULL_PAGE
         }
         val viewer = intent.getStringExtra("show") == "viewer"
+        val dark = intent.getBooleanExtra("dark", false)
         val store = PageImageStore(this)
         val dir = File(filesDir, "webclip-probe").apply { mkdirs() }
         val log = File(dir, "ui.txt")
@@ -86,14 +87,14 @@ class WebClipUiProbeActivity : ComponentActivity() {
                     }
                     when {
                         name == null && !failed && mode == WebClipMode.REGION -> WebClipRegionDialog(
-                            request = WebClipRequest(url, mode, "", ""),
+                            request = WebClipRequest(url, mode, "", "", dark = dark),
                             store = store,
                             onDone = done,
                             onFailed = fail,
                             onCancel = { finish() }
                         )
                         name == null && !failed -> WebClipCaptureDialog(
-                            request = WebClipRequest(url, mode, "", ""),
+                            request = WebClipRequest(url, mode, "", "", dark = dark),
                             store = store,
                             onDone = done,
                             onFailed = fail,
@@ -106,7 +107,8 @@ class WebClipUiProbeActivity : ComponentActivity() {
                                 result.images.values.forEach { file ->
                                     summary.append("img ${store.imageSize(file)} ${store.fileFor(file).length()}\n")
                                 }
-                                blocks.take(40).forEach { b ->
+                                blocks.filter { it.cells != null }.forEach { b -> summary.append("TABLE ${b.cells!!.size} righe: ${b.cells!!.take(2)}\n") }
+                                blocks.take(60).forEach { b ->
                                     summary.append("${b.type} ind=${b.indentLevel} w=${b.attrs.width} ${b.spans.joinToString("") { s -> (if (s.bold) "*" else "") + (if (s.link != null) "[" else "") + s.text.take(40) + (if (s.link != null) "]" else "") }.take(110)}\n")
                                 }
                                 log.writeText(summary.toString())

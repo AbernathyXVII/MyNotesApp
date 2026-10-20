@@ -87,6 +87,32 @@ class WebClipperSheetTest {
     }
 
     @Test
+    fun darkModeIsOnlyForPicturesAndIsRemembered() {
+        AppSettings.webClipDark = false
+        var clipped: WebClipRequest? = null
+        compose.setContent {
+            NotionLocalTheme {
+                WebClipperSheet(onDismiss = {}, onClip = { clipped = it })
+            }
+        }
+        // Full Page (la scelta di partenza) è una foto: l'interruttore c'è.
+        compose.onNodeWithText("Dark mode").assertExists()
+        compose.onNodeWithText("Text and Images").performClick()
+        compose.onNodeWithText("Dark mode").assertDoesNotExist()
+        compose.onNodeWithText("Region").performClick()
+        compose.onNodeWithText("Dark mode").assertExists().performClick()
+        compose.waitForIdle()
+        assertTrue(AppSettings.webClipDark)
+
+        compose.onAllNodes(hasSetTextAction())[0].performTextInput("clip-test.invalid/page")
+        compose.onNodeWithText("Clip").performClick()
+        compose.waitForIdle()
+        assertEquals(WebClipMode.REGION, clipped?.mode)
+        assertEquals(true, clipped?.dark)
+        AppSettings.webClipDark = false
+    }
+
+    @Test
     fun aClipIsTallAndIsReadAtTheRightSize() {
         // La foto di game8: alta, si legge a pezzi.
         assertTrue(isTallImage(2160, 19023))

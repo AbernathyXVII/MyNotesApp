@@ -31,6 +31,14 @@
   }
   function textOf(el) { return ((el.innerText || el.value || el.textContent || '') + '').trim().replace(/\s+/g, ' '); }
   function visible(el) { var r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0; }
+  // Nascosto con una regola legata a un segno sull'elemento: certi script pubblicitari
+  // riscrivono lo stile dei loro riquadri, e un display:none scritto lì sparirebbe.
+  if (!document.getElementById('note-clipper-hidden')) {
+    var rule = document.createElement('style');
+    rule.id = 'note-clipper-hidden';
+    rule.textContent = '[data-note-hidden]{display:none!important}';
+    (document.head || document.documentElement).appendChild(rule);
+  }
   function hide(el) {
     if (el.getAttribute('data-note-hidden')) return;
     el.setAttribute('data-note-hidden', '1');
@@ -80,7 +88,53 @@
     if (cs.position === 'fixed') hide(el);
   }
 
-  // 4. Lo scorrimento sbloccato.
+  // 4. La pubblicità: nella foto i suoi riquadri restano buchi bianchi (su game8 tredici da 250
+  //    pixel nel testo, e il lettore video sotto la copertina).
+  var ADS = [
+    '[id^="AdThrive_"]', '[class*="adthrive"]', '[class*="raptive"]', '[data-raptive-video-fallback-anchor]',
+    '[id^="cls-video-container"]', 'ins.adsbygoogle', '[id^="google_ads"]', '[id^="div-gpt-ad"]', '[id*="taboola"]',
+    '[class*="taboola"]', '[id*="outbrain"]', '[class*="OUTBRAIN"]', '[id^="ezoic"]', '[class*="ezoic"]',
+    '[data-ad-slot]', '[data-ad-unit]', '[data-google-query-id]'
+  ];
+  // Solo i riquadri della pubblicità: mai la pagina (AdThrive mette una sua classe anche su <body>)
+  // né un contenitore con del testo vero (quello che si vede, non quello degli script) o tante immagini.
+  function adBox(el) {
+    if (el === document.documentElement || el === document.body) return false;
+    if (/^(MAIN|ARTICLE|HEADER|FOOTER|NAV|TABLE|TBODY|TR|TD|TH)$/.test(el.tagName)) return false;
+    if (el.querySelectorAll('img').length > 2 || el.querySelector('h1, h2, h3, table')) return false;
+    if ((el.textContent || '').length > 3000) return false;
+    return textOf(el).length <= 200;
+  }
+  ADS.forEach(function (sel) {
+    var found = document.querySelectorAll(sel);
+    for (var i = 0; i < found.length; i++) if (adBox(found[i])) hide(found[i]);
+  });
+  // Le classi "ad", "ads", "ad-slot", "ad-container"… come parole intere: "head-container" non è pubblicità.
+  var AD_CLASS = /(^|\s)(ads?|advert\w*|ad[-_](slot|container|wrapper|unit|box|banner|placeholder)\w*)(\s|$)/i;
+  var withClass = document.querySelectorAll('[class]');
+  for (var k = 0; k < withClass.length; k++) {
+    if (AD_CLASS.test(withClass[k].getAttribute('class') || '') && adBox(withClass[k])) hide(withClass[k]);
+  }
+
+  // 5. Dopo lo scorrimento (window.__noteCollapseEmpty): i riquadri alti rimasti vuoti — né
+  //    testo, né immagini, né mappe — si chiudono. Mai dentro una tabella, mai quelli con uno
+  //    sfondo disegnato. Prima dello scorrimento no: un'immagine che arriva scorrendo non c'è ancora.
+  if (window.__noteCollapseEmpty) {
+    var boxes = document.querySelectorAll('body div, body section, body aside, body figure, body ins, body span');
+    for (var j = 0; j < boxes.length; j++) {
+      var box = boxes[j];
+      if (box.getAttribute('data-note-hidden') || box.closest('table')) continue;
+      var rect = box.getBoundingClientRect();
+      if (rect.height < 60 || rect.width < 120) continue;
+      // Il testo si misura solo se è poco (veloce anche sulle pagine lunghe).
+      if ((box.textContent || '').length > 400 || textOf(box).length > 0) continue;
+      if (box.querySelector('img, picture, svg, canvas, video[poster], iframe, input, textarea, select, object, embed')) continue;
+      if (getComputedStyle(box).backgroundImage !== 'none') continue;
+      hide(box);
+    }
+  }
+
+  // 6. Lo scorrimento sbloccato.
   [document.documentElement, document.body].forEach(function (el) {
     if (!el) return;
     el.style.setProperty('overflow', 'visible', 'important');

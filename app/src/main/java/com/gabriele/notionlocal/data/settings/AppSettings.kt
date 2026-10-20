@@ -161,6 +161,7 @@ object AppSettings {
             .orEmpty()
         skinToneState.value = prefs.getInt(KEY_SKIN_TONE, 0).coerceIn(0, SKIN_TONE_COUNT)
         iconColorState.value = prefs.getString(KEY_ICON_COLOR, null)?.takeIf { HEX_COLOR.matches(it) }
+        webClipDarkState.value = prefs.getBoolean(KEY_WEB_CLIP_DARK, false)
         proofingEnabledState.value = prefs.getBoolean(KEY_PROOFING, false)
         proofingLanguageState.value = ProofingLanguage.fromCode(prefs.getString(KEY_PROOFING_LANGUAGE, null))
             ?.takeIf { it.available }
@@ -463,6 +464,20 @@ object AppSettings {
             if (::prefs.isInitialized) prefs.edit().putString(KEY_ICON_COLOR, iconColorState.value).apply()
         }
 
+    private val webClipDarkState = mutableStateOf(false)
+
+    /**
+     * **"Dark mode" del Web Clipper** (dal 20/10/2026, chiesto dall'utente:
+     * "ci sarebbe troppo bianco"): le foto delle pagine (Full Page, Region,
+     * Article) col sito scurito. Resta com'era l'ultima volta.
+     */
+    var webClipDark: Boolean
+        get() = webClipDarkState.value
+        set(value) {
+            webClipDarkState.value = value
+            if (::prefs.isInitialized) prefs.edit().putBoolean(KEY_WEB_CLIP_DARK, value).apply()
+        }
+
     private val skinToneState = mutableStateOf(0)
 
     /** Il colore della pelle delle emoji di persone e mani: 0 il giallo, 1..5 dal più chiaro al più scuro. */
@@ -540,6 +555,7 @@ object AppSettings {
     private const val KEY_RECENT_EMOJIS = "recent_emojis"
     private const val KEY_SKIN_TONE = "skin_tone"
     private const val KEY_ICON_COLOR = "icon_color"
+    private const val KEY_WEB_CLIP_DARK = "web_clip_dark"
     private const val KEY_PROOFING = "proofing"
     private const val KEY_PROOFING_LANGUAGE = "proofing_language"
 }

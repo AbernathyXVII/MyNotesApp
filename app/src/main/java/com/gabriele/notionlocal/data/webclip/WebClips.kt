@@ -3,8 +3,12 @@ package com.gabriele.notionlocal.data.webclip
 import com.gabriele.notionlocal.data.entity.RichTextSpan
 import java.net.URI
 
-/** Quello che si è scelto nel pannello del Web Clipper. */
-data class WebClipRequest(val url: String, val mode: WebClipMode, val title: String, val note: String)
+/** Quello che si è scelto nel pannello del Web Clipper; `dark` = "Dark mode", per le foto. */
+data class WebClipRequest(val url: String, val mode: WebClipMode, val title: String, val note: String, val dark: Boolean = false)
+
+/** Le scelte che fanno una foto, e quindi possono essere scure. */
+val WebClipMode.isPicture: Boolean
+    get() = this == WebClipMode.FULL_PAGE || this == WebClipMode.REGION || this == WebClipMode.ARTICLE
 
 /** Il grigio della riga "Clipped from", come il testo secondario di Notion. */
 const val CLIP_SOURCE_COLOR = "#9B9A97"

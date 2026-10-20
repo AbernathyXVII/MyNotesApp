@@ -2073,6 +2073,77 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.195 — 20/10/2026 · 22:59 — Il Web Clipper legge le tabelle per righe, toglie i buchi della pubblicità e ha "Dark mode"
+*(Claude Code sul PC; provato sul telefono sulla pagina di game8: "Text and Images", Full Page chiara e scura, Article scuro; 718 test passati)*
+
+L'utente, parola per parola:
+> «Ottimo lavoro. Ora tre cose importanti: 1) nella pagina Untitled 1 dove mi
+> trovo ora e fai il paragone con questo link
+> https://game8.co/games/Shin-Megami-Tensei-III-Nocturne/archives/331985 .
+> Riesci a notare che molte immagini (e sono sicuro anche dei blocchi di testo)
+> sono tutti sparsi? Le tre immagini della mappa dell'ospedale di Shinjuku sono
+> in fondo e non all'inizio dove dovrebbero essere; 2) sempre per quanto
+> riguarda Untitled 1, se vedi ci sono delle tabelle in ordine con le cose da
+> fare, ma nel testo è quasi tutto un blocco unico e i numeri sono letteralmente
+> tra la fine della frase prima e l'inizio di quella nuova. Cerca di sistemare
+> il modo in cui il Clipper legge il sito e la sua struttura; 3) per ultima
+> cosa, nella pagina Untitled 2 c'è lo screen fatto in formato full page.
+> Innanzitutto guarda quanti spazi vuoti che rimangono. Inoltre ti chiedo di
+> mettermi un'opzione che mi consente di fare una sorta di dark mode della
+> pagina, perché ci sarebbe troppo bianco.»
+
+Visto sul telefono (schermate e struttura delle due pagine, chieste
+dall'utente): in "Untitled 1" i pezzi erano nello stesso ordine di game8 (anche
+la versione per telefono del sito ha le tre mappe nella sezione "Maps", dopo il
+boss), ma **le tabelle erano srotolate**: le righe dei passi incollate in un
+blocco solo, il numero di un passo in coda alla frase prima ("Exit the
+Station. 2"), e nelle griglie di schede il testo di una scheda sopra
+l'immagine della scheda dopo ("Recommended level: 20" sopra "Second Kalpa").
+Per questo tutto sembrava sparso. In più le quattro tabelle degli oggetti
+erano vuote, e "Untitled 2" (la foto Full Page, alta 29222 pixel) aveva un
+buco bianco al posto di ogni riquadro pubblicitario.
+
+- **[Bug fix]** **"Text and Images" legge le tabelle per righe**, come la
+  pagina:
+  - le **tabelle dei passi** (numero e cosa fare): una riga per passo, col
+    numero in grassetto davanti, "**1.** Exit the Station."; le note sotto un
+    passo ("You can talk to the spirit…") restano sotto di lui; con
+    un'immagine in cima al passo, prima il numero ("**2.**"), poi l'immagine,
+    poi il testo; "**Boss Fight**" e le etichette come "**1F**" davanti al
+    loro contenuto;
+  - le **griglie di schede** (le guide dei capitoli, le aree Kalpa): una
+    scheda alla volta, separate da una riga sottile, così ogni testo resta
+    con la sua immagine;
+  - la riga d'intestazione ("Objectives") in grassetto;
+  - le righe orizzontali dentro una cella non diventano più divisori
+- **[Bug fix]** Le **tabelle di solo testo** (gli oggetti: "Obtained from",
+  "Items", "Cache Cube"…) arrivano col loro testo: le celle si leggono dal
+  testo scritto, non da come si vedono, che sul telefono a volte risultava
+  vuoto
+- **[Bug fix]** Il titolo di un indice lasciato fuori ("List of Contents")
+  non resta più da solo
+- **[Bug fix]** **I buchi bianchi della foto Full Page**: notE toglie i
+  riquadri pubblicitari dei circuiti più diffusi (AdThrive/Raptive, Google,
+  Taboola, Outbrain, Ezoic…) e il lettore video pubblicitario, e dopo lo
+  scorrimento chiude ogni riquadro alto rimasto vuoto (né testo né immagini,
+  mai dentro una tabella). Su game8: la pagina passa da 17553 a 13625 pixel, il
+  buco sotto la copertina da 498 a 20, e restano tutte le 41 immagini e le 12
+  tabelle. Le classi "ad" si riconoscono come parole intere ("head-container"
+  non è pubblicità) e la pagina stessa non si nasconde mai (AdThrive mette una
+  sua classe anche lì)
+- **[Nuova funzionalità]** **"Dark mode"** nel pannello del Web Clipper, per
+  Full Page, Region e Article: il sito si apre col tema scuro (quelli che ne
+  hanno uno usano il loro) e Chrome scurisce da sé gli altri; Article si
+  impagina chiaro su scuro con i colori del tema scuro di Notion. Prima di
+  Android 13, dove Chrome non sa scurire, i colori si rovesciano (le immagini
+  no). La scelta si ricorda
+- **[Progetto]** `web_clipper_reader.js`: `richTable`, `cell`, `TOC_TITLE`,
+  `render(dark)`; `web_clipper_cleanup.js`: la pubblicità (`adBox`, la regola
+  `[data-note-hidden]`) e `__noteCollapseEmpty`; `WebClipEngine` con `dark` e
+  `cleanUp(collapseEmpty)`; `WebClipRequest.dark`, `WebClipMode.isPicture`,
+  `AppSettings.webClipDark`. Test: `WebClipperSheetTest`; i calcoli del
+  ridimensionamento delle immagini spostati in `ImageFrameTest`
+
 ### 🆕 v0.194 — 20/10/2026 · 19:45 — Le maniglie delle immagini solo su richiesta, e "Full resize" come una finestra
 *(Claude Code sul PC; non ancora provata sul telefono; 717 test passati)*
 

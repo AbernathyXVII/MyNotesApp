@@ -29,6 +29,18 @@ object WebClipStrings {
     val region get() = t("Region", "Area", "Bereich", "Zone", "Región", "区域", "영역", "領域")
     val bookmark get() = t("Bookmark", "Segnalibro", "Lesezeichen", "Signet", "Marcador", "书签", "북마크", "ブックマーク")
     val article get() = t("Article", "Articolo", "Artikel", "Article", "Artículo", "文章", "기사", "記事")
+    /** "Dark mode" (dal 20/10/2026): la foto col sito scurito. */
+    val darkMode get() = t("Dark mode", "Modalità scura", "Dunkelmodus", "Mode sombre", "Modo oscuro", "深色模式", "다크 모드", "ダークモード")
+    val darkModeHint get() = t(
+        "The page is clipped with dark colors",
+        "La pagina viene catturata con i colori scuri",
+        "Die Seite wird mit dunklen Farben erfasst",
+        "La page est capturée en couleurs sombres",
+        "La página se captura con colores oscuros",
+        "以深色截取页面",
+        "페이지를 어두운 색으로 캡처합니다",
+        "ページを暗い色でキャプチャします"
+    )
     val textAndImages get() = t("Text and Images", "Testo e immagini", "Text und Bilder", "Texte et images", "Texto e imágenes", "文字和图片", "텍스트와 이미지", "テキストと画像")
     val stepReading get() = t("Reading the article…", "Leggo l'articolo…", "Artikel wird gelesen…", "Lecture de l'article…", "Leyendo el artículo…", "正在读取文章…", "기사를 읽는 중…", "記事を読み込んでいます…")
     fun stepImages(done: Int, total: Int) = t(
