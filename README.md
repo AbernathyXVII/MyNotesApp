@@ -2073,6 +2073,29 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🔧 v0.195.1 — 21/10/2026 · 00:17 — "+ Row", "+ Column" e il cestino solo mentre si scrive nella tabella
+*(Claude Code sul PC; provata sul telefono nella pagina presa da game8; 719 test passati)*
+
+L'utente, parola per parola:
+> «Guarda dove mi trovo ora, in Untitled: per quale motivo mi trovo + Row  e
+> + Column con l'icona del cestino?»
+
+e poi:
+> «No, non hai capito. IN MEZZO AL TESTO ci sono + Row  e + Column con
+> l'icona del cestino»
+
+Nella pagina presa da game8 con "Text and Images" ci sono sei tabelle
+("Previous / Next", le debolezze del boss, gli oggetti di ogni piano), e
+sotto ognuna la barra per modificarla restava sempre accesa, in mezzo
+all'articolo.
+
+- **[Bug fix]** **La barra sotto una tabella** ("+ Row", "+ Column" e il
+  cestino) **si vede solo mentre si scrive** in una casella di quella
+  tabella: si tocca una casella e compare, si chiude la tastiera e va via.
+  Vale per tutte le tabelle, non solo per quelle del Web Clipper
+- **[Progetto]** `TableBlockContent` guarda se una sua casella ha il cursore
+  (`onFocusChanged` e `focusGroup`). Test: `TableBarTest`
+
 ### 🆕 v0.195 — 20/10/2026 · 22:59 — Il Web Clipper legge le tabelle per righe, toglie i buchi della pubblicità e ha "Dark mode"
 *(Claude Code sul PC; provato sul telefono sulla pagina di game8: "Text and Images", Full Page chiara e scura, Article scuro; 718 test passati)*
 

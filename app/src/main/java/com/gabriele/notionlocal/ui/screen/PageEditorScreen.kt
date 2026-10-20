@@ -215,6 +215,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.foundation.focusGroup
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -7561,7 +7562,7 @@ private fun DividerBlockContent(
 }
 
 @Composable
-private fun TableBlockContent(
+internal fun TableBlockContent(
     block: BlockEntity,
     depth: Int,
     viewModel: PageEditorViewModel
@@ -7578,10 +7579,16 @@ private fun TableBlockContent(
     val cellMap = remember(cells) {
         cells.orEmpty().associate { (it.rowIndex to it.colIndex) to it.text }
     }
+    // **"+ Row", "+ Column" e il cestino solo mentre si scrive nella tabella**
+    // (dal 21/10/2026, chiesto dall'utente): sempre accesi restavano in mezzo
+    // al testo, sotto ogni tabella di un articolo preso col Web Clipper.
+    var editing by remember(block.id) { mutableStateOf(false) }
 
     Column(
         modifier = Modifier
             .padding(start = PAGE_SIDE_PADDING + (depth * 20).dp, end = PAGE_SIDE_PADDING, top = 8.dp, bottom = 8.dp)
+            .onFocusChanged { editing = it.hasFocus }
+            .focusGroup()
     ) {
         for (r in 0 until block.tableRows) {
             Row(modifier = Modifier.fillMaxWidth()) {
@@ -7611,7 +7618,7 @@ private fun TableBlockContent(
             }
         }
 
-        Row(modifier = Modifier.padding(top = 4.dp)) {
+        if (editing) Row(modifier = Modifier.padding(top = 4.dp)) {
             TextButton(onClick = { viewModel.resizeTable(block, block.tableRows + 1, block.tableCols) }) {
                 Text("+ Row", style = MaterialTheme.typography.labelSmall)
             }
