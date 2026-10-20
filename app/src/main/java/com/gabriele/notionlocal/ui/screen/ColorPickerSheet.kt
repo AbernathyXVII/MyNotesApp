@@ -8,6 +8,7 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
@@ -19,11 +20,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -53,6 +61,7 @@ import com.gabriele.notionlocal.data.settings.AppSettings
 import com.gabriele.notionlocal.ui.i18n.EditorStrings
 import com.gabriele.notionlocal.ui.theme.DarkSheet
 import com.gabriele.notionlocal.ui.theme.DarkSurface
+import com.gabriele.notionlocal.ui.theme.FavoriteStar
 import com.gabriele.notionlocal.ui.theme.NotionGray400
 import com.gabriele.notionlocal.ui.theme.NotionWhite
 import kotlin.math.abs
@@ -183,7 +192,10 @@ fun ColorPickerSheet(
             // L'anteprima è scritta sopra e dietro: un quadratino da
             // solo non direbbe come viene a leggersi davvero, che è la
             // sola cosa che interessa quando si colora del testo.
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            val currentHex = hsl.toHex()
+            val favorites = AppSettings.favoriteColors
+            val favorite = favorites.any { it.equals(currentHex, ignoreCase = true) }
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
                         .size(44.dp)
@@ -199,16 +211,25 @@ fun ColorPickerSheet(
                     )
                 }
                 Spacer(modifier = Modifier.size(12.dp))
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = previewLabel
                             ?: if (background) EditorStrings.backgroundColor else EditorStrings.textColor,
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Text(
-                        text = hsl.toHex(),
+                        text = currentHex,
                         style = MaterialTheme.typography.labelMedium,
                         color = NotionGray400
+                    )
+                }
+                // **La stella** (dal 20/10/2026, chiesto dall'utente): il colore
+                // scelto va fra i preferiti, o se c'è già ne esce.
+                IconButton(onClick = { AppSettings.toggleFavoriteColor(currentHex) }) {
+                    Icon(
+                        if (favorite) Icons.Filled.Star else Icons.Filled.StarBorder,
+                        contentDescription = if (favorite) EditorStrings.removeFavoriteColor else EditorStrings.addFavoriteColor,
+                        tint = if (favorite) FavoriteStar else NotionGray400
                     )
                 }
             }
@@ -282,7 +303,23 @@ fun ColorPickerSheet(
                 Spacer(modifier = Modifier.size(6.dp))
                 RecentColorsRow(
                     colors = recent,
-                    current = hsl.toHex(),
+                    current = currentHex,
+                    onPick = { hex -> hexToHsl(hex)?.let { setHsl(it) } }
+                )
+            }
+
+            // **I colori preferiti** (dal 20/10/2026, chiesto dall'utente),
+            // sotto i recenti: restano finché non li si toglie con la stella.
+            // Toccandone uno il selettore va su quel colore, come i recenti.
+            Spacer(modifier = Modifier.size(12.dp))
+            Text(EditorStrings.favoriteColors, style = MaterialTheme.typography.labelMedium, color = NotionGray400)
+            Spacer(modifier = Modifier.size(6.dp))
+            if (favorites.isEmpty()) {
+                Text(EditorStrings.favoriteColorsHint, style = MaterialTheme.typography.bodySmall, color = NotionGray400)
+            } else {
+                FavoriteColorsRow(
+                    colors = favorites,
+                    current = currentHex,
                     onPick = { hex -> hexToHsl(hex)?.let { setHsl(it) } }
                 )
             }
@@ -312,37 +349,69 @@ fun ColorPickerSheet(
 
 /**
  * I colori recenti in fila, dieci posti larghi uguale (anche quando ce ne
- * sono meno): un tondo del colore, col bordo grigio perché si vedano anche
- * i colori scuri; quello uguale al colore scelto ha l'anello bianco.
+ * sono meno), un tondo per colore (`ColorSwatch`).
  */
 @Composable
 private fun RecentColorsRow(colors: List<String>, current: String, onPick: (String) -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
+        horizontalArrangement = Arrangement.spacedBy(SWATCH_GAP)
     ) {
         repeat(AppSettings.RECENT_COLORS_MAX) { index ->
             Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                val hex = colors.getOrNull(index)
-                val color = hex?.let { hexToHsl(it)?.toColor() }
-                if (hex != null && color != null) {
-                    val selected = hex.equals(current, ignoreCase = true)
-                    Box(
-                        modifier = Modifier
-                            .widthIn(max = 32.dp)
-                            .fillMaxWidth()
-                            .aspectRatio(1f)
-                            .clip(CircleShape)
-                            .background(color)
-                            .border(if (selected) 2.dp else 1.dp, if (selected) NotionWhite else NotionGray400, CircleShape)
-                            .semantics { contentDescription = hex }
-                            .clickable { onPick(hex) }
-                    )
+                colors.getOrNull(index)?.let { ColorSwatch(it, current, onPick) }
+            }
+        }
+    }
+}
+
+/**
+ * I colori preferiti in fila, nei posti larghi come quelli dei recenti
+ * (così i tondi stanno in colonna con loro); oltre i dieci la fila si
+ * scorre di lato.
+ */
+@Composable
+private fun FavoriteColorsRow(colors: List<String>, current: String, onPick: (String) -> Unit) {
+    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+        val slots = AppSettings.RECENT_COLORS_MAX
+        val slot = (maxWidth - SWATCH_GAP * (slots - 1)) / slots
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(SWATCH_GAP)
+        ) {
+            colors.forEach { hex ->
+                Box(modifier = Modifier.width(slot), contentAlignment = Alignment.Center) {
+                    ColorSwatch(hex, current, onPick)
                 }
             }
         }
     }
 }
+
+/**
+ * Un tondo del colore, col bordo grigio perché si vedano anche i colori
+ * scuri; quello uguale al colore scelto ha l'anello bianco.
+ */
+@Composable
+private fun ColorSwatch(hex: String, current: String, onPick: (String) -> Unit) {
+    val color = hexToHsl(hex)?.toColor() ?: return
+    val selected = hex.equals(current, ignoreCase = true)
+    Box(
+        modifier = Modifier
+            .widthIn(max = 32.dp)
+            .fillMaxWidth()
+            .aspectRatio(1f)
+            .clip(CircleShape)
+            .background(color)
+            .border(if (selected) 2.dp else 1.dp, if (selected) NotionWhite else NotionGray400, CircleShape)
+            .semantics { contentDescription = hex }
+            .clickable { onPick(hex) }
+    )
+}
+
+private val SWATCH_GAP = 6.dp
 
 @Composable
 private fun TargetChip(

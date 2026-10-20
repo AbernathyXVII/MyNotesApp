@@ -243,6 +243,20 @@ object EditorStrings {
     val noColor get() = t("No color", "Nessun colore", "Keine Farbe", "Aucune couleur", "Sin color", "无颜色", "색상 없음", "色なし")
     /** Gli ultimi colori usati, sotto il campo Hex del selettore (dal 05/10/2026). */
     val recentColors get() = t("Recent colors", "Colori recenti", "Zuletzt verwendet", "Couleurs récentes", "Colores recientes", "最近使用的颜色", "최근 사용한 색", "最近使用した色")
+    /** I colori preferiti, sotto i recenti (dal 20/10/2026); la stella accanto all'anteprima li aggiunge e li toglie. */
+    val favoriteColors get() = t("Favorite colors", "Colori preferiti", "Lieblingsfarben", "Couleurs favorites", "Colores favoritos", "收藏的颜色", "즐겨찾는 색", "お気に入りの色")
+    val addFavoriteColor get() = t("Add to favorite colors", "Aggiungi ai colori preferiti", "Zu den Lieblingsfarben hinzufügen", "Ajouter aux couleurs favorites", "Añadir a los colores favoritos", "添加到收藏的颜色", "즐겨찾는 색에 추가", "お気に入りの色に追加")
+    val removeFavoriteColor get() = t("Remove from favorite colors", "Togli dai colori preferiti", "Aus den Lieblingsfarben entfernen", "Retirer des couleurs favorites", "Quitar de los colores favoritos", "从收藏的颜色中移除", "즐겨찾는 색에서 제거", "お気に入りの色から削除")
+    val favoriteColorsHint get() = t(
+        "Tap the star to keep the current color here",
+        "Tocca la stella per tenere qui il colore scelto",
+        "Tippe auf den Stern, um die aktuelle Farbe hier zu behalten",
+        "Touchez l'étoile pour garder ici la couleur actuelle",
+        "Toca la estrella para guardar aquí el color actual",
+        "点按星标，把当前颜色保存在这里",
+        "별을 눌러 현재 색을 여기에 저장하세요",
+        "星をタップすると、今の色をここに保存できます"
+    )
     val apply get() = t("Apply", "Applica", "Anwenden", "Appliquer", "Aplicar", "应用", "적용", "適用")
 
     // --- La cronologia ("Updates") ---

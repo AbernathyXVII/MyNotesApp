@@ -148,6 +148,12 @@ object AppSettings {
             ?.filter { HEX_COLOR.matches(it) }
             ?.take(RECENT_COLORS_MAX)
             .orEmpty()
+        favoriteColorsState.value = prefs.getString(KEY_FAVORITE_COLORS, null)
+            ?.split(',')
+            ?.filter { HEX_COLOR.matches(it) }
+            ?.distinct()
+            ?.take(FAVORITE_COLORS_MAX)
+            .orEmpty()
         recentEmojisState.value = prefs.getString(KEY_RECENT_EMOJIS, null)
             ?.split('\n')
             ?.filter { it.isNotBlank() }
@@ -400,6 +406,28 @@ object AppSettings {
 
     const val RECENT_COLORS_MAX = 10
 
+    // --- I colori preferiti (dal 20/10/2026, chiesto dall'utente) ---
+
+    private val favoriteColorsState = mutableStateOf<List<String>>(emptyList())
+
+    /**
+     * I colori messi fra i preferiti con la stella del selettore
+     * (`ColorPickerSheet`), "#RRGGBB", nell'ordine in cui sono stati
+     * aggiunti, al massimo `FAVORITE_COLORS_MAX`. Restano finché non li si
+     * toglie, a differenza dei recenti.
+     */
+    val favoriteColors: List<String> get() = favoriteColorsState.value
+
+    /** La stella: un colore che non è fra i preferiti ci va in fondo; uno che c'è già se ne va. */
+    fun toggleFavoriteColor(hex: String) {
+        val next = favoriteColorsState.value.withFavoriteColorToggled(hex)
+        if (next == favoriteColorsState.value) return
+        favoriteColorsState.value = next
+        if (::prefs.isInitialized) prefs.edit().putString(KEY_FAVORITE_COLORS, next.joinToString(",")).apply()
+    }
+
+    const val FAVORITE_COLORS_MAX = 40
+
     // --- Le emoji usate di recente e il colore della pelle (dal 07/10/2026) ---
 
     private val recentEmojisState = mutableStateOf<List<String>>(emptyList())
@@ -508,6 +536,7 @@ object AppSettings {
     private const val KEY_PRIORITY = "notifications_priority"
     private const val KEY_BADGE = "notifications_badge"
     private const val KEY_RECENT_COLORS = "recent_colors"
+    private const val KEY_FAVORITE_COLORS = "favorite_colors"
     private const val KEY_RECENT_EMOJIS = "recent_emojis"
     private const val KEY_SKIN_TONE = "skin_tone"
     private const val KEY_ICON_COLOR = "icon_color"
@@ -532,4 +561,19 @@ fun List<String>.withRecentColor(hex: String, max: Int = AppSettings.RECENT_COLO
     val clean = hex.trim().uppercase().let { if (it.startsWith("#")) it else "#$it" }
     if (!HEX_COLOR.matches(clean)) return this
     return (listOf(clean) + filterNot { it == clean }).take(max)
+}
+
+/**
+ * I colori preferiti dopo aver toccato la stella su `hex`: se c'era se ne va,
+ * se no va in fondo (maiuscolo, col "#"), finché ci sono meno di `max`
+ * colori. Un codice che non è un colore "#RRGGBB" lascia la lista com'è.
+ */
+fun List<String>.withFavoriteColorToggled(hex: String, max: Int = AppSettings.FAVORITE_COLORS_MAX): List<String> {
+    val clean = hex.trim().uppercase().let { if (it.startsWith("#")) it else "#$it" }
+    if (!HEX_COLOR.matches(clean)) return this
+    return when {
+        clean in this -> filterNot { it == clean }
+        size >= max -> this
+        else -> this + clean
+    }
 }

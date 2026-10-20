@@ -2073,6 +2073,31 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.191 — 20/10/2026 · 17:55 — I colori preferiti, sotto gli ultimi colori usati
+*(Claude Code sul PC; non ancora provata sul telefono; 693 test passati)*
+
+L'utente, parola per parola:
+> «Dammi la possibilità di aggiungere ai preferiti dei colori. La lista
+> orizzontale dei colori preferiti sarà sotto a quella degli ultimi colori
+> usati»
+
+- **[Nuova funzionalità]** **La stella** nel selettore di colore, a destra
+  dell'anteprima ("Aa" col nome e il codice del colore): toccata, il colore
+  scelto va fra i **preferiti** e la stella si colora di giallo; toccata di
+  nuovo (sul colore di un preferito) lo toglie. Il selettore è lo stesso in
+  tutta l'app: testo, celle, tag, penne, barre
+- **[Nuova funzionalità]** **"Favorite colors"**, la fila dei preferiti
+  **sotto "Recent colors"**: i tondi sono grandi come quelli dei recenti e
+  stanno in colonna con loro, nell'ordine in cui li si è aggiunti (l'ultimo
+  in fondo); oltre i dieci la fila si scorre di lato. Toccandone uno il
+  selettore va su quel colore, e si applica con "Apply" come i recenti.
+  Restano finché non li si toglie (fino a 40); senza preferiti la fila dice
+  di toccare la stella
+- **[Progetto]** `AppSettings.favoriteColors` e `toggleFavoriteColor`
+  (salvati in `favorite_colors`), `withFavoriteColorToggled`; nel
+  `ColorPickerSheet` la stella, `FavoriteColorsRow` e il tondo `ColorSwatch`
+  in comune coi recenti; i testi nelle 8 lingue. Test: `FavoriteColorsTest`
+
 ### 🔧 v0.190.1 — 20/10/2026 · 15:17 — Una colonna stretta a mano resta stretta anche con "Widen the column"
 *(Claude Code sul PC; non ancora provata sul telefono; 691 test passati)*
 
