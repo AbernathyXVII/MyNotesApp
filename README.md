@@ -2073,6 +2073,30 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🔧 v0.190.1 — 20/10/2026 · 15:17 — Una colonna stretta a mano resta stretta anche con "Widen the column"
+*(Claude Code sul PC; non ancora provata sul telefono; 691 test passati)*
+
+L'utente, parola per parola:
+> «Sto facendo caso nel database Pokédex che se faccio il resize della
+> primissima colonna perché la voglio vedere io manualmente in modo che si
+> visualizzi solo il numero, la rimpicciolisco quanto voglio ma poi ritorna a
+> com'era prima. La puoi sistemare questa cosa?»
+
+- **[Bug fix]** **Stringere una colonna col segnalino** ("Resize column") in
+  una tabella con "Long text" su **"Widen the column"**: mentre si trascinava
+  la colonna si stringeva, ma al rilascio tornava larga quanto il suo
+  contenuto, perché "Widen the column" allargava ogni colonna fin lì. Ora
+  allarga solo le colonne senza una misura scelta a mano: quella stretta col
+  segnalino resta com'è, e il testo che non ci sta finisce coi tre puntini.
+  Le altre colonne si allargano come prima
+- **[Bug fix]** Sempre con "Widen the column", riportata alla larghezza di
+  sempre (dove il segnalino si aggancia) la colonna resta lì, invece di
+  riallargarsi al contenuto
+- **[Progetto]** `tableColumnWidth` in `CellText.kt` decide quale misura
+  vince (il dito, "Fit to content", la misura scelta, quella di sempre, e
+  quando allargare); `DatabaseViewModel.setColumnWidth` con "Widen the column"
+  ricorda anche la larghezza di sempre. Test: `WrapCellsTest`
+
 ### 🆕 v0.190 — 20/10/2026 · 14:33 — "Select all" seleziona tutta la pagina, come su Notion
 *(Claude Code sul PC; non ancora provata sul telefono; 689 test passati)*
 

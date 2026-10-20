@@ -89,6 +89,29 @@ private val WRAP_PADDING = 10.dp
 internal fun shownColumnWidth(chosen: Dp, fitted: Dp?, widen: Boolean, min: Dp): Dp =
     (if (widen && fitted != null) maxOf(chosen, fitted) else chosen).coerceAtLeast(min)
 
+/**
+ * **Quale misura vince** in una colonna della tabella: mentre si trascina
+ * comanda il dito; poi "Fit to content", se acceso; poi la misura scelta a
+ * mano; se no quella di sempre. "Widen the column" allarga solo le colonne
+ * senza una misura scelta a mano (dal 20/10/2026, chiesto dall'utente: la
+ * prima colonna del Pokédex, stretta col segnalino, al rilascio tornava
+ * larga quanto il suo contenuto). Il minimo vale solo per "Fit to content":
+ * a mano si stringe fino a niente.
+ */
+internal fun tableColumnWidth(
+    dragging: Dp?,
+    fit: Dp?,
+    manual: Dp?,
+    default: Dp,
+    fitted: Dp?,
+    widen: Boolean,
+    fitMin: Dp
+): Dp {
+    val chosen = dragging ?: fit ?: manual ?: default
+    val grows = widen && dragging == null && manual == null
+    return shownColumnWidth(chosen, fitted, grows, if (dragging == null && fit != null) fitMin else 0.dp)
+}
+
 /** Se il testo di una cella è stato tagliato coi tre puntini. */
 internal fun TextLayoutResult.isCut(): Boolean =
     hasVisualOverflow || (lineCount > 0 && isLineEllipsized(lineCount - 1))

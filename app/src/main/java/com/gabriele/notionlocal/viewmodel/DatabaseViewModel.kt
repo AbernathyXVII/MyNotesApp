@@ -1689,12 +1689,15 @@ class DatabaseViewModel(
      */
     fun setColumnWidth(key: String, widthDp: Int) {
         val current = _page.value ?: return
-        // Tornata alla larghezza di sempre, non c'è niente da ricordare.
+        // Tornata alla larghezza di sempre, non c'è niente da ricordare. Con
+        // "Widen the column" invece sì (dal 20/10/2026): dimenticata, la
+        // colonna tornerebbe larga quanto il suo contenuto.
         val type = rawColumn(key)?.type
         val default = defaultColumnWidth(key, type)
         val width = snapColumnWidth(key, widthDp, default, minColumnWidth(key, type))
+        val widen = CellOverflow.of(current.cellOverflow) == CellOverflow.WIDEN
         val widths = parseColumnWidths(current.columnWidths).let {
-            if (width == default) it - key else it + (key to width)
+            if (width == default && !widen) it - key else it + (key to width)
         }
         val fit = parseFitColumns(current.fitColumns) - key
         val updated = current.copy(columnWidths = encodeColumnWidths(widths), fitColumns = encodeFitColumns(fit))

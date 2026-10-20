@@ -14,13 +14,16 @@ import com.gabriele.notionlocal.data.entity.MIN_NAME_COLUMN_WIDTH_DP
 import com.gabriele.notionlocal.data.entity.MIN_WRITABLE_COLUMN_WIDTH_DP
 import com.gabriele.notionlocal.data.entity.NAME_COLUMN_KEY
 import com.gabriele.notionlocal.data.entity.PageEntity
+import com.gabriele.notionlocal.data.entity.defaultColumnWidth
 import com.gabriele.notionlocal.data.entity.fitMinColumnWidth
 import com.gabriele.notionlocal.data.entity.minColumnWidth
 import com.gabriele.notionlocal.data.entity.parseColumnWidths
 import com.gabriele.notionlocal.data.repository.DatabaseRepository
 import com.gabriele.notionlocal.data.repository.PageRepository
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.gabriele.notionlocal.ui.screen.shownColumnWidth
+import com.gabriele.notionlocal.ui.screen.tableColumnWidth
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -118,6 +121,39 @@ class WrapCellsTest {
         // Negli altri modi non conta, e il minimo vale sempre.
         assertEquals(150.dp, shownColumnWidth(150.dp, 230.dp, widen = false, min = 80.dp))
         assertEquals(80.dp, shownColumnWidth(48.dp, null, widen = false, min = 80.dp))
+    }
+
+    @Test
+    fun aWidthChosenByHandBeatsWiden() {
+        // Dal 20/10/2026: la prima colonna del Pokédex, stretta a mano, al rilascio tornava larga.
+        fun shown(dragging: Dp? = null, fit: Dp? = null, manual: Dp? = null, widen: Boolean = true) =
+            tableColumnWidth(dragging, fit, manual, default = 150.dp, fitted = 230.dp, widen = widen, fitMin = 80.dp)
+        // Senza misura scelta, "Widen the column" la porta al contenuto.
+        assertEquals(230.dp, shown())
+        // Stretta a mano: resta stretta, anche sotto il minimo di "Fit to content".
+        assertEquals(40.dp, shown(manual = 40.dp))
+        // Allargata a mano oltre il contenuto: resta com'è.
+        assertEquals(300.dp, shown(manual = 300.dp))
+        // Mentre si trascina comanda il dito; "Fit to content" acceso vince sulla misura.
+        assertEquals(20.dp, shown(dragging = 20.dp, manual = 40.dp))
+        assertEquals(230.dp, shown(fit = 230.dp, manual = 40.dp))
+        // Negli altri modi, come prima.
+        assertEquals(150.dp, shown(widen = false))
+        assertEquals(40.dp, shown(manual = 40.dp, widen = false))
+    }
+
+    @Test
+    fun withWidenTheDefaultWidthIsKeptToo() {
+        val default = defaultColumnWidth(notes.id, ColumnType.TEXT)
+        // Coi tre puntini, tornata alla larghezza di sempre non si ricorda niente.
+        viewModel.setColumnWidth(notes.id, 40)
+        waitFor("a 40") { parseColumnWidths(saved().columnWidths)[notes.id] == 40 }
+        viewModel.setColumnWidth(notes.id, default)
+        waitFor("dimenticata") { notes.id !in parseColumnWidths(saved().columnWidths) }
+        // Con "Widen the column" sì: se no tornerebbe larga quanto il contenuto.
+        viewModel.setCellOverflow(CellOverflow.WIDEN)
+        viewModel.setColumnWidth(notes.id, default)
+        waitFor("ricordata") { parseColumnWidths(saved().columnWidths)[notes.id] == default }
     }
 
     @Test

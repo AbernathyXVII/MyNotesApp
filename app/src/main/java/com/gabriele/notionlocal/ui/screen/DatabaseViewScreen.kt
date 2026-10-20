@@ -2141,20 +2141,18 @@ private fun TableLayout(
     // Se c'è almeno una sotto-riga, ogni nome lascia il posto della freccia:
     // così i nomi restano in colonna, con o senza sotto-righe.
     val treeShown = hasSubRows(state.rows)
-    // Mentre si trascina comanda il dito; poi "Fit to content", se acceso;
-    // poi la misura scelta; se no quella di sempre.
-    // Mai sotto il minimo della colonna (dal 30/09/2026): anche le misure
-    // salvate prima, più strette, si allargano fin lì.
+    // Quale misura vince: vedi `tableColumnWidth`.
     fun widthOf(key: String, default: Dp, min: Int): Dp {
         val dragging = resize.draft?.takeIf { key == resize.key }
-        val fit = fitted[key]?.takeIf { key in fitColumns && dragging == null }
-        val chosen = dragging
-            ?: fit
-            ?: columnWidths[key]?.dp
-            ?: default
-        // Mentre si trascina comanda il dito, anche con "Widen the column".
-        // Il minimo vale solo per "Fit to content": a mano si stringe fino a niente.
-        return shownColumnWidth(chosen, fitted[key], widen && dragging == null, if (fit != null) min.dp else 0.dp)
+        return tableColumnWidth(
+            dragging = dragging,
+            fit = fitted[key]?.takeIf { key in fitColumns && dragging == null },
+            manual = columnWidths[key]?.dp,
+            default = default,
+            fitted = fitted[key],
+            widen = widen,
+            fitMin = min.dp
+        )
     }
     val widths = TableWidths(
         name = widthOf(NAME_COLUMN_KEY, NAME_COLUMN_WIDTH, fitMinColumnWidth(NAME_COLUMN_KEY)),
