@@ -2073,6 +2073,30 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🔧 v0.188.1 — 20/10/2026 · 13:39 — I numeri nel testo si ordinano come numeri: 2 prima di 10
+*(Claude Code sul PC; non ancora provata sul telefono; 678 test passati)*
+
+L'utente, parola per parola:
+> «Nel database Habit Tracker ci sono le voci della colonna principale che sono
+> i numeri del mese, ma ordinando per quella proprietà mi considera l'1 come
+> primissima unità anche nelle voci che hanno più di un numero, quindi ora è:
+> 1, 10, 11, 12, 13, 14, ... 19, 2, 20, 21, ... Sistemami questa cosa per
+> favore. Deve essere correttamente così: 1, 2, 3, 4, ... 9, 10, 11, 12, ...
+> 19, 20, 21, ...»
+
+- **[Bug fix]** **Ordinando per un testo** (il nome delle righe, una proprietà
+  di testo, il titolo di una pagina collegata…) i numeri che ci sono dentro
+  valgono per quello che sono: 1, 2, 3… 9, 10, 11, e non più 1, 10, 11… 19, 2,
+  20. Vale anche dentro il testo: "Giorno 9" prima di "Giorno 10", "v0.9"
+  prima di "v0.10". Maiuscole e minuscole continuano a non contare, e i numeri
+  vengono prima delle lettere come prima
+- **[Bug fix]** Lo stesso ordine per i **gruppi** di una tabella o di una
+  bacheca raggruppata per una proprietà di testo
+- **[Progetto]** `NaturalOrder` in `data/NaturalOrder.kt` (a parità, come
+  "01" e "1", decide il confronto di prima, così l'ordine resta fisso), usato
+  da `DatabaseViewModel.compareSortValues` e da `buildRowGroups`. Test:
+  `NaturalOrderTest`
+
 ### 🆕 v0.188 — 20/10/2026 · 13:01 — L'indice navigabile: collegamenti a una riga della stessa pagina
 *(Claude Code sul PC; non ancora provata sul telefono; 674 test passati)*
 

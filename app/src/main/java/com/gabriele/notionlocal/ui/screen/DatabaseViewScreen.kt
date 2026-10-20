@@ -5,6 +5,7 @@ import androidx.compose.material.icons.filled.BorderLeft
 import com.gabriele.notionlocal.data.hasChosenIcon
 import com.gabriele.notionlocal.data.chosenEmoji
 import com.gabriele.notionlocal.data.RowIconRef
+import com.gabriele.notionlocal.data.NaturalOrder
 import com.gabriele.notionlocal.data.entity.DurationUnit
 import com.gabriele.notionlocal.data.entity.durationFormatOf
 import androidx.compose.material.icons.filled.FormatAlignRight
@@ -3317,7 +3318,8 @@ internal fun buildRowGroups(
             val comparator = if (column.type == ColumnType.NUMBER) {
                 compareBy<String> { it.toDoubleOrNull() ?: Double.MAX_VALUE }
             } else {
-                compareBy(String.CASE_INSENSITIVE_ORDER) { it }
+                // I gruppi come le righe: "2" prima di "10" (vedi `NaturalOrder`).
+                NaturalOrder
             }
             byValue.keys.filter { it.isNotEmpty() }.sortedWith(comparator).forEach { value ->
                 groups += RowGroup(value, value, null, byValue[value].orEmpty())

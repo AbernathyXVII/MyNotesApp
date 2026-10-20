@@ -6,6 +6,7 @@ import com.gabriele.notionlocal.data.imageField
 import com.gabriele.notionlocal.data.iconField
 import com.gabriele.notionlocal.data.chosenEmoji
 import com.gabriele.notionlocal.data.RowIconRef
+import com.gabriele.notionlocal.data.NaturalOrder
 import com.gabriele.notionlocal.data.IconChoice
 import com.gabriele.notionlocal.data.entity.NAME_COLUMN_KEY
 import com.gabriele.notionlocal.data.entity.nameOrderAt
@@ -904,11 +905,12 @@ class DatabaseViewModel(
         }
     }
 
+    /** I testi in ordine naturale (dal 20/10/2026): "2" prima di "10", vedi `NaturalOrder`. */
     private fun compareSortValues(a: SortValue, b: SortValue): Int =
         if (a.number != null && b.number != null) {
             a.number.compareTo(b.number)
         } else {
-            String.CASE_INSENSITIVE_ORDER.compare(a.text, b.text)
+            NaturalOrder.compare(a.text, b.text)
         }
 
     /**
