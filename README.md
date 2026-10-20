@@ -2073,6 +2073,54 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.190 — 20/10/2026 · 14:33 — "Select all" seleziona tutta la pagina, come su Notion
+*(Claude Code sul PC; non ancora provata sul telefono; 689 test passati)*
+
+L'utente, parola per parola:
+> «Mi hai chiesto se Select all per un solo pezzo è un problema. A dire la
+> verità sì. Saresti in grado di selezionarmi tutto quello che c'è in una
+> pagina? Se questo comporta far pesare l'app di qualche decina di MB in più
+> non è un problema (spero che siano decine e non centinaia). Hai anche
+> parlato del mio dizionario da 8–10 mila parole in un database che avrà
+> bisogno di un intervento a parte. L'idea delle 50 righe come limite penso
+> sia la migliore. Ma nel caso in cui dovessi vederle tutte le righe?
+> Ovviamente lo farò nella singola pagina, non nel database inline insieme ad
+> altro»
+
+E, fra le due strade proposte: «Fai la selezione di tutta la pagina come su
+Notion: velo blu su tutto, con Copy, Cut e Delete.»
+
+- **[Nuova funzionalità]** **"Select all" vela di blu tutta la pagina**: dalla
+  barra sopra la tastiera e dal menu del testo (quello che compare tenendo
+  premuto). Prima arrivava solo ai bordi del pezzo di testo da 50 righe (dalla
+  v0.181), e una selezione di testo comunque non passa sopra un database o
+  un'immagine. La tastiera si chiude, e in basso c'è una barra con **Copy**,
+  **Cut** e **Delete** (in una pagina bloccata solo Copy) e la ✕. Un tocco sulla
+  pagina, la ✕ o Indietro tolgono la selezione; la pagina scorre come sempre
+- **[Nuova funzionalità]** **Copy** mette negli appunti tutta la pagina,
+  nell'ordine in cui si legge: grassetti, corsivi, colori e link restano, e
+  incollata in notE ogni riga torna col suo tipo (testo, elenco puntato o
+  numerato, casella spuntata o no) e il suo rientro. Riquadri, citazioni e
+  codice danno una riga per ognuna delle loro; le tabelle una riga per riga,
+  con le celle separate da una tabulazione (come le copia un foglio di
+  calcolo); i divisori "---"; immagini e file il loro indirizzo o nome
+- **[Nuova funzionalità]** **Cut** copia e poi toglie tutto; **Delete** toglie
+  tutto, dopo una domanda. Le **sottopagine e i database restano** (e i toggle
+  che li contengono): vivono anche altrove, e si tolgono uno alla volta dal
+  loro menu. Tutti e due si possono annullare
+- **[Nuova funzionalità]** Nel titolo della pagina e nelle celle dei database
+  dentro la pagina "Select all" del menu del testo prende solo quel campo,
+  come prima. Ctrl+A su una tastiera vera seleziona il testo del campo
+- I database da migliaia di righe (la domanda sul dizionario): **a pagina
+  intera le righe scorrono già tutte**, senza "Load more", dalla v0.182; solo
+  la bacheca ha 50 schede per colonna anche lì. Dentro una pagina restano le
+  prime 50 e "Load more". Nessuna delle due cose fa pesare l'app di più
+- **[Progetto]** `PageSelection.kt` (`WholePageTextToolbar`,
+  `PlainTextToolbar`, `pageVeil`, `tapToEndPageSelection`,
+  `copyPageToClipboard`, `PageSelectionBar`), `PageEditorViewModel.
+  pageCopyLines` e `deletePageContent`, `ClipboardBarButtons(onSelectAll)`.
+  Test: `PageSelectAllTest`, `PageSelectionTest`
+
 ### 🆕 v0.189 — 20/10/2026 · 13:59 — "Keep Source Formatting" porta grandezze, elenchi e tabelle da OneNote e dal web
 *(Claude Code sul PC; non ancora provata sul telefono; 685 test passati)*
 

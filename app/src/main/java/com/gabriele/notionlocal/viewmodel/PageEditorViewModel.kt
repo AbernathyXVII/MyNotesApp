@@ -2530,6 +2530,74 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         viewModelScope.launch { repository.deleteBlock(block) }
     }
 
+    // --- Tutta la pagina selezionata, come su Notion (dal 20/10/2026) ---
+
+    /** Una riga della pagina copiata intera: il testo col suo stile, e il suo tipo se è una riga da ritrovare uguale. */
+    data class PageCopyLine(val spans: List<RichTextSpan>, val kind: CopiedLine?)
+
+    /** I blocchi che "Cut" e "Delete" della pagina intera lasciano: sottopagine e database vivono anche altrove. */
+    private val keptByPageDelete = setOf(BlockType.PAGE_LINK, BlockType.DATABASE_LINK)
+
+    /**
+     * **Tutta la pagina da copiare**, nell'ordine in cui si legge: ogni riga
+     * col suo stile, e per le righe di testo, gli elenchi e le caselle anche
+     * il tipo e il rientro, così incollate in notE tornano uguali. Riquadri,
+     * citazioni e codice danno una riga per ognuna delle loro; una tabella
+     * una riga per riga, con le celle separate da una tabulazione (come la
+     * copia un foglio di calcolo); un divisore "---". Sottopagine e database
+     * non hanno testo da copiare.
+     */
+    suspend fun pageCopyLines(): List<PageCopyLine> {
+        val children = _blocks.value.groupBy { it.parentBlockId }.mapValues { (_, list) -> list.sortedBy { it.orderIndex } }
+        val lines = mutableListOf<PageCopyLine>()
+        suspend fun visit(parentId: String?, depth: Int) {
+            for (block in children[parentId].orEmpty()) {
+                when (block.type) {
+                    BlockType.PARAGRAPH, BlockType.BULLET_LIST_ITEM, BlockType.NUMBERED_LIST_ITEM, BlockType.CHECKBOX ->
+                        lines += PageCopyLine(spansOf(block), CopiedLine(block.type, block.isChecked, (block.indentLevel + depth).coerceIn(0, 10)))
+                    BlockType.TABLE -> {
+                        val cells = repository.getTableCells(block.id).first().associate { (it.rowIndex to it.colIndex) to it.text }
+                        for (r in 0 until block.tableRows) {
+                            val row = (0 until block.tableCols).joinToString("\t") { c -> cells[r to c].orEmpty().replace('\n', ' ') }
+                            lines += PageCopyLine(listOf(RichTextSpan(text = row)), null)
+                        }
+                    }
+                    BlockType.DIVIDER -> lines += PageCopyLine(listOf(RichTextSpan(text = "---")), null)
+                    BlockType.PAGE_LINK, BlockType.DATABASE_LINK -> Unit
+                    in MEDIA_TYPES -> {
+                        val media = BlockAttrs.parse(block.attrsJson)
+                        (media.url ?: media.name)?.let { text -> lines += PageCopyLine(listOf(RichTextSpan(text = text)), null) }
+                    }
+                    else -> spansOf(block).splitLines().forEach { lines += PageCopyLine(it, null) }
+                }
+                visit(block.id, depth + 1)
+            }
+        }
+        visit(null, 0)
+        return lines
+    }
+
+    /**
+     * **"Cut" e "Delete" della pagina intera**: tutto quello che c'è nella
+     * pagina se ne va, tranne le sottopagine e i database (e i toggle che li
+     * contengono), che si tolgono uno alla volta dal loro menu. Si può annullare.
+     */
+    fun deletePageContent() {
+        val all = _blocks.value
+        val byId = all.associateBy { it.id }
+        // Chi contiene una sottopagina o un database resta, per non portarseli via.
+        val holders = HashSet<String>()
+        for (block in all) {
+            if (block.type !in keptByPageDelete) continue
+            var parent = block.parentBlockId
+            while (parent != null && holders.add(parent)) parent = byId[parent]?.parentBlockId
+        }
+        val doomed = all.filter { it.type !in keptByPageDelete && it.id !in holders }
+        if (doomed.isEmpty()) return
+        snapshotForStructuralChange()
+        viewModelScope.launch { structuralEdits.withLock { repository.applyBlockChanges(deleted = doomed) } }
+    }
+
     /**
      * Elimina un database mostrato dentro la pagina: sia il blocco sia
      * la pagina-database che contiene, con le sue colonne e le sue

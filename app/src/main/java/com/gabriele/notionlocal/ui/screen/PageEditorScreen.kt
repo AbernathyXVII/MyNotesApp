@@ -531,7 +531,10 @@ private fun BarButton(
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun ClipboardBarButtons() {
+private fun ClipboardBarButtons(
+    /** "Seleziona tutto": tutta la pagina, non solo il pezzo di testo (dal 20/10/2026, vedi `PageSelection.kt`). */
+    onSelectAll: () -> Unit
+) {
     val view = LocalView.current
     val clipboard = LocalClipboardManager.current as? LinkClipboard
     var pasteMenu by remember { mutableStateOf(false) }
@@ -581,7 +584,7 @@ private fun ClipboardBarButtons() {
     BarButton(onClick = { shortcut(KeyEvent.KEYCODE_X) }) {
         Icon(Icons.Filled.ContentCut, contentDescription = EditorStrings.cut, tint = NotionWhite, modifier = Modifier.size(BAR_ICON_SIZE))
     }
-    BarButton(onClick = { shortcut(KeyEvent.KEYCODE_A) }) {
+    BarButton(onClick = onSelectAll) {
         Icon(Icons.Filled.SelectAll, contentDescription = EditorStrings.selectAll, tint = NotionWhite, modifier = Modifier.size(BAR_ICON_SIZE))
     }
 }
@@ -1423,6 +1426,16 @@ private fun PageEditorContent(
     // La finestrella del collegamento: null chiusa, altrimenti l'indirizzo
     // che c'è già ("" se non ce n'è uno).
     var linkDialogFor by remember { mutableStateOf<String?>(null) }
+    // **Tutta la pagina selezionata** (dal 20/10/2026, vedi `PageSelection.kt`).
+    var pageSelected by remember(pageId) { mutableStateOf(false) }
+    var confirmPageDelete by remember { mutableStateOf(false) }
+    val selectWholePage: () -> Unit = remember(focusManager) {
+        {
+            focusManager.clearFocus()
+            pageSelected = true
+        }
+    }
+    BackHandler(enabled = pageSelected) { pageSelected = false }
     var colorForBlockId by remember { mutableStateOf<String?>(null) }
     var colorOnBackground by remember { mutableStateOf(false) }
     var lastPickedHex by remember { mutableStateOf<String?>(null) }
@@ -1750,6 +1763,7 @@ private fun PageEditorContent(
             // dov'era la pagina. Una riga dentro un toggle porta al toggle.
             var linkReturn by remember(pageId) { mutableStateOf<LinkReturn?>(null) }
             val movedBlockNow by viewModel.movedBlock.collectAsStateWithLifecycle()
+            val veilColor = MaterialTheme.colorScheme.primary
             val jumpScope = rememberCoroutineScope()
             val latestRenderItems = rememberUpdatedState(renderItems)
             val latestBlocks = rememberUpdatedState(blocks)
@@ -2032,7 +2046,11 @@ private fun PageEditorContent(
                         }
                     )
             ) {
+            // "Select all" nel menu del testo seleziona tutta la pagina (vedi `PageSelection.kt`).
+            val baseTextToolbar = LocalTextToolbar.current
+            val wholePageToolbar = remember(baseTextToolbar, selectWholePage) { WholePageTextToolbar(baseTextToolbar, selectWholePage) }
             CompositionLocalProvider(
+                LocalTextToolbar provides wholePageToolbar,
                 LocalStickyViewport provides stickyViewport,
                 LocalFocusPark provides focusPark,
                 LocalSideScroll provides sideScroll,
@@ -2379,6 +2397,8 @@ private fun PageEditorContent(
                 state = listState,
                 modifier = Modifier
                     .fillMaxSize()
+                    // Con tutta la pagina selezionata, un tocco la lascia (vedi `PageSelection.kt`).
+                    .tapToEndPageSelection(pageSelected) { pageSelected = false }
                     .stickyViewport(stickyViewport)
                     // Di lato, con "Full line view": il primo verso in cui si
                     // muove il dito decide per tutto il gesto.
@@ -2428,7 +2448,8 @@ private fun PageEditorContent(
                 // uno variabile.
                 item(key = PAGE_HEADER_KEY) {
                     KeepComposed()
-                    PageHeaderSlot(pageHeader)
+                    // Nel titolo "Select all" prende solo il titolo.
+                    PlainTextToolbar { PageHeaderSlot(pageHeader) }
                 }
 
                 items(renderItems, key = { item -> renderItemKey(item) }) { item ->
@@ -2444,6 +2465,7 @@ private fun PageEditorContent(
                     when (item) {
                         is RenderItem.Run -> {
                             val content = RunContent(item.blocks, item.blocks.numbersFrom(ordinals))
+                            Column(Modifier.pageVeil(pageSelected, veilColor)) {
                             RunItem(
                                 content = content,
                                 runKey = item.key,
@@ -2453,6 +2475,7 @@ private fun PageEditorContent(
                                 focusRequestBlockId = focusRequestBlockId?.takeIf { id -> item.blocks.any { it.id == id } },
                                 formatRequest = formatRequest?.takeIf { r -> item.blocks.any { it.id == r.first } }
                             )
+                            }
                         }
                         is RenderItem.Island -> {
                             val content = IslandContent(item.block, scopeOf(item.block, childrenOf))
@@ -2466,6 +2489,7 @@ private fun PageEditorContent(
                             Column(
                                 (if (sideScroll != null) Modifier.nestedScroll(KeepSidewaysInside) else Modifier)
                                     .anchorDecor(item.block.id, item.block.attrs.linkTarget, movedBlockNow, PAGE_SIDE_PADDING)
+                                    .pageVeil(pageSelected, veilColor)
                             ) {
                                 IslandItem(
                                     content = content,
@@ -2481,7 +2505,30 @@ private fun PageEditorContent(
             }
             // **La barretta di scorrimento** (dal 20/10/2026), sul bordo destro.
             PageScrollIndicator(listState, modifier = Modifier.align(Alignment.TopEnd))
-            linkReturn?.let { back ->
+            if (pageSelected) {
+                PageSelectionBar(
+                    editable = !readOnlyPage,
+                    onCopy = {
+                        jumpScope.launch {
+                            copyPageToClipboard(context, viewModel.pageCopyLines())
+                            pageSelected = false
+                        }
+                    },
+                    onCut = {
+                        jumpScope.launch {
+                            copyPageToClipboard(context, viewModel.pageCopyLines())
+                            viewModel.deletePageContent()
+                            pageSelected = false
+                        }
+                    },
+                    onDelete = { confirmPageDelete = true },
+                    onClose = { pageSelected = false },
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 24.dp)
+                )
+            }
+            linkReturn?.takeIf { !pageSelected }?.let { back ->
                 LinkBackButton(
                     back = back,
                     onBack = {
@@ -2674,7 +2721,7 @@ private fun PageEditorContent(
                         }
                         // **Copia, incolla, taglia, seleziona tutto** (dal
                         // 18/10/2026, chiesti dall'utente): vedi `ClipboardBarButtons`.
-                        ClipboardBarButtons()
+                        ClipboardBarButtons(onSelectAll = selectWholePage)
                         BarButton(onClick = { focusedBlock?.let { viewModel.outdentBlock(it) } }) {
                             Icon(Icons.Filled.FormatIndentDecrease, contentDescription = EditorStrings.outdent, tint = NotionWhite, modifier = Modifier.size(BAR_ICON_SIZE))
                         }
@@ -2965,6 +3012,22 @@ private fun PageEditorContent(
                 null
             },
             onDismiss = { editingImage = null }
+        )
+    }
+
+    if (confirmPageDelete) {
+        AlertDialog(
+            onDismissRequest = { confirmPageDelete = false },
+            title = { Text(EditorStrings.deletePageContentTitle) },
+            text = { Text(EditorStrings.deletePageContentText) },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmPageDelete = false
+                    pageSelected = false
+                    viewModel.deletePageContent()
+                }) { Text(Strings.delete, color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = { TextButton(onClick = { confirmPageDelete = false }) { Text(Strings.cancel) } }
         )
     }
 
@@ -6122,7 +6185,9 @@ private fun BlockRow(
         // Un database bloccato con la password (o una vista collegata a
         // lui) dentro una pagina aperta: al suo posto la richiesta di
         // sbloccarlo.
+        // Nelle celle del database "Select all" prende solo la cella (vedi `PageSelection.kt`).
         LockGate(databasePageId, factory.pageRepository, fullScreen = false, isDatabase = true) {
+        PlainTextToolbar {
         DatabaseContent(
             pageId = databasePageId,
             factory = factory,
@@ -6147,6 +6212,7 @@ private fun BlockRow(
             // mentre a schermo intero è attaccata.
             modifier = Modifier.padding(start = (depth * 20).dp, top = 8.dp, bottom = 8.dp)
         )
+        }
         }
         // **La riga alla fine del database** (dal 18/10/2026, chiesto
         // dall'utente): il testo che viene dopo non sembra più attaccato

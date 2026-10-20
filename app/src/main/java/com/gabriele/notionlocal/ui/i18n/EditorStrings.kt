@@ -147,6 +147,28 @@ object EditorStrings {
         "연결된 줄이 이 페이지에 더 이상 없습니다",
         "リンク先の行はこのページにもうありません"
     )
+    // --- Tutta la pagina selezionata (dal 20/10/2026), vedi `PageSelection.kt` ---
+    val pageCopied get() = t("Page copied", "Pagina copiata", "Seite kopiert", "Page copiée", "Página copiada", "页面已复制", "페이지가 복사됨", "ページをコピーしました")
+    val deletePageContentTitle get() = t(
+        "Delete everything in this page?",
+        "Eliminare tutto il contenuto della pagina?",
+        "Alles auf dieser Seite löschen?",
+        "Supprimer tout le contenu de cette page ?",
+        "¿Eliminar todo el contenido de esta página?",
+        "删除此页面中的所有内容？",
+        "이 페이지의 모든 내용을 삭제할까요?",
+        "このページの内容をすべて削除しますか？"
+    )
+    val deletePageContentText get() = t(
+        "Subpages and databases stay where they are. You can undo it.",
+        "Le sottopagine e i database restano dove sono. Si può annullare.",
+        "Unterseiten und Datenbanken bleiben, wo sie sind. Du kannst es rückgängig machen.",
+        "Les sous-pages et les bases de données restent en place. Vous pouvez annuler.",
+        "Las subpáginas y las bases de datos se quedan donde están. Se puede deshacer.",
+        "子页面和数据库会保留在原处。可以撤销。",
+        "하위 페이지와 데이터베이스는 그대로 남습니다. 실행 취소할 수 있습니다.",
+        "サブページとデータベースはそのまま残ります。元に戻せます。"
+    )
     val untitledLine get() = t("Empty line", "Riga vuota", "Leere Zeile", "Ligne vide", "Línea vacía", "空行", "빈 줄", "空の行")
     val subscript get() = t("Subscript", "Pedice", "Tiefgestellt", "Indice", "Subíndice", "下标", "아래 첨자", "下付き文字")
     val superscript get() = t("Superscript", "Apice", "Hochgestellt", "Exposant", "Superíndice", "上标", "위 첨자", "上付き文字")
