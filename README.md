@@ -2073,6 +2073,45 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.194 — 20/10/2026 · 19:45 — Le maniglie delle immagini solo su richiesta, e "Full resize" come una finestra
+*(Claude Code sul PC; non ancora provata sul telefono; 717 test passati)*
+
+L'utente, parola per parola:
+> «Ho visto che hai messo le lineette orizzontali verticali in ogni immagine
+> per ridimensionarle senza che io te l'abbia chiesto. Ti ringrazio, ma ti
+> chiedo di attivarle e di farle vedere solo se voglio ridimensionarle, cosa
+> che posso fare tenendo premuto sull'immagine e toccando l'opzione Resize
+> sopra View. Aggiungimi inoltre sotto Resize un'opzione chiamata Full resize,
+> che mi consente di sistemarla anche ai lati come se fosse una finestra su
+> Windows, quindi anche ai quattro margini»
+
+- **[Nuova funzionalità]** **Le maniglie delle immagini non si vedono più**
+  (c'erano dal 06/10/2026, sempre, su tutte). Tenendo premuta l'immagine, in
+  cima al menu, sopra "View", c'è **"Resize"**: compaiono le due maniglie ai
+  lati di sempre, che allargano e stringono l'immagine tenendola al centro e
+  con la sua forma
+- **[Nuova funzionalità]** **"Full resize"**, subito sotto: le maniglie su
+  **tutti e quattro i lati e sui quattro angoli**, come una finestra di
+  Windows. Si muove solo il bordo afferrato: il destro allarga a destra, il
+  sinistro sposta l'inizio dell'immagine, sopra e sotto cambiano l'altezza, gli
+  angoli due bordi insieme. L'immagine riempie il riquadro (come in OneNote);
+  non esce dalla pagina e non diventa più piccola di un dito
+- **[Nuova funzionalità]** Mentre si ridimensiona, sull'immagine ci sono
+  **"Original size"** (la larghezza della pagina, al centro, con la sua forma)
+  e **"Done"**. Finiscono anche un tocco sull'immagine e il gesto indietro. Si
+  annulla come ogni modifica; con la pagina bloccata le maniglie non vengono
+- **[Bug fix]** Le **foto della fotocamera grandi** (da 6 megapixel in su)
+  dalla v0.192 passavano alle strisce delle immagini lunghe, che non sanno
+  girare una foto scattata in verticale. Ora le strisce sono solo per le
+  immagini davvero lunghe e strette (più alte di 4096 pixel e di due volte e
+  mezza la larghezza), come le foto delle pagine web; le altre si leggono come
+  prima. E la forma di una foto in verticale si legge già girata
+- **[Progetto]** `ImageResize.kt` (`ImageFrame`, `frameOf`, `widened`,
+  `dragged`, `withFrame`, `withOriginalSize`, `ResizeHandle`,
+  `ResizeToolbar`), `BlockAttrs.left` e `aspect`, `MediaRequestKind.RESIZE` e
+  `FULL_RESIZE`, `PageImageStore.imageSize` con l'orientamento, `StripImage`
+  alta quanto il suo riquadro. Test: `ImageResizeTest`
+
 ### 🆕 v0.193 — 20/10/2026 · 19:24 — "Text and Images": l'articolo di un sito come testo e immagini, come OneNote
 *(Claude Code sul PC; provato sul telefono con l'attività di prova, non ancora dall'utente; 713 test passati)*
 

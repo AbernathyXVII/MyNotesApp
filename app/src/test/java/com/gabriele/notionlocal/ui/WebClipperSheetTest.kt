@@ -90,7 +90,9 @@ class WebClipperSheetTest {
     fun aClipIsTallAndIsReadAtTheRightSize() {
         // La foto di game8: alta, si legge a pezzi.
         assertTrue(isTallImage(2160, 19023))
-        assertTrue(isTallImage(4000, 3000))
+        // Le foto della fotocamera no, anche grandi e in verticale.
+        assertFalse(isTallImage(4000, 3000))
+        assertFalse(isTallImage(3000, 4000))
         assertFalse(isTallImage(1080, 1920))
         // Mostrata più piccola della metà, si legge rimpicciolita; ingrandita, intera.
         assertEquals(1, sampleFor(0.67f))

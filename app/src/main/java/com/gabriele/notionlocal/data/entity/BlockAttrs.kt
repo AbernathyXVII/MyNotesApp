@@ -33,6 +33,16 @@ data class BlockAttrs(
     val size: Long? = null,
     /** L'immagine: quanto è larga, in frazione della larghezza della pagina (da 0,2 a 1). */
     val width: Float? = null,
+    /**
+     * L'immagine, dopo "Full resize" (dal 20/10/2026): dove comincia da
+     * sinistra, in frazione della larghezza della pagina; null = al centro.
+     */
+    val left: Float? = null,
+    /**
+     * L'immagine, dopo "Full resize": quanto è alta rispetto a quanto è larga
+     * (il riquadro, che l'immagine riempie); null = la sua forma.
+     */
+    val aspect: Float? = null,
     /** Il codice: il linguaggio scelto, col nome com'è nell'elenco (`CODE_LANGUAGES`). */
     val language: String? = null,
     /** Il riquadro: l'emoji dell'icona; null = 💡, "" = nessuna icona. */

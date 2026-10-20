@@ -87,10 +87,15 @@ import kotlin.math.roundToInt
  * sullo schermo, alla risoluzione che serve.
  */
 internal fun isTallImage(width: Int, height: Int): Boolean =
-    height > TALL_MIN_HEIGHT || width.toLong() * height > TALL_MIN_PIXELS
+    height > TALL_MIN_HEIGHT && height > width * TALL_MIN_RATIO
 
+/**
+ * Solo le immagini davvero lunghe e strette: le foto della fotocamera, anche
+ * da dodici megapixel, si leggono intere rimpicciolite come sempre (le strisce
+ * non sanno girare una foto scattata in verticale).
+ */
 private const val TALL_MIN_HEIGHT = 4096
-private const val TALL_MIN_PIXELS = 6_000_000L
+private const val TALL_MIN_RATIO = 2.5f
 
 /** Quante righe del file per striscia, nella pagina. */
 private const val STRIP_ROWS = 1024
@@ -157,8 +162,10 @@ internal fun StripImage(file: File, imageWidth: Int, imageHeight: Int, descripti
     val density = LocalDensity.current
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val shownWidth = constraints.maxWidth
-        val scale = shownWidth.toFloat() / imageWidth
-        val heightDp = with(density) { (imageHeight * scale).toDp() }
+        // Alta quanto vuole la sua forma, o quanto il riquadro che le danno ("Full resize").
+        val shownHeight = if (constraints.hasBoundedHeight) constraints.maxHeight.toFloat() else imageHeight * shownWidth.toFloat() / imageWidth
+        val scaleY = shownHeight / imageHeight
+        val heightDp = with(density) { shownHeight.toDp() }
         Canvas(
             modifier = Modifier
                 .fillMaxWidth()
@@ -169,7 +176,7 @@ internal fun StripImage(file: File, imageWidth: Int, imageHeight: Int, descripti
                 .onGloballyPositioned { coordinates ->
                     // Quali strisce sono sullo schermo (e una di margine sopra e sotto).
                     val top = coordinates.positionInWindow().y
-                    val stripHeight = STRIP_ROWS * scale
+                    val stripHeight = STRIP_ROWS * scaleY
                     if (stripHeight <= 0f) return@onGloballyPositioned
                     val first = floor((-top) / stripHeight).toInt() - 1
                     val last = floor((-top + windowHeight) / stripHeight).toInt() + 1
@@ -177,7 +184,7 @@ internal fun StripImage(file: File, imageWidth: Int, imageHeight: Int, descripti
                     if (range != visible) visible = range
                 }
         ) {
-            val s = size.width / imageWidth
+            val s = size.height / imageHeight
             strips.forEach { (i, bitmap) ->
                 val top = (i * STRIP_ROWS * s).roundToInt()
                 val bottom = (min(imageHeight, (i + 1) * STRIP_ROWS) * s).roundToInt()

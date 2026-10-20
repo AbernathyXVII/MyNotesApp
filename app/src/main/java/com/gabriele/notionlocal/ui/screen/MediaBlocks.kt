@@ -1,6 +1,11 @@
 package com.gabriele.notionlocal.ui.screen
 
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.unit.IntOffset
+import kotlin.math.roundToInt
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -107,8 +112,9 @@ internal fun MediaPlaceholder(
 }
 
 /**
- * Un'immagine intera, larga quanto il suo riquadro e alta quanto vuole la
- * sua forma. Letta già rimpicciolita a quanto serve (vedi `PageImageStore.load`).
+ * Un'immagine intera che **riempie il suo riquadro** (la forma del riquadro la
+ * decide il blocco: la sua, o quella scelta con "Full resize"). Letta già
+ * rimpicciolita a quanto serve (vedi `PageImageStore.load`).
  */
 @Composable
 private fun WholeImage(fileName: String, store: PageImageStore, description: String?, modifier: Modifier = Modifier) {
@@ -125,16 +131,16 @@ private fun WholeImage(fileName: String, store: PageImageStore, description: Str
         // Due volte la larghezza: ingrandita a tutto schermo resta nitida.
         bitmap = store.load(fileName, widthPx * 2)?.asImageBitmap()
     }
-    Box(modifier = modifier.fillMaxWidth().onSizeChanged { widthPx = it.width }) {
+    Box(modifier = modifier.fillMaxSize().onSizeChanged { widthPx = it.width }) {
         val image = bitmap
         if (image == null) {
-            Box(modifier = Modifier.fillMaxWidth().height(160.dp).background(DarkSurface))
+            Box(modifier = Modifier.fillMaxSize().background(DarkSurface))
         } else {
             Image(
                 bitmap = image,
                 contentDescription = description,
-                contentScale = ContentScale.FillWidth,
-                modifier = Modifier.fillMaxWidth().aspectRatio(image.width.toFloat() / image.height.coerceAtLeast(1))
+                contentScale = ContentScale.FillBounds,
+                modifier = Modifier.fillMaxSize()
             )
         }
     }
@@ -147,9 +153,12 @@ private fun WholeImage(fileName: String, store: PageImageStore, description: Str
  *
  * - **Toccandola** si apre a tutto schermo: lì la si ingrandisce con due
  *   dita e la si scarica nella Galleria;
- * - le **maniglie ai lati** la stringono o la allargano trascinandole;
- * - **tenendola premuta** si apre il menu: guardarla, scaricarla,
- *   sostituirla, spostarla in fondo a un'altra pagina, copiarla, toglierla.
+ * - **tenendola premuta** si apre il menu: ridimensionarla, guardarla,
+ *   scaricarla, sostituirla, spostarla, copiarla, toglierla;
+ * - **le maniglie** si vedono solo dopo "Resize" (le due ai lati, la forma
+ *   resta) o "Full resize" (i quattro lati e i quattro angoli, come una
+ *   finestra) dal menu (dal 20/10/2026, chiesto dall'utente: prima erano
+ *   sempre lì). "Done", un tocco sull'immagine o il gesto indietro le tolgono.
  *
  * Il menu chiede, il blocco fa (vedi `PageEditorViewModel.mediaRequest`).
  */
@@ -168,6 +177,8 @@ internal fun ImageBlockContent(
     val scope = rememberCoroutineScope()
     var busy by remember(block.id) { mutableStateOf(false) }
     var viewing by remember(block.id) { mutableStateOf(false) }
+    // Le maniglie si vedono solo dopo "Resize" o "Full resize" dal menu (dal 20/10/2026).
+    var resizing by remember(block.id) { mutableStateOf(ImageResizeMode.NONE) }
     val request by viewModel.mediaRequest.collectAsStateWithLifecycle()
 
     val gallery = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
@@ -202,8 +213,13 @@ internal fun ImageBlockContent(
             MediaRequestKind.OPEN_ELSEWHERE -> attrs.file?.let {
                 BlockFiles.openWithAnotherApp(context, store, it, BlockFiles.imageMime(store, it))
             }
+            MediaRequestKind.RESIZE -> if (!locked && attrs.file != null) resizing = ImageResizeMode.RESIZE
+            MediaRequestKind.FULL_RESIZE -> if (!locked && attrs.file != null) resizing = ImageResizeMode.FULL
         }
     }
+    // Il gesto indietro chiude il ridimensionamento, invece di uscire dalla pagina.
+    BackHandler(enabled = resizing != ImageResizeMode.NONE) { resizing = ImageResizeMode.NONE }
+    LaunchedEffect(locked) { if (locked) resizing = ImageResizeMode.NONE }
 
     val file = attrs.file
     if (file == null) {
@@ -218,55 +234,68 @@ internal fun ImageBlockContent(
     } else {
         BoxWithConstraints(
             modifier = modifier.fillMaxWidth().padding(vertical = 6.dp),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.TopStart
         ) {
             val density = LocalDensity.current
-            val fullPx = with(density) { maxWidth.toPx() }
-            // **Uno stato solo, aggiornato.** Rifatto a ogni larghezza salvata,
+            val pageWidth = constraints.maxWidth.toFloat()
+            val natural = remember(file) { store.imageSize(file)?.let { (w, h) -> h.toFloat() / w } } ?: DEFAULT_IMAGE_ASPECT
+            // **Uno stato solo, aggiornato.** Rifatto a ogni misura salvata,
             // le maniglie — che si tengono il primo — avrebbero scritto in
             // quello vecchio, e dal secondo trascinamento non si muoveva più.
-            var fraction by remember(block.id) { mutableFloatStateOf(attrs.width ?: 1f) }
-            LaunchedEffect(attrs.width) { fraction = attrs.width ?: 1f }
-            Box(modifier = Modifier.width(maxWidth * fraction)) {
+            var frame by remember(block.id) { mutableStateOf(frameOf(attrs, pageWidth, natural)) }
+            LaunchedEffect(attrs.width, attrs.left, attrs.aspect, pageWidth, natural) { frame = frameOf(attrs, pageWidth, natural) }
+            val save: (Boolean) -> Unit = { full -> viewModel.updateBlockAttrs(block.id) { it.withFrame(frame, pageWidth, full) } }
+            val minPx = with(density) { MIN_FRAME_SIDE.toPx() }
+            Box(
+                modifier = Modifier
+                    .offset { IntOffset(frame.left.roundToInt(), 0) }
+                    .size(with(density) { frame.width.toDp() }, with(density) { frame.height.toDp() })
+            ) {
                 WholeImage(
                     fileName = file,
                     store = store,
                     description = attrs.name ?: EditorStrings.blockType("Image"),
                     modifier = Modifier
                         .clip(RoundedCornerShape(4.dp))
-                        .combinedClickable(onClick = { viewing = true }, onLongClick = onLongPress)
+                        .combinedClickable(
+                            // Mentre si ridimensiona, un tocco sull'immagine finisce.
+                            onClick = { if (resizing != ImageResizeMode.NONE) resizing = ImageResizeMode.NONE else viewing = true },
+                            onLongClick = onLongPress
+                        )
                 )
-                if (!locked) {
-                    // Le due maniglie: l'immagine resta al centro, quindi
-                    // ognuna sposta tutti e due i lati.
-                    listOf(Alignment.CenterStart to -1f, Alignment.CenterEnd to 1f).forEach { (side, sign) ->
-                        Box(
-                            modifier = Modifier
-                                .align(side)
-                                .width(28.dp)
-                                .height(64.dp)
-                                .semantics { contentDescription = BlockStrings.resizeImage }
-                                .pointerInput(fullPx) {
-                                    detectHorizontalDragGestures(
-                                        onDragEnd = { viewModel.updateBlockAttrs(block.id) { it.copy(width = fraction) } }
-                                    ) { change, dx ->
-                                        change.consume()
-                                        val widthPx = fraction * fullPx + 2 * dx * sign
-                                        fraction = (widthPx / fullPx).coerceIn(MIN_IMAGE_WIDTH, 1f)
-                                    }
-                                },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .width(5.dp)
-                                    .height(40.dp)
-                                    .clip(RoundedCornerShape(3.dp))
-                                    .background(Color.Black.copy(alpha = 0.55f))
-                                    .border(1.dp, Color.White.copy(alpha = 0.85f), RoundedCornerShape(3.dp))
+                when (resizing) {
+                    ImageResizeMode.NONE -> Unit
+                    ImageResizeMode.RESIZE -> {
+                        // Le due maniglie di sempre: l'immagine tiene il suo centro, quindi
+                        // ognuna sposta tutti e due i lati, e l'altezza segue.
+                        listOf(Alignment.CenterStart to -1, Alignment.CenterEnd to 1).forEach { (side, sign) ->
+                            ResizeHandle(
+                                shape = HandleShape.VERTICAL,
+                                modifier = Modifier.align(side),
+                                onDrag = { delta -> frame = frame.widened(sign, delta.x, pageWidth, MIN_IMAGE_WIDTH * pageWidth) },
+                                onDragEnd = { save(false) }
                             )
                         }
                     }
+                    ImageResizeMode.FULL -> {
+                        // Come una finestra: i quattro lati e i quattro angoli, si muove solo il bordo afferrato.
+                        FULL_HANDLES.forEach { handle ->
+                            ResizeHandle(
+                                shape = handle.shape,
+                                modifier = Modifier.align(handle.alignment),
+                                onDrag = { delta -> frame = frame.dragged(handle.edgeX, handle.edgeY, delta.x, delta.y, pageWidth, minPx) },
+                                onDragEnd = { save(true) }
+                            )
+                        }
+                    }
+                }
+                if (resizing != ImageResizeMode.NONE) {
+                    ResizeToolbar(
+                        onOriginalSize = { viewModel.updateBlockAttrs(block.id) { it.withOriginalSize() } },
+                        onDone = { resizing = ImageResizeMode.NONE },
+                        // Sotto la maniglia in alto, quando c'è.
+                        modifier = Modifier.align(Alignment.TopCenter).padding(top = 36.dp)
+                    )
                 }
             }
         }

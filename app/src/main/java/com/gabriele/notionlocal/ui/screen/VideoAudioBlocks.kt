@@ -255,7 +255,7 @@ internal fun HandleFileRequests(
             MediaRequestKind.PICK -> if (!locked) onPick()
             MediaRequestKind.DOWNLOAD -> actions.saveCopy()
             MediaRequestKind.OPEN_ELSEWHERE -> actions.openElsewhere()
-            MediaRequestKind.VIEW -> Unit
+            MediaRequestKind.VIEW, MediaRequestKind.RESIZE, MediaRequestKind.FULL_RESIZE -> Unit
         }
     }
 }

@@ -51,6 +51,8 @@ import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material.icons.filled.VerticalAlignBottom
 import androidx.compose.material.icons.filled.VerticalAlignTop
 import androidx.compose.material.icons.filled.SwapVert
+import androidx.compose.material.icons.filled.PhotoSizeSelectLarge
+import androidx.compose.material.icons.filled.CropFree
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -285,6 +287,9 @@ internal fun BlockActionsHost(
                         },
                         actions = when {
                             block.type == BlockType.IMAGE && media.file != null -> listOf(
+                                // Le maniglie si vedono solo da qui (dal 20/10/2026, chiesto dall'utente).
+                                ObjectAction(Icons.Filled.PhotoSizeSelectLarge, BlockStrings.resizeImage) { ask(MediaRequestKind.RESIZE) },
+                                ObjectAction(Icons.Filled.CropFree, BlockStrings.fullResize) { ask(MediaRequestKind.FULL_RESIZE) },
                                 ObjectAction(Icons.Filled.OpenInFull, BlockStrings.view) { ask(MediaRequestKind.VIEW) },
                                 ObjectAction(Icons.Filled.Download, BlockStrings.download) { ask(MediaRequestKind.DOWNLOAD) },
                                 ObjectAction(Icons.Filled.Autorenew, BlockStrings.replace) { ask(MediaRequestKind.PICK) },

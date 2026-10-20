@@ -4235,6 +4235,10 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
 }
 
 /** Cosa fare con un blocco-file: vedi `PageEditorViewModel.mediaRequest`. */
-enum class MediaRequestKind { PICK, VIEW, DOWNLOAD, OPEN_ELSEWHERE }
+/**
+ * Cosa fare con un blocco-file. `RESIZE` e `FULL_RESIZE` (dal 20/10/2026, per le
+ * immagini): le maniglie compaiono solo quando le si chiede dal menu.
+ */
+enum class MediaRequestKind { PICK, VIEW, DOWNLOAD, OPEN_ELSEWHERE, RESIZE, FULL_RESIZE }
 
 data class MediaRequest(val blockId: String, val kind: MediaRequestKind)

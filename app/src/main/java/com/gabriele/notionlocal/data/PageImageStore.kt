@@ -84,11 +84,27 @@ class PageImageStore(context: Context) {
         }.onFailure { target.delete() }.getOrNull()
     }
 
-    /** Le misure di un'immagine salvata (larghezza, altezza), lette senza caricarla; null se non c'è. */
+    /**
+     * Le misure di un'immagine salvata (larghezza, altezza) **come la si
+     * guarda**, lette senza caricarla; null se non c'è. Una foto scattata in
+     * verticale è salvata coricata, con l'etichetta che dice di girarla (vedi
+     * `uprightOf`): le sue misure si scambiano.
+     */
     fun imageSize(name: String): Pair<Int, Int>? = runCatching {
+        val file = File(directory, name)
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        BitmapFactory.decodeFile(File(directory, name).path, bounds)
-        if (bounds.outWidth > 0 && bounds.outHeight > 0) bounds.outWidth to bounds.outHeight else null
+        BitmapFactory.decodeFile(file.path, bounds)
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return@runCatching null
+        val orientation = runCatching {
+            ExifInterface(file.path).getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+        }.getOrDefault(ExifInterface.ORIENTATION_NORMAL)
+        val turned = orientation in setOf(
+            ExifInterface.ORIENTATION_ROTATE_90,
+            ExifInterface.ORIENTATION_ROTATE_270,
+            ExifInterface.ORIENTATION_TRANSPOSE,
+            ExifInterface.ORIENTATION_TRANSVERSE
+        )
+        if (turned) bounds.outHeight to bounds.outWidth else bounds.outWidth to bounds.outHeight
     }.getOrNull()
 
     /**

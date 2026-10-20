@@ -57,6 +57,9 @@ object BlockStrings {
     )
     /** Le maniglie ai lati di un'immagine, per allargarla o stringerla. */
     val resizeImage get() = t("Resize", "Ridimensiona", "Größe ändern", "Redimensionner", "Cambiar tamaño", "调整大小", "크기 조정", "サイズを変更")
+    /** "Full resize" (dal 20/10/2026): le maniglie su tutti e quattro i lati e sugli angoli, come una finestra. */
+    val fullResize get() = t("Full resize", "Ridimensiona liberamente", "Frei skalieren", "Redimensionner librement", "Redimensionar libremente", "自由调整大小", "자유롭게 크기 조정", "自由にサイズ変更")
+    val originalSize get() = t("Original size", "Dimensione originale", "Originalgröße", "Taille d'origine", "Tamaño original", "原始大小", "원래 크기", "元のサイズ")
 
     // --- Video e audio ---
 
