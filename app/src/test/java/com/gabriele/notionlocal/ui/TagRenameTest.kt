@@ -70,7 +70,8 @@ class TagRenameTest {
                         onRenameOption = { id, old, new -> renames += Triple(id, old, new) },
                         onSetOptionColor = { _, _, _ -> },
                         onDeleteOption = { _, _ -> },
-                        onMoveOptions = { _, _ -> }
+                        onMoveOptions = { _, _ -> },
+                        onSetOptionSecondColor = { _, _, _, _ -> }
                     )
                 }
             }

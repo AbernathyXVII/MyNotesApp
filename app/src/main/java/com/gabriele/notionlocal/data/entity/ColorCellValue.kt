@@ -53,9 +53,24 @@ fun encodeColorCell(cell: ColorCellValue): String {
  * 26/09/2026 (#12F20D) prendeva il bianco, e non si leggeva.
  */
 fun darkTextOn(hex: String): Boolean {
-    val rgb = hex.removePrefix("#").toIntOrNull(16) ?: return false
+    val value = luminance(hex) ?: return false
+    return value >= 128
+}
+
+/**
+ * Su una pastiglia a due colori (un tag col secondo colore) la scritta sta a
+ * cavallo di tutti e due: conta la luminosità media.
+ */
+fun darkTextOn(first: String, second: String): Boolean {
+    val a = luminance(first) ?: return darkTextOn(second)
+    val b = luminance(second) ?: return darkTextOn(first)
+    return (a + b) / 2 >= 128
+}
+
+private fun luminance(hex: String): Double? {
+    val rgb = hex.removePrefix("#").toIntOrNull(16) ?: return null
     val r = (rgb shr 16) and 0xFF
     val g = (rgb shr 8) and 0xFF
     val b = rgb and 0xFF
-    return (0.299 * r + 0.587 * g + 0.114 * b) >= 128
+    return 0.299 * r + 0.587 * g + 0.114 * b
 }

@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Today
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -173,6 +174,7 @@ internal fun SportsView(
                 seasonName = info?.let { seasonLabel(it, chosen ?: it.year) },
                 active = active,
                 now = now,
+                todayTick = SportsUpdates.todayRequests[widget.id] ?: 0,
                 onManage = { onManagingChange(true) }
             )
         }
@@ -305,6 +307,20 @@ internal fun CompetitionFlag(league: String, size: TextUnit) {
     }
 }
 
+/** **"Today"** (dal 20/10/2026), a sinistra della freccia che aggiorna: vedi `SportsUpdates.goToToday`. */
+@Composable
+internal fun SportsTodayButton(widget: SportsWidget) {
+    Box(
+        modifier = Modifier
+            .size(32.dp)
+            .clip(CircleShape)
+            .clickable { SportsUpdates.goToToday(widget, AppSettings.zoneId) },
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(Icons.Filled.Today, contentDescription = WidgetStrings.today, tint = NotionGray400, modifier = Modifier.size(18.dp))
+    }
+}
+
 /**
  * **La freccia che aggiorna** (dal 17/10/2026, chiesto dall'utente), accanto
  * ai tre puntini: riscarica subito la competizione che si vede. Gira mentre
@@ -414,6 +430,8 @@ private fun CompetitionRounds(
     seasonName: String?,
     active: Boolean,
     now: Long,
+    /** I tocchi su "Today" (vedi `SportsUpdates.goToToday`): quando cambia, si va alla giornata di oggi. */
+    todayTick: Int,
     onManage: () -> Unit
 ) {
     val sport = Sport.of(competition.sport)
@@ -445,6 +463,14 @@ private fun CompetitionRounds(
     }
     key(view.key) {
         val pagerState = rememberPagerState(initialPage = view.start) { view.rounds.size }
+        // Le giornate nascono già su quella di oggi: conta solo un tocco dopo.
+        var handledToday by remember { mutableIntStateOf(todayTick) }
+        LaunchedEffect(todayTick) {
+            if (todayTick == handledToday) return@LaunchedEffect
+            handledToday = todayTick
+            val target = currentRound(view.rounds, todayIn(AppSettings.zoneId, System.currentTimeMillis()))
+            if (target >= 0) pagerState.animateScrollToPage(target)
+        }
         // La giornata su cui ci si ferma scorrendo si scarica (quella di adesso si aggiorna da sé).
         val latest by rememberUpdatedState(view)
         LaunchedEffect(active, pagerState.settledPage) {

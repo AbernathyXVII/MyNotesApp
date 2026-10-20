@@ -63,7 +63,8 @@ class TagColorTest {
                     onRenameOption = { _, _, _ -> },
                     onSetOptionColor = { id, label, hex -> picked = Triple(id, label, hex) },
                     onDeleteOption = { _, _ -> },
-                    onMoveOptions = { _, _ -> }
+                    onMoveOptions = { _, _ -> },
+                    onSetOptionSecondColor = { _, _, _, _ -> }
                 )
             }
         }

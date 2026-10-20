@@ -75,7 +75,15 @@ val ColumnType.canGroup: Boolean
 @Serializable
 data class SelectOption(
     val label: String,
-    val color: String = TAG_COLORS.first().hex
+    val color: String = TAG_COLORS.first().hex,
+    /**
+     * **Il secondo colore** (dal 20/10/2026, chiesto dall'utente): la
+     * pastiglia ha `color` nella metà di sinistra e questo in quella di
+     * destra. Null = un colore solo.
+     */
+    val secondColor: String? = null,
+    /** Con due colori, una linea verticale li separa; senza, stanno attaccati. */
+    val colorLine: Boolean = false
 )
 
 /**

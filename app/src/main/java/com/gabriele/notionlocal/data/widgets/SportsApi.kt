@@ -158,6 +158,21 @@ object SportsUpdates {
     /** La stagione scelta per ogni competizione (per id); senza, quella in corso. */
     val season = mutableStateMapOf<String, Int>()
 
+    /** Quante volte è stato toccato "Today" in ogni widget (per id): a ogni tocco il widget torna alla giornata di oggi. */
+    val todayRequests = mutableStateMapOf<String, Int>()
+
+    /**
+     * **"Today"** (dal 20/10/2026, chiesto dall'utente): la competizione che si
+     * vede torna alla stagione in corso e alla giornata di oggi (o la
+     * prossima), e se è vecchia si riscarica.
+     */
+    fun goToToday(widget: SportsWidget, zone: ZoneId) {
+        val competition = widget.competitions.find { it.id == shown[widget.id] } ?: widget.competitions.firstOrNull() ?: return
+        season.remove(competition.id)
+        todayRequests[widget.id] = (todayRequests[widget.id] ?: 0) + 1
+        refresh(widget, competition, zone)
+    }
+
     fun roundKey(competitionId: String, round: SportRound): String = "$competitionId/${round.key}"
 
     fun cachedRound(competitionId: String, round: SportRound): CachedRound? = roundCache[roundKey(competitionId, round)]

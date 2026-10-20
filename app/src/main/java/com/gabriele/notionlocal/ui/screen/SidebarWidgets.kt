@@ -270,8 +270,9 @@ private fun WidgetCard(widget: Widget, index: Int, count: Int, now: Long, active
                 modifier = Modifier.weight(1f)
             )
             // **La freccia che aggiorna lo sport** (dal 17/10/2026), a
-            // sinistra dei tre puntini.
+            // sinistra dei tre puntini, e "Today" alla sua sinistra.
             if (widget is SportsWidget && widget.competitions.isNotEmpty()) {
+                SportsTodayButton(widget)
                 SportsRefreshButton(widget)
             }
             Box {

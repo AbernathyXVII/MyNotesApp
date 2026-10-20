@@ -139,7 +139,7 @@ internal fun TagReorderList(
                             .padding(start = 6.dp, top = 6.dp, bottom = 6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        TagChip(label = option.label, color = option.color)
+                        TagChip(label = option.label, option = option)
                         Spacer(modifier = Modifier.weight(1f))
                         Icon(
                             Icons.Filled.Menu,

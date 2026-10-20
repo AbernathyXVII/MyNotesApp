@@ -146,8 +146,11 @@ import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.ViewAgenda
 import androidx.compose.material.icons.filled.ViewComfy
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.material.icons.filled.BorderVertical
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
@@ -1515,6 +1518,9 @@ private fun DatabaseViewBody(
                     onMoveOptions = { columnId, labels ->
                         viewModel.moveSelectOptions(columnId, labels)
                     },
+                    onSetOptionSecondColor = { columnId, label, hex, line ->
+                        viewModel.setSelectOptionSecondColor(columnId, label, hex, line)
+                    },
                     groupColumn = viewModel.tableGroupColumn(),
                     hideEmptyGroups = page?.hideEmptyGroups != false,
                     hideEmptySubGroups = page?.hideEmptySubGroups != false,
@@ -1947,6 +1953,7 @@ private fun DatabaseViewBody(
             },
             onDeleteOption = { columnId, label -> viewModel.deleteSelectOption(columnId, label) },
             onMoveOptions = { columnId, labels -> viewModel.moveSelectOptions(columnId, labels) },
+            onSetOptionSecondColor = { columnId, label, hex, line -> viewModel.setSelectOptionSecondColor(columnId, label, hex, line) },
             hasIcon = rowIcons[live.id] != null,
             iconEditable = !contentLocked,
             simple = simple,
@@ -2072,6 +2079,7 @@ private fun TableLayout(
     onSetOptionColor: (String, String, String) -> Unit,
     onDeleteOption: (String, String) -> Unit,
     onMoveOptions: (String, List<String>) -> Unit,
+    onSetOptionSecondColor: (String, String, String?, Boolean) -> Unit,
     /** Crea una pagina già dentro il gruppo: riceve il valore del gruppo. */
     onAddRowInGroup: (String) -> Unit,
     /** I sottogruppi dentro ogni gruppo (dal 29/09/2026); null se non ce ne sono. */
@@ -2233,6 +2241,7 @@ private fun TableLayout(
                 onSetOptionColor = onSetOptionColor,
                 onDeleteOption = onDeleteOption,
                 onMoveOptions = onMoveOptions,
+                onSetOptionSecondColor = onSetOptionSecondColor,
                 onTitleEditing = onTitleEditing,
                 namePlace = namePlace
             )
@@ -2395,6 +2404,7 @@ private fun TableLayout(
                     onSetOptionColor = onSetOptionColor,
                     onDeleteOption = onDeleteOption,
                     onMoveOptions = onMoveOptions,
+                    onSetOptionSecondColor = onSetOptionSecondColor,
                     onTitleEditing = onTitleEditing,
                     namePlace = namePlace
                 )
@@ -2456,6 +2466,7 @@ private fun TableLayout(
                     onSetOptionColor = onSetOptionColor,
                     onDeleteOption = onDeleteOption,
                     onMoveOptions = onMoveOptions,
+                    onSetOptionSecondColor = onSetOptionSecondColor,
                     onTitleEditing = onTitleEditing,
                     namePlace = namePlace
                 )
@@ -3092,6 +3103,7 @@ private fun TableBodyRow(
     onSetOptionColor: (String, String, String) -> Unit,
     onDeleteOption: (String, String) -> Unit,
     onMoveOptions: (String, List<String>) -> Unit,
+    onSetOptionSecondColor: (String, String, String?, Boolean) -> Unit,
     onTitleEditing: (Boolean) -> Unit = {},
     /** Dove sta Name fra `columns` (vedi `TableHeaderRow`). */
     namePlace: Int = 0
@@ -3128,7 +3140,8 @@ private fun TableBodyRow(
                 onRenameOption = onRenameOption,
                 onSetOptionColor = onSetOptionColor,
                 onDeleteOption = onDeleteOption,
-                onMoveOptions = onMoveOptions
+                onMoveOptions = onMoveOptions,
+                onSetOptionSecondColor = onSetOptionSecondColor
             )
             CellSeparator(column.id, stretch = wrap)
         }
@@ -3168,7 +3181,7 @@ private fun GroupHeaderRow(
         )
         Spacer(modifier = Modifier.size(4.dp))
         if (group.color != null) {
-            TagChip(label = group.label, color = group.color)
+            TagChip(label = group.label, color = group.color, secondColor = group.secondColor, colorLine = group.colorLine)
         } else {
             Text(
                 text = group.label,
@@ -3198,7 +3211,10 @@ internal data class RowGroup(
     val key: String,
     val label: String,
     val color: String?,
-    val rows: List<DatabaseRowEntity>
+    val rows: List<DatabaseRowEntity>,
+    /** Il secondo colore del tag e la linea in mezzo: vedi `SelectOption.secondColor`. */
+    val secondColor: String? = null,
+    val colorLine: Boolean = false
 )
 
 /**
@@ -3231,8 +3247,6 @@ internal fun buildRowGroups(
     fun valueOf(row: DatabaseRowEntity) = state.cellValues[row.id to column.id].orEmpty()
 
     val options = parseSelectOptionsFull(column.optionsJson)
-    fun colorOf(label: String) = options.find { it.label == label }?.color
-
     val groups = mutableListOf<RowGroup>()
     val emptyLabel = DbStrings.noValue(DbStrings.columnName(column.name))
 
@@ -3251,11 +3265,14 @@ internal fun buildRowGroups(
             // comunque un gruppo, in fondo a quelli dichiarati.
             val orphans = rows.flatMap { tagsOf(it) }.distinct().filter { it !in declared }
             (declared + orphans).forEach { label ->
+                val option = options.find { it.label == label }
                 groups += RowGroup(
                     key = label,
                     label = label,
-                    color = colorOf(label),
-                    rows = rows.filter { label in tagsOf(it) }
+                    color = option?.color,
+                    rows = rows.filter { label in tagsOf(it) },
+                    secondColor = option?.secondColor,
+                    colorLine = option?.colorLine == true
                 )
             }
             groups += RowGroup("", emptyLabel, null, rows.filter { tagsOf(it).isEmpty() })
@@ -3506,7 +3523,7 @@ private fun BoardColumnHeader(group: RowGroup, tagged: Boolean, tint: Color?, ac
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (tint != null && tagged && group.key.isNotEmpty()) {
-            TagChip(label = group.label, color = group.color)
+            TagChip(label = group.label, color = group.color, secondColor = group.secondColor, colorLine = group.colorLine)
         } else {
             Text(
                 text = group.label,
@@ -6158,7 +6175,7 @@ private fun TagFilterEditor(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box(modifier = Modifier.weight(1f)) {
-                    TagChip(label = option.label, color = option.color)
+                    TagChip(label = option.label, option = option)
                 }
                 if (isChosen) {
                     Icon(
@@ -7087,7 +7104,8 @@ private fun CellEditor(
     onRenameOption: (String, String, String) -> Unit,
     onSetOptionColor: (String, String, String) -> Unit,
     onDeleteOption: (String, String) -> Unit,
-    onMoveOptions: (String, List<String>) -> Unit
+    onMoveOptions: (String, List<String>) -> Unit,
+    onSetOptionSecondColor: (String, String, String?, Boolean) -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -7130,7 +7148,8 @@ private fun CellEditor(
             onRenameOption = onRenameOption,
             onSetOptionColor = onSetOptionColor,
             onDeleteOption = onDeleteOption,
-            onMoveOptions = onMoveOptions
+            onMoveOptions = onMoveOptions,
+            onSetOptionSecondColor = onSetOptionSecondColor
         )
         }
     }
@@ -7154,6 +7173,7 @@ private fun CellContent(
     onSetOptionColor: (String, String, String) -> Unit,
     onDeleteOption: (String, String) -> Unit,
     onMoveOptions: (String, List<String>) -> Unit,
+    onSetOptionSecondColor: (String, String, String?, Boolean) -> Unit,
     /** Il margine laterale dentro la cella: nella tabella c'è, nella finestra delle proprietà no. */
     cellPadding: Dp = 0.dp
 ) {
@@ -7190,7 +7210,8 @@ private fun CellContent(
                 onRenameOption = onRenameOption,
                 onSetOptionColor = onSetOptionColor,
                 onDeleteOption = onDeleteOption,
-                onMoveOptions = onMoveOptions
+                onMoveOptions = onMoveOptions,
+                onSetOptionSecondColor = onSetOptionSecondColor
             )
 
             ColumnType.MULTI_SELECT -> TagCell(
@@ -7202,7 +7223,8 @@ private fun CellContent(
                 onRenameOption = onRenameOption,
                 onSetOptionColor = onSetOptionColor,
                 onDeleteOption = onDeleteOption,
-                onMoveOptions = onMoveOptions
+                onMoveOptions = onMoveOptions,
+                onSetOptionSecondColor = onSetOptionSecondColor
             )
 
             ColumnType.DATE -> DateCell(
@@ -7345,7 +7367,8 @@ internal fun TagCell(
     onRenameOption: (String, String, String) -> Unit,
     onSetOptionColor: (String, String, String) -> Unit,
     onDeleteOption: (String, String) -> Unit,
-    onMoveOptions: (String, List<String>) -> Unit
+    onMoveOptions: (String, List<String>) -> Unit,
+    onSetOptionSecondColor: (String, String, String?, Boolean) -> Unit
 ) {
     var showSheet by remember { mutableStateOf(false) }
     val options = parseSelectOptionsFull(column.optionsJson)
@@ -7367,7 +7390,7 @@ internal fun TagCell(
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             selected.forEach { label ->
-                TagChip(label = label, color = options.find { it.label == label }?.color)
+                TagChip(label = label, option = options.find { it.label == label })
             }
         }
     } else {
@@ -7379,7 +7402,7 @@ internal fun TagCell(
             verticalAlignment = Alignment.CenterVertically
         ) {
             selected.forEach { label ->
-                TagChip(label = label, color = options.find { it.label == label }?.color)
+                TagChip(label = label, option = options.find { it.label == label })
                 Spacer(modifier = Modifier.size(4.dp))
             }
         }
@@ -7409,7 +7432,8 @@ internal fun TagCell(
             onRenameOption = { old, new -> onRenameOption(columnId, old, new) },
             onSetOptionColor = { label, hex -> onSetOptionColor(columnId, label, hex) },
             onDeleteOption = { label -> onDeleteOption(columnId, label) },
-            onMoveOptions = { labels -> onMoveOptions(columnId, labels) }
+            onMoveOptions = { labels -> onMoveOptions(columnId, labels) },
+            onSetOptionSecondColor = { label, hex, line -> onSetOptionSecondColor(columnId, label, hex, line) }
         )
     }
 }
@@ -7433,10 +7457,13 @@ private fun TagOptionEditor(
     onDone: () -> Unit,
     onRename: (String) -> Unit,
     onSetColor: (String) -> Unit,
+    /** Il secondo colore (null: nessuno) e la linea in mezzo. */
+    onSetSecondColor: (String?, Boolean) -> Unit,
     onDelete: () -> Unit
 ) {
     var name by remember(option.label) { mutableStateOf(option.label) }
     var pickingColor by remember { mutableStateOf(false) }
+    var pickingSecond by remember { mutableStateOf(false) }
     // Già rinominato (o eliminato): l'uscita non deve rifarlo.
     var settled by remember(option.label) { mutableStateOf(false) }
     val currentOption by rememberUpdatedState(option)
@@ -7460,7 +7487,7 @@ private fun TagOptionEditor(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.Center) {
-                TagChip(label = name.trim().ifEmpty { option.label }, color = option.color)
+                TagChip(label = name.trim().ifEmpty { option.label }, option = option)
             }
             TextButton(onClick = {
                 commitName()
@@ -7491,34 +7518,47 @@ private fun TagOptionEditor(
         // che restano quelli dati a giro ai tag nuovi.
         Spacer(modifier = Modifier.size(12.dp))
         SheetGroup {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { pickingColor = true }
-                    .padding(vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .background(tagColor(option.color), RoundedCornerShape(4.dp))
-                )
-                Spacer(modifier = Modifier.size(14.dp))
-                Text(DbStrings.cellColor, modifier = Modifier.weight(1f))
-                Text(
-                    text = option.color.uppercase(),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Icon(
-                    Icons.Filled.ChevronRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            TagColorRow(hex = option.color, label = DbStrings.cellColor) { pickingColor = true }
+        }
+
+        // **Il secondo colore** (dal 20/10/2026, chiesto dall'utente): la
+        // pastiglia diventa metà e metà, attaccate o con una linea in mezzo.
+        Spacer(modifier = Modifier.size(12.dp))
+        SheetGroup {
+            val second = option.secondColor
+            if (second == null) {
+                SheetAction(Icons.Filled.Add, DbStrings.addSecondColor) { pickingSecond = true }
+            } else {
+                TagColorRow(hex = second, label = DbStrings.secondColor) { pickingSecond = true }
+                HorizontalDivider()
+                SettingsToggleRow(
+                    icon = Icons.Filled.BorderVertical,
+                    label = DbStrings.lineBetweenColors,
+                    checked = option.colorLine
+                ) { line -> onSetSecondColor(second, line) }
+                HorizontalDivider()
+                SheetAction(Icons.Filled.Close, DbStrings.removeSecondColor) { onSetSecondColor(null, false) }
             }
         }
 
         Spacer(modifier = Modifier.size(24.dp))
+    }
+
+    if (pickingSecond) {
+        ColorPickerSheet(
+            initialHex = option.secondColor ?: option.color,
+            background = true,
+            onDismiss = { pickingSecond = false },
+            onSwitchTarget = {},
+            onPick = { hex ->
+                // Qui "nessun colore" toglie il secondo.
+                onSetSecondColor(hex?.uppercase(), option.colorLine)
+                pickingSecond = false
+            },
+            showTargetSwitch = false,
+            previewLabel = option.label,
+            noColorLabel = DbStrings.removeSecondColor
+        )
     }
 
     if (pickingColor) {
@@ -7540,20 +7580,84 @@ private fun TagOptionEditor(
     }
 }
 
+/** Una riga del colore di un tag: il quadratino, il nome, il codice e la freccia che apre lo spettro. */
+@Composable
+private fun TagColorRow(hex: String, label: String, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(24.dp)
+                .background(tagColor(hex), RoundedCornerShape(4.dp))
+        )
+        Spacer(modifier = Modifier.size(14.dp))
+        Text(label, modifier = Modifier.weight(1f))
+        Text(
+            text = hex.uppercase(),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Icon(
+            Icons.Filled.ChevronRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
 /**
  * La pastiglia colorata di un tag. La scritta è bianca, o nera su un colore
  * chiaro (dal 05/10/2026: dallo spettro si sceglie anche il giallo acceso,
  * su cui il bianco non si legge), con la regola delle celle colorate.
  */
 @Composable
-internal fun TagChip(label: String, color: String?) {
+internal fun TagChip(label: String, option: SelectOption?) =
+    TagChip(label = label, color = option?.color, secondColor = option?.secondColor, colorLine = option?.colorLine == true)
+
+/**
+ * Con **due colori** (dal 20/10/2026): `color` nella metà di sinistra,
+ * `secondColor` in quella di destra, attaccati o con una linea in mezzo del
+ * colore della pagina, che sembra un taglio fra le due metà.
+ */
+@Composable
+internal fun TagChip(label: String, color: String?, secondColor: String? = null, colorLine: Boolean = false) {
+    val shape = RoundedCornerShape(4.dp)
+    val dark = when {
+        color == null -> false
+        secondColor != null -> darkTextOn(color, secondColor)
+        else -> darkTextOn(color)
+    }
+    val left = tagColor(color)
+    val right = secondColor?.let { tagColor(it) }
+    val lineColor = MaterialTheme.colorScheme.background
     Text(
         text = label,
         style = MaterialTheme.typography.labelMedium,
-        color = if (color != null && darkTextOn(color)) Color.Black else NotionWhite,
+        color = if (dark) Color.Black else NotionWhite,
         maxLines = 1,
         modifier = Modifier
-            .background(tagColor(color), RoundedCornerShape(4.dp))
+            .then(
+                if (right == null) {
+                    Modifier.background(left, shape)
+                } else {
+                    Modifier
+                        .clip(shape)
+                        .drawBehind {
+                            val half = size.width / 2
+                            drawRect(left, size = Size(half, size.height))
+                            drawRect(right, topLeft = Offset(half, 0f), size = Size(size.width - half, size.height))
+                            if (colorLine) {
+                                val width = 2.dp.toPx()
+                                drawRect(lineColor, topLeft = Offset(half - width / 2, 0f), size = Size(width, size.height))
+                            }
+                        }
+                }
+            )
             .padding(horizontal = 8.dp, vertical = 3.dp)
     )
 }
@@ -7578,7 +7682,8 @@ private fun TagPickerSheet(
     onRenameOption: (String, String) -> Unit,
     onSetOptionColor: (String, String) -> Unit,
     onDeleteOption: (String) -> Unit,
-    onMoveOptions: (List<String>) -> Unit
+    onMoveOptions: (List<String>) -> Unit,
+    onSetOptionSecondColor: (String, String?, Boolean) -> Unit
 ) {
     var query by remember { mutableStateOf("") }
     // "Reorder", in alto a destra: i tag con le maniglie, vedi `TagReorderList`.
@@ -7608,6 +7713,7 @@ private fun TagPickerSheet(
                 // Una volta sola, uscendo dalla modifica: vedi `TagOptionEditor`.
                 onRename = { newLabel -> onRenameOption(optionBeingEdited.label, newLabel) },
                 onSetColor = { hex -> onSetOptionColor(optionBeingEdited.label, hex) },
+                onSetSecondColor = { hex, line -> onSetOptionSecondColor(optionBeingEdited.label, hex, line) },
                 onDelete = {
                     onDeleteOption(optionBeingEdited.label)
                     editing = null
@@ -7720,7 +7826,7 @@ private fun TagPickerSheet(
                                 .padding(vertical = 14.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            TagChip(label = option.label, color = option.color)
+                            TagChip(label = option.label, option = option)
                             Spacer(modifier = Modifier.weight(1f))
                             if (option.label in selected) {
                                 Icon(
@@ -9185,6 +9291,7 @@ private fun RowActionsSheet(
     onSetOptionColor: (String, String, String) -> Unit,
     onDeleteOption: (String, String) -> Unit,
     onMoveOptions: (String, List<String>) -> Unit,
+    onSetOptionSecondColor: (String, String, String?, Boolean) -> Unit,
     /** Se la pagina della riga ha già un'icona: la voce dice "Change" invece di "None". */
     hasIcon: Boolean,
     /** Spenta con la pagina bloccata o nel cestino: l'icona fa parte del contenuto. */
@@ -9254,7 +9361,8 @@ private fun RowActionsSheet(
                         onRenameOption = onRenameOption,
                         onSetOptionColor = onSetOptionColor,
                         onDeleteOption = onDeleteOption,
-                        onMoveOptions = onMoveOptions
+                        onMoveOptions = onMoveOptions,
+                        onSetOptionSecondColor = onSetOptionSecondColor
                     )
                     Spacer(modifier = Modifier.size(16.dp))
                     if (move != null) {
@@ -9341,7 +9449,8 @@ private fun RowActionsSheet(
                     onRenameOption = onRenameOption,
                     onSetOptionColor = onSetOptionColor,
                     onDeleteOption = onDeleteOption,
-                    onMoveOptions = onMoveOptions
+                    onMoveOptions = onMoveOptions,
+                    onSetOptionSecondColor = onSetOptionSecondColor
                 )
             }
 
@@ -9392,7 +9501,8 @@ private fun RowPropertiesList(
     onRenameOption: (String, String, String) -> Unit,
     onSetOptionColor: (String, String, String) -> Unit,
     onDeleteOption: (String, String) -> Unit,
-    onMoveOptions: (String, List<String>) -> Unit
+    onMoveOptions: (String, List<String>) -> Unit,
+    onSetOptionSecondColor: (String, String, String?, Boolean) -> Unit
 ) {
     Column {
     if (columns.isEmpty()) {
@@ -9435,7 +9545,8 @@ private fun RowPropertiesList(
                     onRenameOption = onRenameOption,
                     onSetOptionColor = onSetOptionColor,
                     onDeleteOption = onDeleteOption,
-                    onMoveOptions = onMoveOptions
+                    onMoveOptions = onMoveOptions,
+                    onSetOptionSecondColor = onSetOptionSecondColor
                 )
             }
         }
@@ -9554,7 +9665,8 @@ internal fun RowPageProperties(
                                 onRenameOption = { columnId, old, new -> viewModel.renameSelectOption(columnId, old, new) },
                                 onSetOptionColor = { columnId, label, hex -> viewModel.setSelectOptionColor(columnId, label, hex) },
                                 onDeleteOption = { columnId, label -> viewModel.deleteSelectOption(columnId, label) },
-                                onMoveOptions = { columnId, labels -> viewModel.moveSelectOptions(columnId, labels) }
+                                onMoveOptions = { columnId, labels -> viewModel.moveSelectOptions(columnId, labels) },
+                                onSetOptionSecondColor = { columnId, label, hex, line -> viewModel.setSelectOptionSecondColor(columnId, label, hex, line) }
                             )
                         }
                     }

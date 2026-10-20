@@ -397,6 +397,10 @@ object DbStrings {
     )
     val noTagMatches get() = t("No tag matches what you wrote.", "Nessun tag corrisponde a quello che hai scritto.", "Kein Tag passt zu deiner Eingabe.", "Aucun tag ne correspond à ce que vous avez écrit.", "Ninguna etiqueta coincide con lo que escribiste.", "没有与输入内容匹配的标签。", "입력한 내용과 일치하는 태그가 없습니다.", "入力内容に一致するタグはありません。")
     val editTag get() = t("Edit tag", "Modifica tag", "Tag bearbeiten", "Modifier le tag", "Editar etiqueta", "编辑标签", "태그 편집", "タグを編集")
+    val addSecondColor get() = t("Add a second color", "Aggiungi un secondo colore", "Zweite Farbe hinzufügen", "Ajouter une seconde couleur", "Añadir un segundo color", "添加第二种颜色", "두 번째 색상 추가", "2つ目の色を追加")
+    val secondColor get() = t("Second color", "Secondo colore", "Zweite Farbe", "Seconde couleur", "Segundo color", "第二种颜色", "두 번째 색상", "2つ目の色")
+    val lineBetweenColors get() = t("Line between colors", "Linea tra i colori", "Linie zwischen den Farben", "Ligne entre les couleurs", "Línea entre los colores", "颜色之间的分隔线", "색상 사이 구분선", "色の間に線")
+    val removeSecondColor get() = t("Remove second color", "Togli il secondo colore", "Zweite Farbe entfernen", "Retirer la seconde couleur", "Quitar el segundo color", "移除第二种颜色", "두 번째 색상 제거", "2つ目の色を削除")
     val reorder get() = t("Reorder", "Riordina", "Neu ordnen", "Réorganiser", "Reordenar", "排序", "순서 변경", "並べ替え")
     val dragToReorder get() = t("Drag to reorder", "Trascina per riordinare", "Zum Neuordnen ziehen", "Faire glisser pour réorganiser", "Arrastra para reordenar", "拖动以排序", "끌어서 순서 변경", "ドラッグして並べ替え")
 
@@ -727,7 +731,8 @@ object DbStrings {
     val viewName get() = t("View name", "Nome della vista", "Name der Ansicht", "Nom de la vue", "Nombre de la vista", "视图名称", "보기 이름", "ビュー名")
     val viewOptions get() = t("View options", "Opzioni della vista", "Ansichtsoptionen", "Options de la vue", "Opciones de la vista", "视图选项", "보기 옵션", "ビューのオプション")
     val freezeFirstColumn get() = t("Freeze first column", "Blocca la prima colonna", "Erste Spalte fixieren", "Figer la première colonne", "Fijar la primera columna", "冻结首列", "첫 열 고정", "最初の列を固定")
-    val freezeFirstRow get() = t("Freeze first row", "Blocca la prima riga", "Erste Zeile fixieren", "Figer la première ligne", "Fijar la primera fila", "冻结首行", "첫 행 고정", "最初の行を固定")
+    /** È la riga con i nomi delle proprietà, non una riga del database: il nome lo dice (dal 20/10/2026). */
+    val freezeFirstRow get() = t("Freeze Properties Row", "Blocca la riga delle proprietà", "Eigenschaftenzeile fixieren", "Figer la ligne des propriétés", "Fijar la fila de propiedades", "冻结属性行", "속성 행 고정", "プロパティ行を固定")
     val editView get() = t("Edit view", "Modifica la vista", "Ansicht bearbeiten", "Modifier la vue", "Editar vista", "编辑视图", "보기 편집", "ビューを編集")
     val deleteView get() = t("Delete view", "Elimina la vista", "Ansicht löschen", "Supprimer la vue", "Eliminar vista", "删除视图", "보기 삭제", "ビューを削除")
     val deleteViewMessage get() = t(

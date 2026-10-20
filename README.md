@@ -2073,6 +2073,57 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.186 — 20/10/2026 · 08:29 — "Freeze Properties Row", "Today" nel widget dello sport e i tag a due colori
+*(Claude Code sul PC; verificata sul telefono dall'utente il 20/10/2026; 654 test passati; commit solo in locale)*
+
+L'utente, parola per parola:
+> «Tre piccole features:
+> 1) tempo fa ti chiesi di implementarmi un'opzione che mi consentiva di
+> fissare la prima riga o la prima colonna. Con prima riga intendevo quella
+> dove sono scritte tutte le proprietà, quindi non a dire una vera e propria
+> riga. Quell'opzione rinominala in "Freeze Properties Row";
+> 2) nel widget sport, mettimi vicino l'icona dell'update un'icona che svolge
+> la funzione del Today (decidi se va bene un piccolo calendario o altro),
+> cosicché io possa andare alla giornata corrente di qualsiasi competizione;
+> 3) consentimi di mettere un doppio colore ai tag dei database. Alla
+> selezione del colore, ci sarà un'opzione Add a second color, cosicché si
+> vedrà un colore a sinistra e un altro a destra, o separato da una linea
+> verticale in mezzo tra un colore e l'altro oppure i colori si ritrovano
+> letteralmente attaccati l'uno con l'altro»
+
+- **[Nuova funzionalità]** "Freeze first row" ora si chiama **"Freeze
+  Properties Row"** ("Blocca la riga delle proprietà" in italiano, e così
+  nelle altre lingue): è la riga coi nomi delle proprietà, non una riga del
+  database. Fa la stessa cosa di prima
+- **[Nuova funzionalità]** **"Today" nel widget dello sport**: un piccolo
+  calendario a sinistra della freccia che aggiorna. Toccandolo, la competizione
+  che si vede torna alla giornata di oggi (o alla prossima, se oggi non si
+  gioca), scorrendo fin lì; se si stava guardando una stagione passata, torna
+  anche alla stagione in corso. Se le partite sono vecchie, si riscaricano
+- **[Nuova funzionalità]** **I tag a due colori**: nella modifica di un tag,
+  sotto "Color", **"Add a second color"** apre lo stesso spettro del primo. La
+  pastiglia ha il primo colore nella metà di sinistra e il secondo in quella di
+  destra, ovunque si vede il tag: nelle celle, nella finestra dei tag, nei
+  filtri, nei gruppi della tabella e della bacheca. Poi, sotto: "Second color"
+  per cambiarlo, **"Line between colors"** (spenta di partenza, i colori stanno
+  attaccati; accesa, una linea verticale del colore della pagina li separa) e
+  "Remove second color". La scritta è bianca o nera secondo la media dei due
+  colori. Nella bacheca con "Color columns" la colonna prende il velo del primo
+  colore
+- **[Progetto]** `DbStrings.freezeFirstRow` cambia solo il testo (il campo
+  `freezeFirstRow` del database resta). `SportsUpdates.goToToday` e
+  `todayRequests` (i tocchi su "Today", per widget), `SportsTodayButton`, e in
+  `CompetitionRounds` lo scorrimento alla giornata di `currentRound` a ogni
+  tocco. `SelectOption.secondColor` e `colorLine` (i tag salvati prima si
+  leggono con un colore solo), `DatabaseViewModel.setSelectOptionSecondColor`,
+  `onSetOptionSecondColor` per la stessa strada di `onMoveOptions`, `TagChip`
+  con le due metà disegnate dietro alla scritta, `RowGroup.secondColor`,
+  `TagColorRow`, `darkTextOn(first, second)`; `DbStrings.addSecondColor`,
+  `secondColor`, `lineBetweenColors`, `removeSecondColor`. Test:
+  `TagSecondColorTest` (il secondo colore dallo spettro; la linea e il
+  togliere; la scritta sulla media; i tag di prima)
+- Provata dall'utente sul telefono, con la release v0.186: funziona
+
 ### 🆕 v0.185 — 20/10/2026 · 08:17 — I tag si riordinano con le maniglie
 *(Claude Code sul PC; verificata sul telefono dall'utente il 20/10/2026; 650 test passati; commit solo in locale)*
 

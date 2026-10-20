@@ -1778,6 +1778,18 @@ class DatabaseViewModel(
     }
 
     /**
+     * **Il secondo colore di un tag** (dal 20/10/2026) e la linea che lo
+     * separa dal primo. `secondColor` null torna a un colore solo.
+     */
+    fun setSelectOptionSecondColor(columnId: String, label: String, secondColor: String?, colorLine: Boolean) {
+        updateOptions(columnId) { options ->
+            options.map {
+                if (it.label == label) it.copy(secondColor = secondColor, colorLine = secondColor != null && colorLine) else it
+            }
+        }
+    }
+
+    /**
      * Rinomina un tag **e aggiorna tutte le righe che lo usavano**.
      *
      * Le celle contengono l'etichetta, non un riferimento all'opzione:

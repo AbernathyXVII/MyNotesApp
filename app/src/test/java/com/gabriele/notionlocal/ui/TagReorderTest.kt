@@ -99,6 +99,7 @@ class TagReorderTest {
                     onRenameOption = { _, _, _ -> },
                     onSetOptionColor = { _, _, _ -> },
                     onDeleteOption = { _, _ -> },
+                    onSetOptionSecondColor = { _, _, _, _ -> },
                     onMoveOptions = { id, labels ->
                         assertEquals("col", id)
                         moves += labels
