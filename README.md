@@ -2073,6 +2073,30 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🔧 v0.188.2 — 20/10/2026 · 13:46 — La riga alla fine del database torna sotto il database
+*(Claude Code sul PC; non ancora provata sul telefono; 678 test passati)*
+
+L'utente, parola per parola:
+> «In una pagina dentro un database, quando creo un database inline, ci sono
+> due divider. Ne vorrei solo uno classico quando non c'è un database ma
+> quando c'è solo del testo»
+
+e poi:
+> «Quando ti ho chiesto un divider (come sai bene te) te lo avevo chiesto
+> sotto al database, non sopra. Se lo avevi messo sopra e non sotto, allora
+> sistema questo»
+
+- **[Bug fix]** **La riga sottile alla fine di un database dentro una pagina**
+  (v0.179, 18/10/2026) stava **in cima** al database invece che sotto:
+  in una pagina di riga si vedevano due linee in alto, quella delle proprietà
+  e questa. Ora è di nuovo sotto, a separare il database dal testo che segue.
+  Il guasto era della v0.184 (19/10, "Full line view"): ogni blocco a sé stava in un
+  riquadro che mette i suoi pezzi uno **sopra** l'altro, e il database e la
+  sua riga finivano nello stesso punto. Ora i pezzi stanno uno **sotto**
+  l'altro, come prima, per tutti i blocchi a sé
+- **[Progetto]** In `PageEditorScreen` il contenitore delle isole è una
+  `Column`, non un `Box`
+
 ### 🔧 v0.188.1 — 20/10/2026 · 13:39 — I numeri nel testo si ordinano come numeri: 2 prima di 10
 *(Claude Code sul PC; non ancora provata sul telefono; 678 test passati)*
 

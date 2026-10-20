@@ -2459,7 +2459,11 @@ private fun PageEditorContent(
                             // Una tabella arrivata al suo bordo non si trascina
                             // dietro il testo della pagina (vedi `KeepSidewaysInside`).
                             // Col pin ha il segnalibro, e arrivandoci si illumina (`PageAnchors.kt`).
-                            Box(
+                            // **Una colonna, non un `Box`** (dal 20/10/2026): un blocco può
+                            // disegnare più pezzi uno sotto l'altro, come il database e la
+                            // riga alla sua fine; nel `Box` messo il 19/10 finivano uno
+                            // sopra l'altro, e la riga stava in cima al database.
+                            Column(
                                 (if (sideScroll != null) Modifier.nestedScroll(KeepSidewaysInside) else Modifier)
                                     .anchorDecor(item.block.id, item.block.attrs.linkTarget, movedBlockNow, PAGE_SIDE_PADDING)
                             ) {
