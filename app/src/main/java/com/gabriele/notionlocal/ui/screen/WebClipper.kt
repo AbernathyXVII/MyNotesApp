@@ -29,6 +29,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Article
+import androidx.compose.material.icons.automirrored.filled.Notes
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.ContentCut
 import androidx.compose.material.icons.filled.ContentPaste
@@ -80,7 +81,10 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.gabriele.notionlocal.data.LinkPreviews
 import com.gabriele.notionlocal.data.PageImageStore
+import com.gabriele.notionlocal.data.webclip.ClipContent
+import com.gabriele.notionlocal.data.webclip.WebClipDownloads
 import com.gabriele.notionlocal.data.webclip.WebClipEngine
+import com.gabriele.notionlocal.data.webclip.imageSources
 import com.gabriele.notionlocal.data.webclip.WebClipImage
 import com.gabriele.notionlocal.data.webclip.WebClipMode
 import com.gabriele.notionlocal.data.webclip.WebClipRequest
@@ -102,6 +106,9 @@ import kotlin.math.roundToInt
 
 /** Una foto finita: il nome del file nell'app, le misure, e il titolo che la pagina ha detto di sé. */
 internal class WebClipResult(val fileName: String, val image: WebClipImage, val pageTitle: String?)
+
+/** "Text and Images" finito: l'articolo, e le sue immagini già nell'app (indirizzo → file). */
+internal class WebClipTextResult(val content: ClipContent, val images: Map<String, String>)
 
 /**
  * **Il pannello del Web Clipper** (dal 20/10/2026, chiesto dall'utente:
@@ -190,6 +197,9 @@ internal fun WebClipperSheet(onDismiss: () -> Unit, onClip: (WebClipRequest) -> 
                 ModeRow(Icons.Filled.HighlightAlt, WebClipStrings.region, mode == WebClipMode.REGION) { mode = WebClipMode.REGION }
                 ModeRow(Icons.Filled.BookmarkBorder, WebClipStrings.bookmark, mode == WebClipMode.BOOKMARK) { mode = WebClipMode.BOOKMARK }
                 ModeRow(Icons.AutoMirrored.Filled.Article, WebClipStrings.article, mode == WebClipMode.ARTICLE) { mode = WebClipMode.ARTICLE }
+                ModeRow(Icons.AutoMirrored.Filled.Notes, WebClipStrings.textAndImages, mode == WebClipMode.TEXT_AND_IMAGES) {
+                    mode = WebClipMode.TEXT_AND_IMAGES
+                }
             }
 
             Spacer(modifier = Modifier.size(18.dp))
@@ -310,7 +320,9 @@ internal fun WebClipCaptureDialog(
     store: PageImageStore,
     onDone: (WebClipResult) -> Unit,
     onFailed: () -> Unit,
-    onCancel: () -> Unit
+    onCancel: () -> Unit,
+    /** "Text and Images": l'articolo letto, con le immagini scaricate. */
+    onContent: (WebClipTextResult) -> Unit = {}
 ) {
     val context = LocalContext.current
     val article = request.mode == WebClipMode.ARTICLE
@@ -321,12 +333,43 @@ internal fun WebClipCaptureDialog(
     var progress by remember { mutableFloatStateOf(-1f) }
     val latestDone by rememberUpdatedState(onDone)
     val latestFailed by rememberUpdatedState(onFailed)
+    val latestContent by rememberUpdatedState(onContent)
+    val latestCancel by rememberUpdatedState(onCancel)
 
     LaunchedEffect(engine) {
         var reserved: File? = null
         var finished = false
+        val downloaded = mutableListOf<String>()
         try {
             engine.load(request.url) ?: error("page not loaded")
+            if (request.mode == WebClipMode.TEXT_AND_IMAGES) {
+                // Il testo e le immagini dell'articolo, non una foto: prima si scorre
+                // la pagina perché le immagini dicano il loro indirizzo vero.
+                status = WebClipStrings.stepCleaning
+                engine.cleanUp()
+                engine.loadLazyContent()
+                status = WebClipStrings.stepReading
+                val content = engine.readContent()?.takeIf { it.blocks.isNotEmpty() }
+                if (content == null) {
+                    Toast.makeText(context, WebClipStrings.noArticle, Toast.LENGTH_SHORT).show()
+                    latestCancel()
+                    return@LaunchedEffect
+                }
+                val sources = content.imageSources
+                val images = LinkedHashMap<String, String>()
+                sources.forEachIndexed { i, src ->
+                    status = WebClipStrings.stepImages(i + 1, sources.size)
+                    progress = i.toFloat() / sources.size.coerceAtLeast(1)
+                    val bytes = WebClipDownloads.image(src, request.url) ?: return@forEachIndexed
+                    store.saveImageBytes(bytes)?.let { file ->
+                        images[src] = file
+                        downloaded += file
+                    }
+                }
+                finished = true
+                latestContent(WebClipTextResult(content, images))
+                return@LaunchedEffect
+            }
             var title = engine.pageTitle
             if (article) {
                 status = WebClipStrings.stepArticle
@@ -351,7 +394,11 @@ internal fun WebClipCaptureDialog(
         } catch (problem: Throwable) {
             latestFailed()
         } finally {
-            if (!finished) reserved?.delete()
+            if (!finished) {
+                reserved?.delete()
+                // Le immagini già scaricate per un "Text and Images" fermato non restano.
+                downloaded.forEach { store.fileFor(it).delete() }
+            }
         }
     }
 

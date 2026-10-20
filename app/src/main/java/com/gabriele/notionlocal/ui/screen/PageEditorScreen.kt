@@ -13,6 +13,9 @@ import com.gabriele.notionlocal.data.webclip.WebClipMode
 import com.gabriele.notionlocal.data.webclip.WebClipRequest
 import com.gabriele.notionlocal.data.webclip.webClipCaptions
 import com.gabriele.notionlocal.data.webclip.webClipHost
+import com.gabriele.notionlocal.data.webclip.headingSize
+import com.gabriele.notionlocal.data.webclip.toNewBlocks
+import com.gabriele.notionlocal.data.entity.NewBlock
 import com.gabriele.notionlocal.ui.i18n.WebClipStrings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -3336,10 +3339,27 @@ private fun PageEditorContent(
                 webClipRequest = null
                 showClipFailed(context)
             }
+            // "Text and Images": in cima il titolo grande, la nota e "Clipped from", come
+            // OneNote; poi l'articolo, riga per riga, con le sue immagini.
+            val placeText: (WebClipTextResult) -> Unit = { result ->
+                webClipRequest = null
+                val title = request.title.ifBlank { result.content.title }
+                val header = webClipCaptions(title, request.note, request.url, WebClipStrings.clippedFrom, titleSize = headingSize(1))
+                    .map { NewBlock(spans = it) }
+                viewModel.insertWebClipBlocks(header + result.content.toNewBlocks(result.images))
+                Toast.makeText(context, WebClipStrings.clipped, Toast.LENGTH_SHORT).show()
+            }
             if (request.mode == WebClipMode.REGION) {
                 WebClipRegionDialog(request, imageStore, onDone = placeClip, onFailed = failed, onCancel = { webClipRequest = null })
             } else {
-                WebClipCaptureDialog(request, imageStore, onDone = placeClip, onFailed = failed, onCancel = { webClipRequest = null })
+                WebClipCaptureDialog(
+                    request,
+                    imageStore,
+                    onDone = placeClip,
+                    onFailed = failed,
+                    onCancel = { webClipRequest = null },
+                    onContent = placeText
+                )
             }
         }
         if (showProofing) {

@@ -13,6 +13,7 @@ import com.gabriele.notionlocal.data.entity.BlockAttrs
 import com.gabriele.notionlocal.data.entity.LinkTarget
 import com.gabriele.notionlocal.data.entity.linkTargetsOf
 import com.gabriele.notionlocal.data.entity.PageLine
+import com.gabriele.notionlocal.data.entity.NewBlock
 import com.gabriele.notionlocal.data.entity.moveTargetsFor
 import com.gabriele.notionlocal.data.entity.LIST_INDENT_TYPES
 import com.gabriele.notionlocal.data.entity.MEDIA_TYPES
@@ -2515,15 +2516,24 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
      * riceve l'id del blocco, e il blocco si illumina.
      */
     fun insertWebClip(type: BlockType, attrs: BlockAttrs, captions: List<List<RichTextSpan>>, onPlaced: (String) -> Unit = {}) {
+        insertWebClipBlocks(listOf(NewBlock(type = type, attrs = attrs)) + captions.map { NewBlock(spans = it) }, onPlaced)
+    }
+
+    /**
+     * Come `insertWebClip`, per più blocchi in fila: "Text and Images" (dal
+     * 20/10/2026), il titolo, la nota, "Clipped from" e poi l'articolo, con le
+     * sue immagini. Tutto in un passo di Annulla.
+     */
+    fun insertWebClipBlocks(blocks: List<NewBlock>, onPlaced: (String) -> Unit = {}) {
         val pageId = currentPageId ?: return
+        if (blocks.isEmpty()) return
+        val firstType = blocks.first().type
         snapshotForStructuralChange()
         viewModelScope.launch {
-            val placedId = structuralEdits.withLock {
-                repository.insertWebClip(pageId, type, attrs, captions.map { json.encodeToString(it) })
-            }
+            val placedId = structuralEdits.withLock { repository.insertAtFirstEmptyLine(pageId, blocks) } ?: return@launch
             _externalChangeTick.value += 1
             withTimeoutOrNull(FOCUS_HANDOFF_TIMEOUT_MS * 4) {
-                _blocks.first { shown -> shown.any { it.id == placedId && it.type == type } }
+                _blocks.first { shown -> shown.any { it.id == placedId && it.type == firstType } }
             }
             _movedBlock.value = MovedBlock(placedId, android.os.SystemClock.uptimeMillis())
             _revealBlock.value = placedId

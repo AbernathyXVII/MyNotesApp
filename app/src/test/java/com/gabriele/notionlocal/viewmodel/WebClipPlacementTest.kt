@@ -8,6 +8,7 @@ import com.gabriele.notionlocal.data.AppDatabase
 import com.gabriele.notionlocal.data.entity.BlockAttrs
 import com.gabriele.notionlocal.data.entity.BlockEntity
 import com.gabriele.notionlocal.data.entity.BlockType
+import com.gabriele.notionlocal.data.entity.NewBlock
 import com.gabriele.notionlocal.data.entity.PageEntity
 import com.gabriele.notionlocal.data.entity.RichTextSpan
 import com.gabriele.notionlocal.data.entity.attrs
@@ -135,6 +136,33 @@ class WebClipPlacementTest {
         // Gli indici restano in fila, senza buchi né doppioni.
         val top = saved().filter { it.parentBlockId == null }.map { it.orderIndex }.sorted()
         assertEquals(top.indices.toList(), top)
+    }
+
+    @Test
+    fun textAndImagesGoesInOrderWithTheTableCells() = runBlocking<Unit> {
+        viewModel.insertWebClipBlocks(
+            listOf(
+                NewBlock(spans = listOf(RichTextSpan("Persona 5 Royal Stats guide", bold = true, size = 24))),
+                NewBlock(spans = listOf(RichTextSpan("Primo paragrafo"))),
+                NewBlock(type = BlockType.IMAGE, attrs = BlockAttrs(file = "a.img")),
+                NewBlock(type = BlockType.BULLET_LIST_ITEM, spans = listOf(RichTextSpan("Punto")), indentLevel = 1),
+                NewBlock(type = BlockType.TABLE, cells = listOf(listOf("Rank", "EXP"), listOf("1", "34", "x")))
+            )
+        )
+        waitFor("l'articolo") { saved().size == 9 }
+        assertEquals(
+            listOf("title", "empty", "Primo paragrafo", "", "Punto", "", "toggle", "chapter", "last"),
+            reading()
+        )
+        // Il titolo ha preso il posto della riga vuota.
+        assertEquals("Persona 5 Royal Stats guide", viewModel.plainTextOf(saved().single { it.id == empty.id }))
+        val list = saved().single { it.type == BlockType.BULLET_LIST_ITEM }
+        assertEquals(1, list.indentLevel)
+        val table = saved().single { it.type == BlockType.TABLE }
+        assertEquals(2, table.tableRows)
+        assertEquals(3, table.tableCols)
+        val cells = db.tableCellDao().getCellsForBlockOnce(table.id).associate { (it.rowIndex to it.colIndex) to it.text }
+        assertEquals(mapOf((0 to 0) to "Rank", (0 to 1) to "EXP", (1 to 0) to "1", (1 to 1) to "34", (1 to 2) to "x"), cells)
     }
 
     @Test

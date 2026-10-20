@@ -21,8 +21,12 @@ import java.io.File
 import kotlin.coroutines.resume
 import kotlin.math.roundToInt
 
-/** "What do you want to capture?", come in OneNote Web Clipper (dal 20/10/2026). */
-enum class WebClipMode { FULL_PAGE, REGION, BOOKMARK, ARTICLE }
+/**
+ * "What do you want to capture?", come in OneNote Web Clipper (dal 20/10/2026).
+ * `TEXT_AND_IMAGES` (chiesto dopo) non è una foto: il testo e le immagini
+ * dell'articolo diventano righe di notE.
+ */
+enum class WebClipMode { FULL_PAGE, REGION, BOOKMARK, ARTICLE, TEXT_AND_IMAGES }
 
 /** Una foto fatta: il file e le sue misure in pixel. */
 data class WebClipImage(val file: File, val width: Int, val height: Int)
@@ -161,11 +165,24 @@ class WebClipEngine(
 
     /**
      * **"Article"**: la pagina diventa solo il suo articolo, impaginato pulito
-     * (vedi `assets/web_clipper_article.js`). Il titolo dell'articolo, se lo trova.
+     * (`noteReader.render()`, vedi `assets/web_clipper_reader.js`). Il titolo
+     * dell'articolo, se lo trova.
      */
     suspend fun keepOnlyArticle(): String? {
-        val result = evaluateJson(asset(ARTICLE_SCRIPT)) as? String ?: return null
+        evaluate(asset(READER_SCRIPT))
+        val result = evaluateJson("noteReader.render()") as? String ?: return null
         return runCatching { JSONObject(result).optString("title").trim().takeIf { it.isNotEmpty() } }.getOrNull()
+    }
+
+    /**
+     * **"Text and Images"**: l'articolo come blocchi in ordine
+     * (`noteReader.serialize()`, vedi `assets/web_clipper_reader.js`), già
+     * letto (`parseClipContent`); null se la pagina non ne ha uno.
+     */
+    suspend fun readContent(): ClipContent? {
+        evaluate(asset(READER_SCRIPT))
+        val json = evaluateJson("noteReader.serialize()") as? String ?: return null
+        return parseClipContent(json)
     }
 
     /**
@@ -323,7 +340,7 @@ class WebClipEngine(
         const val DESKTOP_CSS_HEIGHT = 900
         const val OUTPUT_SCALE = 1.5f
         const val CLEANUP_SCRIPT = "web_clipper_cleanup.js"
-        const val ARTICLE_SCRIPT = "web_clipper_article.js"
+        const val READER_SCRIPT = "web_clipper_reader.js"
 
         /** "Article" più stretto, come una colonna da leggere. */
         const val ARTICLE_CSS_WIDTH = 860

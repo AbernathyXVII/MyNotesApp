@@ -29,6 +29,28 @@ object WebClipStrings {
     val region get() = t("Region", "Area", "Bereich", "Zone", "Región", "区域", "영역", "領域")
     val bookmark get() = t("Bookmark", "Segnalibro", "Lesezeichen", "Signet", "Marcador", "书签", "북마크", "ブックマーク")
     val article get() = t("Article", "Articolo", "Artikel", "Article", "Artículo", "文章", "기사", "記事")
+    val textAndImages get() = t("Text and Images", "Testo e immagini", "Text und Bilder", "Texte et images", "Texto e imágenes", "文字和图片", "텍스트와 이미지", "テキストと画像")
+    val stepReading get() = t("Reading the article…", "Leggo l'articolo…", "Artikel wird gelesen…", "Lecture de l'article…", "Leyendo el artículo…", "正在读取文章…", "기사를 읽는 중…", "記事を読み込んでいます…")
+    fun stepImages(done: Int, total: Int) = t(
+        "Downloading the images ($done of $total)…",
+        "Scarico le immagini ($done di $total)…",
+        "Bilder werden geladen ($done von $total)…",
+        "Téléchargement des images ($done sur $total)…",
+        "Descargando las imágenes ($done de $total)…",
+        "正在下载图片（$done/$total）…",
+        "이미지를 내려받는 중($done/$total)…",
+        "画像をダウンロードしています（$done/$total）…"
+    )
+    val noArticle get() = t(
+        "No article found in this page",
+        "In questa pagina non ho trovato un articolo",
+        "Auf dieser Seite wurde kein Artikel gefunden",
+        "Aucun article trouvé dans cette page",
+        "No se encontró ningún artículo en esta página",
+        "此页面中未找到文章",
+        "이 페이지에서 기사를 찾지 못했습니다",
+        "このページに記事が見つかりません"
+    )
     val title get() = t("Title", "Titolo", "Titel", "Titre", "Título", "标题", "제목", "タイトル")
     val titlePlaceholder get() = t("Add a title…", "Aggiungi un titolo…", "Titel hinzufügen…", "Ajouter un titre…", "Añade un título…", "添加标题…", "제목 추가…", "タイトルを追加…")
     val note get() = t("Note", "Nota", "Notiz", "Note", "Nota", "备注", "메모", "メモ")

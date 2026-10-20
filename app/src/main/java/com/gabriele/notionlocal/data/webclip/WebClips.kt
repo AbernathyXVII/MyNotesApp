@@ -33,9 +33,16 @@ fun webClipHost(url: String): String = runCatching { URI(url).host }.getOrNull()
  * nota (una riga per ogni sua riga), e "Clipped from" col link, piccolo e
  * grigio, come OneNote. Quelle vuote non ci sono.
  */
-fun webClipCaptions(title: String?, note: String?, url: String?, clippedFrom: String): List<List<RichTextSpan>> {
+fun webClipCaptions(
+    title: String?,
+    note: String?,
+    url: String?,
+    clippedFrom: String,
+    /** Quanto è grande il titolo, in punti; null = come il testo. "Text and Images" lo vuole grande, come OneNote. */
+    titleSize: Int? = null
+): List<List<RichTextSpan>> {
     val lines = mutableListOf<List<RichTextSpan>>()
-    title?.trim()?.takeIf { it.isNotEmpty() }?.let { lines += listOf(RichTextSpan(text = it.replace('\n', ' '), bold = true)) }
+    title?.trim()?.takeIf { it.isNotEmpty() }?.let { lines += listOf(RichTextSpan(text = it.replace('\n', ' '), bold = true, size = titleSize)) }
     note?.lines()?.map { it.trim() }?.filter { it.isNotEmpty() }?.forEach { lines += listOf(RichTextSpan(text = it)) }
     url?.takeIf { it.isNotBlank() }?.let {
         lines += listOf(

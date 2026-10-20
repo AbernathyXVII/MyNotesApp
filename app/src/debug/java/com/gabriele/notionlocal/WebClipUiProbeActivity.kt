@@ -21,6 +21,8 @@ import com.gabriele.notionlocal.data.PageImageStore
 import com.gabriele.notionlocal.data.settings.AppSettings
 import com.gabriele.notionlocal.data.webclip.WebClipMode
 import com.gabriele.notionlocal.data.webclip.WebClipRequest
+import com.gabriele.notionlocal.data.webclip.imageSources
+import com.gabriele.notionlocal.data.webclip.toNewBlocks
 import com.gabriele.notionlocal.ui.screen.StripImage
 import com.gabriele.notionlocal.ui.screen.TallImageViewer
 import com.gabriele.notionlocal.ui.screen.WebClipCaptureDialog
@@ -50,6 +52,7 @@ class WebClipUiProbeActivity : ComponentActivity() {
         val mode = when (intent.getStringExtra("mode")) {
             "article" -> WebClipMode.ARTICLE
             "region" -> WebClipMode.REGION
+            "text" -> WebClipMode.TEXT_AND_IMAGES
             else -> WebClipMode.FULL_PAGE
         }
         val viewer = intent.getStringExtra("show") == "viewer"
@@ -94,7 +97,22 @@ class WebClipUiProbeActivity : ComponentActivity() {
                             store = store,
                             onDone = done,
                             onFailed = fail,
-                            onCancel = { finish() }
+                            onCancel = { finish() },
+                            onContent = { result ->
+                                // "Text and Images": il resoconto dei blocchi, poi le immagini scaricate via.
+                                val blocks = result.content.toNewBlocks(result.images)
+                                val summary = StringBuilder("ok ${(System.currentTimeMillis() - started) / 1000.0}s title=${result.content.title}\n")
+                                summary.append("pezzi=${result.content.blocks.size} blocchi=${blocks.size} immagini=${result.images.size}/${result.content.imageSources.size}\n")
+                                result.images.values.forEach { file ->
+                                    summary.append("img ${store.imageSize(file)} ${store.fileFor(file).length()}\n")
+                                }
+                                blocks.take(40).forEach { b ->
+                                    summary.append("${b.type} ind=${b.indentLevel} w=${b.attrs.width} ${b.spans.joinToString("") { s -> (if (s.bold) "*" else "") + (if (s.link != null) "[" else "") + s.text.take(40) + (if (s.link != null) "]" else "") }.take(110)}\n")
+                                }
+                                log.writeText(summary.toString())
+                                result.images.values.forEach { store.fileFor(it).delete() }
+                                failed = true
+                            }
                         )
                         name == null -> Text("fallita", modifier = Modifier.padding(24.dp))
                         else -> {

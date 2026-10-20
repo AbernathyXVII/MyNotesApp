@@ -53,7 +53,7 @@ class WebClipperSheetTest {
             }
         }
         compose.onNodeWithText("What do you want to capture?").assertExists()
-        listOf("Full Page", "Region", "Bookmark", "Article", "Title", "Note", "Source").forEach {
+        listOf("Full Page", "Region", "Bookmark", "Article", "Text and Images", "Title", "Note", "Source").forEach {
             compose.onNodeWithText(it).assertExists()
         }
         compose.onNodeWithText("Location").assertDoesNotExist()

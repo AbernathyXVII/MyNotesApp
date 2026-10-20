@@ -2073,6 +2073,63 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.193 — 20/10/2026 · 19:24 — "Text and Images": l'articolo di un sito come testo e immagini, come OneNote
+*(Claude Code sul PC; provato sul telefono con l'attività di prova, non ancora dall'utente; 713 test passati)*
+
+L'utente, parola per parola:
+> «Aggiungi un'altra opzione, chiamata text and images: consente praticamente
+> di prendere tutto ciò che riguarda la pagina specifica ed incolla solo testo
+> e immagini rispettando l'ordine. Questa cosa Onenote la faceva molto bene.
+> Guarda la foto, ti mando anche il link appartenente
+> https://www.rpgsite.net/feature/13328-persona-5-royal-stats-guide-increase-knowledge-guts-proficiency-kindness-and-charm-fast .
+> Se ci fai caso dal sito, Onenote ha fatto un ottimo lavoro a non includere
+> copertina, la barra laterale a destra e la barra orizzontale in fondo.
+> Saresti in grado di fare una cosa del genere, tanto intelligente come l'ha
+> fatta Onenote?»
+
+- **[Nuova funzionalità]** **"Text and Images"**, la quinta scelta del Web
+  Clipper: non una foto ma **l'articolo come righe di notE**, nell'ordine
+  della pagina, al posto della prima riga vuota (o in fondo). In cima, come
+  OneNote, il **titolo grande** (24 punti, in grassetto: è anche una voce
+  dell'indice), la nota e "Clipped from" col link; poi l'articolo:
+  - i **paragrafi** coi loro **grassetti**, corsivi, sottolineati, barrati e
+    **link** che si toccano;
+  - i **titoletti** in grassetto e più grandi (24 e 20 punti: anche loro voci
+    dell'indice, v0.188);
+  - gli **elenchi puntati e numerati** col loro rientro, citazioni, codice,
+    tabelle semplici con le celle, divisori, e le didascalie delle immagini in
+    corsivo;
+  - le **immagini**, scaricate nell'app, larghe come nella pagina (quelle
+    larghe quasi tutta la colonna a tutta larghezza)
+- **[Nuova funzionalità]** **Cosa resta fuori**, come fa OneNote: notE trova
+  l'articolo come il "Reader" dei browser (il blocco con più paragrafi di testo
+  vero e pochi link, più i fratelli che ne hanno abbastanza), quindi
+  **copertina, colonne di lato, barre in fondo, menu, commenti e pubblicità**
+  non ci sono. In più di OneNote lascia fuori anche i riquadri "Advertisement.
+  Keep scrolling for more" (OneNote li aveva tenuti) e gli **indici fatti solo
+  di link** ai capitoli della pagina (come OneNote). Il titolo dell'articolo
+  non si ripete. Sulla guida di rpgsite: 96 blocchi e 7 immagini su 7, in 11
+  secondi, dal primo paragrafo "Persona 5 Royal features…" all'ultimo
+- **[Nuova funzionalità]** Le immagini che la pagina carica solo scorrendo (su
+  rpgsite un segnaposto "image-loading") arrivano col loro indirizzo vero: notE
+  fa scorrere la pagina e legge anche gli indirizzi nascosti delle immagini
+  (`data-src`, le varianti del tag `<picture>`). Si scaricano come le scarica
+  il browser, coi cookie del sito: un sito in cui si è entrati dà anche le sue
+  immagini. Mentre si scaricano si vede "Downloading the images (3 of 7)…";
+  fermato, quelle già scaricate non restano
+- **[Bug fix]** Il banner dei cookie di Google ("Do not consent", come su
+  rpgsite) si rifiuta da solo come gli altri; prima si nascondeva soltanto
+- **[Nuova funzionalità]** Anche **"Article"** usa lo stesso modo di trovare
+  l'articolo: la copertina non c'è più neanche lì
+- **[Progetto]** `assets/web_clipper_reader.js` (`noteReader`: `render` per
+  "Article", `serialize` per "Text and Images"; prende il posto di
+  `web_clipper_article.js`), `WebClipEngine.readContent`, `WebClipContent.kt`
+  (`parseClipContent`, `ClipPiece`, `toNewBlocks`, `headingSize`),
+  `WebClipDownloads`, `NewBlock`, `PageRepository.insertAtFirstEmptyLine` (più
+  blocchi in fila, con le celle delle tabelle; ci passa anche la foto) e
+  `PageEditorViewModel.insertWebClipBlocks`. Test: `WebClipContentTest`, e in
+  `WebClipPlacementTest` l'articolo inserito con elenco, immagine e tabella
+
 ### 🆕 v0.192 — 20/10/2026 · 18:59 — Il Web Clipper, come OneNote: la foto di un sito nella pagina
 *(Claude Code sul PC; provato sul telefono con le attività di prova, non ancora dall'utente; 709 test passati)*
 

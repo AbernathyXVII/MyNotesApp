@@ -30,6 +30,7 @@ import com.gabriele.notionlocal.data.entity.splitLines
 import com.gabriele.notionlocal.data.entity.BlockAttrs
 import com.gabriele.notionlocal.data.entity.attrsForNewLine
 import com.gabriele.notionlocal.data.entity.firstEmptyLine
+import com.gabriele.notionlocal.data.entity.NewBlock
 import com.gabriele.notionlocal.data.entity.MULTILINE_TYPES
 import com.gabriele.notionlocal.data.entity.attrs
 import com.gabriele.notionlocal.data.ink.remapAnchor
@@ -1808,41 +1809,46 @@ class PageRepository(private val db: AppDatabase) {
     /**
      * **Dove va quello che arriva dal Web Clipper** (dal 20/10/2026): al posto
      * della prima riga vuota della pagina, dall'alto (`firstEmptyLine`), e se
-     * non ce n'è in fondo. Il blocco diventa `type` con le voci `attrs` (la
-     * foto, o il segnalibro); sotto, una riga per ognuna delle `captions`, già
-     * in JSON. Restituisce l'id del blocco.
+     * non ce n'è in fondo. Il primo dei `blocks` prende il posto della riga
+     * vuota (la foto, il segnalibro, o il titolo di "Text and Images"), gli
+     * altri vengono sotto di lui, in ordine, allo stesso livello; le tabelle
+     * con le loro celle. Restituisce l'id del primo blocco, o null se non ce
+     * n'erano.
      */
-    suspend fun insertWebClip(pageId: String, type: BlockType, attrs: BlockAttrs, captions: List<String>): String =
+    suspend fun insertAtFirstEmptyLine(pageId: String, blocks: List<NewBlock>): String? =
         db.withTransaction {
-            val blocks = blockDao.getBlocksForPageOnce(pageId)
-            val empty = blocks.firstEmptyLine { block ->
+            if (blocks.isEmpty()) return@withTransaction null
+            val existing = blockDao.getBlocksForPageOnce(pageId)
+            val empty = existing.firstEmptyLine { block ->
                 (runCatching { json.decodeFromString<List<RichTextSpan>>(block.textJson) }.getOrNull() ?: emptyList())
                     .joinToString("") { it.text }
             }
-            val encoded = BlockAttrs.encode(attrs)
+            fun entityFor(spec: NewBlock, base: BlockEntity): BlockEntity = base.copy(
+                type = spec.type,
+                textJson = json.encodeToString(spec.spans),
+                attrsJson = BlockAttrs.encode(spec.attrs),
+                indentLevel = spec.indentLevel,
+                tableRows = spec.cells?.size?.coerceAtLeast(1) ?: base.tableRows,
+                tableCols = spec.cells?.maxOfOrNull { it.size }?.coerceAtLeast(1) ?: base.tableCols
+            )
+            val first = blocks.first()
             val placed = if (empty != null) {
-                blockDao.setTypeAndAttrs(empty.id, type, encoded)
-                empty
+                entityFor(first, empty).also { blockDao.update(it) }
             } else {
-                BlockEntity(
-                    pageId = pageId,
-                    type = type,
-                    attrsJson = encoded,
-                    orderIndex = (blockDao.lastOrderIndex(pageId) ?: -1) + 1
-                ).also { blockDao.insert(it) }
+                entityFor(first, BlockEntity(pageId = pageId, orderIndex = (blockDao.lastOrderIndex(pageId) ?: -1) + 1))
+                    .also { blockDao.insert(it) }
             }
-            if (captions.isNotEmpty()) {
-                blockDao.shiftOrderIndexes(pageId, placed.parentBlockId, placed.orderIndex + 1, captions.size)
-                captions.forEachIndexed { i, text ->
-                    blockDao.insert(
-                        BlockEntity(
-                            pageId = pageId,
-                            parentBlockId = placed.parentBlockId,
-                            textJson = text,
-                            indentLevel = placed.indentLevel,
-                            orderIndex = placed.orderIndex + 1 + i
-                        )
-                    )
+            val rest = blocks.drop(1)
+            if (rest.isNotEmpty()) {
+                blockDao.shiftOrderIndexes(pageId, placed.parentBlockId, placed.orderIndex + 1, rest.size)
+            }
+            val created = listOf(first to placed) + rest.mapIndexed { i, spec ->
+                spec to entityFor(spec, BlockEntity(pageId = pageId, parentBlockId = placed.parentBlockId, orderIndex = placed.orderIndex + 1 + i))
+                    .also { blockDao.insert(it) }
+            }
+            created.forEach { (spec, entity) ->
+                spec.cells?.forEachIndexed { r, row ->
+                    row.forEachIndexed { c, text -> if (text.isNotEmpty()) setTableCellText(entity.id, r, c, text) }
                 }
             }
             placed.id
