@@ -1296,7 +1296,10 @@ internal fun groupIntoRenderItems(
     for (block in blocks) {
         if (block.type in FLOWING_TYPES) {
             val chunkKey = chunkStarts[block.id]
-            if (chunkKey != null && currentRun.isNotEmpty()) {
+            if (chunkKey != null) {
+                // Anche in cima al gruppo: un pezzo che ha preso quello sopra
+                // (vedi `PageEditorViewModel.keepVisibleTogether`) tiene la
+                // sua chiave, e il suo campo, col fuoco, non si rifà.
                 closeRun()
                 currentKey = chunkKey
             }
@@ -1674,8 +1677,16 @@ private fun PageEditorContent(
             // I gruppi di righe seguiti da un altro pezzo dello stesso gruppo.
             val continuedRuns = remember(renderItems) {
                 renderItems.zipWithNext()
-                    .filter { (_, next) -> next is RenderItem.Run && next.key.startsWith(CHUNK_KEY_PREFIX) }
+                    .filter { (item, next) -> item is RenderItem.Run && next is RenderItem.Run }
                     .map { (item, _) -> renderItemKey(item) }
+                    .toSet()
+            }
+            // E quelli che ne continuano un altro: due gruppi di righe di fila
+            // sono sempre pezzi dello stesso.
+            val continuingRuns = remember(renderItems) {
+                renderItems.zipWithNext()
+                    .filter { (item, next) -> item is RenderItem.Run && next is RenderItem.Run }
+                    .map { (_, next) -> renderItemKey(next) }
                     .toSet()
             }
             val listState = rememberLazyListState()
@@ -1688,6 +1699,20 @@ private fun PageEditorContent(
             } else {
                 null
             }
+            // **Le righe sullo schermo in un campo solo** (dal 19/10/2026): così la
+            // selezione non si ferma al confine fra due pezzi. Vedi `VisibleChunks.kt`.
+            val visibleRunLines = remember(listState) { VisibleRunLines() }
+            val pageFinger = remember { mutableStateOf(false) }
+            KeepVisibleLinesTogether(
+                viewModel = viewModel,
+                list = listState,
+                lines = visibleRunLines,
+                fingerDown = pageFinger,
+                chunkVersion = chunkVersion,
+                blocksVersion = System.identityHashCode(blocks),
+                drawing = drawingMode,
+                focusedBlockId = focusedBlockId
+            )
             // **La riga dei titoli dei database resta in cima** ("Freeze first
             // row", dal 08/10/2026): la pagina dice alla tabella quando scorre,
             // e dove fermarsi, sotto i pulsanti sospesi (vedi `FrozenTable.kt`).
@@ -1919,6 +1944,8 @@ private fun PageEditorContent(
                     .fillMaxWidth()
                     .weight(1f)
                     .onGloballyPositioned { pageAreaOrigin = it.positionInWindow() }
+                    // Le dita sulla pagina, solo guardate: vedi `LocalPageFingerDown`.
+                    .watchPageFingers(pageFinger)
                     // Un tocco fuori dalle voci dei template le manda via.
                     // Si guarda soltanto, prima di tutti e senza prenderlo:
                     // il tocco arriva lo stesso dove doveva, e se era sulla
@@ -1962,6 +1989,8 @@ private fun PageEditorContent(
                 LocalStickyViewport provides stickyViewport,
                 LocalFocusPark provides focusPark,
                 LocalSideScroll provides sideScroll,
+                LocalVisibleRunLines provides visibleRunLines,
+                LocalPageFingerDown provides pageFinger,
                 // Mentre si disegna, il testo si legge e basta.
                 LocalPageLocked provides (readOnlyPage || drawingMode)
                 // (Fino al 25/09/2026 qui passavano anche il font e il corpo
@@ -2370,7 +2399,7 @@ private fun PageEditorContent(
                             RunItem(
                                 content = content,
                                 runKey = item.key,
-                                joinsAbove = item.key.startsWith(CHUNK_KEY_PREFIX),
+                                joinsAbove = item.key in continuingRuns,
                                 joinsBelow = item.key in continuedRuns,
                                 env = itemEnv,
                                 focusRequestBlockId = focusRequestBlockId?.takeIf { id -> item.blocks.any { it.id == id } },
@@ -5045,6 +5074,29 @@ private fun MergedTextRunField(
         }
     }
 
+    // **Un pezzo vicino entra in questo, la selezione resta** (dal 19/10/2026,
+    // vedi `PageEditorViewModel.keepVisibleTogether`): le sue righe arrivano in
+    // fondo o in cima, e il cursore o la selezione restano sulle stesse
+    // lettere. Il campo le prende nello stesso disegno: aspettando il giro
+    // qui sotto, per un istante le righe del pezzo sparito non c'erano più, e
+    // la selezione si chiudeva.
+    val officialNow = remember(runBlocks) { runFieldText(runBlocks, viewModel) }
+    val shownFirstLine = remember(runKey) { arrayOf(runBlocks.first().id) }
+    if (pendingText == null && officialNow.length > fieldValue.text.length) {
+        val firstLine = runBlocks.first().id
+        val body = bodyOf(fieldValue.text)
+        if (firstLine == shownFirstLine[0] && officialNow.startsWith(fieldValue.text + "\n")) {
+            fieldValue = TextFieldValue(officialNow, fieldValue.selection)
+        } else if (firstLine != shownFirstLine[0] && runBlocks.any { it.id == shownFirstLine[0] } &&
+            officialNow.startsWith(RUN_LEAD) && officialNow.endsWith("\n" + body)
+        ) {
+            val shift = officialNow.length - fieldValue.text.length
+            val sel = fieldValue.selection
+            fieldValue = TextFieldValue(officialNow, TextRange(sel.start + shift, sel.end + shift))
+        }
+    }
+    shownFirstLine[0] = runBlocks.first().id
+
     LaunchedEffect(runBlocks) {
         val official = runFieldText(runBlocks, viewModel)
         when {
@@ -5221,6 +5273,51 @@ private fun MergedTextRunField(
             onFocusChanged(id, true)
             lastLineBlockId = id
         }
+    }
+
+    // **La selezione arrivata in fondo a un pezzo va avanti** (dal 19/10/2026,
+    // trovato dall'utente in Permanent notes: trascinando, la selezione si
+    // fermava a "Kor", l'ultima riga di un pezzo). Di solito non serve, le
+    // righe sullo schermo sono già un campo solo (vedi
+    // `PageEditorViewModel.keepVisibleTogether`); serve se si comincia a
+    // selezionare appena la pagina si ferma. Solo col dito sul testo: le
+    // posizioni del campo non cambiano e il gesto continua. Col dito su una
+    // maniglia no, che il campo la perderebbe e la lente resterebbe lì.
+    val pageFinger = LocalPageFingerDown.current
+    LaunchedEffect(fieldValue.selection, fieldFocused, runBlocks, joinsBelow) {
+        val sel = fieldValue.selection
+        if (!fieldFocused || sel.collapsed || !joinsBelow || pageFinger?.value != true) return@LaunchedEffect
+        val body = bodyOf(fieldValue.text)
+        val lines = body.split('\n')
+        if (lines.size != runBlocks.size) return@LaunchedEffect
+        val to = (sel.max - RUN_LEAD.length).coerceAtLeast(0)
+        if (to >= body.length - lines.last().length) viewModel.joinChunkAfter(runBlocks.last().id)
+    }
+
+    // Quali righe di questo campo si vedono, per la pagina che tiene insieme
+    // quelle sullo schermo (vedi `VisibleRunLines`).
+    val visibleLines = LocalVisibleRunLines.current
+    val latestRunBlocks = rememberUpdatedState(runBlocks)
+    DisposableEffect(visibleLines, runKey) {
+        visibleLines?.providers?.put(runKey) { top, bottom ->
+            val layout = textLayout
+            val blocks = latestRunBlocks.value
+            if (layout == null || layout.lineCount == 0 || blocks.isEmpty()) {
+                emptyList()
+            } else {
+                val shown = layout.layoutInput.text.text
+                fun blockOf(visualLine: Int): Int {
+                    val upTo = layout.getLineStart(visualLine).coerceAtMost(shown.length)
+                    var count = 0
+                    for (k in 0 until upTo) if (shown[k] == '\n') count++
+                    return count.coerceIn(0, blocks.lastIndex)
+                }
+                val first = blockOf(layout.getLineForVerticalPosition((top - sideTopPx).coerceAtLeast(0f)))
+                val last = blockOf(layout.getLineForVerticalPosition((bottom - sideTopPx).coerceAtLeast(0f)))
+                blocks.subList(first, last + 1).map { it.id }
+            }
+        }
+        onDispose { visibleLines?.providers?.remove(runKey) }
     }
 
     // Scelta una voce del menu "/", la barra e quello che le sta

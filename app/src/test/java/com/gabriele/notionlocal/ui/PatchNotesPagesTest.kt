@@ -9,6 +9,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.gabriele.notionlocal.data.patchnotes.NoteBlock
 import com.gabriele.notionlocal.data.patchnotes.PatchNotesAsset
+import com.gabriele.notionlocal.data.patchnotes.PatchVersion
 import com.gabriele.notionlocal.ui.screen.PatchNoteScreen
 import com.gabriele.notionlocal.ui.screen.PatchNotesScreen
 import com.gabriele.notionlocal.ui.screen.inlineMarkdown
@@ -49,6 +50,14 @@ class PatchNotesPagesTest {
         }
     ).text
 
+    /**
+     * Un testo che è solo di quella versione: la richiesta parola per parola, o,
+     * dove manca (v0.186.1, riassunta), la prima modifica. Non il primo
+     * paragrafo: la riga in corsivo sotto il titolo si ripete uguale.
+     */
+    private fun bodyOf(version: PatchVersion) =
+        shownText(version.blocks.firstOrNull { it is NoteBlock.Quote } ?: version.blocks.first { it is NoteBlock.Bullet })
+
     @Test
     fun theListHasOnlyTheTitlesAndOpensTheTappedOne() {
         val (newest, previous) = notes.versions
@@ -63,7 +72,7 @@ class PatchNotesPagesTest {
         compose.onNodeWithText("v${newest.version}").assertIsDisplayed()
         compose.onNodeWithText("${newest.date} · ${newest.time}").assertIsDisplayed()
         compose.onNodeWithText("v${previous.version}").assertIsDisplayed()
-        val newestBody = shownText(newest.blocks.first { it is NoteBlock.Quote })
+        val newestBody = bodyOf(newest)
         assertTrue(compose.onAllNodesWithText(newestBody.take(40), substring = true).fetchSemanticsNodes().isEmpty())
 
         compose.onNodeWithText("v${previous.version}").performClick()
@@ -82,7 +91,7 @@ class PatchNotesPagesTest {
         compose.onNodeWithText("${version.date} · ${version.time}").assertIsDisplayed()
         compose.onNodeWithText(shownText(version.blocks.first()).take(30), substring = true).assertIsDisplayed()
         // Il testo delle altre versioni non c'è.
-        val other = shownText(notes.versions[0].blocks.first { it is NoteBlock.Quote })
+        val other = bodyOf(notes.versions[0])
         assertTrue(compose.onAllNodesWithText(other.take(40), substring = true).fetchSemanticsNodes().isEmpty())
     }
 }

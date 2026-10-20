@@ -2073,6 +2073,34 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🔧 v0.186.1 — 20/10/2026 · 08:57 — La selezione non si ferma più fra un pezzo e l'altro delle pagine lunghe
+*(Claude Code sul PC; verificata sul telefono dall'utente il 20/10/2026; 661 test passati; commit solo in locale)*
+
+La richiesta, riassunta (la conversazione in cui era scritta conteneva dati
+privati e non viene riletta): tenendo premuto e trascinando, la selezione si
+fermava sempre alla stessa riga di una pagina lunga.
+
+- **[Bug fix]** Dalla v0.181 le pagine lunghe sono divise in pezzi da 50
+  righe, e ogni pezzo è un campo di testo a sé: un campo non sa selezionare
+  oltre le sue righe, quindi la selezione si fermava al confine fra due pezzi,
+  circa ogni 50 righe. Ora, quando la pagina è ferma e nessun dito la tocca, le
+  righe sullo schermo stanno in un campo solo, e la selezione va su e giù per
+  tutto lo schermo. Il campo in cui si scrive non si tocca mentre si scrive: le
+  righe si uniscono due secondi dopo l'ultima lettera. Lasciato il campo, la
+  pagina torna divisa in pezzi piccoli, così la scrittura resta veloce
+- **[Bug fix]** Scartata la prima strada, unire i pezzi durante la selezione:
+  trascinando la maniglia blu, la maniglia si fermava al confine e la lente
+  restava bloccata sullo schermo
+- **[Progetto]** `VisibleChunks.kt`: `VisibleRunLines`, `LocalVisibleRunLines`,
+  `LocalPageFingerDown`, `watchPageFingers`, `KeepVisibleLinesTogether`.
+  `PageEditorViewModel`: `joinChunkAfter`, `keepVisibleTogether` (il campo col
+  fuoco resta e prende le righe di sopra; `TYPING_QUIET_MS`, 2 secondi;
+  `FOCUSED_CHUNK_CAP`, 200 righe), `rechunk` non mette confini fra le righe
+  sullo schermo, `lastTypedAt`. `PageEditorScreen`: le righe arrivate in fondo
+  o in cima si uniscono subito, `joinsAbove`/`joinsBelow`. Test:
+  `ChunkSelectionTest`
+- Provata dall'utente sul telefono, con la release v0.186: funziona
+
 ### 🆕 v0.186 — 20/10/2026 · 08:29 — "Freeze Properties Row", "Today" nel widget dello sport e i tag a due colori
 *(Claude Code sul PC; verificata sul telefono dall'utente il 20/10/2026; 654 test passati; commit solo in locale)*
 

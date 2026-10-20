@@ -165,6 +165,13 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         // grande si rifà più lentamente a ogni tasto; uno più piccolo
         // lascia selezionare meno righe insieme.
         internal const val CHUNK_MAX_LINES = 50
+
+        // Oltre queste righe il campo col fuoco non prende altri pezzi, anche
+        // se si vedono: scriverci costerebbe troppo (vedi `keepVisibleTogether`).
+        internal const val FOCUSED_CHUNK_CAP = 200
+
+        // Dopo quanto dall'ultimo tasto si può toccare il campo in cui si scrive.
+        internal const val TYPING_QUIET_MS = 2_000L
         internal const val CHUNK_MAX_CHARS = 3_500
 
         // Quanto si aspetta, smesso di scrivere, prima di ridividere in
@@ -432,6 +439,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         var lines = 0
         var chars = 0
         var inRun = false
+        var previousId: String? = null
         fun close() {
             key?.let { next[it] = members }
             key = null
@@ -441,15 +449,19 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
             if (!isFlowingTextType(block.type)) {
                 close()
                 inRun = false
+                previousId = null
                 continue
             }
             val length = plainTextOf(block).length + 1
+            // Fra due righe sullo schermo un confine non si mette (vedi `keepVisibleTogether`).
+            val onScreen = previousId in visibleLineIds && block.id in visibleLineIds
+            previousId = block.id
             if (!inRun) {
                 // Il primo pezzo del gruppo: comincia col gruppo.
                 inRun = true
                 lines = 0
                 chars = 0
-            } else {
+            } else if (!onScreen) {
                 val existing = starts[block.id]
                 if (existing != null || lines >= CHUNK_MAX_LINES || chars + length > CHUNK_MAX_CHARS) {
                     close()
@@ -485,6 +497,136 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         val (key, ids) = chunkMembers.entries.firstOrNull { afterId in it.value } ?: return
         val at = ids.indexOf(afterId) + 1
         chunkMembers = chunkMembers + (key to (ids.take(at) + newIds + ids.drop(at)))
+    }
+
+    /**
+     * **La selezione arrivata in fondo a un pezzo va avanti** (dal 19/10/2026,
+     * trovato dall'utente in Permanent notes: tenendo premuto e trascinando in
+     * giù, la selezione si fermava a "Kor", che era l'ultima riga di un pezzo).
+     * Ogni pezzo è un campo a sé (vedi [chunkMembers]) e un campo non seleziona
+     * oltre le sue righe: mentre il dito trascina sul testo e la selezione
+     * arriva all'ultima riga, il pezzo che viene dopo entra in questo. Le
+     * posizioni del campo non cambiano (le righe arrivano in fondo), quindi il
+     * gesto in corso continua. Di solito non serve: le righe sullo schermo sono
+     * già un campo solo ([keepVisibleTogether]).
+     *
+     * @return se dopo `lastLineId` c'era un pezzo da unire.
+     */
+    fun joinChunkAfter(lastLineId: String): Boolean {
+        val top = _blocks.value.filter { it.parentBlockId == null }
+        val at = top.indexOfFirst { it.id == lastLineId }
+        if (at < 0) return false
+        val next = top.getOrNull(at + 1) ?: return false
+        val nextKey = chunkStartsOf(top)[next.id] ?: return false
+        val nextIds = chunkMembers[nextKey] ?: return false
+        val ownKey = chunkMembers.entries.firstOrNull { lastLineId in it.value }?.key
+        var joined = chunkMembers - nextKey
+        if (ownKey != null) joined = joined + (ownKey to (joined.getValue(ownKey) + nextIds))
+        chunkMembers = joined
+        _chunkVersion.value++
+        return true
+    }
+
+    /**
+     * Le righe sullo schermo l'ultima volta che la pagina si è fermata: fra due
+     * di loro non c'è un confine di pezzo (vedi [keepVisibleTogether]), e
+     * [rechunk] non ne mette.
+     */
+    private var visibleLineIds: Set<String> = emptySet()
+
+    /** Quando si è scritto l'ultima volta in questa pagina (ms): vedi [keepVisibleTogether]. */
+    private var lastTypedAt = 0L
+
+    /**
+     * **Le righe sullo schermo stanno in un campo solo** (dal 19/10/2026, per
+     * la selezione che si fermava al confine fra due pezzi). Un campo non
+     * seleziona oltre le sue righe, e unire i pezzi mentre si seleziona non va:
+     * col dito su una maniglia, il campo che cambia testo la perde e la lente
+     * resta bloccata; a selezione fatta, Compose non rimette più la barretta
+     * Copy/Cut. Allora i pezzi si uniscono **prima**: quando la pagina si
+     * ferma, due pezzi che si vedono tutti e due diventano uno, e la selezione
+     * va su e giù per tutto lo schermo senza trovare confini.
+     *
+     * Il campo che resta è quello di sopra (le righe di sotto gli arrivano in
+     * fondo); se però il campo col fuoco è quello di sotto resta lui, e le
+     * righe di sopra gli vanno in cima: un campo col fuoco non si butta via.
+     * Lui non si tocca mentre si scrive (la tastiera ricomincerebbe la parola)
+     * né oltre [FOCUSED_CHUNK_CAP] righe, che scrivere costerebbe troppo.
+     * I pezzi fuori dallo schermo tornano piccoli quando non si scrive
+     * ([rechunk]).
+     *
+     * @param visibleIds le righe di primo livello sullo schermo, in ordine.
+     * @param focusedId la riga col fuoco, se ce n'è una.
+     * @return vero se il campo col fuoco è stato lasciato stare perché ci si
+     * stava scrivendo: la schermata riprova quando si smette.
+     */
+    fun keepVisibleTogether(visibleIds: Collection<String>, focusedId: String?): Boolean {
+        visibleLineIds = visibleIds.toHashSet()
+        if (visibleLineIds.size < 2 || chunkMembers.isEmpty()) return false
+        val typing = System.currentTimeMillis() - lastTypedAt < TYPING_QUIET_MS
+        val top = _blocks.value.filter { it.parentBlockId == null }
+        val starts = chunkStartsOf(top)
+
+        // I pezzi della pagina, gruppo per gruppo: chiave (null per il primo
+        // di un gruppo, che ha quella del gruppo) e righe.
+        class Piece(val key: String?, val ids: MutableList<String>)
+        val groups = mutableListOf<MutableList<Piece>>()
+        var group: MutableList<Piece>? = null
+        for (block in top) {
+            if (!isFlowingTextType(block.type)) {
+                group = null
+                continue
+            }
+            val current = group ?: mutableListOf<Piece>().also {
+                groups += it
+                group = it
+            }
+            val key = starts[block.id]
+            if (current.isEmpty() || key != null) current += Piece(key, mutableListOf(block.id)) else current.last().ids += block.id
+        }
+
+        var changed = false
+        var skippedForTyping = false
+        for (pieces in groups) {
+            var i = 1
+            while (i < pieces.size) {
+                val above = pieces[i - 1]
+                val below = pieces[i]
+                if (above.ids.last() !in visibleLineIds || below.ids.first() !in visibleLineIds) {
+                    i++
+                    continue
+                }
+                val focusBelow = focusedId != null && focusedId in below.ids
+                val focusAbove = focusedId != null && focusedId in above.ids
+                if (focusBelow || focusAbove) {
+                    if (typing) {
+                        skippedForTyping = true
+                        i++
+                        continue
+                    }
+                    if (above.ids.size + below.ids.size > FOCUSED_CHUNK_CAP) {
+                        i++
+                        continue
+                    }
+                }
+                if (focusBelow) {
+                    below.ids.addAll(0, above.ids)
+                    pieces.removeAt(i - 1)
+                } else {
+                    above.ids.addAll(below.ids)
+                    pieces.removeAt(i)
+                }
+                changed = true
+            }
+        }
+        if (changed) {
+            chunkMembers = buildMap {
+                for (pieces in groups) for (piece in pieces) piece.key?.let { put(it, piece.ids.toList()) }
+            }
+            _chunkVersion.value++
+            if (!editing) scheduleRechunk()
+        }
+        return skippedForTyping
     }
 
     /** `splitBlockAbove` del repository, fatto sulla lista in memoria. */
@@ -1189,6 +1331,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
     fun load(pageId: String) {
         if (currentPageId == pageId) return
         currentPageId = pageId
+        visibleLineIds = emptySet()
         undoStack.clear()
         redoStack.clear()
         lastTextEditSnapshotBlockId = null
@@ -3188,6 +3331,8 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         // Il resto di un incolla (dal 18/10/2026): stili e pezzi da ripulire.
         paste: PasteFormat = PasteFormat()
     ) {
+        // Si sta scrivendo: il campo col fuoco per un po' non si tocca (vedi `keepVisibleTogether`).
+        if (newLines != linesBefore) lastTypedAt = System.currentTimeMillis()
         // Qui, subito, solo quello che serve ad Annulla e alla cronologia:
         // guardano la modifica così come l'ha fatta l'utente.
         val shownRun = resolveRun(runBlockIds) ?: return
