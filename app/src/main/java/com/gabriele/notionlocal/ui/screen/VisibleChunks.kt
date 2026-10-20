@@ -30,6 +30,13 @@ internal class VisibleRunLines {
      */
     val providers = HashMap<Any, (top: Float, bottom: Float) -> List<String>>()
 
+    /**
+     * Per ogni voce, la cima di una sua riga (per id), in px nelle coordinate
+     * della voce; null se la riga non è lì. Serve al salto dei collegamenti
+     * dentro la pagina (dal 20/10/2026, vedi `PageAnchors.kt`).
+     */
+    val lineTops = HashMap<Any, (blockId: String) -> Float?>()
+
     /** Le righe sullo schermo adesso, in ordine. */
     fun visibleIds(list: LazyListState): List<String> {
         val info = list.layoutInfo

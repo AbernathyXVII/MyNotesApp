@@ -2073,6 +2073,63 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.188 — 20/10/2026 · 13:01 — L'indice navigabile: collegamenti a una riga della stessa pagina
+*(Claude Code sul PC; non ancora provata sul telefono; 674 test passati)*
+
+L'utente, parola per parola:
+> «Vorrei un indice navigabile e interattivo, con collegamenti interni ai
+> capitoli e alle sezioni, che permetta di cliccare una voce normalissima che
+> scrivo io manualmente in un campo di testo e raggiungere direttamente il
+> relativo punto del libro, come su Kindle. Non so come puoi implementare
+> questa feature, un qualcosa che mi consente di collegare una stringa di
+> testo (che io appositamente farò sì che sia o una voce di un indice classico
+> da libro o un titolo grande e importante in un testo) ad un'altra, stile
+> collegamento ma che reindirizza direttamente ed istantaneamente ad una voce
+> della stessa pagina. Magari con dei pin point quando tengo premuto, dentro
+> l'icona dei sei puntini. Dimmi te come pensi che sia il caso farlo»
+
+E, scelta la proposta: «Sì, procedi con la versione che mi hai proposto: pin
+dai sei puntini, scheda "In this page" nella finestra del link, salto con la
+riga che si illumina e il pulsante Back.»
+
+- **[Nuova funzionalità]** **Il pin**: nel menu dei sei puntini di una riga di
+  testo (anche riquadro, citazione, toggle, codice), **"Pin as link target"**
+  ("Fissa come destinazione"). La riga ha un piccolo segnalibro blu nel
+  margine a sinistra; dallo stesso menu, "Unpin link target" lo toglie. Si
+  può annullare
+- **[Nuova funzionalità]** **Le righe in grande fanno da titoli da sole**: una
+  riga scritta tutta da 20 punti in su (barra Aa) è già un punto di arrivo,
+  senza pin. I titoli H1, H2 e H3 non ci sono più dal 24/09/2026, quindi il
+  "titolo" è il testo grande
+- **[Nuova funzionalità]** **"In this page"** nella finestra del
+  collegamento, accanto a "Web": l'elenco delle righe col pin e di quelle in
+  grande, nell'ordine della pagina e rientrate come lì (segnalibro per quelle
+  col pin, "T" per quelle in grande). Si seleziona la voce dell'indice, si
+  tocca l'icona del collegamento, "In this page", e un tocco sulla riga fa il
+  collegamento. Senza righe a cui collegarsi, la scheda dice come farne una
+- **[Nuova funzionalità]** **Il salto**: toccando la voce collegata la pagina
+  va **subito** a quella riga, in cima sotto i pulsanti sospesi, e la riga si
+  illumina un attimo come una riga spostata. In basso compare **"Back"** (con
+  la freccia verso dove si torna), che riporta la pagina dov'era; se ne va da
+  solo dopo dieci secondi. Una riga dentro un toggle porta al toggle
+- **[Nuova funzionalità]** Il collegamento è **blu e sottolineato come gli
+  altri, con una piccola freccia dopo l'ultima lettera**, così si distingue da
+  quello a un sito. Segue la riga e non il testo: rinominata o spostata la si
+  ritrova; cancellata, toccando la voce un avviso dice che non c'è più
+- **[Nuova funzionalità]** I blocchi a sé (riquadro, toggle, citazione,
+  codice) ora si illuminano anche quando li si sposta con "Move up" e "Move
+  down", come le righe di testo
+- **[Progetto]** `BlockLinks.kt` (`note://block/<id>`, `blockLink`,
+  `blockLinkTarget`, `LinkTarget`, `isLargeLine`, `linkTargetsOf` in ordine di
+  lettura), `BlockAttrs.linkTarget`, `PageAnchors.kt` (`LocalBlockLinkJump`,
+  `lineStartIn`/`lineTopIn`, `drawPinRibbon`, `drawBlockLinkArrows` con lo
+  spazio `markBlockLinkEnd`, `anchorDecor`, `LinkBackButton`),
+  `VisibleRunLines.lineTops` (dove sta una riga dentro un gruppo, per il
+  salto), `PageEditorViewModel.setLinkTarget`/`linkTargets`/`highlightBlock`,
+  `rememberLinkOpener` che salta invece di aprire il browser, `LinkDialog` con
+  le schede e `LinkTargetList`; i testi nelle 8 lingue. Test: `BlockLinksTest`,
+  `PageLinkTargetTest`, `LinkDialogTargetsTest`
+
 ### 🆕 v0.187 — 20/10/2026 · 10:24 — La barretta di scorrimento a destra delle pagine
 *(Claude Code sul PC; non ancora provata sul telefono; 664 test passati)*
 

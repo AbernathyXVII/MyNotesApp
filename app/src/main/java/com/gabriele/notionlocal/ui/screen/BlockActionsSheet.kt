@@ -19,6 +19,8 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.Autorenew
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ChevronRight
@@ -375,6 +377,11 @@ internal fun BlockActionsHost(
                             }
                         } else {
                             null
+                        },
+                        pinned = block.attrs.linkTarget,
+                        onTogglePin = {
+                            onDismiss()
+                            viewModel.setLinkTarget(block, !block.attrs.linkTarget)
                         }
                     )
                 } else {
@@ -832,11 +839,20 @@ private fun TextBlockMenu(
     /** Il riquadro: il suo sfondo. Null per gli altri. */
     onBackground: (() -> Unit)? = null,
     /** Riquadro, citazione e codice: toglierli. Null per le righe di testo. */
-    onDelete: (() -> Unit)? = null
+    onDelete: (() -> Unit)? = null,
+    /** Se la riga è un punto di arrivo dei collegamenti (vedi `BlockLinks.kt`). */
+    pinned: Boolean = false,
+    onTogglePin: () -> Unit = {}
 ) {
     MenuTitle(title)
     AddLineGroup(onAddLine)
     OptionsGroup {
+        OptionRow(
+            icon = if (pinned) Icons.Filled.Bookmark else Icons.Filled.BookmarkBorder,
+            label = if (pinned) EditorStrings.unpinLinkTarget else EditorStrings.pinAsLinkTarget,
+            onClick = onTogglePin
+        )
+        HorizontalDivider()
         OptionRow(icon = Icons.Filled.Autorenew, label = EditorStrings.turnInto, trailing = { Chevron() }, onClick = onTurnInto)
         if (onColor != null) {
             HorizontalDivider()

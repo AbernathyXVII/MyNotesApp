@@ -54,6 +54,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.requiredSize
@@ -146,6 +147,7 @@ import com.gabriele.notionlocal.data.notify.NotificationPermission
 import com.gabriele.notionlocal.ui.format.Formats
 import com.gabriele.notionlocal.ui.i18n.NotifyStrings
 import com.gabriele.notionlocal.ui.theme.AccentBlue
+import com.gabriele.notionlocal.ui.theme.TextLinkColor
 import java.time.Instant
 import java.time.LocalDateTime
 import androidx.compose.material.icons.filled.OpenInFull
@@ -1742,6 +1744,51 @@ private fun PageEditorContent(
             inkState.coverHeightPx = if (page?.coverImage != null) with(inkDensity) { COVER_HEIGHT.toPx() } else 0f
             val focusPark = remember { FocusRequester() }
 
+            // **Il salto di un collegamento dentro la pagina** (dal 20/10/2026,
+            // l'indice "come su Kindle"; vedi `PageAnchors.kt`): la riga va in
+            // cima, sotto i pulsanti sospesi, e si illumina; "Back" riporta
+            // dov'era la pagina. Una riga dentro un toggle porta al toggle.
+            var linkReturn by remember(pageId) { mutableStateOf<LinkReturn?>(null) }
+            val movedBlockNow by viewModel.movedBlock.collectAsStateWithLifecycle()
+            val jumpScope = rememberCoroutineScope()
+            val latestRenderItems = rememberUpdatedState(renderItems)
+            val latestBlocks = rememberUpdatedState(blocks)
+            val jumpMarginPx = with(inkDensity) { (FLOATING_BAR_CLEARANCE + 12.dp).toPx() }
+            val jumpToBlock: (String) -> Unit = remember(listState, visibleRunLines) {
+                { blockId ->
+                    jumpScope.launch {
+                        val byId = latestBlocks.value.associateBy { it.id }
+                        var anchor = byId[blockId]
+                        while (anchor?.parentBlockId != null) anchor = byId[anchor.parentBlockId]
+                        val items = latestRenderItems.value
+                        val found = anchor?.let { a -> items.indexOfFirst { a.id in renderItemBlockIds(it) } } ?: -1
+                        if (anchor == null || found < 0) {
+                            Toast.makeText(context, EditorStrings.linkTargetMissing, Toast.LENGTH_SHORT).show()
+                            return@launch
+                        }
+                        focusManager.clearFocus()
+                        val index = found + HEADER_ITEM_COUNT
+                        linkReturn = LinkReturn(
+                            index = listState.firstVisibleItemIndex,
+                            offset = listState.firstVisibleItemScrollOffset,
+                            upward = index > listState.firstVisibleItemIndex
+                        )
+                        listState.scrollToItem(index)
+                        val item = items[found]
+                        if (item is RenderItem.Run) {
+                            // La riga sta dentro il gruppo: si aspetta che sia disegnato per sapere dove.
+                            withFrameNanos { }
+                            withFrameNanos { }
+                            visibleRunLines.lineTops[renderItemKey(item)]?.invoke(anchor.id)?.let { top ->
+                                listState.scrollToItem(index, top.roundToInt())
+                            }
+                        }
+                        listState.scrollBy(-jumpMarginPx)
+                        viewModel.highlightBlock(anchor.id)
+                    }
+                }
+            }
+
             // **Cosa fa una voce del catalogo**, scelta dal menu "/" o dal
             // menu "+": una funzione sola per tutti e due. Erano due copie
             // quasi uguali, una per menu, e si stavano già allontanando
@@ -1990,6 +2037,7 @@ private fun PageEditorContent(
                 LocalFocusPark provides focusPark,
                 LocalSideScroll provides sideScroll,
                 LocalVisibleRunLines provides visibleRunLines,
+                LocalBlockLinkJump provides jumpToBlock,
                 LocalPageFingerDown provides pageFinger,
                 // Mentre si disegna, il testo si legge e basta.
                 LocalPageLocked provides (readOnlyPage || drawingMode)
@@ -2410,7 +2458,11 @@ private fun PageEditorContent(
                             val content = IslandContent(item.block, scopeOf(item.block, childrenOf))
                             // Una tabella arrivata al suo bordo non si trascina
                             // dietro il testo della pagina (vedi `KeepSidewaysInside`).
-                            Box(if (sideScroll != null) Modifier.nestedScroll(KeepSidewaysInside) else Modifier) {
+                            // Col pin ha il segnalibro, e arrivandoci si illumina (`PageAnchors.kt`).
+                            Box(
+                                (if (sideScroll != null) Modifier.nestedScroll(KeepSidewaysInside) else Modifier)
+                                    .anchorDecor(item.block.id, item.block.attrs.linkTarget, movedBlockNow, PAGE_SIDE_PADDING)
+                            ) {
                                 IslandItem(
                                     content = content,
                                     env = itemEnv,
@@ -2425,6 +2477,19 @@ private fun PageEditorContent(
             }
             // **La barretta di scorrimento** (dal 20/10/2026), sul bordo destro.
             PageScrollIndicator(listState, modifier = Modifier.align(Alignment.TopEnd))
+            linkReturn?.let { back ->
+                LinkBackButton(
+                    back = back,
+                    onBack = {
+                        linkReturn = null
+                        jumpScope.launch { listState.scrollToItem(back.index, back.offset) }
+                    },
+                    onTimeout = { linkReturn = null },
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 40.dp)
+                )
+            }
             if (sideScroll != null) {
                 SideScrollEffects(sideScroll, drawing = drawingMode)
                 SideScrollIndicator(
@@ -2900,8 +2965,11 @@ private fun PageEditorContent(
     }
 
     linkDialogFor?.let { current ->
+        // Le righe della pagina a cui collegarsi, lette all'apertura.
+        val targets = remember { viewModel.linkTargets() }
         LinkDialog(
             current = current.ifEmpty { null },
+            targets = targets,
             onDismiss = { linkDialogFor = null },
             onSave = { url ->
                 linkDialogFor = null
@@ -4702,10 +4770,12 @@ private class MergedRunVisualTransformation(
                 }
                 if (blockSpans != null) {
                     var spanPos = 0
-                    for (span in blockSpans) {
+                    for ((spanIndex, span) in blockSpans.withIndex()) {
                         val s = contentStart + spanPos
                         val e = s + span.text.length
                         spanPos += span.text.length
+                        // Lo spazio per la freccia dei collegamenti dentro la pagina.
+                        builder.markBlockLinkEnd(span, blockSpans.getOrNull(spanIndex + 1), s, e)
                         if (span.bold || span.italic || span.underline || span.strikethrough || span.link != null) {
                             val decorations = mutableListOf<TextDecoration>()
                             // Un collegamento è sempre sottolineato.
@@ -5319,7 +5389,15 @@ private fun MergedTextRunField(
                 blocks.subList(first, last + 1).map { it.id }
             }
         }
-        onDispose { visibleLines?.providers?.remove(runKey) }
+        // Dove sta una riga, per il salto dei collegamenti dentro la pagina.
+        visibleLines?.lineTops?.put(runKey) { blockId ->
+            val line = latestRunBlocks.value.indexOfFirst { it.id == blockId }
+            if (line < 0) null else lineTopIn(textLayout, line)?.plus(sideTopPx)
+        }
+        onDispose {
+            visibleLines?.providers?.remove(runKey)
+            visibleLines?.lineTops?.remove(runKey)
+        }
     }
 
     // Scelta una voce del menu "/", la barra e quello che le sta
@@ -5363,6 +5441,8 @@ private fun MergedTextRunField(
     val misspellings = rememberMisspellings(if (proofing == null) emptyList() else bodyOf(fieldValue.text).split('\n'))
     val pageLocked = LocalPageLocked.current
     val openLink = rememberLinkOpener()
+    // Le righe col pin di questo gruppo: il segnalibro nel margine (vedi `PageAnchors.kt`).
+    val pinnedLines = remember(runBlocks) { runBlocks.indices.filter { runBlocks[it].attrs.linkTarget } }
 
     // Una parola scelta dal menu del correttore prende il posto di quella
     // sbagliata, come se la si fosse scritta: stesso giro di `applySlashEntry`.
@@ -5751,6 +5831,14 @@ private fun MergedTextRunField(
                 .fillMaxWidth()
                 .atLeastLane(sideLane, (2 * sidePadPx).roundToInt())
                 .drawBehind { drawMisspellings(textLayout) }
+                // L'indice navigabile (vedi `PageAnchors.kt`): la freccia dei
+                // collegamenti dentro la pagina e il segnalibro delle righe col pin.
+                .drawBehind {
+                    drawBlockLinkArrows(textLayout, TextLinkColor)
+                    for (line in pinnedLines) {
+                        lineTopIn(textLayout, line)?.let { top -> drawPinRibbon(top, left = 0f, color = AccentBlue) }
+                    }
+                }
                 // Un tocco su un testo con un collegamento lo apre (vedi
                 // `TextLinks.kt`): prima del correttore, che così non apre
                 // il suo menu sopra il link.
@@ -6869,7 +6957,10 @@ private fun BlockRow(
                     .weight(1f)
                     .sideLane(sideLane)
                     .bringIntoViewRequester(islandCaret)
-                    .drawBehind { drawMisspellings(islandLayout) }
+                    .drawBehind {
+                        drawMisspellings(islandLayout)
+                        drawBlockLinkArrows(islandLayout, TextLinkColor)
+                    }
                     .linkTaps(layout = { islandLayout }, onLink = openLink)
                     .proofingTaps(enabled = proofing != null && !pageLocked, layout = { islandLayout }) { word, at ->
                         proofMenu = word to at
@@ -7066,10 +7157,11 @@ private class RichTextVisualTransformation(
         val effective = if (storedText == body) spans else applyTextEdit(spans, storedText, body)
         val builder = AnnotatedString.Builder()
         var pos = 0
-        for (span in effective) {
+        for ((spanIndex, span) in effective.withIndex()) {
             val start = pos
             builder.append(span.text)
             pos += span.text.length
+            builder.markBlockLinkEnd(span, effective.getOrNull(spanIndex + 1), start, pos)
             if (span.bold || span.italic || span.underline || span.strikethrough || span.link != null) {
                 val decorations = mutableListOf<TextDecoration>()
                 // Vedi il gemello nel campo unito: un collegamento è sottolineato.

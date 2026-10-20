@@ -121,6 +121,33 @@ object EditorStrings {
     val linkHint get() = t("Paste or type a link", "Incolla o scrivi un link", "Link einfügen oder eingeben", "Collez ou saisissez un lien", "Pega o escribe un enlace", "粘贴或输入链接", "링크를 붙여넣거나 입력하세요", "リンクを貼り付けるか入力")
     val removeLink get() = t("Remove link", "Togli il link", "Link entfernen", "Supprimer le lien", "Quitar enlace", "移除链接", "링크 삭제", "リンクを削除")
     val cantOpenLink get() = t("Can't open this link", "Impossibile aprire questo link", "Dieser Link lässt sich nicht öffnen", "Impossible d'ouvrir ce lien", "No se puede abrir este enlace", "无法打开此链接", "이 링크를 열 수 없습니다", "このリンクを開けません")
+
+    // --- I collegamenti dentro la pagina (dal 20/10/2026), vedi `BlockLinks.kt` ---
+    val pinAsLinkTarget get() = t("Pin as link target", "Fissa come destinazione", "Als Linkziel anheften", "Épingler comme cible de lien", "Fijar como destino de enlace", "固定为链接目标", "링크 대상으로 고정", "リンク先として固定")
+    val unpinLinkTarget get() = t("Unpin link target", "Togli dalle destinazioni", "Linkziel lösen", "Retirer des cibles de lien", "Quitar de los destinos", "取消固定链接目标", "링크 대상 고정 해제", "リンク先の固定を解除")
+    val linkWeb get() = t("Web", "Web", "Web", "Web", "Web", "网页", "웹", "ウェブ")
+    val linkInThisPage get() = t("In this page", "In questa pagina", "Auf dieser Seite", "Dans cette page", "En esta página", "本页内", "이 페이지", "このページ内")
+    val noLinkTargets get() = t(
+        "Nothing to link to yet. Pin a line from its six-dot menu, or write it in large text.",
+        "Ancora niente a cui collegarsi. Fissa una riga dal suo menu dei sei puntini, o scrivila in grande.",
+        "Noch keine Ziele. Hefte eine Zeile über ihr Sechs-Punkte-Menü an oder schreibe sie groß.",
+        "Aucune cible pour l'instant. Épinglez une ligne depuis son menu à six points, ou écrivez-la en grand.",
+        "Aún no hay destinos. Fija una línea desde su menú de seis puntos, o escríbela en grande.",
+        "还没有可链接的位置。从六点菜单固定一行，或用大字书写。",
+        "아직 연결할 곳이 없습니다. 점 6개 메뉴에서 줄을 고정하거나 큰 글씨로 쓰세요.",
+        "リンク先がまだありません。6点メニューから行を固定するか、大きな文字で書いてください。"
+    )
+    val linkTargetMissing get() = t(
+        "The linked line is no longer in this page",
+        "La riga collegata non è più in questa pagina",
+        "Die verlinkte Zeile ist nicht mehr auf dieser Seite",
+        "La ligne liée n'est plus dans cette page",
+        "La línea enlazada ya no está en esta página",
+        "链接的行已不在此页面中",
+        "연결된 줄이 이 페이지에 더 이상 없습니다",
+        "リンク先の行はこのページにもうありません"
+    )
+    val untitledLine get() = t("Empty line", "Riga vuota", "Leere Zeile", "Ligne vide", "Línea vacía", "空行", "빈 줄", "空の行")
     val subscript get() = t("Subscript", "Pedice", "Tiefgestellt", "Indice", "Subíndice", "下标", "아래 첨자", "下付き文字")
     val superscript get() = t("Superscript", "Apice", "Hochgestellt", "Exposant", "Superíndice", "上标", "위 첨자", "上付き文字")
     val outdent get() = t("Outdent", "Riduci rientro", "Einzug verkleinern", "Diminuer le retrait", "Reducir sangría", "减少缩进", "내어쓰기", "インデントを減らす")

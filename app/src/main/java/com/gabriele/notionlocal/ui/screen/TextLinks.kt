@@ -1,20 +1,43 @@
 package com.gabriele.notionlocal.ui.screen
 
 import android.widget.Toast
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
+import androidx.compose.material.icons.filled.Title
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import com.gabriele.notionlocal.data.entity.LinkTarget
+import com.gabriele.notionlocal.data.entity.blockLink
+import com.gabriele.notionlocal.data.entity.blockLinkTarget
+import com.gabriele.notionlocal.ui.theme.NotionGray400
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -55,7 +78,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 // ---------------------------------------------------------------------------
 
 /** L'etichetta con cui il testo mostrato porta l'indirizzo, per sapere cosa si è toccato. */
-private const val LINK_TAG = "text-link"
+internal const val LINK_TAG = "text-link"
 
 /** Il colore del testo con un collegamento; va messo **prima** del colore scelto col pennello, che vince. */
 internal fun linkStyleOf(span: RichTextSpan): SpanStyle? =
@@ -110,14 +133,19 @@ internal fun Modifier.linkTaps(
 
 /**
  * Apre un collegamento; se non si può, lo dice. Le pagine web si aprono nel
- * browser predefinito: vedi `BlockFiles.openUrl`.
+ * browser predefinito: vedi `BlockFiles.openUrl`. Un collegamento a una riga
+ * della pagina (dal 20/10/2026) porta lì: vedi `LocalBlockLinkJump`.
  */
 @Composable
 internal fun rememberLinkOpener(): (String) -> Unit {
     val context = LocalContext.current
-    return remember(context) {
+    val jump = LocalBlockLinkJump.current
+    return remember(context, jump) {
         { url ->
-            if (!BlockFiles.openUrl(context, url)) {
+            val target = blockLinkTarget(url)
+            if (target != null && jump != null) {
+                jump(target)
+            } else if (!BlockFiles.openUrl(context, url)) {
                 Toast.makeText(context, EditorStrings.cantOpenLink, Toast.LENGTH_SHORT).show()
             }
         }
@@ -145,19 +173,25 @@ internal fun textLinkTarget(input: String): String? {
 /**
  * La finestrella del collegamento: l'indirizzo da scrivere o incollare, e
  * "Remove link" se il testo ne ha già uno. [current] è quello che c'è già.
+ *
+ * **"In this page"** (dal 20/10/2026): la seconda scheda elenca le righe della
+ * pagina a cui ci si può collegare ([targets], vedi `linkTargetsOf`); un
+ * tocco su una di loro fa il collegamento.
  */
 @Composable
 internal fun LinkDialog(
     current: String?,
+    targets: List<LinkTarget>,
     onDismiss: () -> Unit,
     onSave: (String) -> Unit,
     onRemove: () -> Unit
 ) {
-    val start = current.orEmpty()
+    val currentTarget = blockLinkTarget(current)
+    var inPage by remember { mutableStateOf(currentTarget != null) }
+    val start = if (currentTarget != null) "" else current.orEmpty()
     var field by remember { mutableStateOf(TextFieldValue(start, TextRange(0, start.length))) }
     var wrong by remember { mutableStateOf(false) }
     val focus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { focus.requestFocus() }
     val submit = {
         val url = textLinkTarget(field.text)
         if (url == null) wrong = true else onSave(url)
@@ -169,6 +203,14 @@ internal fun LinkDialog(
         title = { Text(EditorStrings.link, color = NotionWhite) },
         text = {
             Column {
+                TabRow(selectedTabIndex = if (inPage) 1 else 0, containerColor = DarkSheet) {
+                    Tab(selected = !inPage, onClick = { inPage = false }, text = { Text(EditorStrings.linkWeb) }, unselectedContentColor = NotionGray400)
+                    Tab(selected = inPage, onClick = { inPage = true }, text = { Text(EditorStrings.linkInThisPage) }, unselectedContentColor = NotionGray400)
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                if (inPage) {
+                    LinkTargetList(targets, currentTarget) { onSave(blockLink(it)) }
+                } else {
                 // Un campo per indirizzi: `AutoCaps` lo lascia com'è, niente maiuscola.
                 AutoCaps {
                     OutlinedTextField(
@@ -191,6 +233,8 @@ internal fun LinkDialog(
                             .focusRequester(focus)
                     )
                 }
+                // Qui, accanto al campo: chiesto prima che esista, il fuoco non ha dove andare.
+                LaunchedEffect(Unit) { focus.requestFocus() }
                 if (wrong) {
                     Text(
                         BlockStrings.notALink,
@@ -199,10 +243,12 @@ internal fun LinkDialog(
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 }
+                }
             }
         },
         confirmButton = {
-            TextButton(enabled = field.text.isNotBlank(), onClick = submit) { Text(Strings.done) }
+            // Nella pagina basta toccare la riga.
+            if (!inPage) TextButton(enabled = field.text.isNotBlank(), onClick = submit) { Text(Strings.done) }
         },
         dismissButton = {
             Row {
@@ -215,4 +261,46 @@ internal fun LinkDialog(
             }
         }
     )
+}
+
+/**
+ * Le righe a cui collegarsi, come le voci di un indice: rientrate come nella
+ * pagina, col segnalibro quelle col pin e la "T" quelle scritte in grande.
+ * Quella a cui il testo porta già è colorata.
+ */
+@Composable
+private fun LinkTargetList(targets: List<LinkTarget>, current: String?, onPick: (String) -> Unit) {
+    if (targets.isEmpty()) {
+        Text(EditorStrings.noLinkTargets, style = MaterialTheme.typography.bodyMedium, color = NotionGray400)
+        return
+    }
+    Column(modifier = Modifier.fillMaxWidth().heightIn(max = 340.dp).verticalScroll(rememberScrollState())) {
+        targets.forEach { target ->
+            val chosen = target.blockId == current
+            val tint = if (chosen) MaterialTheme.colorScheme.primary else NotionGray400
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(6.dp))
+                    .clickable { onPick(target.blockId) }
+                    .padding(start = (4 + 14 * target.level.coerceAtMost(4)).dp, top = 10.dp, bottom = 10.dp, end = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    if (target.pinned) Icons.Filled.Bookmark else Icons.Filled.Title,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = tint
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    target.label.ifBlank { EditorStrings.untitledLine },
+                    color = if (chosen) MaterialTheme.colorScheme.primary else NotionWhite,
+                    fontWeight = if (target.pinned) null else FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
 }

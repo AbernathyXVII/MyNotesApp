@@ -58,7 +58,14 @@ data class BlockAttrs(
      * solo su un paragrafo, e cambiando tipo se ne va (vedi
      * `PageRepository.setBlockType`).
      */
-    val listIndent: String? = null
+    val listIndent: String? = null,
+    /**
+     * **Un punto di arrivo dei collegamenti** (dal 20/10/2026, chiesto
+     * dall'utente, come l'indice di un libro su Kindle): segnato dal menu dei
+     * sei puntini, compare in "In this page" nella finestra del collegamento.
+     * Vedi `BlockLinks.kt`.
+     */
+    val linkTarget: Boolean = false
 ) {
     /** L'elenco di cui questo paragrafo tiene il posto, o null. */
     val listIndentType: BlockType?

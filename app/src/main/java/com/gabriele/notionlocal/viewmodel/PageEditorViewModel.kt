@@ -10,6 +10,8 @@ import androidx.lifecycle.viewModelScope
 import com.gabriele.notionlocal.data.PageImageStore
 import com.gabriele.notionlocal.data.entity.BlockEntity
 import com.gabriele.notionlocal.data.entity.BlockAttrs
+import com.gabriele.notionlocal.data.entity.LinkTarget
+import com.gabriele.notionlocal.data.entity.linkTargetsOf
 import com.gabriele.notionlocal.data.entity.LIST_INDENT_TYPES
 import com.gabriele.notionlocal.data.entity.MEDIA_TYPES
 import com.gabriele.notionlocal.data.entity.MULTILINE_TYPES
@@ -2484,6 +2486,23 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
     fun updateBlockAttrs(blockId: String, change: (BlockAttrs) -> BlockAttrs) {
         snapshotForStructuralChange()
         viewModelScope.launch { repository.updateBlockAttrs(blockId, change) }
+    }
+
+    /**
+     * **Il pin di una riga**, dal menu dei sei puntini (dal 20/10/2026): la
+     * riga diventa un punto di arrivo dei collegamenti dentro la pagina (vedi
+     * `BlockLinks.kt`). Si può annullare.
+     */
+    fun setLinkTarget(block: BlockEntity, pinned: Boolean) {
+        updateBlockAttrs(block.id) { it.copy(linkTarget = pinned) }
+    }
+
+    /** Le righe a cui si può collegare del testo, nell'ordine della pagina: vedi `linkTargetsOf`. */
+    fun linkTargets(): List<LinkTarget> = linkTargetsOf(_blocks.value) { spansOf(it) }
+
+    /** La riga arrivata con un collegamento si illumina un attimo, come una riga spostata. */
+    fun highlightBlock(blockId: String) {
+        _movedBlock.value = MovedBlock(blockId, android.os.SystemClock.uptimeMillis())
     }
 
     /**
