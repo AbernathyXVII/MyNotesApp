@@ -50,6 +50,7 @@ import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material.icons.filled.VerticalAlignBottom
 import androidx.compose.material.icons.filled.VerticalAlignTop
+import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -236,6 +237,7 @@ internal fun BlockActionsHost(
                 } else {
                     null
                 }
+                val onMoveToLine = { step = BlockMenuStep.MOVE_TO_LINE }
                 if (step == BlockMenuStep.TURN_INTO) {
                     TurnIntoList(
                         block = block,
@@ -260,7 +262,8 @@ internal fun BlockActionsHost(
                         onDelete = {
                             onDismiss()
                             viewModel.deleteBlock(block)
-                        }
+                        },
+                        onMoveToLine = onMoveToLine
                     )
                 } else if (block.type in MEDIA_TYPES) {
                     // **Immagini, video, audio, file e segnalibri** (dal
@@ -305,7 +308,8 @@ internal fun BlockActionsHost(
                         onDelete = {
                             onDismiss()
                             viewModel.deleteBlock(block)
-                        }
+                        },
+                        onMoveToLine = onMoveToLine
                     )
                 } else if (block.type == BlockType.PAGE_MENTION) {
                     // **"Link to page"** (dal 06/10/2026): aprire la pagina,
@@ -340,7 +344,8 @@ internal fun BlockActionsHost(
                         onDelete = {
                             onDismiss()
                             viewModel.deleteBlock(block)
-                        }
+                        },
+                        onMoveToLine = onMoveToLine
                     )
                 } else if (page == null) {
                     TextBlockMenu(
@@ -453,11 +458,26 @@ internal fun BlockActionsHost(
                                 step = BlockMenuStep.MOVE_TO_DATABASE
                             }
                         },
-                        onMoveToTrash = { step = BlockMenuStep.TRASH }
+                        onMoveToTrash = { step = BlockMenuStep.TRASH },
+                        onMoveToLine = onMoveToLine
                     )
                 }
                 Spacer(modifier = Modifier.size(16.dp))
             }
+        }
+
+        BlockMenuStep.MOVE_TO_LINE -> {
+            val lines = remember(block.id) { viewModel.moveTargets(block) }
+            MoveToLineSheet(
+                title = EditorStrings.moveToLine,
+                lines = lines,
+                labelOf = { line -> lineLabel(line.block, viewModel) },
+                onPick = { afterId ->
+                    onDismiss()
+                    viewModel.moveBlockAfter(block, afterId)
+                },
+                onDismiss = onDismiss
+            )
         }
 
         BlockMenuStep.COLOR -> {
@@ -670,7 +690,26 @@ private enum class BlockMenuStep {
     /** La pagina di un "Link to page" (dal 06/10/2026). */
     PICK_MENTION,
     /** Dove spostare un'immagine (dal 06/10/2026). */
-    MOVE_BLOCK
+    MOVE_BLOCK,
+    /** "Move to line…": sotto quale riga della pagina (dal 20/10/2026). */
+    MOVE_TO_LINE
+}
+
+/**
+ * Come si chiama una riga in "Move to line…": il suo testo (la prima riga),
+ * il nome del file o del sito per immagini e segnalibri, e per il resto il
+ * tipo ("Divider", "Table"…).
+ */
+private fun lineLabel(block: BlockEntity, viewModel: PageEditorViewModel): String {
+    val text = viewModel.plainTextOf(block).lineSequence().firstOrNull()?.trim().orEmpty()
+    return when {
+        text.isNotEmpty() -> text.take(120)
+        block.type in MEDIA_TYPES -> block.attrs.name ?: block.attrs.url?.let { linkHost(it) }
+            ?: EditorStrings.blockType(mediaTypeLabel(block.type))
+        block.type == BlockType.DIVIDER -> EditorStrings.blockType("Divider")
+        block.type == BlockType.PARAGRAPH -> EditorStrings.untitledLine
+        else -> EditorStrings.blockType(blockTypeLabel(block.type))
+    }
 }
 
 /** Il nome inglese di un blocco-file, com'è nel catalogo dei menu "/" e "+". */
@@ -701,10 +740,11 @@ private fun ObjectBlockMenu(
     onAddLine: (Boolean) -> Unit,
     actions: List<ObjectAction>,
     onDuplicate: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onMoveToLine: (() -> Unit)? = null
 ) {
     MenuTitle(title)
-    MoveGroup(onMoveUp, onMoveDown)
+    MoveGroup(onMoveUp, onMoveDown, onMoveToLine)
     AddLineGroup(onAddLine)
     if (actions.isNotEmpty()) {
         OptionsGroup {
@@ -772,7 +812,12 @@ private fun CurrentMark() {
  * in vista. Null = già il primo (o l'ultimo): la voce si vede grigia.
  */
 @Composable
-private fun MoveGroup(onMoveUp: (() -> Unit)?, onMoveDown: (() -> Unit)?) {
+private fun MoveGroup(
+    onMoveUp: (() -> Unit)?,
+    onMoveDown: (() -> Unit)?,
+    /** "Move to line…" (dal 20/10/2026): sotto una riga qualsiasi della pagina. Null = la voce non c'è. */
+    onMoveToLine: (() -> Unit)? = null
+) {
     OptionsGroup {
         OptionRow(
             icon = Icons.Filled.ArrowUpward,
@@ -787,6 +832,15 @@ private fun MoveGroup(onMoveUp: (() -> Unit)?, onMoveDown: (() -> Unit)?) {
             enabled = onMoveDown != null,
             onClick = { onMoveDown?.invoke() }
         )
+        if (onMoveToLine != null) {
+            HorizontalDivider()
+            OptionRow(
+                icon = Icons.Filled.SwapVert,
+                label = EditorStrings.moveToLine,
+                trailing = { Chevron() },
+                onClick = onMoveToLine
+            )
+        }
     }
     Spacer(modifier = Modifier.size(12.dp))
 }
@@ -808,12 +862,13 @@ private fun DividerBlockMenu(
     onMoveUp: (() -> Unit)?,
     onMoveDown: (() -> Unit)?,
     onAddLine: (Boolean) -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onMoveToLine: (() -> Unit)? = null
 ) {
     // Il nome scritto a mano: nel catalogo dei menu "/" il divisore non è un
     // "tipo" di riga (`SlashAction.Type`), e `blockTypeLabel` direbbe "Text".
     MenuTitle(EditorStrings.blockType("Divider"))
-    MoveGroup(onMoveUp, onMoveDown)
+    MoveGroup(onMoveUp, onMoveDown, onMoveToLine)
     AddLineGroup(onAddLine)
     OptionsGroup {
         OptionRow(
@@ -910,13 +965,14 @@ private fun PageBlockMenu(
     onDuplicate: () -> Unit,
     onMoveTo: () -> Unit,
     onMoveToDatabase: () -> Unit,
-    onMoveToTrash: () -> Unit
+    onMoveToTrash: () -> Unit,
+    onMoveToLine: (() -> Unit)? = null
 ) {
     val linked = page.sourceDatabaseId != null
     // Una vista collegata si presenta come "↗ Nome del database", come nel
     // suo titolo dentro la pagina.
     MenuTitle((if (linked) "↗ " else "") + data.title.ifBlank { Strings.untitled })
-    MoveGroup(onMoveUp, onMoveDown)
+    MoveGroup(onMoveUp, onMoveDown, onMoveToLine)
     AddLineGroup(onAddLine)
 
     if (page.isDatabase) {

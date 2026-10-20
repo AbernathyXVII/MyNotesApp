@@ -112,6 +112,12 @@ internal fun MediaPlaceholder(
  */
 @Composable
 private fun WholeImage(fileName: String, store: PageImageStore, description: String?, modifier: Modifier = Modifier) {
+    // Un'immagine molto alta (la foto del Web Clipper) si mostra a strisce: vedi `StripImage`.
+    val size = remember(fileName) { store.imageSize(fileName) }
+    if (size != null && isTallImage(size.first, size.second)) {
+        StripImage(store.fileFor(fileName), size.first, size.second, description, modifier)
+        return
+    }
     var widthPx by remember(fileName) { mutableIntStateOf(0) }
     var bitmap by remember(fileName) { mutableStateOf<ImageBitmap?>(null) }
     LaunchedEffect(fileName, widthPx) {
@@ -267,12 +273,24 @@ internal fun ImageBlockContent(
     }
 
     if (viewing && file != null) {
-        FullScreenImage(
-            fileName = file,
-            store = store,
-            title = attrs.name ?: EditorStrings.blockType("Image"),
-            onDismiss = { viewing = false },
-            onDownload = download
-        )
+        val size = remember(file) { store.imageSize(file) }
+        if (size != null && isTallImage(size.first, size.second)) {
+            TallImageViewer(
+                file = store.fileFor(file),
+                imageWidth = size.first,
+                imageHeight = size.second,
+                title = attrs.name ?: EditorStrings.blockType("Image"),
+                onDismiss = { viewing = false },
+                onDownload = download
+            )
+        } else {
+            FullScreenImage(
+                fileName = file,
+                store = store,
+                title = attrs.name ?: EditorStrings.blockType("Image"),
+                onDismiss = { viewing = false },
+                onDownload = download
+            )
+        }
     }
 }

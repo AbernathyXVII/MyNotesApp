@@ -29,6 +29,7 @@ import com.gabriele.notionlocal.data.entity.plainText
 import com.gabriele.notionlocal.data.entity.splitLines
 import com.gabriele.notionlocal.data.entity.BlockAttrs
 import com.gabriele.notionlocal.data.entity.attrsForNewLine
+import com.gabriele.notionlocal.data.entity.firstEmptyLine
 import com.gabriele.notionlocal.data.entity.MULTILINE_TYPES
 import com.gabriele.notionlocal.data.entity.attrs
 import com.gabriele.notionlocal.data.ink.remapAnchor
@@ -1771,6 +1772,81 @@ class PageRepository(private val db: AppDatabase) {
         }
         passed.id
     }
+
+    /**
+     * **"Move to line…"** (dal 20/10/2026, chiesto dall'utente: "concedimi di
+     * spostare le immagini dove voglio"): il blocco va subito sotto `afterId`,
+     * fra i fratelli di quella riga (dentro lo stesso toggle, se ci sta), o in
+     * cima alla pagina se `afterId` è null. Le righe che ha dentro vengono con
+     * lui. Il vecchio posto si chiude, il nuovo si apre spostando avanti di uno
+     * quelli dopo. Falso se il blocco o la riga non ci sono più, o se la riga
+     * sta dentro il blocco stesso.
+     */
+    suspend fun moveBlockAfter(blockId: String, afterId: String?): Boolean = db.withTransaction {
+        val block = blockDao.getById(blockId) ?: return@withTransaction false
+        if (afterId == blockId) return@withTransaction false
+        val all = blockDao.getBlocksForPageOnce(block.pageId)
+        val byId = all.associateBy { it.id }
+        if (afterId != null) {
+            val target = byId[afterId] ?: return@withTransaction false
+            // Dentro se stesso no: si risale dalla riga scelta.
+            var parent = target.parentBlockId
+            while (parent != null) {
+                if (parent == blockId) return@withTransaction false
+                parent = byId[parent]?.parentBlockId
+            }
+        }
+        blockDao.shiftOrderIndexes(block.pageId, block.parentBlockId, block.orderIndex + 1, -1)
+        val target = afterId?.let { blockDao.getById(it) }
+        val parent = target?.parentBlockId
+        val at = target?.let { it.orderIndex + 1 } ?: 0
+        blockDao.shiftOrderIndexes(block.pageId, parent, at, 1)
+        blockDao.setParentAndOrder(blockId, parent, at)
+        true
+    }
+
+    /**
+     * **Dove va quello che arriva dal Web Clipper** (dal 20/10/2026): al posto
+     * della prima riga vuota della pagina, dall'alto (`firstEmptyLine`), e se
+     * non ce n'è in fondo. Il blocco diventa `type` con le voci `attrs` (la
+     * foto, o il segnalibro); sotto, una riga per ognuna delle `captions`, già
+     * in JSON. Restituisce l'id del blocco.
+     */
+    suspend fun insertWebClip(pageId: String, type: BlockType, attrs: BlockAttrs, captions: List<String>): String =
+        db.withTransaction {
+            val blocks = blockDao.getBlocksForPageOnce(pageId)
+            val empty = blocks.firstEmptyLine { block ->
+                (runCatching { json.decodeFromString<List<RichTextSpan>>(block.textJson) }.getOrNull() ?: emptyList())
+                    .joinToString("") { it.text }
+            }
+            val encoded = BlockAttrs.encode(attrs)
+            val placed = if (empty != null) {
+                blockDao.setTypeAndAttrs(empty.id, type, encoded)
+                empty
+            } else {
+                BlockEntity(
+                    pageId = pageId,
+                    type = type,
+                    attrsJson = encoded,
+                    orderIndex = (blockDao.lastOrderIndex(pageId) ?: -1) + 1
+                ).also { blockDao.insert(it) }
+            }
+            if (captions.isNotEmpty()) {
+                blockDao.shiftOrderIndexes(pageId, placed.parentBlockId, placed.orderIndex + 1, captions.size)
+                captions.forEachIndexed { i, text ->
+                    blockDao.insert(
+                        BlockEntity(
+                            pageId = pageId,
+                            parentBlockId = placed.parentBlockId,
+                            textJson = text,
+                            indentLevel = placed.indentLevel,
+                            orderIndex = placed.orderIndex + 1 + i
+                        )
+                    )
+                }
+            }
+            placed.id
+        }
 
     /**
      * **Una riga vuota sopra o sotto un blocco** (`below`), fra i suoi

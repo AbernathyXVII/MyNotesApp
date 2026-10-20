@@ -84,6 +84,23 @@ class PageImageStore(context: Context) {
         }.onFailure { target.delete() }.getOrNull()
     }
 
+    /** Le misure di un'immagine salvata (larghezza, altezza), lette senza caricarla; null se non c'è. */
+    fun imageSize(name: String): Pair<Int, Int>? = runCatching {
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeFile(File(directory, name).path, bounds)
+        if (bounds.outWidth > 0 && bounds.outHeight > 0) bounds.outWidth to bounds.outHeight else null
+    }.getOrNull()
+
+    /**
+     * **Un file nuovo che l'app scrive da sé** (dal 20/10/2026: la foto del
+     * Web Clipper, scritta a strisce mentre la pagina scorre): il nome da
+     * salvare nel blocco e il file dove scrivere.
+     */
+    fun newFile(extension: String): Pair<String, File> {
+        val name = newName(extension)
+        return name to File(directory, name)
+    }
+
     /**
      * Una copia del file con un nome suo, per una pagina duplicata.
      *

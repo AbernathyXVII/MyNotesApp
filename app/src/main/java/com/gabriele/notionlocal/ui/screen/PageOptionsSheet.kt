@@ -40,6 +40,7 @@ import com.gabriele.notionlocal.data.TextStats
 import com.gabriele.notionlocal.ui.format.Formats
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.ContentCut
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DriveFileMove
 import androidx.compose.material.icons.filled.TableRows
@@ -80,6 +81,7 @@ import com.gabriele.notionlocal.ui.i18n.LockStrings
 import com.gabriele.notionlocal.ui.i18n.ProofingStrings
 import com.gabriele.notionlocal.ui.i18n.NotebookStrings
 import com.gabriele.notionlocal.ui.i18n.Strings
+import com.gabriele.notionlocal.ui.i18n.WebClipStrings
 import com.gabriele.notionlocal.ui.theme.DarkSheet
 import com.gabriele.notionlocal.ui.theme.DarkSurface
 import com.gabriele.notionlocal.ui.theme.FavoriteStar
@@ -158,7 +160,13 @@ fun PageOptionsSheet(
      * che non hanno testo da correggere: allora la voce non c'è.
      */
     proofingValue: String? = null,
-    onProofing: (() -> Unit)? = null
+    onProofing: (() -> Unit)? = null,
+    /**
+     * **"Web Clipper"** (dal 20/10/2026, chiesto dall'utente): la foto di un
+     * sito nella pagina, come OneNote Web Clipper. Null per i database e le
+     * pagine nel cestino: allora la voce non c'è.
+     */
+    onWebClipper: (() -> Unit)? = null
 ) {
     val isRoot = page.id == PageEntity.ROOT_PAGE_ID
 
@@ -218,6 +226,16 @@ fun PageOptionsSheet(
                         label = InkStrings.draw,
                         enabled = !page.isLocked,
                         onClick = onDraw
+                    )
+                }
+                if (onWebClipper != null) {
+                    if (!inNotebook || onDraw != null) HorizontalDivider()
+                    // Bloccata, nella pagina non si aggiunge niente.
+                    OptionRow(
+                        icon = Icons.Filled.ContentCut,
+                        label = WebClipStrings.webClipper,
+                        enabled = !page.isLocked,
+                        onClick = onWebClipper
                     )
                 }
                 // Duplicare la pagina principale vorrebbe dire copiare

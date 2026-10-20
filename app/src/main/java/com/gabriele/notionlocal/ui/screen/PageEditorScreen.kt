@@ -8,6 +8,12 @@ import com.gabriele.notionlocal.data.settings.TitlePosition
 import com.gabriele.notionlocal.ui.i18n.DbStrings
 import com.gabriele.notionlocal.ui.i18n.EditorStrings
 import android.widget.Toast
+import com.gabriele.notionlocal.data.entity.BlockAttrs
+import com.gabriele.notionlocal.data.webclip.WebClipMode
+import com.gabriele.notionlocal.data.webclip.WebClipRequest
+import com.gabriele.notionlocal.data.webclip.webClipCaptions
+import com.gabriele.notionlocal.data.webclip.webClipHost
+import com.gabriele.notionlocal.ui.i18n.WebClipStrings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
@@ -411,6 +417,9 @@ internal fun TextFieldValue.leadOutOfSelection(lead: String = RUN_LEAD): TextFie
  * confonderli porterebbe la pagina a scorrere sulla riga sbagliata.
  */
 private const val HEADER_ITEM_COUNT = 1
+
+/** Quanti fotogrammi aspettare che la foto del Web Clipper compaia nella pagina, prima di portarla in vista. */
+private const val REVEAL_ATTEMPTS = 30
 
 /**
  * La barra sopra la tastiera: quanto è alto un pulsante e quanto è
@@ -1463,6 +1472,9 @@ private fun PageEditorContent(
     var showPageOptions by remember { mutableStateOf(false) }
     // "Proofing" dai tre puntini: vedi `PageProofingSheet`.
     var showProofing by remember { mutableStateOf(false) }
+    // "Web Clipper" dai tre puntini (dal 20/10/2026): il pannello, poi la foto in corso.
+    var webClipperOpen by remember { mutableStateOf(false) }
+    var webClipRequest by remember { mutableStateOf<WebClipRequest?>(null) }
     // "Move to": dove la pagina non può andare, letto quando si tocca la
     // voce; finché c'è, l'albero per scegliere è aperto.
     var moveExclusions by remember { mutableStateOf<PageRepository.MoveExclusions?>(null) }
@@ -1800,6 +1812,30 @@ private fun PageEditorContent(
                         listState.scrollBy(-jumpMarginPx)
                         viewModel.highlightBlock(anchor.id)
                     }
+                }
+            }
+            // **La foto del Web Clipper appena arrivata** (dal 20/10/2026): la
+            // pagina scorre fin lì (senza "Back": non è un collegamento). Si
+            // aspetta qualche fotogramma che la pagina la mostri.
+            val revealRequest by viewModel.revealBlock.collectAsStateWithLifecycle()
+            LaunchedEffect(revealRequest) {
+                val blockId = revealRequest ?: return@LaunchedEffect
+                viewModel.consumeReveal()
+                repeat(REVEAL_ATTEMPTS) {
+                    val byId = latestBlocks.value.associateBy { it.id }
+                    var anchor = byId[blockId]
+                    while (true) {
+                        val parentId = anchor?.parentBlockId ?: break
+                        anchor = byId[parentId]
+                    }
+                    val anchorId = anchor?.id
+                    val found = if (anchorId == null) -1 else latestRenderItems.value.indexOfFirst { anchorId in renderItemBlockIds(it) }
+                    if (found >= 0) {
+                        listState.animateScrollToItem(found + HEADER_ITEM_COUNT)
+                        listState.scrollBy(-jumpMarginPx)
+                        return@LaunchedEffect
+                    }
+                    withFrameNanos { }
                 }
             }
 
@@ -3251,8 +3287,60 @@ private fun PageEditorContent(
                 onProofing = {
                     showPageOptions = false
                     showProofing = true
+                },
+                onWebClipper = if (isTrashed) null else {
+                    {
+                        showPageOptions = false
+                        focusManager.clearFocus()
+                        webClipperOpen = true
+                    }
                 }
             )
+        }
+        if (webClipperOpen) {
+            WebClipperSheet(
+                onDismiss = { webClipperOpen = false },
+                onClip = { request ->
+                    webClipperOpen = false
+                    if (request.mode == WebClipMode.BOOKMARK) {
+                        // Il segnalibro prende da solo titolo, descrizione e immagine del sito.
+                        viewModel.insertWebClip(
+                            BlockType.BOOKMARK,
+                            BlockAttrs(url = request.url),
+                            webClipCaptions(title = null, note = request.note, url = null, clippedFrom = WebClipStrings.clippedFrom)
+                        )
+                    } else {
+                        webClipRequest = request
+                    }
+                }
+            )
+        }
+        webClipRequest?.let { request ->
+            val placeClip: (WebClipResult) -> Unit = { result ->
+                webClipRequest = null
+                val title = request.title.ifBlank { result.pageTitle.orEmpty() }
+                viewModel.insertWebClip(
+                    BlockType.IMAGE,
+                    BlockAttrs(
+                        file = result.fileName,
+                        name = title.ifBlank { webClipHost(request.url) },
+                        url = request.url,
+                        mime = "image/jpeg",
+                        size = result.image.file.length()
+                    ),
+                    webClipCaptions(title, request.note, request.url, WebClipStrings.clippedFrom)
+                )
+                Toast.makeText(context, WebClipStrings.clipped, Toast.LENGTH_SHORT).show()
+            }
+            val failed = {
+                webClipRequest = null
+                showClipFailed(context)
+            }
+            if (request.mode == WebClipMode.REGION) {
+                WebClipRegionDialog(request, imageStore, onDone = placeClip, onFailed = failed, onCancel = { webClipRequest = null })
+            } else {
+                WebClipCaptureDialog(request, imageStore, onDone = placeClip, onFailed = failed, onCancel = { webClipRequest = null })
+            }
         }
         if (showProofing) {
             PageProofingSheet(

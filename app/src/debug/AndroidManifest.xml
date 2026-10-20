@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!-- Solo nella build di debug: la prova del Web Clipper da adb (vedi `WebClipProbeActivity`). -->
+        <activity
+            android:name=".WebClipProbeActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.DeviceDefault.Light.NoActionBar" />
+        <!-- Solo nella build di debug: le parti del Web Clipper che si vedono (vedi `WebClipUiProbeActivity`). -->
+        <activity
+            android:name=".WebClipUiProbeActivity"
+            android:exported="true"
+            android:theme="@style/Theme.NotionLocal" />
+    </application>
+
+</manifest>

@@ -176,6 +176,19 @@ object EditorStrings {
     val indent get() = t("Indent", "Aumenta rientro", "Einzug vergrößern", "Augmenter le retrait", "Aumentar sangría", "增加缩进", "들여쓰기", "インデントを増やす")
     val moveUp get() = t("Move up", "Sposta su", "Nach oben", "Monter", "Subir", "上移", "위로 이동", "上へ移動")
     val moveDown get() = t("Move down", "Sposta giù", "Nach unten", "Descendre", "Bajar", "下移", "아래로 이동", "下へ移動")
+    /** "Move to line…" (dal 20/10/2026): il blocco sotto una riga qualsiasi della pagina, vedi `MoveToLineSheet`. */
+    val moveToLine get() = t("Move to line…", "Sposta sotto una riga…", "Unter eine Zeile verschieben…", "Déplacer sous une ligne…", "Mover bajo una línea…", "移到某行下方…", "줄 아래로 이동…", "行の下へ移動…")
+    val moveToLineHint get() = t(
+        "Tap the line to put it under",
+        "Tocca la riga sotto cui metterlo",
+        "Tippe auf die Zeile, unter die es soll",
+        "Touchez la ligne sous laquelle le placer",
+        "Toca la línea debajo de la que ponerlo",
+        "点按要放在其下方的行",
+        "아래에 둘 줄을 누르세요",
+        "下に置く行をタップしてください"
+    )
+    val topOfPage get() = t("Top of the page", "In cima alla pagina", "Ganz oben auf der Seite", "En haut de la page", "Arriba del todo", "页面顶部", "페이지 맨 위", "ページの一番上")
     val addAbove get() = t("Add above", "Aggiungi sopra", "Oberhalb hinzufügen", "Ajouter au-dessus", "Añadir arriba", "在上方添加", "위에 추가", "上に追加")
     val addBelow get() = t("Add below", "Aggiungi sotto", "Unterhalb hinzufügen", "Ajouter en dessous", "Añadir abajo", "在下方添加", "아래에 추가", "下に追加")
     val addOrChangeBlock get() = t("Add or change block type", "Aggiungi o cambia tipo di blocco", "Blocktyp hinzufügen oder ändern", "Ajouter ou changer le type de bloc", "Añadir o cambiar el tipo de bloque", "添加或更改块类型", "블록 유형 추가 또는 변경", "ブロックの種類を追加・変更")

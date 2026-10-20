@@ -1,0 +1,78 @@
+package com.gabriele.notionlocal.ui.i18n
+
+/**
+ * Le voci del **Web Clipper** (dal 20/10/2026): il pannello come quello di
+ * OneNote Web Clipper, la foto in corso e "Region". Stessa regola di
+ * `Strings`: ogni voce con le sue otto traduzioni.
+ */
+object WebClipStrings {
+
+    private fun t(en: String, it: String, de: String, fr: String, es: String, zh: String, ko: String, ja: String) =
+        Strings.t(en, it, de, fr, es, zh, ko, ja)
+
+    val webClipper get() = "Web Clipper"
+    val link get() = t("Link", "Link", "Link", "Lien", "Enlace", "链接", "링크", "リンク")
+    val linkPlaceholder get() = t("Paste or type a link…", "Incolla o scrivi un link…", "Link einfügen oder eingeben…", "Collez ou saisissez un lien…", "Pega o escribe un enlace…", "粘贴或输入链接…", "링크를 붙여넣거나 입력하세요…", "リンクを貼り付けるか入力…")
+    val paste get() = t("Paste", "Incolla", "Einfügen", "Coller", "Pegar", "粘贴", "붙여넣기", "貼り付け")
+    val notALink get() = t("That doesn't look like a link", "Questo non sembra un link", "Das sieht nicht wie ein Link aus", "Cela ne ressemble pas à un lien", "Eso no parece un enlace", "这看起来不像链接", "링크가 아닌 것 같습니다", "リンクではないようです")
+    val whatToCapture get() = t(
+        "What do you want to capture?",
+        "Cosa vuoi catturare?",
+        "Was möchtest du erfassen?",
+        "Que voulez-vous capturer ?",
+        "¿Qué quieres capturar?",
+        "你想捕获什么？",
+        "무엇을 캡처할까요?",
+        "何をキャプチャしますか?"
+    )
+    val fullPage get() = t("Full Page", "Pagina intera", "Ganze Seite", "Page entière", "Página completa", "整页", "전체 페이지", "ページ全体")
+    val region get() = t("Region", "Area", "Bereich", "Zone", "Región", "区域", "영역", "領域")
+    val bookmark get() = t("Bookmark", "Segnalibro", "Lesezeichen", "Signet", "Marcador", "书签", "북마크", "ブックマーク")
+    val article get() = t("Article", "Articolo", "Artikel", "Article", "Artículo", "文章", "기사", "記事")
+    val title get() = t("Title", "Titolo", "Titel", "Titre", "Título", "标题", "제목", "タイトル")
+    val titlePlaceholder get() = t("Add a title…", "Aggiungi un titolo…", "Titel hinzufügen…", "Ajouter un titre…", "Añade un título…", "添加标题…", "제목 추가…", "タイトルを追加…")
+    val note get() = t("Note", "Nota", "Notiz", "Note", "Nota", "备注", "메모", "メモ")
+    val notePlaceholder get() = t("Add a note…", "Aggiungi una nota…", "Notiz hinzufügen…", "Ajouter une note…", "Añade una nota…", "添加备注…", "메모 추가…", "メモを追加…")
+    val source get() = t("Source", "Fonte", "Quelle", "Source", "Fuente", "来源", "출처", "ソース")
+    val clip get() = t("Clip", "Cattura", "Erfassen", "Capturer", "Capturar", "剪辑", "클립", "クリップ")
+    val clipping get() = t("Clipping…", "Cattura in corso…", "Wird erfasst…", "Capture en cours…", "Capturando…", "正在剪辑…", "클립하는 중…", "クリップ中…")
+    val stepOpening get() = t("Opening the page…", "Apro la pagina…", "Seite wird geöffnet…", "Ouverture de la page…", "Abriendo la página…", "正在打开页面…", "페이지를 여는 중…", "ページを開いています…")
+    val stepCleaning get() = t(
+        "Removing cookie banners and loading the images…",
+        "Tolgo i banner dei cookie e carico le immagini…",
+        "Cookie-Banner werden entfernt, Bilder werden geladen…",
+        "Suppression des bannières de cookies et chargement des images…",
+        "Quitando los avisos de cookies y cargando las imágenes…",
+        "正在移除 Cookie 横幅并加载图片…",
+        "쿠키 배너를 없애고 이미지를 불러오는 중…",
+        "Cookie バナーを消して画像を読み込んでいます…"
+    )
+    val stepArticle get() = t("Keeping only the article…", "Tengo solo l'articolo…", "Nur der Artikel bleibt…", "Seul l'article est conservé…", "Dejando solo el artículo…", "只保留文章…", "기사만 남기는 중…", "記事だけを残しています…")
+    val stepCapturing get() = t("Taking the picture…", "Faccio la foto…", "Bild wird aufgenommen…", "Prise de la capture…", "Haciendo la captura…", "正在截图…", "캡처하는 중…", "撮影しています…")
+    val clipFailed get() = t(
+        "This page couldn't be clipped",
+        "Non sono riuscito a catturare questa pagina",
+        "Diese Seite konnte nicht erfasst werden",
+        "Impossible de capturer cette page",
+        "No se pudo capturar esta página",
+        "无法剪辑此页面",
+        "이 페이지를 클립할 수 없습니다",
+        "このページをクリップできませんでした"
+    )
+    val clipped get() = t("Clipped into this page", "Catturata in questa pagina", "In diese Seite übernommen", "Capturée dans cette page", "Capturada en esta página", "已剪辑到此页面", "이 페이지에 클립했습니다", "このページにクリップしました")
+    /** La riga sotto la foto, prima del link: come "Clipped from:" di OneNote. */
+    val clippedFrom get() = t("Clipped from", "Catturata da", "Erfasst von", "Capturée depuis", "Capturada de", "剪辑自", "클립 출처", "クリップ元")
+    val regionHint get() = t(
+        "Scroll to the part you want, then tap Select and drag over it.",
+        "Scorri fino alla parte che vuoi, poi tocca Seleziona e trascina sopra di lei.",
+        "Scrolle zum gewünschten Teil, tippe auf Auswählen und ziehe darüber.",
+        "Faites défiler jusqu'à la partie voulue, touchez Sélectionner et faites glisser dessus.",
+        "Desplázate hasta la parte que quieras, toca Seleccionar y arrastra sobre ella.",
+        "滚动到想要的部分，点按“选择”后在上面拖动。",
+        "원하는 부분으로 스크롤한 다음 선택을 누르고 그 위를 드래그하세요.",
+        "必要な部分までスクロールし、「選択」をタップしてその上をドラッグしてください。"
+    )
+    val dragHint get() = t("Drag over the area to clip", "Trascina sopra l'area da catturare", "Ziehe über den Bereich", "Faites glisser sur la zone", "Arrastra sobre la zona", "在要剪辑的区域上拖动", "클립할 영역 위를 드래그하세요", "クリップする範囲をドラッグ")
+    val select get() = t("Select", "Seleziona", "Auswählen", "Sélectionner", "Seleccionar", "选择", "선택", "選択")
+    val browse get() = t("Scroll", "Scorri", "Scrollen", "Défiler", "Desplazar", "滚动", "스크롤", "スクロール")
+}

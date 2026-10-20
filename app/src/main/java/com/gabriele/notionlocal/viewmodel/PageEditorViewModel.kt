@@ -12,6 +12,8 @@ import com.gabriele.notionlocal.data.entity.BlockEntity
 import com.gabriele.notionlocal.data.entity.BlockAttrs
 import com.gabriele.notionlocal.data.entity.LinkTarget
 import com.gabriele.notionlocal.data.entity.linkTargetsOf
+import com.gabriele.notionlocal.data.entity.PageLine
+import com.gabriele.notionlocal.data.entity.moveTargetsFor
 import com.gabriele.notionlocal.data.entity.LIST_INDENT_TYPES
 import com.gabriele.notionlocal.data.entity.MEDIA_TYPES
 import com.gabriele.notionlocal.data.entity.MULTILINE_TYPES
@@ -2503,6 +2505,63 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
     /** La riga arrivata con un collegamento si illumina un attimo, come una riga spostata. */
     fun highlightBlock(blockId: String) {
         _movedBlock.value = MovedBlock(blockId, android.os.SystemClock.uptimeMillis())
+    }
+
+    /**
+     * **Il Web Clipper** (dal 20/10/2026): la foto di un sito (o il suo
+     * segnalibro) al posto della prima riga vuota della pagina, e se non ce
+     * n'è in fondo (vedi `PageRepository.insertWebClip`); sotto, le righe di
+     * `captions`. Si può annullare. Quando la pagina lo mostra, `onPlaced`
+     * riceve l'id del blocco, e il blocco si illumina.
+     */
+    fun insertWebClip(type: BlockType, attrs: BlockAttrs, captions: List<List<RichTextSpan>>, onPlaced: (String) -> Unit = {}) {
+        val pageId = currentPageId ?: return
+        snapshotForStructuralChange()
+        viewModelScope.launch {
+            val placedId = structuralEdits.withLock {
+                repository.insertWebClip(pageId, type, attrs, captions.map { json.encodeToString(it) })
+            }
+            _externalChangeTick.value += 1
+            withTimeoutOrNull(FOCUS_HANDOFF_TIMEOUT_MS * 4) {
+                _blocks.first { shown -> shown.any { it.id == placedId && it.type == type } }
+            }
+            _movedBlock.value = MovedBlock(placedId, android.os.SystemClock.uptimeMillis())
+            _revealBlock.value = placedId
+            onPlaced(placedId)
+        }
+    }
+
+    private val _revealBlock = MutableStateFlow<String?>(null)
+
+    /** Un blocco appena arrivato da portare in vista (la foto del Web Clipper): la pagina scorre fin lì, poi `consumeReveal`. */
+    val revealBlock: StateFlow<String?> = _revealBlock
+
+    fun consumeReveal() {
+        _revealBlock.value = null
+    }
+
+    /** I posti dove "Move to line…" può mettere un blocco: vedi `moveTargetsFor`. */
+    fun moveTargets(block: BlockEntity): List<PageLine> = _blocks.value.moveTargetsFor(block.id)
+
+    /**
+     * **"Move to line…"** (dal 20/10/2026): il blocco va subito sotto la riga
+     * `afterId`, o in cima alla pagina con null (vedi
+     * `PageRepository.moveBlockAfter`). Si può annullare; arrivato, si illumina.
+     */
+    fun moveBlockAfter(block: BlockEntity, afterId: String?) {
+        snapshotForStructuralChange()
+        viewModelScope.launch {
+            val moved = structuralEdits.withLock { repository.moveBlockAfter(block.id, afterId) }
+            if (!moved) return@launch
+            _externalChangeTick.value += 1
+            withTimeoutOrNull(FOCUS_HANDOFF_TIMEOUT_MS) {
+                _blocks.first { shown ->
+                    val now = shown.find { it.id == block.id }
+                    now != null && (now.parentBlockId != block.parentBlockId || now.orderIndex != block.orderIndex)
+                }
+            }
+            _movedBlock.value = MovedBlock(block.id, android.os.SystemClock.uptimeMillis())
+        }
     }
 
     /**

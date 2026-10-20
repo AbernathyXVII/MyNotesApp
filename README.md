@@ -2073,6 +2073,116 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.192 — 20/10/2026 · 18:59 — Il Web Clipper, come OneNote: la foto di un sito nella pagina
+*(Claude Code sul PC; provato sul telefono con le attività di prova, non ancora dall'utente; 709 test passati)*
+
+L'utente, parola per parola:
+> «Riesci a creare un plugin in notE che mi consente di creare un'immagine
+> clippata di un sito che inserisco dal browser? Una cosa uguale identica a
+> OneNote Web Clipper. Le opzioni devono essere identiche a quelle che vedi in
+> foto. Nelle impostazioni in alto a destra di ogni pagina ci sarà un'opzione
+> chiamata Web Clipper che, tramite l'inserimento di un link, mi consentirà di
+> creare lo screen (che di default verrà messo nel primissimo spazio libero
+> partendo dall'alto) nella pagina corrente. Il risultato sarà una semplice
+> immagine come se fosse uno screen fatto da una pagina da internet che se apro
+> potrò zoomare per vederla meglio. Dimmi se sei in grado e come pensi di
+> implementare questa feature»
+
+E poi, dopo la proposta:
+> «Per quanto riguarda il Web Clipper sì procedi pure ma perdonami alcune
+> considerazioni: 1) la feature Location non ha senso, toglila. Semmai
+> concedimi di spostare le immagini dove voglio, sempre di default nel primo
+> blocco vuoto (non so se già c'era come feature); 2) non riusciresti proprio a
+> togliere i banner dei cookie? Guarda per esempio la prima foto che è lo
+> screen fatto da OneNote Web Clipper da questo sito
+> https://game8.co/games/Shin-Megami-Tensei-III-Nocturne/archives/331985 ; 3) il
+> fatto che tu faccia il taglio perché il telefono non esaurisca la memoria,
+> cosa significa? Non saresti proprio in grado di farle intere tutte le
+> immagini? 4) per quanto riguarda i paywall, esiste un modo per raggirare
+> questo problema?»
+
+- **[Nuova funzionalità]** **"Web Clipper"** nel menu dei tre puntini di ogni
+  pagina (non nei database; spento con la pagina bloccata). Si apre il
+  pannello come quello di OneNote Web Clipper: il **link** (incollato col
+  pulsante accanto o scritto, anche senza "https://"), **"What do you want to
+  capture?"** con **Full Page**, **Region**, **Bookmark** e **Article**, poi
+  **Title** (si riempie da solo col titolo del sito), **Note** e **Source**.
+  **Niente "Location"**: tolta, come chiesto. "Clip" si accende solo con un
+  link vero
+- **[Nuova funzionalità]** **Full Page**: notE apre il sito **come sul PC**
+  (largo 1440 pixel, come un portatile: è la larghezza a cui game8 viene come
+  nella foto di OneNote, colonna di sinistra compresa; in chiaro), lo fa
+  scorrere fino in fondo perché arrivino le immagini che si caricano solo
+  scorrendo, e lo fotografa dall'alto in fondo. Mentre lo fa si vede la
+  pagina che scorre, coi passi scritti e la barra che avanza; "Cancel" ferma
+  tutto. La pagina di game8: 2160 × 19023 pixel in 13 secondi, 4 MB
+- **[Nuova funzionalità]** **Le pagine vengono intere** (la domanda 3): la
+  foto si scrive nel file **a strisce** mentre la pagina scorre, senza mai
+  stare tutta in memoria (intera, quella di game8 sarebbero 160 MB), e si
+  mostra **a pezzi**, leggendo dal file solo quelli sullo schermo. Solo una
+  pagina più alta di 65535 pixel (il limite del formato JPEG, più di quaranta
+  schermate di PC) si fotografa un po' più piccola, ma sempre intera
+- **[Nuova funzionalità]** **I banner dei cookie** (la domanda 2): prima dello
+  scatto notE tocca da sé **"Reject all"** / "Rifiuta" (la scelta che
+  protegge di più), poi nasconde i banner che restano (anche quelli chiusi in
+  un pezzo di pagina a parte, come quello di game8), il velo scuro dietro, le
+  barre fisse in basso (pubblicità, chat) che nella foto finirebbero in mezzo
+  alla pagina, e sblocca lo scorrimento. La barra del sito in alto resta, in
+  cima. Provato sulla pagina di game8 dell'utente: banner e barra
+  pubblicitaria via
+- **[Nuova funzionalità]** **Region**: il sito a tutto schermo come sul PC, da
+  scorrere e ingrandire come in un browser; "Select" ferma la pagina e col
+  dito si disegna il rettangolo (fuori si scurisce), "Clip" lo fotografa
+  nitido come la pagina intera. "Scroll" torna a scorrere
+- **[Nuova funzionalità]** **Article**: notE tiene solo l'articolo (titolo,
+  testo, immagini, tabelle), senza menu, pubblicità, colonne e commenti,
+  impaginato pulito come un libro in una colonna da leggere, e lo fotografa
+  intero
+- **[Nuova funzionalità]** **Bookmark**: non una foto ma il "Web bookmark" di
+  notE, con titolo, descrizione e immagine del sito
+- **[Nuova funzionalità]** **Dove va**: al posto della **prima riga vuota
+  della pagina, dall'alto** (anche dentro un toggle aperto); se non ce n'è,
+  in fondo. Sotto la foto: il titolo in grassetto, la nota (una riga per ogni
+  sua riga) e, piccolo e grigio, "Clipped from" col link che si tocca. La
+  pagina scorre fino alla foto, che si illumina un attimo. Si annulla come
+  ogni modifica
+- **[Nuova funzionalità]** **La foto nella pagina** è larga quanto la pagina e
+  alta quanto vuole, nitida (a strisce, vedi sopra); le maniglie ai lati la
+  stringono come le altre immagini. **Toccandola** si apre a tutto schermo
+  larga quanto lo schermo, in cima: si scorre col dito **con lo slancio**,
+  si ingrandisce con due dita fino a otto volte, con due tocchi si ingrandisce
+  lì o si torna com'era; la X e lo scarica sono su un tondo scuro, che sopra
+  una pagina bianca si vedono. Vale per tutte le immagini molto alte
+- **[Nuova funzionalità]** **"Move to line…"** (la domanda 1): nel menu di
+  un'immagine (e di segnalibri, file, divisori, sottopagine e database),
+  accanto a "Move up" e "Move down", l'elenco delle righe della pagina
+  rientrate come lì, più "Top of the page": toccandone una il blocco va
+  subito sotto di lei, anche dentro un toggle. Prima c'erano solo "Move up" e
+  "Move down", un posto alla volta, e "Move to" verso un'altra pagina
+- I **paywall** (la domanda 4): aggirarli no, vorrebbe dire scavalcare
+  l'abbonamento di un sito. Se l'abbonamento c'è, si entra col proprio
+  account in "Region" (il sito si usa come in un browser) e notE se lo
+  ricorda: anche le foto "Full Page" e "Article" dopo vedono la pagina come
+  la vede l'utente
+- **[Progetto]** `data/webclip`: `WebClipEngine` (il WebView "da PC", le
+  sue misure in pixel veri, `prepare`, `captureFullPage` che scorre una
+  finestra alla volta e disegna con `WebView.draw`, `captureRegion`,
+  `keepOnlyArticle`), `JpegStripWriter` (JPEG baseline 4:4:4 scritto a
+  strisce, con le tabelle standard), `WebClips.kt` (`webClipUrl`,
+  `webClipCaptions`). Gli script in `assets/web_clipper_cleanup.js` e
+  `web_clipper_article.js`. `PageRepository.insertWebClip` e
+  `moveBlockAfter`, `PageLines.kt` (`inReadingOrder`, `firstEmptyLine`,
+  `moveTargetsFor`), `PageImageStore.newFile`/`imageSize`, `TallImage.kt`
+  (`StripImage`, `TallImageViewer` con `BitmapRegionDecoder`), `WebClipper.kt`
+  (il pannello, `WebClipCaptureDialog`, `WebClipRegionDialog`),
+  `MoveToLineSheet`, `WebClipStrings` nelle 8 lingue. Scoperto sul telefono:
+  `WebView.enableSlowWholeDocumentDraw()` faceva uscire le foto bianche, e
+  `WebView.getScale()` restava fermo a 3,5: non si usano. Nella build di debug
+  `WebClipProbeActivity` e `WebClipUiProbeActivity` provano tutto da adb
+  senza toccare le pagine. Test: `JpegStripWriterTest` (il JPEG riletto dal
+  decodificatore di Java), `WebClipsTest`, `PageLinesTest`,
+  `WebClipPlacementTest`, `WebClipperSheetTest`
+
 ### 🆕 v0.191 — 20/10/2026 · 17:55 — I colori preferiti, sotto gli ultimi colori usati
 *(Claude Code sul PC; non ancora provata sul telefono; 693 test passati)*
 

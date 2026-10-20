@@ -135,6 +135,10 @@ interface BlockDao {
     @Query("UPDATE blocks SET orderIndex = :orderIndex WHERE id = :blockId")
     suspend fun setOrderIndex(blockId: String, orderIndex: Int)
 
+    /** Un blocco in un altro posto della stessa pagina: dentro `parentBlockId` (null = primo livello), al posto `orderIndex`. */
+    @Query("UPDATE blocks SET parentBlockId = :parentBlockId, orderIndex = :orderIndex WHERE id = :blockId")
+    suspend fun setParentAndOrder(blockId: String, parentBlockId: String?, orderIndex: Int)
+
     /**
      * Cambia **solo** il testo di un blocco.
      *
