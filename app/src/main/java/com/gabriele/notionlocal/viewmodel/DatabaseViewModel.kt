@@ -27,6 +27,13 @@ import com.gabriele.notionlocal.data.PageImageStore
 import com.gabriele.notionlocal.data.dao.RowCover
 import com.gabriele.notionlocal.data.entity.CalendarMode
 import com.gabriele.notionlocal.data.entity.ColumnType
+import com.gabriele.notionlocal.data.entity.DatabaseSnapshot
+import com.gabriele.notionlocal.data.entity.RollupFormatting
+import com.gabriele.notionlocal.data.entity.RollupValue
+import com.gabriele.notionlocal.data.entity.computeRollups
+import com.gabriele.notionlocal.data.entity.relationConfig
+import com.gabriele.notionlocal.data.entity.relationTitles
+import com.gabriele.notionlocal.data.entity.secondHopDatabases
 import com.gabriele.notionlocal.data.entity.canGroup
 import com.gabriele.notionlocal.data.entity.DatabaseLayout
 import com.gabriele.notionlocal.data.entity.ChartSettings
@@ -65,6 +72,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -184,7 +192,11 @@ private val SEARCHABLE_COLUMN_TYPES = setOf(
     ColumnType.MULTI_SELECT,
     ColumnType.URL,
     ColumnType.EMAIL,
-    ColumnType.PHONE
+    ColumnType.PHONE,
+    // Dal 21/10/2026: di una Relation si cercano i nomi delle righe collegate,
+    // di un Rollup il testo che mostra.
+    ColumnType.RELATION,
+    ColumnType.ROLLUP
 )
 
 /**
@@ -209,7 +221,9 @@ internal fun searchRows(
      * l'hanno. Una riga nuova è vuota, e sparendo subito sembrerebbe che
      * "Nuova pagina" non abbia fatto niente.
      */
-    addedWhileSearching: Set<String> = emptySet()
+    addedWhileSearching: Set<String> = emptySet(),
+    /** I database collegati dalle Relation, per i nomi delle righe collegate. */
+    related: Map<String, DatabaseSnapshot> = emptyMap()
 ): Pair<List<DatabaseRowEntity>, RowSearch?> {
     val wanted = query.trim()
     if (wanted.isEmpty()) return rows to null
@@ -221,7 +235,11 @@ internal fun searchRows(
         val inProperty = searchable.any { column ->
             val raw = cellValues[row.id to column.id].orEmpty()
             // Di una cella colorata si cerca il testo, non il codice del colore.
-            val readable = if (column.type == ColumnType.COLOR) parseColorCell(raw).text else raw
+            val readable = when (column.type) {
+                ColumnType.COLOR -> parseColorCell(raw).text
+                ColumnType.RELATION -> relationTitles(raw, column.relationConfig()?.let { related[it.database] }).joinToString(" ")
+                else -> raw
+            }
             readable.replace(MULTI_VALUE_SEPARATOR, " ").contains(wanted, ignoreCase = true)
         }
         val inPage = index[row.id]?.contains(wanted, ignoreCase = true) == true
@@ -270,6 +288,49 @@ class DatabaseViewModel(
 
     /** Le pagine collegate dalle celle "Page link", per id: il titolo e l'icona di adesso. */
     val linkedPages: StateFlow<Map<String, PageEntity>> = _linkedPages
+
+    // --- "Relation" e "Rollup" (dal 21/10/2026): vedi `Relations.kt` ---
+
+    private val _related = MutableStateFlow<Map<String, DatabaseSnapshot>>(emptyMap())
+
+    /**
+     * I database collegati dalle colonne Relation, seguiti nel tempo: per i
+     * nomi delle righe nelle celle, per sceglierle, e per i Rollup. Ci sono
+     * anche quelli a due passi (il database collegato da una Relation del
+     * database collegato), quando un Rollup ne legge i nomi.
+     */
+    val related: StateFlow<Map<String, DatabaseSnapshot>> = _related
+
+    /** Questi database com'è adesso, seguiti nel tempo: colonne, righe e celle. */
+    private fun observeSnapshots(ids: Set<String>): Flow<Map<String, DatabaseSnapshot>> {
+        if (ids.isEmpty()) return flowOf(emptyMap())
+        return combine(
+            ids.map { id ->
+                combine(
+                    repository.getColumns(id),
+                    repository.getRows(id),
+                    repository.getAllCells(id),
+                    pageRepository.observePage(id)
+                ) { columns, rows, cells, page ->
+                    id to DatabaseSnapshot(columns, rows, cells.associate { (it.rowId to it.columnId) to it.value }, page)
+                }
+            }
+        ) { pairs -> pairs.toMap() }
+    }
+
+    /** I database dell'app, per scegliere quello di una Relation nuova. */
+    fun loadDatabases(onReady: (List<PageRepository.LinkableDatabase>) -> Unit) {
+        viewModelScope.launch { onReady(pageRepository.linkableDatabases()) }
+    }
+
+    /**
+     * Una riga di un altro database, per aprirne la pagina da una cella
+     * Relation. `onReady` riceve null se la riga una pagina non l'ha e non
+     * può averla (un database semplice).
+     */
+    fun openRelatedRow(rowId: String, onReady: (String?) -> Unit) {
+        viewModelScope.launch { onReady(pageRepository.ensureRowPage(rowId)) }
+    }
 
     // --- Le viste del database (dal 29/09/2026, come su Notion) ---
 
@@ -481,6 +542,25 @@ class DatabaseViewModel(
                 .collect { pages -> _linkedPages.value = pages.associateBy { it.id } }
         }
 
+        // I database collegati dalle Relation (dal 21/10/2026), e quelli a due
+        // passi che i Rollup leggono: vedi `related`.
+        viewModelScope.launch {
+            val ownColumns = _page
+                .map { it?.let { page -> page.sourceDatabaseId ?: page.id } }
+                .filterNotNull()
+                .distinctUntilChanged()
+                .flatMapLatest { repository.getColumns(it) }
+            val firstIds = ownColumns
+                .map { columns -> columns.mapNotNullTo(LinkedHashSet()) { it.relationConfig()?.database } }
+                .distinctUntilChanged()
+            val first = firstIds.flatMapLatest { observeSnapshots(it) }
+            val secondIds = combine(ownColumns, first) { columns, snapshots -> secondHopDatabases(columns, snapshots) }
+                .distinctUntilChanged()
+            combine(first, secondIds.flatMapLatest { observeSnapshots(it) }) { near, far -> far + near }
+                .flowOn(Dispatchers.Default)
+                .collect { _related.value = it }
+        }
+
         // Le viste in più di questo database (vedi `PageEntity.viewHostId`).
         if (!light) {
             viewModelScope.launch {
@@ -585,8 +665,9 @@ class DatabaseViewModel(
                 _page,
                 combine(_searchQuery, _searchIndex, _addedWhileSearching, _frozenOrder, _heldVisible) { query, index, added, frozen, held ->
                     SearchAndOrder(query, index, added, frozen, held)
-                }
-            ) { (sourceColumns, rows, cells), page, (query, index, added, frozen, held) ->
+                },
+                _related
+            ) { (sourceColumns, rows, cells), page, (query, index, added, frozen, held), related ->
                 rawColumns = sourceColumns
                 lastRowOrderIndex = rows.maxOfOrNull { it.orderIndex } ?: -1
                 // In una vista collegata si vede quello che nasconde la
@@ -597,7 +678,18 @@ class DatabaseViewModel(
                 } else {
                     sourceColumns
                 }
-                val cellValues = cells.associate { (it.rowId to it.columnId) to it.value }
+                val storedValues = cells.associate { (it.rowId to it.columnId) to it.value }
+                // **I Rollup** (dal 21/10/2026): calcolati qui, prima di
+                // filtrare e ordinare, e messi fra le celle col testo che si
+                // legge; si ordinano per il loro numero o la loro data.
+                val rollups = computeRollups(columns, rows, storedValues, related, RollupFormatting.formatter)
+                // Quello che una colonna aveva prima di diventare un Rollup non si vede più.
+                val rollupIds = columns.filter { it.type == ColumnType.ROLLUP }.mapTo(HashSet()) { it.id }
+                val cellValues = if (rollupIds.isEmpty()) {
+                    storedValues
+                } else {
+                    storedValues.filterKeys { it.second !in rollupIds } + rollups.mapValues { it.value.text }
+                }
                 // Prima si filtra e poi si ordina: ordinare righe che
                 // stanno per sparire è lavoro buttato, e il risultato
                 // sarebbe lo stesso. La ricerca è un filtro in più, sopra
@@ -608,8 +700,8 @@ class DatabaseViewModel(
                         rows.filter { it.id in ids || it.id in held }
                     }
                 }
-                val (kept, search) = searchRows(filtered, columns, cellValues, query, index, added)
-                val sorted = sortRows(kept, columns, cellValues, page)
+                val (kept, search) = searchRows(filtered, columns, cellValues, query, index, added, related)
+                val sorted = sortRows(kept, columns, cellValues, page, rollups, related)
                 DatabaseTableState(
                     columns = columns,
                     rows = frozen?.let { order -> keepOrder(sorted, order) } ?: sorted,
@@ -825,13 +917,15 @@ class DatabaseViewModel(
         rows: List<DatabaseRowEntity>,
         columns: List<DatabaseColumnEntity>,
         cellValues: Map<Pair<String, String>, String>,
-        page: PageEntity?
+        page: PageEntity?,
+        rollups: Map<Pair<String, String>, RollupValue> = emptyMap(),
+        related: Map<String, DatabaseSnapshot> = emptyMap()
     ): List<DatabaseRowEntity> {
         val rules = sortRulesOf(page, columns)
         if (rules.isEmpty()) return rows
 
         val keyed = rows.map { row ->
-            row to rules.map { rule -> sortValueOf(row, rule.column, cellValues) }
+            row to rules.map { rule -> sortValueOf(row, rule.column, cellValues, rollups, related) }
         }
         // **Prima la prima regola, poi la seconda** (dal 05/10/2026): la
         // seconda conta solo fra le righe che per la prima sono pari. Fra
@@ -878,11 +972,20 @@ class DatabaseViewModel(
     private fun sortValueOf(
         row: DatabaseRowEntity,
         column: DatabaseColumnEntity?,
-        cellValues: Map<Pair<String, String>, String>
+        cellValues: Map<Pair<String, String>, String>,
+        rollups: Map<Pair<String, String>, RollupValue> = emptyMap(),
+        related: Map<String, DatabaseSnapshot> = emptyMap()
     ): SortValue {
         if (column == null) return SortValue(null, row.title)
         val raw = cellValues[row.id to column.id].orEmpty()
         return when (column.type) {
+            // Per i nomi delle righe collegate, non per i loro id.
+            ColumnType.RELATION -> SortValue(
+                null,
+                relationTitles(raw, column.relationConfig()?.let { related[it.database] }).joinToString(", ")
+            )
+            // Per il numero o la data che dà, non per come è scritto.
+            ColumnType.ROLLUP -> rollups[row.id to column.id]?.let { SortValue(it.number, it.text) } ?: SortValue(null, "")
             ColumnType.NUMBER -> SortValue(raw.toDoubleOrNull(), raw)
             // Il primo campo del valore di una data è l'istante di
             // inizio in millisecondi (il formato completo sta in
@@ -1540,18 +1643,38 @@ class DatabaseViewModel(
         viewModelScope.launch { pageRepository.updatePage(updated) }
     }
 
-    fun addColumn(name: String, type: ColumnType, optionsJson: String = "[]") {
+    fun addColumn(
+        name: String,
+        type: ColumnType,
+        optionsJson: String = "[]",
+        /** Solo per una Relation: il nome della gemella nell'altro database, se vale nei due sensi. */
+        twoWayName: String? = null
+    ) {
         val pageId = dataPageId ?: return
         val nextIndex = nextColumnIndex()
         viewModelScope.launch {
-            repository.addColumn(
-                DatabaseColumnEntity(
-                    pageId = pageId,
-                    name = name,
-                    type = type,
-                    optionsJson = optionsJson,
-                    orderIndex = nextIndex
-                )
+            val column = DatabaseColumnEntity(
+                pageId = pageId,
+                name = name,
+                type = type,
+                optionsJson = optionsJson,
+                orderIndex = nextIndex
+            )
+            if (type == ColumnType.RELATION) repository.addRelationColumn(column, twoWayName) else repository.addColumn(column)
+        }
+    }
+
+    /**
+     * "Edit property" o "Change type" che finisce su una Relation: nome,
+     * database (in `optionsJson`) e "Show on …" in un colpo solo.
+     * [twoWayName] è il nome della gemella, o null se vale in un senso solo.
+     */
+    fun updateRelationColumn(columnId: String, name: String, optionsJson: String, twoWayName: String?) {
+        val column = rawColumn(columnId) ?: return
+        viewModelScope.launch {
+            repository.updateRelationColumn(
+                column.copy(name = name, type = ColumnType.RELATION, optionsJson = optionsJson),
+                twoWayName
             )
         }
     }
@@ -1573,7 +1696,8 @@ class DatabaseViewModel(
         ) + 1
 
     fun deleteColumn(column: DatabaseColumnEntity) {
-        viewModelScope.launch { repository.deleteColumn(column) }
+        // Una Relation nei due sensi si porta via la gemella.
+        viewModelScope.launch { repository.deleteColumnWithTwin(rawColumn(column.id) ?: column) }
     }
 
     /**
@@ -2071,8 +2195,15 @@ class DatabaseViewModel(
 
     fun setCellValue(row: DatabaseRowEntity, column: DatabaseColumnEntity, value: String) {
         if (column.type == ColumnType.CHECKBOX) holdAfterCheckbox(row, column, value)
+        // Un Rollup non ha un valore suo: si calcola.
+        if (column.type == ColumnType.ROLLUP) return
         viewModelScope.launch {
-            repository.setCellValue(row.id, column.id, value)
+            if (column.type == ColumnType.RELATION) {
+                // Con la gemella, se la Relation vale nei due sensi.
+                repository.setRelation(row.id, rawColumn(column.id) ?: column, value)
+            } else {
+                repository.setCellValue(row.id, column.id, value)
+            }
         }
     }
 

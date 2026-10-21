@@ -240,7 +240,12 @@ fun calculate(
 ): CalculationResult {
     fun isEmpty(v: String) = if (type == ColumnType.CHECKBOX) v != "true" else v.isBlank()
     fun pieces(v: String): List<String> =
-        if (type == ColumnType.MULTI_SELECT) v.split(MULTI_VALUE_SEPARATOR).filter { it.isNotBlank() } else listOf(v)
+        // Una Relation (dal 21/10/2026) conta come i tag: ogni riga collegata è un valore.
+        if (type == ColumnType.MULTI_SELECT || type == ColumnType.RELATION) {
+            v.split(MULTI_VALUE_SEPARATOR).filter { it.isNotBlank() }
+        } else {
+            listOf(v)
+        }
     val numbers by lazy { values.mapNotNull { it.trim().takeIf { t -> t.isNotEmpty() }?.let { t -> runCatching { BigDecimal(t) }.getOrNull() } } }
     val dates by lazy { values.mapNotNull { v -> v.takeIf { it.isNotBlank() }?.let(startOfDate) } }
     val all = values.size

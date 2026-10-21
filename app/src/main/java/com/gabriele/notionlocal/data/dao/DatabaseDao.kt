@@ -180,6 +180,10 @@ interface DatabaseDao {
     @Query("SELECT * FROM database_columns WHERE pageId = :pageId ORDER BY orderIndex ASC")
     suspend fun getColumnsForPageOnce(pageId: String): List<DatabaseColumnEntity>
 
+    /** Una colonna, se c'è ancora: la gemella di una Relation nei due sensi (vedi `Relations.kt`). */
+    @Query("SELECT * FROM database_columns WHERE id = :columnId LIMIT 1")
+    suspend fun getColumnById(columnId: String): DatabaseColumnEntity?
+
     @Query("SELECT * FROM database_rows WHERE pageId = :pageId ORDER BY orderIndex ASC")
     suspend fun getRowsForPageOnce(pageId: String): List<DatabaseRowEntity>
 

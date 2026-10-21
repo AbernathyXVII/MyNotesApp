@@ -137,7 +137,9 @@ fun chartPoints(
     cellValues: Map<Pair<String, String>, String>,
     settings: ChartSettings,
     labels: ChartLabels,
-    zone: ZoneId = ZoneId.systemDefault()
+    zone: ZoneId = ZoneId.systemDefault(),
+    /** I database collegati dalle Relation: i nomi delle righe di un gruppo per Relation. */
+    related: Map<String, DatabaseSnapshot> = emptyMap()
 ): List<ChartPoint> {
     val groupColumn = settings.groupColumnId?.let { id -> columns.find { it.id == id } }
     val valueColumn = settings.valueColumnId?.let { id -> columns.find { it.id == id && it.type == ColumnType.NUMBER } }
@@ -163,6 +165,16 @@ fun chartPoints(
                 val tags = raw.split(MULTI_VALUE_SEPARATOR).map { it.trim() }.filter { it.isNotEmpty() }
                 if (tags.isEmpty()) add("", labels.empty, ChartKey.Text("￿"), row)
                 tags.forEach { add(it, it, ChartKey.Text(it), row) }
+            }
+            // "Relation" (dal 21/10/2026): come i tag, una barra per ogni riga collegata.
+            ColumnType.RELATION -> {
+                val target = groupColumn.relationConfig()?.let { related[it.database] }
+                val linked = target?.let { snapshot -> relationIds(raw).mapNotNull { snapshot.rowsById[it] } }.orEmpty()
+                if (linked.isEmpty()) add("", labels.empty, ChartKey.Text("￿"), row)
+                linked.forEach { other ->
+                    val title = other.title.ifBlank { labels.untitled }
+                    add(other.id, title, ChartKey.Text(title), row)
+                }
             }
             ColumnType.CHECKBOX -> {
                 val checked = raw == "true"

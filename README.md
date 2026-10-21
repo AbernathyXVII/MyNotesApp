@@ -609,7 +609,10 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   più "sposta", che sta nel menu dell'intestazione tenuta premuta). Dodici
   tipi: Text, Number, Select, Multi-select, Date, Checkbox, **Color cell**
   (dal 26/09/2026: la cella piena di un colore, con sopra del testo se si
-  vuole), URL, Email, Phone, Created time, Last edited time
+  vuole), URL, Email, Phone, Created time, Last edited time. Dal
+  21/10/2026 (v0.125) anche **Relation**, che collega le righe a quelle di
+  un altro database (o dello stesso), anche nei due sensi, e **Rollup**,
+  che fa un calcolo sulle righe collegate
 - **Sei viste per i database** — Table, List, Board, **Calendar**,
   **Timeline** e **Gallery**, una per volta, scelte da Settings → Layout
   e ricordate per ogni database
@@ -939,9 +942,12 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   Created by, Last edited by (non esistono account né utenti), Files &
   media, Button, Place, e tutte le Connections (Google Drive, Figma,
   GitHub, Zendesk) e l'AI Autofill, che richiedono rete e servizi
-  esterni — contro il principio dell'app. **Relation, Rollup e Formula
-  sarebbero invece possibili** e sono i candidati sensati da
-  aggiungere: ognuno è un progetto a sé
+  esterni — contro il principio dell'app. **Relation e Rollup** ci sono
+  dal 21/10/2026 (v0.125); **Formula sarebbe invece possibile** ed è il
+  candidato sensato da aggiungere: un progetto a sé
+- **Database: Relation e Rollup non si filtrano e non raggruppano la
+  bacheca** (v0.125): il filtro sceglie fra tag, date, numeri e caselle,
+  e il raggruppamento fra le proprietà che hanno un valore solo per riga
 - **Database: aprendo una riga come pagina non si vedono le sue
   proprietà.** In Notion stanno in cima alla pagina e si modificano da
   lì; qui i valori vivono solo nella tabella
@@ -2097,6 +2103,100 @@ Le voci nate nelle sessioni cloud (quelle del 24/09/2026, da "Database —
 vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
+
+### 🆕 v0.125 — 21/10/2026 · 08:53 — "Relation" e "Rollup": le righe di un database collegate a quelle di un altro, e i calcoli su quelle collegate
+*(Claude Code sul PC; ancora da provare sul telefono, che era staccato: si proverà su database di prova; 750 test passati)*
+
+L'utente, parola per parola:
+> «Ora la cosa importante che ti dicevo ieri: ho già fatto un database
+> chiamato KPOP Music Show e vorrei che mi facessi quello che si vede in
+> questo sito https://soridata.com/awards/index.html , ossia una
+> visualizzazione Board delle vittorie delle canzoni dei gruppi KPOP
+> raggruppati per il tipo di evento, quindi Show K-POP (nuovoformato di
+> lunedi) The Show, Show Champion, M Countdown, Music Bank, Show! Music Core
+> e Inkigayo.
+> Prendi quel sito solo come ispirazione, perché vorrei che prelevassi i
+> dati delle vittorie da questo profilo su Twitter
+> https://x.com/KshowAnalysis1 .
+> Ancora prima di iniziare, ho chiesto a ChatGPT di brainstormare un'idea su
+> come farlo: ti interessa o pensi di fare da solo? Te lo chiedo solo perché
+> mi ha fatto venire in mente un'idea nell'implementare due feature nuove da
+> Notion»
+
+e, letta l'idea di ChatGPT (tre database collegati: gruppi, canzoni e
+vittorie, con Relation e Rollup):
+> «Sì, procedi. Allora ti chiedo di togliere come ispirazione il profilo di
+> Twitter e di prendere ispirazione da Soridata. Hanno le vittorie
+> praticamente dal 2006, fai te.
+> Quindi vuoi fare prima Releation e Rollup e poi procedi con il database?»
+
+Questa versione è la prima metà: **Relation** e **Rollup**. Il database
+delle vittorie, coi dati di Soridata, viene nelle prossime.
+
+- **[Nuova funzionalità]** **[📱 Mobile]** Fra i tipi di proprietà c'è
+  "**Relation**" (icona ↗): collega le righe di questo database a quelle di
+  un altro, o dello stesso. Scegliendola nella finestra della proprietà,
+  subito sotto compare "**Related to**", l'elenco dei database col nome
+  della pagina in cui stanno; senza averne scelto uno non si aggiunge. Nella
+  cella ci sono i nomi delle righe collegate, sottolineati con la freccia
+  come in "Page link": toccandone uno si apre la sua pagina (in un database
+  semplice, dove le righe non hanno pagina, si apre la scelta). Toccando il
+  resto della cella si sceglie: in cima le righe già collegate, sotto le
+  altre del database, con la ricerca; un tocco collega o scollega, e la
+  cella cambia subito. Una Relation già fatta tiene il suo database: le sue
+  celle sono righe di quello
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Show on “…”": la Relation
+  nei due sensi**, come su Notion. Accesa, nell'altro database nasce una
+  Relation gemella, col nome scritto sotto ("Name there"; di suo il nome di
+  questo database), e le due restano allineate: collegando la canzone "I
+  AM" a "IVE", nella riga di IVE compare I AM, e viceversa. Si accende e si
+  spegne anche dopo, da "Edit property": accesa, la gemella nasce già con
+  i collegamenti che ci sono; spenta, se ne va (le celle di qua restano);
+  cambiando il nome, la gemella si rinomina. Eliminando la Relation se ne
+  va anche la gemella
+- **[Nuova funzionalità]** **[📱 Mobile]** Fra i tipi di proprietà c'è
+  "**Rollup**" (icona della lente): legge le righe collegate da una
+  Relation di questo database, una loro proprietà (o il nome) e ci fa un
+  calcolo. Scegliendolo, sotto si scelgono la Relation, la proprietà e il
+  calcolo: **Show original**, **Show unique values**, i conteggi (Count
+  all, values, unique values, empty, not empty) e le percentuali; per i
+  numeri Sum, Average, Median, Min, Max e Range; per le date Earliest date,
+  Latest date e i giorni fra la prima e l'ultima; per le caselle Checked,
+  Unchecked e le loro percentuali. La proprietà letta può essere anche lei
+  una Relation: da una vittoria si legge **il gruppo della canzone**, due
+  database più in là. Non si scrive: si aggiorna da sé appena cambia
+  qualcosa nelle righe collegate, anche nell'altro database. Senza una
+  Relation nel database, la finestra dice di aggiungerne prima una
+- **[Nuova funzionalità]** **[📱 Mobile]** Dove si vedono: nella tabella,
+  nelle schede di bacheca, galleria ed elenco, nella scheda della riga e in
+  cima alla sua pagina. **Si ordinano** (la Relation per i nomi collegati,
+  il Rollup per il suo numero o la sua data), **la lente li cerca** (i nomi
+  delle righe collegate, il testo del Rollup), "**Calculate**" in fondo
+  alla colonna conta ogni riga collegata come un valore, "Fit to content"
+  misura i nomi, e **un grafico si può raggruppare per una Relation**: una
+  barra per ogni riga collegata, col suo nome. Non ancora nel filtro e nel
+  raggruppamento della bacheca (vedi "Limiti noti")
+- **[Nuova funzionalità]** **[📱 Mobile]** **Le copie.** Duplicando la
+  pagina di una riga, la copia ha gli stessi collegamenti e, nei due sensi,
+  anche le righe di là la hanno fra le loro. Copiando un database, le
+  Relation con sé stesso collegano le righe della copia fra loro; quelle
+  verso un altro database restano collegate a quello, in un senso solo (la
+  gemella di là è dell'originale). Anche i Rollup della copia leggono le
+  Relation della copia
+- **[Progetto]** Nessuna colonna nuova nel database dell'app (resta la
+  versione 59): la cella di una Relation tiene gli id delle righe
+  collegate, separati come i tag, e la configurazione di Relation e Rollup
+  sta nelle opzioni della colonna, come quelle dei tag. I Rollup si
+  calcolano nel `DatabaseViewModel`, prima di filtrare e ordinare, dai
+  database collegati seguiti nel tempo (`related`, a uno e a due passi).
+  File: `Relations.kt` (i conti, le due metà, le copie), `DatabaseRepository`
+  (`setRelation`, `addRelationColumn`, `updateRelationColumn`,
+  `deleteColumnWithTwin`, in una transazione ciascuno), `RelationCell.kt`,
+  `RelationSettings.kt`, `RelationStrings.kt` (otto lingue). Test:
+  `RelationsTest` (i conti, coi gruppi, le canzoni e le vittorie
+  dell'utente) e `RelationTest` (col database: le due metà allineate, la
+  gemella accesa, rinominata e spenta, il Rollup a due passi che segue i
+  cambiamenti, ordinamento, ricerca, riga duplicata, database copiato)
 
 ### ✏️ v0.124.1 — 21/10/2026 · 01:14 — La Cronologia riletta e rinumerata: aggiunte, modifiche e correzioni, e la piattaforma di ogni voce
 *(Claude Code sul PC; Cronologia riletta versione per versione; provata sul telefono in Settings → Patch Notes: "v0.124.1" sotto la voce, l'elenco con ✏️ v0.124.1 e 🆕 v0.124, le etichette delle piattaforme nella pagina della versione; 729 test passati)*

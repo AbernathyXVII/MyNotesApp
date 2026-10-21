@@ -40,6 +40,19 @@ enum class ColumnType {
      */
     PAGE_LINK,
     /**
+     * **"Relation"** (dal 21/10/2026, chiesta dall'utente, come su Notion):
+     * le righe collegate di un altro database (o di questo), anche nei due
+     * sensi. Il valore sono i loro id; la configurazione sta in `optionsJson`.
+     * Vedi `Relations.kt` e `RelationCell.kt`.
+     */
+    RELATION,
+    /**
+     * **"Rollup"** (dal 21/10/2026): un calcolo sulle righe collegate da una
+     * Relation (quante sono, la prima data, la somma…). Non ha un valore
+     * suo: si calcola. Vedi `Relations.kt`.
+     */
+    ROLLUP,
+    /**
      * **"Image"** (dal 29/09/2026): una cella quadrata con un'immagine
      * intera, scelta come l'icona di una pagina. Il valore è il nome del
      * file (`PageImageStore`). Vedi `ImageCell.kt`.
@@ -64,7 +77,10 @@ val ColumnType.canGroup: Boolean
         this != ColumnType.COLOR &&
         this != ColumnType.PAGE_LINK &&
         this != ColumnType.IMAGE &&
-        this != ColumnType.DURATION
+        this != ColumnType.DURATION &&
+        // Relation e Rollup: id di righe, e un calcolo che cambia con loro.
+        this != ColumnType.RELATION &&
+        this != ColumnType.ROLLUP
 
 /**
  * Una singola opzione disponibile per una colonna SELECT. Serializzata

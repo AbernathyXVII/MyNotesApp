@@ -43,6 +43,8 @@ object DbStrings {
         ColumnType.EMAIL -> "Email"
         ColumnType.PHONE -> "Phone"
         ColumnType.PAGE_LINK -> "Page link"
+        ColumnType.RELATION -> "Relation"
+        ColumnType.ROLLUP -> "Rollup"
         ColumnType.IMAGE -> "Image"
         ColumnType.CREATED_TIME -> "Created time"
         ColumnType.LAST_EDITED_TIME -> "Last edited time"
@@ -61,6 +63,8 @@ object DbStrings {
         ColumnType.EMAIL -> t("Email", "Email", "E-Mail", "E-mail", "Correo", "电子邮件", "이메일", "メール")
         ColumnType.PHONE -> t("Phone", "Telefono", "Telefon", "Téléphone", "Teléfono", "电话", "전화", "電話")
         ColumnType.PAGE_LINK -> t("Page link", "Collegamento a pagina", "Seitenlink", "Lien de page", "Enlace a página", "页面链接", "페이지 링크", "ページリンク")
+        ColumnType.RELATION -> t("Relation", "Relazione", "Relation", "Relation", "Relación", "关联", "관계형", "リレーション")
+        ColumnType.ROLLUP -> t("Rollup", "Rollup", "Rollup", "Rollup", "Rollup", "汇总", "롤업", "ロールアップ")
         ColumnType.IMAGE -> t("Image", "Immagine", "Bild", "Image", "Imagen", "图片", "이미지", "画像")
         ColumnType.CREATED_TIME -> t("Created time", "Data di creazione", "Erstellt am", "Date de création", "Fecha de creación", "创建时间", "생성 일시", "作成日時")
         ColumnType.LAST_EDITED_TIME -> t("Last edited time", "Ultima modifica", "Zuletzt bearbeitet", "Dernière modification", "Última edición", "上次编辑时间", "마지막 편집 일시", "最終更新日時")

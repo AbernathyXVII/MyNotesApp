@@ -10,6 +10,10 @@ import com.gabriele.notionlocal.data.TextStats
 import com.gabriele.notionlocal.data.textStatsOf
 import com.gabriele.notionlocal.data.entity.BlockEntity
 import com.gabriele.notionlocal.data.entity.ColumnType
+import com.gabriele.notionlocal.data.entity.copiedLinkOptions
+import com.gabriele.notionlocal.data.entity.encodeRelationIds
+import com.gabriele.notionlocal.data.entity.relationConfig
+import com.gabriele.notionlocal.data.entity.relationIds
 import com.gabriele.notionlocal.data.entity.encodeColumnWidths
 import com.gabriele.notionlocal.data.entity.encodeSortRules
 import com.gabriele.notionlocal.data.entity.parseSortRules
@@ -1254,15 +1258,32 @@ class PageRepository(private val db: AppDatabase) {
                     // senza i suoi valori sarebbe solo una riga nuova.
                     // Un'immagine ("Image") ha il suo file: la copia ne ha uno suo,
                     // o cambiandola in una riga sparirebbe anche dall'altra.
-                    val imageColumns = databaseDao.getColumnsForPageOnce(sourceRow.pageId)
-                        .filter { it.type == ColumnType.IMAGE }.mapTo(HashSet()) { it.id }
-                    databaseDao.getCellsForRowOnce(sourceRow.id).forEach { cell ->
+                    val sourceColumns = databaseDao.getColumnsForPageOnce(sourceRow.pageId)
+                    val imageColumns = sourceColumns.filter { it.type == ColumnType.IMAGE }.mapTo(HashSet()) { it.id }
+                    val sourceCells = databaseDao.getCellsForRowOnce(sourceRow.id)
+                    sourceCells.forEach { cell ->
                         val value = if (cell.columnId in imageColumns && cell.value.isNotEmpty()) {
                             copyImage(cell.value) ?: cell.value
                         } else {
                             cell.value
                         }
                         databaseDao.insertCell(cell.copy(id = UUID.randomUUID().toString(), rowId = rowId, value = value))
+                    }
+                    // Una "Relation" nei due sensi (dal 21/10/2026): le righe
+                    // collegate all'originale hanno anche la copia fra le loro.
+                    sourceColumns.forEach { column ->
+                        val reverse = column.relationConfig()?.reverse ?: return@forEach
+                        if (databaseDao.getColumnById(reverse)?.relationConfig()?.reverse != column.id) return@forEach
+                        relationIds(sourceCells.find { it.columnId == column.id }?.value).forEach { other ->
+                            val cell = databaseDao.getCell(other, reverse)
+                            val ids = relationIds(cell?.value)
+                            if (rowId in ids) return@forEach
+                            if (cell != null) {
+                                databaseDao.updateCell(cell.copy(value = encodeRelationIds(ids + rowId)))
+                            } else {
+                                databaseDao.insertCell(DatabaseCellEntity(rowId = other, columnId = reverse, value = rowId))
+                            }
+                        }
                     }
                 }
                 sourceLink != null -> {
@@ -1475,7 +1496,14 @@ class PageRepository(private val db: AppDatabase) {
 
         if (original.isDatabase) {
             columns.forEach { column ->
-                databaseDao.insertColumn(column.copy(id = newColumnIds.getValue(column.id), pageId = copyId))
+                databaseDao.insertColumn(
+                    column.copy(
+                        id = newColumnIds.getValue(column.id),
+                        pageId = copyId,
+                        // "Relation" e "Rollup" che puntano dentro il database puntano dentro la copia.
+                        optionsJson = copiedLinkOptions(column, pageId, copyId, newColumnIds)
+                    )
+                )
             }
             val rows = databaseDao.getRowsForPageOnce(pageId)
             val newRowIds = rows.associate { it.id to UUID.randomUUID().toString() }
@@ -1499,6 +1527,7 @@ class PageRepository(private val db: AppDatabase) {
             }
             val pageLinkColumns = columns.filter { it.type == ColumnType.PAGE_LINK }.mapTo(HashSet()) { it.id }
             val imageColumns = columns.filter { it.type == ColumnType.IMAGE }.mapTo(HashSet()) { it.id }
+            val selfRelations = columns.filter { it.relationConfig()?.database == pageId }.mapTo(HashSet()) { it.id }
             databaseDao.getAllCellsForPageOnce(pageId).forEach { cell ->
                 val rowId = newRowIds[cell.rowId] ?: return@forEach
                 val columnId = newColumnIds[cell.columnId] ?: return@forEach
@@ -1506,6 +1535,8 @@ class PageRepository(private val db: AppDatabase) {
                 // pagina di un'altra riga): la copia punta alla copia.
                 val value = when {
                     cell.columnId in pageLinkColumns -> copies[cell.value] ?: cell.value
+                    // Una Relation di un database con sé stesso: fra le righe della copia.
+                    cell.columnId in selfRelations -> encodeRelationIds(relationIds(cell.value).map { newRowIds[it] ?: it })
                     // "Image": ogni copia col suo file (vedi sopra, riga duplicata).
                     cell.columnId in imageColumns && cell.value.isNotEmpty() -> copyImage(cell.value) ?: cell.value
                     else -> cell.value

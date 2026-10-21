@@ -33,6 +33,15 @@ import androidx.compose.material.icons.filled.Lock
 import com.gabriele.notionlocal.ui.i18n.LockStrings
 import androidx.compose.material.icons.filled.LinkOff
 import androidx.compose.material.icons.filled.NorthEast
+import androidx.compose.material.icons.filled.CallMade
+import com.gabriele.notionlocal.data.entity.DatabaseSnapshot
+import com.gabriele.notionlocal.data.entity.RelationConfig
+import com.gabriele.notionlocal.data.entity.RollupConfig
+import com.gabriele.notionlocal.data.entity.encodeRelationConfig
+import com.gabriele.notionlocal.data.entity.encodeRollupConfig
+import com.gabriele.notionlocal.data.entity.relationConfig
+import com.gabriele.notionlocal.data.entity.relationTitles
+import com.gabriele.notionlocal.data.entity.rollupConfig
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.graphics.Shape
@@ -872,6 +881,8 @@ fun DatabaseContent(
     // "Page link": le pagine collegate e la scelta, per tutte le viste (le
     // celle sono le stesse) e per le finestre che le mostrano.
     val linkedPages by hostViewModel.linkedPages.collectAsStateWithLifecycle()
+    // "Relation" (dal 21/10/2026): i database collegati, per tutte le viste.
+    RelationHost(viewModel = hostViewModel, onOpenPage = onOpenRowPage) {
     PageLinkHost(factory = factory, linkedPages = linkedPages, onOpenPage = onOpenRowPage) {
     // Una vista, un ViewModel e un pezzo di schermo nuovi: niente di
     // quello che era aperto su una resta appeso all'altra.
@@ -906,6 +917,7 @@ fun DatabaseContent(
             onSettingsStarted = { settingsForView = null },
             modifier = modifier
         )
+    }
     }
     }
 
@@ -1834,11 +1846,14 @@ private fun DatabaseViewBody(
     propertyTarget?.let { target ->
         PropertySheet(
             target = target,
+            viewModel = viewModel,
             onDismiss = { propertyTarget = null },
-            onSave = { name, type, optionsJson, number, duration ->
-                when (target) {
-                    is PropertyTarget.New -> viewModel.addColumn(name, type, optionsJson)
-                    is PropertyTarget.Existing ->
+            onSave = { name, type, optionsJson, number, duration, twoWayName ->
+                when {
+                    target is PropertyTarget.New -> viewModel.addColumn(name, type, optionsJson, twoWayName)
+                    target is PropertyTarget.Existing && type == ColumnType.RELATION ->
+                        viewModel.updateRelationColumn(target.column.id, name, optionsJson, twoWayName)
+                    target is PropertyTarget.Existing ->
                         viewModel.updateColumn(target.column.id, name, type, optionsJson, number, duration = duration)
                 }
                 propertyTarget = null
@@ -2556,8 +2571,9 @@ private fun fitWidths(
     val simple = LocalSimpleDatabase.current
     val icons = LocalRowIcons.current
     val linkedPages = LocalLinkedPages.current
+    val related = LocalRelated.current
     val nameLabel = nameColumnLabel()
-    return remember(state, columns, keys, calculations, subRowKeys, typography, density, simple, icons, linkedPages, nameLabel) {
+    return remember(state, columns, keys, calculations, subRowKeys, typography, density, simple, icons, linkedPages, related, nameLabel) {
         if (keys.isEmpty()) return@remember emptyMap()
         val measure: (String, ComposeTextStyle) -> Dp = { text, style ->
             if (text.isEmpty()) {
@@ -2589,7 +2605,11 @@ private fun fitWidths(
             columns.filter { it.id in keys }.forEach { column ->
                 val header = 12.dp + 16.dp + 8.dp + measure(DbStrings.columnName(column.name), typography.labelLarge) + 12.dp
                 val cells = state.rows.maxOfOrNull { row ->
-                    cellFitWidth(column, row, state.cellValues[row.id to column.id].orEmpty(), typography, measure) { linkedPages[it]?.title } + 24.dp
+                    cellFitWidth(
+                        column, row, state.cellValues[row.id to column.id].orEmpty(), typography, measure,
+                        pageTitle = { linkedPages[it]?.title },
+                        related = related
+                    ) + 24.dp
                 } ?: 0.dp
                 val calc = validCalculation(calculations, column.id, column.type)?.let {
                     calculationWidth(it, columnCalculationText(it, column, rowsForCalculation(state.rows, column.id in subRowKeys), state))
@@ -2631,10 +2651,15 @@ internal fun cellFitWidth(
     value: String,
     typography: Typography,
     measure: (String, ComposeTextStyle) -> Dp,
+    /** I database collegati dalle Relation (vedi `LocalRelated`). */
+    related: Map<String, DatabaseSnapshot> = emptyMap(),
     /** Il titolo della pagina di una cella "Page link", o null se non c'è più. */
     pageTitle: (String) -> String? = { null }
 ): Dp = when (column.type) {
     ColumnType.CHECKBOX -> 24.dp
+    // Ogni riga collegata: la freccia, 3 punti, il nome, e 8 fra l'una e l'altra (`RelatedRowLink`).
+    ColumnType.RELATION -> relationTitles(value, column.relationConfig()?.let { related[it.database] })
+        .fold(0.dp) { sum, title -> sum + 14.dp + 3.dp + measure(title.ifBlank { Strings.untitled }, typography.bodyMedium) + 8.dp }
     // Il quadrato dell'immagine, senza i 12 punti per lato delle altre celle.
     ColumnType.IMAGE -> IMAGE_CELL_SIZE - 24.dp
     // L'icona, 6 punti, il titolo (o "Page not found").
@@ -7184,7 +7209,8 @@ private fun CellContent(
         // propria zona toccabile.
         modifier = if (column.type == ColumnType.DATE || column.type == ColumnType.COLOR ||
             column.type == ColumnType.PAGE_LINK || column.type == ColumnType.IMAGE ||
-            column.type == ColumnType.DURATION
+            column.type == ColumnType.DURATION ||
+            column.type == ColumnType.RELATION || column.type == ColumnType.ROLLUP
         ) {
             Modifier
         } else {
@@ -7236,6 +7262,21 @@ private fun CellContent(
             ColumnType.PAGE_LINK -> PageLinkCell(
                 value = value,
                 onValueChange = onValueChange,
+                contentPadding = cellPadding,
+                alignment = LocalCellAlignment.current.box
+            )
+
+            // "Relation" e "Rollup" (dal 21/10/2026): vedi `RelationCell.kt`.
+            ColumnType.RELATION -> RelationCell(
+                column = column,
+                value = value,
+                onValueChange = onValueChange,
+                contentPadding = cellPadding,
+                alignment = LocalCellAlignment.current.box
+            )
+
+            ColumnType.ROLLUP -> RollupCell(
+                value = value,
                 contentPadding = cellPadding,
                 alignment = LocalCellAlignment.current.box
             )
@@ -8158,6 +8199,18 @@ private fun CardPropertyValue(
             contentScale = ContentScale.Fit,
             placeholder = false,
             modifier = Modifier.size(28.dp)
+        )
+        return
+    }
+    // "Relation": le frecce e i nomi delle righe collegate.
+    if (column.type == ColumnType.RELATION) {
+        val related = LocalRelated.current
+        Text(
+            text = relationCardText(value, column.relationConfig()?.let { related[it.database] }),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = overflow
         )
         return
     }
@@ -9592,6 +9645,7 @@ internal fun RowPageProperties(
     var addingProperty by remember { mutableStateOf(false) }
     val linkedPages by viewModel.linkedPages.collectAsStateWithLifecycle()
 
+    RelationHost(viewModel = viewModel, onOpenPage = onOpenPage) {
     PageLinkHost(factory = factory, linkedPages = linkedPages, onOpenPage = onOpenPage) {
     CompositionLocalProvider(LocalDatabaseLocked provides !canEdit, LocalNameColumnTitle provides dataPage?.nameColumnTitle) {
         Column(
@@ -9699,13 +9753,15 @@ internal fun RowPageProperties(
         }
     }
     }
+    }
 
     if (addingProperty) {
         PropertySheet(
             target = PropertyTarget.New(),
+            viewModel = viewModel,
             onDismiss = { addingProperty = false },
-            onSave = { name, type, optionsJson, _, _ ->
-                viewModel.addColumn(name, type, optionsJson)
+            onSave = { name, type, optionsJson, _, _, twoWayName ->
+                viewModel.addColumn(name, type, optionsJson, twoWayName)
                 addingProperty = false
             },
             onDelete = { addingProperty = false }
@@ -10723,8 +10779,11 @@ internal fun SettingsRow(
 @Composable
 private fun PropertySheet(
     target: PropertyTarget,
+    /** Per "Relation" e "Rollup": le colonne di qua, i database collegati, quelli fra cui scegliere. */
+    viewModel: DatabaseViewModel,
     onDismiss: () -> Unit,
-    onSave: (String, ColumnType, String, NumberSettings?, DurationUnit?) -> Unit,
+    /** Nome, tipo, opzioni, Number, Duration e, per una Relation nei due sensi, il nome della gemella. */
+    onSave: (String, ColumnType, String, NumberSettings?, DurationUnit?, String?) -> Unit,
     onDelete: () -> Unit
 ) {
     val existing = (target as? PropertyTarget.Existing)?.column
@@ -10749,6 +10808,61 @@ private fun PropertySheet(
     // nome del tipo, come su Notion. Prima il pulsante di conferma in
     // quel caso non faceva niente, in silenzio.
     val effectiveName = name.ifBlank { DbStrings.englishTypeName(selectedType) }
+
+    // "Relation" e "Rollup" (dal 21/10/2026): a che cosa si collega, che cosa calcola.
+    val tableState by viewModel.tableState.collectAsStateWithLifecycle()
+    val related by viewModel.related.collectAsStateWithLifecycle()
+    val dataPage by viewModel.dataPage.collectAsStateWithLifecycle()
+    val existingRelation = existing?.relationConfig()
+    var relationDb by remember(existing?.id) { mutableStateOf(existingRelation?.database) }
+    var twoWay by remember(existing?.id) { mutableStateOf(existingRelation?.twoWay == true) }
+    var twinName by remember(existing?.id) { mutableStateOf<String?>(null) }
+    var rollup by remember(existing?.id) { mutableStateOf(existing?.rollupConfig()) }
+    var databases by remember { mutableStateOf<List<PageRepository.LinkableDatabase>?>(null) }
+    val wantsDatabases = selectedType == ColumnType.RELATION && existingRelation == null
+    LaunchedEffect(wantsDatabases) {
+        if (wantsDatabases && databases == null) viewModel.loadDatabases { databases = it }
+    }
+    val relationColumns = tableState.columns.filter { it.type == ColumnType.RELATION && it.id != existing?.id }
+    // Senza una scelta, il Rollup legge la prima Relation, col nome delle righe.
+    val rollupNow = rollup?.takeIf { r -> relationColumns.any { it.id == r.relation } }
+        ?: relationColumns.firstOrNull()?.let { RollupConfig(it.id) }
+    val relationDbName = relationDb?.let { id -> databases?.find { it.page.id == id }?.page?.title ?: related[id]?.page?.title }
+    // La gemella si chiama come questo database, se non le si dà un altro nome.
+    val twinNameNow = twinName
+        ?: existingRelation?.reverse?.let { rev -> related[existingRelation.database]?.columns?.find { it.id == rev }?.name }
+        ?: dataPage?.title?.ifBlank { null }
+        ?: DbStrings.englishTypeName(ColumnType.RELATION)
+    val saveOptions = when (selectedType) {
+        ColumnType.RELATION -> relationDb?.let { encodeRelationConfig(RelationConfig(database = it)) } ?: "[]"
+        ColumnType.ROLLUP -> rollupNow?.let(::encodeRollupConfig) ?: "[]"
+        // Lasciando una Relation o un Rollup, la loro configurazione non serve più.
+        else -> if (existing?.type == ColumnType.RELATION || existing?.type == ColumnType.ROLLUP) "[]" else optionsJson
+    }
+    // Una Relation senza database non avrebbe righe da collegare.
+    val canSave = selectedType != ColumnType.RELATION || relationDb != null
+    val linkSettings: @Composable () -> Unit = {
+        when (selectedType) {
+            ColumnType.RELATION -> RelationSettingsSection(
+                databases = databases,
+                database = relationDb,
+                databaseName = relationDbName,
+                fixed = existingRelation != null,
+                onDatabase = { relationDb = it },
+                twoWay = twoWay,
+                onTwoWay = { twoWay = it },
+                twinName = twinNameNow,
+                onTwinName = { twinName = it }
+            )
+            ColumnType.ROLLUP -> RollupSettingsSection(
+                relations = relationColumns,
+                related = related,
+                config = rollupNow,
+                onChange = { rollup = it }
+            )
+            else -> Unit
+        }
+    }
 
     NoteBottomSheet(
         onDismissRequest = onDismiss,
@@ -10777,13 +10891,16 @@ private fun PropertySheet(
                 )
                 TextButton(onClick = onDismiss) { Text(Strings.cancel) }
                 TextButton(
+                    enabled = canSave,
                     onClick = {
                         onSave(
                             effectiveName,
                             selectedType,
-                            optionsJson,
+                            saveOptions,
                             number.takeIf { selectedType == ColumnType.NUMBER },
-                            duration.takeIf { selectedType == ColumnType.DURATION }
+                            duration.takeIf { selectedType == ColumnType.DURATION },
+                            twinNameNow.trim().ifBlank { DbStrings.englishTypeName(ColumnType.RELATION) }
+                                .takeIf { selectedType == ColumnType.RELATION && twoWay }
                         )
                     }
                 ) { Text(if (existing == null) DbStrings.add else EditorStrings.save) }
@@ -10821,6 +10938,11 @@ private fun PropertySheet(
             if (!showTypes && existing?.type == ColumnType.DURATION) {
                 Spacer(modifier = Modifier.size(12.dp))
                 DurationSettingsSection(format = duration, onChange = { duration = it })
+            }
+
+            // "Edit property" di una Relation o di un Rollup: le loro scelte.
+            if (!showTypes && (existing?.type == ColumnType.RELATION || existing?.type == ColumnType.ROLLUP)) {
+                linkSettings()
             }
 
             if (showTypes) {
@@ -10874,6 +10996,11 @@ private fun PropertySheet(
                             )
                         }
                     }
+                    // Scelta una Relation o un Rollup, le loro domande subito sotto,
+                    // dove si sta guardando.
+                    if (type == selectedType) {
+                        Column(modifier = Modifier.padding(start = 32.dp, bottom = 8.dp)) { linkSettings() }
+                    }
                 }
             }
 
@@ -10897,7 +11024,7 @@ private fun PropertySheet(
 }
 
 @Composable
-private fun SheetTextField(
+internal fun SheetTextField(
     value: String,
     onValueChange: (String) -> Unit,
     placeholder: String,
@@ -11009,6 +11136,9 @@ internal fun ColumnType.icon(): ImageVector = when (this) {
     ColumnType.EMAIL -> Icons.Filled.AlternateEmail
     ColumnType.PHONE -> Icons.Filled.Call
     ColumnType.PAGE_LINK -> Icons.Filled.NorthEast
+    // Le icone di Notion: le due frecce che si incrociano, e la lente sul foglio.
+    ColumnType.RELATION -> Icons.Filled.CallMade
+    ColumnType.ROLLUP -> Icons.Filled.Search
     ColumnType.IMAGE -> Icons.Filled.Image
     ColumnType.CREATED_TIME -> Icons.Filled.Schedule
     ColumnType.LAST_EDITED_TIME -> Icons.Filled.Update

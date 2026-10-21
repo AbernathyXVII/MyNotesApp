@@ -253,6 +253,7 @@ internal fun ChartSettingsDetail(
                 onChange(settings.copy(groupColumnId = null))
             }
             // "Page link" no: le barre si chiamerebbero con l'id della pagina.
+            // "Relation" sì (dal 21/10/2026): una barra per riga collegata, col suo nome.
             columns.filter { it.type != ColumnType.PAGE_LINK && it.type != ColumnType.IMAGE && it.type != ColumnType.DURATION }.forEach { column ->
                 HorizontalDivider()
                 ChoiceRow(column.type.icon(), DbStrings.columnName(column.name), settings.groupColumnId == column.id) {

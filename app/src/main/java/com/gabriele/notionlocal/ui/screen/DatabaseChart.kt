@@ -120,8 +120,9 @@ internal fun ChartLayout(state: DatabaseTableState, settings: ChartSettings) {
         unchecked = ChartStrings.unchecked,
         day = { day -> Formats.date(day) }
     )
-    val points = remember(state.rows, state.columns, state.cellValues, settings, AppSettings.zoneId) {
-        chartPoints(state.rows, state.columns, state.cellValues, settings, labels, AppSettings.zoneId)
+    val related = LocalRelated.current
+    val points = remember(state.rows, state.columns, state.cellValues, settings, AppSettings.zoneId, related) {
+        chartPoints(state.rows, state.columns, state.cellValues, settings, labels, AppSettings.zoneId, related)
     }
     val formatter = remember(valueColumn, settings.decimals, settings.aggregation) { ChartFormatter(valueColumn, settings) }
     val seriesName = valueColumn?.let { DbStrings.columnName(it.name) } ?: ChartStrings.count

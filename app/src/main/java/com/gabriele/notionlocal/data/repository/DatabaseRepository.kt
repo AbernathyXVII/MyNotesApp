@@ -12,7 +12,15 @@ import com.gabriele.notionlocal.data.entity.DatabaseColumnEntity
 import com.gabriele.notionlocal.data.entity.DatabaseRowEntity
 import com.gabriele.notionlocal.data.entity.MULTI_VALUE_SEPARATOR
 import com.gabriele.notionlocal.data.entity.RichTextSpan
+import com.gabriele.notionlocal.data.entity.ColumnType
+import com.gabriele.notionlocal.data.entity.RelationConfig
+import com.gabriele.notionlocal.data.entity.encodeRelationConfig
+import com.gabriele.notionlocal.data.entity.encodeRelationIds
+import com.gabriele.notionlocal.data.entity.relationConfig
+import com.gabriele.notionlocal.data.entity.relationIds
+import com.gabriele.notionlocal.data.entity.reverseChanges
 import com.gabriele.notionlocal.data.notify.NoteAlarms
+import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.decodeFromString
@@ -288,6 +296,142 @@ class DatabaseRepository(private val db: AppDatabase) {
         if (value.endsWith(NOTIFY_SUFFIX) || existing?.value?.endsWith(NOTIFY_SUFFIX) == true) {
             NoteAlarms.reschedule()
         }
+    }
+
+    // --- "Relation" (dal 21/10/2026): vedi `Relations.kt` ---
+
+    /** Scrive una cella e segna la riga come modificata, come `setCellValue`, dentro una transazione già aperta. */
+    private suspend fun writeCell(rowId: String, columnId: String, value: String, now: Long) {
+        val existing = dao.getCell(rowId, columnId)
+        if (existing?.value == value) return
+        if (existing != null) {
+            dao.updateCell(existing.copy(value = value))
+        } else {
+            dao.insertCell(DatabaseCellEntity(rowId = rowId, columnId = columnId, value = value))
+        }
+        dao.touchRow(rowId, now)
+    }
+
+    /**
+     * **Una cella Relation**, e se la Relation vale nei due sensi anche le
+     * celle della colonna gemella nell'altro database: la riga aggiunta qui
+     * ha questa fra le sue, quella tolta non più. Tutto in una transazione
+     * sola, così le due tabelle non si vedono mai a metà.
+     */
+    suspend fun setRelation(rowId: String, column: DatabaseColumnEntity, value: String) = db.withTransaction {
+        val now = System.currentTimeMillis()
+        val before = relationIds(dao.getCell(rowId, column.id)?.value)
+        val after = relationIds(value)
+        writeCell(rowId, column.id, encodeRelationIds(after), now)
+        val reverse = column.relationConfig()?.reverse ?: return@withTransaction
+        // Una gemella cancellata nel frattempo, o diventata di un altro tipo,
+        // non si tocca.
+        if (dao.getColumnById(reverse)?.relationConfig()?.reverse != column.id) return@withTransaction
+        val touched = (before + after).distinct().associateWith { other -> dao.getCell(other, reverse)?.value }
+        reverseChanges(rowId, before, after) { other -> touched[other] }
+            .forEach { (other, ids) -> writeCell(other, reverse, ids, now) }
+    }
+
+    /**
+     * Una colonna Relation nuova. Nei due sensi ([twoWayName] non null) nasce
+     * anche la gemella nell'altro database, in fondo alle sue colonne, col
+     * nome dato; ognuna sa qual è l'altra.
+     */
+    suspend fun addRelationColumn(column: DatabaseColumnEntity, twoWayName: String?) = db.withTransaction {
+        val config = column.relationConfig() ?: run {
+            dao.insertColumn(column)
+            return@withTransaction
+        }
+        if (twoWayName == null) {
+            dao.insertColumn(column.copy(optionsJson = encodeRelationConfig(config.copy(reverse = null))))
+            return@withTransaction
+        }
+        val twinId = UUID.randomUUID().toString()
+        dao.insertColumn(column.copy(optionsJson = encodeRelationConfig(config.copy(reverse = twinId))))
+        val order = (dao.getColumnsForPageOnce(config.database).maxOfOrNull { it.orderIndex } ?: -1) + 1
+        dao.insertColumn(
+            DatabaseColumnEntity(
+                id = twinId,
+                pageId = config.database,
+                name = twoWayName,
+                type = ColumnType.RELATION,
+                optionsJson = encodeRelationConfig(RelationConfig(database = column.pageId, reverse = column.id)),
+                orderIndex = order
+            )
+        )
+    }
+
+    /**
+     * **"Edit property" di una Relation** (o "Change type" che ci arriva):
+     * nome, database e "nei due sensi" insieme, in una transazione. Collegata
+     * a un altro database, la gemella di prima se ne va: puntava al vecchio.
+     */
+    suspend fun updateRelationColumn(column: DatabaseColumnEntity, twoWayName: String?) = db.withTransaction {
+        val config = column.relationConfig() ?: run {
+            dao.updateColumn(column)
+            return@withTransaction
+        }
+        val before = dao.getColumnById(column.id)?.relationConfig()
+        val reverse = before?.reverse?.takeIf { before.database == config.database }
+        if (before?.reverse != null && reverse == null) {
+            dao.getColumnById(before.reverse)?.takeIf { it.relationConfig()?.reverse == column.id }?.let { dao.deleteColumn(it) }
+        }
+        val updated = column.copy(optionsJson = encodeRelationConfig(config.copy(reverse = reverse)))
+        dao.updateColumn(updated)
+        setRelationTwoWay(updated, twoWayName)
+    }
+
+    /**
+     * Accende o spegne "nei due sensi" su una Relation che c'è già. Accesa,
+     * la gemella nasce già piena: ogni riga di là ha le righe di qua che la
+     * collegano. Spenta, la gemella se ne va con le sue celle. Già accesa,
+     * la gemella prende il nome dato.
+     */
+    suspend fun setRelationTwoWay(column: DatabaseColumnEntity, twoWayName: String?) = db.withTransaction {
+        val config = column.relationConfig() ?: return@withTransaction
+        val current = dao.getColumnById(column.id) ?: return@withTransaction
+        if (twoWayName == null) {
+            config.reverse?.let { twin -> dao.getColumnById(twin)?.let { dao.deleteColumn(it) } }
+            dao.updateColumn(current.copy(optionsJson = encodeRelationConfig(config.copy(reverse = null))))
+            return@withTransaction
+        }
+        config.reverse?.let { dao.getColumnById(it) }?.let { twin ->
+            if (twin.name != twoWayName) dao.updateColumn(twin.copy(name = twoWayName))
+            return@withTransaction
+        }
+        val twinId = UUID.randomUUID().toString()
+        val order = (dao.getColumnsForPageOnce(config.database).maxOfOrNull { it.orderIndex } ?: -1) + 1
+        dao.insertColumn(
+            DatabaseColumnEntity(
+                id = twinId,
+                pageId = config.database,
+                name = twoWayName,
+                type = ColumnType.RELATION,
+                optionsJson = encodeRelationConfig(RelationConfig(database = column.pageId, reverse = column.id)),
+                orderIndex = order
+            )
+        )
+        dao.updateColumn(current.copy(optionsJson = encodeRelationConfig(config.copy(reverse = twinId))))
+        // Le celle della gemella, dalle relazioni che ci sono già.
+        val back = LinkedHashMap<String, MutableList<String>>()
+        dao.getAllCellsForPageOnce(column.pageId)
+            .filter { it.columnId == column.id }
+            .forEach { cell -> relationIds(cell.value).forEach { other -> back.getOrPut(other) { mutableListOf() } += cell.rowId } }
+        val now = System.currentTimeMillis()
+        back.forEach { (other, ids) -> writeCell(other, twinId, encodeRelationIds(ids), now) }
+    }
+
+    /**
+     * Cancella una colonna. Una Relation nei due sensi si porta via la
+     * gemella: senza l'altra metà non avrebbe più niente da tenere allineato.
+     */
+    suspend fun deleteColumnWithTwin(column: DatabaseColumnEntity) = db.withTransaction {
+        column.relationConfig()?.reverse?.let { twin ->
+            dao.getColumnById(twin)
+                ?.takeIf { it.relationConfig()?.reverse == column.id }
+                ?.let { dao.deleteColumn(it) }
+        }
+        dao.deleteColumn(column)
     }
 
     /**

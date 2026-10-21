@@ -48,6 +48,9 @@ class MainActivity : ComponentActivity() {
         InkPrefs.init(applicationContext)
         // La password delle pagine bloccate, e quali sono aperte adesso.
         AppLock.init(applicationContext)
+        // I Rollup scrivono numeri e date come il resto dell'app (dal 21/10/2026).
+        com.gabriele.notionlocal.data.entity.RollupFormatting.formatter =
+            com.gabriele.notionlocal.ui.screen.AppRollupFormatter
         // Le notifiche: i canali, e la sveglia rimessa alla prossima.
         NoteAlarms.init(applicationContext)
         // I timer partiti, con la loro notifica nella tendina.
