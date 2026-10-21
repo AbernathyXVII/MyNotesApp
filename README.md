@@ -2104,6 +2104,43 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.126 — 21/10/2026 · 09:06 — "Date by": i gruppi per data diventano settimane, mesi o anni, anche dai più recenti
+*(Claude Code sul PC; ancora da provare sul telefono, che era staccato; 757 test passati)*
+
+L'utente, parola per parola (dalla richiesta della v0.125, la parte sulla
+bacheca):
+> «vorrei che mi facessi quello che si vede in questo sito
+> https://soridata.com/awards/index.html , ossia una visualizzazione Board
+> delle vittorie delle canzoni dei gruppi KPOP raggruppati per il tipo di
+> evento»
+
+Su Soridata ogni riga è una settimana e ogni colonna un programma. In notE
+è una bacheca con le colonne per "Music show" e **le fasce per settimana**:
+per le fasce serviva raggruppare le date per settimana, e questa versione lo
+fa (i dati arrivano nella prossima).
+
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Date by"**, come su Notion:
+  raggruppando per una data — "Group" della tabella, "Group by" della
+  bacheca, "Sub groups" di tutte e due — sotto l'elenco delle proprietà si
+  sceglie se i gruppi sono **giorni** (com'era), **settimane**, **mesi** o
+  **anni**. Una settimana si chiama col primo e l'ultimo giorno
+  ("12/10/2026 – 18/10/2026") e comincia dove la fa cominciare il calendario
+  (il lunedì, su un telefono in italiano); un mese col suo nome ("Ottobre
+  2026"); un anno col numero. Ogni raggruppamento della vista ha il suo
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Newest first"**, sotto: i
+  gruppi dal più recente al più vecchio, come le settimane di Soridata, con
+  quella di adesso in cima. Le righe senza data restano in fondo
+- **[Nuova funzionalità]** **[📱 Mobile]** Una riga creata dentro una
+  settimana, un mese o un anno prende il primo giorno del gruppo, e ci resta
+- **[Progetto]** La scelta sta in `PageEntity.dateGroupingJson`, un JSON
+  coi quattro raggruppamenti della vista (null = tutto per giorno, dal più
+  vecchio): migrazione 59→60, schema di prova `v59.sql`. File:
+  `DateGrouping.kt` (`DateUnit`, `DateGroupBy`, `DateGroupings`, inizio e
+  fine di un gruppo), `DateGroupingUi.kt`, `DateGroupStrings.kt` (otto
+  lingue); `buildRowGroups` riceve `dateBy`. Test: `DateGroupingTest` (le
+  vittorie di quattro giorni in tre settimane, due mesi e due anni) e
+  `MigrationTest` dalla 59
+
 ### 🆕 v0.125 — 21/10/2026 · 08:53 — "Relation" e "Rollup": le righe di un database collegate a quelle di un altro, e i calcoli su quelle collegate
 *(Claude Code sul PC; ancora da provare sul telefono, che era staccato: si proverà su database di prova; 750 test passati)*
 

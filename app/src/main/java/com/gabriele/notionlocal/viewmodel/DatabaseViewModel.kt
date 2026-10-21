@@ -28,6 +28,10 @@ import com.gabriele.notionlocal.data.dao.RowCover
 import com.gabriele.notionlocal.data.entity.CalendarMode
 import com.gabriele.notionlocal.data.entity.ColumnType
 import com.gabriele.notionlocal.data.entity.DatabaseSnapshot
+import com.gabriele.notionlocal.data.entity.DateGroupBy
+import com.gabriele.notionlocal.data.entity.GroupSlot
+import com.gabriele.notionlocal.data.entity.encodeDateGroupings
+import com.gabriele.notionlocal.data.entity.parseDateGroupings
 import com.gabriele.notionlocal.data.entity.RollupFormatting
 import com.gabriele.notionlocal.data.entity.RollupValue
 import com.gabriele.notionlocal.data.entity.computeRollups
@@ -1354,6 +1358,18 @@ class DatabaseViewModel(
     fun setBoardHideEmptySubGroups(hide: Boolean) {
         val current = _page.value ?: return
         val updated = current.copy(boardHideEmptySubGroups = hide)
+        _page.value = updated
+        viewModelScope.launch { pageRepository.updatePage(updated) }
+    }
+
+    /**
+     * **"Date by"** di un raggruppamento per data (dal 21/10/2026): giorni,
+     * settimane, mesi o anni, e da quale parte si comincia. Vale per questa vista.
+     */
+    fun setDateGrouping(slot: GroupSlot, by: DateGroupBy) {
+        val current = _page.value ?: return
+        val groupings = parseDateGroupings(current.dateGroupingJson).with(slot, by)
+        val updated = current.copy(dateGroupingJson = encodeDateGroupings(groupings))
         _page.value = updated
         viewModelScope.launch { pageRepository.updatePage(updated) }
     }

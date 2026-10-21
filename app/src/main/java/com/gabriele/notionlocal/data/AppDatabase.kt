@@ -60,7 +60,7 @@ import kotlinx.serialization.json.Json
         NotebookSectionEntity::class,
         PersonalWordEntity::class
     ],
-    version = 59,
+    version = 60,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -802,6 +802,13 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** "Date by" dei raggruppamenti per data (21/10/2026): tutti per giorno, com'erano. */
+        private val MIGRATION_59_60 = object : Migration(59, 60) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE pages ADD COLUMN dateGroupingJson TEXT DEFAULT NULL")
+            }
+        }
+
         /** Il "Paragraph" delle pagine (21/10/2026): tutte come Settings. */
         private val MIGRATION_58_59 = object : Migration(58, 59) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -931,7 +938,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_55_56,
                         MIGRATION_56_57,
                         MIGRATION_57_58,
-                        MIGRATION_58_59
+                        MIGRATION_58_59,
+                        MIGRATION_59_60
                     )
                     .build()
                 INSTANCE = instance

@@ -35,6 +35,13 @@ import androidx.compose.material.icons.filled.LinkOff
 import androidx.compose.material.icons.filled.NorthEast
 import androidx.compose.material.icons.filled.CallMade
 import com.gabriele.notionlocal.data.entity.DatabaseSnapshot
+import com.gabriele.notionlocal.data.entity.DateGroupBy
+import com.gabriele.notionlocal.data.entity.DateGroupings
+import com.gabriele.notionlocal.data.entity.DateUnit
+import com.gabriele.notionlocal.data.entity.GroupSlot
+import com.gabriele.notionlocal.data.entity.endOf
+import com.gabriele.notionlocal.data.entity.parseDateGroupings
+import com.gabriele.notionlocal.data.entity.startOf
 import com.gabriele.notionlocal.data.entity.RelationConfig
 import com.gabriele.notionlocal.data.entity.RollupConfig
 import com.gabriele.notionlocal.data.entity.encodeRelationConfig
@@ -1194,7 +1201,8 @@ private fun DatabaseViewBody(
         LocalSimpleDatabase provides simple,
         LocalRowSearch provides state.search,
         LocalTitleEditRequest provides TitleEditRequest(editTitleOf, viewModel::consumeEditTitle),
-        LocalRowLimits provides rowLimits
+        LocalRowLimits provides rowLimits,
+        LocalDateGroupings provides parseDateGroupings(page?.dateGroupingJson)
     ) {
     Column(
         modifier = modifier
@@ -1719,6 +1727,8 @@ private fun DatabaseViewBody(
             onSetBoardSubGroupColumn = { viewModel.setBoardSubGroupColumn(it) },
             boardHideEmptySubGroups = page?.boardHideEmptySubGroups != false,
             onSetBoardHideEmptySubGroups = { viewModel.setBoardHideEmptySubGroups(it) },
+            dateGroupings = parseDateGroupings(page?.dateGroupingJson),
+            onSetDateGrouping = { slot, by -> viewModel.setDateGrouping(slot, by) },
             cellOverflow = CellOverflow.of(page?.cellOverflow ?: 0),
             onSetCellOverflow = { viewModel.setCellOverflow(it) },
             freezeFirstColumn = page?.freezeFirstColumn == true,
@@ -1894,12 +1904,12 @@ private fun DatabaseViewBody(
             val sub = viewModel.tableSubGroupColumn()
             when {
                 it.groupKey == null || group == null -> state.rows
-                else -> buildRowGroups(state, group, page?.hideEmptyGroups != false)
+                else -> buildRowGroups(state, group, page?.hideEmptyGroups != false, dateBy = parseDateGroupings(page?.dateGroupingJson).table)
                     .find { g -> g.key == it.groupKey }?.rows?.let { groupRows ->
                         if (it.subKey == null || sub == null) {
                             groupRows
                         } else {
-                            buildRowGroups(state, sub, page?.hideEmptySubGroups != false, groupRows)
+                            buildRowGroups(state, sub, page?.hideEmptySubGroups != false, groupRows, dateBy = parseDateGroupings(page?.dateGroupingJson).tableSub)
                                 .find { s -> s.key == it.subKey }?.rows
                         }
                     }.orEmpty()
@@ -2131,6 +2141,7 @@ private fun TableLayout(
     /** A pagina intera: una lista che disegna solo le righe sullo schermo (vedi `LazyBody`). */
     lazy: LazyBody? = null
 ) {
+    val dateGroupings = LocalDateGroupings.current
     // Dentro un contenitore che scorre in orizzontale la larghezza
     // disponibile è illimitata: una linea che chiede "tutta la
     // larghezza" ne ottiene zero e sparisce. Le linee orizzontali vanno
@@ -2280,7 +2291,7 @@ private fun TableLayout(
             if (onAddRow != null) item(key = "$prefix:add") { GroupNewRowButton(onAddRow) }
         }
 
-        val groups = if (groupColumn == null) emptyList() else buildRowGroups(state, groupColumn, hideEmptyGroups)
+        val groups = if (groupColumn == null) emptyList() else buildRowGroups(state, groupColumn, hideEmptyGroups, dateBy = dateGroupings.table)
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val viewport = maxWidth
             Box(
@@ -2324,7 +2335,7 @@ private fun TableLayout(
                                 if (subGroupColumn == null) {
                                     section("g:" + group.key, group.rows, RowPlace(group.key)) { onAddRowInGroup(group.key) }
                                 } else {
-                                    buildRowGroups(state, subGroupColumn, hideEmptySubGroups, group.rows).forEach { sub ->
+                                    buildRowGroups(state, subGroupColumn, hideEmptySubGroups, group.rows, dateBy = dateGroupings.tableSub).forEach { sub ->
                                         val subKey = group.key + SUB_GROUP_KEY_SEPARATOR + sub.key
                                         val subCollapsed = collapsed[subKey] == true
                                         item(key = "sub:$subKey") {
@@ -2512,7 +2523,7 @@ private fun TableLayout(
             }
         }
 
-        val groups = buildRowGroups(state, groupColumn, hideEmptyGroups)
+        val groups = buildRowGroups(state, groupColumn, hideEmptyGroups, dateBy = dateGroupings.table)
         groups.forEach { group ->
             val isCollapsed = collapsed[group.key] == true
             GroupHeaderRow(
@@ -2527,7 +2538,7 @@ private fun TableLayout(
                 } else {
                     // **I sottogruppi**: dentro il gruppo, le sue righe
                     // divise secondo la seconda proprietà, un po' rientrate.
-                    buildRowGroups(state, subGroupColumn, hideEmptySubGroups, group.rows).forEach { sub ->
+                    buildRowGroups(state, subGroupColumn, hideEmptySubGroups, group.rows, dateBy = dateGroupings.tableSub).forEach { sub ->
                         val subKey = group.key + SUB_GROUP_KEY_SEPARATOR + sub.key
                         val subCollapsed = collapsed[subKey] == true
                         GroupHeaderRow(
@@ -3266,7 +3277,9 @@ internal fun buildRowGroups(
      * Tiene il gruppo "senza valore" anche vuoto: nella bacheca è la colonna
      * dove nasce una pagina creata dal pulsante in fondo.
      */
-    keepEmptyNone: Boolean = false
+    keepEmptyNone: Boolean = false,
+    /** Per una data: gruppi per giorno, settimana, mese o anno ("Date by", dal 21/10/2026). */
+    dateBy: DateGroupBy = DateGroupBy()
 ): List<RowGroup> {
     fun valueOf(row: DatabaseRowEntity) = state.cellValues[row.id to column.id].orEmpty()
 
@@ -3321,19 +3334,25 @@ internal fun buildRowGroups(
 
         ColumnType.DATE -> {
             // Un gruppo per giorno: raggruppare per istante esatto
-            // darebbe un gruppo per riga.
-            val byDay = rows.groupBy { row ->
-                parseDateRange(valueOf(row))?.start?.toLocalDate()
+            // darebbe un gruppo per riga. O, con "Date by", per settimana,
+            // mese o anno: la chiave è il primo giorno del gruppo, che è
+            // anche la data di una riga nata lì dentro.
+            val unit = dateBy.unit
+            // La settimana comincia dove la fa cominciare il calendario: dal telefono.
+            val firstDayOfWeek = WeekFields.of(Locale.getDefault()).firstDayOfWeek
+            val byStart = rows.groupBy { row ->
+                parseDateRange(valueOf(row))?.start?.toLocalDate()?.let { unit.startOf(it, firstDayOfWeek) }
             }
-            byDay.keys.filterNotNull().sorted().forEach { day ->
+            val starts = byStart.keys.filterNotNull().sorted()
+            (if (dateBy.newestFirst) starts.reversed() else starts).forEach { start ->
                 groups += RowGroup(
-                    key = day.toEpochDay().toString(),
-                    label = day.format(DATE_FORMAT),
+                    key = start.toEpochDay().toString(),
+                    label = dateGroupLabel(unit, start),
                     color = null,
-                    rows = byDay[day].orEmpty()
+                    rows = byStart[start].orEmpty()
                 )
             }
-            groups += RowGroup("", emptyLabel, null, byDay[null].orEmpty())
+            groups += RowGroup("", emptyLabel, null, byStart[null].orEmpty())
         }
 
         else -> {
@@ -3358,6 +3377,20 @@ internal fun buildRowGroups(
         it.rows.isNotEmpty() || (!hideEmpty && it.key.isNotEmpty()) || (keepEmptyNone && it.key.isEmpty())
     }
 }
+
+/**
+ * Il nome di un gruppo di date: il giorno; per una settimana il primo e
+ * l'ultimo giorno ("13/10/2026 – 19/10/2026"); il mese col suo nome; l'anno.
+ */
+internal fun dateGroupLabel(unit: DateUnit, start: LocalDate): String = when (unit) {
+    DateUnit.DAY -> start.format(DATE_FORMAT)
+    DateUnit.WEEK -> start.format(DATE_FORMAT) + " – " + unit.endOf(start).format(DATE_FORMAT)
+    DateUnit.MONTH -> start.format(MONTH_FORMAT).replaceFirstChar { it.titlecase(displayLocale) }
+    DateUnit.YEAR -> start.year.toString()
+}
+
+/** "Date by" dei raggruppamenti di questa vista: lo mette la schermata del database. */
+internal val LocalDateGroupings = staticCompositionLocalOf { DateGroupings() }
 
 /**
  * La visualizzazione a bacheca: una colonna per ogni valore della
@@ -3408,8 +3441,9 @@ internal fun BoardLayout(
         return
     }
 
+    val dateGroupings = LocalDateGroupings.current
     // Tutte le colonne dei tag, anche vuote, e sempre quella senza valore.
-    val groups = buildRowGroups(state, groupColumn, hideEmpty = false, keepEmptyNone = true)
+    val groups = buildRowGroups(state, groupColumn, hideEmpty = false, keepEmptyNone = true, dateBy = dateGroupings.board)
     val tagged = groupColumn.type == ColumnType.SELECT || groupColumn.type == ColumnType.MULTI_SELECT
     val onPage = MaterialTheme.colorScheme.onBackground
     // **"Color columns"** (dal 30/09/2026, sul modello di Notion che l'utente
@@ -3460,7 +3494,7 @@ internal fun BoardLayout(
         return
     }
 
-    val subGroups = buildRowGroups(state, subGroupColumn, hideEmptySubGroups)
+    val subGroups = buildRowGroups(state, subGroupColumn, hideEmptySubGroups, dateBy = dateGroupings.boardSub)
     // Quali fasce sono chiuse: come per i gruppi della tabella, è come si
     // sta guardando adesso, e riaprendo la pagina si riparte con tutto aperto.
     val collapsed = remember(groupColumn.id, subGroupColumn.id) { mutableStateMapOf<String, Boolean>() }
@@ -9848,6 +9882,9 @@ private fun SettingsSheet(
     onSetBoardSubGroupColumn: ((String?) -> Unit)? = null,
     boardHideEmptySubGroups: Boolean = true,
     onSetBoardHideEmptySubGroups: ((Boolean) -> Unit)? = null,
+    /** "Date by" dei quattro raggruppamenti (dal 21/10/2026), per quelli per data. */
+    dateGroupings: DateGroupings = DateGroupings(),
+    onSetDateGrouping: ((GroupSlot, DateGroupBy) -> Unit)? = null,
     /** Il testo lungo nelle celle della tabella (dal 30/09/2026). */
     cellOverflow: CellOverflow = CellOverflow.TRUNCATE,
     onSetCellOverflow: ((CellOverflow) -> Unit)? = null,
@@ -10359,6 +10396,9 @@ private fun SettingsSheet(
                             )
                         }
                     }
+                    if (tableGroupColumn?.type == ColumnType.DATE && onSetDateGrouping != null) {
+                        DateGroupBySection(dateGroupings.table, enabled = !viewLocked) { onSetDateGrouping(GroupSlot.TABLE, it) }
+                    }
                     if (groupable.isEmpty()) {
                         Text(
                             text = DbStrings.groupingNeedsProperty,
@@ -10413,6 +10453,10 @@ private fun SettingsSheet(
                                 onClick = { onChoose?.invoke(column.id) }
                             )
                         }
+                    }
+                    if (chosen?.type == ColumnType.DATE && onSetDateGrouping != null) {
+                        val slot = if (board) GroupSlot.BOARD_SUB else GroupSlot.TABLE_SUB
+                        DateGroupBySection(dateGroupings[slot], enabled = !viewLocked) { onSetDateGrouping(slot, it) }
                     }
                     if (groupable.isEmpty()) {
                         Text(
@@ -10509,6 +10553,9 @@ private fun SettingsSheet(
                                     onClick = { onSetGroupColumn(column) }
                                 )
                             }
+                        }
+                        if (groupColumn?.type == ColumnType.DATE && onSetDateGrouping != null) {
+                            DateGroupBySection(dateGroupings.board, enabled = !viewLocked) { onSetDateGrouping(GroupSlot.BOARD, it) }
                         }
                     }
                 }

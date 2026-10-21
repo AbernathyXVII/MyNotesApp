@@ -317,6 +317,11 @@ data class PageEntity(
     // Se le fasce senza nemmeno una pagina si nascondono, come
     // `hideEmptySubGroups` per la tabella.
     var boardHideEmptySubGroups: Boolean = true,
+    // **"Date by"** (dal 21/10/2026): raggruppando per una data, gruppi per
+    // giorno, settimana, mese o anno, dal più vecchio o dal più recente, per
+    // ognuno dei quattro raggruppamenti della vista. Null = per giorno, dal
+    // più vecchio, com'era. Vedi `DateGrouping.kt`.
+    var dateGroupingJson: String? = null,
     // Quale proprietà data colloca le righe nel calendario. null = non
     // scelta: si usa la prima proprietà di tipo data che c'è.
     var calendarDateColumnId: String? = null,
