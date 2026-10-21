@@ -3338,10 +3338,12 @@ internal fun buildRowGroups(
             // mese o anno: la chiave è il primo giorno del gruppo, che è
             // anche la data di una riga nata lì dentro.
             val unit = dateBy.unit
-            // La settimana comincia dove la fa cominciare il calendario: dal telefono.
-            val firstDayOfWeek = WeekFields.of(Locale.getDefault()).firstDayOfWeek
+            // La settimana va dal lunedì alla domenica, come su Soridata e
+            // nelle classifiche K-pop (dal 21/10/2026): col telefono in
+            // inglese americano cominciava di domenica, e l'Inkigayo della
+            // domenica finiva nella settimana dopo.
             val byStart = rows.groupBy { row ->
-                parseDateRange(valueOf(row))?.start?.toLocalDate()?.let { unit.startOf(it, firstDayOfWeek) }
+                parseDateRange(valueOf(row))?.start?.toLocalDate()?.let { unit.startOf(it, DayOfWeek.MONDAY) }
             }
             val starts = byStart.keys.filterNotNull().sorted()
             (if (dateBy.newestFirst) starts.reversed() else starts).forEach { start ->

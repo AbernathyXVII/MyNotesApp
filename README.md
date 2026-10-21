@@ -2104,8 +2104,60 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### ✏️ v0.126.2 — 21/10/2026 · 13:15 — Le vittorie K-pop dal 2006 in "KPOP Music Shows", e i ritocchi visti sul telefono
+*(Claude Code sul PC; provata sul telefono su "KPOP Music Shows", "KPOP Groups" e "KPOP Songs", col database confrontato prima e dopo; 763 test passati)*
+
+L'utente, parola per parola:
+> «Sì: quando il telefono è collegato prova, installa e importa le vittorie
+> nel mio KPOP Music Shows.»
+
+e, sbloccato Soridata:
+> «Ho scaricato il database di Soridata nella cartella Download: trovalo,
+> dimmi nome e dimensione e usalo per tutte le vittorie dal 2006.»
+
+- **[Nota]** **Le vittorie sono nel database dell'utente**: 4.268, dall'8
+  gennaio 2006 al 20 ottobre 2026, dal database che Soridata offre da
+  scaricare ("Database Download": `dbdownload.zip`, 6,3 MB, con dentro
+  `mainbackup_2026-10-21.sql`, tabelle `app_kpop_ms` e `app_kpop_group`),
+  messe con `KpopImportActivity` (v0.126.1). In "KPOP Music Shows" ogni
+  vittoria ha la canzone come nome, il gruppo fra i tag (i suoi restano
+  suoi: "aespa"), il programma, la data e la Relation "Song"; nella pagina
+  "KPOP", sotto la bacheca, "**KPOP Songs**" (1.288 canzoni: gruppo,
+  vittorie, prima e ultima, programmi) e "**KPOP Groups**" (374 gruppi:
+  canzoni, "Winning songs", "Number of wins"), dal più premiato: BTS 179,
+  Twice 123, EXO 119, IU 100. La bacheca ha le colonne per programma e le
+  fasce per settimana, dalla più recente. "Show KPOP (Monday)" resta vuota:
+  Soridata non ha il lunedì. Confrontato il database del telefono prima e
+  dopo: fuori dalla pagina "KPOP" non è cambiato niente
+- **[Nota]** Sui dati: 29 vittorie cadono in un giorno diverso dal solito
+  del loro programma (quasi tutte Show Champion del 2012, che allora andava
+  di martedì) e restano come le dà Soridata; una, Inkigayo del 24/08/2025
+  (ALLDAY PROJECT), non ha il nome della canzone. Prima del database
+  scaricato provavo a leggere le pagine anno per anno: i tentativi ripetuti
+  dal PC hanno fatto bloccare dal sito il collegamento dell'utente, che l'ha
+  sbloccato col captcha. Da allora nessuna richiesta automatica a Soridata
+- **[Modifica]** **[📱 Mobile]** **Le settimane di "Date by" vanno sempre
+  dal lunedì alla domenica**, come su Soridata e nelle classifiche K-pop.
+  Seguivano il telefono, e su quello dell'utente, in inglese americano,
+  cominciavano di domenica: l'Inkigayo della domenica finiva nella
+  settimana dopo. Il calendario segue ancora il telefono
+- **[Modifica]** **[📱 Mobile]** **La cella di una Relation su una riga
+  sola**: le righe collegate che ci stanno intere, poi "**+N**" per le
+  altre ("I need U +17"). Prima l'ultima restava tagliata a metà, una
+  freccia e due puntini. Un nome che da solo non ci sta si accorcia coi tre
+  puntini
+- **[Modifica]** **[📱 Mobile]** In "Related to", "**Show on “…”**" e
+  "Name there" stanno **subito sotto il database scelto**: in fondo
+  all'elenco di tutti i database finivano fuori dallo schermo
+- **[Modifica]** **[📱 Mobile]** Nella finestra di un Rollup, le icone delle
+  proprietà sono grigie come altrove (quella di una Relation era blu)
+- **[Progetto]** `RelatedRowsLine` misura i nomi col misuratore del testo
+  e disegna solo quelli che si vedono: misurarli componendoli li lasciava
+  nell'albero dell'accessibilità anche nascosti. Test: `RelationCellTest`;
+  `DateGroupingTest` col telefono in inglese americano
+
 ### ✏️ v0.126.1 — 21/10/2026 · 09:17 — Le fasce della bacheca: le prime 12 e "Load more"
-*(Claude Code sul PC; ancora da provare sul telefono, che era staccato; 760 test passati)*
+*(Claude Code sul PC; provata sul telefono il 21/10/2026 sulla bacheca di "KPOP Music Shows": "Load more 1059" in fondo alle fasce; l'importazione fatta sul telefono, vedi v0.126.2; 760 test passati)*
 
 Dalla stessa richiesta della v0.125 e della v0.126 (le vittorie K-pop di
 Soridata in una bacheca a fasce settimanali).
@@ -2137,7 +2189,7 @@ Soridata in una bacheca a fasce settimanali).
   passo, aspetta che la pagina resti ferma
 
 ### 🆕 v0.126 — 21/10/2026 · 09:06 — "Date by": i gruppi per data diventano settimane, mesi o anni, anche dai più recenti
-*(Claude Code sul PC; ancora da provare sul telefono, che era staccato; 757 test passati)*
+*(Claude Code sul PC; provata sul telefono il 21/10/2026 sulla bacheca di "KPOP Music Shows": colonne per programma, fasce per settimana dalla più recente; le settimane cominciavano di domenica, corretto nella v0.126.2; 757 test passati)*
 
 L'utente, parola per parola (dalla richiesta della v0.125, la parte sulla
 bacheca):
@@ -2174,7 +2226,7 @@ fa (i dati arrivano nella prossima).
   `MigrationTest` dalla 59
 
 ### 🆕 v0.125 — 21/10/2026 · 08:53 — "Relation" e "Rollup": le righe di un database collegate a quelle di un altro, e i calcoli su quelle collegate
-*(Claude Code sul PC; ancora da provare sul telefono, che era staccato: si proverà su database di prova; 750 test passati)*
+*(Claude Code sul PC; provata sul telefono il 21/10/2026 su "KPOP Groups" e "KPOP Songs", guardando senza cambiare niente: celle, Rollup, finestre "Edit property", scelta delle righe; una proprietà nuova provata fino alla scelta del database e annullata; ritocchi nella v0.126.2; 750 test passati)*
 
 L'utente, parola per parola:
 > «Ora la cosa importante che ti dicevo ieri: ho già fatto un database

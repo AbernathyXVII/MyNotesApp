@@ -6,6 +6,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -45,6 +47,8 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -183,9 +187,7 @@ internal fun RelationCell(
             ) {
                 rows.forEach { row -> RelatedRowLink(row, onOpen = { openOrPick(row.id) }) }
             }
-            else -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                rows.forEach { row -> RelatedRowLink(row, onOpen = { openOrPick(row.id) }) }
-            }
+            else -> RelatedRowsLine(rows, onOpen = { openOrPick(it.id) })
         }
     }
     if (picking && target != null) {
@@ -199,11 +201,77 @@ internal fun RelationCell(
     }
 }
 
+/**
+ * Le righe collegate in fila, su una riga sola: quelle che ci stanno intere,
+ * poi "+N" per le altre (dal 21/10/2026). Prima l'ultima restava tagliata a
+ * metà, una freccia e due puntini. Se non ci sta nemmeno la prima, la prima
+ * si accorcia coi tre puntini.
+ */
+@Composable
+private fun RelatedRowsLine(rows: List<DatabaseRowEntity>, onOpen: (DatabaseRowEntity) -> Unit) {
+    // Si misurano i nomi col misuratore del testo, senza disegnarli: una riga
+    // composta e non mostrata la leggerebbe lo stesso TalkBack.
+    val measurer = rememberTextMeasurer()
+    val nameStyle = MaterialTheme.typography.bodyMedium.copy(textDecoration = TextDecoration.Underline)
+    val moreStyle = MaterialTheme.typography.bodySmall
+    val density = LocalDensity.current
+    BoxWithConstraints {
+        val max = constraints.maxWidth
+        val gap = with(density) { 8.dp.roundToPx() }
+        val arrow = with(density) { (14.dp + 3.dp).roundToPx() }
+        val widths = remember(rows, nameStyle, density) {
+            rows.map { arrow + measurer.measure(it.title.ifBlank { Strings.untitled }, nameStyle, maxLines = 1).size.width }
+        }
+        val total = widths.sum() + gap * (rows.size - 1).coerceAtLeast(0)
+        var count = rows.size
+        var firstRoom: Int? = null
+        if (total > max && rows.isNotEmpty()) {
+            // Il posto per "+N" col numero più lungo possibile.
+            val widest = measurer.measure("+${rows.size}", moreStyle, maxLines = 1).size.width
+            var used = 0
+            count = 0
+            while (count < rows.size) {
+                val next = used + (if (count > 0) gap else 0) + widths[count]
+                if (next + gap + widest > max) break
+                used = next
+                count++
+            }
+            if (count == 0) {
+                // Nemmeno la prima: accorciata, col posto per "+N" se ce ne sono altre.
+                firstRoom = (max - (if (rows.size > 1) gap + widest else 0)).coerceAtLeast(0)
+                count = 1
+            }
+        }
+        val hidden = rows.size - count
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            rows.take(count).forEachIndexed { i, row ->
+                val room = firstRoom.takeIf { i == 0 }
+                RelatedRowLink(
+                    row,
+                    onOpen = { onOpen(row) },
+                    modifier = if (room != null) Modifier.widthIn(max = with(density) { room.toDp() }) else Modifier
+                )
+            }
+            if (hidden > 0) MoreRows(hidden)
+        }
+    }
+}
+/** "+N": quante righe collegate non ci stanno nella cella. */
+@Composable
+private fun MoreRows(count: Int) {
+    Text(
+        "+$count",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        maxLines = 1
+    )
+}
+
 /** Una riga collegata: la freccia e il nome sottolineato, come un collegamento a pagina. */
 @Composable
-private fun RelatedRowLink(row: DatabaseRowEntity, onOpen: () -> Unit) {
+private fun RelatedRowLink(row: DatabaseRowEntity, onOpen: () -> Unit, modifier: Modifier = Modifier) {
     Row(
-        modifier = Modifier.clickable(onClick = onOpen),
+        modifier = modifier.clickable(onClick = onOpen),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(

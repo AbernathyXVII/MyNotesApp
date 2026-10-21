@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.SyncAlt
 import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -62,28 +63,11 @@ internal fun RelationSettingsSection(
     twinName: String,
     onTwinName: (String) -> Unit
 ) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        SectionLabel(RelationStrings.relatedTo)
-        if (fixed) {
-            DatabaseChoiceRow(title = databaseTitle(databaseName), place = null, selected = true, onClick = null)
-        } else {
-            Text(
-                RelationStrings.chooseDatabaseHint,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 4.dp)
-            )
-            databases?.forEach { item ->
-                DatabaseChoiceRow(
-                    title = databaseTitle(item.page.title),
-                    place = item.place,
-                    selected = item.page.id == database,
-                    onClick = { onDatabase(item.page.id) }
-                )
-            }
-        }
-        if (database != null) {
-            Spacer(modifier = Modifier.size(8.dp))
+    // "Show on …" subito sotto il database scelto (dal 21/10/2026): in fondo
+    // all'elenco di tutti i database finiva fuori dallo schermo.
+    @Composable
+    fun twoWayControls() {
+        Column(modifier = Modifier.padding(start = 32.dp, bottom = 8.dp)) {
             SettingsToggleRow(
                 icon = Icons.Filled.SyncAlt,
                 label = RelationStrings.showOn(databaseTitle(databaseName)),
@@ -99,6 +83,30 @@ internal fun RelationSettingsSection(
             if (twoWay) {
                 SectionLabel(RelationStrings.twinName)
                 SheetTextField(value = twinName, onValueChange = onTwinName, placeholder = RelationStrings.twinName, leading = Icons.Filled.Notes)
+            }
+        }
+    }
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        SectionLabel(RelationStrings.relatedTo)
+        if (fixed) {
+            DatabaseChoiceRow(title = databaseTitle(databaseName), place = null, selected = true, onClick = null)
+            twoWayControls()
+        } else {
+            Text(
+                RelationStrings.chooseDatabaseHint,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+            databases?.forEach { item ->
+                DatabaseChoiceRow(
+                    title = databaseTitle(item.page.title),
+                    place = item.place,
+                    selected = item.page.id == database,
+                    onClick = { onDatabase(item.page.id) }
+                )
+                if (item.page.id == database) twoWayControls()
             }
         }
     }
@@ -199,7 +207,15 @@ internal fun RollupSettingsSection(
                     selected = property.id == config.property,
                     onClick = { onChange(config.copy(property = property.id, calc = keepCalc(config, property.type))) },
                     label = { Text(DbStrings.columnName(property.name)) },
-                    leadingIcon = { Icon(property.type.icon(), contentDescription = null, modifier = Modifier.size(16.dp)) }
+                    // Grigia come le icone dei tipi altrove (il chip la farebbe blu), chiara se scelta.
+                    leadingIcon = {
+                        Icon(
+                            property.type.icon(),
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = if (property.id == config.property) LocalContentColor.current else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 )
             }
         }

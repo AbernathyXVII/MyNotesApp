@@ -68,8 +68,9 @@ class DateGroupingTest {
 
     @Before
     fun setUp() = runBlocking<Unit> {
-        // Come sul telefono dell'utente: la settimana comincia il lunedì.
-        Locale.setDefault(Locale.ITALY)
+        // Come sul telefono dell'utente, in inglese americano: lì la settimana del
+        // calendario comincia di domenica, ma quelle dei gruppi il lunedì, come su Soridata.
+        Locale.setDefault(Locale.US)
         db = Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext(), AppDatabase::class.java)
             .allowMainThreadQueries()
             .build()
