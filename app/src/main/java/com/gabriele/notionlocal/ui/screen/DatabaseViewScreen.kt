@@ -954,9 +954,11 @@ fun DatabaseContent(
     }
     if (showNewView) {
         NewViewSheet(
-            onCreate = { name, layout ->
+            ownSource = host?.let { it.sourceDatabaseId ?: it.id }.orEmpty(),
+            loadDatabases = hostViewModel::loadDatabases,
+            onCreate = { name, layout, sourceId ->
                 showNewView = false
-                hostViewModel.createView(name, layout) { id ->
+                hostViewModel.createView(name, layout, sourceId) { id ->
                     if (layout == DatabaseLayout.CHART) chartTypeForView = id
                 }
             },
@@ -1194,7 +1196,22 @@ private fun DatabaseViewBody(
         return
     }
 
+    // Le Relation e i "Page link" di **questa** vista (dal 21/10/2026): una
+    // vista può mostrare le righe di un altro database ("Data source"), e i
+    // database collegati sono quelli delle sue righe, non dell'ospite.
+    val viewRelated by viewModel.related.collectAsStateWithLifecycle()
+    val viewLinkedPages by viewModel.linkedPages.collectAsStateWithLifecycle()
+    val openRowPage by rememberUpdatedState(onOpenRowPage)
+    val relationActions = remember(viewModel) {
+        RelationActions { rowId, onMissing ->
+            viewModel.openRelatedRow(rowId) { id -> if (id != null) openRowPage(id) else onMissing() }
+        }
+    }
+
     CompositionLocalProvider(
+        LocalRelated provides viewRelated,
+        LocalRelationActions provides relationActions,
+        LocalLinkedPages provides viewLinkedPages,
         LocalDatabaseLocked provides contentLocked,
         LocalNameColumnTitle provides dataPage?.nameColumnTitle,
         LocalRowIcons provides rowIcons,

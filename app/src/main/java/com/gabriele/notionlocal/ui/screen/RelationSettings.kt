@@ -122,8 +122,9 @@ private fun SectionLabel(text: String) {
     )
 }
 
+/** Un database da scegliere: il nome, la pagina in cui sta, la spunta. Anche per la sorgente di una vista nuova. */
 @Composable
-private fun DatabaseChoiceRow(title: String, place: String?, selected: Boolean, onClick: (() -> Unit)?) {
+internal fun DatabaseChoiceRow(title: String, place: String?, selected: Boolean, onClick: (() -> Unit)?) {
     Row(
         modifier = Modifier
             .fillMaxWidth()

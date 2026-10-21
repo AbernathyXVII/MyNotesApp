@@ -343,10 +343,13 @@ class DatabaseViewModel(
     /** Le viste in più di questo database; la sua è `page`. */
     val views: StateFlow<List<PageEntity>> = _views
 
-    /** Una vista nuova, subito davanti; `onCreated` riceve il suo id. */
-    fun createView(name: String?, layout: DatabaseLayout, onCreated: (String) -> Unit = {}) {
+    /**
+     * Una vista nuova, subito davanti; `onCreated` riceve il suo id.
+     * [sourceId]: le righe di un altro database (vedi `PageRepository.createView`).
+     */
+    fun createView(name: String?, layout: DatabaseLayout, sourceId: String? = null, onCreated: (String) -> Unit = {}) {
         val hostId = currentPageId ?: return
-        viewModelScope.launch { pageRepository.createView(hostId, name, layout)?.let(onCreated) }
+        viewModelScope.launch { pageRepository.createView(hostId, name, layout, sourceId)?.let(onCreated) }
     }
 
     /** La vista da mostrare: `viewId` uguale al database, la sua. */

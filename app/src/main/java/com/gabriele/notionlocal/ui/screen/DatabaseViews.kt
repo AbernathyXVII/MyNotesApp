@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -51,6 +52,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.gabriele.notionlocal.data.entity.DatabaseLayout
 import com.gabriele.notionlocal.data.entity.PageEntity
+import com.gabriele.notionlocal.data.repository.PageRepository
 import com.gabriele.notionlocal.ui.i18n.DbStrings
 import com.gabriele.notionlocal.ui.i18n.EditorStrings
 import com.gabriele.notionlocal.ui.i18n.Strings
@@ -74,7 +76,12 @@ internal class DatabaseView(
      */
     val removable: Boolean,
     /** Se il nome è suo: senza, è quello del layout e lo segue. */
-    val named: Boolean
+    val named: Boolean,
+    /**
+     * Se si può togliere (dal 21/10/2026): quella di partenza solo se ne resta
+     * un'altra con le stesse righe, che prende il suo posto.
+     */
+    val deletable: Boolean = true
 )
 
 /** Il nome di una vista: il suo, o quello del suo layout. */
@@ -82,11 +89,14 @@ internal fun PageEntity.viewDisplayName(): String =
     viewName ?: (databaseLayout ?: DatabaseLayout.TABLE).displayName()
 
 /** La vista di partenza (il database) e poi le altre, nell'ordine in cui sono nate. */
-internal fun databaseViews(host: PageEntity, extra: List<PageEntity>): List<DatabaseView> =
-    listOf(host.toView(removable = false)) + extra.map { it.toView(removable = true) }
+internal fun databaseViews(host: PageEntity, extra: List<PageEntity>): List<DatabaseView> {
+    val own = host.sourceDatabaseId ?: host.id
+    return listOf(host.toView(removable = false, deletable = extra.any { it.sourceDatabaseId == own })) +
+        extra.map { it.toView(removable = true) }
+}
 
-private fun PageEntity.toView(removable: Boolean) =
-    DatabaseView(id, viewDisplayName(), databaseLayout ?: DatabaseLayout.TABLE, removable, named = viewName != null)
+private fun PageEntity.toView(removable: Boolean, deletable: Boolean = true) =
+    DatabaseView(id, viewDisplayName(), databaseLayout ?: DatabaseLayout.TABLE, removable, named = viewName != null, deletable = deletable)
 
 /**
  * **Toccando il nome della vista**: l'elenco delle viste, per passare da una
@@ -135,7 +145,7 @@ internal fun ViewsSheet(
                         active = view.id == activeId,
                         canEdit = canEdit,
                         // L'ultima vista che resta non si toglie.
-                        canDelete = views.size > 1,
+                        canDelete = views.size > 1 && view.deletable,
                         onPick = { onPick(view.id) },
                         onEdit = { onEdit(view) },
                         onRename = { onRename(view) },
@@ -247,11 +257,23 @@ private fun ViewRow(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun NewViewSheet(
-    onCreate: (String, DatabaseLayout) -> Unit,
+    /** Il database delle righe di questa vista di partenza: la sorgente di suo. */
+    ownSource: String,
+    /** I database fra cui scegliere la sorgente (vedi DatabaseViewModel.loadDatabases). */
+    loadDatabases: ((List<PageRepository.LinkableDatabase>) -> Unit) -> Unit,
+    /** Nome, layout e, per le righe di un altro database, il suo id. */
+    onCreate: (String, DatabaseLayout, String?) -> Unit,
     onDismiss: () -> Unit
 ) {
     var name by remember { mutableStateOf("") }
     var layout by remember { mutableStateOf(DatabaseLayout.TABLE) }
+    // **"Data source"** (dal 21/10/2026, come su Notion): di suo le righe di
+    // questo database; toccando la voce, l'elenco degli altri.
+    var source by remember { mutableStateOf(ownSource) }
+    var choosingSource by remember { mutableStateOf(false) }
+    var databases by remember { mutableStateOf<List<PageRepository.LinkableDatabase>?>(null) }
+    LaunchedEffect(Unit) { loadDatabases { databases = it } }
+    val sourceName = databases?.find { it.page.id == source }?.page?.title?.ifBlank { null } ?: Strings.untitled
     NoteBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
@@ -272,7 +294,7 @@ internal fun NewViewSheet(
                     modifier = Modifier.weight(1f)
                 )
                 TextButton(onClick = onDismiss) { Text(Strings.cancel) }
-                TextButton(onClick = { onCreate(name, layout) }) { Text(Strings.done) }
+                TextButton(onClick = { onCreate(name, layout, source.takeIf { it != ownSource }) }) { Text(Strings.done) }
             }
             Spacer(modifier = Modifier.size(8.dp))
             AutoCaps {
@@ -286,6 +308,34 @@ internal fun NewViewSheet(
                 )
             }
             Spacer(modifier = Modifier.size(12.dp))
+            SheetGroup {
+                SettingsRow(
+                    icon = Icons.Filled.TableChart,
+                    label = DbStrings.dataSource,
+                    value = if (databases == null) null else sourceName,
+                    onClick = { choosingSource = !choosingSource }
+                )
+                if (choosingSource) {
+                    databases?.forEach { item ->
+                        HorizontalDivider()
+                        DatabaseChoiceRow(
+                            title = item.page.title.ifBlank { Strings.untitled },
+                            place = item.place,
+                            selected = item.page.id == source,
+                            onClick = {
+                                source = item.page.id
+                                choosingSource = false
+                            }
+                        )
+                    }
+                }
+            }
+            Text(
+                DbStrings.dataSourceHint,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 4.dp, top = 6.dp, bottom = 12.dp)
+            )
             // Gli stessi riquadri di "Layout" nelle impostazioni.
             DatabaseLayout.entries.chunked(3).forEach { rowLayouts ->
                 Row(modifier = Modifier.fillMaxWidth()) {

@@ -2104,6 +2104,47 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.127 — 21/10/2026 · 13:35 — "Data source": una vista con le righe di un altro database, e i tre database K-pop in uno
+*(Claude Code sul PC; provata sul telefono su "KPOP Music Shows", col database confrontato prima e dopo; 767 test passati)*
+
+L'utente, parola per parola:
+> «Perdonami non l'avevo vista, non pensavo che fossero tre database
+> separati. Vorrei farti una domanda allora: non hai la possibilità di
+> incorporare tutti e tre i database in uno solo, avendo ovviamente tre viste
+> diverse, ossia quella Board per le vittorie giornaliere (con la proprietà
+> Music Show per il grouping) e le due Table per KPOP Songs e KPOP Groups?
+> Dimmi solo se riesci. Se ci riesci, vorrei che lo facessi per favore»
+
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Data source" nella finestra
+  "New view"**, come le sorgenti dei database di Notion: di suo la vista
+  mostra le righe del suo database; toccando la voce si sceglie un altro
+  database dall'elenco (col nome della pagina in cui sta), e la vista, che
+  resta in questo, mostra le righe, le proprietà, i Rollup e le Relation di
+  quello. Senza un nome suo prende quello dell'altro database. Una riga
+  creata da lì nasce in quel database
+- **[Modifica]** **[📱 Mobile]** La vista di partenza si toglie solo se ne
+  resta un'altra con le sue stesse righe, che prende il suo posto: una vista
+  che mostra un altro database non può diventare il database
+- **[Bug fix]** **[📱 Mobile]** Togliendo la vista di partenza, il database
+  prendeva le impostazioni della vista dopo ma non "Date by" (settimane,
+  mesi o anni, dalla v0.126)
+- **[Nota]** **"KPOP Music Shows" ora è un database solo con tre viste**:
+  "**Board**" (le vittorie, colonne per programma e fasce per settimana; le
+  colonne colorate, come le aveva messe l'utente), "**KPOP Songs**" e
+  "**KPOP Groups**" (Table, dal più premiato). I due collegamenti in fondo
+  alla pagina "KPOP" non ci sono più; "KPOP Songs" e "KPOP Groups" restano
+  come database, sono le sorgenti delle due viste. La tabella delle vittorie
+  che era la vista di partenza se n'è andata: la bacheca ha preso il suo
+  posto. Confrontato il database del telefono prima e dopo: righe e celle
+  uguali, fuori dalla pagina "KPOP" niente di cambiato
+- **[Progetto]** `PageRepository.createView(…, sourceId)`;
+  `deleteStartingView` cerca la prima vista con la stessa sorgente; ogni
+  vista mette le sue Relation e i suoi "Page link" (`LocalRelated`,
+  `LocalLinkedPages`) invece di quelli dell'ospite; `databaseViews` dice
+  se la vista di partenza si può togliere (`deletable`). Solo debug,
+  `KpopMergeActivity`, una volta sola. Test: `ViewSourceTest`,
+  `KpopImportTest` (l'unione, sulla copia con gli stessi id)
+
 ### ✏️ v0.126.2 — 21/10/2026 · 13:15 — Le vittorie K-pop dal 2006 in "KPOP Music Shows", e i ritocchi visti sul telefono
 *(Claude Code sul PC; provata sul telefono su "KPOP Music Shows", "KPOP Groups" e "KPOP Songs", col database confrontato prima e dopo; 763 test passati)*
 

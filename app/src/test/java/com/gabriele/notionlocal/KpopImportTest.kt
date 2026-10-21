@@ -112,6 +112,38 @@ class KpopImportTest {
         return log.readText()
     }
 
+    private fun runMerge(): String {
+        val log = File(context.filesDir, "kpop-merge-log.txt").also { it.delete() }
+        Robolectric.buildActivity(KpopMergeActivity::class.java).setup()
+        waitFor("il resoconto dell'unione") { log.exists() }
+        return log.readText()
+    }
+
+    @Test
+    fun theThreeDatabasesBecomeOneWithThreeViews() = runBlocking<Unit> {
+        runImport()
+        val report = runMerge()
+        assertTrue(report, report.startsWith("OK"))
+        val songsDb = db.pageDao().getLinkableDatabases().single { it.title == "KPOP Songs" }
+        val groupsDb = db.pageDao().getLinkableDatabases().single { it.title == "KPOP Groups" }
+        // La bacheca è la vista di partenza, con le settimane; poi le due Table.
+        val host = db.pageDao().getById(wins.id)!!
+        assertEquals(DatabaseLayout.BOARD, host.databaseLayout)
+        assertEquals(DateUnit.WEEK, parseDateGroupings(host.dateGroupingJson)[GroupSlot.BOARD_SUB].unit)
+        assertEquals(winDate.id, host.boardSubGroupColumnId)
+        assertEquals(null, host.activeViewId)
+        val views = db.pageDao().getViewsOnce(wins.id)
+        assertEquals(listOf("KPOP Songs", "KPOP Groups"), views.map { it.viewName })
+        assertEquals(listOf(songsDb.id, groupsDb.id), views.map { it.sourceDatabaseId })
+        assertEquals(songsDb.sortRulesJson, views[0].sortRulesJson)
+        // Nella pagina resta solo il database, coi suoi blocchi di prima.
+        val blocks = db.blockDao().getBlocksForPageOnce(kpop.id)
+        assertEquals(listOf(BlockType.DATABASE_LINK, BlockType.PARAGRAPH), blocks.sortedBy { it.orderIndex }.map { it.type })
+        // Una volta sola.
+        assertTrue(runMerge().startsWith("ERRORE"))
+        assertEquals(2, db.pageDao().getViewsOnce(wins.id).size)
+    }
+
     @Test
     fun theWinsTheSongsAndTheGroupsAreLinked() = runBlocking<Unit> {
         val report = runImport()

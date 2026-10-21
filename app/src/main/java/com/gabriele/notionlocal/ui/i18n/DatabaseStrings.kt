@@ -733,6 +733,18 @@ object DbStrings {
     val newView get() = t("New view", "Nuova vista", "Neue Ansicht", "Nouvelle vue", "Nueva vista", "新建视图", "새 보기", "新しいビュー")
     val addView get() = t("Add view", "Aggiungi una vista", "Ansicht hinzufügen", "Ajouter une vue", "Añadir vista", "添加视图", "보기 추가", "ビューを追加")
     val viewName get() = t("View name", "Nome della vista", "Name der Ansicht", "Nom de la vue", "Nombre de la vista", "视图名称", "보기 이름", "ビュー名")
+    /** "Data source" di una vista nuova (dal 21/10/2026): le righe di quale database. */
+    val dataSource get() = t("Data source", "Sorgente dei dati", "Datenquelle", "Source de données", "Fuente de datos", "数据源", "데이터 소스", "データソース")
+    val dataSourceHint get() = t(
+        "The rows this view shows: this database's, or another one's. Its properties are that database's.",
+        "Le righe che mostra la vista: quelle di questo database o di un altro. Le proprietà sono di quel database.",
+        "Die Zeilen dieser Ansicht: aus dieser oder einer anderen Datenbank. Die Eigenschaften sind die jener Datenbank.",
+        "Les lignes de cette vue : celles de cette base ou d'une autre. Les propriétés sont celles de cette base.",
+        "Las filas de esta vista: las de esta base o las de otra. Las propiedades son las de esa base.",
+        "此视图显示的行：来自此数据库或其他数据库。属性属于那个数据库。",
+        "이 보기에 표시되는 행: 이 데이터베이스 또는 다른 데이터베이스의 행. 속성은 그 데이터베이스의 것입니다.",
+        "このビューに表示する行：このデータベースか別のデータベースのもの。プロパティはそのデータベースのものです。"
+    )
     val viewOptions get() = t("View options", "Opzioni della vista", "Ansichtsoptionen", "Options de la vue", "Opciones de la vista", "视图选项", "보기 옵션", "ビューのオプション")
     val freezeFirstColumn get() = t("Freeze first column", "Blocca la prima colonna", "Erste Spalte fixieren", "Figer la première colonne", "Fijar la primera columna", "冻结首列", "첫 열 고정", "最初の列を固定")
     /** È la riga con i nomi delle proprietà, non una riga del database: il nome lo dice (dal 20/10/2026). */

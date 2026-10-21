@@ -2357,17 +2357,26 @@ class PageRepository(private val db: AppDatabase) {
      * originale), le impostazioni tutte sue e **da zero**, come su Notion —
      * niente filtro, ordinamento o raggruppamento, tutte le proprietà in
      * vista. Restituisce l'id, o null se il database non c'è più.
+     *
+     * **Con le righe di un altro database** ([sourceId], dal 21/10/2026, come
+     * le "data sources" di Notion): la vista sta qui ma mostra quelle. Senza
+     * un nome suo prende quello dell'altro database.
      */
-    suspend fun createView(hostId: String, name: String?, layout: DatabaseLayout): String? = db.withTransaction {
+    suspend fun createView(hostId: String, name: String?, layout: DatabaseLayout, sourceId: String? = null): String? = db.withTransaction {
         val host = pageDao.getById(hostId)?.takeIf { it.isDatabase } ?: return@withTransaction null
+        val own = host.sourceDatabaseId ?: host.id
+        val source = sourceId?.takeIf { it != own }?.let { id ->
+            pageDao.getById(id)?.takeIf { it.isDatabase && it.sourceDatabaseId == null && it.trashedAt == null }
+                ?: return@withTransaction null
+        }
         val order = (pageDao.getViewsOnce(hostId).maxOfOrNull { it.orderIndex } ?: -1) + 1
         val now = System.currentTimeMillis()
         val view = PageEntity(
             title = host.title,
             isDatabase = true,
-            sourceDatabaseId = host.sourceDatabaseId ?: host.id,
+            sourceDatabaseId = source?.id ?: own,
             viewHostId = host.id,
-            viewName = name?.trim()?.ifEmpty { null },
+            viewName = name?.trim()?.ifEmpty { null } ?: source?.title?.ifBlank { null },
             databaseLayout = layout,
             orderIndex = order,
             createdAt = now,
@@ -2398,10 +2407,15 @@ class PageRepository(private val db: AppDatabase) {
      * larghezze, calcoli, grafico…), e quella se ne va. Per chi guarda, la
      * prima vista è sparita e la seconda è diventata la prima, come su
      * Notion. Non si toglie l'ultima vista rimasta: restituisce false.
+     *
+     * Prende la prima vista **con le stesse righe** (dal 21/10/2026): una
+     * vista che mostra un altro database non può diventare il database. Se
+     * non ce n'è, la vista di partenza resta: false.
      */
     suspend fun deleteStartingView(hostId: String): Boolean = db.withTransaction {
         val host = pageDao.getById(hostId)?.takeIf { it.isDatabase } ?: return@withTransaction false
-        val next = pageDao.getViewsOnce(hostId).firstOrNull() ?: return@withTransaction false
+        val own = host.sourceDatabaseId ?: host.id
+        val next = pageDao.getViewsOnce(hostId).firstOrNull { it.sourceDatabaseId == own } ?: return@withTransaction false
         val databaseDao = db.databaseDao()
         // Le colonne nascoste: in una vista sono una lista sua; nel database
         // vero sono le colonne stesse. In una vista collegata, la sua lista.
@@ -2429,6 +2443,8 @@ class PageRepository(private val db: AppDatabase) {
                 colorBoardCards = next.colorBoardCards,
                 boardSubGroupColumnId = next.boardSubGroupColumnId,
                 boardHideEmptySubGroups = next.boardHideEmptySubGroups,
+                // "Date by" (dal 21/10/2026): settimane, mesi o anni della vista dopo.
+                dateGroupingJson = next.dateGroupingJson,
                 calendarDateColumnId = next.calendarDateColumnId,
                 calendarWeekView = next.calendarWeekView,
                 calendarMode = next.calendarMode,

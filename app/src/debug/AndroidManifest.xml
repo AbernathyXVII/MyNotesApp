@@ -22,6 +22,11 @@
             android:name=".KpopImportActivity"
             android:exported="true"
             android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+        <!-- Solo nella build di debug: i tre database K-pop in uno con tre viste (vedi `KpopMergeActivity`). -->
+        <activity
+            android:name=".KpopMergeActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
     </application>
 
 </manifest>
