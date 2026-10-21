@@ -108,6 +108,15 @@ class ManySortRulesTest {
         viewModel.change()
         val wanted = viewModel.page.value!!.sortRules()
         waitFor("salvato: $wanted") { savedPage().sortRules() == wanted && viewModel.page.value!!.sortRules() == wanted }
+        // Una rilettura partita prima del salvataggio può ancora arrivare
+        // (succedeva nella suite intera, col PC carico): si aspetta che la
+        // pagina resti ferma un momento, e che sia ancora quella giusta.
+        val quietUntil = System.currentTimeMillis() + 300
+        while (System.currentTimeMillis() < quietUntil) {
+            shadowOf(Looper.getMainLooper()).idle()
+            Thread.sleep(10)
+        }
+        waitFor("ancora salvato: $wanted") { viewModel.page.value!!.sortRules() == wanted }
     }
 
     /** Piattaforma, genere, voto dal più alto, nome. */

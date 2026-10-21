@@ -17,6 +17,11 @@
             android:name=".ParagraphProbeActivity"
             android:exported="true"
             android:theme="@style/Theme.NotionLocal" />
+        <!-- Solo nella build di debug: le vittorie K-pop di Soridata nei database dell'utente (vedi `KpopImportActivity`). -->
+        <activity
+            android:name=".KpopImportActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
     </application>
 
 </manifest>

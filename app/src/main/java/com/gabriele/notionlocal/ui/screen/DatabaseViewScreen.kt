@@ -3494,7 +3494,12 @@ internal fun BoardLayout(
         return
     }
 
-    val subGroups = buildRowGroups(state, subGroupColumn, hideEmptySubGroups, dateBy = dateGroupings.boardSub)
+    val allSubGroups = buildRowGroups(state, subGroupColumn, hideEmptySubGroups, dateBy = dateGroupings.boardSub)
+    // Le prime fasce e "Load more" (dal 21/10/2026), come le schede: vedi `BOARD_BAND_LIMIT`.
+    val limits = LocalRowLimits.current
+    val bandsKey = "board-bands:" + subGroupColumn.id
+    val shownBands = limits.limit(bandsKey, allSubGroups, BOARD_BAND_LIMIT) { it.key }
+    val subGroups = shownBands.items
     // Quali fasce sono chiuse: come per i gruppi della tabella, è come si
     // sta guardando adesso, e riaprendo la pagina si riparte con tutto aperto.
     val collapsed = remember(groupColumn.id, subGroupColumn.id) { mutableStateMapOf<String, Boolean>() }
@@ -3543,6 +3548,12 @@ internal fun BoardLayout(
                 }
             }
             Spacer(modifier = Modifier.size(12.dp))
+        }
+        if (shownBands.hidden > 0) {
+            // Fermo sul bordo sinistro come i nomi delle fasce.
+            Box(modifier = Modifier.offset { IntOffset(boardScroll.value, 0) }) {
+                LoadMoreButton(shownBands.hidden, onClick = { limits?.more(bandsKey, BOARD_BAND_LIMIT) })
+            }
         }
     }
 }

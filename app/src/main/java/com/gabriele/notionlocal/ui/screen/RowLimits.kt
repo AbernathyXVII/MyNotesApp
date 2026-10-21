@@ -46,9 +46,12 @@ internal class RowLimits(private val step: Int = DATABASE_ROW_LIMIT) {
      */
     var created: Set<String> = emptySet()
 
-    /** Le righe da mostrare di un elenco (`key`: quale), e quante restano fuori. */
-    fun <T> take(key: String, items: List<T>, id: (T) -> String): Limited<T> {
-        val limit = shown[key] ?: step
+    /**
+     * Le righe da mostrare di un elenco (`key`: quale), e quante restano fuori.
+     * [first] quante subito, se non sono [step] (le fasce della bacheca).
+     */
+    fun <T> take(key: String, items: List<T>, first: Int = step, id: (T) -> String): Limited<T> {
+        val limit = shown[key] ?: first
         if (items.size <= limit) return Limited(items, 0)
         val tail = items.subList(limit, items.size)
         val made = created
@@ -57,9 +60,9 @@ internal class RowLimits(private val step: Int = DATABASE_ROW_LIMIT) {
         return Limited(if (kept.isEmpty()) head else head + kept, tail.size - kept.size)
     }
 
-    /** "Load more": altre [step] righe di quell'elenco. */
-    fun more(key: String) {
-        shown[key] = (shown[key] ?: step) + step
+    /** "Load more": altre [first] righe di quell'elenco (di suo [step]). */
+    fun more(key: String, first: Int = step) {
+        shown[key] = (shown[key] ?: first) + first
     }
 }
 
@@ -67,8 +70,15 @@ internal class RowLimits(private val step: Int = DATABASE_ROW_LIMIT) {
 internal data class Limited<T>(val items: List<T>, val hidden: Int)
 
 /** Le righe di un elenco col limite, se c'è; tutte altrimenti. */
-internal fun <T> RowLimits?.limit(key: String, items: List<T>, id: (T) -> String): Limited<T> =
-    this?.take(key, items, id) ?: Limited(items, 0)
+internal fun <T> RowLimits?.limit(key: String, items: List<T>, first: Int = DATABASE_ROW_LIMIT, id: (T) -> String): Limited<T> =
+    this?.take(key, items, first, id) ?: Limited(items, 0)
+
+/**
+ * **Le fasce della bacheca** (dal 21/10/2026): le prime 12 e "Load more" ne
+ * aggiunge altre 12. Ogni fascia ha tutte le colonne, e con le settimane di
+ * vent'anni di vittorie K-pop sarebbero mille fasce da disegnare insieme.
+ */
+internal const val BOARD_BAND_LIMIT = 12
 
 /** Null dove le righe si vedono tutte, senza limite. */
 internal val LocalRowLimits = staticCompositionLocalOf<RowLimits?> { null }

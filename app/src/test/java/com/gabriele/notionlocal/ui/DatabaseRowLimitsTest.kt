@@ -21,9 +21,11 @@ import com.gabriele.notionlocal.data.entity.DatabaseLayout
 import com.gabriele.notionlocal.data.entity.DatabaseRowEntity
 import com.gabriele.notionlocal.data.entity.PageEntity
 import com.gabriele.notionlocal.data.settings.AppSettings
+import com.gabriele.notionlocal.ui.screen.BOARD_BAND_LIMIT
 import com.gabriele.notionlocal.ui.screen.DATABASE_ROW_LIMIT
 import com.gabriele.notionlocal.ui.screen.DatabaseContent
 import com.gabriele.notionlocal.ui.screen.RowLimits
+import com.gabriele.notionlocal.ui.screen.limit
 import com.gabriele.notionlocal.ui.theme.NotionLocalTheme
 import com.gabriele.notionlocal.viewmodel.ViewModelFactory
 import kotlinx.coroutines.runBlocking
@@ -148,5 +150,19 @@ class DatabaseRowLimitsTest {
         assertEquals(listOf(0, 1, 2, 9), limits.take("altro", rows) { "$it" }.items)
         // Meno righe del limite: tutte, e niente "Load more".
         assertEquals(0, limits.take("t", listOf(1, 2)) { "$it" }.hidden)
+    }
+
+    @Test
+    fun theBandsOfTheBoardComeTwelveAtATime() {
+        // Mille settimane di vittorie (21/10/2026): le prime 12, poi altre 12.
+        val limits = RowLimits()
+        val weeks = (0 until 1000).toList()
+        assertEquals(12 to 988, limits.limit("board-bands", weeks, BOARD_BAND_LIMIT) { "$it" }.let { it.items.size to it.hidden })
+        limits.more("board-bands", BOARD_BAND_LIMIT)
+        assertEquals(24, limits.limit("board-bands", weeks, BOARD_BAND_LIMIT) { "$it" }.items.size)
+        // Le schede delle colonne restano a 50.
+        assertEquals(50, limits.limit("board:x", weeks) { "$it" }.items.size)
+        // Senza limiti (un database che li mostra tutti), tutte.
+        assertEquals(1000, (null as RowLimits?).limit("board-bands", weeks, BOARD_BAND_LIMIT) { "$it" }.items.size)
     }
 }

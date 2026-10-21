@@ -2104,6 +2104,38 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### ✏️ v0.126.1 — 21/10/2026 · 09:17 — Le fasce della bacheca: le prime 12 e "Load more"
+*(Claude Code sul PC; ancora da provare sul telefono, che era staccato; 760 test passati)*
+
+Dalla stessa richiesta della v0.125 e della v0.126 (le vittorie K-pop di
+Soridata in una bacheca a fasce settimanali).
+
+- **[Modifica]** **[📱 Mobile]** **Le fasce della bacheca** (i
+  sottogruppi) si vedono **12 alla volta**, e "**Load more**", in fondo a
+  sinistra, ne aggiunge altre 12, come già le schede di ogni colonna (50
+  alla volta). Ogni fascia ha tutte le colonne, e con le settimane di
+  vent'anni di music show sarebbero state mille fasce da disegnare
+  insieme: la bacheca ci avrebbe messo secondi ad aprirsi. Con "Newest
+  first" le prime 12 sono le ultime dodici settimane, quasi tre mesi
+- **[Progetto]** `RowLimits.take` e `limit` hanno `first` (quante subito),
+  `BOARD_BAND_LIMIT` = 12. Test: `DatabaseRowLimitsTest`, mille settimane
+- **[Progetto]** Solo nella build di debug, **`KpopImportActivity`**: legge
+  le vittorie preparate sul PC dalle pagine di soridata.com (un file JSON:
+  data della puntata, programma, artista, canzone) e le mette nel
+  database "KPOP Music Shows" dell'utente, col tag del gruppo (quelli che
+  l'utente ha già restano suoi: "aespa", non "Aespa"), il programma fra le
+  sue opzioni e la data; crea "**KPOP Songs**" e "**KPOP Groups**" in fondo
+  alla pagina "KPOP", collegati nei due sensi (vittoria ↔ canzone ↔
+  gruppo), coi Rollup "Number of wins", "First win", "Last win", "Music
+  shows", "Winning songs", ordinati dal più premiato; la bacheca prende le
+  fasce per settimana dalla più recente. Una volta sola. Test:
+  `KpopImportTest`, su una copia del database dell'utente con gli stessi id
+- **[Progetto]** `ManySortRulesTest` cadeva a volte nella suite intera:
+  dopo un salvataggio il ViewModel rilegge la pagina, e col PC carico una
+  rilettura partita prima arrivava dopo, rimettendo per un attimo le regole
+  di prima proprio mentre il test aggiungeva quella dopo. Ora, dopo ogni
+  passo, aspetta che la pagina resti ferma
+
 ### 🆕 v0.126 — 21/10/2026 · 09:06 — "Date by": i gruppi per data diventano settimane, mesi o anni, anche dai più recenti
 *(Claude Code sul PC; ancora da provare sul telefono, che era staccato; 757 test passati)*
 
