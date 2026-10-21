@@ -63,7 +63,7 @@ class PatchNotesTest {
         assertEquals("08/09/2026", first.date)
         assertEquals("09:19", first.time)
         versions.forEach { v ->
-            assertTrue("${v.version}: ${v.emoji}", v.emoji == if (v.kind == PatchKind.FIX) "🔧" else "🆕")
+            assertEquals("${v.version}: ${v.emoji}", v.kind.emoji, v.emoji)
             assertTrue("${v.version}: vuota", v.blocks.isNotEmpty())
             // L'ora c'è, o si dice che non si sa; con l'ora, la data è un giorno preciso.
             if (v.time == UNKNOWN_TIME) return@forEach
@@ -77,15 +77,56 @@ class PatchNotesTest {
 
     @Test
     fun theNumbersFollowEachOther() {
-        var minor = 0
-        var patch = 0
+        // Dal 21/10/2026: un'aggiunta fa salire il secondo numero, una
+        // modifica il terzo, una correzione il quarto (v0.8, v0.8.1, v0.8.1.1).
+        var added = 0
+        var changed = 0
+        var fixed = 0
         notes().versions.asReversed().forEach { v ->
-            if (v.kind == PatchKind.FIX) patch++ else {
-                minor++
-                patch = 0
+            val expected = when (v.kind) {
+                PatchKind.RELEASE -> {
+                    added++
+                    changed = 0
+                    fixed = 0
+                    "0.$added"
+                }
+                PatchKind.CHANGE -> {
+                    changed++
+                    fixed = 0
+                    "0.$added.$changed"
+                }
+                PatchKind.FIX -> {
+                    fixed++
+                    "0.$added.$changed.$fixed"
+                }
             }
-            val expected = if (v.kind == PatchKind.FIX) "0.$minor.$patch" else "0.$minor"
             assertEquals(v.title, expected, v.version)
+        }
+    }
+
+    @Test
+    fun everyItemSaysItsPlatformAndFitsItsVersion() {
+        // Dal 21/10/2026: accanto all'etichetta di ogni voce la piattaforma
+        // (una o più, o "Tutte"), e le etichette sono quelle di adesso.
+        val platforms = setOf("📱 Mobile", "💻 PC", "🍎 Mac", "🌐 Web App", "🌍 Tutte")
+        val item = Regex("""^\s*- \*\*\[([^\]]+)\]\*\*(?: \*\*\[([^\]]+)\]\*\*)?""")
+        val kindOf = Regex("""^### \S+ v(\S+) — """)
+        var kind: PatchKind? = null
+        var version = ""
+        readmeChronology().lines().forEach { line ->
+            kindOf.find(line)?.let {
+                version = it.groupValues[1]
+                kind = PatchKind.of(version)
+            }
+            val m = item.find(line) ?: return@forEach
+            val tag = m.groupValues[1]
+            if (tag == "Progetto" || tag == "Nota") return@forEach
+            assertTrue("$version: etichetta \"$tag\"", tag in setOf("Nuova funzionalità", "Modifica", "Rimosso", "Bug fix"))
+            val said = m.groupValues[2].split(" · ").filter { it.isNotEmpty() }
+            assertTrue("$version: \"$tag\" senza piattaforma", said.isNotEmpty() && said.all { it in platforms })
+            // Una correzione corregge soltanto; una modifica non aggiunge.
+            if (kind == PatchKind.FIX) assertEquals("$version: $line", "Bug fix", tag)
+            if (kind == PatchKind.CHANGE) assertTrue("$version: $line", tag != "Nuova funzionalità")
         }
     }
 
@@ -126,12 +167,19 @@ class PatchNotesTest {
               |---|---|
               | 1 | 2 |
 
-            ### 🔧 v0.1.1 — 24/09/2026 · 23:17 — Una correzione
+            ### ✏️ v0.1.1 — 24/09/2026 · 23:30 — Una modifica
+            - **[Modifica]** **[📱 Mobile]** Cambiato
+
+            ### 🔧 v0.1.0.1 — 24/09/2026 · 23:17 — Una correzione
             - **[Bug fix]** Corretto
             """.trimIndent()
         )
         assertEquals(listOf(NoteBlock.Paragraph("Una riga spezzata a mano.")), notes.intro)
-        val (release, fix) = notes.versions
+        val (release, change, fix) = notes.versions
+        assertEquals(PatchKind.CHANGE, change.kind)
+        assertEquals("0.1.1", change.version)
+        assertEquals("✏️", change.emoji)
+        assertEquals("0.1.0.1", fix.version)
         assertEquals(PatchKind.RELEASE, release.kind)
         assertEquals("0.2", release.version)
         assertEquals("25/09/2026", release.date)

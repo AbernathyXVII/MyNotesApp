@@ -48,7 +48,7 @@ import com.gabriele.notionlocal.viewmodel.PageEditorViewModel
 
 // ---------------------------------------------------------------------------
 // **Tutta la pagina selezionata, come su Notion** (dal 20/10/2026, chiesto
-// dall'utente). Dalla v0.181 le pagine lunghe sono divise in pezzi, e "Select
+// dall'utente). Dalla v0.113.1 le pagine lunghe sono divise in pezzi, e "Select
 // all" del testo arrivava solo ai bordi del pezzo; e comunque una selezione di
 // testo non passa sopra un database o un'immagine. Ora "Select all" (nella
 // barra sopra la tastiera e nel menu del testo) vela di blu tutta la pagina,

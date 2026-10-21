@@ -36,9 +36,10 @@ val patchNotes = tasks.register<PatchNotesTask>("patchNotes") {
 }
 
 // **La versione dell'app è l'ultima delle Patch Notes**: il numero del primo
-// titolo "### 🆕 v0.68 — …" della Cronologia. `versionCode` è quante versioni
-// ci sono, così cresce sempre.
-val patchVersions = Regex("""^### \S+ v(\d+\.\d+(?:\.\d+)?) — """, RegexOption.MULTILINE)
+// titolo "### 🆕 v0.78 — …" della Cronologia, fino a quattro parti (v0.N.M.K,
+// dal 21/10/2026). `versionCode` è quante versioni ci sono, così cresce sempre,
+// anche quando la Cronologia si rinumera.
+val patchVersions = Regex("""^### \S+ v(\d+\.\d+(?:\.\d+){0,2}) — """, RegexOption.MULTILINE)
     .findAll(rootProject.file("README.md").readText(Charsets.UTF_8))
     .map { it.groupValues[1] }
     .toList()

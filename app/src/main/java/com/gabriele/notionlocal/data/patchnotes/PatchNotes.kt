@@ -55,8 +55,25 @@ sealed class NoteBlock {
     data class Table(val level: Int, val rows: List<List<String>>) : NoteBlock()
 }
 
-/** 🆕 una versione nuova, 🔧 una correzione. */
-enum class PatchKind { RELEASE, FIX }
+/**
+ * Che cosa porta una versione, dal suo numero (dal 21/10/2026, chiesto
+ * dall'utente): 🆕 v0.N un'aggiunta, ✏️ v0.N.M una modifica di qualcosa
+ * che c'era già, 🔧 v0.N.M.K solo correzioni di bug.
+ */
+enum class PatchKind(val emoji: String) {
+    RELEASE("🆕"),
+    CHANGE("✏️"),
+    FIX("🔧");
+
+    companion object {
+        /** Dal numero: "0.124" un'aggiunta, "0.123.1" una modifica, "0.123.0.1" una correzione. */
+        fun of(version: String): PatchKind = when (version.count { it == '.' }) {
+            1 -> RELEASE
+            2 -> CHANGE
+            else -> FIX
+        }
+    }
+}
 
 /**
  * L'ora di una versione di cui non si sa (le prime, fatte in un'altra chat
@@ -64,11 +81,11 @@ enum class PatchKind { RELEASE, FIX }
  */
 const val UNKNOWN_TIME = "ora non registrata"
 
-/** Una versione: "🆕 v0.68 — 30/09/2026 · 15:09 — titolo", e sotto quello che contiene. */
+/** Una versione: "🆕 v0.78 — 30/09/2026 · 15:09 — titolo", e sotto quello che contiene. */
 data class PatchVersion(
     val kind: PatchKind,
     val emoji: String,
-    /** "0.68", "0.67.1": il numero senza la "v". */
+    /** "0.78", "0.77.1", "0.77.0.1": il numero senza la "v". */
     val version: String,
     /** "30/09/2026", o un periodo ("fra l'8 e il 18/09/2026") quando l'ora non si sa. */
     val date: String,
@@ -86,8 +103,8 @@ data class PatchNotes(
     val versions: List<PatchVersion>
 )
 
-/** Il titolo di una versione: "### 🆕 v0.68 — 30/09/2026 · 15:09 — Il time-blocking…". */
-val VERSION_HEADING = Regex("""^### (\S+) v(\d+\.\d+(?:\.\d+)?) — (.+?) · (\d{2}:\d{2}|$UNKNOWN_TIME) — (.+)$""")
+/** Il titolo di una versione: "### 🆕 v0.78 — 30/09/2026 · 15:09 — Il time-blocking…". */
+val VERSION_HEADING = Regex("""^### (\S+) v(\d+\.\d+(?:\.\d+){0,2}) — (.+?) · (\d{2}:\d{2}|$UNKNOWN_TIME) — (.+)$""")
 
 fun parsePatchNotes(markdown: String): PatchNotes {
     val lines = markdown.removePrefix("﻿").replace("\r\n", "\n").split("\n")
@@ -101,7 +118,7 @@ fun parsePatchNotes(markdown: String): PatchNotes {
         val head = current ?: return
         val (emoji, version, date, time, name) = head.destructured
         versions += PatchVersion(
-            kind = if (version.count { it == '.' } == 2) PatchKind.FIX else PatchKind.RELEASE,
+            kind = PatchKind.of(version),
             emoji = emoji,
             version = version,
             date = date,

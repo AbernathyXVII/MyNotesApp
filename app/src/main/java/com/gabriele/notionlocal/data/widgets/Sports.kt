@@ -24,7 +24,7 @@ import java.time.temporal.TemporalAdjusters
  * **Lo sport** (dal 17/10/2026, chiesto dall'utente): una o più competizioni
  * di sport diversi — calcio, tennis, basket, baseball, football americano.
  *
- * Dalla v0.172 il widget mostra **una competizione alla volta**, che si
+ * Dalla v0.107.1 il widget mostra **una competizione alla volta**, che si
  * cambia con le frecce, e **una giornata intera per pagina**: scorrendo si
  * vedono le giornate prima e dopo, tutta la stagione. Un tocco apre le
  * partite della giornata e la classifica; tenendo premuto si scelgono le
@@ -161,8 +161,8 @@ data class SportReport(
 )
 
 /**
- * La versione di `SportReport` (2 dalla v0.172: giornate, stemmi; 3 dalla
- * v0.175: la stagione). Quelli salvati prima si riscaricano subito,
+ * La versione di `SportReport` (2 dalla v0.107.1: giornate, stemmi; 3 dalla
+ * v0.110: la stagione). Quelli salvati prima si riscaricano subito,
  * altrimenti la classifica restava senza stemmi fino alla mezz'ora dopo (e
  * la stagione senza anno fino al giorno dopo).
  */

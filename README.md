@@ -472,14 +472,28 @@ dichiarato: tornando su Claude Code non si deve ricominciare niente da
 capo.
 
 **Dal 30/09/2026 ogni voce della Cronologia è una versione** (chiesto
-dall'utente, vedi v0.131 e v0.134): il titolo è `### 🆕 v0.N —
-gg/mm/aaaa · hh:mm — Titolo`, con 🆕 e il numero dopo per una richiesta
-che porta qualcosa di nuovo o toglie qualcosa, 🔧 e un decimale in più
-(v0.N.1, v0.N.2…) per una che corregge soltanto. Il giorno e l'ora sono quelli (italiani)
-del commit che chiude la voce; la voce nuova va in cima. La Cronologia è
-anche **Settings → Patch Notes** nell'app, che la copia a ogni
-compilazione, e `PatchNotesTest` controlla che numeri, date e ordine
-tornino.
+dall'utente, vedi v0.84 e v0.85.1): il titolo è `### 🆕 v0.N —
+gg/mm/aaaa · hh:mm — Titolo`. **Dal 21/10/2026 il numero dice che cosa
+porta la versione** (chiesto dall'utente, che ha fatto rileggere e
+rinumerare tutta la Cronologia):
+- 🆕 **v0.N**, uno in più al secondo numero: **un'aggiunta**, qualcosa che
+  l'app prima non faceva;
+- ✏️ **v0.N.M**, uno in più al terzo: **una modifica** di qualcosa che
+  c'era già (come si vede, come si comporta, dove sta, toglierlo);
+- 🔧 **v0.N.M.K**, uno in più al quarto: **solo correzioni di bug**.
+
+Una versione con più cose prende il numero di quella più grande (con
+un'aggiunta è 🆕 anche se corregge dei bug). Ogni voce di una versione
+ha la sua etichetta (`[Nuova funzionalità]`, `[Modifica]`, `[Rimosso]`,
+`[Bug fix]`; `[Progetto]` per come è fatta) e, **dal 21/10/2026, la
+piattaforma** a cui si riferisce: `[📱 Mobile]` l'app per il telefono,
+`[💻 PC]`, `[🍎 Mac]`, `[🌐 Web App]`, più d'una insieme o `[🌍 Tutte]`.
+Per ora c'è solo l'app per il telefono. Il giorno e l'ora sono quelli
+(italiani) del commit che chiude la voce; la voce nuova va in cima. La
+Cronologia è anche **Settings → Patch Notes** nell'app, che la copia a
+ogni compilazione, e `PatchNotesTest` controlla che numeri, date e
+ordine tornino. I commit prima del 21/10/2026 hanno il numero vecchio:
+vedi "Vecchia numerazione", dopo la Cronologia.
 
 ---
 
@@ -662,7 +676,7 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   ("Upload"), di cui l'app tiene una copia. Un PNG trasparente resta
   trasparente. (Fino al 25/09/2026 anche da un link: tolto su
   richiesta, e con lui il permesso di rete. La rete è tornata il
-  06/10/2026, v0.146, solo per i video presi da un link e per le
+  06/10/2026, v0.91, solo per i video presi da un link e per le
   anteprime dei segnalibri)
 - **La copertina si inquadra**: da "Reposition" la si sposta col dito
   in tutte le direzioni e la si ingrandisce pizzicando, fino a
@@ -814,8 +828,8 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   Audio, Code, File, Web bookmark e Database - Full page** ci sono ma
   sono grigie: non sono state
   costruite — alcune richiedono capacità nuove (gestione file,
-  embedding media).~~ **Superato** (06–07/10/2026, dalla v0.146 alla
-  v0.151): ci sono tutte. ~~Anche Linked view of data source.~~
+  embedding media).~~ **Superato** (06–07/10/2026, dalla v0.91 alla
+  v0.96): ci sono tutte. ~~Anche Linked view of data source.~~
   **Superato** (24/09/2026, richiesta 36): la vista collegata c'è
 - **Database: "Property visibility" non riordina e non cerca.** Su
   Notion le due liste hanno le maniglie per trascinare le colonne e un
@@ -994,7 +1008,7 @@ progetto è su Kotlin 1.9.24 in tutta la configurazione.
   dentro la pagina. Il colore di un collegamento vale solo per quel
   collegamento, non per la pagina. ~~**"Edit icon" cambia l'immagine
   dell'icona**, come ovunque nell'app: l'emoji di una pagina non si
-  sceglie ancora da nessuna parte~~ **Superato** (08/10/2026, v0.152):
+  sceglie ancora da nessuna parte~~ **Superato** (08/10/2026, v0.97):
   "Edit icon", come ogni icona, apre il selettore delle emoji di Notion
 - ~~**Annulla dopo un "Duplicate" di una pagina** (o di un toggle con
   dentro una sottopagina) toglie il collegamento alla copia, ma la copia
@@ -2048,13 +2062,24 @@ del 24/09/2026"):
 ## Cronologia degli aggiornamenti
 
 **Le patch notes dell'app** (dal 30/09/2026, chiesto dall'utente). Ogni
-richiesta dell'utente è una **versione**, dalla prima, v0.1, a oggi: 🆕
-da v0.1 a v0.2, v0.3… se porta qualcosa di nuovo o toglie qualcosa
-(`[Nuova funzionalità]`, `[Rimosso]`); 🔧 una **correzione** della
-versione prima (da v0.8 a v0.8.1, v0.8.2…) se corregge soltanto
-(`[Bug fix]`) o verifica. La più recente sta in cima; sotto il titolo,
-come sempre, la richiesta parola per parola e le modifiche, ognuna con la
-sua etichetta.
+richiesta dell'utente è una **versione**, dalla prima, v0.1, a oggi, e il
+numero dice che cosa porta (dal 21/10/2026, chiesto dall'utente: tutta la
+Cronologia è stata riletta e rinumerata così):
+- 🆕 **un'aggiunta**, qualcosa che l'app prima non faceva: uno in più al
+  secondo numero (da v0.1 a v0.2, v0.3…);
+- ✏️ **una modifica** di qualcosa che c'era già, come si vede o come si
+  comporta, o toglierla: uno in più al terzo (da v0.8 a v0.8.1, v0.8.2…);
+- 🔧 **solo correzioni di bug**: uno in più al quarto (da v0.8 a v0.8.0.1,
+  da v0.8.1 a v0.8.1.1…).
+
+Una versione con più cose prende il numero della più grande: con
+un'aggiunta è 🆕 anche se corregge dei bug. La più recente sta in cima;
+sotto il titolo, come sempre, la richiesta parola per parola e le voci,
+ognuna con la sua etichetta (`[Nuova funzionalità]`, `[Modifica]`,
+`[Rimosso]`, `[Bug fix]`; `[Progetto]` per come è fatta) e con **la
+piattaforma** a cui si riferisce: **[📱 Mobile]** l'app per il telefono,
+**[💻 PC]**, **[🍎 Mac]**, **[🌐 Web App]**, più d'una insieme o
+**[🌍 Tutte]**. Per ora c'è solo l'app per il telefono.
 
 Accanto al numero, il giorno e l'ora (italiana) in cui la versione è
 stata chiusa: quella del commit, o, per il lavoro che commit non ne ha
@@ -2073,7 +2098,60 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
-### 🆕 v0.196 — 21/10/2026 · 00:59 — "Paragraph": lo spazio fra i blocchi e dopo numeri, pallini e caselle, come su Word
+### ✏️ v0.124.1 — 21/10/2026 · 01:14 — La Cronologia riletta e rinumerata: aggiunte, modifiche e correzioni, e la piattaforma di ogni voce
+*(Claude Code sul PC; Cronologia riletta versione per versione; installata sul telefono come 0.124.1, la schermata Patch Notes non ancora guardata lì; 729 test passati)*
+
+L'utente, parola per parola:
+> «Una cosa importante: ricomincia da capo a rileggere ogni patch note
+> dall'inizio e considerare:
+> - 0.1 aggiunte;
+> - 0.0.1 modifiche (ad aggiunte già fatte, tipo cambio di texture);
+> - 0.0.0.1 bug.
+>
+> Inoltre d'ora in poi, nel ReadMe (e nelle Patch Notes) specifica quale
+> funzione, modifica o bug è correlata direttamente all'app mobile, su PC,
+> su Mac, su Web App, o se a tutti o ad alcuni, magari con un tag (anche se
+> per il momento sono solo modifiche all'app mobile)»
+
+- **[Modifica]** **[📱 Mobile]** **Tutte le 246 versioni rinumerate**,
+  rileggendole una per una dalla prima: 🆕 **v0.N** per un'aggiunta
+  (qualcosa che l'app prima non faceva), ✏️ **v0.N.M** per una modifica di
+  qualcosa che c'era già (com'è fatto, come si comporta, dove sta,
+  toglierlo), 🔧 **v0.N.M.K** per una versione di sole correzioni. Una
+  versione con più cose prende il numero di quella più grande. Sono venute
+  **124 aggiunte, 77 modifiche e 45 versioni di sole correzioni**: la
+  versione di prima, "Paragraph", che era la v0.196, ora è la **v0.124**.
+  Anche l'app ha il numero nuovo (Settings → Patch Notes e la versione
+  sotto)
+- **[Modifica]** **[📱 Mobile]** **La piattaforma di ogni voce**:
+  **[📱 Mobile]** l'app per il telefono, **[💻 PC]**, **[🍎 Mac]**,
+  **[🌐 Web App]**, più d'una insieme o **[🌍 Tutte]**. Messa a tutte le
+  voci, anche a quelle di prima (731), che sono tutte dell'app per il
+  telefono; le voci `[Progetto]`, su come è fatta, non ce l'hanno
+- **[Modifica]** **[📱 Mobile]** Le etichette sono quattro: `[Nuova
+  funzionalità]`, `[Modifica]` (prima anche `[Modificato]` e
+  `[Cambiamento]`), `[Rimosso]` e `[Bug fix]` (prima anche `[Bug]`).
+  Nelle versioni che ora sono modifiche, le voci che dicevano "[Nuova
+  funzionalità]" dicono "[Modifica]"
+- **[Progetto]** Come ho deciso: un'aggiunta è una cosa che prima non si
+  poteva fare (una vista, un tipo di proprietà, un'opzione, un menu, un
+  widget); allargare o spostare una cosa che c'era (un'altra voce dove
+  c'era già, colori, misure, un comportamento diverso, toglierla) è una
+  modifica; una versione di soli `[Bug fix]` è una correzione. Le voci
+  dentro le aggiunte tengono la loro etichetta. I rimandi nel testo ("vedi
+  v0.N") hanno il numero nuovo, tranne dentro le parole dell'utente e nei
+  racconti delle numerazioni di allora (le vecchie v0.131, v0.132 e
+  v0.134). La tabella vecchio → nuovo, per i commit di prima, è in
+  "Vecchia numerazione", dopo la Cronologia, fuori dalle Patch Notes
+- **[Progetto]** App: `PatchKind` ha tre tipi (🆕, ✏️, 🔧) e si legge dal
+  numero (`PatchKind.of`); il titolo di una versione può avere un numero
+  di quattro parti, nel build e nelle Patch Notes. `versionCode` resta
+  quante versioni ci sono, quindi il telefono accetta l'aggiornamento
+  anche col numero più basso. Test: `PatchNotesTest`, coi tre tipi, i
+  numeri che seguono la regola nuova, e ogni voce con la sua piattaforma e
+  un'etichetta adatta alla sua versione
+
+### 🆕 v0.124 — 21/10/2026 · 00:59 — "Paragraph": lo spazio fra i blocchi e dopo numeri, pallini e caselle, come su Word
 *(Claude Code sul PC; provata sul telefono su una pagina di prova, "Paragraph – prova", col database confrontato prima e dopo; 728 test passati)*
 
 L'utente, parola per parola:
@@ -2090,7 +2168,7 @@ L'utente, parola per parola:
 > che mi consente di scegliere se il Paragraph sarà uguale per numbered,
 > bulleted e to-do list»
 
-- **[Nuova funzionalità]** **Settings → "Paragraph"**, sotto "Full line
+- **[Nuova funzionalità]** **[📱 Mobile]** **Settings → "Paragraph"**, sotto "Full line
   view", con le due misure in punti, scelte con "−" e "+":
   - **"Space between blocks"**: lo spazio in più fra un blocco e l'altro
     (da 0 a 32 pt; 0 è com'erano sempre le pagine), metà sopra e metà sotto
@@ -2100,10 +2178,10 @@ L'utente, parola per parola:
     com'era sempre, poi da 0 a 32 pt). Con **"Same for numbered, bulleted
     and to-do lists"** acceso è uno solo per tutti e tre gli elenchi; spento,
     ognuno ha il suo
-- **[Nuova funzionalità]** **"Paragraph" nei tre puntini di ogni pagina**,
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Paragraph" nei tre puntini di ogni pagina**,
   sotto "Proofing": per ognuna delle due misure "As in Settings" oppure
   "Only this page", con le stesse scelte di Settings
-- **[Nuova funzionalità]** **"Paragraph" per un gruppo di righe**: dal nuovo
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Paragraph" per un gruppo di righe**: dal nuovo
   pulsante ¶ della barra sopra la tastiera (le righe toccate dal testo
   selezionato, o quella del cursore) e dalla voce "Paragraph" del menu del
   blocco (sei puntini). "As in the page" oppure "Only these lines"; con più
@@ -2131,7 +2209,7 @@ L'utente, parola per parola:
   pagina di prova. Test: `ParagraphTest`, `ParagraphLinesTest`,
   `ParagraphSettingsTest`, `MigrationTest` (con lo schema `v58.sql`)
 
-### 🔧 v0.195.1 — 21/10/2026 · 00:17 — "+ Row", "+ Column" e il cestino solo mentre si scrive nella tabella
+### 🔧 v0.123.0.1 — 21/10/2026 · 00:17 — "+ Row", "+ Column" e il cestino solo mentre si scrive nella tabella
 *(Claude Code sul PC; provata sul telefono nella pagina presa da game8; 719 test passati)*
 
 L'utente, parola per parola:
@@ -2147,14 +2225,14 @@ Nella pagina presa da game8 con "Text and Images" ci sono sei tabelle
 sotto ognuna la barra per modificarla restava sempre accesa, in mezzo
 all'articolo.
 
-- **[Bug fix]** **La barra sotto una tabella** ("+ Row", "+ Column" e il
+- **[Bug fix]** **[📱 Mobile]** **La barra sotto una tabella** ("+ Row", "+ Column" e il
   cestino) **si vede solo mentre si scrive** in una casella di quella
   tabella: si tocca una casella e compare, si chiude la tastiera e va via.
   Vale per tutte le tabelle, non solo per quelle del Web Clipper
 - **[Progetto]** `TableBlockContent` guarda se una sua casella ha il cursore
   (`onFocusChanged` e `focusGroup`). Test: `TableBarTest`
 
-### 🆕 v0.195 — 20/10/2026 · 22:59 — Il Web Clipper legge le tabelle per righe, toglie i buchi della pubblicità e ha "Dark mode"
+### 🆕 v0.123 — 20/10/2026 · 22:59 — Il Web Clipper legge le tabelle per righe, toglie i buchi della pubblicità e ha "Dark mode"
 *(Claude Code sul PC; provato sul telefono sulla pagina di game8: "Text and Images", Full Page chiara e scura, Article scuro; 718 test passati)*
 
 L'utente, parola per parola:
@@ -2184,7 +2262,7 @@ Per questo tutto sembrava sparso. In più le quattro tabelle degli oggetti
 erano vuote, e "Untitled 2" (la foto Full Page, alta 29222 pixel) aveva un
 buco bianco al posto di ogni riquadro pubblicitario.
 
-- **[Bug fix]** **"Text and Images" legge le tabelle per righe**, come la
+- **[Bug fix]** **[📱 Mobile]** **"Text and Images" legge le tabelle per righe**, come la
   pagina:
   - le **tabelle dei passi** (numero e cosa fare): una riga per passo, col
     numero in grassetto davanti, "**1.** Exit the Station."; le note sotto un
@@ -2197,13 +2275,13 @@ buco bianco al posto di ogni riquadro pubblicitario.
     con la sua immagine;
   - la riga d'intestazione ("Objectives") in grassetto;
   - le righe orizzontali dentro una cella non diventano più divisori
-- **[Bug fix]** Le **tabelle di solo testo** (gli oggetti: "Obtained from",
+- **[Bug fix]** **[📱 Mobile]** Le **tabelle di solo testo** (gli oggetti: "Obtained from",
   "Items", "Cache Cube"…) arrivano col loro testo: le celle si leggono dal
   testo scritto, non da come si vedono, che sul telefono a volte risultava
   vuoto
-- **[Bug fix]** Il titolo di un indice lasciato fuori ("List of Contents")
+- **[Bug fix]** **[📱 Mobile]** Il titolo di un indice lasciato fuori ("List of Contents")
   non resta più da solo
-- **[Bug fix]** **I buchi bianchi della foto Full Page**: notE toglie i
+- **[Bug fix]** **[📱 Mobile]** **I buchi bianchi della foto Full Page**: notE toglie i
   riquadri pubblicitari dei circuiti più diffusi (AdThrive/Raptive, Google,
   Taboola, Outbrain, Ezoic…) e il lettore video pubblicitario, e dopo lo
   scorrimento chiude ogni riquadro alto rimasto vuoto (né testo né immagini,
@@ -2212,7 +2290,7 @@ buco bianco al posto di ogni riquadro pubblicitario.
   tabelle. Le classi "ad" si riconoscono come parole intere ("head-container"
   non è pubblicità) e la pagina stessa non si nasconde mai (AdThrive mette una
   sua classe anche lì)
-- **[Nuova funzionalità]** **"Dark mode"** nel pannello del Web Clipper, per
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Dark mode"** nel pannello del Web Clipper, per
   Full Page, Region e Article: il sito si apre col tema scuro (quelli che ne
   hanno uno usano il loro) e Chrome scurisce da sé gli altri; Article si
   impagina chiaro su scuro con i colori del tema scuro di Notion. Prima di
@@ -2225,7 +2303,7 @@ buco bianco al posto di ogni riquadro pubblicitario.
   `AppSettings.webClipDark`. Test: `WebClipperSheetTest`; i calcoli del
   ridimensionamento delle immagini spostati in `ImageFrameTest`
 
-### 🆕 v0.194 — 20/10/2026 · 19:45 — Le maniglie delle immagini solo su richiesta, e "Full resize" come una finestra
+### 🆕 v0.122 — 20/10/2026 · 19:45 — Le maniglie delle immagini solo su richiesta, e "Full resize" come una finestra
 *(Claude Code sul PC; non ancora provata sul telefono; 717 test passati)*
 
 L'utente, parola per parola:
@@ -2237,23 +2315,23 @@ L'utente, parola per parola:
 > che mi consente di sistemarla anche ai lati come se fosse una finestra su
 > Windows, quindi anche ai quattro margini»
 
-- **[Nuova funzionalità]** **Le maniglie delle immagini non si vedono più**
+- **[Nuova funzionalità]** **[📱 Mobile]** **Le maniglie delle immagini non si vedono più**
   (c'erano dal 06/10/2026, sempre, su tutte). Tenendo premuta l'immagine, in
   cima al menu, sopra "View", c'è **"Resize"**: compaiono le due maniglie ai
   lati di sempre, che allargano e stringono l'immagine tenendola al centro e
   con la sua forma
-- **[Nuova funzionalità]** **"Full resize"**, subito sotto: le maniglie su
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Full resize"**, subito sotto: le maniglie su
   **tutti e quattro i lati e sui quattro angoli**, come una finestra di
   Windows. Si muove solo il bordo afferrato: il destro allarga a destra, il
   sinistro sposta l'inizio dell'immagine, sopra e sotto cambiano l'altezza, gli
   angoli due bordi insieme. L'immagine riempie il riquadro (come in OneNote);
   non esce dalla pagina e non diventa più piccola di un dito
-- **[Nuova funzionalità]** Mentre si ridimensiona, sull'immagine ci sono
+- **[Nuova funzionalità]** **[📱 Mobile]** Mentre si ridimensiona, sull'immagine ci sono
   **"Original size"** (la larghezza della pagina, al centro, con la sua forma)
   e **"Done"**. Finiscono anche un tocco sull'immagine e il gesto indietro. Si
   annulla come ogni modifica; con la pagina bloccata le maniglie non vengono
-- **[Bug fix]** Le **foto della fotocamera grandi** (da 6 megapixel in su)
-  dalla v0.192 passavano alle strisce delle immagini lunghe, che non sanno
+- **[Bug fix]** **[📱 Mobile]** Le **foto della fotocamera grandi** (da 6 megapixel in su)
+  dalla v0.120 passavano alle strisce delle immagini lunghe, che non sanno
   girare una foto scattata in verticale. Ora le strisce sono solo per le
   immagini davvero lunghe e strette (più alte di 4096 pixel e di due volte e
   mezza la larghezza), come le foto delle pagine web; le altre si leggono come
@@ -2264,7 +2342,7 @@ L'utente, parola per parola:
   `FULL_RESIZE`, `PageImageStore.imageSize` con l'orientamento, `StripImage`
   alta quanto il suo riquadro. Test: `ImageResizeTest`
 
-### 🆕 v0.193 — 20/10/2026 · 19:24 — "Text and Images": l'articolo di un sito come testo e immagini, come OneNote
+### 🆕 v0.121 — 20/10/2026 · 19:24 — "Text and Images": l'articolo di un sito come testo e immagini, come OneNote
 *(Claude Code sul PC; provato sul telefono con l'attività di prova, non ancora dall'utente; 713 test passati)*
 
 L'utente, parola per parola:
@@ -2278,7 +2356,7 @@ L'utente, parola per parola:
 > Saresti in grado di fare una cosa del genere, tanto intelligente come l'ha
 > fatta Onenote?»
 
-- **[Nuova funzionalità]** **"Text and Images"**, la quinta scelta del Web
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Text and Images"**, la quinta scelta del Web
   Clipper: non una foto ma **l'articolo come righe di notE**, nell'ordine
   della pagina, al posto della prima riga vuota (o in fondo). In cima, come
   OneNote, il **titolo grande** (24 punti, in grassetto: è anche una voce
@@ -2286,13 +2364,13 @@ L'utente, parola per parola:
   - i **paragrafi** coi loro **grassetti**, corsivi, sottolineati, barrati e
     **link** che si toccano;
   - i **titoletti** in grassetto e più grandi (24 e 20 punti: anche loro voci
-    dell'indice, v0.188);
+    dell'indice, v0.118);
   - gli **elenchi puntati e numerati** col loro rientro, citazioni, codice,
     tabelle semplici con le celle, divisori, e le didascalie delle immagini in
     corsivo;
   - le **immagini**, scaricate nell'app, larghe come nella pagina (quelle
     larghe quasi tutta la colonna a tutta larghezza)
-- **[Nuova funzionalità]** **Cosa resta fuori**, come fa OneNote: notE trova
+- **[Nuova funzionalità]** **[📱 Mobile]** **Cosa resta fuori**, come fa OneNote: notE trova
   l'articolo come il "Reader" dei browser (il blocco con più paragrafi di testo
   vero e pochi link, più i fratelli che ne hanno abbastanza), quindi
   **copertina, colonne di lato, barre in fondo, menu, commenti e pubblicità**
@@ -2301,16 +2379,16 @@ L'utente, parola per parola:
   di link** ai capitoli della pagina (come OneNote). Il titolo dell'articolo
   non si ripete. Sulla guida di rpgsite: 96 blocchi e 7 immagini su 7, in 11
   secondi, dal primo paragrafo "Persona 5 Royal features…" all'ultimo
-- **[Nuova funzionalità]** Le immagini che la pagina carica solo scorrendo (su
+- **[Nuova funzionalità]** **[📱 Mobile]** Le immagini che la pagina carica solo scorrendo (su
   rpgsite un segnaposto "image-loading") arrivano col loro indirizzo vero: notE
   fa scorrere la pagina e legge anche gli indirizzi nascosti delle immagini
   (`data-src`, le varianti del tag `<picture>`). Si scaricano come le scarica
   il browser, coi cookie del sito: un sito in cui si è entrati dà anche le sue
   immagini. Mentre si scaricano si vede "Downloading the images (3 of 7)…";
   fermato, quelle già scaricate non restano
-- **[Bug fix]** Il banner dei cookie di Google ("Do not consent", come su
+- **[Bug fix]** **[📱 Mobile]** Il banner dei cookie di Google ("Do not consent", come su
   rpgsite) si rifiuta da solo come gli altri; prima si nascondeva soltanto
-- **[Nuova funzionalità]** Anche **"Article"** usa lo stesso modo di trovare
+- **[Nuova funzionalità]** **[📱 Mobile]** Anche **"Article"** usa lo stesso modo di trovare
   l'articolo: la copertina non c'è più neanche lì
 - **[Progetto]** `assets/web_clipper_reader.js` (`noteReader`: `render` per
   "Article", `serialize` per "Text and Images"; prende il posto di
@@ -2321,7 +2399,7 @@ L'utente, parola per parola:
   `PageEditorViewModel.insertWebClipBlocks`. Test: `WebClipContentTest`, e in
   `WebClipPlacementTest` l'articolo inserito con elenco, immagine e tabella
 
-### 🆕 v0.192 — 20/10/2026 · 18:59 — Il Web Clipper, come OneNote: la foto di un sito nella pagina
+### 🆕 v0.120 — 20/10/2026 · 18:59 — Il Web Clipper, come OneNote: la foto di un sito nella pagina
 *(Claude Code sul PC; provato sul telefono con le attività di prova, non ancora dall'utente; 709 test passati)*
 
 L'utente, parola per parola:
@@ -2349,7 +2427,7 @@ E poi, dopo la proposta:
 > immagini? 4) per quanto riguarda i paywall, esiste un modo per raggirare
 > questo problema?»
 
-- **[Nuova funzionalità]** **"Web Clipper"** nel menu dei tre puntini di ogni
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Web Clipper"** nel menu dei tre puntini di ogni
   pagina (non nei database; spento con la pagina bloccata). Si apre il
   pannello come quello di OneNote Web Clipper: il **link** (incollato col
   pulsante accanto o scritto, anche senza "https://"), **"What do you want to
@@ -2357,20 +2435,20 @@ E poi, dopo la proposta:
   **Title** (si riempie da solo col titolo del sito), **Note** e **Source**.
   **Niente "Location"**: tolta, come chiesto. "Clip" si accende solo con un
   link vero
-- **[Nuova funzionalità]** **Full Page**: notE apre il sito **come sul PC**
+- **[Nuova funzionalità]** **[📱 Mobile]** **Full Page**: notE apre il sito **come sul PC**
   (largo 1440 pixel, come un portatile: è la larghezza a cui game8 viene come
   nella foto di OneNote, colonna di sinistra compresa; in chiaro), lo fa
   scorrere fino in fondo perché arrivino le immagini che si caricano solo
   scorrendo, e lo fotografa dall'alto in fondo. Mentre lo fa si vede la
   pagina che scorre, coi passi scritti e la barra che avanza; "Cancel" ferma
   tutto. La pagina di game8: 2160 × 19023 pixel in 13 secondi, 4 MB
-- **[Nuova funzionalità]** **Le pagine vengono intere** (la domanda 3): la
+- **[Nuova funzionalità]** **[📱 Mobile]** **Le pagine vengono intere** (la domanda 3): la
   foto si scrive nel file **a strisce** mentre la pagina scorre, senza mai
   stare tutta in memoria (intera, quella di game8 sarebbero 160 MB), e si
   mostra **a pezzi**, leggendo dal file solo quelli sullo schermo. Solo una
   pagina più alta di 65535 pixel (il limite del formato JPEG, più di quaranta
   schermate di PC) si fotografa un po' più piccola, ma sempre intera
-- **[Nuova funzionalità]** **I banner dei cookie** (la domanda 2): prima dello
+- **[Nuova funzionalità]** **[📱 Mobile]** **I banner dei cookie** (la domanda 2): prima dello
   scatto notE tocca da sé **"Reject all"** / "Rifiuta" (la scelta che
   protegge di più), poi nasconde i banner che restano (anche quelli chiusi in
   un pezzo di pagina a parte, come quello di game8), il velo scuro dietro, le
@@ -2378,30 +2456,30 @@ E poi, dopo la proposta:
   alla pagina, e sblocca lo scorrimento. La barra del sito in alto resta, in
   cima. Provato sulla pagina di game8 dell'utente: banner e barra
   pubblicitaria via
-- **[Nuova funzionalità]** **Region**: il sito a tutto schermo come sul PC, da
+- **[Nuova funzionalità]** **[📱 Mobile]** **Region**: il sito a tutto schermo come sul PC, da
   scorrere e ingrandire come in un browser; "Select" ferma la pagina e col
   dito si disegna il rettangolo (fuori si scurisce), "Clip" lo fotografa
   nitido come la pagina intera. "Scroll" torna a scorrere
-- **[Nuova funzionalità]** **Article**: notE tiene solo l'articolo (titolo,
+- **[Nuova funzionalità]** **[📱 Mobile]** **Article**: notE tiene solo l'articolo (titolo,
   testo, immagini, tabelle), senza menu, pubblicità, colonne e commenti,
   impaginato pulito come un libro in una colonna da leggere, e lo fotografa
   intero
-- **[Nuova funzionalità]** **Bookmark**: non una foto ma il "Web bookmark" di
+- **[Nuova funzionalità]** **[📱 Mobile]** **Bookmark**: non una foto ma il "Web bookmark" di
   notE, con titolo, descrizione e immagine del sito
-- **[Nuova funzionalità]** **Dove va**: al posto della **prima riga vuota
+- **[Nuova funzionalità]** **[📱 Mobile]** **Dove va**: al posto della **prima riga vuota
   della pagina, dall'alto** (anche dentro un toggle aperto); se non ce n'è,
   in fondo. Sotto la foto: il titolo in grassetto, la nota (una riga per ogni
   sua riga) e, piccolo e grigio, "Clipped from" col link che si tocca. La
   pagina scorre fino alla foto, che si illumina un attimo. Si annulla come
   ogni modifica
-- **[Nuova funzionalità]** **La foto nella pagina** è larga quanto la pagina e
+- **[Nuova funzionalità]** **[📱 Mobile]** **La foto nella pagina** è larga quanto la pagina e
   alta quanto vuole, nitida (a strisce, vedi sopra); le maniglie ai lati la
   stringono come le altre immagini. **Toccandola** si apre a tutto schermo
   larga quanto lo schermo, in cima: si scorre col dito **con lo slancio**,
   si ingrandisce con due dita fino a otto volte, con due tocchi si ingrandisce
   lì o si torna com'era; la X e lo scarica sono su un tondo scuro, che sopra
   una pagina bianca si vedono. Vale per tutte le immagini molto alte
-- **[Nuova funzionalità]** **"Move to line…"** (la domanda 1): nel menu di
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Move to line…"** (la domanda 1): nel menu di
   un'immagine (e di segnalibri, file, divisori, sottopagine e database),
   accanto a "Move up" e "Move down", l'elenco delle righe della pagina
   rientrate come lì, più "Top of the page": toccandone una il blocco va
@@ -2431,7 +2509,7 @@ E poi, dopo la proposta:
   decodificatore di Java), `WebClipsTest`, `PageLinesTest`,
   `WebClipPlacementTest`, `WebClipperSheetTest`
 
-### 🆕 v0.191 — 20/10/2026 · 17:55 — I colori preferiti, sotto gli ultimi colori usati
+### 🆕 v0.119 — 20/10/2026 · 17:55 — I colori preferiti, sotto gli ultimi colori usati
 *(Claude Code sul PC; non ancora provata sul telefono; 693 test passati)*
 
 L'utente, parola per parola:
@@ -2439,12 +2517,12 @@ L'utente, parola per parola:
 > orizzontale dei colori preferiti sarà sotto a quella degli ultimi colori
 > usati»
 
-- **[Nuova funzionalità]** **La stella** nel selettore di colore, a destra
+- **[Nuova funzionalità]** **[📱 Mobile]** **La stella** nel selettore di colore, a destra
   dell'anteprima ("Aa" col nome e il codice del colore): toccata, il colore
   scelto va fra i **preferiti** e la stella si colora di giallo; toccata di
   nuovo (sul colore di un preferito) lo toglie. Il selettore è lo stesso in
   tutta l'app: testo, celle, tag, penne, barre
-- **[Nuova funzionalità]** **"Favorite colors"**, la fila dei preferiti
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Favorite colors"**, la fila dei preferiti
   **sotto "Recent colors"**: i tondi sono grandi come quelli dei recenti e
   stanno in colonna con loro, nell'ordine in cui li si è aggiunti (l'ultimo
   in fondo); oltre i dieci la fila si scorre di lato. Toccandone uno il
@@ -2456,7 +2534,7 @@ L'utente, parola per parola:
   `ColorPickerSheet` la stella, `FavoriteColorsRow` e il tondo `ColorSwatch`
   in comune coi recenti; i testi nelle 8 lingue. Test: `FavoriteColorsTest`
 
-### 🔧 v0.190.1 — 20/10/2026 · 15:17 — Una colonna stretta a mano resta stretta anche con "Widen the column"
+### 🔧 v0.118.2.1 — 20/10/2026 · 15:17 — Una colonna stretta a mano resta stretta anche con "Widen the column"
 *(Claude Code sul PC; non ancora provata sul telefono; 691 test passati)*
 
 L'utente, parola per parola:
@@ -2465,14 +2543,14 @@ L'utente, parola per parola:
 > visualizzi solo il numero, la rimpicciolisco quanto voglio ma poi ritorna a
 > com'era prima. La puoi sistemare questa cosa?»
 
-- **[Bug fix]** **Stringere una colonna col segnalino** ("Resize column") in
+- **[Bug fix]** **[📱 Mobile]** **Stringere una colonna col segnalino** ("Resize column") in
   una tabella con "Long text" su **"Widen the column"**: mentre si trascinava
   la colonna si stringeva, ma al rilascio tornava larga quanto il suo
   contenuto, perché "Widen the column" allargava ogni colonna fin lì. Ora
   allarga solo le colonne senza una misura scelta a mano: quella stretta col
   segnalino resta com'è, e il testo che non ci sta finisce coi tre puntini.
   Le altre colonne si allargano come prima
-- **[Bug fix]** Sempre con "Widen the column", riportata alla larghezza di
+- **[Bug fix]** **[📱 Mobile]** Sempre con "Widen the column", riportata alla larghezza di
   sempre (dove il segnalino si aggancia) la colonna resta lì, invece di
   riallargarsi al contenuto
 - **[Progetto]** `tableColumnWidth` in `CellText.kt` decide quale misura
@@ -2480,7 +2558,7 @@ L'utente, parola per parola:
   quando allargare); `DatabaseViewModel.setColumnWidth` con "Widen the column"
   ricorda anche la larghezza di sempre. Test: `WrapCellsTest`
 
-### 🆕 v0.190 — 20/10/2026 · 14:33 — "Select all" seleziona tutta la pagina, come su Notion
+### ✏️ v0.118.2 — 20/10/2026 · 14:33 — "Select all" seleziona tutta la pagina, come su Notion
 *(Claude Code sul PC; non ancora provata sul telefono; 689 test passati)*
 
 L'utente, parola per parola:
@@ -2497,29 +2575,29 @@ L'utente, parola per parola:
 E, fra le due strade proposte: «Fai la selezione di tutta la pagina come su
 Notion: velo blu su tutto, con Copy, Cut e Delete.»
 
-- **[Nuova funzionalità]** **"Select all" vela di blu tutta la pagina**: dalla
+- **[Modifica]** **[📱 Mobile]** **"Select all" vela di blu tutta la pagina**: dalla
   barra sopra la tastiera e dal menu del testo (quello che compare tenendo
   premuto). Prima arrivava solo ai bordi del pezzo di testo da 50 righe (dalla
-  v0.181), e una selezione di testo comunque non passa sopra un database o
+  v0.113.1), e una selezione di testo comunque non passa sopra un database o
   un'immagine. La tastiera si chiude, e in basso c'è una barra con **Copy**,
   **Cut** e **Delete** (in una pagina bloccata solo Copy) e la ✕. Un tocco sulla
   pagina, la ✕ o Indietro tolgono la selezione; la pagina scorre come sempre
-- **[Nuova funzionalità]** **Copy** mette negli appunti tutta la pagina,
+- **[Modifica]** **[📱 Mobile]** **Copy** mette negli appunti tutta la pagina,
   nell'ordine in cui si legge: grassetti, corsivi, colori e link restano, e
   incollata in notE ogni riga torna col suo tipo (testo, elenco puntato o
   numerato, casella spuntata o no) e il suo rientro. Riquadri, citazioni e
   codice danno una riga per ognuna delle loro; le tabelle una riga per riga,
   con le celle separate da una tabulazione (come le copia un foglio di
   calcolo); i divisori "---"; immagini e file il loro indirizzo o nome
-- **[Nuova funzionalità]** **Cut** copia e poi toglie tutto; **Delete** toglie
+- **[Modifica]** **[📱 Mobile]** **Cut** copia e poi toglie tutto; **Delete** toglie
   tutto, dopo una domanda. Le **sottopagine e i database restano** (e i toggle
   che li contengono): vivono anche altrove, e si tolgono uno alla volta dal
   loro menu. Tutti e due si possono annullare
-- **[Nuova funzionalità]** Nel titolo della pagina e nelle celle dei database
+- **[Modifica]** **[📱 Mobile]** Nel titolo della pagina e nelle celle dei database
   dentro la pagina "Select all" del menu del testo prende solo quel campo,
   come prima. Ctrl+A su una tastiera vera seleziona il testo del campo
 - I database da migliaia di righe (la domanda sul dizionario): **a pagina
-  intera le righe scorrono già tutte**, senza "Load more", dalla v0.182; solo
+  intera le righe scorrono già tutte**, senza "Load more", dalla v0.113.2; solo
   la bacheca ha 50 schede per colonna anche lì. Dentro una pagina restano le
   prime 50 e "Load more". Nessuna delle due cose fa pesare l'app di più
 - **[Progetto]** `PageSelection.kt` (`WholePageTextToolbar`,
@@ -2528,7 +2606,7 @@ Notion: velo blu su tutto, con Copy, Cut e Delete.»
   pageCopyLines` e `deletePageContent`, `ClipboardBarButtons(onSelectAll)`.
   Test: `PageSelectAllTest`, `PageSelectionTest`
 
-### 🆕 v0.189 — 20/10/2026 · 13:59 — "Keep Source Formatting" porta grandezze, elenchi e tabelle da OneNote e dal web
+### ✏️ v0.118.1 — 20/10/2026 · 13:59 — "Keep Source Formatting" porta grandezze, elenchi e tabelle da OneNote e dal web
 *(Claude Code sul PC; non ancora provata sul telefono; 685 test passati)*
 
 L'utente, parola per parola:
@@ -2541,23 +2619,23 @@ L'utente, parola per parola:
 > nell'app mi piacerebbe che rilevasse come le scritte sono state divise
 > nella tabella che copio»
 
-- **[Nuova funzionalità]** **La grandezza del testo**, con "Keep Source
+- **[Modifica]** **[📱 Mobile]** **La grandezza del testo**, con "Keep Source
   Formatting": il corpo più usato nel testo copiato diventa quello normale di
   notE, e il resto in proporzione. Il testo normale di OneNote (11 punti)
   resta normale; un titolo a 20 punti diventa 29, grande quanto lo era lì
   rispetto al resto. Dal web, il testo che non dice la sua grandezza vale
   quella di sempre dei browser, e i titoli (H1–H6) arrivano grandi e in
   grassetto come sulla pagina. Una riga che arriva tutta da 20 punti in su fa
-  da punto di arrivo dell'indice (v0.188)
-- **[Nuova funzionalità]** **Gli elenchi puntati e numerati** arrivano come
+  da punto di arrivo dell'indice (v0.118)
+- **[Modifica]** **[📱 Mobile]** **Gli elenchi puntati e numerati** arrivano come
   elenchi di notE, col loro rientro (un elenco dentro l'altro), senza i
   pallini o i numeri scritti come testo
-- **[Nuova funzionalità]** **Le tabelle** arrivano come tabelle semplici di
+- **[Modifica]** **[📱 Mobile]** **Le tabelle** arrivano come tabelle semplici di
   notE, con le righe, le colonne e il testo diviso cella per cella come nella
   tabella copiata (da OneNote o da una pagina web, intestazioni comprese). Una
   "tabella" di una cella sola, che sui siti serve solo a impaginare, arriva
   come testo. Le celle sono di solo testo, come sempre nelle tabelle semplici
-- **[Nuova funzionalità]** Le righe, i paragrafi vuoti messi apposta e i
+- **[Modifica]** **[📱 Mobile]** Le righe, i paragrafi vuoti messi apposta e i
   collegamenti arrivano come erano nella fonte. "Paste", "Match Destination
   Formatting" e "Keep Text Only" restano come prima, e da notE a notE il tipo
   delle righe arriva come prima
@@ -2569,7 +2647,7 @@ L'utente, parola per parola:
   la riga diventa una tabella (`writePastedCells`). Test: `ClipHtmlTest`,
   `PasteSourceStructureTest`
 
-### 🔧 v0.188.2 — 20/10/2026 · 13:46 — La riga alla fine del database torna sotto il database
+### 🔧 v0.118.0.2 — 20/10/2026 · 13:46 — La riga alla fine del database torna sotto il database
 *(Claude Code sul PC; non ancora provata sul telefono; 678 test passati)*
 
 L'utente, parola per parola:
@@ -2582,18 +2660,18 @@ e poi:
 > sotto al database, non sopra. Se lo avevi messo sopra e non sotto, allora
 > sistema questo»
 
-- **[Bug fix]** **La riga sottile alla fine di un database dentro una pagina**
-  (v0.179, 18/10/2026) stava **in cima** al database invece che sotto:
+- **[Bug fix]** **[📱 Mobile]** **La riga sottile alla fine di un database dentro una pagina**
+  (v0.112, 18/10/2026) stava **in cima** al database invece che sotto:
   in una pagina di riga si vedevano due linee in alto, quella delle proprietà
   e questa. Ora è di nuovo sotto, a separare il database dal testo che segue.
-  Il guasto era della v0.184 (19/10, "Full line view"): ogni blocco a sé stava in un
+  Il guasto era della v0.114 (19/10, "Full line view"): ogni blocco a sé stava in un
   riquadro che mette i suoi pezzi uno **sopra** l'altro, e il database e la
   sua riga finivano nello stesso punto. Ora i pezzi stanno uno **sotto**
   l'altro, come prima, per tutti i blocchi a sé
 - **[Progetto]** In `PageEditorScreen` il contenitore delle isole è una
   `Column`, non un `Box`
 
-### 🔧 v0.188.1 — 20/10/2026 · 13:39 — I numeri nel testo si ordinano come numeri: 2 prima di 10
+### 🔧 v0.118.0.1 — 20/10/2026 · 13:39 — I numeri nel testo si ordinano come numeri: 2 prima di 10
 *(Claude Code sul PC; non ancora provata sul telefono; 678 test passati)*
 
 L'utente, parola per parola:
@@ -2604,20 +2682,20 @@ L'utente, parola per parola:
 > favore. Deve essere correttamente così: 1, 2, 3, 4, ... 9, 10, 11, 12, ...
 > 19, 20, 21, ...»
 
-- **[Bug fix]** **Ordinando per un testo** (il nome delle righe, una proprietà
+- **[Bug fix]** **[📱 Mobile]** **Ordinando per un testo** (il nome delle righe, una proprietà
   di testo, il titolo di una pagina collegata…) i numeri che ci sono dentro
   valgono per quello che sono: 1, 2, 3… 9, 10, 11, e non più 1, 10, 11… 19, 2,
   20. Vale anche dentro il testo: "Giorno 9" prima di "Giorno 10", "v0.9"
   prima di "v0.10". Maiuscole e minuscole continuano a non contare, e i numeri
   vengono prima delle lettere come prima
-- **[Bug fix]** Lo stesso ordine per i **gruppi** di una tabella o di una
+- **[Bug fix]** **[📱 Mobile]** Lo stesso ordine per i **gruppi** di una tabella o di una
   bacheca raggruppata per una proprietà di testo
 - **[Progetto]** `NaturalOrder` in `data/NaturalOrder.kt` (a parità, come
   "01" e "1", decide il confronto di prima, così l'ordine resta fisso), usato
   da `DatabaseViewModel.compareSortValues` e da `buildRowGroups`. Test:
   `NaturalOrderTest`
 
-### 🆕 v0.188 — 20/10/2026 · 13:01 — L'indice navigabile: collegamenti a una riga della stessa pagina
+### 🆕 v0.118 — 20/10/2026 · 13:01 — L'indice navigabile: collegamenti a una riga della stessa pagina
 *(Claude Code sul PC; non ancora provata sul telefono; 674 test passati)*
 
 L'utente, parola per parola:
@@ -2636,31 +2714,31 @@ E, scelta la proposta: «Sì, procedi con la versione che mi hai proposto: pin
 dai sei puntini, scheda "In this page" nella finestra del link, salto con la
 riga che si illumina e il pulsante Back.»
 
-- **[Nuova funzionalità]** **Il pin**: nel menu dei sei puntini di una riga di
+- **[Nuova funzionalità]** **[📱 Mobile]** **Il pin**: nel menu dei sei puntini di una riga di
   testo (anche riquadro, citazione, toggle, codice), **"Pin as link target"**
   ("Fissa come destinazione"). La riga ha un piccolo segnalibro blu nel
   margine a sinistra; dallo stesso menu, "Unpin link target" lo toglie. Si
   può annullare
-- **[Nuova funzionalità]** **Le righe in grande fanno da titoli da sole**: una
+- **[Nuova funzionalità]** **[📱 Mobile]** **Le righe in grande fanno da titoli da sole**: una
   riga scritta tutta da 20 punti in su (barra Aa) è già un punto di arrivo,
   senza pin. I titoli H1, H2 e H3 non ci sono più dal 24/09/2026, quindi il
   "titolo" è il testo grande
-- **[Nuova funzionalità]** **"In this page"** nella finestra del
+- **[Nuova funzionalità]** **[📱 Mobile]** **"In this page"** nella finestra del
   collegamento, accanto a "Web": l'elenco delle righe col pin e di quelle in
   grande, nell'ordine della pagina e rientrate come lì (segnalibro per quelle
   col pin, "T" per quelle in grande). Si seleziona la voce dell'indice, si
   tocca l'icona del collegamento, "In this page", e un tocco sulla riga fa il
   collegamento. Senza righe a cui collegarsi, la scheda dice come farne una
-- **[Nuova funzionalità]** **Il salto**: toccando la voce collegata la pagina
+- **[Nuova funzionalità]** **[📱 Mobile]** **Il salto**: toccando la voce collegata la pagina
   va **subito** a quella riga, in cima sotto i pulsanti sospesi, e la riga si
   illumina un attimo come una riga spostata. In basso compare **"Back"** (con
   la freccia verso dove si torna), che riporta la pagina dov'era; se ne va da
   solo dopo dieci secondi. Una riga dentro un toggle porta al toggle
-- **[Nuova funzionalità]** Il collegamento è **blu e sottolineato come gli
+- **[Nuova funzionalità]** **[📱 Mobile]** Il collegamento è **blu e sottolineato come gli
   altri, con una piccola freccia dopo l'ultima lettera**, così si distingue da
   quello a un sito. Segue la riga e non il testo: rinominata o spostata la si
   ritrova; cancellata, toccando la voce un avviso dice che non c'è più
-- **[Nuova funzionalità]** I blocchi a sé (riquadro, toggle, citazione,
+- **[Nuova funzionalità]** **[📱 Mobile]** I blocchi a sé (riquadro, toggle, citazione,
   codice) ora si illuminano anche quando li si sposta con "Move up" e "Move
   down", come le righe di testo
 - **[Progetto]** `BlockLinks.kt` (`note://block/<id>`, `blockLink`,
@@ -2674,7 +2752,7 @@ riga che si illumina e il pulsante Back.»
   le schede e `LinkTargetList`; i testi nelle 8 lingue. Test: `BlockLinksTest`,
   `PageLinkTargetTest`, `LinkDialogTargetsTest`
 
-### 🆕 v0.187 — 20/10/2026 · 10:24 — La barretta di scorrimento a destra delle pagine
+### 🆕 v0.117 — 20/10/2026 · 10:24 — La barretta di scorrimento a destra delle pagine
 *(Claude Code sul PC; non ancora provata sul telefono; 664 test passati)*
 
 L'utente, parola per parola:
@@ -2684,14 +2762,14 @@ L'utente, parola per parola:
 > te, è che non pensavo che dovessi chiedertelo. La puoi mettere? Falla piccola
 > classica come le impostazioni del telefono»
 
-- **[Nuova funzionalità]** **La barretta di scorrimento** sul bordo destro
+- **[Nuova funzionalità]** **[📱 Mobile]** **La barretta di scorrimento** sul bordo destro
   delle pagine: sottile, chiara (scura col tema chiaro), coi bordi tondi, come
   nelle impostazioni del telefono. Compare mentre la pagina scorre e svanisce
   poco meno di un secondo dopo che si è fermata. È alta quanto la parte di
   pagina che si vede (mai meno di un dito di pagina), in cima e in fondo tocca
   il bordo, e non prende i tocchi: sotto si continua a scrivere e a toccare
   come prima. Non c'è se la pagina sta tutta nello schermo
-- **[Nuova funzionalità]** Le pagine sono fatte di voci di altezze diverse
+- **[Nuova funzionalità]** **[📱 Mobile]** Le pagine sono fatte di voci di altezze diverse
   (pezzi di testo, immagini, database) che si misurano solo quando si vedono:
   la barretta si ricorda l'altezza di quelle già viste e dà la media alle
   altre, quindi è esatta dove si è già passati e si assesta scorrendo
@@ -2701,7 +2779,7 @@ L'utente, parola per parola:
   `PageScrollIndicatorTest` (la media per le voci mai viste; altezza, minimo,
   cima e fondo; compare scorrendo e svanisce dopo)
 
-### 🔧 v0.186.2 — 20/10/2026 · 08:58 — "Today" passa alla giornata dopo a mezzanotte
+### 🔧 v0.116.0.2 — 20/10/2026 · 08:58 — "Today" passa alla giornata dopo a mezzanotte
 *(Claude Code sul PC; non ancora provata sul telefono; 661 test passati; commit solo in locale)*
 
 L'utente, parola per parola:
@@ -2716,7 +2794,7 @@ L'utente, parola per parola:
 > rimasto alla settima. Se l'avessi fatto alle 00:00 di oggi, mi andava
 > all'ottava»
 
-- **[Bug fix]** **"Today" non tiene più la giornata finita il giorno dopo**:
+- **[Bug fix]** **[📱 Mobile]** **"Today" non tiene più la giornata finita il giorno dopo**:
   fino alle 23:59 del giorno dell'ultima partita resta quella giornata, da
   mezzanotte va alla successiva. Nell'esempio: lunedì 19/10 la settima della
   Serie A, da martedì 20 l'ottava. Aprendo il widget, invece, il martedì si
@@ -2725,14 +2803,14 @@ L'utente, parola per parola:
   giorno dopo; lo usa "Today" in `CompetitionRounds`. Test: `SportsTest` (le
   date dell'esempio)
 
-### 🔧 v0.186.1 — 20/10/2026 · 08:57 — La selezione non si ferma più fra un pezzo e l'altro delle pagine lunghe
+### 🔧 v0.116.0.1 — 20/10/2026 · 08:57 — La selezione non si ferma più fra un pezzo e l'altro delle pagine lunghe
 *(Claude Code sul PC; verificata sul telefono dall'utente il 20/10/2026; 661 test passati; commit solo in locale)*
 
 La richiesta, riassunta (la conversazione in cui era scritta conteneva dati
 privati e non viene riletta): tenendo premuto e trascinando, la selezione si
 fermava sempre alla stessa riga di una pagina lunga.
 
-- **[Bug fix]** Dalla v0.181 le pagine lunghe sono divise in pezzi da 50
+- **[Bug fix]** **[📱 Mobile]** Dalla v0.113.1 le pagine lunghe sono divise in pezzi da 50
   righe, e ogni pezzo è un campo di testo a sé: un campo non sa selezionare
   oltre le sue righe, quindi la selezione si fermava al confine fra due pezzi,
   circa ogni 50 righe. Ora, quando la pagina è ferma e nessun dito la tocca, le
@@ -2740,7 +2818,7 @@ fermava sempre alla stessa riga di una pagina lunga.
   tutto lo schermo. Il campo in cui si scrive non si tocca mentre si scrive: le
   righe si uniscono due secondi dopo l'ultima lettera. Lasciato il campo, la
   pagina torna divisa in pezzi piccoli, così la scrittura resta veloce
-- **[Bug fix]** Scartata la prima strada, unire i pezzi durante la selezione:
+- **[Bug fix]** **[📱 Mobile]** Scartata la prima strada, unire i pezzi durante la selezione:
   trascinando la maniglia blu, la maniglia si fermava al confine e la lente
   restava bloccata sullo schermo
 - **[Progetto]** `VisibleChunks.kt`: `VisibleRunLines`, `LocalVisibleRunLines`,
@@ -2751,9 +2829,9 @@ fermava sempre alla stessa riga di una pagina lunga.
   sullo schermo, `lastTypedAt`. `PageEditorScreen`: le righe arrivate in fondo
   o in cima si uniscono subito, `joinsAbove`/`joinsBelow`. Test:
   `ChunkSelectionTest`
-- Provata dall'utente sul telefono, con la release v0.186: funziona
+- Provata dall'utente sul telefono, con la release v0.116: funziona
 
-### 🆕 v0.186 — 20/10/2026 · 08:29 — "Freeze Properties Row", "Today" nel widget dello sport e i tag a due colori
+### 🆕 v0.116 — 20/10/2026 · 08:29 — "Freeze Properties Row", "Today" nel widget dello sport e i tag a due colori
 *(Claude Code sul PC; verificata sul telefono dall'utente il 20/10/2026; 654 test passati; commit solo in locale)*
 
 L'utente, parola per parola:
@@ -2771,16 +2849,16 @@ L'utente, parola per parola:
 > verticale in mezzo tra un colore e l'altro oppure i colori si ritrovano
 > letteralmente attaccati l'uno con l'altro»
 
-- **[Nuova funzionalità]** "Freeze first row" ora si chiama **"Freeze
+- **[Nuova funzionalità]** **[📱 Mobile]** "Freeze first row" ora si chiama **"Freeze
   Properties Row"** ("Blocca la riga delle proprietà" in italiano, e così
   nelle altre lingue): è la riga coi nomi delle proprietà, non una riga del
   database. Fa la stessa cosa di prima
-- **[Nuova funzionalità]** **"Today" nel widget dello sport**: un piccolo
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Today" nel widget dello sport**: un piccolo
   calendario a sinistra della freccia che aggiorna. Toccandolo, la competizione
   che si vede torna alla giornata di oggi (o alla prossima, se oggi non si
   gioca), scorrendo fin lì; se si stava guardando una stagione passata, torna
   anche alla stagione in corso. Se le partite sono vecchie, si riscaricano
-- **[Nuova funzionalità]** **I tag a due colori**: nella modifica di un tag,
+- **[Nuova funzionalità]** **[📱 Mobile]** **I tag a due colori**: nella modifica di un tag,
   sotto "Color", **"Add a second color"** apre lo stesso spettro del primo. La
   pastiglia ha il primo colore nella metà di sinistra e il secondo in quella di
   destra, ovunque si vede il tag: nelle celle, nella finestra dei tag, nei
@@ -2802,9 +2880,9 @@ L'utente, parola per parola:
   `secondColor`, `lineBetweenColors`, `removeSecondColor`. Test:
   `TagSecondColorTest` (il secondo colore dallo spettro; la linea e il
   togliere; la scritta sulla media; i tag di prima)
-- Provata dall'utente sul telefono, con la release v0.186: funziona
+- Provata dall'utente sul telefono, con la release v0.116: funziona
 
-### 🆕 v0.185 — 20/10/2026 · 08:17 — I tag si riordinano con le maniglie
+### 🆕 v0.115 — 20/10/2026 · 08:17 — I tag si riordinano con le maniglie
 *(Claude Code sul PC; verificata sul telefono dall'utente il 20/10/2026; 650 test passati; commit solo in locale)*
 
 L'utente, parola per parola:
@@ -2812,17 +2890,17 @@ L'utente, parola per parola:
 > ordinare e di spostare i tag tramite le classiche icone da tre lineette
 > orizzontali, cosa che hanno moltissime app»
 
-- **[Nuova funzionalità]** **"Reorder"** ("Riordina" in italiano) in alto a
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Reorder"** ("Riordina" in italiano) in alto a
   destra nella finestra dei tag, accanto al titolo "Select" o "Multi-select",
   quando i tag sono almeno due. Toccandolo, i tag compaiono tutti in fila,
   ognuno con la maniglia a tre lineette a destra: la si tiene e la si
   trascina, e gli altri tag fanno posto appena il tag arriva a metà di uno di
   loro. Il tag trascinato si stacca dagli altri con un'ombra. "Done" torna
   all'elenco di sempre
-- **[Nuova funzionalità]** L'ordine si salva a ogni rilascio: chiudere la
+- **[Nuova funzionalità]** **[📱 Mobile]** L'ordine si salva a ogni rilascio: chiudere la
   finestra non perde niente. Con tanti tag, portando quello trascinato vicino
   al bordo di sopra o di sotto della finestra, l'elenco scorre da solo
-- **[Nuova funzionalità]** L'ordine vale ovunque si vedono i tag in elenco:
+- **[Nuova funzionalità]** **[📱 Mobile]** L'ordine vale ovunque si vedono i tag in elenco:
   nella finestra dei tag, nei filtri, e nei gruppi della tabella e della
   bacheca raggruppate per quella proprietà, che seguono l'ordine dei tag come
   su Notion. Le celle non cambiano
@@ -2838,9 +2916,9 @@ L'utente, parola per parola:
   nuovo; oltre la metà del vicino e non prima; un trascinamento corto non
   salva niente; il secondo parte dall'ordine salvato; "Done" torna
   all'elenco)
-- Provata dall'utente sul telefono, con la release v0.186: funziona
+- Provata dall'utente sul telefono, con la release v0.116: funziona
 
-### 🆕 v0.184 — 19/10/2026 · 23:20 — Le righe lunghe non vanno più a capo
+### 🆕 v0.114 — 19/10/2026 · 23:20 — Le righe lunghe non vanno più a capo
 *(Claude Code sul PC; verificata sul telefono; 643 test passati; commit solo in locale)*
 
 L'utente, parola per parola:
@@ -2854,7 +2932,7 @@ L'utente, parola per parola:
 > l'ha ma è fatta malissimo (anche sulla questione della feature dello zoom in
 > e out, di cui poi ne parleremo più in là)»
 
-- **[Nuova funzionalità]** **Settings → "Full line view"** ("Visualizzazione
+- **[Nuova funzionalità]** **[📱 Mobile]** **Settings → "Full line view"** ("Visualizzazione
   totale" in italiano), sotto "Title position", accesa di partenza: le righe
   lunghe delle pagine non vanno più a capo, e col dito si scorrono di lato
   fino alla loro fine. Le righe scorrono **tutte insieme**, come su un foglio
@@ -2863,7 +2941,7 @@ L'utente, parola per parola:
   testo della pagina (paragrafi, elenchi, caselle) e per quello di toggle,
   riquadri, citazioni, notifiche e codice, che scorre dentro il suo riquadro.
   Spenta, tutto è come prima
-- **[Nuova funzionalità]** **Fatta per non avere i difetti di OneNote**:
+- **[Nuova funzionalità]** **[📱 Mobile]** **Fatta per non avere i difetti di OneNote**:
   - il dito va in verticale **oppure** di lato, mai di sbieco: il primo verso
     in cui si muove decide per tutto il gesto;
   - di lato si va solo fin dove finisce la riga più lunga fra quelle sullo
@@ -2909,7 +2987,7 @@ L'utente, parola per parola:
   notes: 295 fotogrammi, metà sotto i 6 ms, il 95% sotto i 9 ms, nessuno
   lento per colpa dell'app. Riga di prova eliminata: database, impostazioni e
   widget identici a prima
-### 🆕 v0.183 — 19/10/2026 · 22:44 — Le caselle copiate si incollano come caselle
+### ✏️ v0.113.3 — 19/10/2026 · 22:44 — Le caselle copiate si incollano come caselle
 *(Claude Code sul PC; verificata sul telefono; 637 test passati; commit solo in locale)*
 
 L'utente, parola per parola:
@@ -2917,7 +2995,7 @@ L'utente, parola per parola:
 > qualche altra parte, le checkbox non vengono incollate e rimane solo testo
 > normale»
 
-- **[Nuova funzionalità]** **Copiando delle righe da notE, ognuna porta con
+- **[Modifica]** **[📱 Mobile]** **Copiando delle righe da notE, ognuna porta con
   sé il suo tipo**: le caselle da spuntare (spuntate o no), gli elenchi
   puntati e numerati e il rientro. Incollandole in notE tornano com'erano: le
   righe incollate che erano state copiate intere riprendono il loro tipo, e
@@ -2944,7 +3022,7 @@ L'utente, parola per parola:
   sotto, sono tornate tre caselle con latte spuntata; nel database le righe
   nuove erano CHECKBOX con la spunta giusta. Riga di prova eliminata:
   database, impostazioni e widget identici a prima
-### 🔧 v0.182.1 — 19/10/2026 · 17:53 — La pagina segue il cursore e non salta più
+### 🔧 v0.113.2.1 — 19/10/2026 · 17:53 — La pagina segue il cursore e non salta più
 *(Claude Code sul PC; verificata sul telefono; 630 test passati; commit solo in locale)*
 
 L'utente, parola per parola:
@@ -2961,11 +3039,11 @@ L'utente, parola per parola:
 > mi viene spostata tutto in basso fino ad appena sopra la tastiera.
 > Cerca di di sistemare questa cosa per favore»
 
-- **[Bug fix]** **La pagina si sposta solo se la tastiera coprirebbe il
+- **[Bug fix]** **[📱 Mobile]** **La pagina si sposta solo se la tastiera coprirebbe il
   cursore, e solo di quanto basta.** Toccando una riga a metà pagina, la
   pagina saliva fino a portare in cima l'inizio del suo pezzo di testo;
   unendo col backspace una riga a quella del pezzo sopra, scendeva fino a
-  mettere la fine di quel pezzo appena sopra la tastiera. Colpa della v0.181:
+  mettere la fine di quel pezzo appena sopra la tastiera. Colpa della v0.113.1:
   le pagine lunghe sono divise in pezzi di 50 righe, e quando un campo di
   testo prende il cursore (o la tastiera accorcia lo schermo) Compose porta
   in vista **tutto il campo**, cioè tutto il pezzo. Prima, con un campo solo
@@ -2992,10 +3070,10 @@ L'utente, parola per parola:
   pagina segue il cursore. Riga di prova eliminata: database, impostazioni e
   widget identici a prima. In Permanent notes solo toccate due righe, senza
   scrivere
-### 🆕 v0.182 — 19/10/2026 · 17:28 — I database da diecimila righe
+### ✏️ v0.113.2 — 19/10/2026 · 17:28 — I database da diecimila righe
 *(Claude Code sul PC; verificata sul telefono con un database di prova da 10.000 righe; 627 test passati; commit solo in locale)*
 
-Dopo la v0.181 l'utente aveva chiesto che l'app reggesse "tante scritte e
+Dopo la v0.113.1 l'utente aveva chiesto che l'app reggesse "tante scritte e
 database", pensando al suo dizionario di parole studiate con Anki ("arriveranno
 anche a 8k, se non più di 10k parole, persino in un database semplice").
 Un database disegnava tutte le righe in una volta: con diecimila voleva dire
@@ -3026,12 +3104,12 @@ L'utente, parola per parola:
   e le sue righe dovrebbero diventare pezzi di quella lista, con gruppi,
   intestazioni ferme, calcoli e lo scorrimento orizzontale delle colonne da
   rifare
-- **[Modificato]** **Scrivere in un database grande non ferma più lo
+- **[Modifica]** **[📱 Mobile]** **Scrivere in un database grande non ferma più lo
   schermo**: il filtro, la ricerca e l'ordinamento di tutte le righe, che si
   rifanno a ogni lettera scritta in una cella, ora girano in background e
   non sul thread che disegna; e l'albero delle sotto-righe, quando nessuna
   riga ne ha, non si costruisce più
-- **[Nuova funzionalità]** **L'etichetta rossa "🔴 [Da rivedere]"** nella
+- **[Modifica]** **[📱 Mobile]** **L'etichetta rossa "🔴 [Da rivedere]"** nella
   Cronologia, chiesta dall'utente: segna una scelta fatta fra due, da
   riguardare più avanti, con l'altra strada scritta accanto. Nelle Patch
   Notes dell'app la scritta è rossa; su GitHub il colore lo dà 🔴
@@ -3055,11 +3133,11 @@ L'utente, parola per parola:
   e cancellando 30 lettere nel nome di una riga (release), a pagina intera
   5 ms di mediana e 17–25 al massimo (prima di spostare il calcolo in
   background 8 e 18), dentro la pagina 7 e 18. Poi la riga di prova
-  eliminata (con la copia di Permanent notes della v0.181 e il database):
+  eliminata (con la copia di Permanent notes della v0.113.1 e il database):
   database identico a com'era prima delle prove, a parte quella riga, la
   sua pagina, le sue 689 righe e tre voci della sua cronologia; impostazioni
   e widget identici
-### 🆕 v0.181 — 18/10/2026 · 18:45 — Le pagine lunghe veloci
+### ✏️ v0.113.1 — 18/10/2026 · 18:45 — Le pagine lunghe veloci
 *(Claude Code sul PC; installata sul telefono e misurata, in parte verificata: il telefono si è scollegato a metà; 622 test passati; commit solo in locale)*
 
 L'utente, parola per parola:
@@ -3075,7 +3153,7 @@ L'utente, parola per parola:
 > EDIT: la tastiera e lo scorrimento laggano anche nel menu principale.
 > L'app deve reggere tante scritte e database, per forza di cose»
 
-- **[Modificato]** **Le pagine lunghe si dividono in pezzi**: Permanent
+- **[Modifica]** **[📱 Mobile]** **Le pagine lunghe si dividono in pezzi**: Permanent
   notes ha 689 righe e 31.600 lettere, ed era tutta un campo di testo solo,
   che a ogni tasto si rifaceva per intero (e la tastiera Samsung se lo
   faceva rimandare tutto). Ora ogni pezzo di 50 righe (o 3.500 lettere) è un
@@ -3086,14 +3164,14 @@ L'utente, parola per parola:
   dopo che si è smesso di scrivere, mai sotto le dita. **"Select all" (e la
   selezione col dito) arriva fino ai bordi del pezzo**, non a tutta la
   pagina (detto all'utente prima di cominciare)
-- **[Modificato]** **A ogni tasto si ridisegna solo quello che cambia**:
+- **[Modifica]** **[📱 Mobile]** **A ogni tasto si ridisegna solo quello che cambia**:
   prima ogni pezzo della pagina già visto, i database dentro la pagina e la
   testata (copertina, icona, titolo, proprietà) si rifacevano a ogni
   lettera; ora ognuno riceve solo quello che mostra e si salta se non è
   cambiato. I numeri degli elenchi si contano una volta per tutta la pagina
   (prima riga per riga, rileggendo la pagina per ogni numero), e il testo di
   ogni riga si legge dal database una volta sola
-- **[Modificato]** **Sul telefono c'è la versione "release"**, quella che
+- **[Modifica]** **[📱 Mobile]** **Sul telefono c'è la versione "release"**, quella che
   si usa davvero: la versione di prova, che c'era finora, è più lenta di
   circa tre volte per come è costruita (misurato). Ha la stessa firma, si
   installa sopra e i dati restano
@@ -3121,9 +3199,9 @@ L'utente, parola per parola:
   "31." col cursore nel punto giusto e la tastiera aperta, Invio la ridivide
   e "xyz" finisce davanti a "32.". Poi il telefono si è scollegato, e la
   riga di prova "Untitled" del Main calendar (creata alle 14:28) è stata
-  eliminata il giorno dopo, con le prove della v0.182 (vedi lì). Prima di
+  eliminata il giorno dopo, con le prove della v0.113.2 (vedi lì). Prima di
   cominciare Permanent notes era identico a com'era
-### 🆕 v0.180 — 18/10/2026 · 14:00 — Il volume dei click del Counter, il backspace negli elenchi come su Word
+### 🆕 v0.113 — 18/10/2026 · 14:00 — Il volume dei click del Counter, il backspace negli elenchi come su Word
 *(Claude Code sul PC; verificata sul telefono; 616 test passati; commit solo in locale)*
 
 L'utente, parola per parola:
@@ -3139,7 +3217,7 @@ a inizio del quinto elemento, dopo il secondo):
 > poi ricancello con Backspace, allora lo metti tutto in fondo a sinistra
 > come fa Word e come vedi nelle foto»
 
-- **[Nuova funzionalità]** **La barra del volume nei suoni del Counter**, fra
+- **[Nuova funzionalità]** **[📱 Mobile]** **La barra del volume nei suoni del Counter**, fra
   l'interruttore e la scelta dei suoni: da 0 a 100%, col numero accanto e le
   icone dell'altoparlante ai capi. Mentre la si trascina cambia il numero;
   lasciandola si salva e si sente il suono del + a quel volume. Il 100% è il
@@ -3147,7 +3225,7 @@ a inizio del quinto elemento, dopo il secondo):
   nelle impostazioni dei suoni), e la nota del pannello ora lo dice. La
   barra segue l'orecchio: a metà si sente circa a metà. Coi suoni spenti è
   grigia. Ogni contatore ha il suo; quelli di prima partono da 100%
-- **[Modificato]** **Il backspace a inizio di un elemento di elenco, come su
+- **[Modifica]** **[📱 Mobile]** **Il backspace a inizio di un elemento di elenco, come su
   Word**: il primo toglie il numero o il pallino ma **il testo resta dov'era**,
   allineato agli altri elementi; il secondo lo porta a sinistra (nel punto
   in cui c'era il numero, e con altri backspace si toglie un rientro alla
@@ -3170,9 +3248,9 @@ a inizio del quinto elemento, dopo il secondo):
   cambio di tipo, il rientro, il toggle, la casella), `CounterVolumeTest`
   (la barra nel pannello), `CounterSoundsTest` (volume e guadagno)
 - Prima di installarla l'utente l'ha provata sul telefono, dove c'era ancora
-  la 0.179 (il PC aspettava il permesso per il debug USB): il testo andava
+  la 0.112 (il PC aspettava il permesso per il debug USB): il testo andava
   subito a sinistra, com'era prima ("Non funziona"). Riavviato adb il
-  permesso è arrivato, e con la 0.180 installata: in una riga di prova del
+  permesso è arrivato, e con la 0.113 installata: in una riga di prova del
   Main calendar, un elenco 1–6 di "A"; col cursore fra "5." e la "A" il
   primo backspace toglie il numero e la "A" resta allineata alle altre, col
   cursore davanti, e sotto c'è il 5; il secondo la porta a sinistra, sotto
@@ -3181,7 +3259,7 @@ a inizio del quinto elemento, dopo il secondo):
   i suoni scelti dall'utente restano Soft click e Drop). Riga di prova
   eliminata; database identico a prima, nei widget solo i dati scaricati e
   il volume nuovo del Counter a 100
-### 🆕 v0.179 — 18/10/2026 · 09:21 — Marcatori e stadio, i suoni del Counter, colonne libere, la riga dopo i database, copia e incolla nella barra
+### 🆕 v0.112 — 18/10/2026 · 09:21 — Marcatori e stadio, i suoni del Counter, colonne libere, la riga dopo i database, copia e incolla nella barra
 *(Claude Code sul PC; verificata sul telefono; 607 test passati; commit solo in locale)*
 
 L'utente, parola per parola (con la foto dell'intestazione di Bologna-Inter
@@ -3212,7 +3290,7 @@ su Sofascore):
 > mi chiederanno se voglio incollare con il metodo 'Keep Source Formatting',
 > 'Match Destination Formatting', oppure 'Keep Text Only' (come lo ha Word)»
 
-- **[Nuova funzionalità]** **Nella finestra della partita, sotto il
+- **[Nuova funzionalità]** **[📱 Mobile]** **Nella finestra della partita, sotto il
   risultato, i marcatori come su Sofascore**: quelli della casa a sinistra,
   quelli degli ospiti a destra, col pallone in mezzo; nome intero e minuti
   ("Antonio Raimondo 26', 30', 57'"), rigori e autogol segnati (l'autogol va
@@ -3220,27 +3298,27 @@ su Sofascore):
   bandiera) e stadio**, ognuno con la sua icona; la piattaforma no. Vale per
   le partite in corso, finite e da giocare (che hanno solo la seconda riga).
   La riga in cima con la competizione è sparita: ora sta qui
-- **[Nuova funzionalità]** **I suoni del Counter**: un click su + e uno più
+- **[Nuova funzionalità]** **[📱 Mobile]** **I suoni del Counter**: un click su + e uno più
   lieve su −. L'app li disegna da sé (nessun file da scaricare) e li suona
   come i suoni dei tasti: col telefono in silenzioso non si sentono. Nei tre
   puntini del widget c'è "Sounds": un interruttore per spegnerli e, per + e
   per −, la scelta fra Click, Soft click, Tick, Pop, Drop, Wood, Beep e Coin
   (toccandone uno lo si sente). Ogni contatore ha i suoi
-- **[Modificato]** **Le colonne dei database si stringono quanto si vuole**,
+- **[Modifica]** **[📱 Mobile]** **Le colonne dei database si stringono quanto si vuole**,
   trascinando il segnalino, fino a sparire del tutto. Prima avevano un minimo
   (Name 120, quelle in cui si scrive 80, le altre 48); resta solo per "Fit
   to content". Il contenuto di una colonna stretta non sborda più in quella
   accanto
-- **[Nuova funzionalità]** **Una riga sottile alla fine di ogni database
+- **[Nuova funzionalità]** **[📱 Mobile]** **Una riga sottile alla fine di ogni database
   dentro una pagina** (semplice o no, anche le viste collegate), come il
   divisore: il testo che segue non sembra più attaccato alla tabella
-- **[Nuova funzionalità]** **Copia, incolla, taglia e seleziona tutto nella
+- **[Nuova funzionalità]** **[📱 Mobile]** **Copia, incolla, taglia e seleziona tutto nella
   barra sopra la tastiera**, fra i sei puntini e la freccia del rientro.
   Fanno quello che fanno Ctrl+C, Ctrl+V, Ctrl+X e Ctrl+A su una tastiera
   vera, sul testo dove sta il cursore. Copiando del testo formattato, negli
   appunti va anche la sua formattazione (grassetto, corsivo, sottolineato,
   barrato, link), anche col "Copy" del menu che si apre tenendo premuto
-- **[Nuova funzionalità]** **Tenendo premuto "incolla", i tre modi di Word**:
+- **[Nuova funzionalità]** **[📱 Mobile]** **Tenendo premuto "incolla", i tre modi di Word**:
   "Keep Source Formatting" (anche il tocco semplice) toglie la formattazione
   del punto in cui si incolla e mette quella di chi ha copiato — grassetto,
   corsivo, sottolineato, barrato e link, da notE o da un'altra app (OneNote,
@@ -3248,7 +3326,7 @@ su Sofascore):
   testo con la formattazione del punto in cui arriva; "Keep Text Only" solo
   il testo, senza formattazione. Il "Paste" del menu che si apre tenendo
   premuto resta com'era (i link sì)
-- **[Bug fix]** **"Select all" prendeva anche l'a-capo nascosto** che ogni
+- **[Bug fix]** **[📱 Mobile]** **"Select all" prendeva anche l'a-capo nascosto** che ogni
   riga di testo ha in testa (serve a sentire il backspace a inizio riga):
   copiato e incollato in fondo, il testo finiva in una riga nuova invece di
   attaccarsi; tagliato, valeva un backspace a inizio riga. Visto provando la
@@ -3282,15 +3360,15 @@ su Sofascore):
   il testo in fondo alla riga; la riga di prova poi eliminata. Database
   identico a prima delle prove; nei widget cambiano solo meteo e partite
   scaricati e i tre campi nuovi del Counter coi valori di partenza
-### 🆕 v0.178 — 18/10/2026 · 08:51 — Il nome della proprietà principale
-*(Claude Code sul PC; installata insieme alla v0.179 e verificata sul telefono; 596 test passati; database alla
+### 🆕 v0.111 — 18/10/2026 · 08:51 — Il nome della proprietà principale
+*(Claude Code sul PC; installata insieme alla v0.112 e verificata sul telefono; 596 test passati; database alla
 versione 58; commit solo in locale)*
 
 L'utente, parola per parola:
 > «Dammi la possibilità di rinominare il nome della proprietà principale di
 > ogni database»
 
-- **[Nuova funzionalità]** **La proprietà principale ("Aa Name") si può
+- **[Nuova funzionalità]** **[📱 Mobile]** **La proprietà principale ("Aa Name") si può
   rinominare**, database per database: un tocco sull'intestazione della
   colonna, o "Rename" in cima al menu che si apre tenendola premuta. La
   finestrella mostra il nome di adesso; lasciandola vuota torna "Name" (nella
@@ -3314,7 +3392,7 @@ L'utente, parola per parola:
   su "Aa Name" apre "Rename the main property"; con "Prodotto" cambia
   l'intestazione di entrambi i gruppi (ALDI e IPERPOLI), e svuotato il
   campo torna "Name" (rimesso com'era)
-### 🆕 v0.177 — 18/10/2026 · 08:40 — I link si aprono in Firefox
+### ✏️ v0.110.2 — 18/10/2026 · 08:40 — I link si aprono in Firefox
 *(Claude Code sul PC; verificato sul telefono; 592 test passati; commit solo
 in locale)*
 
@@ -3323,10 +3401,10 @@ L'utente, parola per parola:
 > default che nel mio caso è Firefox. Ora me lo apre nel browser stock
 > dell'app come fa ora»
 
-- **[Modificato]** **Le pagine web si aprono nel browser predefinito del
+- **[Modifica]** **[📱 Mobile]** **Le pagine web si aprono nel browser predefinito del
   telefono** (per l'utente Firefox), con la sua barra degli indirizzi e le
   sue schede, e non più nel riquadro del browser sopra l'app (la "Custom
-  Tab" della v0.168). Vale per i link sul testo, i segnalibri, i video e gli
+  Tab" della v0.105). Vale per i link sul testo, i segnalibri, i video e gli
   audio con un indirizzo e le celle URL dei database. Email e numeri di
   telefono si aprono come prima con la posta e il telefono, e un indirizzo
   che ha un'app sua (un video di YouTube) si apre ancora in quella
@@ -3335,10 +3413,10 @@ L'utente, parola per parola:
   `OpenUrlTest` aggiornato (nessuna Custom Tab)
 - Verificato sul telefono, in una riga di prova di Main calendar poi
   cancellata: un segnalibro di Wikipedia si apre in Firefox, e "indietro" da
-  Firefox torna alla pagina di notE (nella v0.168, con la scheda normale,
+  Firefox torna alla pagina di notE (nella v0.105, con la scheda normale,
   aveva mostrato un'altra app: oggi no). Alla fine il database è uguale a
   prima della prova
-### 🆕 v0.176 — 17/10/2026 · 23:45 — "Turn into page" e si resta dove si è
+### ✏️ v0.110.1 — 17/10/2026 · 23:45 — "Turn into page" e si resta dove si è
 *(Claude Code sul PC; verificato nei test; 592 test passati; commit solo in
 locale)*
 
@@ -3348,7 +3426,7 @@ L'utente, parola per parola:
 > favore. Quando faccio Turn into page, la trasforma in una pagina e
 > nient'altro, rimango lì dove sono»
 
-- **[Modificato]** **"Turn into page"** su un database dentro una pagina (dalle
+- **[Modifica]** **[📱 Mobile]** **"Turn into page"** su un database dentro una pagina (dalle
   impostazioni del database o dal menu del blocco) lo trasforma in un
   collegamento alla pagina del database **e basta**: si resta nella pagina in
   cui si era, col collegamento al posto del database. Prima il database si
@@ -3363,7 +3441,7 @@ L'utente, parola per parola:
   Main calendar) non c'è un database dentro la pagina, e crearne uno di prova
   l'avrebbe lasciato nel Cestino. Installata la mattina dopo, a telefono
   ricollegato: l'app si apre normalmente
-### 🆕 v0.175 — 17/10/2026 · 19:49 — Lo sport: la freccia, il risultato in rosso, le stagioni
+### 🆕 v0.110 — 17/10/2026 · 19:49 — Lo sport: la freccia, il risultato in rosso, le stagioni
 *(Claude Code sul PC; verificato sul telefono; 591 test passati; commit solo
 in locale)*
 
@@ -3383,14 +3461,14 @@ L'utente, parola per parola:
 > statistiche di tutte le competizioni, quindi partite, gol, assist, gialli,
 > rossi, eccetera»
 
-- **[Nuova funzionalità]** **La freccia che aggiorna**, a sinistra dei tre
+- **[Nuova funzionalità]** **[📱 Mobile]** **La freccia che aggiorna**, a sinistra dei tre
   puntini del widget dello sport: riscarica subito la competizione che si
   vede (nella stagione scelta) e le giornate guardate scorrendo. Gira mentre
   scarica
-- **[Modificato]** **Il risultato di una partita in corso è rosso**, come il
+- **[Modifica]** **[📱 Mobile]** **Il risultato di una partita in corso è rosso**, come il
   minuto: nel widget, nella finestra della giornata e in quella della
   partita. Quelli delle partite finite restano bianchi
-- **[Nuova funzionalità]** **La stagione a sinistra del nome**
+- **[Nuova funzionalità]** **[📱 Mobile]** **La stagione a sinistra del nome**
   ("2026-2027 Serie A"; per NFL, MLB e tennis un anno solo, "2026"). **Un
   tocco** sulla stagione o sul nome apre la scelta: quella in corso e le
   nove prima. Scelta un'altra stagione, il widget mostra le sue giornate
@@ -3421,7 +3499,7 @@ L'utente, parola per parola:
   giocatori (Lautaro Martínez 17 gol, Dimarco 17 assist, i gialli, i rossi);
   poi di nuovo la stagione in corso. Widget, impostazioni e database come
   prima
-### 🆕 v0.174 — 17/10/2026 · 19:33 — Una partita da vicino, come Sofascore
+### 🆕 v0.109 — 17/10/2026 · 19:33 — Una partita da vicino, come Sofascore
 *(Claude Code sul PC; verificato sul telefono; 589 test passati; commit solo in locale)*
 
 L'utente, parola per parola (con la foto della cronaca di Frosinone-Sassuolo
@@ -3432,7 +3510,7 @@ su Sofascore):
 > stati dati per il recupero di ogni tempo, chi è stato sostituito per chi e
 > quando, chi è stato ammonito o espulso con il motivo e quando.»
 
-- **[Nuova funzionalità]** **Un tocco su una partita** (nel widget o nella
+- **[Nuova funzionalità]** **[📱 Mobile]** **Un tocco su una partita** (nel widget o nella
   finestra della giornata) apre la partita: in alto le due squadre con lo
   stemma e il risultato (o l'ora d'inizio), il minuto in rosso se è in
   corso. Nel calcio due schede:
@@ -3447,12 +3525,12 @@ su Sofascore):
   - **"Statistics"**: possesso palla, tiri, tiri in porta, calci d'angolo,
     fuorigioco, falli, cartellini, parate, passaggi e passaggi riusciti (con
     la percentuale), contrasti, intercetti, con la barra delle due squadre
-- **[Nuova funzionalità]** Negli altri sport: i punti per quarto o inning
+- **[Nuova funzionalità]** **[📱 Mobile]** Negli altri sport: i punti per quarto o inning
   (e le azioni da punti nella NFL) e le statistiche (NBA: tiri, tiri da
   tre, liberi, rimbalzi, assist, palle rubate, stoppate, palle perse; NFL:
   first down, yard, penalità, possesso). Nel tennis i set dei due giocatori.
   Una partita in corso si aggiorna ogni minuto finché è aperta
-- **[Modificato]** Il tocco sul titolo della giornata apre ancora la
+- **[Modifica]** **[📱 Mobile]** Il tocco sul titolo della giornata apre ancora la
   finestra con tutte le partite e la classifica; tenendo premuto si
   scelgono le competizioni, come prima
 - **[Progetto]** Dal "summary" di ESPN: gli eventi principali e, per il
@@ -3467,8 +3545,8 @@ su Sofascore):
   Bologna-Inter in corso all'86', 1-3, con i gol e gli assist (Bonny su
   assist di Augusto, Augusto su assist di Zielinski), i cambi, i gialli col
   motivo, e le statistiche (possesso 33%-67%, passaggi riusciti 244 (80%) e
-  586 (92%)). Installata insieme alla v0.175
-### 🆕 v0.173 — 17/10/2026 · 19:19 — Incollare coi link; Inter e Roma; stemmi più svelti
+  586 (92%)). Installata insieme alla v0.110
+### 🆕 v0.108 — 17/10/2026 · 19:19 — Incollare coi link; Inter e Roma; stemmi più svelti
 *(Claude Code sul PC; nomi e stemmi verificati sul telefono, l'incolla nei
 test; 582 test passati; commit solo in locale)*
 
@@ -3482,7 +3560,7 @@ L'utente, parola per parola:
 > OneNote) e la incollo in una pagina, puoi far sì che venga incollato con i
 > link compresi?»
 
-- **[Nuova funzionalità]** **Il testo incollato da un'altra app tiene i suoi
+- **[Nuova funzionalità]** **[📱 Mobile]** **Il testo incollato da un'altra app tiene i suoi
   link**, sulle stesse parole: OneNote, un browser, qualsiasi app che metta
   negli appunti, accanto al testo, l'HTML o un testo coi link. Vale nei
   paragrafi, negli elenchi, nelle caselle, nei riquadri e nelle citazioni,
@@ -3491,10 +3569,10 @@ L'utente, parola per parola:
   i link. Funziona con "Paste" del menu che si apre tenendo premuto (o
   Ctrl+V); quello che la tastiera incolla dal suo pannello degli appunti
   arriva senza link
-- **[Modificato]** Nel widget dello sport **"Inter" e "Roma"** invece di
+- **[Modifica]** **[📱 Mobile]** Nel widget dello sport **"Inter" e "Roma"** invece di
   "Inter Milan" e "AS Roma", nelle partite (anche di Champions) e in
   classifica
-- **[Bug fix]** **Gli stemmi arrivano prima.** Erano lenti perché ogni
+- **[Bug fix]** **[📱 Mobile]** **Gli stemmi arrivano prima.** Erano lenti perché ogni
   immagine apriva una connessione nuova verso il server delle immagini di
   ESPN (con la ricerca dell'indirizzo, che col DNS privato del telefono a
   volte è lenta) e la chiudeva subito; e uno stemma non arrivato non si
@@ -3518,7 +3596,7 @@ L'utente, parola per parola:
   immagini di ESPN). Il widget di prova è stato tolto: widget, impostazioni
   e database come prima. L'incolla coi link non è stato provato sul
   telefono: avrebbe voluto dire sovrascrivere gli appunti dell'utente
-### 🆕 v0.172 — 17/10/2026 · 19:00 — Lo sport a giornate, con stemmi e bandiere
+### ✏️ v0.107.1 — 17/10/2026 · 19:00 — Lo sport a giornate, con stemmi e bandiere
 *(Claude Code sul PC; verificato sul telefono; 574 test passati; commit solo
 in locale)*
 
@@ -3538,12 +3616,12 @@ L'utente, parola per parola:
 > sono competizioni continentali, cerca di metterci l'icona dei continenti
 > (europa, sud america, africa, eccetera)»
 
-- **[Nuova funzionalità]** **Gli stemmi** a sinistra di ogni squadra, nelle
+- **[Modifica]** **[📱 Mobile]** **Gli stemmi** a sinistra di ogni squadra, nelle
   partite e nella classifica; nel tennis la bandiera del giocatore. Sono
   quelli di ESPN nella versione per i fondi scuri (la J della Juventus è
   bianca), scaricati piccoli (64×64, circa 4 KB) e tenuti nella cache
   dell'app: ognuno si scarica una volta sola
-- **[Modificato]** **Il widget mostra una giornata intera** di una
+- **[Modifica]** **[📱 Mobile]** **Il widget mostra una giornata intera** di una
   competizione alla volta, con i giorni separati ("Friday 16", "Today",
   "Tomorrow"), e **scorrendo** si vedono le giornate prima e dopo, tutta la
   stagione. Si apre sulla giornata di adesso (il giorno dopo l'ultima
@@ -3553,17 +3631,17 @@ L'utente, parola per parola:
   Dove il conto torna (Serie A, Serie B, Premier, Bundesliga, Ligue 1)
   "Matchday 7"; altrove (LaLiga con recuperi e anticipi, le coppe) le date,
   col nome della fase se ESPN lo dà ("League Phase")
-- **[Nuova funzionalità]** **Le frecce** ai lati del nome cambiano
+- **[Modifica]** **[📱 Mobile]** **Le frecce** ai lati del nome cambiano
   competizione: grigia la sinistra sulla prima, la destra sull'ultima,
   tutte e due se ce n'è una sola. Aprendo la barra si vede la prima
-- **[Nuova funzionalità]** **La bandiera** a sinistra del nome di ogni
+- **[Modifica]** **[📱 Mobile]** **La bandiera** a sinistra del nome di ogni
   competizione (nel widget, nella finestra, nell'elenco e nel catalogo):
   🇮🇹 Serie A, Serie B, Coppa Italia, la croce di San Giorgio per la
   Premier, 🇪🇸 🇩🇪 🇫🇷, 🇺🇸 per le leghe americane. Per le competizioni
   continentali il globo col continente: 🌍 Europa e Africa (non c'è
   un'emoji della sola Europa), 🌎 le Americhe, 🌏 l'Asia; per Mondiali, ATP
   e WTA il globo intero 🌐
-- **[Modificato]** Un tocco su una giornata apre la sua finestra: le partite
+- **[Modifica]** **[📱 Mobile]** Un tocco su una giornata apre la sua finestra: le partite
   e la classifica, ora con gli stemmi. Si scarica solo la competizione che
   si vede: le giornate due volte al giorno, la giornata di adesso ogni
   cinque minuti (ogni minuto con una partita in corso), le altre quando ci
@@ -3586,11 +3664,11 @@ L'utente, parola per parola:
   martedì 20 e mercoledì 21, l'ATP di oggi coi tornei e le bandiere, la Week
   6 della NFL, le frecce grigie alla prima e all'ultima. Poi il widget di
   prova è stato tolto: widget, impostazioni e database come prima
-### 🆕 v0.171 — 17/10/2026 · 14:50 — I widget dello sport e della borsa
+### 🆕 v0.107 — 17/10/2026 · 14:50 — I widget dello sport e della borsa
 *(Claude Code sul PC; provato sul telefono con internet; 569 test passati;
 commit solo in locale)*
 
-La richiesta dei tre widget è quella della v0.170. Sul meteo, poi, l'utente,
+La richiesta dei tre widget è quella della v0.106. Sul meteo, poi, l'utente,
 parola per parola:
 > «Invece che ammattirti, facciamo che devo cercare le città in inglese (dato
 > che ho telefono e lingua dell'app in inglese). Se un giorno dovessi cambiare
@@ -3601,7 +3679,7 @@ parola per parola:
 E durante la prova dello sport:
 > «Ci mette troppo a caricarsi. Come mai?»
 
-- **[Nuova funzionalità]** **"Sports" fra i widget della barra laterale**.
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Sports" fra i widget della barra laterale**.
   Una pagina per competizione, fino a dieci, che si sfogliano col dito:
   calcio (Serie A, Serie B, Coppa Italia, Champions, Europa e Conference
   League, Premier League, LaLiga, Bundesliga, Ligue 1, Nations League,
@@ -3613,7 +3691,7 @@ E durante la prova dello sport:
   **Tenendo premuto** si apre l'elenco delle competizioni: "Add a
   competition" in cima, e per ognuna, dal menu ⋮, Show first, Move up,
   Move down e Remove
-- **[Nuova funzionalità]** **"Stocks" fra i widget**: la lista dei titoli
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Stocks" fra i widget**: la lista dei titoli
   come nella foto dell'utente, con sigla, nome, prezzo e variazione del
   giorno in verde o in rosso, fino a trenta titoli. Si cercano per nome o
   sigla (azioni, indici, cambi, fondi), con borsa e tipo nella lingua
@@ -3621,26 +3699,26 @@ E durante la prova dello sport:
   prezzo e valuta, chiusura precedente, minimo e massimo del giorno e
   dell'anno, ultimo scambio (con data e ora come in Settings). **Tenendo
   premuto** si apre la lista per aggiungere, spostare e togliere i titoli
-- **[Nuova funzionalità]** Come il meteo, sport e borsa si scaricano **solo
+- **[Nuova funzionalità]** **[📱 Mobile]** Come il meteo, sport e borsa si scaricano **solo
   con la barra aperta**: lo sport ogni cinque minuti (ogni minuto con una
   partita in corso, la classifica ogni mezz'ora), la borsa ogni cinque
   minuti, o subito con "Refresh" nei tre puntini. Senza rete resta l'ultimo
   dato salvato, con "No connection" accanto all'ora
-- **[Modificato]** **Le città si cercano nella lingua dell'app e in quella
+- **[Modifica]** **[📱 Mobile]** **Le città si cercano nella lingua dell'app e in quella
   del telefono**, come ha deciso l'utente: con tutti e due in inglese si
   cerca "Milan"; con uno dei due in italiano anche "Milano" trova Milano,
   Lombardia. Le città trovate vengono **dalla più abitata alla meno
   abitata**, e la stessa città una volta sola
-- **[Bug fix]** **Lo sport non fa più aspettare minuti**. Sul telefono il
+- **[Bug fix]** **[📱 Mobile]** **Lo sport non fa più aspettare minuti**. Sul telefono il
   DNS privato (AdGuard) ogni tanto impiega 16 secondi a trovare un sito, e
   il widget faceva sei domande a ESPN una dopo l'altra: la Serie A ci ha
   messo più di due minuti. Ora le domande partono tutte insieme, e la prima
   volta le partite compaiono appena arriva la prima risposta: la Premier
   League si è caricata in pochi secondi. Anche le ricerche e i prezzi dei
   titoli chiedono tutto insieme
-- **[Modificato]** Le ricerche di città e titoli mostrano **"Loading…"**
+- **[Modifica]** **[📱 Mobile]** Le ricerche di città e titoli mostrano **"Loading…"**
   mentre aspettano la risposta, invece di una finestra vuota
-- **[Modificato]** Nella finestra delle partite il giorno sta solo nel
+- **[Modifica]** **[📱 Mobile]** Nella finestra delle partite il giorno sta solo nel
   titolo sopra le partite, e la scheda non scelta è grigia. L'avviso "Remove
   this widget?" non elenca più orologi e contatori, che non c'entrano coi
   widget nuovi
@@ -3661,7 +3739,7 @@ E durante la prova dello sport:
   ricerca "enel" in inglese con "Loading…". Poi i tre widget di prova sono
   stati tolti, e i widget, le impostazioni e il database sono tornati
   identici a prima
-### 🆕 v0.170 — 17/10/2026 · 14:01 — Il widget del meteo
+### 🆕 v0.106 — 17/10/2026 · 14:01 — Il widget del meteo
 *(Claude Code sul PC; provato sul telefono senza rete, con la rete dal PC e
 nei test; 554 test passati; commit solo in locale)*
 
@@ -3684,7 +3762,7 @@ E poi, alle domande su come farli:
 > 3. Sì anche la classifica.
 > 4. Sì»
 
-- **[Nuova funzionalità]** **"Weather" fra i widget della barra laterale**.
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Weather" fra i widget della barra laterale**.
   Una pagina per città: la principale e fino ad altre nove, che si
   sfogliano col dito. Ogni pagina ha temperatura, cielo, massima e minima
   di oggi, i prossimi cinque giorni e l'ora dell'ultimo aggiornamento. **Un
@@ -3695,7 +3773,7 @@ E poi, alle domande su come farli:
   main city, Move up, Move down e Remove city. Le città si cercano per nome,
   con regione e paese per distinguerle. Le stesse voci, "Cities" e
   "Refresh", stanno nei tre puntini del widget
-- **[Nuova funzionalità]** Il meteo si scarica **solo con la barra aperta**,
+- **[Nuova funzionalità]** **[📱 Mobile]** Il meteo si scarica **solo con la barra aperta**,
   e per ogni città al massimo ogni mezz'ora (o subito, con "Refresh").
   Senza rete il widget mostra l'ultimo meteo salvato con "No connection"
   accanto all'ora, e la ricerca dice "No connection"
@@ -3716,7 +3794,7 @@ E poi, alle domande su come farli:
   tornati identici a prima. Con la rete il meteo è stato provato dal PC
   (Open-Meteo risponde, e le risposte si leggono giuste nei test); sul
   telefono va riprovato quando c'è internet
-### 🆕 v0.169 — 17/10/2026 · 10:09 — Regole di ordinamento quante se ne vogliono, in "Sort rules"
+### ✏️ v0.105.2 — 17/10/2026 · 10:09 — Regole di ordinamento quante se ne vogliono, in "Sort rules"
 *(Claude Code sul PC; verificato sul telefono; 548 test passati; database alla
 versione 57; commit solo in locale)*
 
@@ -3733,7 +3811,7 @@ E poi:
 > come dici te, hai il permesso di rimuovere tutte le regole del sorting che
 > trovi»
 
-- **[Nuova funzionalità]** **"Sort rules" in cima alla finestra Sort**, col
+- **[Modifica]** **[📱 Mobile]** **"Sort rules" in cima alla finestra Sort**, col
   numero di regole. Apre una finestra a parte con tutte le regole, dalla
   prima all'ultima, numerate nell'ordine in cui contano: ognuna ordina solo
   le righe pari per quelle sopra. "Add a sort rule" sta sempre in alto,
@@ -3742,7 +3820,7 @@ E poi:
   una regola ne rovescia il verso. Il menu ⋮ ha Move up, Move down e Remove
   sort. In fondo c'è "Remove all sorts". Quando tutte le proprietà sono già
   in una regola, "Add a sort rule" si spegne
-- **[Modificato]** Sotto "Sort rules", "Sort by" con le proprietà come
+- **[Modifica]** **[📱 Mobile]** Sotto "Sort rules", "Sort by" con le proprietà come
   prima: toccandone una diventa la prima regola, al posto di quella che
   c'era; toccando quella che è già la prima se ne rovescia il verso. Accanto
   alle proprietà già usate, il loro posto e verso ("1 ↓"). "Then sort by" e
@@ -3773,14 +3851,14 @@ E poi:
   quando l'utente l'ha ricollegato. Rispetto a quella provata cambiano solo
   due righe tolte (un `BackHandler` che nella finestra non poteva
   funzionare) e il numero di versione
-### 🔧 v0.168.1 — 17/10/2026 · 09:46 — Anche segnalibri, video e celle URL si aprono sopra l'app
+### ✏️ v0.105.1 — 17/10/2026 · 09:46 — Anche segnalibri, video e celle URL si aprono sopra l'app
 *(Claude Code sul PC; verificato sul telefono; 539 test passati; commit solo
 in locale)*
 
 L'utente, parola per parola:
 > «Sì, fallo anche per segnalibri e video»
 
-- **[Modificato]** **Segnalibri web, video e audio con un indirizzo e le
+- **[Modifica]** **[📱 Mobile]** **Segnalibri web, video e audio con un indirizzo e le
   celle URL, email e telefono dei database si aprono come i link sul
   testo**: le pagine web nel riquadro del browser sopra l'app, e "indietro"
   torna a notE. Prima si aprivano come scheda normale del browser, e
@@ -3789,7 +3867,7 @@ L'utente, parola per parola:
   file (video, PDF…) aperti "con un'altra app" partono ora da notE, così
   "indietro" dal lettore torna qui
 - **[Progetto]** Un modo solo di aprire gli indirizzi: `BlockFiles.openUrl`,
-  che apre come Custom Tab (fino alla v0.168 stava in `TextLinks.kt`). Lo
+  che apre come Custom Tab (fino alla v0.105 stava in `TextLinks.kt`). Lo
   usano `rememberLinkOpener` dei link sul testo e `openLink` delle celle.
   Senza un'attività, che nell'app non succede, chiede un'attività nuova come
   prima. Test: `OpenUrlTest`
@@ -3799,7 +3877,7 @@ L'utente, parola per parola:
   uguale a prima della prova. Video e celle URL passano dalla stessa
   funzione, provata dai test; sul telefono non li ho aperti, perché un video
   di YouTube avrebbe aperto l'app YouTube
-### 🆕 v0.168 — 17/10/2026 · 09:39 — I link sul testo selezionato
+### 🆕 v0.105 — 17/10/2026 · 09:39 — I link sul testo selezionato
 *(Claude Code sul PC; verificato sul telefono; 536 test passati; commit solo
 in locale)*
 
@@ -3809,7 +3887,7 @@ L'utente, parola per parola:
 > io possa mettere il link a quel testo selezionato in modo che semplicemente
 > toccando quel testo a cui ho messo il link si apre quest'ultimo.»
 
-- **[Nuova funzionalità]** **L'icona del collegamento nella barra sopra la
+- **[Nuova funzionalità]** **[📱 Mobile]** **L'icona del collegamento nella barra sopra la
   tastiera**, accanto al pennello. Compare quando c'è del testo selezionato
   (tenendo premuta una parola) o quando il cursore sta dentro un link, e
   apre la finestrella "Link" dove incollare o scrivere l'indirizzo:
@@ -3817,7 +3895,7 @@ L'utente, parola per parola:
   diventa un link per scrivere una mail. Se il testo ha già un link, la
   finestrella lo mostra e ha "Remove link". Col solo cursore dentro un link
   si cambia o si toglie il link intero
-- **[Nuova funzionalità]** **Il testo con un link è blu e sottolineato, e
+- **[Nuova funzionalità]** **[📱 Mobile]** **Il testo con un link è blu e sottolineato, e
   toccandolo si apre**, senza mettere il cursore né aprire la tastiera.
   Tenendolo premuto, invece, si seleziona come sempre, per cambiare o
   togliere il link. Le pagine web si aprono nel riquadro del browser sopra
@@ -3844,14 +3922,14 @@ L'utente, parola per parola:
   apriva il link come scheda normale di Firefox, e "indietro" mostrava
   l'app usata prima (YouTube) invece di notE: da qui la Custom Tab. Alla
   fine il database del telefono è uguale a prima della prova
-### 🔧 v0.167.1 — 17/10/2026 · 09:14 — Il punto in alto sta proprio in alto: 2˙026
+### 🔧 v0.104.1.1 — 17/10/2026 · 09:14 — Il punto in alto sta proprio in alto: 2˙026
 *(Claude Code sul PC; verificato sul telefono; 526 test passati; commit solo
 in locale)*
 
 L'utente, parola per parola:
 > «Con punto in alto intendevo proprio in alto, quelli sono a metà»
 
-- **[Bug]** **La quarta scelta di "Number format" usava "·", il punto a
+- **[Bug fix]** **[📱 Mobile]** **La quarta scelta di "Number format" usava "·", il punto a
   metà altezza**: ora è "˙", in cima alle cifre. 2˙026, 1˙000˙000 e coi
   decimali 1˙234,56
 - **[Progetto]** `NumberStyle.MIDDLE_DOT_GROUPS` diventa `HIGH_DOT_GROUPS`
@@ -3860,7 +3938,7 @@ L'utente, parola per parola:
 - Verificato sul telefono: nel menu e nella colonna Year di "Habit tracker
   2026" il punto sta all'altezza della cima delle cifre. Poi rimessa la
   scelta dell'utente, 2026 senza separatore
-### 🆕 v0.167 — 17/10/2026 · 09:05 — I numeri con più di tre cifre: 2 026, 2026, 2.026 o 2·026
+### ✏️ v0.104.1 — 17/10/2026 · 09:05 — I numeri con più di tre cifre: 2 026, 2026, 2.026 o 2·026
 *(Claude Code sul PC; verificato sul telefono; 526 test passati; commit solo
 in locale)*
 
@@ -3873,7 +3951,7 @@ L'utente, parola per parola:
 > - 2.026
 > - 2 (con il puntino in alto) 026»
 
-- **[Nuova funzionalità]** **"Number format" in Settings ha cinque scelte
+- **[Modifica]** **[📱 Mobile]** **"Number format" in Settings ha cinque scelte
   invece di due**: 1 000 000, 1000000, 1.000.000, 1·000·000 e, come prima,
   1,000,000. Sotto ognuna lo stesso numero coi decimali: con le prime
   quattro i decimali vanno dopo la virgola (1 234,56), con l'ultima dopo il
@@ -3886,7 +3964,7 @@ L'utente, parola per parola:
 - Verificato sul telefono: il menu mostra le cinque scritture; in "Habit
   tracker 2026" la colonna Year si legge "2·026", "2 026" e "2026" a
   seconda della scelta. Poi rimesso 1.000.000, com'era
-### 🆕 v0.166 — 17/10/2026 · 08:50 — Nella pagina di una riga, le frecce per la pagina prima e quella dopo
+### 🆕 v0.104 — 17/10/2026 · 08:50 — Nella pagina di una riga, le frecce per la pagina prima e quella dopo
 *(Claude Code sul PC; verificato sul telefono; 523 test passati; commit solo
 in locale)*
 
@@ -3896,7 +3974,7 @@ L'utente, parola per parola:
 > database. Ovviamente fai sì che l'ordine corrente con i vari filtri,
 > grouping eccetera vengano rispettati»
 
-- **[Nuova funzionalità]** **˄ e ˅ in alto a destra nella pagina di una
+- **[Nuova funzionalità]** **[📱 Mobile]** **˄ e ˅ in alto a destra nella pagina di una
   riga**, accanto ai tre puntini, come le frecce di Notion: la pagina prima
   e quella dopo dello stesso database. L'ordine è quello della vista da cui
   la si è aperta: filtro, ordinamento, ricerca, gruppi e sottogruppi della
@@ -3920,14 +3998,14 @@ L'utente, parola per parola:
   "Prova 2" ˅ → "Prova 1". Tolti l'ordinamento e le righe di prova; nel
   database del telefono restano solo le modifiche fatte nel frattempo
   dall'utente
-### 🆕 v0.165 — 16/10/2026 · 17:40 — Anche "Time format" in Settings, uno solo per tutta l'app
+### ✏️ v0.103.3 — 16/10/2026 · 17:40 — Anche "Time format" in Settings, uno solo per tutta l'app
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 519 test
 passati; commit solo in locale)*
 
 L'utente, parola per parola:
 > «Sì, metti anche Time format globale in Settings»
 
-- **[Nuova funzionalità]** **"Time format" in Settings**, subito sotto
+- **[Modifica]** **[📱 Mobile]** **"Time format" in Settings**, subito sotto
   "Date format": **Hidden**, **12 hour**, **24 hour**, con l'ora di adesso
   scritta così. 12 hour vale in tutta l'app: le date dei database, la
   cronologia, "Created" e "Last edited", preferiti, cestino, quaderni, le
@@ -3936,7 +4014,7 @@ L'utente, parola per parola:
   dei database; dove l'ora è quello che si vuole leggere (cronologia,
   "Created", timer…) resta a 24 ore. Le rotelle di "Set time" restano a 24
   ore. Di partenza 24 hour, come avevano tutte le colonne
-- **[Rimosso]** **"Time format" da "Edit property" delle colonne Date**: lì
+- **[Rimosso]** **[📱 Mobile]** **"Time format" da "Edit property" delle colonne Date**: lì
   ora c'è solo il nome
 - **[Progetto]** `AppSettings.timeFormat` (`TimeFormatKind`);
   `Formats.timeFormatter`, `hourLabelFormatter` e
@@ -3952,7 +4030,7 @@ L'utente, parola per parola:
   con 12 hour Main calendar → "2026年11月15日 3:00 PM", con Hidden
   "2026年11月15日" con la campanella; "Edit property" della colonna Date ha
   solo il nome. Rimesso 24 hour: database identico a prima delle prove
-### 🆕 v0.164 — 16/10/2026 · 17:15 — "Date format" torna in Settings, uno solo per tutta l'app
+### ✏️ v0.103.2 — 16/10/2026 · 17:15 — "Date format" torna in Settings, uno solo per tutta l'app
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 518 test
 passati; commit solo in locale)*
 
@@ -3961,14 +4039,14 @@ L'utente, parola per parola:
 > l'app (quelli che già sai), e toglila dalla proprietà della data dei
 > database. L'opzione deve essere globale, non scelta singolarmente»
 
-- **[Nuova funzionalità]** **"Date format" in Settings**, dopo "Number
-  format", come prima della v0.101: i nove formati (Full date, Short date,
+- **[Modifica]** **[📱 Mobile]** **"Date format" in Settings**, dopo "Number
+  format", come prima della v0.64: i nove formati (Full date, Short date,
   Month.Day.Year, Month/Day/Year, Day.Month.Year, Day/Month/Year,
   Year.Month.Day, Year/Month/Day, Chinese date), ognuno con la data di oggi.
   Vale **ovunque**: celle, liste, calcoli (Earliest, Latest…), riassunto del
   filtro, grafici, cronologia, preferiti, cestino, quaderni. Quello scelto
   resta quello di prima: sul telefono "Chinese date"
-- **[Rimosso]** **"Date format" da "Edit property" delle colonne Date**.
+- **[Rimosso]** **[📱 Mobile]** **"Date format" da "Edit property" delle colonne Date**.
   Resta "Time format" (Hidden, 12 hour, 24 hour), che vale per la colonna.
   L'unica colonna che se n'era scelto uno suo, "Release date" di
   Videogames ("Full date"), ora segue quello di Settings
@@ -3981,7 +4059,7 @@ L'utente, parola per parola:
   "15/11/2026 15:00"; in "Edit property" della colonna Date c'è solo "Time
   format". Rimesso Chinese date: database e impostazioni del telefono sono
   identici a prima delle prove
-### 🔧 v0.163.1 — 16/10/2026 · 17:04 — L'ora della data resta quella scelta, e la notifica non va più alle 9:00
+### ✏️ v0.103.1 — 16/10/2026 · 17:04 — L'ora della data resta quella scelta, e la notifica non va più alle 9:00
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 516 test
 passati; commit solo in locale)*
 
@@ -3995,12 +4073,12 @@ L'utente, parola per parola:
 > scegliere le 15:00, ma per esempio non mi fa mettere le 15:01 o un altro
 > minuto, anche se chiudo l'app»
 
-- **[Bug]** **"Set time" teneva l'ora di prima** se si premeva "Done" mentre
+- **[Bug fix]** **[📱 Mobile]** **"Set time" teneva l'ora di prima** se si premeva "Done" mentre
   la rotella si stava ancora fermando: dopo un colpo veloce sui minuti
   restavano quelli di partenza (le 9:00, o le 15:00). Ora "Done" prende i
   numeri che si vedono in mezzo. Vale per ogni "Set time" dell'app: date
   dei database, eventi del calendario, durate, righe "/notification"
-- **[Modificato]** **Niente più 9:00 da sole**: accendendo "Include
+- **[Modifica]** **[📱 Mobile]** **Niente più 9:00 da sole**: accendendo "Include
   notification" si accende anche "Include time", e spegnendo l'ora si spegne
   la notifica, così la notifica suona sempre all'ora scelta. L'ora proposta,
   quando non ce n'è una, è quella di adesso e non più le 9:00 (la fine un'ora
@@ -4017,7 +4095,7 @@ L'utente, parola per parola:
   time 15:07", e nel database 20/10/2026 15:07 con ora e notifica. Prima
   della correzione lo stesso gesto aveva dato 09:05. Il database del telefono
   è identico a prima delle prove
-### 🆕 v0.163 — 14/10/2026 · 11:35 — "---" fa un divisore, e "Move up"/"Move down" per immagini, file e divisori
+### 🆕 v0.103 — 14/10/2026 · 11:35 — "---" fa un divisore, e "Move up"/"Move down" per immagini, file e divisori
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 515 test
 passati; commit solo in locale)*
 
@@ -4025,16 +4103,16 @@ L'utente, parola per parola:
 > «Sì, aggiungile anche lì. Inoltre, come fa Notion, se scrivo attaccate tre
 > lineette (così ---), mi crea un divider. Fai la stessa cosa anche qui»
 
-- **[Nuova funzionalità]** **"---" scritto da solo in una riga di testo la
+- **[Nuova funzionalità]** **[📱 Mobile]** **"---" scritto da solo in una riga di testo la
   fa diventare un divisore**, come su Notion: i trattini spariscono e il
   cursore va sulla riga nuova sotto. Vale anche con la lineetta lunga al
   posto dei primi due trattini, e nelle righe dentro un toggle. Su elenchi
   e caselle, o in mezzo ad altro testo, i trattini restano scritti.
   Annulla toglie il divisore e rimette "--"
-- **[Nuova funzionalità]** **"Move up" e "Move down" anche per immagini,
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Move up" e "Move down" anche per immagini,
   video, audio, file, segnalibri, "Link to page" e divisori**, sopra "Add
   above", tenendoli premuti; grigi in cima e in fondo
-- **[Bug]** Un divisore teneva nel database il testo che aveva prima
+- **[Bug fix]** **[📱 Mobile]** Un divisore teneva nel database il testo che aveva prima
   (invisibile, ma contato nella ricerca): ora diventando divisore il blocco
   si svuota sempre
 - **[Progetto]** `dividerShortcutJustTyped` (come `numberedListPrefixJustTyped`
@@ -4047,7 +4125,7 @@ L'utente, parola per parola:
   tenuto premuto il divisore, "Move down" → sotto "Due"; un secondo "---"
   ha il testo vuoto nel database; Annulla → "--". Il database del telefono
   è identico a prima delle prove
-### 🆕 v0.162 — 14/10/2026 · 11:22 — "Move up" e "Move down" anche per database e pagine
+### ✏️ v0.102.3 — 14/10/2026 · 11:22 — "Move up" e "Move down" anche per database e pagine
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 512 test
 passati; commit solo in locale)*
 
@@ -4064,7 +4142,7 @@ tastiera ci sono già:
 > puntini per i database e sopra Add above per le pagine quando ci tengo
 > premuto»
 
-- **[Nuova funzionalità]** **"Move up" e "Move down"** in cima al menu che
+- **[Modifica]** **[📱 Mobile]** **"Move up" e "Move down"** in cima al menu che
   si apre dai sei puntini di un database dentro una pagina e tenendo
   premuto il collegamento a una pagina, sopra "Add above": il blocco
   scambia il posto con quello sopra o sotto, come fanno le frecce della
@@ -4080,7 +4158,7 @@ tastiera ci sono già:
   menu "Move up" è grigio; due volte "Move down" → in fondo, e "Move down"
   grigio. Una sottopagina tenuta premuta → "Move up" → sale sopra "Sotto".
   Il database del telefono è identico a prima delle prove
-### 🆕 v0.161 — 14/10/2026 · 11:07 — Il "+" cambia tutte le righe selezionate, non solo quella col cursore
+### ✏️ v0.102.2 — 14/10/2026 · 11:07 — Il "+" cambia tutte le righe selezionate, non solo quella col cursore
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 511 test
 passati; commit solo in locale)*
 
@@ -4097,7 +4175,7 @@ L'utente, parola per parola:
 > tenevo premuto e potevo dire di resettare da capo la lista da un punto
 > preciso e altre opzioni, ti ricordi?»
 
-- **[Nuova funzionalità]** **Con del testo selezionato, il "+" della barra
+- **[Modifica]** **[📱 Mobile]** **Con del testo selezionato, il "+" della barra
   cambia tutte le righe che la selezione tocca**, nell'ordine in cui sono:
   tre paragrafi selezionati e "Numbered list" fanno 1, 2, 3; "To-do list"
   fa tre caselle. Vale qualunque tipo avessero (testo, elenco puntato o
@@ -4128,7 +4206,7 @@ L'utente, parola per parola:
   poi "Select all" e To-do list → quattro caselle, anche le due numerate;
   Annulla → di nuovo "1. Uno, 2. Due, Tre, Quattro". Il database del telefono
   è identico a prima delle prove
-### 🆕 v0.160 — 14/10/2026 · 10:51 — La cella su cui si scrive sale sopra la tastiera, con un movimento solo
+### ✏️ v0.102.1 — 14/10/2026 · 10:51 — La cella su cui si scrive sale sopra la tastiera, con un movimento solo
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 508 test
 passati; commit solo in locale)*
 
@@ -4143,7 +4221,7 @@ tastiera dei numeri aperta sulle celle "Order" vuote in fondo):
 > database in modo da alzare tutto quanto? L'effetto di spostamento deve
 > essere fluido, non di scatto»
 
-- **[Nuova funzionalità]** **La cella su cui si scrive resta sempre sopra
+- **[Modifica]** **[📱 Mobile]** **La cella su cui si scrive resta sempre sopra
   la tastiera**, intera, col suo bordo e un po' di spazio: mentre la
   tastiera sale, la tabella sale con lei, in un movimento solo che
   accelera e rallenta e finisce insieme alla tastiera. Vale per ogni campo
@@ -4151,11 +4229,11 @@ tastiera dei numeri aperta sulle celle "Order" vuote in fondo):
   pagina intera, nel database dentro una pagina e nelle proprietà di una
   riga aperta come pagina. Chiudendo la tastiera tutto torna giù al suo
   posto
-- **[Bug]** **A pagina intera la tastiera passava sopra le righe**: la
+- **[Bug fix]** **[📱 Mobile]** **A pagina intera la tastiera passava sopra le righe**: la
   parte che scorre restava alta come lo schermo, e le celle in fondo si
   scrivevano alla cieca (le foto dell'utente). Ora si accorcia insieme alla
   tastiera
-- **[Bug]** **Dentro una pagina la cella restava mezza coperta**: la pagina
+- **[Bug fix]** **[📱 Mobile]** **Dentro una pagina la cella restava mezza coperta**: la pagina
   saliva, ma solo fino a far vedere il testo, e il bordo della cella
   restava dietro la tastiera
 - **[Progetto]** `keepFocusedAboveKeyboard` (`KeepAboveKeyboard.kt`), messo
@@ -4182,7 +4260,7 @@ tastiera dei numeri aperta sulle celle "Order" vuote in fondo):
   movimento unico, e la cella intera in vista invece che tagliata a metà.
   Chiudendo la tastiera la tabella torna giù. Nessun valore scritto: il
   database del telefono è identico a prima delle prove
-### 🆕 v0.159 — 14/10/2026 · 10:28 — I sottogruppi anche nella Board, e "Group by" per quasi ogni proprietà
+### 🆕 v0.102 — 14/10/2026 · 10:28 — I sottogruppi anche nella Board, e "Group by" per quasi ogni proprietà
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 508 test
 passati; database alla versione 56, copia del database del telefono fatta
 prima di installare; commit solo in locale)*
@@ -4195,7 +4273,7 @@ L'utente, parola per parola:
 > mi dice solo Spermercato, ma di proprietà per fare il Grouping ce ne sono
 > anche altre. È un bug?»
 
-- **[Nuova funzionalità]** **"Sub groups" nella Board**, sotto "Group by",
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Sub groups" nella Board**, sotto "Group by",
   come su Notion: la bacheca si divide in **fasce orizzontali**, una per
   valore della seconda proprietà, e ogni fascia ha tutte le colonne della
   bacheca con le sue schede. I nomi delle colonne stanno una volta sola, in
@@ -4204,9 +4282,9 @@ L'utente, parola per parola:
   riapre. "New" dentro una fascia crea una scheda già col valore della
   colonna **e** quello della fascia. Sulle schede non si ripetono né il
   valore della colonna né quello della fascia
-- **[Nuova funzionalità]** **"Hide empty sub groups"** per le fasce della
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Hide empty sub groups"** per le fasce della
   Board, acceso di partenza, a sé da quello della tabella
-- **[Modificato]** **"Group by" della Board offre le stesse proprietà del
+- **[Modifica]** **[📱 Mobile]** **"Group by" della Board offre le stesse proprietà del
   raggruppamento della tabella**: anche casella, data, numero, testo,
   selezione multipla, URL, email, telefono — non più solo quelle a
   selezione singola. Una casella fa due colonne, "Checked" e "Unchecked";
@@ -4214,10 +4292,10 @@ L'utente, parola per parola:
   tag. Non ci sono colore, immagine, collegamento a pagina, durata, "Created
   time" e "Last edited time", che non danno nomi leggibili o fanno un gruppo
   per riga. Senza scelta resta la prima a selezione singola, come prima
-- **[Bug]** Nella Board una scheda con un tag poi cancellato dalla
+- **[Bug fix]** **[📱 Mobile]** Nella Board una scheda con un tag poi cancellato dalla
   proprietà spariva: ora ha la sua colonna, dopo quelle dei tag, come nella
   tabella
-- **[Bug]** Nella tabella raggruppata per una data, "New page" dentro un
+- **[Bug fix]** **[📱 Mobile]** Nella tabella raggruppata per una data, "New page" dentro un
   gruppo creava la riga al **1° gennaio 1970**, in un gruppo tutto suo: ora
   nasce nel giorno del gruppo. Lo stesso vale per la Board
 - **[Progetto]** Sulla domanda: **non era un bug ma un limite voluto**. La
@@ -4245,20 +4323,20 @@ L'utente, parola per parola:
   Checkbox: "Checked" 44 e "Unchecked" 0. Rimesse le impostazioni di prima
   e la vista Table: il database del telefono è com'era (cambia solo l'ora di
   modifica della vista Board)
-### 🔧 v0.158.3 — 09/10/2026 · 09:03 — Food: la riga spuntata scende dopo 0,2 secondi
+### ✏️ v0.101.3 — 09/10/2026 · 09:03 — Food: la riga spuntata scende dopo 0,2 secondi
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 495 test
 passati; commit solo in locale)*
 
 L'utente, parola per parola:
 > «Un secondo è estremamente troppo. Fallo tipo di 0.2 secondi»
 
-- **[Modificato]** La riga appena spuntata (o tolta) va al suo posto **0,2
+- **[Modifica]** **[📱 Mobile]** La riga appena spuntata (o tolta) va al suo posto **0,2
   secondi** dopo che la sua casella si è riempita, non più un secondo dopo.
   Spuntando più cose di fila restano ferme finché si continua, e poi
   scendono insieme
 - **[Progetto]** `CHECKBOX_SETTLE_MS` a 200. Con un attimo così corto, un
   salvataggio lento avrebbe fatto partire la riga prima che la casella si
-  riempisse, e lo scatto della v0.158.1 sarebbe tornato: per questo gli 0,2
+  riempisse, e lo scatto della v0.101.1 sarebbe tornato: per questo gli 0,2
   secondi ora si contano **da quando il valore nuovo arriva dal database**
   (`holdAfterCheckbox` aspetta di vederlo nella tabella, al più 2 secondi),
   non dal tocco. `CheckboxHoldTest` usa la costante
@@ -4267,7 +4345,7 @@ L'utente, parola per parola:
   già scesa fra le prese; nella colonna delle caselle nessun altro
   movimento. Tolta la spunta, risale dopo "Shampoo". Il database del
   telefono è tornato com'era (cambia solo l'ora di modifica della riga)
-### 🔧 v0.158.2 — 09/10/2026 · 08:56 — Food: la riga spuntata scende al suo posto dopo un secondo
+### ✏️ v0.101.2 — 09/10/2026 · 08:56 — Food: la riga spuntata scende al suo posto dopo un secondo
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 495 test
 passati; commit solo in locale)*
 
@@ -4276,10 +4354,10 @@ L'utente, parola per parola:
 > avevo attivato il sorting delle checkbox checked in ordine ascendente.
 > Ora non lo fa più»
 
-La v0.158.1 teneva ferme le righe finché si restava sulla pagina: niente
+La v0.101.1 teneva ferme le righe finché si restava sulla pagina: niente
 più caselle che scattavano, ma nemmeno la presa che scende in fondo.
 
-- **[Modificato]** **Un secondo dopo l'ultima spunta** le righe vanno al
+- **[Modifica]** **[📱 Mobile]** **Un secondo dopo l'ultima spunta** le righe vanno al
   loro posto: la casella si riempie dove la si è toccata, e poco dopo la
   riga scende fra le prese (o risale, togliendo la spunta). Spuntando più
   cose di fila, a meno di un secondo l'una dall'altra, restano tutte ferme
@@ -4298,7 +4376,7 @@ più caselle che scattavano, ma nemmeno la presa che scende in fondo.
   nella colonna delle caselle nessun altro movimento. Tolta la spunta
   laggiù, si svuota lì e 1,1 s dopo risale dopo "Shampoo". Il database del
   telefono è tornato com'era (cambia solo l'ora di modifica della riga)
-### 🔧 v0.158.1 — 09/10/2026 · 07:44 — Le caselle di Food non scattano più: la riga spuntata resta sotto il dito
+### ✏️ v0.101.1 — 09/10/2026 · 07:44 — Le caselle di Food non scattano più: la riga spuntata resta sotto il dito
 *(Claude Code sul PC; provato sul telefono l'08 e il 09/10/2026,
 registrando lo schermo; 494 test passati; commit solo in locale)*
 
@@ -4313,14 +4391,14 @@ e, alla domanda su dove:
 > checkbox capita che mi si scattino delle checkbox sopra o sotto. Fai pure
 > delle prove te su quel database»
 
-- **[Bug]** **Food è ordinato per la sua casella** (prima le cose da
+- **[Bug fix]** **[📱 Mobile]** **Food è ordinato per la sua casella** (prima le cose da
   prendere, poi le prese). Spuntandone una, la riga saltava **subito** fra
   le prese: le righe in mezzo scalavano di un posto, e sotto il dito
   arrivava un'altra riga, con la sua casella che si ridisegnava. Si vedeva
   scattare una casella mai toccata, sopra o sotto; e toccando di nuovo lo
   stesso punto si spuntava **un'altra riga** (successo anche durante le
   prove: "Spazzolino" al posto di "Dentifricio")
-- **[Modificato]** Ora, spuntata (o tolta) una casella su cui la vista
+- **[Modifica]** **[📱 Mobile]** Ora, spuntata (o tolta) una casella su cui la vista
   **ordina o filtra**, le righe **restano dove sono** finché si resta
   sulla pagina: si possono spuntare più cose di fila, come in una lista
   della spesa, e sotto il dito c'è sempre la riga che si vede. Vanno al
@@ -4351,7 +4429,7 @@ e, alla domanda su dove:
   tornati indietro, è risalita fra le cose da prendere. Poi tolte le due
   righe di prova di Main calendar: il database del telefono ha di diverso
   solo quello che l'utente ha cambiato nel frattempo
-### 🆕 v0.158 — 08/10/2026 · 22:37 — Il correttore, come in OneNote: riga rossa sotto le parole sbagliate
+### 🆕 v0.101 — 08/10/2026 · 22:37 — Il correttore, come in OneNote: riga rossa sotto le parole sbagliate
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 490 test passati; database alla
 versione 55, copia del database del telefono fatta prima di installare; commit solo in locale)*
 
@@ -4371,33 +4449,33 @@ L'utente, parola per parola:
 e, sentito come l'avrei fatto:
 > «Vai, entrambi dizionari inglesi»
 
-- **[Nuova funzionalità]** **La riga rossa ondulata** sotto le parole che
+- **[Nuova funzionalità]** **[📱 Mobile]** **La riga rossa ondulata** sotto le parole che
   il dizionario non conosce, nelle pagine del Workspace e dei Notebooks:
   nel testo, negli elenchi, nelle caselle, nei toggle, nei riquadri, nelle
   citazioni, nelle notifiche e nel titolo. La parola che si sta scrivendo
   non si segna finché non la si finisce, e le altre si ricontrollano
   appena si smette di scrivere
-- **[Nuova funzionalità]** **Toccando una parola sottolineata** si apre il
+- **[Nuova funzionalità]** **[📱 Mobile]** **Toccando una parola sottolineata** si apre il
   suo menu: fino a **cinque parole al suo posto** (quattro con la
   tastiera aperta, perché il menu stia sopra o sotto la parola senza
   coprirla), la migliore per prima ("perche" → "perché", "squola" →
   "scuola", "dellacasa" → "della casa"), **"Add to dictionary"** e
   **"Ignore"**. La tastiera resta aperta; "Indietro" o un tocco fuori lo
   chiudono
-- **[Nuova funzionalità]** **Settings → Proofing**, sotto Language:
+- **[Nuova funzionalità]** **[📱 Mobile]** **Settings → Proofing**, sotto Language:
   "Check spelling" per tutte le pagine, Workspace e Notebooks insieme;
   **la lingua**; **"My dictionary"**, le parole aggiunte, che da lì si
   tolgono. **Spento di partenza**; la lingua di partenza è quella
   dell'app
-- **[Nuova funzionalità]** **"Proofing" nei tre puntini di una pagina**:
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Proofing" nei tre puntini di una pagina**:
   "Default" (come dice Settings), "On" o "Off" solo per lei, e la sua
   lingua — una pagina in tedesco in un'app in italiano. Sotto, le parole
   ignorate in quella pagina, con "Check again" per rimetterle
-- **[Nuova funzionalità]** **Le lingue** sono quelle dell'app: inglese
+- **[Nuova funzionalità]** **[📱 Mobile]** **Le lingue** sono quelle dell'app: inglese
   americano e britannico, italiano, tedesco, francese, spagnolo. Cinese,
   coreano e giapponese ci sono ma grigie, "Not available yet". Le parole
   aggiunte al dizionario valgono in tutte
-- **[Nuova funzionalità]** **Non si controllano**, come in OneNote e Word:
+- **[Nuova funzionalità]** **[📱 Mobile]** **Non si controllano**, come in OneNote e Word:
   indirizzi, email e nomi di file ("notes.txt"), le parole con dei numeri,
   le sigle tutte maiuscole, le parole di una lettera, quelle in un altro
   alfabeto, il testo sotto uno spoiler, il codice, le celle dei database
@@ -4445,7 +4523,7 @@ e, sentito come l'avrei fatto:
   Settings l'interruttore spento quasi non si vedeva e la spiegazione sotto
   era tagliata. Alla fine riga di prova tolta, parola tolta dal dizionario
   e correttore rispento: il database del telefono è tornato com'era
-### 🆕 v0.157 — 08/10/2026 · 15:57 — "Move as inline": un database spostato può arrivare aperto nella pagina
+### 🆕 v0.100 — 08/10/2026 · 15:57 — "Move as inline": un database spostato può arrivare aperto nella pagina
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 461 test
 passati; commit solo in locale)*
 
@@ -4459,15 +4537,15 @@ L'utente, parola per parola:
 Arrivava come collegamento a pagina per una scelta del 24/09/2026 (chiesta
 allora dall'utente): lo spostamento rifaceva sempre un collegamento.
 
-- **[Nuova funzionalità]** **"Move as inline"**, in fondo alla finestra di
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Move as inline"**, in fondo alla finestra di
   "Move to" quando si sposta **un database** (dal menu del blocco o dai tre
   puntini del database a pagina intera): acceso, il database arriva **aperto
   dentro la pagina** scelta; spento, come **collegamento a pagina**, come
   prima. Per le pagine non c'è
-- **[Nuova funzionalità]** **Parte com'è il database adesso**: acceso se si
+- **[Nuova funzionalità]** **[📱 Mobile]** **Parte com'è il database adesso**: acceso se si
   vede aperto dentro una pagina, spento se è un collegamento. Così, se non
   lo si tocca, il database arriva com'era
-- **[Modificato]** La spiegazione in cima alla finestra dice le due strade
+- **[Modifica]** **[📱 Mobile]** La spiegazione in cima alla finestra dice le due strade
   (prima rimandava a "Turn into database" da fare dopo)
 - **[Progetto]** `PageRepository.movePageTo(…, asInline)` crea il blocco
   database invece del collegamento (solo per un database);
@@ -4485,7 +4563,7 @@ allora dall'utente): lo spostamento rifaceva sempre un collegamento.
   aveva appena spostato "Main calendar" in fondo alla pagina principale: è
   rimasto dove l'aveva messo
 
-### 🆕 v0.156 — 08/10/2026 · 15:39 — "Turn into database inline"
+### ✏️ v0.99.1 — 08/10/2026 · 15:39 — "Turn into database inline"
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 460 test
 passati; commit solo in locale)*
 
@@ -4493,7 +4571,7 @@ L'utente, parola per parola (con la foto del menu del blocco di "Main
 calendar"):
 > «Riscrivi l'opzione 'Turn into database' in 'Turn into database inline'»
 
-- **[Modificato]** La voce che rimette un database a pagina intera dentro
+- **[Modifica]** **[📱 Mobile]** La voce che rimette un database a pagina intera dentro
   la pagina che lo richiama ora si chiama **"Turn into database inline"**:
   sia nel menu del blocco (tenendo premuto il collegamento, come nella foto)
   sia nei tre puntini del database aperto a pagina intera, dove fa la stessa
@@ -4502,18 +4580,18 @@ calendar"):
   de données intégrée", "Convertir en base de datos en línea", "转换为内嵌数据库",
   "인라인 데이터베이스로 전환", "インラインデータベースに変換"
 - **[Progetto]** `Strings.turnIntoDatabase`, la scritta delle due voci
-- Installata sul telefono alle 15:37, ancora col numero 0.155 (la versione
+- Installata sul telefono alle 15:37, ancora col numero 0.99 (la versione
   si prende dal README, e questa voce non c'era ancora): la scritta nuova
   c'è già. Il menu non è stato aperto per vederla: dal confronto del
   database risultava che l'utente stava usando l'app (alle 15:34–15:35 aveva
   tolto la spunta a otto righe di "Food" e aggiunto una riga in 家計簿), e da
   lì Claude non ha più toccato il telefono. Avuto il via dall'utente
-  («Ora puoi installare, non sto usando il telefono»), installata la 0.156:
+  («Ora puoi installare, non sto usando il telefono»), installata la 0.99.1:
   tenendo premuto il collegamento "Main calendar" nella pagina principale il
   menu dice "Turn into database inline". Il menu è stato solo aperto e
   chiuso, e il database è rimasto com'era
 
-### 🆕 v0.155 — 08/10/2026 · 15:32 — "Freeze first column" e "Freeze first row": prima colonna e titoli sempre in vista
+### 🆕 v0.99 — 08/10/2026 · 15:32 — "Freeze first column" e "Freeze first row": prima colonna e titoli sempre in vista
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 460 test
 passati; database alla versione 54, copia del database del telefono fatta
 prima di installare; commit solo in locale)*
@@ -4526,19 +4604,19 @@ L'utente, parola per parola:
 > per esempio) e se vado troppo sotto la prima riga la vedo comunque
 > (uguale come il punto di prima)»
 
-- **[Nuova funzionalità]** **"Freeze first column"**, nelle impostazioni
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Freeze first column"**, nelle impostazioni
   della tabella (sotto "Long text"): scorrendo la tabella a destra **la
   prima colonna resta al bordo sinistro** — Name, o quella che c'è per
   prima se Name è stata spostata — e le altre le passano sotto. Si sa
   sempre di che riga è la casella che si spunta
-- **[Nuova funzionalità]** **"Freeze first row"**: scorrendo in giù **la
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Freeze first row"**: scorrendo in giù **la
   riga dei titoli delle colonne resta in cima**, e le righe le passano
   sotto. La "prima riga" è quella coi nomi delle proprietà: è lei che dice
   di quale proprietà è la casella. Dentro una pagina si ferma sotto i
   pulsanti sospesi (indietro, barra laterale, tre puntini); a pagina intera
   sotto la barra della vista. Quando la tabella finisce se ne va con lei. In
   una tabella a gruppi ogni gruppo ha la sua, ferma finché si è nel gruppo
-- **[Nuova funzionalità]** Si accendono **tutte e due insieme** o una sola;
+- **[Nuova funzionalità]** **[📱 Mobile]** Si accendono **tutte e due insieme** o una sola;
   insieme, anche l'angolo (il titolo della prima colonna) resta fermo. Sono
   impostazioni **della vista**, come "Long text": ogni vista ha le sue, e
   con "Lock view" restano grigie
@@ -4550,7 +4628,7 @@ L'utente, parola per parola:
   inseguirlo. Il contenitore che scorre lo dice alla tabella
   (`StickyViewport`): la pagina (`forList`, con il margine dei pulsanti) e
   il database a pagina intera (`forScroll`). "Delete view" sulla prima vista
-  (v0.154) si porta dietro anche queste due. `SettingsToggleRow` sa essere
+  (v0.98.1) si porta dietro anche queste due. `SettingsToggleRow` sa essere
   spento. Test: `FrozenTableTest` (5: l'intestazione in cima, sotto il
   margine, spenta, dentro una pagina; la prima cella a sinistra), la
   migrazione 53→54 in `MigrationTest`, e `DatabaseViewsTest`
@@ -4570,7 +4648,7 @@ L'utente, parola per parola:
   scorrimento del fotogramma prima, e dentro la pagina restava indietro di
   un passo; ora si rimette a posto ogni volta che la tabella si sposta
 
-### 🆕 v0.154 — 08/10/2026 · 09:57 — Le viste: "Edit view" dai tre puntini, e anche la prima si toglie
+### ✏️ v0.98.1 — 08/10/2026 · 09:57 — Le viste: "Edit view" dai tre puntini, e anche la prima si toglie
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 454 test
 passati; commit solo in locale)*
 
@@ -4584,11 +4662,11 @@ La Table non si toglieva perché era **la vista di partenza**: nell'app è il
 database stesso (le viste aggiunte col "+" sono a parte), e il database non
 può andarsene. Su Notion invece tutte le viste sono uguali.
 
-- **[Nuova funzionalità]** **"Edit view"** in cima ai tre puntini di ogni
+- **[Modifica]** **[📱 Mobile]** **"Edit view"** in cima ai tre puntini di ogni
   vista, nell'elenco delle viste: la mette davanti e apre le sue
   impostazioni (Layout, Filter, Group, Long text, proprietà…), come l'icona
   dei cursori
-- **[Modificato]** **"Delete view" c'è anche per la vista di partenza**
+- **[Modifica]** **[📱 Mobile]** **"Delete view" c'è anche per la vista di partenza**
   (la Table di "Foreign Languages"). Il database prende le impostazioni
   della vista che viene dopo — layout, nome, filtro, ordinamento, gruppi,
   proprietà nascoste, larghezze delle colonne, calcoli, grafico — e quella
@@ -4610,7 +4688,7 @@ può andarsene. Su Notion invece tutte le viste sono uguali.
   della List, ora l'unica, hanno "Edit view" e "Rename" ma non "Delete
   view". Alla fine il database del telefono è identico a prima della prova
 
-### 🔧 v0.153.1 — 08/10/2026 · 09:48 — Cancellando una riga se ne va anche la sua pagina
+### 🔧 v0.98.0.1 — 08/10/2026 · 09:48 — Cancellando una riga se ne va anche la sua pagina
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 452 test
 passati; copia del database del telefono fatta prima; commit solo in locale)*
 
@@ -4619,14 +4697,14 @@ database la sua pagina, coi blocchi e i file, senza più un posto (la ricerca
 la trovava ancora). L'utente, parola per parola:
 > «Sistema anche il bug delle pagine delle righe cancellate»
 
-- **[Bug]** **Cancellando una riga** ("Delete this page? The row and its
+- **[Bug fix]** **[📱 Mobile]** **Cancellando una riga** ("Delete this page? The row and its
   values will be deleted. This can't be undone.") **se ne va anche la sua
   pagina**, con quello che c'è dentro: i blocchi, la cronologia delle
   modifiche, i file (icone, copertine, immagini, video, audio, file), e le
   sottopagine che non sono richiamate da nessun'altra parte, come quando si
   cancella per sempre una pagina dal cestino. È quello che la conferma
   diceva già. Prima se ne andava solo la riga
-- **[Bug]** **Le pagine rimaste da righe cancellate prima** non si
+- **[Bug fix]** **[📱 Mobile]** **Le pagine rimaste da righe cancellate prima** non si
   cancellano: all'avvio **vanno nel cestino**, dove si possono guardare e
   ripristinare, e da dove se ne vanno con la regola del cestino (30 giorni).
   Ripristinata, una di queste torna **una pagina normale, in fondo al menu
@@ -4650,7 +4728,7 @@ la trovava ancora). L'utente, parola per parola:
   aperta e con "Prova cancellazione" scritto dentro, poi cancellata: nel
   database non resta niente, né la riga né la pagina né il testo
 
-### 🆕 v0.153 — 08/10/2026 · 09:39 — La scheda "Icons": le icone di Material, bianche o del colore che si sceglie
+### 🆕 v0.98 — 08/10/2026 · 09:39 — La scheda "Icons": le icone di Material, bianche o del colore che si sceglie
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 450 test
 passati; database alla versione 53, copia del database del telefono fatta
 prima di installare; commit solo in locale)*
@@ -4663,16 +4741,16 @@ icone di Material (quelle di Notion sono loro), l'utente, parola per parola
 > foto (di base tutte le icone sono bianche, ma selezionando il colore mi
 > appare il solito spettro dei colori che usi in tutta l'app)»
 
-- **[Nuova funzionalità]** **La scheda "Icons"** del selettore delle icone,
+- **[Nuova funzionalità]** **[📱 Mobile]** **La scheda "Icons"** del selettore delle icone,
   fra "Emoji" e "Upload": le **2132 icone piene di Material**, di partenza
   **bianche** (il colore del testo: sul tema chiaro scure), in una griglia
   come quella di Notion. "Filter…" le cerca per le parole del nome inglese
   ("home", "alar acc"), "Random" ne sceglie una a caso
-- **[Nuova funzionalità]** **Il pallino accanto a "Random"** apre lo
+- **[Nuova funzionalità]** **[📱 Mobile]** **Il pallino accanto a "Random"** apre lo
   spettro dei colori di tutta l'app ("Icon color"): il colore scelto colora
   tutte le icone della griglia e va con l'icona che si sceglie; "No color"
   le rimette bianche. Il colore resta per la prossima volta, come su Notion
-- **[Nuova funzionalità]** **L'icona scelta vale ovunque** come le emoji:
+- **[Nuova funzionalità]** **[📱 Mobile]** **L'icona scelta vale ovunque** come le emoji:
   in cima alla pagina, nell'albero, nella ricerca, nei preferiti, nel
   cestino, nei collegamenti e nei rimandi, davanti al nome di un database,
   accanto alle righe in tutte le viste del database, nei riquadri
@@ -4700,7 +4778,7 @@ icone di Material (quelle di Notion sono loro), l'utente, parola per parola
   stanno nella libreria di base di Material, e il generatore leggeva solo
   quella estesa
 
-### 🆕 v0.152 — 08/10/2026 · 09:17 — Le emoji di Notion per le icone: categorie, ricerca e colore della pelle
+### 🆕 v0.97 — 08/10/2026 · 09:17 — Le emoji di Notion per le icone: categorie, ricerca e colore della pelle
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 443 test
 passati; commit solo in locale)*
 
@@ -4710,40 +4788,40 @@ selettore di Notion):
 > mi si aprono quando le vedo su Notion, le emoticon, cibi, icone standard,
 > bandiere, eccetera»
 
-- **[Nuova funzionalità]** **Il selettore delle icone**, lo stesso
+- **[Nuova funzionalità]** **[📱 Mobile]** **Il selettore delle icone**, lo stesso
   dappertutto si tocca un'icona per cambiarla: l'icona di una pagina (anche
   "Add icon" delle pagine delle righe), "Icon" delle impostazioni di un
   database e delle azioni di una riga, "Edit icon" dei collegamenti, l'icona
   dei riquadri (Callout). In cima due schede, **"Emoji"** e **"Upload"**
   (l'immagine dal telefono, come prima), e **"Remove"** quando un'icona c'è
-- **[Nuova funzionalità]** **Tutte le emoji, nelle categorie di Notion**:
+- **[Nuova funzionalità]** **[📱 Mobile]** **Tutte le emoji, nelle categorie di Notion**:
   Recent, People, Animals and nature, Food and drink, Activity, Travel and
   places, Objects, Symbols, Flags (1906 emoji di Unicode 16; quelle che il
   telefono non sa ancora disegnare restano fuori, invece di comparire come
   quadratini). In fondo **"Custom"**: le immagini già caricate come icona di
   pagine e riquadri, una volta sola anche se copiate più volte; toccandone
   una la pagina ne prende una copia sua
-- **[Nuova funzionalità]** **La barra in basso della foto**: orologio,
+- **[Nuova funzionalità]** **[📱 Mobile]** **La barra in basso della foto**: orologio,
   faccina, foglia, carota, pallone, aereo, lampadina, spunta, bandiera,
   quadretti e "+". Ogni voce porta alla sua categoria e resta accesa mentre
   la si guarda; "+" carica un'immagine nuova
-- **[Nuova funzionalità]** **"Filter…"**: si cerca per nome **in tutte e
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Filter…"**: si cerca per nome **in tutte e
   otto le lingue dell'app insieme**, senza badare a maiuscole e accenti —
   "gatto", "cat", "Katze" e "猫" trovano il gatto anche con l'app in
   inglese. Ogni parola scritta è l'inizio di una parola del nome ("pizz"
   trova la pizza, "cat" non trova la "catena" prima dei gatti). Un'emoji
   scritta con la tastiera si usa così com'è ("Use this emoji")
-- **[Nuova funzionalità]** **"Random"** sceglie un'emoji a caso; **la
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Random"** sceglie un'emoji a caso; **la
   manina** accanto apre i sei colori della pelle, che valgono per tutte le
   emoji di persone e mani e restano scelti
-- **[Nuova funzionalità]** **Anche i database e le pagine delle righe hanno
+- **[Nuova funzionalità]** **[📱 Mobile]** **Anche i database e le pagine delle righe hanno
   l'emoji**: davanti al nome del database, nell'albero, nella ricerca, nei
   collegamenti e accanto al nome della riga in tutte le viste (tabella,
   bacheca, calendario…). Prima per loro contava solo un'immagine
-- **[Modificato]** **Il selettore dei riquadri** è questo, con in cima la
-  famiglia "Callout" della v0.146; il campo "Other emoji" non c'è più, la
+- **[Modifica]** **[📱 Mobile]** **Il selettore dei riquadri** è questo, con in cima la
+  famiglia "Callout" della v0.91; il campo "Other emoji" non c'è più, la
   ricerca fa lo stesso
-- **[Modificato]** README: nei limiti noti, la frase "l'emoji di una pagina
+- **[Modifica]** **[📱 Mobile]** README: nei limiti noti, la frase "l'emoji di una pagina
   non si sceglie ancora da nessuna parte" è superata
 - **[Progetto]** `IconPicker.kt` (`IconPickerSheet`), `EmojiCatalog.kt`
   (`EmojiCatalog`, `withSkinTone`, `EmojiCatalogs`, `IconLibrary`),
@@ -4774,11 +4852,11 @@ selettore di Notion):
   si vede. Il colore della pelle è stato rimesso giallo. Le Recent del
   telefono hanno 🐈 e 👍🏽 delle prove
 
-### 🆕 v0.151 — 07/10/2026 · 21:19 — "File" e "Web bookmark": il file da aprire o scaricare e il link con l'anteprima
+### 🆕 v0.96 — 07/10/2026 · 21:19 — "File" e "Web bookmark": il file da aprire o scaricare e il link con l'anteprima
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno, anche con
 la rete; 431 test passati; commit solo in locale)*
 
-Dalla stessa richiesta della v0.146, le ultime due voci, parola per parola:
+Dalla stessa richiesta della v0.91, le ultime due voci, parola per parola:
 > «File (mettere un file che posso aprire o scaricare ovunque io sia come
 > vedi nella nona foto)»
 >
@@ -4787,32 +4865,32 @@ Dalla stessa richiesta della v0.146, le ultime due voci, parola per parola:
 
 Con questa, **tutte le voci di quella richiesta ci sono**.
 
-- **[Nuova funzionalità]** **"File"** (dal menu "/" e dal "+"): il riquadro
-  "Upload or embed a file" e la finestrella Upload/Link della v0.150:
+- **[Nuova funzionalità]** **[📱 Mobile]** **"File"** (dal menu "/" e dal "+"): il riquadro
+  "Upload or embed a file" e la finestrella Upload/Link della v0.95:
   "Choose a file" apre i file del telefono, **di qualsiasi tipo**; "Link"
   ("Embed link") tiene l'indirizzo di un file in rete
-- **[Nuova funzionalità]** Il blocco è la riga della nona foto: **l'icona
+- **[Nuova funzionalità]** **[📱 Mobile]** Il blocco è la riga della nona foto: **l'icona
   del tipo** (PDF, immagine, video, audio, documento, archivio), **il nome
   e il peso** ("215 KB", "1,4 MB"). **Toccandolo si apre** con l'app che lo
   sa aprire (Android chiede quale); **la freccia a destra lo scarica dove si
   sceglie** — il telefono, la scheda SD, Drive —: è il "scaricarlo ovunque
   io sia". Tenendolo premuto: "Open with…", "Download", "Replace",
   "Duplicate", "Delete". Un file da link si apre toccandolo
-- **[Nuova funzionalità]** **"Web bookmark"**: la finestra "Create
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Web bookmark"**: la finestra "Create
   bookmark", dove si incolla il link. Il segnalibro è la scheda della decima
   foto: **il titolo del sito, la descrizione e la sua immagine**, e sotto
   l'indirizzo. **Toccandolo si apre nel browser predefinito** (o nell'app
   del sito, se c'è). Tenendolo premuto: "Open in browser or app", "Replace",
   "Duplicate", "Delete"
-- **[Nuova funzionalità]** **L'anteprima si legge dal sito una volta sola**,
+- **[Nuova funzionalità]** **[📱 Mobile]** **L'anteprima si legge dal sito una volta sola**,
   appena nasce il segnalibro: sono i dati che il sito stesso dà per le
   anteprime (gli stessi che usano Notion, WhatsApp e Telegram). L'immagine
   si salva nell'app, quindi dopo si vede anche senza rete. Senza rete il
   segnalibro mostra il nome del sito e l'indirizzo, e ci riprova alla
   prossima apertura della pagina
-- **[Modificato]** README: tolte dai limiti noti le voci grigie dei menu
+- **[Modifica]** **[📱 Mobile]** README: tolte dai limiti noti le voci grigie dei menu
   "+" e "/" (ora ci sono tutte), e nelle funzionalità la frase "l'app non
-  si collega a niente", vera fino alla v0.146
+  si collega a niente", vera fino alla v0.91
 - **[Progetto]** `FileBookmarkBlocks.kt` (`FileBlockContent`,
   `BookmarkBlockContent`, `BookmarkSheet`, `formatFileSize`),
   `LinkPreviews.kt` (legge al massimo 512 KB della pagina, presentandosi
@@ -4832,11 +4910,11 @@ Con questa, **tutte le voci di quella richiesta ci sono**.
   globo; toccandolo si apre Firefox, il browser predefinito, su
   wikipedia.org, e Indietro torna a notE
 
-### 🆕 v0.150 — 07/10/2026 · 21:18 — "Video" e "Audio": guardarli e ascoltarli dentro la pagina
+### 🆕 v0.95 — 07/10/2026 · 21:18 — "Video" e "Audio": guardarli e ascoltarli dentro la pagina
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno, anche con
-la rete; 431 test passati insieme alla v0.151; commit solo in locale)*
+la rete; 431 test passati insieme alla v0.96; commit solo in locale)*
 
-Dalla stessa richiesta della v0.146, le voci del video e dell'audio, parola
+Dalla stessa richiesta della v0.91, le voci del video e dell'audio, parola
 per parola:
 > «Video (mettere un video tramite upload o tramite link come vedi nella
 > sesta foto, che mi permette o di riprodurlo direttamente sull'embed
@@ -4848,35 +4926,35 @@ per parola:
 > con play, pause, resume, e la barra di riproduzione che mi consente di
 > andare avanti o indietro, come vedi nella settima foto)»
 
-- **[Nuova funzionalità]** **"Video"** (dal menu "/" e dal "+"): la riga
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Video"** (dal menu "/" e dal "+"): la riga
   diventa il riquadro "Embed or upload a video" e si apre subito la
   finestrella di Notion con due schede: **"Upload"** ("Choose a video", la
   galleria del telefono con i soli video) e **"Link"** (si incolla
   l'indirizzo, "Embed video"). Un indirizzo senza "https://" lo prende; una
   parola che non è un link no ("That doesn't look like a link")
-- **[Nuova funzionalità]** **Un video caricato, o il link diretto a un
+- **[Nuova funzionalità]** **[📱 Mobile]** **Un video caricato, o il link diretto a un
   video** (un .mp4…), si guarda **nel lettore dell'app**: toccando il video
   parte o si ferma, e sotto ci sono **play/pausa, il tempo e la barra col
   pallino** — lo si trascina per andare avanti o indietro, e il video ci
   salta quando lo si lascia. Prima di partire mostra il primo fotogramma
   invece del nero; arrivato in fondo, play ricomincia
-- **[Nuova funzionalità]** **YouTube e Vimeo** si guardano **nel loro
+- **[Nuova funzionalità]** **[📱 Mobile]** **YouTube e Vimeo** si guardano **nel loro
   lettore, dentro la pagina** (play, pausa, la barra col pallino rosso):
   è l'unico modo in cui quei siti lasciano vedere i loro video fuori da sé.
   Il tasto **schermo intero** del lettore lo allarga a tutto il telefono,
   barre di sistema comprese; Indietro lo riporta nella pagina. Sotto, il
   nome del sito e i tre puntini del menu del blocco
-- **[Nuova funzionalità]** **Il menu del video** (tenendolo premuto, o dai
+- **[Nuova funzionalità]** **[📱 Mobile]** **Il menu del video** (tenendolo premuto, o dai
   tre puntini): per un link **"Open in browser or app"** — Android chiede
   se aprirlo nell'app di YouTube o nel browser —; per un file **"Open
   with…"** (un altro lettore), **"Download"** (lo si salva dove si sceglie)
   e "Replace"; per tutti "Duplicate" e "Delete"
-- **[Nuova funzionalità]** **"Audio"**: il riquadro "Add an audio file", poi
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Audio"**: il riquadro "Add an audio file", poi
   la stessa finestrella ("Choose a file" apre i file del telefono, solo
   audio; "Link" per l'indirizzo di un file audio). Il blocco è la scheda
   della settima foto: **il nome e, sotto, play/pausa, il tempo e la barra
   col pallino**. Tenendolo premuto, lo stesso menu del video
-- **[Nuova funzionalità]** **Uscendo dall'app o dalla pagina il lettore si
+- **[Nuova funzionalità]** **[📱 Mobile]** **Uscendo dall'app o dalla pagina il lettore si
   ferma** (Home, un'altra app, lo schermo spento, un'altra pagina): niente
   suono da una pagina che non si vede. Tornando non riparte da solo, e play
   **riprende dal punto in cui si era fermato**
@@ -4887,7 +4965,7 @@ per parola:
   "di casa" `https://com.gabriele.notionlocal` (YouTube vuole sapere chi
   lo incorpora). `VideoAudioBlocks.kt`: la finestrella Upload/Link e i
   blocchi. I file caricati vivono nella cartella delle immagini dei blocchi
-  e si aprono alle altre app dal `FileProvider` della v0.149. Test:
+  e si aprono alle altre app dal `FileProvider` della v0.94. Test:
   `MediaLinksTest` (4: YouTube in tutte le forme del suo indirizzo, Vimeo,
   i link senza "https://", il tempo come un orologio)
 - Verificato sul telefono, in una riga di prova di Main calendar (poi
@@ -4907,34 +4985,34 @@ per parola:
   Firefox (controllato senza aprirlo, per non toccare la cronologia di
   YouTube dell'utente)
 
-### 🆕 v0.149 — 07/10/2026 · 20:39 — "Image": l'immagine da ridimensionare, ingrandire, scaricare e spostare
+### 🆕 v0.94 — 07/10/2026 · 20:39 — "Image": l'immagine da ridimensionare, ingrandire, scaricare e spostare
 *(Claude Code sul PC; verificato sul telefono il 06/10/2026; 423 test
 passati; commit solo in locale)*
 
-Dalla stessa richiesta della v0.146, la voce dell'immagine, parola per parola:
+Dalla stessa richiesta della v0.91, la voce dell'immagine, parola per parola:
 > «Image (mettere un'immagine come vedi nella quinta foto esclusivamente con
 > un upload diretto: posso redimensionarla, aprirla, zoomarla, scaricarla, e
 > spostarla da qualche altra parte di default sempre in fondo alla pagina di
 > destinazione)»
 
-- **[Nuova funzionalità]** **"Image"** (dal menu "/" e dal "+"): la riga
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Image"** (dal menu "/" e dal "+"): la riga
   diventa il riquadro grigio "Add an image" e **si apre subito la galleria**
   del telefono, come su Notion. Si carica **solo dal telefono**, come
   chiesto (niente link). Annullando la galleria il riquadro resta, e
   toccandolo la si riapre
-- **[Nuova funzionalità]** L'immagine si vede **intera**, larga quanto la
+- **[Nuova funzionalità]** **[📱 Mobile]** L'immagine si vede **intera**, larga quanto la
   pagina e centrata. **Due maniglie ai lati** la stringono (fino a un
   quarto della pagina) o la allargano trascinandole; la larghezza resta
-- **[Nuova funzionalità]** **Toccandola si apre a tutto schermo**, sul nero:
+- **[Nuova funzionalità]** **[📱 Mobile]** **Toccandola si apre a tutto schermo**, sul nero:
   si ingrandisce e si sposta con due dita, due tocchi la rimettono com'era.
   Lì c'è anche il pulsante per **scaricarla**, nella Galleria del telefono
   ("Pictures/notE")
-- **[Nuova funzionalità]** **Tenendola premuta**: "View", "Download",
+- **[Nuova funzionalità]** **[📱 Mobile]** **Tenendola premuta**: "View", "Download",
   "Replace" (un'altra dalla galleria), **"Move to"** — si sceglie la pagina,
   dall'albero o cercandola, e l'immagine **va in fondo a quella pagina** —,
   "Duplicate" (con una copia sua del file) e "Delete". "Move to" non si
   annulla con la freccia indietro: l'avviso dice dov'è finita
-- **[Modificato]** **Backspace a inizio della riga sotto un riquadro o una
+- **[Modifica]** **[📱 Mobile]** **Backspace a inizio della riga sotto un riquadro o una
   citazione** unisce la riga al loro testo, come già sotto un toggle o una
   casella. Sotto un'immagine (o un altro blocco senza testo) non fa niente
 - **[Progetto]** `MediaBlocks.kt` (`ImageBlockContent`, `MediaPlaceholder`),
@@ -4953,11 +5031,11 @@ Dalla stessa richiesta della v0.146, la voce dell'immagine, parola per parola:
   "ProvaDest" la porta in fondo a quella pagina ("Moved to "ProvaDest""),
   con la sua larghezza. Le righe di Main calendar sono come prima della prova
 
-### 🆕 v0.148 — 06/10/2026 · 10:15 — "Link to page" e "Database - Full page"
+### 🆕 v0.93 — 06/10/2026 · 10:15 — "Link to page" e "Database - Full page"
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 419 test
 passati; commit solo in locale)*
 
-Dalla stessa richiesta della v0.146, le due voci, parola per parola:
+Dalla stessa richiesta della v0.91, le due voci, parola per parola:
 > «Link to page (un collegamento ad una pagina all'interno del Workspace
 > come vedi nella quarta foto)»
 
@@ -4965,24 +5043,24 @@ Dalla stessa richiesta della v0.146, le due voci, parola per parola:
 > quella della pagina, dove rispetto alle altre non sarà inline e me la
 > farà aprire direttamente come pagina come vedi nell'undicesima foto)»
 
-- **[Nuova funzionalità]** **"Link to page"** (dal menu "/" e dal "+"): si
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Link to page"** (dal menu "/" e dal "+"): si
   sceglie una pagina dall'albero del Workspace, o cercandola per nome (lo
   stesso di "Move to"; anche le pagine delle righe dei database), e la riga
   diventa un **rimando** a lei: la sua icona con una **freccetta** e il nome
   sottolineato, sempre quelli di adesso. Toccandolo si apre la pagina (un
   database si apre a pagina intera). **La pagina non si sposta**: resta dov'è
   nell'albero, e questa non diventa sua madre
-- **[Nuova funzionalità]** Tenendo premuto il rimando: **"Open"**, **"Change
+- **[Nuova funzionalità]** **[📱 Mobile]** Tenendo premuto il rimando: **"Open"**, **"Change
   page"** (si sceglie un'altra pagina), "Duplicate" e "Delete" (toglie il
   rimando, non la pagina). Se la pagina finisce nel cestino il rimando lo
   dice ("In the trash") e non la apre; se viene eliminata per sempre diventa
   "Deleted page"
-- **[Nuova funzionalità]** **"Database - Full page"**: nasce un database che
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Database - Full page"**: nasce un database che
   **si apre subito a pagina intera**, e nella pagina resta il suo
   collegamento (l'icona della tabella e il nome), come un database dopo
   "Turn into page". Da "Turn into" il testo della riga diventa il nome del
   database
-- **[Modificato]** "Link to page" non è in "Turn into": il testo della riga
+- **[Modifica]** **[📱 Mobile]** "Link to page" non è in "Turn into": il testo della riga
   andrebbe perso
 - **[Progetto]** `BlockType.PAGE_MENTION`, con la pagina in
   `BlockAttrs.pageId` e non in `linkedPageId` (che costruisce l'albero);
@@ -4997,30 +5075,30 @@ Dalla stessa richiesta della v0.146, le due voci, parola per parola:
   "Untitled" con la tabella. Le pagine dell'utente e le righe di Main
   calendar sono come prima della prova
 
-### 🆕 v0.147 — 06/10/2026 · 10:08 — "Code": il codice col suo linguaggio e i suoi colori
+### 🆕 v0.92 — 06/10/2026 · 10:08 — "Code": il codice col suo linguaggio e i suoi colori
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 415 test
 passati; commit solo in locale)*
 
-Dalla stessa richiesta della v0.146, la voce del codice, parola per parola:
+Dalla stessa richiesta della v0.91, la voce del codice, parola per parola:
 > «Code (una finestrella che mi consente di scrivere del codice da
 > programmazione con la scelta di selezionare i più usati linguaggi di
 > programmazione come vedi nell'ottava foto)»
 
-- **[Nuova funzionalità]** **"Code"** (dal menu "/" e dal "+"): un
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Code"** (dal menu "/" e dal "+"): un
   **riquadro** col carattere a larghezza fissa. In alto a sinistra il
   **linguaggio** (di partenza JavaScript, come su Notion): toccandolo si
   apre l'elenco dei sessanta più usati, con la ricerca in cima e il segno
   accanto a quello scelto. In alto a destra il pulsante che **copia tutto il
   codice** ("Code copied")
-- **[Nuova funzionalità]** **Il codice si colora** secondo il linguaggio,
+- **[Nuova funzionalità]** **[📱 Mobile]** **Il codice si colora** secondo il linguaggio,
   coi colori dei temi "One" (scuro e chiaro): parole chiave viola, stringhe
   verdi, commenti grigi in corsivo, numeri arancioni, funzioni azzurre, tipi
   gialli. "Plain Text" e "Diff" restano senza colori
-- **[Nuova funzionalità]** Nel codice **l'Invio va sempre a capo dentro**, e
+- **[Nuova funzionalità]** **[📱 Mobile]** Nel codice **l'Invio va sempre a capo dentro**, e
   la tastiera non mette maiuscole e non corregge le parole. Mentre si scrive
   codice la barra non mostra "Aa" né il pennello, e i sei puntini non hanno
   "Color": i colori sono quelli del linguaggio. Hanno invece "Delete"
-- **[Nuova funzionalità]** **Backspace in un codice vuoto** lo fa tornare una
+- **[Nuova funzionalità]** **[📱 Mobile]** **Backspace in un codice vuoto** lo fa tornare una
   riga di testo; **"Turn into"** verso il testo fa di ogni riga di codice una
   riga di testo
 - **[Progetto]** `CodeBlock.kt` (il blocco e la scelta del linguaggio),
@@ -5034,7 +5112,7 @@ Dalla stessa richiesta della v0.146, la voce del codice, parola per parola:
   un codice vuoto lo fa tornare testo. Le righe di Main calendar sono come
   prima della prova
 
-### 🆕 v0.146 — 06/10/2026 · 09:58 — "Callout" e "Quote": il riquadro con l'icona e la citazione
+### 🆕 v0.91 — 06/10/2026 · 09:58 — "Callout" e "Quote": il riquadro con l'icona e la citazione
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 410 test
 passati; commit solo in locale)*
 
@@ -5080,35 +5158,35 @@ da link e l'anteprima dei segnalibri serve di nuovo) la risposta è stata
 Le voci si costruiscono a gruppi, ognuno con la sua versione: questa è la
 prima, **Callout** e **Quote**.
 
-- **[Nuova funzionalità]** **"Callout"** (dal menu "/" e dal "+"): un
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Callout"** (dal menu "/" e dal "+"): un
   **riquadro** con lo sfondo grigio più chiaro della pagina, l'icona a
   sinistra (di partenza la lampadina 💡, come su Notion) e il testo accanto.
   **L'Invio va a capo dentro il riquadro**, che si allunga; un Invio su una
   riga vuota in fondo esce: la riga vuota se ne va e sotto nasce una riga di
   testo. Il testo si formatta come quello delle altre righe (grassetto,
   colori, corpo)
-- **[Nuova funzionalità]** **L'icona del riquadro**, toccandola (o dai sei
+- **[Nuova funzionalità]** **[📱 Mobile]** **L'icona del riquadro**, toccandola (o dai sei
   puntini, "Edit icon"): le emoji della famiglia "Callout" del selettore di
   Notion (💡 👉 ☝️ 👌 🔑 🚧 ⚠️ 🔥 📌 ✂️ ❓ 🚫 ⛔ ⏰ ☎️ 🚨 ♻️ ✅ 🔒 📎 📖 🗣️ ➡️ 📢
   🛠️ ⚙️), "Other emoji" per scriverne una qualsiasi con la tastiera,
   **"Upload"** per un'immagine dal telefono come per le icone delle pagine, e
   "Remove" per lasciarlo senza icona
-- **[Nuova funzionalità]** **Lo sfondo del riquadro**, dai sei puntini
+- **[Nuova funzionalità]** **[📱 Mobile]** **Lo sfondo del riquadro**, dai sei puntini
   ("Background color"): lo stesso selettore dei colori di tutta l'app; "No
   color" rimette il grigio
-- **[Nuova funzionalità]** **"Quote"**: la **riga verticale spessa** a
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Quote"**: la **riga verticale spessa** a
   sinistra, alta quanto il testo, e il suggerimento grigio "Empty quote"
   finché è vuota. Anche qui l'Invio va a capo dentro e quello su una riga
   vuota in fondo esce
-- **[Nuova funzionalità]** **Backspace a inizio riquadro o citazione** li fa
+- **[Nuova funzionalità]** **[📱 Mobile]** **Backspace a inizio riquadro o citazione** li fa
   tornare testo normale, come su Notion, **con tutte le loro righe**: ogni
   riga diventa una riga di testo (lo stesso con "Turn into" verso un altro
   tipo). Un altro backspace la unisce alla riga sopra
-- **[Nuova funzionalità]** Nei **sei puntini** di riquadro e citazione, oltre
+- **[Nuova funzionalità]** **[📱 Mobile]** Nei **sei puntini** di riquadro e citazione, oltre
   alle voci delle righe di testo, **"Delete"**: sono scatole a sé
-- **[Modificato]** Toccando sotto un riquadro o una citazione in fondo alla
+- **[Modifica]** **[📱 Mobile]** Toccando sotto un riquadro o una citazione in fondo alla
   pagina si scrive su una riga nuova, invece di rientrarci dentro
-- **[Modificato]** **L'app può di nuovo usare Internet** (permesso tolto il
+- **[Modifica]** **[📱 Mobile]** **L'app può di nuovo usare Internet** (permesso tolto il
   25/09/2026): servirà ai video presi da un link e alle anteprime dei
   segnalibri delle prossime versioni. Le note restano sul telefono
 - **[Progetto]** Database alla **versione 52**: `blocks.attrsJson`, le voci
@@ -5131,7 +5209,7 @@ prima, **Callout** e **Quote**.
   preso per un Invio. Corretto. Il database del telefono è passato alla 52
   senza perdere niente
 
-### 🔧 v0.145.1 — 06/10/2026 · 09:26 — "/database" sotto un divisore non chiude più l'app
+### 🔧 v0.90.0.1 — 06/10/2026 · 09:26 — "/database" sotto un divisore non chiude più l'app
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 404 test
 passati; commit solo in locale)*
 
@@ -5141,7 +5219,7 @@ L'utente, parola per parola:
 > il database è stato creato, ma l'app è crashata. È per caso quel bug di
 > cui mi hai parlato ieri?»
 
-- **[Bug]** Sì, era il crash del 03/10/2026 alle 19:31: il database
+- **[Bug fix]** **[📱 Mobile]** Sì, era il crash del 03/10/2026 alle 19:31: il database
   "Foreign languages" di never_underestimate_feelings è nato in quello
   stesso secondo. Una riga sola sotto un divisore (o sotto un database) è
   un gruppo di testo tutto suo; scegliendo **"Database - Inline"** (o
@@ -5159,14 +5237,14 @@ L'utente, parola per parola:
   già faceva "Linked view of data source". Il crash dipende dalla tastiera
   vera e non si riproduce nei test sul PC
 - Verificato sul telefono, in una riga di prova di Main calendar (poi
-  tolta): con la v0.145 i passi dell'utente (database, "Add below",
+  tolta): con la v0.90 i passi dell'utente (database, "Add below",
   "/divider", "/database" sotto il divisore, "Database - Inline") hanno
   chiuso l'app con lo stesso errore del 03/10; con la correzione, gli
   stessi passi creano il database senza crash. Provati anche "/table" e
   "/page" su una riga sola fra due isole: niente crash. Le righe di Main
   calendar sono come prima della prova
 
-### 🆕 v0.145 — 06/10/2026 · 09:13 — "Title position": il titolo sotto l'icona, accanto o nascosto
+### 🆕 v0.90 — 06/10/2026 · 09:13 — "Title position": il titolo sotto l'icona, accanto o nascosto
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 404 test
 passati; commit solo in locale)*
 
@@ -5186,7 +5264,7 @@ cover" in cima ai tre puntini sempre o solo col titolo accanto?):
 
 > «Sempre nei tre puntini»
 
-- **[Nuova funzionalità]** In **Settings**, sopra "Animations", la voce
+- **[Nuova funzionalità]** **[📱 Mobile]** In **Settings**, sopra "Animations", la voce
   **"Title position"**, che vale per tutte le pagine insieme, anche quella
   del menu principale: **Below the icon** (come prima, ed è la scelta di
   partenza), **Next to the icon** (il titolo a destra dell'icona, sulla
@@ -5194,7 +5272,7 @@ cover" in cima ai tre puntini sempre o solo col titolo accanto?):
   non si vede; la pagina si rinomina con "Rename" dal menu del suo blocco
   nella pagina madre o, per una riga, dalla cella del database). Le
   pagine dei quaderni, che non hanno icona, tengono il titolo dov'è
-- **[Modificato]** **"Add cover"** non sta più accanto all'icona: è la
+- **[Modifica]** **[📱 Mobile]** **"Add cover"** non sta più accanto all'icona: è la
   prima voce dei **tre puntini** di ogni pagina, sempre, qualunque sia la
   posizione del titolo. Non c'è quando la pagina ha già una copertina (si
   cambia toccandola), nel cestino e nelle pagine dei quaderni
@@ -5211,7 +5289,7 @@ cover" in cima ai tre puntini sempre o solo col titolo accanto?):
   dalla pagina della riga. Poi rimesso "Below the icon" e tolta la riga di
   prova: le righe di Main calendar sono come prima della prova
 
-### 🆕 v0.144 — 05/10/2026 · 22:58 — Il divisore tenuto premuto: "Add above", "Add below" e "Delete"
+### ✏️ v0.89.1 — 05/10/2026 · 22:58 — Il divisore tenuto premuto: "Add above", "Add below" e "Delete"
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 403 test
 passati; commit solo in locale)*
 
@@ -5222,14 +5300,14 @@ L'utente, parola per parola:
 > above, Add below e Delete. Tutte le altre, naturalmente essendo non
 > coerenti con un divider, non le mettere»
 
-- **[Nuova funzionalità]** Tenendo premuto un **divisore** si apre il menu
+- **[Modifica]** **[📱 Mobile]** Tenendo premuto un **divisore** si apre il menu
   dei blocchi (quello dei sei puntini), col titolo "Divider" e solo tre
   voci: **Add above** e **Add below** (una riga vuota sopra o sotto, col
   cursore dentro) e **Delete** (lo toglie subito; Annulla lo rimette).
   Prima il tocco lungo chiedeva soltanto "Delete this divider?". In una
   pagina bloccata il tocco lungo non fa niente, come per gli altri
   blocchi
-- **[Rimosso]** La domanda "Delete this divider?"
+- **[Rimosso]** **[📱 Mobile]** La domanda "Delete this divider?"
 - **[Progetto]** `DividerBlockContent(onLongPress)` apre `BlockActionsHost`,
   che per un divisore mostra `DividerBlockMenu`. `AddLineTest`: un test in
   più (una riga sopra e una sotto il divisore, e "Delete" che toglie solo
@@ -5242,7 +5320,7 @@ L'utente, parola per parola:
   prova il titolo diceva "Text": corretto. Le righe di Main calendar sono
   come prima della prova
 
-### 🆕 v0.143 — 05/10/2026 · 22:48 — Gli ultimi dieci colori usati, sotto il campo Hex
+### 🆕 v0.89 — 05/10/2026 · 22:48 — Gli ultimi dieci colori usati, sotto il campo Hex
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 402 test
 passati; commit solo in locale)*
 
@@ -5250,7 +5328,7 @@ L'utente, parola per parola:
 > «Sotto il box dove scrivo il codice esadecimale del selettore del
 > colore, OVUNQUE, mettici gli ultimi dieci colori usati»
 
-- **[Nuova funzionalità]** Nel selettore del colore, sotto il campo
+- **[Nuova funzionalità]** **[📱 Mobile]** Nel selettore del colore, sotto il campo
   **Hex**, ci sono i **"Recent colors"**: gli ultimi dieci colori
   applicati, il più recente per primo, in una fila di tondi. Toccandone
   uno il selettore va su quel colore (si applica con "Apply", come gli
@@ -5276,7 +5354,7 @@ L'utente, parola per parola:
   prova restano fra i recenti. Nel database è cambiata solo l'ora di
   ultima modifica della riga di prova
 
-### 🆕 v0.142 — 05/10/2026 · 22:27 — "Move to database": prima di spostare, il nome della pagina nuova
+### ✏️ v0.88.1 — 05/10/2026 · 22:27 — "Move to database": prima di spostare, il nome della pagina nuova
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 400 test
 passati; commit solo in locale)*
 
@@ -5288,7 +5366,7 @@ L'utente, parola per parola:
 > prima di completare lo spostamento, di rinominare la nuova pagina nel
 > quale ci sarà quella pagina o quel database che ho spostato»
 
-- **[Nuova funzionalità]** In "Move to database", scelto il database,
+- **[Modifica]** **[📱 Mobile]** In "Move to database", scelto il database,
   compare **"Name of the new page"**: il nome della pagina nuova, già
   scritto (quello di adesso) e tutto selezionato, con sopra cosa
   succederà. "Move" sposta, "Cancel" torna alla scelta del database
@@ -5318,7 +5396,7 @@ L'utente, parola per parola:
   Tolte poi le righe di prova: le righe di Main calendar sono identiche a
   prima della prova
 
-### 🔧 v0.141.1 — 05/10/2026 · 22:15 — Backspace sulla riga vuota sotto un divisore, e "Search databases"
+### 🔧 v0.88.0.1 — 05/10/2026 · 22:15 — Backspace sulla riga vuota sotto un divisore, e "Search databases"
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 397 test
 passati; commit solo in locale)*
 
@@ -5328,11 +5406,11 @@ L'utente, parola per parola:
 > nulla. Fai sì che io possa cancellare il testo e poi si toglie la
 > tastiera, perché il divider non può essere focussato»
 
-(E prima, «Sì falle»: le cose rimaste della v0.141 — provare sul
+(E prima, «Sì falle»: le cose rimaste della v0.88 — provare sul
 telefono lo spostamento di un database, togliere le righe di prova, la
 scritta della ricerca.)
 
-- **[Bug fix]** Su una **riga vuota subito sotto un divisore**, senza una
+- **[Bug fix]** **[📱 Mobile]** Su una **riga vuota subito sotto un divisore**, senza una
   riga di testo sotto di lei (in fondo alla pagina, o con sotto una
   tabella, un database…), il Backspace non faceva niente. Ora **la riga
   se ne va e la tastiera si chiude**: il divisore non si può scrivere, e
@@ -5340,7 +5418,7 @@ scritta della ricerca.)
   Com'era: con una riga di testo sotto, la riga vuota se ne va e il
   cursore sale su quella; su una riga col testo il primo Backspace
   "prende" il divisore e il secondo lo toglie
-- **[Bug fix]** In "Move to database" il campo di ricerca diceva "Search
+- **[Bug fix]** **[📱 Mobile]** In "Move to database" il campo di ricerca diceva "Search
   pages", ma cerca database: ora dice **"Search databases"**
 - **[Progetto]** `BackspaceOutcome.REMOVED_CLOSE_KEYBOARD`: il campo lascia
   il fuoco e chiude la tastiera prima che la riga sparisca (un campo
@@ -5351,7 +5429,7 @@ scritta della ricerca.)
 - Verificato sul telefono, in una riga di prova di Main calendar
   ("Contenitore"): inserito un divisore, sotto la riga vuota col cursore,
   Backspace — la riga è sparita, il divisore è rimasto, la tastiera si è
-  chiusa, nessun crash. Poi la prova che mancava della v0.141: un
+  chiusa, nessun crash. Poi la prova che mancava della v0.88: un
   database creato lì dentro, dal menu del blocco "Move to database" (col
   campo "Search databases") → Main calendar: è nata una riga nuova, e la
   sua pagina mostra dentro il database aperto; da "Contenitore" è
@@ -5359,9 +5437,9 @@ scritta della ricerca.)
   quella del database); le righe "Untitled" e "SaaS" di Main calendar,
   nate alle 18:25 e 18:26, non sono mie e sono rimaste com'erano
 
-### 🆕 v0.141 — 05/10/2026 · 18:20 — "Move to database": una pagina o un database diventa una pagina di un database
+### 🆕 v0.88 — 05/10/2026 · 18:20 — "Move to database": una pagina o un database diventa una pagina di un database
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno, per una
-pagina e — con la v0.141.1 — per un database; 395 test passati; commit
+pagina e — con la v0.88.0.1 — per un database; 395 test passati; commit
 solo in locale)*
 
 L'utente, parola per parola:
@@ -5369,7 +5447,7 @@ L'utente, parola per parola:
 > pagina o un database complesso in un database, e di ricrearlo come se
 > fosse una pagina aggiunta a quel database»
 
-- **[Nuova funzionalità]** **"Move to database"**, sotto "Move to": nei
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Move to database"**, sotto "Move to": nei
   tre puntini di una pagina e di un database, e nel menu di un
   collegamento a pagina o a database. Si apre l'albero delle pagine:
   **toccando un database lo si sceglie** (la freccia lo apre), le pagine
@@ -5397,9 +5475,9 @@ L'utente, parola per parola:
   dentro una sottopagina "Sotto"; dai tre puntini di "Sotto", "Move to
   database" → Main calendar: "Sotto" è diventata l'ultima riga di Main
   calendar, e da "Contenitore" il collegamento è sparito. Lo spostamento
-  di un database l'ho provato col telefono dopo, con la v0.141.1 (vedi lì)
+  di un database l'ho provato col telefono dopo, con la v0.88.0.1 (vedi lì)
 
-### 🔧 v0.140.1 — 05/10/2026 · 18:06 — Rinominare un tag: la tastiera non si chiude più alla prima lettera
+### 🔧 v0.87.0.1 — 05/10/2026 · 18:06 — Rinominare un tag: la tastiera non si chiude più alla prima lettera
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 389 test
 passati; commit solo in locale)*
 
@@ -5408,7 +5486,7 @@ L'utente, parola per parola:
 > nel rename di un select di un database, la tastiera scompare subito, ma
 > quando lo scrivo per la prima volta non dà problemi»
 
-- **[Bug fix]** Nella modifica di un tag (Select e Multi-select), scrivendo
+- **[Bug fix]** **[📱 Mobile]** Nella modifica di un tag (Select e Multi-select), scrivendo
   nel nome la tastiera si chiudeva alla prima lettera o cifra. Il motivo:
   ogni lettera rinominava subito il tag, e l'elenco dei tag arriva dal
   database un attimo dopo; in quell'attimo la modifica cercava il tag col
@@ -5436,7 +5514,7 @@ L'utente, parola per parola:
   scrivendo "A" e chiudendo con "indietro" è diventato "Prova12A". Nel
   database è cambiata solo l'ora di ultima modifica della riga di prova
 
-### 🆕 v0.140 — 05/10/2026 · 17:57 — Una seconda regola di ordinamento nei database
+### 🆕 v0.87 — 05/10/2026 · 17:57 — Una seconda regola di ordinamento nei database
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno, dopo il
 backup del database; 386 test passati; commit solo in locale)*
 
@@ -5445,7 +5523,7 @@ L'utente, parola per parola:
 > un'altra proprietà dei database. Ovviamente rispettando prima quella che
 > è già stata inserita e poi quella nuova»
 
-- **[Nuova funzionalità]** Nella finestra **Sort** di un database, sotto
+- **[Nuova funzionalità]** **[📱 Mobile]** Nella finestra **Sort** di un database, sotto
   la regola che c'è, ora c'è **"Then sort by"**: con "Add a second sort"
   si sceglie un'altra proprietà (o il nome), e **conta solo fra le righe
   che per la prima sono pari**. Esempio: per piattaforma, e dentro ogni
@@ -5481,7 +5559,7 @@ L'utente, parola per parola:
   il database è come prima (cambiata solo l'ora di ultima modifica della
   vista di Main calendar)
 
-### 🆕 v0.139 — 05/10/2026 · 17:40 — Il colore dei tag dallo spettro, come in tutti gli altri posti
+### ✏️ v0.86.4 — 05/10/2026 · 17:40 — Il colore dei tag dallo spettro, come in tutti gli altri posti
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 381 test
 passati; commit solo in locale)*
 
@@ -5490,7 +5568,7 @@ L'utente, parola per parola:
 > database ci sia lo stesso spettro di colori che c'è in tutti gli altri
 > posti»
 
-- **[Nuova funzionalità]** Nella modifica di un tag (Select e
+- **[Modifica]** **[📱 Mobile]** Nella modifica di un tag (Select e
   Multi-select, i tre puntini accanto al tag) l'elenco dei dieci colori
   di Notion è diventato una riga **Color**, col quadratino del colore e
   il suo codice: toccandola si apre **lo stesso selettore** del testo,
@@ -5498,7 +5576,7 @@ L'utente, parola per parola:
   tinta e la luminosità, Rosso/Verde/Blu ed Hex. "Default" torna al
   grigio dei tag di Notion. I tag nuovi prendono ancora, a giro, i dieci
   colori di Notion
-- **[Nuova funzionalità]** La scritta di un tag è **nera sui colori
+- **[Modifica]** **[📱 Mobile]** La scritta di un tag è **nera sui colori
   chiari** (un giallo acceso, per esempio), bianca sugli altri: la stessa
   regola delle celle colorate. Prima era sempre bianca, che coi dieci
   colori scuri di Notion andava bene
@@ -5514,7 +5592,7 @@ L'utente, parola per parola:
   nella modifica e nella tabella. Nel database è cambiata solo l'ora di
   ultima modifica della riga di prova
 
-### 🆕 v0.138 — 05/10/2026 · 17:30 — Le notifiche tutte in Settings, e fra i suoni anche le suonerie
+### ✏️ v0.86.3 — 05/10/2026 · 17:30 — Le notifiche tutte in Settings, e fra i suoni anche le suonerie
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 378 test
 passati; commit solo in locale)*
 
@@ -5523,16 +5601,16 @@ L'utente, parola per parola:
 > Toglila nella sidebar e metti quello che hai messo di nuovo in Settings.
 > Poi, tra i suoni delle notifiche, metti anche le Ringtones»
 
-- **[Rimosso]** La voce **Notifications** della barra laterale, e la sua
-  pagina (nate con la v0.133)
-- **[Nuova funzionalità]** In **Settings** la sezione che si chiamava
+- **[Rimosso]** **[📱 Mobile]** La voce **Notifications** della barra laterale, e la sua
+  pagina (nate con la v0.85)
+- **[Modifica]** **[📱 Mobile]** In **Settings** la sezione che si chiamava
   "App sounds" (suono e notifiche spente) ora si chiama **Notifications**
   e ha tutto quello che c'era nella pagina: il suono, **Vibration**,
   **Priority**, **App icon badge**, **Send a test notification**, "Turn
   off notifications" e "Turn off for a while", e in cima, se Android le ha
   spente per l'app, la riga per riaccenderle. Sotto, la nota su cosa
   valgono (timer e pomodoro suonano sempre)
-- **[Nuova funzionalità]** Nella scelta del suono delle notifiche, oltre ai
+- **[Modifica]** **[📱 Mobile]** Nella scelta del suono delle notifiche, oltre ai
   suoni di notifica (la voce ora si chiama "Notification sounds (default
   and downloaded)", prima "Phone sounds") ci sono le **suonerie**:
   **"Ringtones (default and downloaded)"** apre l'elenco delle suonerie
@@ -5554,7 +5632,7 @@ L'utente, parola per parola:
   quelle di serie. Chiuso senza sceglierne nessuna: il suono resta quello
   predefinito
 
-### 🆕 v0.137 — 05/10/2026 · 17:20 — La vista List senza le linee fra le righe
+### ✏️ v0.86.2 — 05/10/2026 · 17:20 — La vista List senza le linee fra le righe
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 375 test
 passati; commit solo in locale)*
 
@@ -5562,7 +5640,7 @@ L'utente, parola per parola (con l'immagine di una vista List di Notion):
 > «Nella visualizzazione List dei database, togli le righe orizzontali tra
 > una riga e l'altra»
 
-- **[Rimosso]** Nella vista **List** dei database non c'è più la linea
+- **[Rimosso]** **[📱 Mobile]** Nella vista **List** dei database non c'è più la linea
   sotto ogni riga: le righe si separano con lo spazio, come su Notion.
   Il resto della riga (icona, nome, i primi valori a destra, tocco e
   tocco lungo) è com'era
@@ -5571,7 +5649,7 @@ L'utente, parola per parola (con l'immagine di una vista List di Notion):
   l'altra, senza linee. Main calendar è tornato sulla vista Table, e il
   database è identico a prima della prova
 
-### 🆕 v0.136 — 05/10/2026 · 17:14 — Le celle URL: un tocco apre il link, il tocco lungo lo modifica, copia o incolla
+### ✏️ v0.86.1 — 05/10/2026 · 17:14 — Le celle URL: un tocco apre il link, il tocco lungo lo modifica, copia o incolla
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 375 test
 passati; commit solo in locale)*
 
@@ -5583,7 +5661,7 @@ L'utente, parola per parola:
 E poi:
 > «Se vuoi fai tutte le prove che vuoi nel database in menu Main calendar»
 
-- **[Nuova funzionalità]** Una cella **URL** con un indirizzo dentro non si
+- **[Modifica]** **[📱 Mobile]** Una cella **URL** con un indirizzo dentro non si
   scrive più toccandola: è un link, sottolineato come quelli delle celle
   Page link
   - **un tocco lo apre** col browser del telefono. Scritto senza l'inizio
@@ -5619,7 +5697,7 @@ E poi:
   cella, che resta in vista. Nel database è cambiata solo l'ora di ultima
   modifica della riga di prova
 
-### 🆕 v0.135 — 30/09/2026 · 19:53 — Il Timer nella tendina: una notifica fissa col tempo che scorre
+### 🆕 v0.86 — 30/09/2026 · 19:53 — Il Timer nella tendina: una notifica fissa col tempo che scorre
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 370 test
 passati; commit solo in locale)*
 
@@ -5632,7 +5710,7 @@ L'utente, parola per parola:
 E poi:
 > «Vai vai scusa»
 
-- **[Nuova funzionalità]** Ogni timer partito dal widget Timer ha la sua
+- **[Nuova funzionalità]** **[📱 Mobile]** Ogni timer partito dal widget Timer ha la sua
   **notifica fissa** nella tendina, come il timer di Samsung:
   - **in corsa**: il conto alla rovescia accanto al nome dell'app, "Timer
     · 3 m" come titolo e sotto "Ends at 19:37"; i pulsanti **Pause** e
@@ -5652,7 +5730,7 @@ E poi:
   - un canale suo, **"Running timers"**, silenzioso: niente suono, niente
     vibrazione, niente pallino sull'icona. Con le notifiche spente
     dall'app ("Turn off notifications") non compare
-- **[Nuova funzionalità]** Su Android 16 la notifica chiede di essere una
+- **[Nuova funzionalità]** **[📱 Mobile]** Su Android 16 la notifica chiede di essere una
   **"live update"** (il permesso `POST_PROMOTED_NOTIFICATIONS`, "Show live
   updates"), e sul telefono Android la accetta: ha il segno
   `PROMOTED_ONGOING`. La pastiglia col tempo nella barra di stato e la Now
@@ -5683,9 +5761,9 @@ E poi:
   rotelle. Rifatte "Pause" e "Cancel" con l'APK finale. Stato dei widget
   e database uguali a prima della prova
 
-### 🆕 v0.134 — 30/09/2026 · 19:22 — La storia intera, da v0.1 a oggi: una versione per ogni richiesta
+### ✏️ v0.85.1 — 30/09/2026 · 19:22 — La storia intera, da v0.1 a oggi: una versione per ogni richiesta
 *(Claude Code sul PC; 361 test passati; verificato sul telefono lo stesso
-giorno, con la v0.135; commit solo in locale)*
+giorno, con la v0.86; commit solo in locale)*
 
 L'utente, parola per parola:
 > «Ho fatto caso ad una cosa: hai racchiuso tutto quello fatto prima di
@@ -5700,9 +5778,9 @@ L'utente, parola per parola:
 
 - **[Progetto]** README: la vecchia 📦 v0.1, un blocco solo con tutto il
   lavoro arrivato su GitHub il 24/09, è diventata **79 versioni**, dalla
-  **v0.1** alla **v0.63**, una per richiesta, in ordine di tempo; quelle
-  che c'erano già vengono dopo, rinumerate: dalla **v0.64** (era v0.2,
-  "Database — vista Gallery") alla **v0.133** (era v0.71), stesso ordine
+  **v0.1** alla **v0.40**, una per richiesta, in ordine di tempo; quelle
+  che c'erano già vengono dopo, rinumerate: dalla **v0.41** (era v0.2,
+  "Database — vista Gallery") alla **v0.85** (era v0.71), stesso ordine
   e stessi titoli. In tutto **166 versioni**. Non c'è più un "prima" e un
   "dopo" GitHub
   - **Da dove vengono l'ordine e le ore**: le conversazioni di Claude
@@ -5718,33 +5796,33 @@ L'utente, parola per parola:
   - **Le prime**, fatte in un'altra chat («Home») dall'8 al 18/09: delle
     loro richieste non c'è traccia. Quali fossero lo dice il README com'era
     il 18/09, letto in una di quelle conversazioni: sono le versioni dalla
-    v0.2 alla v0.6.2, con "fra l'8 e il 18/09/2026 · ora non registrata",
+    v0.1.1 alla v0.4.0.2, con "fra l'8 e il 18/09/2026 · ora non registrata",
     nell'ordine in cui le elencava. Due momenti si sanno dalle date dei
     file dell'archivio caricato su GitHub: **v0.1 "Nasce notE"**, l'8/09
-    alle 09:19 (i primi file del progetto), e **v0.7**, l'icona dalla foto
+    alle 09:19 (i primi file del progetto), e **v0.4.1**, l'icona dalla foto
     e il nome "notE", il 17/09 alle 22:37
   - Scritte adesso, perché prima non avevano una voce a sé: la riga della
-    v0.1 (cos'è notE, dalle prime righe del README) e quella della v0.11.1
+    v0.1 (cos'è notE, dalle prime righe del README) e quella della v0.6.0.1
     (il backspace che toglie un rientro per volta, già descritto nella
     voce del backspace)
   - Aggiornate l'introduzione della Cronologia (come si leggono numeri e
     ore), la "Regola di lavoro concordata" e la frase sulle sessioni in
-    cloud. Le versioni v0.131–v0.133 raccontano la numerazione di allora e
+    cloud. Le versioni v0.84–v0.85 raccontano la numerazione di allora e
     sono rimaste com'erano
 - **[Progetto]** App: le Patch Notes leggono anche "ora non registrata"
   (`UNKNOWN_TIME`); niente più 📦 (`PatchKind` ha solo versioni nuove e
   correzioni). `PatchNotesTest`: la prima versione è la v0.1 dell'8/09
   alle 09:19, quelle senza ora sono solo le prime, e dove l'ora c'è non
   torna mai indietro
-- Verificato sul telefono (alle 19:42, installata la v0.135; prima era
+- Verificato sul telefono (alle 19:42, installata la v0.86; prima era
   scollegato): Settings → Patch Notes, "Oldest first": in cima la v0.1
   "Nasce notE" 08/09/2026 · 09:19, poi le versioni dell'altra chat con
-  "fra l'8 e il 18/09/2026 · ora non registrata", la v0.7 del 17/09 alle
-  22:37 e dalla v0.8 (18/09 alle 21:19) quelle con la richiesta
+  "fra l'8 e il 18/09/2026 · ora non registrata", la v0.4.1 del 17/09 alle
+  22:37 e dalla v0.4.2 (18/09 alle 21:19) quelle con la richiesta
   dell'utente dentro, parola per parola; "Newest first": in cima la più
   recente
 
-### 🆕 v0.133 — 30/09/2026 · 18:55 — La pagina "Notifications": suono, vibrazione, priorità e pallino sull'icona
+### 🆕 v0.85 — 30/09/2026 · 18:55 — La pagina "Notifications": suono, vibrazione, priorità e pallino sull'icona
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 361 test
 passati; commit solo in locale)*
 
@@ -5765,7 +5843,7 @@ poi:
 > vedere la pagina o la riga appartenente alla notifica. Perdonami, ora che
 > ci penso non hanno senso le azioni»
 
-- **[Nuova funzionalità]** La voce **"Notifications"** della barra
+- **[Nuova funzionalità]** **[📱 Mobile]** La voce **"Notifications"** della barra
   laterale, spenta finora, apre la pagina delle notifiche:
   - **"Notification sound"**: "Phone sounds (default and downloaded)"
     apre l'elenco dei suoni del telefono — quelli di serie e quelli
@@ -5788,12 +5866,12 @@ poi:
   - Valgono per i promemoria di pagine e database ("/notification" e
     "Include notification"). **Timer e pomodoro** sono sveglie: suonano e
     compaiono sempre, com'erano (lo dice la nota in fondo alla pagina)
-- **[Nuova funzionalità]** **Toccando la notifica di una riga di un
+- **[Nuova funzionalità]** **[📱 Mobile]** **Toccando la notifica di una riga di un
   database semplice** si apre il database **con la scheda di quella riga**;
   prima si apriva solo il database. Il resto com'era: la notifica di una
   data di un database apre la pagina della riga, quella di una riga
   "/notification" la sua pagina
-- **[Rimosso]** Le azioni nel riquadro delle notifiche (Complete, Snooze,
+- **[Rimosso]** **[📱 Mobile]** Le azioni nel riquadro delle notifiche (Complete, Snooze,
   Open note, Archive, Delete) non ci sono: chieste e poi tolte
   dall'utente prima di essere fatte
 - **[Progetto]** Android non lascia cambiare priorità, vibrazione e
@@ -5821,7 +5899,7 @@ poi:
   High; suono, vibrazione e pallino mai cambiati; la riga "Esempio" non
   risulta modificata (ultima modifica sempre del 26/09)
 
-### 🆕 v0.132 — 30/09/2026 · 18:33 — Patch Notes: l'elenco dei titoli, e una pagina per ogni versione
+### ✏️ v0.84.1 — 30/09/2026 · 18:33 — Patch Notes: l'elenco dei titoli, e una pagina per ogni versione
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 356 test
 passati; commit solo in locale)*
 
@@ -5831,7 +5909,7 @@ L'utente, parola per parola:
 > Lascia icone, nome della versione, data e ora al titolo, poi apro la
 > pagina di quel titolo e mostrerà il testo ad esso appartenente»
 
-- **[Nuova funzionalità]** Settings → Patch Notes ora è **l'elenco dei
+- **[Modifica]** **[📱 Mobile]** Settings → Patch Notes ora è **l'elenco dei
   titoli**: per ogni versione l'emoji, il numero, il giorno e l'ora, il
   titolo e una freccia, uno sotto l'altro; in cima resta l'introduzione
   che spiega i numeri. **Toccando un titolo si apre la sua pagina**: in
@@ -5839,7 +5917,7 @@ L'utente, parola per parola:
   testo di quella versione — la richiesta, le modifiche, le verifiche —
   come nel README. Il nome della pagina, in alto, è il numero della
   versione
-- **[Nuova funzionalità]** Tornando indietro da una versione l'elenco
+- **[Modifica]** **[📱 Mobile]** Tornando indietro da una versione l'elenco
   **resta dov'era**; riparte dalla cima solo cambiando l'ordine ("Newest
   first" / "Oldest first", come prima)
 - **[Progetto]** `PatchNotesScreen` (l'elenco, `VersionRow`) e
@@ -5857,7 +5935,7 @@ L'utente, parola per parola:
   averla aperta); "Oldest first" riparte dalla cima con 📦 v0.1, "Newest
   first" con v0.69
 
-### 🆕 v0.131 — 30/09/2026 · 18:22 — Le Patch Notes: ogni voce una versione con giorno e ora, e Settings → Patch Notes
+### 🆕 v0.84 — 30/09/2026 · 18:22 — Le Patch Notes: ogni voce una versione con giorno e ora, e Settings → Patch Notes
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 354 test
 passati; commit solo in locale)*
 
@@ -5908,7 +5986,7 @@ L'utente, parola per parola:
     parola e le modifiche con le loro etichette. Aggiornate la "Regola di
     lavoro concordata" (ogni voce è una versione), la "Nota tecnica" e la
     "Struttura del progetto"
-- **[Nuova funzionalità]** **Settings → Patch Notes**, in fondo alle
+- **[Nuova funzionalità]** **[📱 Mobile]** **Settings → Patch Notes**, in fondo alle
   impostazioni, col numero della versione di adesso sotto. Apre la
   Cronologia **identica** a quella di questo README: il testo con
   grassetto, corsivo, barrato e codice, le richieste dell'utente come
@@ -5940,7 +6018,7 @@ L'utente, parola per parola:
   codice come qui; "Oldest first" porta in cima 📦 v0.1 coi suoi elenchi e
   i nomi del codice
 
-### 🆕 v0.130 — 30/09/2026 · 15:09 — Il time-blocking come Google Calendar: la modalità Day del calendario
+### 🆕 v0.83 — 30/09/2026 · 15:09 — Il time-blocking come Google Calendar: la modalità Day del calendario
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 347 test
 passati; commit solo in locale)*
 
@@ -5964,7 +6042,7 @@ Google Calendar. Poi ha precisato: «Intendevo di non considerare la
 situazione del programma Windows. Ho già risposto alle tue domande,
 continua.»
 
-- **[Nuova funzionalità]** Il calendario ha un quarto pulsante, **Day**,
+- **[Nuova funzionalità]** **[📱 Mobile]** Il calendario ha un quarto pulsante, **Day**,
   dopo Year, Month e Week: un giorno solo, con le ventiquattro ore una
   sotto l'altra divise in **quadratini da mezz'ora**. Ogni pagina con
   un'ora è un **blocco alto quanto dura**, del suo colore, col nome e le
@@ -5976,7 +6054,7 @@ continua.»
   in un riquadro che arriva al fondo dello schermo, i giorni col dito a
   destra e a sinistra (e con le frecce e Today, come sempre); le ore a
   sinistra restano ferme
-- **[Nuova funzionalità]** **Toccando un quadratino vuoto** si apre la
+- **[Nuova funzionalità]** **[📱 Mobile]** **Toccando un quadratino vuoto** si apre la
   finestra rapida della seconda foto: "Add title" con la tastiera già
   aperta, il giorno e le ore (mezz'ora dal quadratino toccato; si tocca il
   giorno o un'ora per cambiarli, con i selettori di Samsung della
@@ -5985,7 +6063,7 @@ continua.»
   suo quadratino, "(No title)" finché non ha un nome. Salvando nasce una
   pagina del database con quel nome, quella data e quel colore (la
   proprietà data si crea al volo se non c'è, come toccando un giorno)
-- **[Nuova funzionalità]** **"More options"** è la finestra della terza
+- **[Nuova funzionalità]** **[📱 Mobile]** **"More options"** è la finestra della terza
   foto: il nome; **"All day"**; inizio e fine, giorno e ora (spostando
   l'inizio la fine lo segue e l'evento dura quanto prima; una fine prima
   dell'inizio non si accetta); la **ripetizione** con le scelte di Google
@@ -5995,14 +6073,14 @@ continua.»
   Google Calendar (Tomato, Flamingo, Tangerine, Banana, Sage, Basil,
   Peacock, Blueberry, Lavender, Grape, Graphite) più "Default", il grigio
   di sempre
-- **[Nuova funzionalità]** **"Edit event"**: tenendo premuta una pagina
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Edit event"**: tenendo premuta una pagina
   nel calendario, in cima alle azioni, apre "More options" su di lei (per
   una che si ripete, su tutta la serie: è una pagina sola). Si scrive solo
   quello che cambia: salvata com'era, la pagina non risulta modificata.
   Toccare un blocco apre la sua pagina, come nelle altre viste
-- **[Nuova funzionalità]** Anche **le barre del mese e della settimana**
+- **[Nuova funzionalità]** **[📱 Mobile]** Anche **le barre del mese e della settimana**
   hanno il colore del loro evento
-- **[Bug fix]** Nella settimana (e nel mese) una pagina che si ripete più
+- **[Bug fix]** **[📱 Mobile]** Nella settimana (e nel mese) una pagina che si ripete più
   volte nella stessa settimana — ogni giorno, per esempio — **compariva una
   volta sola**, l'ultima, e le altre finivano nel "+N": le volte della
   stessa pagina stavano nella stessa riga e si coprivano. Ora ci sono
@@ -6019,7 +6097,7 @@ continua.»
   `ui/screen/CalendarDay.kt` (la griglia, la finestra rapida, "More
   options"); `DatabaseViewModel.saveEvent`. Test nuovi: `CalendarEventTest`
   (16), `EventSaveTest` (4), `MigrationTest.from49NoRowHasAnEventColor`
-- **[Bug fix]** (trovato provando, prima del commit) Scorrendo i giorni
+- **[Bug fix]** **[📱 Mobile]** (trovato provando, prima del commit) Scorrendo i giorni
   col dito il giorno si fermava a una ventina di pixel dal bordo, con un
   filo del giorno accanto. Il pager contava duecentomila pagine: a
   centoventi milioni di pixel i suoi numeri con la virgola vanno a passi
@@ -6042,7 +6120,7 @@ continua.»
   data di modifica. Il calendario "Untitled" della stessa pagina,
   dell'utente, non è stato toccato
 
-### 🔧 v0.129.1 — 30/09/2026 · 13:48 — "Wrap in the cell": vanno a capo anche i titoli delle colonne
+### 🔧 v0.82.1.1 — 30/09/2026 · 13:48 — "Wrap in the cell": vanno a capo anche i titoli delle colonne
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 326 test
 passati; commit solo in locale)*
 
@@ -6052,7 +6130,7 @@ parola per parola:
 > «Continua a non funzionare quello che dicevo io dell'andare a capo nella
 > stessa cella. Deve fare una cosa del genere che vedi nella foto»
 
-- **[Bug fix]** Con "Wrap in the cell" andava a capo il testo delle celle
+- **[Bug fix]** **[📱 Mobile]** Con "Wrap in the cell" andava a capo il testo delle celle
   ma non quello dei **titoli delle colonne**, che restava su una riga e si
   perdeva oltre il bordo: ora va a capo anche lui, e la riga dei titoli si
   alza quanto il più lungo, con le linee fra le colonne fino in fondo
@@ -6070,7 +6148,7 @@ parola per parola:
   database uguale, tranne "Last edited" di "Esempio nuovo" e le date di
   modifica
 
-### 🆕 v0.129 — 30/09/2026 · 13:34 — "Color columns": la bacheca colorata come su Notion
+### ✏️ v0.82.1 — 30/09/2026 · 13:34 — "Color columns": la bacheca colorata come su Notion
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 326 test
 passati; commit solo in locale)*
 
@@ -6078,7 +6156,7 @@ L'utente, con la foto di una bacheca di Notion (colonne "1", "2", "3" e "No
 Select", ognuna tinta del colore del suo tag), parola per parola:
 > «Io intendevo un qualcosa del genere per i colori del Board»
 
-- **[Nuova funzionalità]** "Color cards" diventa "**Color columns**" e fa
+- **[Modifica]** **[📱 Mobile]** "Color cards" diventa "**Color columns**" e fa
   come Notion: acceso, **la colonna intera** ha un velo del colore del suo
   tag; in cima c'è il tag stesso (la pastiglia colorata) e il numero delle
   pagine nel suo colore; le schede hanno un velo più carico e un bordino,
@@ -6097,7 +6175,7 @@ Select", ognuna tinta del colore del suo tag), parola per parola:
   nuovo su PS5, "Color columns" spento e vista rimessa in Table: database
   uguale, tranne la data di modifica della vista
 
-### 🆕 v0.128 — 30/09/2026 · 13:23 — "Color cards": le schede della bacheca del colore del loro tag
+### 🆕 v0.82 — 30/09/2026 · 13:23 — "Color cards": le schede della bacheca del colore del loro tag
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 326 test
 passati; commit solo in locale)*
 
@@ -6106,7 +6184,7 @@ L'utente, parola per parola:
 > rettangolini delle pagine dello stesso colore di quello assegnato al
 > Select usato per la board»
 
-- **[Nuova funzionalità]** Nelle impostazioni di una bacheca, sotto "Group
+- **[Nuova funzionalità]** **[📱 Mobile]** Nelle impostazioni di una bacheca, sotto "Group
   by", l'interruttore "**Color cards**" (per vista, spento di suo). Acceso,
   ogni scheda prende il colore del tag della sua colonna — quello scelto
   per il Select con cui la bacheca è raggruppata — e il nome e le altre
@@ -6127,7 +6205,7 @@ L'utente, parola per parola:
   cards" spento e vista rimessa in Table: database uguale alla copia,
   tranne la colonna nuova e la data di modifica della vista
 
-### 🆕 v0.127 — 30/09/2026 · 10:49 — "Long text": tre puntini, colonna allargata o a capo; il riquadro grigio centrato
+### ✏️ v0.81.1 — 30/09/2026 · 10:49 — "Long text": tre puntini, colonna allargata o a capo; il riquadro grigio centrato
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 324 test
 passati; commit solo in locale)*
 
@@ -6142,7 +6220,7 @@ L'utente, parola per parola:
 >   fossero più righe. In questa situazione, l'altezza della riga deve
 >   essere per tutta la riga, non solo per la cella dove si trova il testo»
 
-- **[Nuova funzionalità]** L'interruttore "Wrap cells" diventa la voce
+- **[Modifica]** **[📱 Mobile]** L'interruttore "Wrap cells" diventa la voce
   "**Long text**" con tre scelte, nell'ordine chiesto: "**Show …**" (tre
   puntini, di suo; toccando la cella compare il testo intero), "**Widen
   the column**" (ogni colonna si allarga quanto basta perché si legga
@@ -6150,7 +6228,7 @@ L'utente, parola per parola:
   larga resta come la si è fatta) e "**Wrap in the cell**" (il testo va a
   capo dentro la cella, e **tutta la riga** si allunga: le altre celle
   restano a metà della riga più alta)
-- **[Bug fix]** Il riquadro grigio col testo intero è **centrato sulla
+- **[Bug fix]** **[📱 Mobile]** Il riquadro grigio col testo intero è **centrato sulla
   cella**, in orizzontale e in verticale, proprio sopra di lei (prima
   partiva dal suo angolo in alto a sinistra); per il nome, centrato su
   tutta la cella, OPEN compreso
@@ -6168,7 +6246,7 @@ L'utente, parola per parola:
   …" e "Sdrogo" rimesso dal riquadro: database uguale, tranne "Last edited"
   della riga e la data di modifica della vista
 
-### 🆕 v0.126 — 30/09/2026 · 10:35 — "Wrap cells", i tre puntini e il testo intero di una cella
+### 🆕 v0.81 — 30/09/2026 · 10:35 — "Wrap cells", i tre puntini e il testo intero di una cella
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 322 test
 passati; commit solo in locale)*
 
@@ -6190,14 +6268,14 @@ L'utente, parola per parola:
 > quali io posso scrivere qualsiasi cosa, avranno un minimo di larghezza
 > meno del quale non si può rimpicciolire»
 
-- **[Nuova funzionalità]** Nelle impostazioni di una tabella, sotto
+- **[Nuova funzionalità]** **[📱 Mobile]** Nelle impostazioni di una tabella, sotto
   "Group", l'interruttore "**Wrap cells**" (per vista, come le larghezze).
   Acceso: il testo delle celle va a capo e **la riga si allunga** quanto la
   sua cella più alta (nome, testo, numero, collegamento, email, telefono,
   data, durata, "Page link", cella colorata, data di creazione e modifica;
   i tag vanno a capo uno sotto l'altro); le linee fra le colonne seguono
   tutta la riga. Scrivendo in una cella, il testo va a capo lì dentro
-- **[Nuova funzionalità]** Spento (di suo): quello che non ci sta finisce
+- **[Nuova funzionalità]** **[📱 Mobile]** Spento (di suo): quello che non ci sta finisce
   coi **tre puntini**. Toccando una cella di testo, di numero, di
   collegamento, email o telefono, o il nome di una riga, col testo tagliato,
   compare **nello stesso punto un riquadro grigio col testo intero**, dove
@@ -6205,7 +6283,7 @@ L'utente, parola per parola:
   fuori o col gesto indietro. Se il testo ci sta, si scrive nella cella
   come prima (col cursore in fondo). La data, la durata e "Page link"
   tagliate si aprono col loro tocco di sempre, che le mostra intere
-- **[Nuova funzionalità]** **Larghezza minima** delle colonne in cui si
+- **[Nuova funzionalità]** **[📱 Mobile]** **Larghezza minima** delle colonne in cui si
   scrive: 80 per testo, numero, collegamento, email, telefono e cella
   colorata, 120 per Name (c'è OPEN). Né trascinando il segnalino né con "Fit
   to content" si va sotto; le misure salvate prima, più strette, si
@@ -6228,7 +6306,7 @@ L'utente, parola per parola:
   rimesso com'era: database uguale, tranne la colonna nuova e "Last
   edited" della riga "Esempio nuovo"
 
-### 🆕 v0.125 — 30/09/2026 · 10:18 — Ritoccando un giorno col pallino, il pallino se ne va
+### ✏️ v0.80.1 — 30/09/2026 · 10:18 — Ritoccando un giorno col pallino, il pallino se ne va
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 316 test
 passati; commit solo in locale)*
 
@@ -6237,7 +6315,7 @@ L'utente, parola per parola:
 > ritocco un giorno che ho toccato e che è visualizzato con un pallino
 > arancione, mi toglie il pallino»
 
-- **[Nuova funzionalità]** Nel calendario della proprietà Date, toccando
+- **[Modifica]** **[📱 Mobile]** Nel calendario della proprietà Date, toccando
   di nuovo il giorno scelto (col pallino arancione) il pallino se ne va.
   Con "End date" acceso: ritoccando la fine resta solo l'inizio;
   ritoccando l'inizio resta solo la fine. Senza più niente scelto, "Done"
@@ -6249,7 +6327,7 @@ L'utente, parola per parola:
   periodo 15-18, ritoccando il 18 resta il 15, ritoccando il 15 resta il
   18. Poi "Cancel": database identico
 
-### 🆕 v0.124 — 30/09/2026 · 10:11 — "Today" nel calendario delle date
+### 🆕 v0.80 — 30/09/2026 · 10:11 — "Today" nel calendario delle date
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 313 test
 passati; commit solo in locale)*
 
@@ -6257,7 +6335,7 @@ L'utente, parola per parola:
 > «Nella selezione della data del calendario nella proprietà Date, mettimi
 > Today, che mi porta al giorno corrente»
 
-- **[Nuova funzionalità]** In alto a destra del calendario, accanto alle
+- **[Nuova funzionalità]** **[📱 Mobile]** In alto a destra del calendario, accanto alle
   frecce del mese, c'è "**Today**", in arancione come il numero di oggi:
   riporta il calendario al mese di oggi, anche dalle rotelle di giorno,
   mese e anno (che si chiudono). Non sceglie il giorno: lo si tocca come
@@ -6270,7 +6348,7 @@ L'utente, parola per parola:
   rotelle portate al 2021, "Today" chiude le rotelle e torna a settembre
   2026. Poi "Cancel": database identico
 
-### 🆕 v0.123 — 30/09/2026 · 09:04 — In una pagina vuota il cursore va sulla prima riga
+### ✏️ v0.79.1 — 30/09/2026 · 09:04 — In una pagina vuota il cursore va sulla prima riga
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 313 test
 passati; commit solo in locale)*
 
@@ -6280,7 +6358,7 @@ L'utente, parola per parola:
 > mi fa creare il text cursor lì in fondo, cosicché non ci sia un spazio
 > vuoto sopra inutilissimo»
 
-- **[Nuova funzionalità]** Le **righe vuote in fondo alla pagina** (i
+- **[Modifica]** **[📱 Mobile]** Le **righe vuote in fondo alla pagina** (i
   paragrafi senza testo dopo l'ultima cosa scritta; in una pagina vuota,
   tutte) non prendono più il cursore dove cade il dito: toccandone una, o
   toccando sotto l'ultima riga, il cursore va sulla **prima** di loro. In
@@ -6303,14 +6381,14 @@ L'utente, parola per parola:
   "V" va sulla seconda, subito sotto. Poi la pagina rimessa com'era, una
   riga vuota: database uguale, tranne 3 voci di "Updates" di quella pagina
 
-### 🔧 v0.122.1 — 30/09/2026 · 08:44 — Il corpo del titolo di un toggle ora cambia
+### 🔧 v0.79.0.1 — 30/09/2026 · 08:44 — Il corpo del titolo di un toggle ora cambia
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 308 test
 passati; commit solo in locale)*
 
 L'utente, parola per parola:
 > «Non mi modifica la grandezza del font di un titolo del toggle»
 
-- **[Bug fix]** Riprodotto sulla pagina di prova: selezionato il titolo di
+- **[Bug fix]** **[📱 Mobile]** Riprodotto sulla pagina di prova: selezionato il titolo di
   un toggle e scelto 30 in "Font size" dalla barra Aa, la barra diceva 30
   e nel database c'era 30, ma il titolo restava piccolo; alla prima
   lettera scritta il 30 spariva anche dal database. Il titolo di un toggle
@@ -6319,7 +6397,7 @@ L'utente, parola per parola:
   il fuoco: la finestrella del corpo il fuoco non lo toglie. Ora font,
   corpo e colore messi dalla barra Aa e dal pennello arrivano subito anche
   a quel campo, e restano scrivendo
-- **[Bug fix]** Col titolo grande, la freccetta del toggle (e la casella,
+- **[Bug fix]** **[📱 Mobile]** Col titolo grande, la freccetta del toggle (e la casella,
   e la campanella) scende a metà della prima riga invece di restare in
   cima
 - **[Progetto]** `PageEditorViewModel.externalSpans`: il blocco e i suoi
@@ -6335,7 +6413,7 @@ L'utente, parola per parola:
   riga vuota: database uguale, tranne 3 voci di "Updates" della pagina di
   prova
 
-### 🆕 v0.122 — 30/09/2026 · 08:33 — Nuova proprietà "Duration": quanto passa fra due date
+### 🆕 v0.79 — 30/09/2026 · 08:33 — Nuova proprietà "Duration": quanto passa fra due date
 *(Claude Code sul PC; verificato sul telefono; 306 test passati; commit
 solo in locale)*
 
@@ -6359,7 +6437,7 @@ L'utente, parola per parola:
 > * in anni, mesi, giorni, ore e minuti (se è possibile). Duration sarà 30
 >   anni, 8 mesi, 17 giorni, 21 ore e 22 minuti»
 
-- **[Nuova funzionalità]** Nuovo tipo di proprietà **Duration** (dopo
+- **[Nuova funzionalità]** **[📱 Mobile]** Nuovo tipo di proprietà **Duration** (dopo
   Date nell'elenco dei tipi). Toccando una cella si apre la sua finestra:
   in cima quanto dura, sotto "Start date", "Start time", "End date", "End
   time", ognuna col suo selettore (il calendario, con le rotelle di giorno,
@@ -6367,7 +6445,7 @@ L'utente, parola per parola:
   00:00, la data da oggi. "Done" salva solo con tutte e due le date e la
   fine dopo l'inizio (se no avvisa "The end comes before the start");
   "Clear" svuota la cella
-- **[Nuova funzionalità]** In "Edit property", "**Show as**" con le cinque
+- **[Nuova funzionalità]** **[📱 Mobile]** In "Edit property", "**Show as**" con le cinque
   scelte chieste, ognuna con l'esempio dell'utente sotto: "Years" (30
   years), "Years and months", "Years, months and days", "Years, months,
   days and hours", "Years, months, days, hours and minutes" (di suo). Il
@@ -6378,7 +6456,7 @@ L'utente, parola per parola:
   mesi, poi 17 giorni fino al 29/09. Con 8 mesi si arriverebbe al
   12/10/2026. L'app scrive quindi "30 years, 7 months, 17 days, 21 hours
   and 22 minutes"
-- **[Nuova funzionalità]** La durata è scritta nella lingua dell'app
+- **[Nuova funzionalità]** **[📱 Mobile]** La durata è scritta nella lingua dell'app
   ("30 anni, 7 mesi e 17 giorni" in italiano, col singolare per 1; in
   cinese e giapponese attaccata, "30年7か月17日"). La colonna nasce larga
   320 perché ci stia tutto l'esempio; "Fit to content" misura la durata.
@@ -6414,7 +6492,7 @@ L'utente, parola per parola:
   (il toggle "SaaS" in My Space, una data e le colonne di "SuduS al
   contrario")
 
-### 🆕 v0.121 — 29/09/2026 · 20:32 — La colonna Name si sposta dove si vuole
+### ✏️ v0.78.1 — 29/09/2026 · 20:32 — La colonna Name si sposta dove si vuole
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 291 test
 passati; commit solo in locale)*
 
@@ -6423,13 +6501,13 @@ L'utente, parola per parola:
 > quella dove sono presenti le pagine (dei database complessi) o le voci
 > (dei database semplici)»
 
-- **[Nuova funzionalità]** Tenendo premuta l'intestazione **Name**, in cima
+- **[Modifica]** **[📱 Mobile]** Tenendo premuta l'intestazione **Name**, in cima
   al menu ci sono "**Move to left**" e "**Move to right**", come nelle altre
   colonne. Name si sposta di un posto alla volta, con le sue celle, i
   pulsanti OPEN, le sotto-righe e il suo calcolo; le altre colonne le
   passano accanto con i loro "Move to left/right". Le voci sono grigie
   quando Name è già la prima o l'ultima, e con "Lock view"
-- **[Nuova funzionalità]** Il posto di Name vale per **tutte le viste** del
+- **[Modifica]** **[📱 Mobile]** Il posto di Name vale per **tutte le viste** del
   database, come l'ordine delle colonne: spostata da una vista collegata,
   si sposta anche nel database. Le colonne nascoste non contano (Name salta
   quelle che non si vedono). Una proprietà nuova nasce sempre all'estrema
@@ -6457,7 +6535,7 @@ L'utente, parola per parola:
   uguale alla copia, tranne la colonna nuova `nameColumnOrder` (-1) su ogni
   pagina
 
-### 🔧 v0.120.1 — 29/09/2026 · 20:00 — Divisori: cancellando le righe vuote sotto, il divisore resta
+### 🔧 v0.78.0.1 — 29/09/2026 · 20:00 — Divisori: cancellando le righe vuote sotto, il divisore resta
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 281 test
 passati; commit solo in locale)*
 
@@ -6466,14 +6544,14 @@ L'utente, parola per parola:
 > lo spazio vuoto fino al divider accade che me lo cancella. Prova a
 > simularlo tu per capire, e risolvimi questo bug»
 
-- **[Bug fix]** Riprodotto sulla pagina di prova: divisore, riga vuota,
+- **[Bug fix]** **[📱 Mobile]** Riprodotto sulla pagina di prova: divisore, riga vuota,
   "Titolo"; col cursore sulla riga vuota, il backspace **toglieva il
   divisore** e la riga vuota restava (la regola messa per "sotto un divider
   non posso cancellare nulla", letta male: si volevano cancellare le righe
   vuote, non il divisore). Ora sulla **riga vuota** subito sotto un
   divisore il backspace **toglie la riga**: il divisore resta, la riga di
   sotto sale al suo posto col cursore all'inizio, la tastiera resta aperta
-- **[Bug fix]** Su una **riga col testo** subito sotto un divisore, come su
+- **[Bug fix]** **[📱 Mobile]** Su una **riga col testo** subito sotto un divisore, come su
   Notion: il primo backspace "**prende**" il divisore, che si **accende
   d'azzurro**, e solo il secondo lo toglie. Così continuando a premere il
   divisore non sparisce senza avvisare. Dopo 3 secondi senza il secondo
@@ -6490,7 +6568,7 @@ L'utente, parola per parola:
   pagina rimessa com'era (database e 22 righe vuote): uguale, tranne una
   riga vuota rifatta e 2 voci di "Updates"
 
-### 🆕 v0.120 — 29/09/2026 · 19:47 — "Image" a tutto schermo, e il gesto indietro chiude il segnalino delle colonne
+### 🆕 v0.78 — 29/09/2026 · 19:47 — "Image" a tutto schermo, e il gesto indietro chiude il segnalino delle colonne
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 278 test
 passati; commit solo in locale)*
 
@@ -6501,12 +6579,12 @@ L'utente, parola per parola:
 > usare la gesture per andare indietro per far sì che io possa finire le
 > modifiche»
 
-- **[Nuova funzionalità]** Toccando un'immagine di una cella "Image" si
+- **[Nuova funzionalità]** **[📱 Mobile]** Toccando un'immagine di una cella "Image" si
   sceglie: "**View full screen**", "Upload" per cambiarla, "Remove". A
   tutto schermo l'immagine si vede intera sul nero; con due dita la si
   ingrandisce e la si sposta, con due tocchi torna com'era; si chiude con
   la X o col gesto indietro. Una cella vuota apre direttamente "Upload"
-- **[Nuova funzionalità]** Col segnalino di "Resize column" acceso, il
+- **[Nuova funzionalità]** **[📱 Mobile]** Col segnalino di "Resize column" acceso, il
   **gesto indietro** lo chiude e lascia la tabella com'è, invece di uscire
   dalla pagina. Senza segnalino il gesto fa quello di sempre
 - **[Progetto]** `PageImageSheet` ha la voce facoltativa `onView`;
@@ -6521,7 +6599,7 @@ L'utente, parola per parola:
   Poi immagine tolta, proprietà cancellata, immagine di prova tolta dal
   telefono: database uguale a prima tranne "Last edited" della riga "1"
 
-### 🆕 v0.119 — 29/09/2026 · 19:37 — Nuova proprietà "Image": una cella quadrata con un'immagine
+### 🆕 v0.77 — 29/09/2026 · 19:37 — Nuova proprietà "Image": una cella quadrata con un'immagine
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 278 test
 passati; commit solo in locale)*
 
@@ -6534,7 +6612,7 @@ seconda colonna ha le figure dei Pokémon):
 > proprietà da sinistra, ossia le immagini nella colonna con il quadratino
 > e il pennello dentro)»
 
-- **[Nuova funzionalità]** Fra i tipi di proprietà c'è "**Image**". La
+- **[Nuova funzionalità]** **[📱 Mobile]** Fra i tipi di proprietà c'è "**Image**". La
   colonna nasce **quadrata**, larga quanto è alta una riga; la cella mostra
   l'immagine **intera**, piccola, senza ritagliarla (una figura più alta
   che larga si vede tutta, col suo fondo). Toccando la cella si apre la
@@ -6562,7 +6640,7 @@ seconda colonna ha le figure dei Pokémon):
   riga "1". (Durante la prova il mio script ha creato per sbaglio una
   proprietà Text vuota, subito cancellata)
 
-### 🆕 v0.118 — 29/09/2026 · 19:23 — Life progress: le barre riempiono il widget
+### ✏️ v0.76.1 — 29/09/2026 · 19:23 — Life progress: le barre riempiono il widget
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 273 test
 passati; commit solo in locale)*
 
@@ -6571,7 +6649,7 @@ L'utente, parola per parola:
 > sezione dedicata (ovviamente fai rispettare il limite se attivo i
 > decimali)»
 
-- **[Nuova funzionalità]** La scritta accanto alle barre non ha più una
+- **[Modifica]** **[📱 Mobile]** La scritta accanto alle barre non ha più una
   larghezza fissa (112, più del necessario, con uno spazio vuoto a
   destra): è **larga quanto la più lunga del widget**, e tutto il resto va
   alle barre, che ora arrivano fin lì. La si misura **al 100%**
@@ -6584,7 +6662,7 @@ L'utente, parola per parola:
   subito prima di "Year: 74%"; col decimale 660, tutte uguali, con
   "Month: 96,0%" intero. Il decimale lasciato spento, com'era
 
-### 🆕 v0.117 — 29/09/2026 · 19:19 — Life progress: il decimale sulle percentuali, da accendere e spegnere
+### 🆕 v0.76 — 29/09/2026 · 19:19 — Life progress: il decimale sulle percentuali, da accendere e spegnere
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 273 test
 passati; commit solo in locale)*
 
@@ -6592,7 +6670,7 @@ L'utente, parola per parola:
 > «Fai sì che io possa attivare o disattivare il decimale sui numeri della
 > Life progress bar nella Sidebar»
 
-- **[Nuova funzionalità]** Nel menu "⋯" del widget **Life progress** della
+- **[Nuova funzionalità]** **[📱 Mobile]** Nel menu "⋯" del widget **Life progress** della
   barra laterale c'è "**Show decimals**", con l'interruttore: acceso, le
   percentuali hanno un decimale ("Year: 74,3%" invece di "Year: 74%"), col
   separatore scelto nelle impostazioni (74,3 o 74.3); spento, tornano
@@ -6607,7 +6685,7 @@ L'utente, parola per parola:
   "Week: 22,7%", "Day: 59,1%", barre tutte uguali; ancora acceso dopo aver
   riaperto l'app; spento, di nuovo "Year: 74%". Lasciato spento, com'era
 
-### 🆕 v0.116 — 29/09/2026 · 14:06 — Nuova proprietà "Page link": il collegamento a un'altra pagina
+### 🆕 v0.75 — 29/09/2026 · 14:06 — Nuova proprietà "Page link": il collegamento a un'altra pagina
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 271 test
 passati; commit solo in locale)*
 
@@ -6621,7 +6699,7 @@ L'utente, parola per parola:
 > all'interno dello stesso database dove sono contenuti sia la pagina da
 > collegare sia la pagina a cui devo collegare la pagina originale)»
 
-- **[Nuova funzionalità]** Fra i tipi di proprietà c'è "**Page link**"
+- **[Nuova funzionalità]** **[📱 Mobile]** Fra i tipi di proprietà c'è "**Page link**"
   (icona ↗). Toccando la cella si apre "**Page link**": l'**albero del
   Workspace**, con le pagine che si aprono come nella barra laterale e i
   database che mostrano le loro righe, e in cima la **barra di ricerca**
@@ -6655,7 +6733,7 @@ L'utente, parola per parola:
   database è uguale a prima, tranne "Last edited" delle righe "1" e "2",
   che sono state scritte durante la prova
 
-### 🔧 v0.115.1 — 29/09/2026 · 13:53 — Sotto-righe: "Move up" e "Move down" solo sotto la loro riga (verifica)
+### 🔧 v0.74.0.1 — 29/09/2026 · 13:53 — Sotto-righe: "Move up" e "Move down" solo sotto la loro riga (verifica)
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; nessuna
 modifica al codice; commit solo in locale)*
 
@@ -6674,7 +6752,7 @@ L'utente, parola per parola:
   "Move down" diventa grigio (non passa sotto "2"). Poi rimessa su, le due
   sotto-righe cancellate e la vista tolta: il database è identico a prima
 
-### 🆕 v0.115 — 29/09/2026 · 13:48 — Tabelle: le sotto-righe ("Create sub row")
+### 🆕 v0.74 — 29/09/2026 · 13:48 — Tabelle: le sotto-righe ("Create sub row")
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 266 test
 passati; commit solo in locale)*
 
@@ -6691,7 +6769,7 @@ L'utente, parola per parola:
 > un'opzione che mi consente di calcolare o meno anche i dati delle sub
 > rows, di default disattivata»
 
-- **[Nuova funzionalità]** Tenendo premuto il nome di una riga della
+- **[Nuova funzionalità]** **[📱 Mobile]** Tenendo premuto il nome di una riga della
   tabella, in cima alle azioni, "**Create sub row**": nasce una riga nuova
   **sotto quella**, rientrata, e il suo nome si apre subito per scriverlo.
   Si può fare anche su una sotto-riga (un livello più in là)
@@ -6708,7 +6786,7 @@ L'utente, parola per parola:
   una riga principale fra le principali (con le sue sotto-righe dietro)
 - Cancellando una riga **le sue sotto-righe restano**, un livello più su:
   il messaggio di conferma lo dice
-- **[Nuova funzionalità]** Nella finestra di **Calculate**, sotto i
+- **[Nuova funzionalità]** **[📱 Mobile]** Nella finestra di **Calculate**, sotto i
   calcoli, l'interruttore "**Include sub rows**", **spento di suo**: i
   calcoli contano solo le righe principali; acceso, anche le sotto-righe.
   Vale per il calcolo di quella colonna
@@ -6730,7 +6808,7 @@ L'utente, parola per parola:
   cancellata e l'interruttore spento: il database è uguale alla copia,
   tranne la data di ultima modifica della vista collegata
 
-### 🆕 v0.114 — 29/09/2026 · 13:35 — Tabelle: "Move up" e "Move down" tenendo premuto il nome di una riga
+### 🆕 v0.73 — 29/09/2026 · 13:35 — Tabelle: "Move up" e "Move down" tenendo premuto il nome di una riga
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 254 test
 passati; commit solo in locale)*
 
@@ -6738,7 +6816,7 @@ L'utente, parola per parola:
 > «Se tengo premuto su una cella della colonna Name, fai sì che ci sia
 > un'opzione che mi consenti di spostare l'intera riga sopra o sotto»
 
-- **[Nuova funzionalità]** Nelle azioni che si aprono tenendo premuto il
+- **[Nuova funzionalità]** **[📱 Mobile]** Nelle azioni che si aprono tenendo premuto il
   nome di una riga della tabella, in cima, "**Move up**" e "**Move
   down**": la riga passa sopra quella che le sta sopra, o sotto quella che
   le sta sotto, **come la si vede** — con un filtro o una ricerca salta le
@@ -6765,7 +6843,7 @@ L'utente, parola per parola:
   down" (in fondo la voce diventa grigia) e la vista tolta: il database è
   identico alla copia
 
-### 🆕 v0.113 — 29/09/2026 · 13:26 — Tabelle: la larghezza delle colonne, col segnalino o adattata al contenuto
+### 🆕 v0.72 — 29/09/2026 · 13:26 — Tabelle: la larghezza delle colonne, col segnalino o adattata al contenuto
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 250 test
 passati; commit solo in locale)*
 
@@ -6781,7 +6859,7 @@ L'utente, parola per parola:
 > manualmente) fa Excel quando faccio doppio click sul bordino di una
 > colonna»
 
-- **[Nuova funzionalità]** Tenendo premuta l'intestazione di una colonna
+- **[Nuova funzionalità]** **[📱 Mobile]** Tenendo premuta l'intestazione di una colonna
   (anche **Name**) c'è "**Resize column**": compare un **segnalino** blu
   sul bordo fra quella colonna e la successiva, e la linea del bordo si
   colora dall'intestazione all'ultima riga. Trascinato **a destra allarga**
@@ -6789,7 +6867,7 @@ L'utente, parola per parola:
   resta. Il segnalino resta lì per altri ritocchi e se ne va toccando la
   tabella da un'altra parte. Vicino alla larghezza di partenza (150, Name
   200) si aggancia lì: si torna precisi a com'era
-- **[Nuova funzionalità]** Nello stesso menu "**Fit to content**", con
+- **[Nuova funzionalità]** **[📱 Mobile]** Nello stesso menu "**Fit to content**", con
   l'interruttore: acceso, la colonna è **larga quanto serve perché si legga
   tutto**, su una riga sola: l'intestazione, ogni cella delle righe mostrate
   (testo, tag, date, numeri, colori…) e il calcolo in fondo. Resta acceso:
@@ -6816,7 +6894,7 @@ L'utente, parola per parola:
   spento: il database è uguale alla copia, tranne la data di ultima
   modifica della vista collegata
 
-### 🆕 v0.112 — 29/09/2026 · 13:02 — La maiuscola automatica, ovunque si scriva, solo a campo vuoto
+### ✏️ v0.71.1 — 29/09/2026 · 13:02 — La maiuscola automatica, ovunque si scriva, solo a campo vuoto
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 240 test
 passati; commit solo in locale)*
 
@@ -6831,7 +6909,7 @@ L'utente, parola per parola:
 > Stessa cosa anche quando rinomimo il nome do una proprietà di una
 > colonna»
 
-- **[Nuova funzionalità]** **In ogni campo di testo dell'app** (38: "Create
+- **[Modifica]** **[📱 Mobile]** **In ogni campo di testo dell'app** (38: "Create
   a tag", il nome delle proprietà, celle, titoli, nomi, ricerche, il testo
   delle pagine…) **a campo vuoto la tastiera parte in maiuscolo**; se c'è
   già qualcosa, anche solo uno spazio, no — nemmeno dopo ". ", dove la
@@ -6861,7 +6939,7 @@ L'utente, parola per parola:
   parole "in composizione" della tastiera: com'è quando si scrive col
   dito lo si vede usandola
 
-### 🆕 v0.111 — 29/09/2026 · 12:48 — Le viste di un database: il "+" accanto a "Table" e l'elenco delle viste
+### 🆕 v0.71 — 29/09/2026 · 12:48 — Le viste di un database: il "+" accanto a "Table" e l'elenco delle viste
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 230 test
 passati; commit solo in locale)*
 
@@ -6876,17 +6954,17 @@ scheda "Table" e la finestra "New view"):
 > create da me. Tanto la modifica della vista in quel momento è già
 > presente in Settings (del database) e in Layout come prima opzione»
 
-- **[Nuova funzionalità]** **Un database può avere più viste**, come su
+- **[Nuova funzionalità]** **[📱 Mobile]** **Un database può avere più viste**, come su
   Notion: stesse pagine, ognuna con layout, filtro, ordinamento, gruppi,
   proprietà nascoste e grafico suoi. Vale per ogni database, dentro una
   pagina e a schermo intero, e per le viste collegate
-- **[Nuova funzionalità]** **"+" subito a destra del nome della vista**:
+- **[Nuova funzionalità]** **[📱 Mobile]** **"+" subito a destra del nome della vista**:
   apre "**New view**" — il nome (vuoto = quello del layout) e i sette
   layout, gli stessi riquadri di "Layout" nelle impostazioni; "Done" crea
   la vista e la mette davanti. Parte da zero, come su Notion: niente
   filtro né ordinamento, tutte le proprietà in vista. Scelto "Chart", si
   apre subito la scelta del grafico
-- **[Nuova funzionalità]** **Toccando il nome della vista** non si apre più
+- **[Nuova funzionalità]** **[📱 Mobile]** **Toccando il nome della vista** non si apre più
   la scelta del layout ma l'**elenco delle viste** ("Views"): la spunta su
   quella che si vede, un tocco per passare a un'altra, "Add view" in fondo.
   Dai tre puntini di ogni vista: "**Rename**" (anche quella di partenza) e
@@ -6918,7 +6996,7 @@ scheda "Table" e la finestra "New view"):
   vista di partenza c'è solo "Rename". Alla fine il database è identico
   alla copia di prima
 
-### 🔧 v0.110.2 — 29/09/2026 · 08:38 — Divisori: il backspace sotto li toglie, e la riga spostata si illumina
+### 🔧 v0.70.0.2 — 29/09/2026 · 08:38 — Divisori: il backspace sotto li toglie, e la riga spostata si illumina
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 219 test
 passati; commit solo in locale)*
 
@@ -6927,14 +7005,14 @@ L'utente, parola per parola:
 > e sposto verso il basso, non solo non mi sposta verso il basso, ma il
 > divider cancella una riga e si sposta da sola verso l'alto»
 
-- **[Bug fix]** Il backspace a inizio della riga subito sotto un divisore
+- **[Bug fix]** **[📱 Mobile]** Il backspace a inizio della riga subito sotto un divisore
   non faceva niente (riprodotto sul telefono: nel database non cambiava
   nulla). Ora **toglie il divisore**, come una riga orizzontale in un
   documento: la riga resta col suo testo e il cursore all'inizio, e un
   altro backspace la unisce a quella di sopra. Sotto un database, una
   tabella o un collegamento a una pagina resta com'era: lì dentro c'è roba
   da non buttare
-- **[Bug fix]** Spostare con ↓ una riga oltre un divisore la spostava
+- **[Bug fix]** **[📱 Mobile]** Spostare con ↓ una riga oltre un divisore la spostava
   davvero (controllato nel database, anche su My Space: nessuna riga
   sparita), ma con le righe vuote non si vedeva: fra cinque righe vuote i
   primi tocchi sembravano non fare niente, e passando il divisore
@@ -6954,7 +7032,7 @@ L'utente, parola per parola:
   rimessa com'era e il database confrontato con la copia: uguale, tranne
   3 voci di "Updates" della pagina di prova
 
-### 🔧 v0.110.1 — 29/09/2026 · 08:21 — Col gesto indietro il cursore si spegne subito
+### 🔧 v0.70.0.1 — 29/09/2026 · 08:21 — Col gesto indietro il cursore si spegne subito
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 216 test
 passati; commit solo in locale)*
 
@@ -6962,7 +7040,7 @@ L'utente, parola per parola:
 > «Quando c'è il text cursor attivato da qualsiasi parte e faccio la gesture
 > per andare indietro, ci mette almeno un secondo per sparire»
 
-- **[Bug fix]** Il gesto indietro con la tastiera aperta se lo prende la
+- **[Bug fix]** **[📱 Mobile]** Il gesto indietro con la tastiera aperta se lo prende la
   tastiera, e l'app spegneva il cursore quando se ne accorgeva: a tastiera
   **scesa del tutto** e poi dopo altri 450 ms (250 nel database a tutta
   pagina), l'attesa messa per la tastiera Samsung che sparisce e riappare
@@ -6987,7 +7065,7 @@ L'utente, parola per parola:
   passa alla riga sotto e la tastiera sempre aperta. Poi le prove annullate
   e la pagina uguale a prima
 
-### 🆕 v0.110 — 29/09/2026 · 08:07 — Sottogruppi: "Hide empty sub groups", separato dai gruppi
+### 🆕 v0.70 — 29/09/2026 · 08:07 — Sottogruppi: "Hide empty sub groups", separato dai gruppi
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 216 test
 passati; commit solo in locale)*
 
@@ -6996,7 +7074,7 @@ come gruppi e le piattaforme come sottogruppi (con le piattaforme vuote
 mostrate), alla proposta di separare l'interruttore:
 > «Sì, separalo in due interruttori»
 
-- **[Nuova funzionalità]** Sotto "Hide empty groups" c'è "**Hide empty sub
+- **[Nuova funzionalità]** **[📱 Mobile]** Sotto "Hide empty groups" c'è "**Hide empty sub
   groups**", solo quando i sottogruppi ci sono: nasconde (o mostra) i
   sottogruppi vuoti, a prescindere dai gruppi. Così sotto ogni genere si
   vedono tutte le piattaforme, anche quelle senza giochi (con lo 0 e il
@@ -7014,7 +7092,7 @@ mostrate), alla proposta di separare l'interruttore:
   confrontato con la copia: uguale, tranne l'ora di ultima modifica della
   vista
 
-### 🆕 v0.109 — 29/09/2026 · 08:00 — Tabelle: i sottogruppi, gruppi dentro i gruppi
+### 🆕 v0.69 — 29/09/2026 · 08:00 — Tabelle: i sottogruppi, gruppi dentro i gruppi
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 214 test
 passati; commit solo in locale)*
 
@@ -7023,7 +7101,7 @@ L'utente, parola per parola:
 > quarta opzione nelle impostazioni delle pagine proprio Sub groups, che mi
 > consentirà di creare gruppi nei gruppi»
 
-- **[Nuova funzionalità]** Nelle impostazioni di una vista a tabella, appena
+- **[Nuova funzionalità]** **[📱 Mobile]** Nelle impostazioni di una vista a tabella, appena
   "Group" ha una proprietà, compare come **quarta voce "Sub groups"**
   (dopo Layout, Filter e Group). Si sceglie None o una proprietà, le stesse
   che si possono usare per i gruppi tranne quella che fa già i gruppi.
@@ -7053,7 +7131,7 @@ L'utente, parola per parola:
   non è stato provato sul telefono, per non aggiungere righe al database
   "Videogiochi" (c'è il test)
 
-### 🆕 v0.108 — 29/09/2026 · 07:48 — Sei puntini: "Add above" e "Add below"
+### 🆕 v0.68 — 29/09/2026 · 07:48 — Sei puntini: "Add above" e "Add below"
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 209 test
 passati; commit solo in locale)*
 
@@ -7062,7 +7140,7 @@ L'utente, parola per parola:
 > (campo testo, pagina, database, eccetera), aggiungi due voci, ossia "Add
 > above" e "Add below" per aggiungere sopra o sotto una riga»
 
-- **[Nuova funzionalità]** Nel menu dei sei puntini, **in cima**, per ogni
+- **[Nuova funzionalità]** **[📱 Mobile]** Nel menu dei sei puntini, **in cima**, per ogni
   blocco (riga di testo, pagina, database, vista collegata): "**Add
   above**" e "**Add below**". Aggiungono una riga vuota sopra o sotto il
   blocco, allo stesso livello (dentro un toggle resta dentro) e col suo
@@ -7080,7 +7158,7 @@ L'utente, parola per parola:
   com'era e il database confrontato con la copia: uguale, tranne 10 voci
   di "Updates" di "Titolo tre H3" con le lettere delle prove
 
-### 🆕 v0.107 — 29/09/2026 · 00:56 — Colonne Checkbox: "Activate all" e "Deactivate all"
+### 🆕 v0.67 — 29/09/2026 · 00:56 — Colonne Checkbox: "Activate all" e "Deactivate all"
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 204 test
 passati; commit solo in locale)*
 
@@ -7090,7 +7168,7 @@ L'utente, parola per parola:
 > esclusive che mi consentono di attivare o disattivare le checkbox di tutte
 > le celle, chiamate "Activate all" e "Deactivate all"»
 
-- **[Nuova funzionalità]** Tenendo premuta l'intestazione di una colonna
+- **[Nuova funzionalità]** **[📱 Mobile]** Tenendo premuta l'intestazione di una colonna
   **Checkbox**, sotto "Change type" ci sono "**Activate all**" e
   "**Deactivate all**": spuntano o tolgono la spunta a tutte le caselle
   della colonna, sulle righe che la vista mostra (col filtro o la ricerca,
@@ -7107,7 +7185,7 @@ L'utente, parola per parola:
   all" le toglie tutte. Poi il database di prova messo nel cestino e la
   pagina rimessa com'era (confrontata con la copia fatta prima)
 
-### 🔧 v0.106.1 — 29/09/2026 · 00:45 — Le frecce della barra spostano davvero la riga, e il cursore la segue
+### 🔧 v0.66.0.1 — 29/09/2026 · 00:45 — Le frecce della barra spostano davvero la riga, e il cursore la segue
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 201 test
 passati; commit solo in locale)*
 
@@ -7121,7 +7199,7 @@ e poi, ancora con la versione di prima sul telefono:
 > «Adesso le due freccette che permettono alle righe di essere spostate non
 > spostano nulla, proprio niente, né in basso né in alto»
 
-- **[Bug fix]** Le frecce su e giù scambiavano due righe **intere**, prese
+- **[Bug fix]** **[📱 Mobile]** Le frecce su e giù scambiavano due righe **intere**, prese
   dalla copia della schermata, con due salvataggi separati: se il testo
   appena scritto o la riga appena nata con l'Invio non erano ancora nel
   database, lo scambio rimetteva il testo e le posizioni di prima. E il
@@ -7131,7 +7209,7 @@ e poi, ancora con la versione di prima sul telefono:
   scritture di prima e cambia nel database **solo la posizione**
   (`PageRepository.moveBlock`, `BlockDao.setOrderIndex`); il campo prende
   sempre il nuovo ordine, come per Annulla
-- **[Bug fix]** **Il cursore segue la riga spostata**, nello stesso punto.
+- **[Bug fix]** **[📱 Mobile]** **Il cursore segue la riga spostata**, nello stesso punto.
   Prima restava alla stessa altezza, cioè sulla riga scambiata: su righe
   vuote non si vedeva muoversi niente, e sopra un database la riga saliva
   ma il cursore restava sotto, così il tocco seguente spostava un'altra
@@ -7151,7 +7229,7 @@ e poi, ancora con la versione di prima sul telefono:
   con la copia: uguale, tranne 11 voci di "Updates" di "Titolo tre H3" con
   le lettere delle prove
 
-### 🆕 v0.106 — 28/09/2026 · 20:48 — Database: la vista Chart, con barre, linea e ciambella
+### 🆕 v0.66 — 28/09/2026 · 20:48 — Database: la vista Chart, con barre, linea e ciambella
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 196 test
 passati; commit solo in locale)*
 
@@ -7163,13 +7241,13 @@ L'utente, parola per parola, con sette foto di Notion:
 > Vertical, Horizontal, Line e Donut (vedi le foto). Mettici poi le varie
 > opzioni che vedi sempre in foto.»
 
-- **[Nuova funzionalità]** **"Chart" fra i layout dei database**, dopo
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Chart" fra i layout dei database**, dopo
   Gallery (e "Chart view" nel menu "/"). Scelto, si apre la finestrella
   "**Chart type**" con i quattro grafici: **Vertical**, **Horizontal**,
   **Line** e **Donut**; di base sono le barre verticali, una per pagina,
   alte quanto il conteggio. Nelle impostazioni, sotto "Layout: Chart", la
   voce "Chart type" riapre la stessa finestrella
-- **[Nuova funzionalità]** **Le voci delle foto**, sotto Layout:
+- **[Nuova funzionalità]** **[📱 Mobile]** **Le voci delle foto**, sotto Layout:
   - **X axis**: *What to show* (Name, cioè una barra per pagina, oppure una
     proprietà: i tag contano una volta per tag, le caselle Checked e
     Unchecked, le date un giorno per gruppo nel formato della colonna, i
@@ -7220,7 +7298,7 @@ L'utente, parola per parola, con sette foto di Notion:
   copia, tranne l'ora di ultima modifica della pagina "SuduS al
   contrario". "1 line" al singolare non è stato riprovato sul telefono
 
-### 🔧 v0.105.2 — 28/09/2026 · 20:05 — Lo scorrimento non si ferma più un istante prima di partire
+### 🔧 v0.65.3.2 — 28/09/2026 · 20:05 — Lo scorrimento non si ferma più un istante prima di partire
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 185 test
 passati; commit solo in locale)*
 
@@ -7228,7 +7306,7 @@ L'utente, parola per parola:
 > «Ho provato, adesso lo scorrimento funziona, anche se per un millisecondo
 > si blocca prima di farmi scorrere»
 
-- **[Bug fix]** Risalendo dal fondo della pagina, il primo fotogramma
+- **[Bug fix]** **[📱 Mobile]** Risalendo dal fondo della pagina, il primo fotogramma
   dello scorrimento durava 29 millisecondi invece di 8: la lista della
   pagina rifaceva da capo il database di sopra ("SuduS al contrario"),
   che aveva smontato quando era uscito dallo schermo. Poco dopo c'era un
@@ -7247,7 +7325,7 @@ L'utente, parola per parola:
   di preparazione), nessuno sopra i 16 ms su 84. La scrittura funziona
   come prima: toccata "Primo punto", cursore in fondo e tastiera aperta
 
-### 🔧 v0.105.1 — 28/09/2026 · 19:57 — Risalendo una pagina, i database non fanno più saltare tutto
+### 🔧 v0.65.3.1 — 28/09/2026 · 19:57 — Risalendo una pagina, i database non fanno più saltare tutto
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 185 test
 passati; commit solo in locale)*
 
@@ -7257,7 +7335,7 @@ L'utente, parola per parola:
 > che fa un grande scatto in alto e mi skippa direttamente tutto il
 > database. Usa anche il database sul menu per controllare questo bug.»
 
-- **[Bug fix]** Risalendo una pagina con dei database dentro, quando il
+- **[Bug fix]** **[📱 Mobile]** Risalendo una pagina con dei database dentro, quando il
   database di sopra rientrava nello schermo la pagina **saltava in alto**
   di colpo e lo scavalcava tutto. Non dipendeva dalle celle: capitava anche
   partendo dal testo sotto. Ogni database dentro una pagina passa dal
@@ -7277,7 +7355,7 @@ L'utente, parola per parola:
   tabella. **Dopo**: la tabella scende piano col dito, e da sopra compare
   un po' alla volta il fondo di "SuduS al contrario"
 
-### 🆕 v0.105 — 28/09/2026 · 19:49 — Pomodoro: la durata dello studio dal riquadro grande, "Study sound" e "Break sound"
+### ✏️ v0.65.3 — 28/09/2026 · 19:49 — Pomodoro: la durata dello studio dal riquadro grande, "Study sound" e "Break sound"
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 185 test
 passati; commit solo in locale)*
 
@@ -7290,14 +7368,14 @@ L'utente, parola per parola:
 > con il primo che è un suono che mi dice quando riinizia la sessione di
 > studio e il secondo che è un suono che mi dice quando inizia la pausa»
 
-- **[Rimosso]** Dall'ingranaggio del Pomodoro la durata della sessione di
+- **[Rimosso]** **[📱 Mobile]** Dall'ingranaggio del Pomodoro la durata della sessione di
   studio. Restano la durata della pausa e i suoni
-- **[Nuova funzionalità]** **Il tempo scritto nel riquadro grande durante
+- **[Modifica]** **[📱 Mobile]** **Il tempo scritto nel riquadro grande durante
   lo studio è la durata della sessione**, anche per le sessioni dopo e per
   "da capo", secondi compresi. Senza, tolta la sua voce dall'ingranaggio,
   le sessioni seguenti sarebbero tornate alla durata vecchia. Durante la
   pausa il tempo scritto vale solo per quella pausa
-- **[Nuova funzionalità]** Due suoni al posto di uno: **"Study sound"**,
+- **[Modifica]** **[📱 Mobile]** Due suoni al posto di uno: **"Study sound"**,
   quando ricomincia la sessione di studio, e **"Break sound"**, quando
   comincia la pausa, ognuno scelto fra le suonerie del telefono e ognuno
   col suo "usa il suono predefinito". Il suono unico di prima diventa il
@@ -7315,7 +7393,7 @@ L'utente, parola per parola:
   cambiato niente. Chiuso con Cancel: il pomodoro è rimasto com'era (1
   minuto di studio, 5 di pausa, nessun suono scelto)
 
-### 🆕 v0.104 — 28/09/2026 · 19:40 — Nei calendari per scegliere la data, solo i giorni del mese
+### ✏️ v0.65.2 — 28/09/2026 · 19:40 — Nei calendari per scegliere la data, solo i giorni del mese
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno, appena
 ricollegato; 182 test passati; commit solo in locale)*
 
@@ -7324,7 +7402,7 @@ L'utente, parola per parola:
 > mese precedente in alto e i giorni del mese successivo in basso. Mi
 > confondono troppo se uso il Repeat e vedo troppi pallini»
 
-- **[Rimosso]** Nel calendario che si apre per scegliere una data (le
+- **[Rimosso]** **[📱 Mobile]** Nel calendario che si apre per scegliere una data (le
   date dei database, con Repeat, e le notifiche: è lo stesso,
   `SamsungCalendar`) **i giorni del mese prima e del mese dopo non si
   vedono più**: al loro posto le caselle restano vuote, senza numero, senza
@@ -7336,7 +7414,7 @@ L'utente, parola per parola:
   gennaio 2026 comincia giovedì 1, prima niente. Chiuso con Cancel: le date
   nel database sono rimaste quelle di prima
 
-### 🆕 v0.103 — 28/09/2026 · 19:38 — Notebooks in cima alla barra laterale
+### ✏️ v0.65.1 — 28/09/2026 · 19:38 — Notebooks in cima alla barra laterale
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 182 test
 passati; commit solo in locale)*
 
@@ -7344,7 +7422,7 @@ L'utente, parola per parola:
 > «Ho provato, lo scatto non c'è più. Mettimi Notebooks sopra tutto lo
 > spazio degli Widget»
 
-- **[Nuova funzionalità]** Il riquadro **Notebooks** coi suoi quaderni
+- **[Modifica]** **[📱 Mobile]** Il riquadro **Notebooks** coi suoi quaderni
   sta ora **in cima alla barra laterale**, sopra i widget; sotto di lui
   resta la linea chiesta il 26/09. Fra i widget e "Main menu" c'è adesso
   la stessa linea: prima a separarli c'erano i quaderni
@@ -7352,7 +7430,7 @@ L'utente, parola per parola:
   poi "Widgets" coi fusi orari e gli altri; in fondo ai widget "Add
   widget", la linea, "Main menu"
 
-### 🔧 v0.102.2 — 28/09/2026 · 19:33 — Invio in fretta: niente righe in più, e i font non scattano
+### 🔧 v0.65.0.2 — 28/09/2026 · 19:33 — Invio in fretta: niente righe in più, e i font non scattano
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 182 test
 passati; commit solo in locale il 28/09/2026)*
 
@@ -7363,7 +7441,7 @@ L'utente, parola per parola:
 > superscripted scattassero, come se si ingrandissero e diminuissero di
 > scatto. Riesci a vederlo?»
 
-- **[Bug fix]** **Invio premuti in fretta creavano una riga in più.** Il
+- **[Bug fix]** **[📱 Mobile]** **Invio premuti in fretta creavano una riga in più.** Il
   secondo Invio arrivava prima che il database avesse scritto il primo:
   il campo aveva una riga più dei blocchi, `updateRun` tornava a
   confrontare coi testi salvati e da lì sembravano nate due righe. Tre
@@ -7374,7 +7452,7 @@ L'utente, parola per parola:
   database (`structuralEdits`), dove la precedente c'è già; delle righe
   che c'erano si riscrive solo il testo, così un cambio di tipo arrivato
   un istante prima (il menu "/") non viene riportato indietro
-- **[Bug fix]** **Lo "scatto"** anche con un Invio solo: per un
+- **[Bug fix]** **[📱 Mobile]** **Lo "scatto"** anche con un Invio solo: per un
   fotogramma, finché il database non scriveva, ogni riga prendeva font,
   colori, pedici e apici dal blocco della riga accanto, e le righe
   formattate si vedevano cambiare e tornare. Ora righe e blocchi si
@@ -7398,14 +7476,14 @@ L'utente, parola per parola:
   28/09/2026, ricollegato, non c'erano più: in cima ci sono quattro righe
   vuote, e il resto della pagina, formattazione compresa, è intatto
 
-### 🔧 v0.102.1 — 26/09/2026 · 18:31 — "To-do list" dal "+" sulla prima riga di una pagina nuova
+### 🔧 v0.65.0.1 — 26/09/2026 · 18:31 — "To-do list" dal "+" sulla prima riga di una pagina nuova
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 174 test
 passati; commit solo in locale)*
 
 L'utente, parola per parola:
 > «Non mi fa mettere le checkbox nei template»
 
-- **[Bug fix]** In un template appena creato — e in ogni pagina nuova,
+- **[Bug fix]** **[📱 Mobile]** In un template appena creato — e in ogni pagina nuova,
   comprese quelle delle righe dei database — **scegliere un tipo dal "+"
   sulla prima riga, prima di scriverci, non faceva niente**: "To-do list"
   non metteva la casella, e quello che si scriveva dopo restava testo
@@ -7425,7 +7503,7 @@ L'utente, parola per parola:
   database. I template di prova sono nel cestino; "SaaS" e "SuduS"
   dell'utente non sono stati toccati
 
-### 🆕 v0.102 — 26/09/2026 · 18:21 — I template delle pagine, e le proprietà in cima alla pagina di una riga
+### 🆕 v0.65 — 26/09/2026 · 18:21 — I template delle pagine, e le proprietà in cima alla pagina di una riga
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 173 test
 passati; commit solo in locale)*
 
@@ -7467,7 +7545,7 @@ titolo):
 > sincronizzato. Fammi anche vedere le proprietà nascoste che posso
 > comunque modificare»
 
-- **[Nuova funzionalità]** **"Templates" nella barra laterale**, sotto
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Templates" nella barra laterale**, sotto
   "Startup window": l'elenco dei template, "New template" in cima per
   crearne uno, e i tre puntini di ciascuno per mandarlo nel cestino (da cui
   torna fra i template, non nel menu principale). Un template **si scrive
@@ -7476,7 +7554,7 @@ titolo):
   nome si chiama "Untitled template". Nei tre puntini di un template non ci
   sono "Duplicate" e "Move to", che lo farebbero diventare una pagina del
   menu principale
-- **[Nuova funzionalità]** **Le voci grigie di una pagina nuova di un
+- **[Nuova funzionalità]** **[📱 Mobile]** **Le voci grigie di una pagina nuova di un
   database**: aprendo la pagina di una riga ancora vuota, sotto le
   proprietà compaiono "Tap anywhere to continue with an empty page, or pick
   a template" e le due voci **"+ New template"** (crea un template e lo
@@ -7490,7 +7568,7 @@ titolo):
   cambiano; Annulla lo toglie. I template sono **gli stessi per tutti i
   database**, sia quelli creati dalla barra laterale sia quelli creati da
   una pagina
-- **[Nuova funzionalità]** **Le proprietà in cima alla pagina di una
+- **[Nuova funzionalità]** **[📱 Mobile]** **Le proprietà in cima alla pagina di una
   riga**, come nella terza foto: fra il titolo e il testo, una per riga,
   con l'icona del tipo e il nome, **ciascuna modificabile lì** come nella
   sua cella (tag, date con ripetizioni e notifiche, numeri, caselle,
@@ -7532,7 +7610,7 @@ titolo):
   aggiunto "⁵" al nome "Riga semplice"; tolto, e al secondo confronto i
   dati erano identici a prima (a parte i due template di prova)
 
-### 🔧 v0.101.1 — 26/09/2026 · 17:49 — L'Invio a inizio della prima riga non chiude più la tastiera
+### 🔧 v0.64.0.1 — 26/09/2026 · 17:49 — L'Invio a inizio della prima riga non chiude più la tastiera
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 168 test
 passati; commit solo in locale)*
 
@@ -7543,7 +7621,7 @@ L'utente, parola per parola:
 > scompare. Questa cosa accade solo se mi trovo al primo blocco e solo
 > se c'è qualcosa scritto.»
 
-- **[Bug fix]** **Invio col cursore all'inizio della prima riga** di un
+- **[Bug fix]** **[📱 Mobile]** **Invio col cursore all'inizio della prima riga** di un
   gruppo di righe di testo (in cima alla pagina, o subito sotto un
   toggle, un divisore, un link…): la tastiera spariva. Il campo che
   tiene insieme le righe era riconosciuto dal suo primo blocco, e la
@@ -7553,7 +7631,7 @@ L'utente, parola per parola:
   una riga più sotto, la riga nuova non diventa la prima del gruppo.
   Ora il campo è riconosciuto da quello che gli sta sopra (l'isola che
   lo precede, o l'inizio della pagina), che andando a capo non cambia
-- **[Bug fix]** Nello stesso caso, sotto un'isola **la riga vuota finiva
+- **[Bug fix]** **[📱 Mobile]** Nello stesso caso, sotto un'isola **la riga vuota finiva
   in cima alla pagina**, sopra l'isola, invece che subito sopra la riga:
   le si dava il posto zero della pagina invece di quello della riga.
   Non si vedeva ancora perché il campo si chiudeva prima
@@ -7574,7 +7652,7 @@ L'utente, parola per parola:
   tolti il testo e il divisore di prova: la pagina ha di nuovo le sue
   23 righe vuote
 
-### 🆕 v0.101 — 26/09/2026 · 13:53 — "Date format" e "Time format" nella proprietà Date, e via da Settings
+### 🆕 v0.64 — 26/09/2026 · 13:53 — "Date format" e "Time format" nella proprietà Date, e via da Settings
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 164 test
 passati; commit solo in locale)*
 
@@ -7588,19 +7666,19 @@ L'utente, parola per parola:
 e subito dopo, con le due foto di Notion:
 > «Perdonami, eccole»
 
-- **[Nuova funzionalità]** **Date format** in Edit property di una
+- **[Nuova funzionalità]** **[📱 Mobile]** **Date format** in Edit property di una
   colonna Date: gli stessi nove formati che c'erano in Settings (Full
   date, Short date, Month.Day.Year, Month/Day/Year, Day.Month.Year,
   Day/Month/Year, Year.Month.Day, Year/Month/Day, Chinese date), ognuno
   con la data di oggi scritta così e la spunta su quello attuale. "Relative"
   della foto di Notion non c'è: la richiesta era la lista di Settings
-- **[Nuova funzionalità]** **Time format** accanto: **Hidden**, **12
+- **[Nuova funzionalità]** **[📱 Mobile]** **Time format** accanto: **Hidden**, **12
   hour**, **24 hour**, come nella seconda foto. 12 hour scrive "7:43 PM",
   24 hour "19:43", Hidden toglie l'ora dalla cella (resta salvata, e la
   notifica pure). Vale per le celle, le liste, i calcoli (Earliest,
   Latest…) e il riassunto del filtro, in tutte le viste della colonna;
   ogni colonna Date ha il suo
-- **[Rimosso]** **Date format da Settings**. Le colonne Date che non ne
+- **[Rimosso]** **[📱 Mobile]** **Date format da Settings**. Le colonne Date che non ne
   hanno ancora scelto uno (e quelle nuove) continuano col formato scelto
   lì l'ultima volta, e così la cronologia, i preferiti, il cestino e la
   data dei quaderni, che non hanno una proprietà da cui prenderlo
@@ -7620,7 +7698,7 @@ e subito dopo, con le due foto di Notion:
   Alla fine rimesso Chinese date e 24 hour: le celle sono tornate
   "2026年09月25日 19:43" e "2025年12月08日" come prima
 
-### 🆕 v0.100 — 26/09/2026 · 13:40 — A sinistra, al centro o a destra: le celle e i calcoli
+### 🆕 v0.63 — 26/09/2026 · 13:40 — A sinistra, al centro o a destra: le celle e i calcoli
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 163 test
 passati; commit solo in locale)*
 
@@ -7635,7 +7713,7 @@ L'utente, parola per parola:
 > premuto su ogni cella della Property, ma MAI la scritta delle Property:
 > quelle sempre a sinistra, lasciale così come sono.»
 
-- **[Nuova funzionalità]** **Le celle di ogni colonna a sinistra, al centro
+- **[Nuova funzionalità]** **[📱 Mobile]** **Le celle di ogni colonna a sinistra, al centro
   o a destra**: tenendo premuta l'intestazione, tre voci — **Align left**,
   **Center**, **Align right** — con la spunta su quella attuale, per
   **ogni tipo** (prima si centravano solo le caselle). Si spostano il
@@ -7644,7 +7722,7 @@ L'utente, parola per parola:
   il testo delle celle colorate, le caselle, le date di creazione e
   modifica. **Le intestazioni restano sempre a sinistra.** Vale in tutte
   le viste che mostrano la colonna; la colonna del nome non cambia
-- **[Nuova funzionalità]** **Il risultato di ogni calcolo** sotto la
+- **[Nuova funzionalità]** **[📱 Mobile]** **Il risultato di ogni calcolo** sotto la
   tabella a sinistra, al centro o a destra, **tenendolo premuto** (toccato
   si cambia il calcolo, come prima). Di suo a destra, come su Notion. Vale
   per quella vista, come i calcoli
@@ -7668,7 +7746,7 @@ L'utente, parola per parola:
   calcolo dell'utente al suo posto (nel database la stringa dei calcoli è
   tornata identica)
 
-### 🆕 v0.99 — 26/09/2026 · 13:24 — La proprietà Number: formato, cifre, barra e anello; "Calculate" sotto la tabella
+### 🆕 v0.62 — 26/09/2026 · 13:24 — La proprietà Number: formato, cifre, barra e anello; "Calculate" sotto la tabella
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno, tranne quello
 elencato in fondo; 161 test passati; commit solo in locale)*
 
@@ -7728,35 +7806,35 @@ menu di "Calculate"):
 > option (con Sum, Average, Median, Min, Max, Range). Alla proprietà
 > Checkbox, modifica le voci di Count in Count all, Checked e Unchecked.»
 
-- **[Nuova funzionalità]** **"Change type"** nel menu che si apre tenendo
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Change type"** nel menu che si apre tenendo
   premuta l'intestazione di una colonna, di **qualunque** tipo: lì c'è la
   lista dei tipi con la ricerca. **"Edit property"** (e il tocco
   sull'intestazione) ha il nome e, per una colonna Number, le impostazioni
   qui sotto; il tipo non c'è più
-- **[Nuova funzionalità]** **Edit property di una colonna Number**, come
+- **[Nuova funzionalità]** **[📱 Mobile]** **Edit property di una colonna Number**, come
   nella prima foto: **Number format**, **Decimal places**, una riga, "Show
   as" e i tre riquadri **Number** (42), **Bar** (piena a metà) e **Ring**
   (pieno al 40%); quello scelto è bordato di blu. Si salva con "Save"; vale
   in tutte le viste che mostrano la colonna
-- **[Nuova funzionalità]** **Number format**: Number e Percent, una riga,
+- **[Nuova funzionalità]** **[📱 Mobile]** **Number format**: Number e Percent, una riga,
   poi le venti valute **nell'ordine chiesto**, ognuna col suo segno ($, €,
   £, CHF, ¥, ₩, A$, CA$, S$, ₽, ₹, HK$, NZ$, kr, MX$, NT$, kr., zł), con un
   campo per cercarle. Il segno va davanti ("€25,00") o dopo per ₽, kr e zł
   ("100 kr"). "Pound" è **GBP**: nella richiesta c'era "GBR", che è il
   codice del paese. **Percent** aggiunge il segno % al numero scritto: 45
   si legge 45% (non si moltiplica per 100)
-- **[Nuova funzionalità]** **Decimal places**: Default (come l'ha scritto
+- **[Nuova funzionalità]** **[📱 Mobile]** **Decimal places**: Default (come l'ha scritto
   l'utente) e da 0 a 5. Le cifre in più **si nascondono senza
   arrotondare** e senza essere cancellate: 45.76 con una cifra si legge
   45.7, con tre 45.760; il valore salvato resta 45.76. Scrivendo nella
   cella si vede il numero com'è, senza formato
-- **[Nuova funzionalità]** **Bar e Ring nelle celle**: una barra orizzontale
+- **[Nuova funzionalità]** **[📱 Mobile]** **Bar e Ring nelle celle**: una barra orizzontale
   o un anello pieni per il numero diviso 100 (72 → quasi tre quarti; "Divide
   by" non c'è, come chiesto), col numero accanto se **Show number** è
   acceso. **Color** apre la tavolozza di sempre (spettro, grigi, RGB, Hex);
   di suo è verde. Per l'anello, **Position**: a sinistra o al centro della
   cella. Nell'elenco e nelle schede il numero si legge col suo formato
-- **[Nuova funzionalità]** **"Calculate"**, tenendo premuta l'intestazione di
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Calculate"**, tenendo premuta l'intestazione di
   qualunque colonna **e del nome**: None, **Count** (Count all, Count
   values, Count unique values, Count empty, Count not empty; per le caselle
   Count all, Checked, Unchecked), **Percent** (Percent empty, Percent not
@@ -7792,7 +7870,7 @@ menu di "Calculate"):
   dell'utente), il cambio di colore della barra, i calcoli delle date e
   delle caselle e quelli sotto i gruppi
 
-### 🔧 v0.98.1 — 26/09/2026 · 12:51 — Il nome di una riga: il cursore in fondo, e la tastiera che resta con l'ordinamento
+### 🔧 v0.61.0.1 — 26/09/2026 · 12:51 — Il nome di una riga: il cursore in fondo, e la tastiera che resta con l'ordinamento
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 152 test
 passati; commit solo in locale)*
 
@@ -7804,10 +7882,10 @@ L'utente, parola per parola:
 > 2) quando c'è un sort attivato, se cancello il titolo di una pagina, la
 > tastiera mi scompare.»
 
-- **[Bug fix]** **Il cursore in fondo al nome.** Il campo del nome si
+- **[Bug fix]** **[📱 Mobile]** **Il cursore in fondo al nome.** Il campo del nome si
   apriva col cursore all'inizio (un campo di solo testo parte da lì); ora
   parte in fondo, pronto per continuare o cancellare
-- **[Bug fix]** **Con un ordinamento, cancellando il nome la tastiera
+- **[Bug fix]** **[📱 Mobile]** **Con un ordinamento, cancellando il nome la tastiera
   spariva.** Le righe della tabella non avevano il loro id: con l'ordine
   per nome, un nome vuoto va in fondo, la riga cambiava posto e il campo
   in cui si scriveva finiva su un'altra riga, che lo chiudeva. Ora ogni
@@ -7815,7 +7893,7 @@ L'utente, parola per parola:
   scrive il nome l'ordine resta fermo** (`DatabaseViewModel.startTitleEdit`
   / `endTitleEdit`): la riga non salta a ogni lettera, e va al suo posto
   quando si preme "Done" o si esce dal campo
-- **[Bug fix]** (trovato provando) **Il nome di una riga si riscriveva una
+- **[Bug fix]** **[📱 Mobile]** (trovato provando) **Il nome di una riga si riscriveva una
   volta sola**: la seconda volta la cella si apriva e si richiudeva
   nell'istante, perché si ricordava di aver già avuto il fuoco la volta
   prima. Ora si riparte da capo a ogni tocco
@@ -7831,7 +7909,7 @@ L'utente, parola per parola:
   dentro il toggle"; controllato col confronto sulla copia di stamattina:
   i 28 blocchi di My Space sono identici, niente cambiato
 
-### 🆕 v0.98 — 26/09/2026 · 12:39 — La pagina di un quaderno, e un divisore sotto i quaderni
+### 🆕 v0.61 — 26/09/2026 · 12:39 — La pagina di un quaderno, e un divisore sotto i quaderni
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 152 test
 passati; commit solo in locale)*
 
@@ -7844,14 +7922,14 @@ L'utente, parola per parola:
 > invece che ricercare sezione per sezione, posso toccare le freccette a
 > sinistra per aprire la gerarchia di tutto il Notebook»
 
-- **[Nuova funzionalità]** **Un divisore sotto i quaderni**, come quello
+- **[Nuova funzionalità]** **[📱 Mobile]** **Un divisore sotto i quaderni**, come quello
   sotto "Main menu": l'ultima riga dei quaderni non si confonde più con
   "Main menu"
-- **[Nuova funzionalità]** **Nella barra, il nome di un quaderno apre la sua
+- **[Nuova funzionalità]** **[📱 Mobile]** **Nella barra, il nome di un quaderno apre la sua
   pagina, la freccetta a sinistra apre e chiude l'albero** lì dov'è. La
   freccetta ora è un pulsante a sé, un po' più largo, per il dito. I gruppi
   si aprono e chiudono come prima
-- **[Nuova funzionalità]** **La pagina di un quaderno**: in cima il quaderno
+- **[Nuova funzionalità]** **[📱 Mobile]** **La pagina di un quaderno**: in cima il quaderno
   (icona grande e nome), sotto **tutte** le sezioni e i gruppi, rientrati
   come nell'albero, ogni sezione con la sua linguetta, il lucchetto se è
   protetta e **quante pagine ha**, in fila sul bordo destro. Toccando una
@@ -7865,7 +7943,7 @@ L'utente, parola per parola:
   conteggio delle pagine per sezione (`NotebookDao.observePageCounts`) si
   legge solo mentre la pagina è aperta, perché la tabella delle pagine
   cambia a ogni tasto
-- **[Bug fix]** (trovato provando) I numeri delle pagine si spostavano a
+- **[Bug fix]** **[📱 Mobile]** (trovato provando) I numeri delle pagine si spostavano a
   destra a ogni rientro invece di stare in colonna
 - Verificato sul telefono, coi quaderni dell'utente ("My Notebook", con
   due gruppi uno dentro l'altro, e "My Notebook 2"): il divisore sopra
@@ -7876,7 +7954,7 @@ L'utente, parola per parola:
   "My Notebook › New Section Group 1" → indietro → di nuovo la pagina del
   quaderno, col gruppo ancora chiuso. Nessun dato dell'utente toccato
 
-### 🆕 v0.97 — 26/09/2026 · 09:06 — Le ripetizioni: senza toccare il giorno, i pallini arancioni, fino al 2100
+### 🆕 v0.60 — 26/09/2026 · 09:06 — Le ripetizioni: senza toccare il giorno, i pallini arancioni, fino al 2100
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 152 test
 passati; commit solo in locale)*
 
@@ -7896,29 +7974,29 @@ L'utente, parola per parola:
 > ripetere quell'evento 1) o da oggi (il giorno corrente) fino al 2100 2)
 > oppure da un giorno preciso che decido io fino al 2100»
 
-- **[Bug fix]** **La ripetizione senza un giorno toccato andava persa.**
+- **[Bug fix]** **[📱 Mobile]** **La ripetizione senza un giorno toccato andava persa.**
   Scegliendo solo "Repeat" senza toccare un giorno sul calendario, "Done"
   trovava la data vuota e **svuotava la cella**: la regola non arrivava
   mai al database, e per questo non si vedeva né sul calendario né nella
   vista Calendar (che le ripetizioni le sa già disegnare). Sul telefono la
   riga "Esempio" dell'utente aveva infatti la data vuota. Ora, con una
   ripetizione, **il giorno non va toccato**: si parte da oggi
-- **[Nuova funzionalità]** **I pallini arancioni della ripetizione** sul
+- **[Nuova funzionalità]** **[📱 Mobile]** **I pallini arancioni della ripetizione** sul
   calendario della data, gli stessi del giorno scelto: con "ogni sabato",
   tutti i sabati **da quel giorno in avanti** (quelli prima no). Il giorno
   da cui parte, se non è uno di quelli, ha solo il contorno arancione
-- **[Nuova funzionalità]** **Da quando**: sotto "Repeat", quando c'è una
+- **[Nuova funzionalità]** **[📱 Mobile]** **Da quando**: sotto "Repeat", quando c'è una
   ripetizione, la riga **"Starts"** ("Today" o la data). Toccandola:
   **"From today until 2100"** oppure **"From a day I choose until 2100"**
   (col selettore della data). Tutte e due fanno finire la ripetizione il
   31/12/2100, che si legge nel riassunto ("Weekly on Saturday, until
   2100年12月31日")
-- **[Nuova funzionalità]** **"L'ultima domenica del mese" senza partire da
+- **[Nuova funzionalità]** **[📱 Mobile]** **"L'ultima domenica del mese" senza partire da
   un'ultima domenica.** In "Custom…" con "month": "On [giorno]" col numero
   da scrivere, oppure "The first / second / third / fourth / last
   [giorno]" da un menu, col giorno della settimana scelto dai pallini sotto.
   Prima si poteva solo "come il giorno toccato sul calendario"
-- **[Nuova funzionalità]** Nella cella, accanto alla data, le **frecce in
+- **[Nuova funzionalità]** **[📱 Mobile]** Nella cella, accanto alla data, le **frecce in
   cerchio** di una data che si ripete (come la campanella della notifica)
 - **[Progetto]** `Recurrence` ha tre campi in più, `monthDay`, `nthWeek`
   (1–4 o `LAST_WEEK`) e `nthWeekday`, salvati nella regola (`MDAY`,
@@ -7943,7 +8021,7 @@ L'utente, parola per parola:
 - Da sapere: la cella mostra il giorno da cui la ripetizione parte, non la
   prossima volta in cui capita
 
-### 🆕 v0.96 — 26/09/2026 · 08:53 — I quaderni, come in OneNote
+### 🆕 v0.59 — 26/09/2026 · 08:53 — I quaderni, come in OneNote
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno, tranne
 quello che è elencato in fondo; 147 test passati; commit solo in locale)*
 
@@ -7967,7 +8045,7 @@ una pagina aperta con titolo, data e ora):
 > cose, non avrò limiti finché scrivo)
 > (non far caso a Copilot Notebook, non mi interessa)»
 
-- **[Nuova funzionalità]** **La voce "Notebooks" della barra laterale è
+- **[Nuova funzionalità]** **[📱 Mobile]** **La voce "Notebooks" della barra laterale è
   accesa**: è la fascia di prima (un altro colore, sotto i widget), con la
   freccetta per aprirla e chiuderla — la scelta si ricorda — e il **+** per
   un quaderno nuovo. Sotto, **l'albero di OneNote**: i quaderni col loro
@@ -7976,14 +8054,14 @@ una pagina aperta con titolo, data e ora):
   chiudono come i toggle e possono contenere altre sezioni e altri gruppi
   (come "Languages" → "Deutsch" → "General" nella foto). In fondo a ogni
   quaderno aperto, "+ New section". La sezione aperta è evidenziata
-- **[Nuova funzionalità]** **Un quaderno nuovo**: nome e colore (i dodici
+- **[Nuova funzionalità]** **[📱 Mobile]** **Un quaderno nuovo**: nome e colore (i dodici
   di OneNote), e nasce con la sua prima sezione "New Section 1", come in
   OneNote. **L'icona**: il quaderno disegnato nel colore scelto, oppure
   **un'immagine a scelta dalla galleria** — per esempio un'icona scaricata
   da Flaticon — da "Notebook icon" nel suo menu. Scaricarle da Flaticon
   non lo posso fare io: l'app non va in rete (e le icone hanno la loro
   licenza); se l'utente me le manda, le metto fra quelle pronte
-- **[Nuova funzionalità]** **Tenendo premuta una voce** si apre il suo menu,
+- **[Nuova funzionalità]** **[📱 Mobile]** **Tenendo premuta una voce** si apre il suo menu,
   le voci del tasto destro di OneNote che hanno senso qui:
   - quaderno: Rename, Notebook color, Notebook icon, New section, New
     section group, Move up, Move down, Delete
@@ -7995,14 +8073,14 @@ una pagina aperta con titolo, data e ora):
   Il nome nuovo si propone già scritto e selezionato ("New Section 2",
   "New Section Group 1"…). Una sezione nuova prende il colore dopo quello
   dell'ultima, e si apre subito
-- **[Nuova funzionalità]** **Una sezione aperta**: in alto dove sta
+- **[Nuova funzionalità]** **[📱 Mobile]** **Una sezione aperta**: in alto dove sta
   ("Prova quaderni › Languages"), il nome con la linguetta, **"Add page"**
   come in OneNote, e le pagine nel loro ordine, col giorno in cui sono
   nate. Toccando una pagina la si apre; tenendola premuta, Move up, Move
   down, Delete page. I tre puntini aprono il menu della sezione. Su un
   telefono le tre colonne di OneNote non ci stanno: la colonna delle
   sezioni è la barra laterale, quella delle pagine è questa schermata
-- **[Nuova funzionalità]** **Le pagine dei quaderni** usano lo stesso
+- **[Nuova funzionalità]** **[📱 Mobile]** **Le pagine dei quaderni** usano lo stesso
   editor delle altre, quindi **scorrono senza fine**: all'inizio c'è solo
   quello che si vede, e si allungano man mano che si scrive. In cima,
   **come in OneNote**: il titolo ("Untitled page" in grigio finché è
@@ -8010,7 +8088,7 @@ una pagina aperta con titolo, data e ora):
   la pagina è nata (nel formato di data scelto nelle impostazioni). Niente
   icona né copertina. Si disegna, si blocca, si protegge con la password,
   si guarda la cronologia come nelle altre pagine
-- **[Nuova funzionalità]** **Due mondi separati**, come chiesto. Le pagine
+- **[Nuova funzionalità]** **[📱 Mobile]** **Due mondi separati**, come chiesto. Le pagine
   dei quaderni non compaiono mai nel menu principale: né nell'albero delle
   pagine, né nella ricerca, né fra le pagine da cui far partire l'app, né
   fra i database da mostrare in una vista collegata. E dal quaderno non si
@@ -8053,7 +8131,7 @@ una pagina aperta con titolo, data e ora):
   non l'ho aperta). Delete del quaderno → "Everything inside goes with it,
   1 page included" → eliminato: nel database zero quaderni, zero sezioni,
   zero pagine di quaderni, le 10 pagine dell'utente intatte
-- **[Bug fix]** (trovato provando) Il blu del quaderno nuovo non era uno
+- **[Bug fix]** **[📱 Mobile]** (trovato provando) Il blu del quaderno nuovo non era uno
   dei dodici colori, e nella scelta nessuno aveva la spunta: ora è il
   primo. Verificato: la spunta sul blu
 - **Non provato sul telefono**: l'impronta chiesta prima di eliminare una
@@ -8061,7 +8139,7 @@ una pagina aperta con titolo, data e ora):
   dell'utente), l'immagine come icona di un quaderno, i colori cambiati
   dopo, Rename e Move up/down dai menu (su e giù li prova il test)
 
-### 🔧 v0.95.1 — 26/09/2026 · 08:27 — La freccetta del toggle, un pelino più su
+### 🔧 v0.58.0.1 — 26/09/2026 · 08:27 — La freccetta del toggle, un pelino più su
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; commit solo
 in locale)*
 
@@ -8072,7 +8150,7 @@ L'utente, parola per parola:
 > Gallery, c'è un toggle. La freccetta è ancora storta, alzamela di un
 > pelino»
 
-- **[Bug fix]** **Il triangolino del toggle stava un po' basso** rispetto al
+- **[Bug fix]** **[📱 Mobile]** **Il triangolino del toggle stava un po' basso** rispetto al
   titolo. Il triangolo è in mezzo al suo quadrato di 24dp e la riga del
   titolo è in mezzo ai suoi 24, ma le lettere non stanno in mezzo alla loro
   riga: stanno più su, perché sotto c'è il posto delle gambe di g, p e q.
@@ -8085,7 +8163,7 @@ L'utente, parola per parola:
   Space: prima 2422–2455 (in pixel), dopo 2415–2448, con la "R" del titolo
   a 2414–2445
 
-### 🆕 v0.95 — 26/09/2026 · 08:20 — Il lucchetto accanto ai tre puntini
+### 🆕 v0.58 — 26/09/2026 · 08:20 — Il lucchetto accanto ai tre puntini
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno
 dall'utente: «Ho controllato, il lucchetto c'è»; 141 test passati; commit
 solo in locale)*
@@ -8095,7 +8173,7 @@ L'utente, parola per parola:
 > tre puntini per ogni pagina ma di un lucchetto chiuso alla sinnistra di
 > quella dei tre puntini per descrivere quella come protetta da password?»
 
-- **[Nuova funzionalità]** Su una pagina bloccata con la password, **alla
+- **[Nuova funzionalità]** **[📱 Mobile]** Su una pagina bloccata con la password, **alla
   sinistra dei tre puntini** c'è un secondo pulsante **identico** — lo
   stesso cerchio grigio semitrasparente, la stessa grandezza — con **un
   lucchetto chiuso**. Toccato, dice "Protected by a password"
@@ -8111,7 +8189,7 @@ L'utente, parola per parola:
   e le pagine bloccate si aprono con l'impronta o la password dell'utente:
   **l'ha guardato l'utente**, aprendo "Untitled" in "Titolo tre H3"
 
-### 🔧 v0.94.1 — 26/09/2026 · 08:16 — La scheda della galleria di una pagina bloccata
+### 🔧 v0.57.0.1 — 26/09/2026 · 08:16 — La scheda della galleria di una pagina bloccata
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 141 test
 passati; commit solo in locale)*
 
@@ -8125,7 +8203,7 @@ E subito dopo:
 > «Ovviamente, perdonami, questo deve vale per tutti i database, non solo
 > per questo che ti ho appena menzionato»
 
-- **[Bug fix]** Nella vista Gallery **di qualunque database** (anche dentro
+- **[Bug fix]** **[📱 Mobile]** Nella vista Gallery **di qualunque database** (anche dentro
   una pagina, anche una vista collegata), la scheda di una pagina bloccata
   con la password mostrava la sua copertina. Ora al posto dell'anteprima
   c'è **uno sfondo grigio scuro sfumato, sempre uguale, con un lucchetto
@@ -8133,7 +8211,7 @@ E subito dopo:
   scheda. Vale per "Page cover" e per "Page content"; con "None" la scheda
   non ha anteprima e resta com'è. Tenendo premuta la scheda non c'è più
   "Reposition cover", che avrebbe fatto rivedere la copertina
-- **[Bug fix]** (trovato lavorandoci) La lente accanto a Sort cercava anche
+- **[Bug fix]** **[📱 Mobile]** (trovato lavorandoci) La lente accanto a Sort cercava anche
   dentro il testo delle pagine bloccate, e trovandolo illuminava la riga:
   ora le salta, come la ricerca generale
 - **[Progetto]** La copertina e il testo di una pagina bloccata non escono
@@ -8148,7 +8226,7 @@ E subito dopo:
   "UntitledZeta" ha Icon, Edit property e Delete, senza "Reposition cover",
   che invece "Gioco uno" ha ancora
 
-### 🆕 v0.94 — 26/09/2026 · 08:04 — Bloccare pagine e database con la password o l'impronta
+### 🆕 v0.57 — 26/09/2026 · 08:04 — Bloccare pagine e database con la password o l'impronta
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno, tranne il
 database che diventa un collegamento, vedi in fondo; 140 test passati;
 commit solo in locale)*
@@ -8160,7 +8238,7 @@ Richiesta dell'utente, parola per parola:
 > usato il Turn into page, e poi mi chiede la password o l'impronta se
 > voglio aprirla»
 
-- **[Nuova funzionalità]** **"Lock with password"** nei tre puntini di ogni
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Lock with password"** nei tre puntini di ogni
   pagina e di ogni database, sotto "Lock page", con l'icona dell'impronta e
   l'interruttore. Non c'è in My Space: bloccarla chiuderebbe l'app intera.
   **La prima volta si sceglie la password** (almeno 4 caratteri, scritta
@@ -8174,12 +8252,12 @@ Richiesta dell'utente, parola per parola:
   resta aperta finché ci si muove al suo interno; andando altrove, o
   uscendo dall'app per più di 30 secondi, si richiude. Togliere il blocco
   (l'interruttore spento) chiede di nuovo impronta o password
-- **[Nuova funzionalità]** **Un database bloccato, dentro una pagina,
+- **[Nuova funzionalità]** **[📱 Mobile]** **Un database bloccato, dentro una pagina,
   diventa un collegamento**, come con "Turn into page", e aprirlo chiede
   impronta o password. Si chiudono anche le sue righe e le sue viste
   collegate: una vista collegata dentro una pagina aperta mostra, al posto
   della tabella, la richiesta di sbloccarlo
-- **[Nuova funzionalità]** In Settings, sotto "Time zone", **"Password for
+- **[Nuova funzionalità]** **[📱 Mobile]** In Settings, sotto "Time zone", **"Password for
   locked pages"** (Set / Not set): l'impronta sì o no, **"Change
   password"** (prima si conferma che si è noi) e **"Remove password"**,
   che funziona solo quando nessuna pagina è più bloccata — altrimenti
@@ -8196,7 +8274,7 @@ Richiesta dell'utente, parola per parola:
   delle schede della galleria saltano le pagine bloccate. L'impronta è il
   `BiometricPrompt` di sistema (permesso `USE_BIOMETRIC`). Test
   `PageLockTest` e `MigrationTest` (33→34, col file `v33.sql`)
-- **[Bug fix]** (trovato provando) Tornando indietro da una pagina bloccata
+- **[Bug fix]** **[📱 Mobile]** (trovato provando) Tornando indietro da una pagina bloccata
   appena aperta, la richiesta dell'impronta ripartiva dalla schermata che
   se ne stava andando: ora parte solo quando la schermata è davvero
   davanti
@@ -8215,7 +8293,7 @@ Richiesta dell'utente, parola per parola:
   dell'installazione; li aveva cancellati l'utente («L'ho fatto io»), non
   è un errore
 
-### 🆕 v0.93 — 26/09/2026 · 00:23 — Svuotare la cache, cancellare tutto il contenuto
+### 🆕 v0.56 — 26/09/2026 · 00:23 — Svuotare la cache, cancellare tutto il contenuto
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno, tranne la
 cancellazione vera, vedi in fondo; 133 test passati; commit solo in
 locale)*
@@ -8227,7 +8305,7 @@ L'utente, parola per parola:
 > Time Zones, che mi consentono di cancellare tutta la cache dell'app e
 > tutto il contenuto»
 
-- **[Nuova funzionalità]** In Settings, **sotto "Time zone"** e separate da
+- **[Nuova funzionalità]** **[📱 Mobile]** In Settings, **sotto "Time zone"** e separate da
   una riga, due voci:
   - **"Clear cache"**, con accanto quanto occupa: toglie i soli file
     temporanei, che l'app rifà quando servono. Chiede conferma, poi dice
@@ -8257,7 +8335,7 @@ L'utente, parola per parola:
   laterale non si era aperto, e un tocco è finito sull'icona delle
   impostazioni del database a galleria di My Space; nessuna scelta toccata
 
-### 🆕 v0.92 — 26/09/2026 · 00:14 — La proprietà "Color cell"
+### 🆕 v0.55 — 26/09/2026 · 00:14 — La proprietà "Color cell"
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno, tranne le
 targhette della bacheca e della galleria; 131 test passati; commit solo in
 locale)*
@@ -8268,7 +8346,7 @@ Richiesta dell'utente, parola per parola:
 > la cella con un colore a mia scelta. Dammi anche la possibilità di
 > scriverci sopra del testo (possibilità, non obbligo)»
 
-- **[Nuova funzionalità]** **"Color cell"** fra i tipi di proprietà (col
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Color cell"** fra i tipi di proprietà (col
   secchiello), nei database normali e in quelli semplici. Nella tabella il
   colore **riempie tutta la cella**; il testo, se c'è, sta sopra, **nero o
   bianco** a seconda di cosa si legge meglio su quel colore. Toccando la
@@ -8285,7 +8363,7 @@ Richiesta dell'utente, parola per parola:
   la tabella non si raggruppa per una cella colorata (il gruppo si
   chiamerebbe "#E03E3E"). Cambiando il tipo della colonna i valori restano
   quelli, come per gli altri tipi. Test `ColorCellValueTest`
-- **[Bug fix]** (trovato provando) Sul verde acceso scelto nella prova
+- **[Bug fix]** **[📱 Mobile]** (trovato provando) Sul verde acceso scelto nella prova
   (#12F20D) il testo veniva bianco e non si leggeva: la soglia fra nero e
   bianco è scesa a metà
 - Verificato sul telefono, nella tabella "Untitled" di My Space: "Color
@@ -8295,7 +8373,7 @@ Richiesta dell'utente, parola per parola:
   "#12F20D|Fatto"); la scheda della riga → riquadro verde con "Fatto". Poi
   la proprietà di prova tolta ("Delete property"): la tabella è com'era
 
-### 🆕 v0.91 — 26/09/2026 · 00:03 — Via il cestino accanto ai collegamenti alle pagine
+### ✏️ v0.54.3 — 26/09/2026 · 00:03 — Via il cestino accanto ai collegamenti alle pagine
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 126 test
 passati; commit solo in locale)*
 
@@ -8303,7 +8381,7 @@ Richiesta dell'utente, parola per parola:
 > «Toglimi l'icona del cestino a destra delle pagine nei campi di testo. Mi
 > basta tenerci premuto se voglio eliminarla»
 
-- **[Rimosso]** Il cestino a destra di ogni collegamento a una pagina
+- **[Rimosso]** **[📱 Mobile]** Il cestino a destra di ogni collegamento a una pagina
   dentro il testo (e la sua scritta "Remove link"). Per eliminare si tiene
   premuto il collegamento: nel menu del blocco, in fondo, c'è "Move to
   trash". Su una pagina bloccata il menu non si apre, come prima
@@ -8311,7 +8389,7 @@ Richiesta dell'utente, parola per parola:
   c'è più; tenendo premuto si apre il menu con "Move to trash" (richiuso
   senza toccare niente)
 
-### 🆕 v0.90 — 25/09/2026 · 23:57 — Il dito disegna, due dita scorrono, il palmo non conta
+### ✏️ v0.54.2 — 25/09/2026 · 23:57 — Il dito disegna, due dita scorrono, il palmo non conta
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno, le due dita
 dall'utente il 26/09/2026, vedi in fondo; 126 test passati; commit solo in
 locale)*
@@ -8326,16 +8404,16 @@ schermo. Proposto di spostare la mano, o di non spegnere più il dito da
 solo. Risposta, parola per parola:
 > «Sì. Quando disegno lo scorrimento lo devi mettere solo con due dita»
 
-- **[Nuova funzionalità]** **Mentre si disegna, un dito disegna e la pagina
+- **[Modifica]** **[📱 Mobile]** **Mentre si disegna, un dito disegna e la pagina
   scorre solo con due dita**, sempre. Con la mano spenta un dito non fa
   niente (non scorre più la pagina)
-- **[Nuova funzionalità]** **La mano sta accanto a ✓, Annulla e Ripeti**,
+- **[Modifica]** **[📱 Mobile]** **La mano sta accanto a ✓, Annulla e Ripeti**,
   sempre in vista, blu quando il dito disegna
-- **[Rimosso]** Lo spegnimento automatico del dito al primo uso della S Pen,
+- **[Rimosso]** **[📱 Mobile]** Lo spegnimento automatico del dito al primo uso della S Pen,
   e il suo avviso. La scelta salvata ha un nome nuovo (`fingerDrawing`):
   quella spenta da sola sul telefono dell'utente si è dimenticata, e il dito
   è tornato a disegnare
-- **[Nuova funzionalità]** **Il palmo non conta**, al posto dello
+- **[Modifica]** **[📱 Mobile]** **Il palmo non conta**, al posto dello
   spegnimento: mentre la S Pen è vicina allo schermo (anche solo sospesa) o
   lo tocca, e per 0,6 secondi dopo, i tocchi della mano si ignorano; e se la
   mano ha cominciato un segno prima che la penna tocchi, quel segno si butta
@@ -8353,7 +8431,7 @@ solo. Risposta, parola per parola:
   disegno si fanno col dito, e quello che vuole la penna vera lo prova
   l'utente
 
-### 🆕 v0.89 — 25/09/2026 · 23:49 — Il colore delle penne col selettore del pennello
+### ✏️ v0.54.1 — 25/09/2026 · 23:49 — Il colore delle penne col selettore del pennello
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 126 test
 passati; commit solo in locale)*
 
@@ -8361,7 +8439,7 @@ Richiesta dell'utente, parola per parola:
 > «Il colore di quando disegno fammelo scegliere con la stessa palette
 > colori e spettro dei grigi del pennello sulla Toolbar»
 
-- **[Nuova funzionalità]** Nella finestra di una penna, sotto "Colors", c'è
+- **[Modifica]** **[📱 Mobile]** Nella finestra di una penna, sotto "Colors", c'è
   il colore in uso (il tondo e il codice, "#2383E2"); toccandolo si apre
   **il selettore del pennello**, lo stesso della barra del testo: il
   riquadro di tinta e saturazione, la striscia dei grigi dal bianco al
@@ -8369,7 +8447,7 @@ Richiesta dell'utente, parola per parola:
   "No color" c'è **"Text color"**, che rimette il colore del testo (quello
   che segue il tema); sotto l'anteprima c'è il nome della penna invece di
   "Text color"
-- **[Rimosso]** I venti tondi dei colori fissi della finestra della penna
+- **[Rimosso]** **[📱 Mobile]** I venti tondi dei colori fissi della finestra della penna
 - **[Progetto]** `ColorPickerSheet` prende due scritte da fuori
   (`previewLabel`, `noColorLabel`); il pennello e le barre dei widget non
   cambiano. Il colore della penna passa al selettore come "#RRGGBB" e torna
@@ -8383,7 +8461,7 @@ Richiesta dell'utente, parola per parola:
   spessa): **la pressione funziona**, il tratto si allarga e si stringe.
   Lasciati com'erano. Nella prova è rimasta in mano la penna blu
 
-### 🆕 v0.88 — 25/09/2026 · 23:42 — Disegnare a mano sulle pagine, anche con la S Pen
+### 🆕 v0.54 — 25/09/2026 · 23:42 — Disegnare a mano sulle pagine, anche con la S Pen
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno, con la S Pen
 simulata da adb, vedi in fondo; 123 test passati; commit solo in locale)*
 
@@ -8404,7 +8482,7 @@ evidenziatore):
 > i colori (tranne per la gomma ovviamente). Dimmi se riesci a far
 > funzionare la mia SPen»
 
-- **[Nuova funzionalità]** **"Draw"**, con la matita, nei tre puntini di
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Draw"**, con la matita, nei tre puntini di
   ogni pagina di testo (anche le pagine delle righe; non nei database a
   schermo intero). Si disegna **su tutta la pagina dalla fine della
   copertina in giù**, copertina esclusa: sopra il testo, il titolo, un
@@ -8413,7 +8491,7 @@ evidenziatore):
   dei disegni, separati da quelli del testo), la **gomma** e sei penne come
   nella foto, e la **mano** per disegnare col dito. Mentre si disegna il
   testo si legge e basta; finito, i disegni restano e si vedono sempre
-- **[Nuova funzionalità]** **Le penne**: penna, matita, pennarello ed
+- **[Nuova funzionalità]** **[📱 Mobile]** **Le penne**: penna, matita, pennarello ed
   evidenziatore. Di partenza: penna del colore del testo (bianca sul tema
   scuro, nera sul chiaro), penna blu, penna rossa, matita grigia,
   pennarello verde, evidenziatore giallo. Toccando lo strumento già in mano
@@ -8423,11 +8501,11 @@ evidenziatore):
   pennello; prima venti colori fissi). La penna si allarga premendo di più con la S Pen; la matita
   è un po' trasparente; l'evidenziatore è trasparente, a punta piatta, e
   sta sotto gli altri tratti. Le scelte si ricordano
-- **[Nuova funzionalità]** **La gomma**, con **Thickness** e **Types**:
+- **[Nuova funzionalità]** **[📱 Mobile]** **La gomma**, con **Thickness** e **Types**:
   **Stroke Eraser** toglie tutto il tratto toccato, **Point Eraser** solo
   quello che passa sotto la gomma (il tratto si spezza). Mentre si cancella
   si vede il cerchio della gomma. Una passata è un Annulla solo
-- **[Nuova funzionalità]** **La S Pen.** Sì, funziona: il telefono è un
+- **[Nuova funzionalità]** **[📱 Mobile]** **La S Pen.** Sì, funziona: il telefono è un
   Galaxy S25 Ultra (SM-S938B) e la S Pen arriva all'app come penna vera, con
   la **pressione**. La prima volta che la si usa il dito smette di
   disegnare e **scorre la pagina** (un avviso lo dice): così il palmo
@@ -8467,7 +8545,7 @@ evidenziatore):
   Dalla cronologia della pagina le ha svuotate l'utente alle 23:16–23:17,
   prima dell'aggiornamento: non è stata la migrazione
 
-### 🆕 v0.87 — 25/09/2026 · 23:12 — Le notifiche: "/notification", le date dei database, timer e pomodoro
+### 🆕 v0.53 — 25/09/2026 · 23:12 — Le notifiche: "/notification", le date dei database, timer e pomodoro
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno,
 tranne la riaccensione vera, vedi in fondo; 114 test passati; commit solo in
 locale)*
@@ -8497,7 +8575,7 @@ Richiesta dell'utente, parola per parola:
 > feature da implementare è anche una notifica quando finisce un timer, e
 > quando finisce la sessione di studio e di break del pomodoro.»
 
-- **[Nuova funzionalità]** **La riga "/notification".** Si scrive
+- **[Nuova funzionalità]** **[📱 Mobile]** **La riga "/notification".** Si scrive
   `/notification 22.10.2026 19:41 Buttare l'immondizia` e si preme Invio:
   il comando sparisce e resta una riga con la **campanella**, il testo
   "Buttare l'immondizia" e in fondo, in un riquadro blu, **quando suona**;
@@ -8513,7 +8591,7 @@ Richiesta dell'utente, parola per parola:
   lascia il testo com'è, mette le prossime 9:00 e apre subito la scelta
   del giorno. Backspace a inizio riga la fa tornare testo, come una
   casella da spuntare. Una notifica già passata si fa grigia
-- **[Nuova funzionalità]** **"Include notification"** nella finestra della
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Include notification"** nella finestra della
   data dei database, sotto "Include time" (e sotto le sue ore): la data
   manda una notifica col **nome della pagina della riga** ("Revive +") e
   sotto il nome del database. All'ora della data, o **alle 9:00** se l'ora
@@ -8521,15 +8599,15 @@ Richiesta dell'utente, parola per parola:
   "Album · Inizio", "Album · Fine"); una data che si ripete suona a ogni
   ripetizione. Sotto l'interruttore una riga dice quando suonerà. Nella
   cella, accanto alla data, una campanellina
-- **[Nuova funzionalità]** **La fine di un timer e di ogni fase del
+- **[Nuova funzionalità]** **[📱 Mobile]** **La fine di un timer e di ogni fase del
   pomodoro** mandano una notifica ("Tempo scaduto", sotto "Timer · 10 m";
   alla fine della sessione il suo nome e "È ora della pausa · 5 min"; alla
   fine della pausa "Pausa finita" e di nuovo la sessione),
   e adesso suonano **anche ad app chiusa**
-- **[Nuova funzionalità]** Toccando una notifica si apre **la sua
+- **[Nuova funzionalità]** **[📱 Mobile]** Toccando una notifica si apre **la sua
   pagina**: quella della riga "/notification", o quella della riga del
   database (se la riga non può avere una pagina, il database)
-- **[Nuova funzionalità]** Il **permesso delle notifiche** (Android 13 e
+- **[Nuova funzionalità]** **[📱 Mobile]** Il **permesso delle notifiche** (Android 13 e
   dopo) si chiede **quando serve**, non all'avvio: creando una notifica,
   accendendo "Include notification", facendo partire un timer o un
   pomodoro. Nelle impostazioni, al posto di "Le notifiche non ci sono
@@ -8573,7 +8651,7 @@ Poi l'utente, parola per parola:
 > «Se l'app è chiusa, non mi manda la notifica se la creo su un campo
 > testo. Se la creo su un databse, funziona perfettamente»
 
-- **[Bug fix]** Non era l'app chiusa: nel database del telefono e nelle
+- **[Bug fix]** **[📱 Mobile]** Non era l'app chiusa: nel database del telefono e nelle
   sveglie di Android si vedeva che la sua riga era per **domani**. Aveva
   scritto `/notification` senza ora alle 19:32, quindi le prossime 9:00,
   cioè domani; poi, toccando il riquadro, aveva cambiato solo l'ora
@@ -8603,12 +8681,12 @@ e, durante le prove:
   cestino, il primo timer riportato alle sue rotelle (00:21:02), il secondo
   mai toccato (00:14:00). Il riavvio vero del telefono non è stato provato:
   spegnerebbe il debug wireless
-- **[Bug fix]** (trovato provando) **La riga-notifica restava blu dopo aver
+- **[Bug fix]** **[📱 Mobile]** (trovato provando) **La riga-notifica restava blu dopo aver
   suonato**, finché la pagina non si ridisegnava per altro: l'ora si
   guardava solo al disegno. Ora campanella e riquadro si fanno grigi da
   soli nel momento in cui la notifica suona (provato: "Diventa grigia"
   alle 23:12, a pagina aperta senza toccare niente)
-- **[Bug fix]** (trovato provando, c'era già prima) **La barra laterale
+- **[Bug fix]** **[📱 Mobile]** (trovato provando, c'era già prima) **La barra laterale
   senza pagine.** Se Android chiudeva l'app con la barra aperta, alla
   riapertura la barra tornava aperta da sola, ma senza passare dal
   pulsante che legge l'albero: sotto "Pages" non c'era niente, finché non
@@ -8619,7 +8697,7 @@ e, durante le prove:
   già suonate ("Test app chiusa", due "Tocca per aprire", "Diventa
   grigia"); lasciate lì, sono sulla pagina di prova dell'utente
 
-### 🆕 v0.86 — 25/09/2026 · 18:46 — I selettori di data e ora come quelli di Samsung
+### ✏️ v0.52.6 — 25/09/2026 · 18:46 — I selettori di data e ora come quelli di Samsung
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 95 test
 passati; commit solo in locale)*
 
@@ -8638,7 +8716,7 @@ SEP · 25 · 2026; le rotelle 19 : 00 di "Set time"):
 > scorrimento verticale. Non far caso che nella foto vedi 55, 00, 05. Fai
 > gli intervalli ad ogni secondo»
 
-- **[Nuova funzionalità]** **Il mese come quello di Samsung**
+- **[Modifica]** **[📱 Mobile]** **Il mese come quello di Samsung**
   (`SamsungCalendar` in `SamsungPickers.kt`), al posto del calendario di
   Material: in alto "Settembre 2026 ▾" con le frecce ‹ › ai lati, e il
   mese si cambia anche **trascinando in orizzontale**. Sei settimane a
@@ -8649,17 +8727,17 @@ SEP · 25 · 2026; le rotelle 19 : 00 di "Set time"):
   giorno, mese, anno); il giorno si adatta al mese (dal 31 a febbraio si va
   al 28); ritoccando il mese si torna alla griglia, sul mese scelto. Anni
   dal 1900 al 2100
-- **[Nuova funzionalità]** **"Set time" a rotelle** (`SamsungTimeDialog`):
+- **[Modifica]** **[📱 Mobile]** **"Set time" a rotelle** (`SamsungTimeDialog`):
   ore e minuti, sulle ventiquattro ore, **un minuto alla volta** — la
   richiesta "intervalli ad ogni secondo" letta come "ogni singolo valore"
   (la foto andava di cinque in cinque, e l'utente ha chiesto ore e minuti,
   non secondi). In fondo **Cancel | Done**, come nella foto
-- **[Nuova funzionalità]** **"End date"**: con il calendario nuovo toccare
+- **[Modifica]** **[📱 Mobile]** **"End date"**: con il calendario nuovo toccare
   un altro giorno **sposta** la data (prima, col calendario di Material, un
   secondo tocco faceva un periodo). Il periodo si fa con l'interruttore
   "End date", come su Notion: acceso, il primo tocco è l'inizio e il
   secondo la fine, con una fascia arancio chiaro fra i due
-- **[Nuova funzionalità]** Lo stesso calendario, in una finestra "Set date"
+- **[Modifica]** **[📱 Mobile]** Lo stesso calendario, in una finestra "Set date"
   con Cancel | Done (`SamsungDateDialog`), anche dove si sceglie un giorno
   solo: la fine di una ripetizione, il filtro per data, le date proprie del
   widget Life progress
@@ -8668,7 +8746,7 @@ SEP · 25 · 2026; le rotelle 19 : 00 di "Set time"):
   rotelle che si fermano ai capi (gli anni). Tolti il calendario e l'ora di
   Material (`DateRangePicker`, `DatePickerDialog`, `TimeInput`) e le loro
   conversioni dei millisecondi in UTC, che non servono più
-- **[Bug fix]** (trovato provando) La finestra di "Set time" finiva sotto la
+- **[Bug fix]** **[📱 Mobile]** (trovato provando) La finestra di "Set time" finiva sotto la
   barra di navigazione, con Cancel e Done tagliati: dentro la finestra c'era
   un riquadro a tutto schermo con la scheda in fondo, e la finestra non sa
   dov'è la barra. Ora è la finestra stessa a stare in fondo, alta quanto la
@@ -8682,7 +8760,7 @@ SEP · 25 · 2026; le rotelle 19 : 00 di "Set time"):
 - Notato: in cima a "My Space" ci sono sei righe vuote prima di "Titolo
   uno H1", nate dalle prove dell'utente delle 17:45; lasciate com'erano
 
-### 🆕 v0.85 — 25/09/2026 · 18:18 — Il cestino per i timer aggiunti
+### ✏️ v0.52.5 — 25/09/2026 · 18:18 — Il cestino per i timer aggiunti
 *(Claude Code sul PC;
 verificato sul telefono lo stesso giorno; 95 test passati; commit solo in
 locale)*
@@ -8694,7 +8772,7 @@ Richiesta dell'utente, parola per parola:
 > quando c'è un secondo timer attivato, e dal secondo timer in poi dammi
 > la possibilità di eliminare i successivi al primo»
 
-- **[Nuova funzionalità]** **Il cestino dei timer aggiunti.** Nel widget
+- **[Modifica]** **[📱 Mobile]** **Il cestino dei timer aggiunti.** Nel widget
   Timer, dalla seconda pagina in poi, in alto a destra c'è un **cestino**
   che elimina quel timer, in qualunque stato: sulle rotelle, in corsa, in
   pausa, finito. Sulla prima pagina non c'è: **il primo timer non si
@@ -8702,7 +8780,7 @@ Richiesta dell'utente, parola per parola:
   (`TimerWidget.withoutTimer`), non solo nella schermata. Se il timer
   eliminato correva, la sua sveglia se ne va con lui. Test nuovo
   `WidgetsTest.onlyTheTimersAddedAfterTheFirstCanBeDeleted`
-- **[Rimosso]** Il **"Cancel"** sulle rotelle, che c'era con più di un
+- **[Rimosso]** **[📱 Mobile]** Il **"Cancel"** sulle rotelle, che c'era con più di un
   timer: eliminava il timer, ma non si capiva — e valeva anche per il
   primo. Ora sulle rotelle c'è solo Start, e per eliminare il cestino
 - Verificato sul telefono, coi due timer dell'utente (10:02 e 14:00, sulle
@@ -8711,7 +8789,7 @@ Richiesta dell'utente, parola per parola:
   cestino, ↻ e +) ed eliminato col cestino → due timer; il secondo
   riportato alle rotelle con ↻ — i due timer dell'utente sono com'erano
 
-### 🆕 v0.84 — 25/09/2026 · 18:04 — Quattro bug, il link delle immagini tolto, la pagina vuota
+### ✏️ v0.52.4 — 25/09/2026 · 18:04 — Quattro bug, il link delle immagini tolto, la pagina vuota
 *(Claude Code sul PC; tutto verificato sul telefono lo stesso giorno; 94
 test passati; commit solo in locale, **non** su GitHub finché l'utente non
 lo dice)*
@@ -8746,7 +8824,7 @@ scarico un'icona .png 512x512 da Flaticon e la uploado, il .png si
 che lo sfondo del .png sia trasparente (proprio per rispettare quello che
 i .png fanno) ?»
 
-- **[Rimosso]** **Il link delle immagini** (icona e copertina). Prima c'era
+- **[Rimosso]** **[📱 Mobile]** **Il link delle immagini** (icona e copertina). Prima c'era
   una pastiglia "Link" accanto a "Upload", spenta finché il campo era
   vuoto, che scaricava l'immagine: sembrava un'etichetta. Per qualche ora
   è diventata un pulsante "Download" accanto al campo, col tasto Invio e i
@@ -8757,11 +8835,11 @@ i .png fanno) ?»
   di togliere il link. Tolto tutto: il campo, il pulsante, lo scaricamento
   (`PageImageStore.saveFromUrl`) e le sue scritte. La finestrella ha solo
   **Upload** (e Reposition / Remove quando c'è un'immagine)
-- **[Rimosso]** **Il permesso di andare in rete** (`INTERNET` nel
+- **[Rimosso]** **[📱 Mobile]** **Il permesso di andare in rete** (`INTERNET` nel
   manifest): serviva solo al link. I font cinesi e giapponesi li scarica
   Google Play Services col permesso suo. Da ora l'app non si collega a
   niente
-- **[Bug fix]** Scegliendo dalla galleria un file che non è un'immagine,
+- **[Bug fix]** **[📱 Mobile]** Scegliendo dalla galleria un file che non è un'immagine,
   la copia fallita restava nella cartella dell'app: si cancellava un file
   che aveva per nome il messaggio d'errore (`PageImageStore.saveFromGallery`)
 - **Il PNG con lo sfondo bianco non era un bug dell'app.** Il file scelto
@@ -8770,7 +8848,7 @@ i .png fanno) ?»
   mandandolo come foto, l'aveva compresso in JPEG, che la trasparenza non
   ce l'ha. Mandato come file è rimasto trasparente («Ok, funziona»). Vedi
   "Limiti noti"
-- **[Bug fix]** **Backspace fra righe vuote: la tastiera spariva** (bug 2).
+- **[Bug fix]** **[📱 Mobile]** **Backspace fra righe vuote: la tastiera spariva** (bug 2).
   Con tante righe vuote, il backspace a inizio della seconda toglieva la
   **prima** riga invece della seconda: per il testo è uguale, ma il campo
   condiviso è legato al primo blocco del suo gruppo (la chiave nella
@@ -8780,7 +8858,7 @@ i .png fanno) ?»
   quelle riscritte, e si toglie la successiva (`updateRun`). Test nuovi in
   `EmptyLinesBackspaceTest`. Verificato: quattro righe vuote, backspace
   dalla seconda → tastiera aperta, "x" scritta sulla prima
-- **[Bug fix]** **Copia / Incolla / Select all nelle finestrelle che salgono
+- **[Bug fix]** **[📱 Mobile]** **Copia / Incolla / Select all nelle finestrelle che salgono
   dal basso** (bug 3). Il `ModalBottomSheet` di Material 1.2 si apre in una
   finestra aggiunta a mano, che non sa mostrare la barrettina del telefono:
   la parola si selezionava e non compariva niente. Non solo nel colore
@@ -8794,7 +8872,7 @@ i .png fanno) ?»
   la richiudeva — aperta e chiusa quattro volte in 30 ms, poi più niente
   (visto nel registro). Verificato nel selettore di colore: Cut / Copy /
   Select all su "#FF0000", Copy → compare Paste, Select all seleziona tutto
-- **[Bug fix]** **Il toggle storto** (bug 4). Le righe dentro un toggle
+- **[Bug fix]** **[📱 Mobile]** **Il toggle storto** (bug 4). Le righe dentro un toggle
   hanno ciascuna un campo suo, e Compose toglieva lo spazio sopra la prima
   riga: il testo stava ~3dp più su della freccetta e dei numeri, che si
   scrivono a parte (i numeri avevano in più 2dp di margine sopra). Ora la
@@ -8803,11 +8881,11 @@ i .png fanno) ?»
   4dp sopra e sotto). Il quadratino delle caselle non va più alzato a mano
   (via `CHECKBOX_BASELINE_LIFT`). Verificato: freccetta centrata sul
   titolo, "1." sulla riga di "A", stesso passo dell'elenco fuori
-- **[Bug fix]** **"1." dentro un toggle non faceva l'elenco numerato**
+- **[Bug fix]** **[📱 Mobile]** **"1." dentro un toggle non faceva l'elenco numerato**
   (bug 4): la regola c'era solo nel testo condiviso. Ora anche nelle righe
   dentro un toggle (`startNumberedListInBlock`). Verificato: Invio sulla
   riga vuota, "1." → elenco da 1, "Nuovo" scritto dentro; poi annullato
-- **[Bug fix]** **La pagina vuota: il primo Invio perdeva il cursore**
+- **[Bug fix]** **[📱 Mobile]** **La pagina vuota: il primo Invio perdeva il cursore**
   (trovato da Claude provando il bug 2, sistemato su richiesta). Una
   pagina senza righe ne mostra una vuota che nel database non c'è; il
   primo Invio salvava solo la riga nuova, quella vuota spariva e con lei
@@ -8825,7 +8903,7 @@ i .png fanno) ?»
   stato modificato dall'utente (righe "A" rifatte, toggle chiuso); lasciato
   com'è
 
-### 🆕 v0.83 — 25/09/2026 · 13:31 — Divisore sotto le pagine, menu dei font non più coperto
+### ✏️ v0.52.3 — 25/09/2026 · 13:31 — Divisore sotto le pagine, menu dei font non più coperto
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 89 test
 passati; commit solo in locale)*
 
@@ -8835,12 +8913,12 @@ coperto, nella voce qui sotto):
 > sezione con la visualizzazione gerarchica del Workspace nella sidebar,
 > mettimici un divider, così non si confonde con Search»
 
-- **[Nuova funzionalità]** **Un divisore sotto l'albero delle pagine**
+- **[Modifica]** **[📱 Mobile]** **Un divisore sotto l'albero delle pagine**
   nella barra laterale, uguale a quello sotto "Main menu": l'ultima
   pagina dell'albero e "Search" non sembrano più la stessa lista
   (`Sidebar.kt`). Verificato sul telefono: il divisore sta fra l'ultimo
   "Untitled" e "Search"
-- **[Bug fix]** **Il menu dei font era coperto dalla barrettina Copy /
+- **[Bug fix]** **[📱 Mobile]** **Il menu dei font era coperto dalla barrettina Copy /
   Cut / Select all** del telefono, quando c'era del testo selezionato:
   copriva Garamond e Arial. Il menu non prende il fuoco apposta (così la
   tastiera e la barra Aa restano), quindi il campo restava a fuoco con la
@@ -8856,7 +8934,7 @@ coperto, nella voce qui sotto):
   pagina, era già in Futura. **Confermato dall'utente**: «Sì, l'ho
   provato io, tranquillo». Lasciata com'è
 
-### 🆕 v0.82 — 25/09/2026 · 13:23 — Font e dimensione sul testo selezionato
+### ✏️ v0.52.2 — 25/09/2026 · 13:23 — Font e dimensione sul testo selezionato
 *(Claude Code
 sul PC; verificato sul telefono lo stesso giorno; schema alla versione
 **31**; 89 test passati; commit solo in locale, **non** su GitHub finché
@@ -8872,10 +8950,10 @@ Richiesta dell'utente, parola per parola:
 > selezionarne altro e modificare quel testo con un altro font. Puoi
 > farlo?»
 
-- **[Rimosso]** **"Font" e "Font size" nelle impostazioni.** Erano due
+- **[Rimosso]** **[📱 Mobile]** **"Font" e "Font size" nelle impostazioni.** Erano due
   voci grigie, messe lì per un futuro font di tutto il Workspace: tolte,
   con le loro scritte (`Strings.font`, `Strings.fontSize`)
-- **[Nuova funzionalità]** **Font e dimensione valgono solo per il testo
+- **[Modifica]** **[📱 Mobile]** **Font e dimensione valgono solo per il testo
   selezionato.** Prima le due voci della barra Aa cambiavano **tutta la
   pagina**, qualunque cosa fosse selezionata (non era un bug: era fatta
   così il 24/09, "per ogni pagina"). Ora si comportano come il colore:
@@ -8896,7 +8974,7 @@ Richiesta dell'utente, parola per parola:
   `setPageFont`, `setPageFontSize`. Le celle delle tabelle semplici e il
   titolo della pagina, che prendevano il font della pagina, tornano al
   font di sistema (sono testo senza formattazione)
-- **[Nuova funzionalità]** **Le righe si allungano per il testo grande.**
+- **[Modifica]** **[📱 Mobile]** **Le righe si allungano per il testo grande.**
   Con una dimensione più grande di 16 in un gruppo di righe, **tutte**
   le righe di quel gruppo diventano più alte, quanto serve al pezzo più
   grande; perché non solo la sua, vedi "Limiti noti"
@@ -8924,7 +9002,7 @@ Richiesta dell'utente, parola per parola:
   Select all, che copriva Garamond e Arial. **Corretto subito dopo**, vedi
   la voce qui sopra
 
-### 🆕 v0.81 — 25/09/2026 · 12:59 — Timer: via i tempi pronti da 10, 15 e 30 minuti
+### ✏️ v0.52.1 — 25/09/2026 · 12:59 — Timer: via i tempi pronti da 10, 15 e 30 minuti
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno)*
 
 L'utente, parola per parola:
@@ -8932,15 +9010,15 @@ L'utente, parola per parola:
 > minuti, 15 minuti e 30 minuti) di Samsung non li volevo. Toglimeli per
 > favore.»
 
-- **[Rimosso]** I tempi pronti 00:10:00, 00:15:00 e 00:30:00 sotto le
-  rotelle del Timer, quelli della seconda foto (v0.80): resta solo
+- **[Rimosso]** **[📱 Mobile]** I tempi pronti 00:10:00, 00:15:00 e 00:30:00 sotto le
+  rotelle del Timer, quelli della seconda foto (v0.52): resta solo
   **Start**
 
-### 🆕 v0.80 — 25/09/2026 · 12:56 — Cronometro e Timer fra i widget, come quelli dell'orologio Samsung
+### 🆕 v0.52 — 25/09/2026 · 12:56 — Cronometro e Timer fra i widget, come quelli dell'orologio Samsung
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno; 80 test
 passati)*
 
-- **[Nuova funzionalità]** **Cronometro e Timer fra i widget.** Richiesta
+- **[Nuova funzionalità]** **[📱 Mobile]** **Cronometro e Timer fra i widget.** Richiesta
   dell'utente, parola per parola, con quattro foto dell'orologio Samsung
   (il cronometro fermo a 00:32.52 con tre giri e in corsa a 00:10.84; le
   rotelle del timer a 00:10:00 coi tempi pronti; un timer a 9:55 con
@@ -8978,7 +9056,7 @@ passati)*
     secondi 0-59), ognuna si ferma su un numero intero e il tempo si salva
     subito; **Start**. *(I tempi pronti 00:10:00, 00:15:00 e 00:30:00
     della seconda foto c'erano in questa versione e sono stati tolti
-    subito dopo, su richiesta dell'utente: vedi v0.81)*
+    subito dopo, su richiesta dell'utente: vedi v0.52.1)*
     Partito: il quadrante con le **tacche arancio per il tempo che resta**,
     dentro il tempo impostato ("10 m"), il conto alla rovescia ("9:55") e
     la **campanella con l'ora in cui finisce**; sotto **Pause** / **Resume**.
@@ -8998,10 +9076,10 @@ passati)*
     `WidgetsTest` (cronometro, giri e colori coi tempi delle foto, stati
     del timer, rotelle, testi): 80 test passati
 
-### 🆕 v0.79 — 25/09/2026 · 08:34 — Fusi orari: l'ora a destra di ogni fuso nella finestra di scelta
+### ✏️ v0.51.1 — 25/09/2026 · 08:34 — Fusi orari: l'ora a destra di ogni fuso nella finestra di scelta
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno)*
 
-- **[Nuova funzionalità]** **L'ora nella scelta del fuso di "Add to the
+- **[Modifica]** **[📱 Mobile]** **L'ora nella scelta del fuso di "Add to the
   list".** Richiesta dell'utente, parola per parola: «Nella lista degli
   orologi, non quando faccio "Add clock" ma "Add to the list", aggiungimi
   a destra anche l'ora. Mi serve saperla in aggiunta del fuso orario
@@ -9016,11 +9094,11 @@ passati)*
   → 19:34 allo scatto del minuto, Marquesas (GMT-9:30) 21:03 → 21:04; in
   "Add clock" 19:36 alle 08:36 italiane
 
-### 🔧 v0.78.1 — 25/09/2026 · 08:29 — Pomodoro: la cifra cambia a ogni secondo da quando si preme ▶
+### 🔧 v0.51.0.1 — 25/09/2026 · 08:29 — Pomodoro: la cifra cambia a ogni secondo da quando si preme ▶
 *(Claude Code sul PC; verificato sul telefono lo stesso giorno)*
 
-- **[Bug fix]** **…e partiva con un secondo di ritardo.** Segnalato
-  dall'utente dopo la correzione del secondo in più (v0.78): «non si vede il secondo in
+- **[Bug fix]** **[📱 Mobile]** **…e partiva con un secondo di ritardo.** Segnalato
+  dall'utente dopo la correzione del secondo in più (v0.51): «non si vede il secondo in
   più che ti dicevo, ma comunque il pomodoro ci mette un secondo in più a
   partire rispetto a quando premo il pulsante play». Il widget si
   ridisegnava allo scoccare dei secondi **dell'orologio**, e il timer
@@ -9032,7 +9110,7 @@ passati)*
   Verificato con screenshot a tempo dal telefono: "01:00" fino a 0,76 s
   dopo il tocco, "00:59" a 1,13 s, "00:58" a 2,16 s, "00:57" a 3,06 s
 
-### 🆕 v0.78 — 25/09/2026 · 08:25 — Le prove dell'utente: "Reposition cover" nelle schede, il suono del pomodoro, SimSun al posto di MS YaHei
+### 🆕 v0.51 — 25/09/2026 · 08:25 — Le prove dell'utente: "Reposition cover" nelle schede, il suono del pomodoro, SimSun al posto di MS YaHei
 *(Claude Code sul PC; tutto verificato sul telefono lo stesso giorno;
 schema alla versione **30**)*
 
@@ -9056,7 +9134,7 @@ della scheda** (non la copertina della pagina); suono **solo del
 pomodoro**; MS YaHei: «Toglilo. Mi ci puoi mettere SimSum?». E durante la
 prova: «La suoneria sta continuando a suonare all'infinito».
 
-- **[Nuova funzionalità]** **"Reposition cover" nelle schede della
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Reposition cover" nelle schede della
   galleria.** Tenendo premuta una scheda che mostra la copertina, nelle
   azioni c'è "Reposition cover": la copertina **dentro la scheda** si
   trascina e si pizzica (fino a 4×, come nella pagina), mai oltre i bordi;
@@ -9070,14 +9148,14 @@ prova: «La suoneria sta continuando a suonare all'infinito».
   colonne `cardCoverScale`, `cardCoverOffsetX`, `cardCoverOffsetY` in
   `pages`). Verificato: trascinata la copertina di "Gioco uno", salvata
   nella sola scheda (`cardCoverOffsetY` 0,085, la pagina a 0)
-- **[Nuova funzionalità]** **Il suono del pomodoro fra le suonerie del
+- **[Nuova funzionalità]** **[📱 Mobile]** **Il suono del pomodoro fra le suonerie del
   telefono.** Nell'ingranaggio c'è "Sound": apre l'elenco di sistema dei
   suoni (con l'anteprima), si sceglie, e con "Fatto" vale **per quel
   pomodoro**; "Use default sound" torna al suono delle notifiche dell'app,
   che resta quello di partenza (`PomodoroWidget.soundUri`, `soundName`).
   Sul S25 Ultra il telefono chiede con quale app sceglierlo (SecSoundPicker
   o Zedge, se installato). Verificato con "Asteroid"
-- **[Bug fix]** **Un suono che non finiva più.** Le suonerie del telefono
+- **[Bug fix]** **[📱 Mobile]** **Un suono che non finiva più.** Le suonerie del telefono
   (le "Galaxy" di Samsung) sono fatte per ripetersi finché non si
   risponde — lo chiede il file stesso, con l'etichetta `ANDROID_LOOP` — e
   suonate come avviso andavano avanti all'infinito (fermate chiudendo
@@ -9085,7 +9163,7 @@ prova: «La suoneria sta continuando a suonare all'infinito».
   impostazioni del suono) suona **una volta sola** (`isLooping = false`,
   da Android 9) e comunque **si ferma dopo 8 secondi** (`WidgetStore.playOnce`).
   Verificato: partito alle 08:22:58, fermato e rilasciato alle 08:23:06
-- **[Bug fix]** **Il pomodoro appena avviato mostrava un secondo in
+- **[Bug fix]** **[📱 Mobile]** **Il pomodoro appena avviato mostrava un secondo in
   più** ("01:01" per un attimo, con un minuto). L'ora che la barra
   laterale passa al widget si rinfresca allo scoccare di ogni secondo, e
   subito dopo ▶ era indietro di quasi un secondo rispetto a quando il
@@ -9093,12 +9171,12 @@ prova: «La suoneria sta continuando a suonare all'infinito».
   partenza (`PomodoroWidget.remainingAt`). Test nuovo
   `WidgetsTest.aJustStartedPomodoroNeverShowsMoreThanItStartedWith`.
   Verificato: subito dopo ▶ "01:00", e un minuto dopo la pausa in verde
-- **[Rimosso]** **MS YaHei.** Non era rotto: il suo sosia libero, Noto
+- **[Rimosso]** **[📱 Mobile]** **MS YaHei.** Non era rotto: il suo sosia libero, Noto
   Sans SC, è **lo stesso disegno** che Android usa già per il cinese, e
   sul telefono non si distingueva dal font di sistema. Tolto su richiesta
   dell'utente; le pagine che lo usavano tornano al font di sistema
   (migrazione 29→30)
-- **[Nuova funzionalità]** **SimSun** al posto di MS YaHei, nel gruppo
+- **[Nuova funzionalità]** **[📱 Mobile]** **SimSun** al posto di MS YaHei, nel gruppo
   cinese: un Song dai tratti sottili, reso con **Noto Serif SC nel peso
   Light** — lo stesso font del Songti ma più leggero, che a SimSun somiglia
   e dal Songti si distingue. Si scarica come gli altri cinesi. Verificato
@@ -9115,7 +9193,7 @@ prova: «La suoneria sta continuando a suonare all'infinito».
 - **[Progetto]** Voce 14 confermata dall'utente: le schede piccole, medie
   e grandi come su Notion, **medie** di partenza — è già così
 
-### 🔧 v0.77.1 — 24/09/2026 · 23:17 — Ripresa sul PC del 24/09/2026 — il lavoro cloud provato sul telefono
+### 🔧 v0.50.0.1 — 24/09/2026 · 23:17 — Ripresa sul PC del 24/09/2026 — il lavoro cloud provato sul telefono
 *(Claude Code sul PC, S25 Ultra in debug wireless, build
 firmata con la chiave di debug del PC; esito voce per voce in "Diario
 delle sessioni cloud" → "Da verificare sul telefono")*
@@ -9139,14 +9217,14 @@ delle sessioni cloud" → "Da verificare sul telefono")*
   tabella non è stata rifatta); i tre titoli diventati `PARAGRAPH` col
   testo intatto; tutto il resto identico; `integrity_check` e
   `foreign_key_check` puliti; nessun errore in `logcat`
-- **[Bug fix]** **Barra Aa: la voce della dimensione era vuota** — solo
+- **[Bug fix]** **[📱 Mobile]** **Barra Aa: la voce della dimensione era vuota** — solo
   la freccetta, niente "16" (lavoro cloud). `BarValueChip` accorcia il
   testo coi puntini con `weight(1f, fill = false)`, che vuole una
   larghezza massima: la barra scorre in orizzontale, e senza limite
   Compose dava al testo zero pixel. La voce del font l'aveva
   (`FONT_CHIP_MAX_WIDTH`), quella della dimensione no: ora ha
   `SIZE_CHIP_MAX_WIDTH` (64 dp). Verificato: "16", e 32, 72, 5
-- **[Bug fix]** **Annulla faceva chiudere l'app** in qualunque pagina con
+- **[Bug fix]** **[📱 Mobile]** **Annulla faceva chiudere l'app** in qualunque pagina con
   un toggle non vuoto che non fosse il primo blocco
   (`SQLiteConstraintException: FOREIGN KEY constraint failed` in
   `replaceAllBlocks`). **C'era già prima del cloud.** La foto di Annulla
@@ -9158,7 +9236,7 @@ delle sessioni cloud" → "Da verificare sul telefono")*
   `PageRepositoryTest.undoSnapshotPutsBackAToggleWhoseChildComesFirstInOrderIndex`:
   senza la correzione fallisce con lo stesso errore del telefono (787),
   con la correzione passa. Verificato sul telefono
-- **[Bug fix]** **Dopo "Duplicate" dal menu del blocco il testo restava
+- **[Bug fix]** **[📱 Mobile]** **Dopo "Duplicate" dal menu del blocco il testo restava
   indietro, e la lettera successiva cancellava la copia.** Il campo
   unito mostrava le righe di prima (una sola copia) coi segni degli
   elenchi scalati di una riga; scrivendo una lettera, `updateRun`
@@ -9172,7 +9250,7 @@ delle sessioni cloud" → "Da verificare sul telefono")*
   blocco è nuovo. Ora `pendingText` si imposta solo se il testo è
   cambiato davvero. Verificato: stessa sequenza, due righe subito, segni
   giusti, la lettera va nel blocco giusto e la copia resta
-- **[Bug]** *(non corretto, c'era già in `4a35c64`)* **La riga fantasma**:
+- **[Bug fix]** **[📱 Mobile]** *(non corretto, c'era già in `4a35c64`)* **La riga fantasma**:
   trasformando dal menu "/" l'**ultima** riga di un gruppo di testo in
   un'isola (toggle, database, pagina, tabella), nel campo resta una riga
   in più col testo che aveva (vuota se era vuota). `applySlashEntry`
@@ -9181,12 +9259,12 @@ delle sessioni cloud" → "Da verificare sul telefono")*
   `pendingText`, e il campo lo scambia per "database indietro". Non perde
   niente: scrivendoci nasce un blocco nuovo, e riaprendo la pagina
   sparisce. Da correggere con calma: è il punto più delicato dell'app
-- **[Bug]** *(non corretto, c'era già)* Creando un database o una pagina
+- **[Bug fix]** **[📱 Mobile]** *(non corretto, c'era già)* Creando un database o una pagina
   dal menu "/", il testo del comando ("/table", "/gallery") **resta
   salvato** nel blocco del collegamento: `convertToDatabaseLink(block)`
   salva la copia del blocco presa prima che il comando fosse tolto. Non
   si vede (il collegamento mostra il nome della pagina)
-- **[Bug]** *(non corretto, lavoro cloud, solo aspetto)* Sotto
+- **[Bug fix]** **[📱 Mobile]** *(non corretto, lavoro cloud, solo aspetto)* Sotto
   l'orologio del widget "Fusi orari" si legge "Thu 24 Sep • GMT+02:00"
   invece della sigla "CEST" che la voce prometteva: su questo telefono il
   nome breve del fuso, con la lingua dell'app in inglese, esce come
@@ -9201,18 +9279,18 @@ delle sessioni cloud" → "Da verificare sul telefono")*
   tolto a mano. Il tasto Indietro con la tastiera già chiusa esce
   dall'app
 
-### 🆕 v0.77 — 24/09/2026 · 15:52 — Pedice e apice nella barra Aa
+### 🆕 v0.50 — 24/09/2026 · 15:52 — Pedice e apice nella barra Aa
 *(verificato in parte sul telefono
 il 24/09/2026: voce 30)* *(sessione cloud del 24/09/2026,
 richiesta 39: compilato, 70 test passati — 7 nuovi —, nessuna
 migrazione, **non provato sul telefono**)*
-- **[Nuova funzionalità]** Nella barra **Aa**, subito dopo S, due
+- **[Nuova funzionalità]** **[📱 Mobile]** Nella barra **Aa**, subito dopo S, due
   pulsanti: **x₂ pedice** (una x col 2 piccolo in basso a destra) e
   **x² apice** (il 2 in alto a destra), come chiesto. Come B, I, U, S
   agiscono sul testo selezionato, anche a cavallo di più righe, e un
   secondo tocco toglie. **Si escludono**: dare l'apice a un pedice lo
   trasforma, come in Word (`withSubscript`, `withSuperscript`)
-- **[Nuova funzionalità]** Il testo in pedice o apice è **a sette decimi
+- **[Nuova funzionalità]** **[📱 Mobile]** Il testo in pedice o apice è **a sette decimi
   del corpo** della pagina (cresce con lui) e sta sotto o sopra la riga;
   le altre formattazioni — grassetto, colore, spoiler — restano. È solo
   aspetto: le lettere sono dove erano, quindi cursore, selezione,
@@ -9222,7 +9300,7 @@ migrazione, **non provato sul telefono**)*
   `subscript` e `superscript`, scritte solo quando sono accese: il testo
   di prima si legge com'era e, senza pedici, si salva identico. Niente
   migrazione (è JSON dentro una colonna che c'era già)
-- **[Bug fix]** *(trovati col disegno di prova, prima del telefono)*
+- **[Bug fix]** **[📱 Mobile]** *(trovati col disegno di prova, prima del telefono)*
   Nei pulsanti, il 2 dell'apice spingeva giù la x, che non stava più
   all'altezza di B, U, S; poi, messo il 2 in un angolo, restava a metà
   in tutti e due i pulsanti perché si portava dietro l'altezza di riga
@@ -9236,40 +9314,40 @@ migrazione, **non provato sul telefono**)*
   nuovi nelle otto lingue (`EditorStrings.subscript`, `superscript`, che
   chi usa il lettore di schermo sente sui due pulsanti)
 
-### 🆕 v0.76 — 24/09/2026 · 15:21 — Widget nella barra laterale — fusi orari, avanzamento, contatore, pomodoro
+### 🆕 v0.49 — 24/09/2026 · 15:21 — Widget nella barra laterale — fusi orari, avanzamento, contatore, pomodoro
 *(verificato in parte sul telefono il 24/09/2026: voce 29)*
 *(sessione cloud del 24/09/2026, richiesta 37: compilato, 63
 test passati — 12 nuovi —, nessuna migrazione, **non provato sul
 telefono**)*
-- **[Nuova funzionalità]** **La sezione "Widget" in cima alla barra
+- **[Nuova funzionalità]** **[📱 Mobile]** **La sezione "Widget" in cima alla barra
   laterale non è più uno spazio vuoto** (`WIDGETS_SPACE`, tolto): i widget
   si aggiungono da **"+ Aggiungi widget"** in fondo alla sezione, arrivano
   in fondo, ognuno nel suo riquadro arrotondato col nome e i **tre
   puntini** (Sposta su, Sposta giù, Rimuovi con la conferma; sul
   contatore anche Rinomina). Di ognuno se ne possono mettere quanti se ne
   vuole (`SidebarWidgets.kt`, `WidgetsSection`)
-- **[Nuova funzionalità]** **L'interruttore**: una freccetta accanto al
+- **[Nuova funzionalità]** **[📱 Mobile]** **L'interruttore**: una freccetta accanto al
   titolo "Widget", su per chiudere e giù per riaprire, **nasconde tutta
   la sezione** e lascia solo il titolo. La scelta **resta** chiudendo la
   barra e l'app, come chiesto
-- **[Nuova funzionalità]** **Fusi orari**: **orologi** due per riga, col
+- **[Nuova funzionalità]** **[📱 Mobile]** **Fusi orari**: **orologi** due per riga, col
   nome della città sopra; l'analogico come nella foto dell'utente —
   tacche, lancette di ore, minuti e secondi, e dentro l'ora scritta
   ("16:05:09") col giorno nella lingua dell'app e la sigla del fuso
   ("gio 24 set • CEST"); il digitale con l'ora grande. **Tenendo premuto
   un orologio**: Analogico / Digitale, Cambia fuso orario, Rimuovi. Il
   primo orologio nasce sul fuso dell'app (Settings)
-- **[Nuova funzionalità]** **L'elenco dei fusi**, sotto gli orologi:
+- **[Nuova funzionalità]** **[📱 Mobile]** **L'elenco dei fusi**, sotto gli orologi:
   città, ora, sole o luna (giorno dalle 6 alle 18). **Sempre da ovest a
   est**, come chiesto: si ordina a ogni secondo sulla distanza da
   Greenwich **di adesso**, perché l'ora legale sposta i fusi (New York e
   Londra non sono sempre a cinque ore); a parità, per nome
   (`sortedWestToEast`). Tenendo premuta una riga, la si toglie
-- **[Nuova funzionalità]** **La scelta del fuso**: tutti i fusi con un
+- **[Nuova funzionalità]** **[📱 Mobile]** **La scelta del fuso**: tutti i fusi con un
   nome di città (fuori i doppioni vecchi come "US/Pacific" o
   "Etc/GMT+5"), anche loro da ovest a est, con "Regione · GMT+5:30"
   sotto, e la ricerca per città, regione o "GMT+2" (`ZonePickerSheet`)
-- **[Nuova funzionalità]** **Avanzamento** (la "Life Progress Bar"):
+- **[Nuova funzionalità]** **[📱 Mobile]** **Avanzamento** (la "Life Progress Bar"):
   **Anno, Mese, Settimana, Giorno** già dentro, e **"Aggiungi una data"**
   per le proprie — nome, Da, A, con il calendario dei database; A prima
   di Da non si accetta. Barra con la cornice, pieno quanto è passato,
@@ -9281,10 +9359,10 @@ telefono**)*
   lunedì; una data si conta dalla mezzanotte del primo giorno alla
   mezzanotte dell'ultimo, e da lì è al 100%; tutto nel fuso dell'app
   (`fractionAt`)
-- **[Nuova funzionalità]** **Contatore**: − e + quadrati ai lati del
+- **[Nuova funzionalità]** **[📱 Mobile]** **Contatore**: − e + quadrati ai lati del
   numero, sotto la freccetta che gira per azzerare, come nella foto. Un
   nome facoltativo sopra al numero (Rinomina, dai tre puntini)
-- **[Nuova funzionalità]** **Pomodoro**: il riquadro arrotondato col
+- **[Nuova funzionalità]** **[📱 Mobile]** **Pomodoro**: il riquadro arrotondato col
   **tempo grande** ("25:00"; toccandolo lo si scrive a mano, minuti e
   secondi), sotto **il nome della sessione** (toccandolo lo si cambia; in
   pausa c'è scritto "Pausa") e tre pulsanti tondi: **▶** (che diventa ⏸),
@@ -9321,7 +9399,7 @@ telefono**)*
   in `app/build.gradle.kts`. `captureToImage` di Compose sotto
   Robolectric non finisce mai: si disegna a mano la finestra su una
   bitmap
-- **[Bug fix]** *(trovato con quel disegno, prima di arrivare al
+- **[Bug fix]** **[📱 Mobile]** *(trovato con quel disegno, prima di arrivare al
   telefono)* **Il contenuto di ogni widget era disegnato tutto nello
   stesso punto**, righe una sopra l'altra: stava in un `Box` invece che
   in una `Column`. E **le barre dell'avanzamento erano lunghe ognuna a
@@ -9339,44 +9417,44 @@ telefono**)*
   richiesta 35) e "Linked view of data source" fra le voci grigie dei
   menu "+" e "/" (costruita alla richiesta 36). Barrate, non cancellate
 
-### 🆕 v0.75 — 24/09/2026 · 14:56 — Viste collegate — lo stesso database in un'altra pagina
+### 🆕 v0.48 — 24/09/2026 · 14:56 — Viste collegate — lo stesso database in un'altra pagina
 *(verificato in parte sul telefono il 24/09/2026: voce 28)* *(sessione
 cloud del 24/09/2026, richiesta 36: compilato, 51 test passati — 9
 nuovi, compresa la migrazione 28→29 aperta da Room —, **schema alla
 versione 29**, **non provato sul telefono**)*
-- **[Nuova funzionalità]** **"Linked view of data source"** nei menu "/"
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Linked view of data source"** nei menu "/"
   e "+" (finora grigia) e in "Turn into": si sceglie un database da un
   elenco con la ricerca in cima — tutti i database dell'app, ognuno con
   sotto la pagina in cui sta, come "Existing data sources" di Notion
   (`LinkedSourcePickerSheet`) — e nella pagina compare **lo stesso
   database**: stesse righe, proprietà, pagine e quello che c'è scritto
   dentro. Non è una copia: scrivere da una parte è scrivere dall'altra
-- **[Nuova funzionalità]** **La vista nasce identica** all'originale —
+- **[Nuova funzionalità]** **[📱 Mobile]** **La vista nasce identica** all'originale —
   vista, filtro, ordinamento, raggruppamento, galleria, calendario,
   proprietà nascoste — e da lì ha **impostazioni sue**: nella pagina
   "PS5" si filtra Piattaforma = PS5 e nel database principale non cambia
   niente. Anche **le proprietà nascoste** sono della vista
   (`PageEntity.viewHiddenColumnIds`)
-- **[Nuova funzionalità]** **Il titolo è "↗ Nome del database"**, quello
+- **[Nuova funzionalità]** **[📱 Mobile]** **Il titolo è "↗ Nome del database"**, quello
   vivo dell'origine, e **toccandolo si apre il database principale** a
   schermo intero, come chiesto (`LinkedViewTitle`). Icona, nome, blocco
   del contenuto e "database semplice" sono quelli dell'origine
-- **[Nuova funzionalità]** **Una riga nuova nasce col valore del filtro**,
+- **[Nuova funzionalità]** **[📱 Mobile]** **Una riga nuova nasce col valore del filtro**,
   come su Notion — nella vista PS5, "Nuova pagina" crea un gioco PS5 nel
   database principale. Vale per ogni database filtrato, non solo per le
   viste: prima una riga creata con un filtro attivo spariva appena nata.
   Per le selezioni (il primo valore scelto) e per le caselle filtrate
   sulle spuntate (`fillFilterValue`)
-- **[Nuova funzionalità]** Menu del blocco su una vista: le voci del
+- **[Nuova funzionalità]** **[📱 Mobile]** Menu del blocco su una vista: le voci del
   database (semplice / complesso, Lock database, Rename, Edit icon)
   agiscono **sull'origine**, quelle della pagina (Duplicate, Move to,
   Move to trash, preferiti) **sulla vista**; niente "Turn into page".
   **Togliere la vista** (Delete nelle sue impostazioni) lo dice con una
   finestra sua: se ne va solo la vista, il database resta
-- **[Nuova funzionalità]** Se il database di origine è cancellato o nel
+- **[Nuova funzionalità]** **[📱 Mobile]** Se il database di origine è cancellato o nel
   cestino, al posto della vista una riga lo dice, coi sei puntini per
   toglierla (`LinkedSourceMissing`); ripristinandolo, la vista torna
-- **[Nuova funzionalità]** Le viste **non compaiono nella barra laterale
+- **[Nuova funzionalità]** **[📱 Mobile]** Le viste **non compaiono nella barra laterale
   né nella ricerca generale**: sono un altro modo di guardare un database
   che lì c'è già, e lo avrebbero ripetuto. Una pagina con solo viste non
   ha il triangolino dei figli (`BlockDao.countLinksInPage`)
@@ -9395,7 +9473,7 @@ versione 29**, **non provato sul telefono**)*
   database di origine**, dove l'avrebbero visto tutti. Ora si parte
   sempre dalle colonne vere (`rawColumns`); controprova fatta: tolta la
   protezione, il test lo coglie
-- **[Bug fix]** *(trovato scrivendo questo)* **Una riga nuova in un
+- **[Bug fix]** **[📱 Mobile]** *(trovato scrivendo questo)* **Una riga nuova in un
   database filtrato poteva prendere il numero d'ordine di una riga
   nascosta**: il numero si calcolava sulle righe visibili, già filtrate
   (o, da oggi, cercate). Due righe con lo stesso numero non hanno un
@@ -9411,17 +9489,17 @@ versione 29**, **non provato sul telefono**)*
   `linkedSourceMissing`, `noDatabasesToLink`, `removeLinkedViewTitle`,
   `removeLinkedViewText`)
 
-### 🆕 v0.74 — 24/09/2026 · 14:35 — Ricerca dentro un database — la lente accanto a Sort
+### 🆕 v0.47 — 24/09/2026 · 14:35 — Ricerca dentro un database — la lente accanto a Sort
 *(verificato in parte sul telefono il 24/09/2026: voce 27)* *(sessione
 cloud del 24/09/2026, richiesta 35: compilato, 42 test passati — 10
 nuovi —, nessuna migrazione, **non provato sul telefono**)*
-- **[Nuova funzionalità]** Nella riga degli strumenti di ogni database,
+- **[Nuova funzionalità]** **[📱 Mobile]** Nella riga degli strumenti di ogni database,
   **subito dopo Sort**, la **lente**. Toccandola, lì dov'era la riga
   compare **la barra della ricerca**, col cursore già dentro: si scrive
   subito, come su Notion. La **X** la chiude, cancella la parola e
   rimette la riga degli strumenti (`DatabaseSearchBar`). Si può cercare
   anche con "Lock view": cercare non cambia com'è fatto il database
-- **[Nuova funzionalità]** **Cosa si cerca**, a ogni lettera, senza
+- **[Nuova funzionalità]** **[📱 Mobile]** **Cosa si cerca**, a ogni lettera, senza
   distinguere maiuscole e minuscole: il **nome** delle righe; il valore
   delle **proprietà** che si leggono come sono scritte — testo, numero,
   selezione, selezione multipla (valore per valore), URL, email,
@@ -9430,14 +9508,14 @@ nuovi —, nessuna migrazione, **non provato sul telefono**)*
   nomi delle sottopagine. Date, caselle e date automatiche no: il loro
   valore salvato ("2026-09-24", "true") non è quello che si legge, e
   "true" troverebbe ogni casella spuntata
-- **[Nuova funzionalità]** **Cosa si illumina**, come chiesto: se la
+- **[Nuova funzionalità]** **[📱 Mobile]** **Cosa si illumina**, come chiesto: se la
   parola è **nel nome**, si illuminano di giallo **le sue lettere**;
   se è **dentro** (una proprietà, la pagina), si illumina di un giallo
   più leggero **tutta la riga** — o la scheda, o la barra. Giallo e non
   l'azzurro dell'app, che vuol dire "selezionato". In **tutte e sei le
   viste**: tabella, bacheca, elenco, galleria, calendario, linea del tempo
   (`highlightedTitle`, `Modifier.foundInside`, `LocalRowSearch`)
-- **[Nuova funzionalità]** **Le righe senza la parola si nascondono**
+- **[Nuova funzionalità]** **[📱 Mobile]** **Le righe senza la parola si nascondono**
   mentre si cerca, come su Notion; senza nessuna riga trovata, sotto la
   barra c'è "Nessun risultato". La ricerca è un filtro in più sopra a
   quello delle impostazioni, e sta nel ViewModel del database
@@ -9445,7 +9523,7 @@ nuovi —, nessuna migrazione, **non provato sul telefono**)*
   per questo vale in ogni vista senza che nessuna debba saperlo, e
   aprendo una pagina trovata e tornando indietro la ricerca è ancora lì
   (senza riaprire la tastiera)
-- **[Nuova funzionalità]** **Una riga creata mentre si cerca resta
+- **[Nuova funzionalità]** **[📱 Mobile]** **Una riga creata mentre si cerca resta
   visibile** fino alla chiusura della ricerca: è vuota, non ha la
   parola, e sparendo subito avrebbe fatto sembrare rotto "Nuova pagina"
 - **[Progetto]** **Veloce anche con tanto testo**: il testo delle pagine
@@ -9463,12 +9541,12 @@ nuovi —, nessuna migrazione, **non provato sul telefono**)*
   aperta). Testi nuovi nelle otto lingue (`DbStrings.searchInDatabase`,
   `closeSearch`)
 
-### 🆕 v0.73 — 24/09/2026 · 14:24 — Annulla e Ripristina anche per Move to, Duplicate e Move to trash
+### ✏️ v0.46.2 — 24/09/2026 · 14:24 — Annulla e Ripristina anche per Move to, Duplicate e Move to trash
 *(verificato in parte sul telefono il 24/09/2026: voci 25 e 26)*
 *(sessione cloud del 24/09/2026, richiesta 34: compilato, 32 test passati
 — 16 nuovi, sul database vero —, nessuna migrazione, **non provato sul
 telefono**)*
-- **[Nuova funzionalità]** **Annulla disfa anche "Move to", "Duplicate"
+- **[Modifica]** **[📱 Mobile]** **Annulla disfa anche "Move to", "Duplicate"
   e "Move to trash", e Ripristina li rifà.** Prima Annulla conosceva solo
   le foto dei blocchi della pagina aperta, e queste tre toccano altre
   pagine:
@@ -9484,7 +9562,7 @@ telefono**)*
   - **Move to trash** → la pagina esce dal Cestino e torna al suo posto
     (fatto anche questo: stesso meccanismo, e la voce stava nello stesso
     elenco di Limiti noti)
-- **[Nuova funzionalità]** **Dove si annulla.** Dal menu del blocco, nella
+- **[Modifica]** **[📱 Mobile]** **Dove si annulla.** Dal menu del blocco, nella
   pagina stessa. Dai tre puntini la schermata se ne va — si torna
   indietro, o si entra nella copia — e l'Annulla passa alla **prossima
   pagina che compare** (`PendingPageUndo`, preso in
@@ -9527,38 +9605,38 @@ telefono**)*
   la tabella resta vuota. Non erano ipotesi. Le correzioni sono al loro
   posto, e i test passano
 
-### 🆕 v0.72 — 24/09/2026 · 14:04 — Move to — l'albero con la ricerca
+### ✏️ v0.46.1 — 24/09/2026 · 14:04 — Move to — l'albero con la ricerca
 *(verificato in parte sul
 telefono il 24/09/2026: voce 24)* *(sessione cloud del 24/09/2026,
 richiesta 33: compilato, test passati, nessuna migrazione, **non
 provato sul telefono**)*
-- **[Nuova funzionalità]** **"Move to" apre l'albero della barra
+- **[Modifica]** **[📱 Mobile]** **"Move to" apre l'albero della barra
   laterale con la ricerca in cima** — lo stesso di "Duplicate → Dentro
   una pagina" (`DestinationPickerSheet`, ora condiviso, e
   `MovePagePicker`) — dai tre puntini di una pagina, dai tre puntini di
   un database a schermo intero e dal menu del blocco. Prima era un
   elenco piatto, in ordine alfabetico, delle sole pagine di testo
-- **[Nuova funzionalità]** Si può scegliere **anche la pagina di un
+- **[Modifica]** **[📱 Mobile]** Si può scegliere **anche la pagina di un
   database**: i database si aprono come cartelle, e si sceglie una delle
   loro righe — anche una mai aperta, la cui pagina nasce in quel
   momento. Il database stesso no: il suo contenuto sono righe, non
   blocchi. Prima le pagine delle righe erano escluse
-- **[Nuova funzionalità]** **Sempre in fondo** alla pagina scelta, come
+- **[Modifica]** **[📱 Mobile]** **Sempre in fondo** alla pagina scelta, come
   chiesto: anche scegliendo la pagina in cui sta già (prima lì non
   succedeva niente). Un avviso dice "Spostata in …"; dal menu del blocco
   si resta nella pagina, dai tre puntini si torna indietro come prima
-- **[Nuova funzionalità]** **Un database spostato arriva sempre come
+- **[Modifica]** **[📱 Mobile]** **Un database spostato arriva sempre come
   collegamento a pagina**, anche se prima era aperto dentro la pagina:
   per riaprirlo lì c'è "Turn into database" (tenendo premuto il
   collegamento, o dai tre puntini del database). Prima si ricreava
   sempre aperto. La riga di spiegazione in cima all'albero lo dice
-- **[Nuova funzionalità]** **"Move to" sulla pagina principale c'è ma è
+- **[Modifica]** **[📱 Mobile]** **"Move to" sulla pagina principale c'è ma è
   grigia** (prima non c'era proprio). L'utente ha lasciato la scelta fra
   la voce grigia e un messaggio "The main menu cannot be moved": messa
   la grigia, perché è già il modo in cui l'app dice "non qui" (Import ed
   Export nello stesso menu) e non costa un tocco a vuoto. Cambiarla col
   messaggio è una riga
-- **[Bug fix]** *(trovato scrivendo questo)* **Si poteva spostare una
+- **[Bug fix]** **[📱 Mobile]** *(trovato scrivendo questo)* **Si poteva spostare una
   pagina dentro una sua sottopagina**: il vecchio elenco offriva tutte
   le pagine tranne quella stessa. Il risultato era un giro chiuso — la
   pagina dentro la sottopagina, la sottopagina dentro la pagina — e
@@ -9567,12 +9645,12 @@ provato sul telefono**)*
   grigie e non si aprono, e cercando non compaiono
   (`PageRepository.moveExclusions`); il repository rifiuta comunque lo
   spostamento se arriva da un'altra strada
-- **[Bug fix]** *(trovato scrivendo questo)* **La pagina di una riga
+- **[Bug fix]** **[📱 Mobile]** *(trovato scrivendo questo)* **La pagina di una riga
   spostata restava anche nel database**, cioè in due posti. Ora esce dal
   database, come su Notion: la riga si toglie con le sue proprietà, e la
   pagina diventa una pagina come le altre (`isRowPage` spento,
   `PageDao.setRowPage`). La riga di spiegazione lo dice prima di scegliere
-- **[Bug fix]** *(trovato scrivendo questo; **confermato dai test** della
+- **[Bug fix]** **[📱 Mobile]** *(trovato scrivendo questo; **confermato dai test** della
   richiesta 34)* **Annulla dopo aver
   eliminato un database dentro la pagina faceva chiudere l'app.**
   L'eliminazione (`deleteDatabaseBlock`) scatta una foto per Annulla e
@@ -9585,7 +9663,7 @@ provato sul telefono**)*
   `replaceAllBlocks`). Vale per tutte le strade — tre puntini della
   sottopagina, menu del blocco, cestino — e sostituisce `forgetLinksTo`
   della voce precedente, che copriva solo il menu del blocco
-- **[Rimosso]** La vecchia finestra di "Move to" (`MoveToSheet`), la
+- **[Rimosso]** **[📱 Mobile]** La vecchia finestra di "Move to" (`MoveToSheet`), la
   query delle sue destinazioni (`PageDao.getMoveDestinations`,
   `PageRepository.moveDestinations`), le funzioni che la caricavano nei
   due ViewModel e il testo "Non c'è un'altra pagina in cui spostarla"
@@ -9595,13 +9673,13 @@ provato sul telefono**)*
   triangolino. Testi nuovi nelle otto lingue (`Strings.moveHint`,
   `moveDatabaseHint`, `moveRowPageHint`, `movedInto`)
 
-### 🆕 v0.71 — 24/09/2026 · 13:52 — Il menu del blocco — i sei puntini
+### 🆕 v0.46 — 24/09/2026 · 13:52 — Il menu del blocco — i sei puntini
 *(verificato in parte sul
 telefono il 24/09/2026: voci 22 e 23; Duplicate aveva un bug, corretto —
 vedi "Ripresa sul PC")* *(sessione cloud del 24/09/2026,
 richieste 31-32: compilato, test passati, nessuna migrazione — schema
 sempre alla 28 —, **non provato sul telefono**)*
-- **[Nuova funzionalità]** Nella barra sopra la tastiera, **prima del
+- **[Nuova funzionalità]** **[📱 Mobile]** Nella barra sopra la tastiera, **prima del
   rientro a sinistra**, un'icona coi **sei puntini** (due colonne da tre,
   `Icons.Filled.DragIndicator`, la stessa di Notion): apre il **menu
   della riga in cui sta il cursore**. Il cursore si spegne prima di
@@ -9612,7 +9690,7 @@ sempre alla 28 —, **non provato sul telefono**)*
   (`BlockActionsHost`, file nuovo `BlockActionsSheet.kt`) sta a livello
   di schermata, come il pennello e la dimensione del testo, perché la
   barra sparisce con la tastiera
-- **[Nuova funzionalità]** **Per una riga di testo** (paragrafo, elenchi,
+- **[Nuova funzionalità]** **[📱 Mobile]** **Per una riga di testo** (paragrafo, elenchi,
   casella, toggle, righe dentro un toggle): **Turn into, Color,
   Duplicate**. Edit icon, Add to favorites, Move to e Move to trash ci
   sono solo per le pagine, come chiesto (richiesta 32). **Rename**
@@ -9639,7 +9717,7 @@ sempre alla 28 —, **non provato sul telefono**)*
     un toggle si copiano anche loro, come fa "Duplicate" di una pagina:
     due collegamenti alla stessa sottopagina non sarebbero una copia
     (`PageRepository.duplicateBlock`)
-- **[Nuova funzionalità]** **Tenendo premuto il collegamento a una
+- **[Nuova funzionalità]** **[📱 Mobile]** **Tenendo premuto il collegamento a una
   pagina** nel testo (dove il cursore non entra) si apre il menu **della
   pagina**: Turn into (grigio: trasformare una pagina in altro non è
   ancora costruito), **Color** (il colore del nome, solo in quel
@@ -9654,7 +9732,7 @@ sempre alla 28 —, **non provato sul telefono**)*
   tre puntini). Si resta sempre nella pagina: un avviso dice dove è
   finita la copia quando non è qui. Il tocco normale apre la pagina come
   prima (`combinedClickable`)
-- **[Nuova funzionalità]** **Per un database**, in cima: **Turn into
+- **[Nuova funzionalità]** **[📱 Mobile]** **Per un database**, in cima: **Turn into
   page**, **Turn into simple database**, **Turn into complex database**,
   **Lock database** (interruttore), **Open as page**; sotto le voci
   della pagina, con Turn into e Color grigi. Ci si arriva dai **sei
@@ -9682,7 +9760,7 @@ sempre alla 28 —, **non provato sul telefono**)*
     (`ensureRowPage`), e compaiono subito nella barra laterale
   - Le due voci ci sono sempre: quella che il database è già si vede
     grigia con la spunta
-- **[Bug fix]** *(trovato leggendo il codice per il Duplicate;
+- **[Bug fix]** **[📱 Mobile]** *(trovato leggendo il codice per il Duplicate;
   **confermato dai test** della richiesta 34)* **Annulla
   e Ripristina svuotavano tutte le tabelle della pagina.** Rimettono la
   pagina com'era riscrivendo tutti i blocchi da capo
@@ -9694,7 +9772,7 @@ sempre alla 28 —, **non provato sul telefono**)*
   si mettono da parte e si rimettono, tutto in una transazione (e
   `TableCellDao.getCellsForPageOnce`). Il testo delle celle resta quello
   di adesso: Annulla non lo segue, come già scritto nel codice
-- **[Bug fix]** *(trovato scrivendo "Turn into")* **Un toggle con delle
+- **[Bug fix]** **[📱 Mobile]** *(trovato scrivendo "Turn into")* **Un toggle con delle
   righe dentro, cambiato in un altro tipo dal "+"**, lasciava le sue
   righe appese a un blocco che non le mostra: **sparivano alla vista**
   (nel database c'erano ancora). Ora escono subito sotto, allo stesso
@@ -9702,7 +9780,7 @@ sempre alla 28 —, **non provato sul telefono**)*
   backspace — per ogni trasformazione: tipo, pagina, database, tabella,
   divisore (`PageRepository.unnestChildren`, estratta da
   `unnestAndConvert`)
-- **[Nuova funzionalità]** Il collegamento a una pagina **segue la
+- **[Nuova funzionalità]** **[📱 Mobile]** Il collegamento a una pagina **segue la
   pagina nel tempo** (`observePageInfo` al posto di `getPageInfo`):
   prima nome e icona si leggevano quando la riga compariva e restavano
   quelli; con Rename ed Edit icon dal menu del blocco devono cambiare
@@ -9727,12 +9805,12 @@ sempre alla 28 —, **non provato sul telefono**)*
   `turnIntoSimpleDatabase`, `turnIntoComplexDatabase`, `lockDatabase`,
   `openAsPage`, `simpleDatabaseLossTitle`, `simpleDatabaseLossText`)
 
-### 🆕 v0.70 — 24/09/2026 · 13:25 — Database semplice — le righe sono solo testo
+### 🆕 v0.45 — 24/09/2026 · 13:25 — Database semplice — le righe sono solo testo
 *(verificato in parte
 sul telefono il 24/09/2026: voci 21 e 22)* *(sessione cloud del
 24/09/2026, richiesta 30: compilato, test passati, migrazione 27→28
 simulata, **non provato sul telefono**)*
-- **[Nuova funzionalità]** **"Simple database"** nei menu "/" e "+"
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Simple database"** nei menu "/" e "+"
   (finora grigia) crea un **database semplice**: un database vero, con
   tutte le viste e le impostazioni degli altri — filtri, ordinamento,
   raggruppamento, proprietà, Lock view — ma in cui **le righe sono solo
@@ -9741,28 +9819,28 @@ simulata, **non provato sul telefono**)*
   vista si cambia dalle impostazioni. Salvato in
   `PageEntity.isSimpleDatabase` (**migrazione 27→28**, 0 per tutti i
   database che c'erano: restano normali)
-- **[Nuova funzionalità]** **Toccando una riga si apre la sua scheda**
+- **[Nuova funzionalità]** **[📱 Mobile]** **Toccando una riga si apre la sua scheda**
   invece di una pagina, in tutte e sei le viste (tabella dal tocco
   prolungato, bacheca, elenco, galleria, calendario, linea del tempo):
   in cima **il nome da scrivere**, subito sotto **tutte le proprietà**
   modificabili sul posto, poi Delete e le date di creazione e modifica
   (`RowActionsSheet` con `simple = true`, `SimpleRowNameField`). Nella
   tabella il nome si scrive toccandolo, come sempre
-- **[Nuova funzionalità]** Tolto tutto quello che nei database normali
+- **[Nuova funzionalità]** **[📱 Mobile]** Tolto tutto quello che nei database normali
   riguarda le pagine delle righe: **niente OPEN** nella cella del nome,
   **niente voce "Icon"** nella scheda, **niente "Card preview"** nella
   galleria (copertina e testo sono della pagina della riga: le schede
   hanno nome e proprietà), e i pulsanti dicono **"Nuova riga"** invece di
   "Nuova pagina". In fondo alle impostazioni una riga dice che il
   database è semplice e che cosa vuol dire
-- **[Nuova funzionalità]** **Nessuna strada porta a una pagina di
+- **[Nuova funzionalità]** **[📱 Mobile]** **Nessuna strada porta a una pagina di
   riga**: il divieto sta in `PageRepository.ensureRowPage`, l'unico punto
   da cui una pagina di riga nasce, che per un database semplice rifiuta.
   E in più: nella **barra laterale** il database semplice non ha figli
   (`treeChildren`, `nodeFor`); nella **ricerca** una riga trovata porta
   **al database** e dice in quale sta; il **Duplicate** non offre le sue
   righe come posto in cui copiare
-- **[Bug fix]** *(trovato scrivendo questo)* La lista dei risultati della
+- **[Bug fix]** **[📱 Mobile]** *(trovato scrivendo questo)* La lista dei risultati della
   ricerca usava come chiave l'identificativo della pagina: un risultato
   di riga che porta al database, e due righe dello stesso database,
   avrebbero avuto la stessa chiave, cosa che una `LazyColumn` non
@@ -9773,17 +9851,17 @@ simulata, **non provato sul telefono**)*
   scheda della riga semplice. Testi nuovi nelle otto lingue
   (`DbStrings.newRow`, `row`, `simpleDatabaseNote`)
 
-### 🆕 v0.69 — 24/09/2026 · 13:12 — Menu "+" — le stesse voci del menu "/", nello stesso ordine
+### ✏️ v0.44.2 — 24/09/2026 · 13:12 — Menu "+" — le stesse voci del menu "/", nello stesso ordine
 *(verificato in parte sul telefono il 24/09/2026: voce 20)*
 *(sessione cloud del 24/09/2026, richiesta 29: compilato, test passati,
 **non provato sul telefono**)*
-- **[Nuova funzionalità]** Il menu "+" della barra **legge lo stesso
+- **[Modifica]** **[📱 Mobile]** Il menu "+" della barra **legge lo stesso
   catalogo del menu "/"** (`SLASH_ENTRIES`): stesse voci, stesse
   icone, **stesso ordine**, comprese le voci non ancora costruite, che
   ci sono e sono grigie. Prima il "+" aveva un elenco suo, fermo alle
   nove voci dei primi tempi, mentre il "/" cresceva. Ora una voce
   aggiunta al catalogo compare in tutti e due
-- **[Nuova funzionalità]** **Due colonne riempite riga per riga**, come
+- **[Modifica]** **[📱 Mobile]** **Due colonne riempite riga per riga**, come
   chiesto: la prima voce del "/" è la prima a sinistra, la seconda la
   prima a destra, e così via. Oggi (27 voci, l'ultima riga ne ha una):
 
@@ -9820,12 +9898,12 @@ simulata, **non provato sul telefono**)*
   aveva solo il "/". Il comportamento di ogni voce è quello che aveva
   nel "/"
 
-### 🆕 v0.68 — 24/09/2026 · 13:06 — Pagine — la dimensione si scrive a mano, e via i titoli (Heading)
+### ✏️ v0.44.1 — 24/09/2026 · 13:06 — Pagine — la dimensione si scrive a mano, e via i titoli (Heading)
 *(verificato sul telefono il 24/09/2026: voci 18 e 19, e la migrazione
 26→27 su titoli veri)* *(sessione cloud del 24/09/2026, richiesta 28: compilato, test passati,
 migrazione 26→27 provata su un database di prova, **non provato sul
 telefono**)*
-- **[Nuova funzionalità]** **La dimensione del testo si scrive a
+- **[Modifica]** **[📱 Mobile]** **La dimensione del testo si scrive a
   mano**: toccando il numero nella barra Aa si apre una finestrella
   (`FontSizeDialog`) con una piccola casella, il numero in uso già
   selezionato (scrivendo lo si sostituisce) e **la tastiera dei
@@ -9844,7 +9922,7 @@ telefono**)*
   a comando vorrebbe dire spostare il fuoco mentre la tastiera passa da
   numeri a lettere, il passaggio che con la tastiera Samsung dà più
   problemi
-- **[Rimosso]** **I titoli — Heading 1, 2 e 3 — dall'app intera**, su
+- **[Rimosso]** **[📱 Mobile]** **I titoli — Heading 1, 2 e 3 — dall'app intera**, su
   richiesta dell'utente: con la dimensione scelta per pagina, dei titoli
   a misura fissa non se ne faceva più niente (e i "Toggle Heading" che
   stava per chiedere non servono più). Tolti dal menu "+" e dal menu
@@ -9852,7 +9930,7 @@ telefono**)*
   dal campo unito (`FLOWING_TYPES`, `isFlowingTextType`), dalla sua
   trasformazione visiva, dalle isole, dall'anteprima della Gallery e
   dai testi tradotti. Nessuna scorciatoia di scrittura li creava
-- **[Rimosso]** **Quelli già scritti sono diventati testo normale**
+- **[Rimosso]** **[📱 Mobile]** **Quelli già scritti sono diventati testo normale**
   (**migrazione 26→27**: `UPDATE blocks SET type = 'PARAGRAPH'`). Fra le
   tre possibilità proposte — testo in grassetto, testo normale,
   lasciarli come sono — l'utente ha scelto il testo normale. Il testo
@@ -9865,13 +9943,13 @@ telefono**)*
 - **"Predefinito"** in cima all'elenco dei font resta, confermato
   dall'utente
 
-### 🆕 v0.67 — 24/09/2026 · 12:55 — Pagine — font e dimensione del testo (barra Aa)
+### 🆕 v0.44 — 24/09/2026 · 12:55 — Pagine — font e dimensione del testo (barra Aa)
 *(verificato sul
 telefono il 24/09/2026: voci 17 e 18; la voce della dimensione era
 vuota, corretto — vedi "Ripresa sul PC")* *(sessione cloud
 del 24/09/2026, richiesta 27: compilato, migrazione 25→26 simulata,
 **non provato sul telefono**)*
-- **[Nuova funzionalità]** Nella barra Aa, **prima di B**, due voci
+- **[Nuova funzionalità]** **[📱 Mobile]** Nella barra Aa, **prima di B**, due voci
   come su OneNote: **il font**, col nome di quello in uso ("Calibri", o
   "Predefinito" se la pagina non ne ha scelto uno), e **la dimensione**,
   col numero in uso ("16"). Toccandole si apre l'elenco per cambiarle.
@@ -9880,7 +9958,7 @@ del 24/09/2026, richiesta 27: compilato, migrazione 25→26 simulata,
   (`PageEntity.pageFont` e `pageFontSize`, **migrazione 25→26**; null
   vale "come prima", e il 16 si salva come null). Con la pagina bloccata
   le due voci non ci sono
-- **[Nuova funzionalità]** **I font, e chi li disegna davvero.** Quelli
+- **[Nuova funzionalità]** **[📱 Mobile]** **I font, e chi li disegna davvero.** Quelli
   chiesti sono commerciali e non si possono mettere nell'app: al loro
   posto ci sono sosia con licenza libera (SIL Open Font License), scelti
   e approvati con l'utente. **Nella barra si legge il nome originale;
@@ -9909,7 +9987,7 @@ del 24/09/2026, richiesta 27: compilato, migrazione 25→26 simulata,
 
   **Lishu tolto**: un Lishu libero non esiste, e l'utente ha scelto di
   toglierlo invece di sostituirlo con un'altra calligrafia
-- **[Nuova funzionalità]** **Da dove arrivano**, scelta dell'utente
+- **[Nuova funzionalità]** **[📱 Mobile]** **Da dove arrivano**, scelta dell'utente
   ("Misto"): i dieci occidentali stanno **dentro l'app** — 38 file TTF
   in `app/src/main/res/font` (normale, grassetto, corsivo, grassetto
   corsivo), circa 12 MB, scaricati da Google Fonts il 24/09/2026 — e
@@ -9917,7 +9995,7 @@ del 24/09/2026, richiesta 27: compilato, migrazione 25→26 simulata,
   10-20 MB l'uno e **si scaricano da Google Play Services** la prima
   volta che una pagina li usa, poi restano sul telefono. L'APK di debug
   è passato da 17,8 a 23,9 MB
-- **[Nuova funzionalità]** **Il corpo scala tutto in proporzione**, non
+- **[Nuova funzionalità]** **[📱 Mobile]** **Il corpo scala tutto in proporzione**, non
   solo il testo normale (`PageTypography`, `ui/theme/PageFonts.kt`): i
   titoli H1-H3 (28/22/18 a corpo 16; tolti poco dopo, richiesta 28),
   l'altezza delle righe del campo
@@ -9931,7 +10009,7 @@ del 24/09/2026, richiesta 27: compilato, migrazione 25→26 simulata,
   e ai collegamenti a pagine. Il titolo della pagina prende **solo il
   font**. Restano fissi i quadratini delle caselle e le frecce dei
   toggle, e i database dentro la pagina
-- **[Nuova funzionalità]** **Gli elenchi non chiudono la tastiera**
+- **[Nuova funzionalità]** **[📱 Mobile]** **Gli elenchi non chiudono la tastiera**
   (`PopupProperties(focusable = false)`): un menu che prende il fuoco
   chiude la tastiera, con lei se ne va la barra — ci è appoggiata sopra
   — e con la barra la voce da cui il menu è partito. Così si sceglie e
@@ -9939,7 +10017,7 @@ del 24/09/2026, richiesta 27: compilato, migrazione 25→26 simulata,
   tutti i numeri da 5 a 72~~ — **superato dalla richiesta 28**: la
   dimensione si scrive a mano in una finestrella, vedi la voce qui
   sotto
-- **[Nuova funzionalità]** Nell'elenco dei font i nomi occidentali sono
+- **[Nuova funzionalità]** **[📱 Mobile]** Nell'elenco dei font i nomi occidentali sono
   scritti **ognuno col suo font**, come nei menu di Word; quelli cinesi
   e giapponesi no, per non scaricarli tutti solo aprendo il menu
 - **[Progetto]** Nuova dipendenza `androidx.compose.ui:ui-text-google-fonts`
@@ -9951,12 +10029,12 @@ del 24/09/2026, richiesta 27: compilato, migrazione 25→26 simulata,
   Testi nuovi nelle otto lingue (`EditorStrings.defaultFont`, `font`,
   `fontSize`). Primo uso di `R` nel codice (`R.font`, `R.array`)
 
-### 🆕 v0.66 — 24/09/2026 · 12:32 — Pagine — il conteggio del testo ("X words")
+### 🆕 v0.43 — 24/09/2026 · 12:32 — Pagine — il conteggio del testo ("X words")
 *(verificato sul
 telefono il 24/09/2026: voce 16)* *(sessione cloud del
 24/09/2026, richiesta 25: compilato e con i test automatici passati,
 **non provato sul telefono**)*
-- **[Nuova funzionalità]** In fondo al menu dei tre puntini di una
+- **[Nuova funzionalità]** **[📱 Mobile]** In fondo al menu dei tre puntini di una
   pagina, dopo "Updates", c'è **"X words"** (col numero nel formato
   scelto nelle impostazioni: 2.652 o 2,652). **Toccandola si apre lì
   sotto** l'elenco completo, e ritoccandola si richiude. L'utente
@@ -9964,14 +10042,14 @@ telefono il 24/09/2026: voce 16)* *(sessione cloud del
   scelta la seconda, perché una finestra sopra il menu, su un telefono,
   copre proprio il menu da cui si arriva, e per richiuderla serve un
   tocco in più. Da far confermare all'utente
-- **[Nuova funzionalità]** Le voci, nell'ordine chiesto: **Words,
+- **[Nuova funzionalità]** **[📱 Mobile]** Le voci, nell'ordine chiesto: **Words,
   Letters, Numbers, Letters and numbers, Characters (no spaces),
   Characters (with spaces), Lines, Japanese characters, Chinese
   characters, Korean characters** (in italiano: Parole, Lettere,
   Numeri, Lettere e numeri, Caratteri senza e con spazi, Righe,
   Caratteri giapponesi, Caratteri cinesi, Lettere coreane — la parola
   dell'utente). Tutte e dieci sempre, anche a zero, come in Word
-- **[Nuova funzionalità]** *(richiesta 26)* **"Lettere e numeri"** è
+- **[Nuova funzionalità]** **[📱 Mobile]** *(richiesta 26)* **"Lettere e numeri"** è
   una voce a sé, voluta dall'utente dopo aver visto come si contano i
   caratteri: la somma di lettere e cifre e **nient'altro**
   (`TextStats.lettersAndDigits`), mentre **i caratteri contano tutto**
@@ -9979,7 +10057,7 @@ telefono il 24/09/2026: voce 16)* *(sessione cloud del
   asterischi... Così "hin(...) = 3x!" fa 5 lettere e numeri e 12
   caratteri senza spazi. Le due voci sui caratteri (senza e con spazi)
   restano come nella richiesta originale
-- **[Nuova funzionalità]** **Le regole sono quelle della finestra
+- **[Nuova funzionalità]** **[📱 Mobile]** **Le regole sono quelle della finestra
   "Word Count" di Word**, che l'utente ha mostrato come modello
   (`data/TextStats.kt`, `textStatsOf`):
   - una **parola** è quello che sta fra due spazi, anche "=" o "[]";
@@ -10005,7 +10083,7 @@ telefono il 24/09/2026: voce 16)* *(sessione cloud del
     del katakana (ー) conta come giapponese;
   - si conta per **punti di codice** e non per `Char`, così un'emoji o
     un ideogramma raro è un carattere solo e non due
-- **[Nuova funzionalità]** **Cosa si conta** (`PageRepository.textStats`):
+- **[Nuova funzionalità]** **[📱 Mobile]** **Cosa si conta** (`PageRepository.textStats`):
   il testo di paragrafi, titoli, elenchi, caselle e toggle, **anche
   quello dentro i toggle chiusi**, e le celle delle tabelle semplici
   (solo quelle che si vedono: rimpicciolita una tabella, le celle
@@ -10014,7 +10092,7 @@ telefono il 24/09/2026: voce 16)* *(sessione cloud del
   dei database, i nomi delle pagine collegate, e **il titolo della
   pagina** — spesso messo dall'app ("Senza titolo", "Untitled"). Da far
   confermare all'utente
-- **[Nuova funzionalità]** Per un **database** aperto a schermo intero
+- **[Nuova funzionalità]** **[📱 Mobile]** Per un **database** aperto a schermo intero
   la voce non c'è: il suo contenuto sono righe, e le righe non si
   contano. Il menu dei tre puntini ora **scorre**, perché aperto il
   conteggio le voci sono più di quante stiano su uno schermo basso
@@ -10026,19 +10104,19 @@ telefono il 24/09/2026: voce 16)* *(sessione cloud del
   mescolate, spazi speciali, emoji, a-capo, testo vuoto. Girano senza
   telefono: `gradle testDebugUnitTest`
 
-### 🆕 v0.65 — 24/09/2026 · 12:13 — Colonne — spostarle tenendo premuta l'intestazione
+### 🆕 v0.42 — 24/09/2026 · 12:13 — Colonne — spostarle tenendo premuta l'intestazione
 *(verificato in
 parte sul telefono il 24/09/2026: voce 15)* *(trovata già
 scritta nel codice arrivato dal PC il 24/09/2026, ma mancava in questo
 README: documentata nella sessione cloud dello stesso giorno. **Da
 verificare sul telefono**: non risulta che sia mai stata provata)*
-- **[Nuova funzionalità]** Tenendo premuta l'intestazione di una
+- **[Nuova funzionalità]** **[📱 Mobile]** Tenendo premuta l'intestazione di una
   colonna della tabella, il menu ha nell'ordine: **Move to left**,
   **Move to right**, **Edit property**, *Center / Align left* (solo per
   le colonne a caselle) e **Hide**. È la richiesta dell'utente, che
   nella sessione cloud l'ha ripetuta parola per parola (Diario,
   richiesta 20) perché l'aveva appena chiesta a Code sul PC
-- **[Nuova funzionalità]** *(sessione cloud del 24/09/2026, richiesta
+- **[Nuova funzionalità]** **[📱 Mobile]** *(sessione cloud del 24/09/2026, richiesta
   22)* **Le due voci per spostare sono passate in cima al menu**, sopra
   Edit property. Nel codice arrivato dal PC stavano sotto, come diceva
   la prima richiesta; l'utente, non avendole mai viste sul telefono
@@ -10046,7 +10124,7 @@ verificare sul telefono**: non risulta che sia mai stata provata)*
   sopra. Spostare è la cosa per cui si tiene premuta un'intestazione —
   per modificarla basta toccarla — e in cima si trova senza leggere il
   menu. Cambiato solo l'ordine delle voci in `PropertyHeaderCell`
-- **[Rimosso]** *(sessione cloud del 24/09/2026, richiesta 23)* **"Move
+- **[Rimosso]** **[📱 Mobile]** *(sessione cloud del 24/09/2026, richiesta 23)* **"Move
   left" e "Move right" dalla finestra della proprietà** (quella di Edit
   property, `PropertySheet`): lì resta solo "Delete property". Erano un
   doppione del menu dell'intestazione, e per di più comparivano una
@@ -10058,14 +10136,14 @@ verificare sul telefono**: non risulta che sia mai stata provata)*
   spostare senza rimostrarla (vedi Limiti noti). Il ramo di
   `DatabaseTableState.neighbourForMove` che muoveva le colonne nascoste
   fra tutte resta nel codice ma oggi nessuno lo raggiunge
-- **[Nuova funzionalità]** **"Move to left" è grigia sulla prima
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Move to left" è grigia sulla prima
   colonna dopo Name**, qualunque essa sia: Name è il titolo delle
   pagine, non una proprietà, e resta sempre la prima. **"Move to
   right" è grigia sull'ultima**, e con **"Lock view"** lo sono tutte e
   due. Grigie e non nascoste: una voce che sparisce e ricompare farebbe
   cambiare posto alle altre sotto il dito (`PropertyHeaderCell`,
   `canMoveLeft = !viewLocked && index > 0`)
-- **[Nuova funzionalità]** Si conta **fra le colonne che si vedono**
+- **[Nuova funzionalità]** **[📱 Mobile]** Si conta **fra le colonne che si vedono**
   (`DatabaseTableState.neighbourForMove`): scambiarsi con una colonna
   nascosta in mezzo non sposterebbe niente di visibile. Lo spostamento
   rinumera tutte le colonne in un salvataggio solo
@@ -10075,14 +10153,14 @@ verificare sul telefono**: non risulta che sia mai stata provata)*
   lo stesso menu. Le regole sono le stesse di Move left / Move right
   nella finestra della proprietà
 
-### 🆕 v0.64 — 24/09/2026 · 11:50 — Database — vista Gallery
+### 🆕 v0.41 — 24/09/2026 · 11:50 — Database — vista Gallery
 *(verificato in parte sul telefono il
 24/09/2026: voci 3-14; mancano copertine, rotazione, fluidità)*
 *(sessione cloud del 24/09/2026:
 **compilata** in cloud — `assembleDebug` riuscito, query controllate da
 Room, migrazione simulata su SQLite, vedi Diario — **ma NON provata sul
 telefono**)*
-- **[Nuova funzionalità]** **Gallery**, la sesta vista: le pagine del
+- **[Nuova funzionalità]** **[📱 Mobile]** **Gallery**, la sesta vista: le pagine del
   database come **schede in griglia**. In alto l'anteprima, sotto il
   nome (con l'icona della pagina, se c'è) e le proprietà che si vedono
   e hanno un valore, una per riga come sulle schede della bacheca. Un
@@ -10090,7 +10168,7 @@ telefono**)*
   nelle altre viste. Filtro e ordinamento valgono anche qui. Si sceglie
   da Settings → Layout (sesto riquadro, icona a griglia) o si crea dal
   menu "/" con **"Gallery view"**, che finora c'era ma era spenta
-- **[Nuova funzionalità]** **Card preview**, nelle impostazioni della
+- **[Nuova funzionalità]** **[📱 Mobile]** **Card preview**, nelle impostazioni della
   vista, con le voci di Notion che qui si possono fare: **None**,
   **Page cover**, **Page content**. Salvata per ogni database
   (`PageEntity.galleryCardPreview`, **migrazione 24→25**). Finché non
@@ -10099,14 +10177,14 @@ telefono**)*
   riconosce dalle immagini. La quarta voce di Notion, l'anteprima da una
   proprietà "Files & media", manca perché quel tipo di proprietà non
   esiste nell'app
-- **[Nuova funzionalità]** **Card size**: **Small / Medium / Large**,
+- **[Nuova funzionalità]** **[📱 Mobile]** **Card size**: **Small / Medium / Large**,
   salvata per ogni database (`PageEntity.galleryCardSize`, stessa
   migrazione), media finché non si sceglie. Le schede non hanno una
   larghezza fissa ma **una minima** (100, 150 e 280 punti): in una riga
   ne entrano quante ci stanno e si allargano insieme a riempirla. Su un
   telefono in verticale sono tre, due o una per riga; girandolo ne
   entrano di più invece di diventare enormi (`galleryColumnsFor`)
-- **[Nuova funzionalità]** Con **Page cover** la scheda mostra la
+- **[Nuova funzionalità]** **[📱 Mobile]** Con **Page cover** la scheda mostra la
   copertina della pagina **con l'inquadratura scelta in
   "Reposition"**. La scheda ha un'altra forma della striscia della
   pagina, e la stessa inquadratura avrebbe potuto portare l'immagine
@@ -10114,7 +10192,7 @@ telefono**)*
   `internal`, per usarla da qui) ha un parametro nuovo, `clampOffset`,
   che ferma lo spostamento dove l'immagine smette di coprire. Nella
   pagina resta spento e lì non cambia niente
-- **[Nuova funzionalità]** Con **Page content** la scheda mostra
+- **[Nuova funzionalità]** **[📱 Mobile]** Con **Page content** la scheda mostra
   **l'inizio del testo della pagina**, in piccolo (8, 10 o 12 punti
   secondo la dimensione della scheda), scritto come nella pagina: i
   titoli più grandi e in grassetto, gli elenchi con **lo stesso segno
@@ -10126,22 +10204,22 @@ telefono**)*
   (`GALLERY_PREVIEW_MAX_LINES`), saltando quelli senza testo (tabelle,
   divisori, collegamenti) e le righe vuote in testa e in coda; quello
   che non ci sta lo taglia il bordo della scheda
-- **[Nuova funzionalità]** **Gli spoiler restano coperti
+- **[Nuova funzionalità]** **[📱 Mobile]** **Gli spoiler restano coperti
   nell'anteprima**: ogni lettera coperta diventa `▒`, gli spazi
   restano. Senza, un testo nascosto nella pagina si sarebbe letto in
   chiaro nella scheda — che è proprio il colpo d'occhio da cui lo
   spoiler protegge
-- **[Nuova funzionalità]** Le schede di una stessa riga sono **alte
+- **[Nuova funzionalità]** **[📱 Mobile]** Le schede di una stessa riga sono **alte
   uguali** (`IntrinsicSize.Max`), e l'ultima riga, se non è piena,
   tiene le schede larghe come le altre. L'anteprima occupa il suo posto
   anche quando è vuota (pagina senza copertina o senza testo), così le
   schede restano allineate
-- **[Nuova funzionalità]** "Card preview" e "Card size" compaiono nelle
+- **[Nuova funzionalità]** **[📱 Mobile]** "Card preview" e "Card size" compaiono nelle
   impostazioni **solo con la galleria**, subito sotto Filter come le
   voci delle altre viste, e **"Lock view" le spegne**. Scelta una voce
   la finestra resta aperta e il segno ✓ si sposta, come per "Date
   property" e "Group by": la galleria dietro cambia subito
-- **[Nuova funzionalità]** Testi nuovi nelle otto lingue dell'app
+- **[Nuova funzionalità]** **[📱 Mobile]** Testi nuovi nelle otto lingue dell'app
   (`DbStrings.layoutName`, `galleryPreviewName`, `gallerySizeName`,
   `cardPreview`, `cardSize`). In italiano la dimensione è al femminile
   perché si parla della *scheda*
@@ -10160,13 +10238,13 @@ telefono**)*
   di partenza, le larghezze minime delle schede e il rapporto 1,6 : 1
   della parte alta (`GALLERY_PREVIEW_RATIO`)
 
-### 🆕 v0.63 — 23/09/2026 · 15:41 — Duplicate: si sceglie dove va la copia, e la copia è davvero una copia
+### 🆕 v0.40 — 23/09/2026 · 15:41 — Duplicate: si sceglie dove va la copia, e la copia è davvero una copia
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
 > «Dammi la possibilità di duplicare una pagina dal menu dei tre puntini. Metti anche un'opzione per decidere dove metterla, se crearla come pagina e duplicarla in fondo al menu principale oppure in una pagina a scelta (anche all'interno di ogni pagina di tutti i database dell'app)»
 
-- **[Nuova funzionalità]** "Duplicate" nel menu dei tre puntini (pagine e
+- **[Nuova funzionalità]** **[📱 Mobile]** "Duplicate" nel menu dei tre puntini (pagine e
   database a schermo intero) apre una finestra che chiede **dove mettere
   la copia**, con tre scelte: **Next to the original** (subito sotto
   l'originale; per la pagina di una riga vuol dire **una riga nuova
@@ -10186,7 +10264,7 @@ L'utente, parola per parola:
 - Fatta la copia **si apre**, e se non è accanto all'originale un avviso
   dice dov'è finita ("Copy placed in “B”"). Il titolo prende " (copy)"
   nella lingua dell'app; le pagine dentro di lei tengono il loro nome
-- **[Bug fix]** La copia **non era una copia**. Puntava alle stesse
+- **[Bug fix]** **[📱 Mobile]** La copia **non era una copia**. Puntava alle stesse
   sottopagine e, per un database, alle stesse pagine delle righe:
   scrivere in una sottopagina della copia cambiava anche l'originale,
   rinominare la pagina di una riga rinominava la riga in tutti e due i
@@ -10194,22 +10272,22 @@ L'utente, parola per parola:
   giù fino in fondo**, come su Notion (`PageRepository.copyPageDeep`);
   una pagina richiamata due volte si copia una volta sola, e un
   collegamento all'indietro non fa girare la copia all'infinito
-- **[Bug fix]** Duplicare **la pagina di una riga** creava una pagina che
+- **[Bug fix]** **[📱 Mobile]** Duplicare **la pagina di una riga** creava una pagina che
   non stava da nessuna parte: non c'era un collegamento da mettere
   accanto, e la copia si trovava solo cercandola. Nel database del
   telefono ce n'è una rimasta così, **"A (copia)"**, di una prova di
   prima. Ora accanto all'originale diventa una riga nuova, e altrove una
   pagina normale
-- **[Bug fix]** Icona e copertina della copia **condividevano il file**
+- **[Bug fix]** **[📱 Mobile]** Icona e copertina della copia **condividevano il file**
   con l'originale: cambiando l'immagine di una, o cancellandola per
   sempre, il file spariva e l'altra restava senza. Ora ogni copia ha il
   suo file (`PageImageStore.copy`)
-- **[Bug fix]** La copia perdeva il testo delle **tabelle semplici**
+- **[Bug fix]** **[📱 Mobile]** La copia perdeva il testo delle **tabelle semplici**
   (vive in una tabella a parte, per blocco) e, in un database, puntava
   ancora alle colonne dell'originale per raggruppamento, calendario,
   ordine e filtro, che quindi sparivano. I figli dei toggle si salvano
   dopo il loro toggle, come chiede il vincolo sul genitore
-- **[Bug fix]** Il testo scritto in una **tabella semplice spariva
+- **[Bug fix]** **[📱 Mobile]** Il testo scritto in una **tabella semplice spariva
   riaprendo la pagina** (nel database c'era ancora): ogni casella teneva
   il suo testo in uno stato nato col primo valore visto, e al primo
   disegno le celle non erano ancora arrivate. Ora le caselle rinascono
@@ -10224,13 +10302,13 @@ L'utente, parola per parola:
   resta dopo essere usciti e rientrati. Poi il database del telefono è
   tornato com'era prima delle prove
 
-### 🆕 v0.62 — 23/09/2026 · 15:06 — Icone per le pagine dei database
+### 🆕 v0.39 — 23/09/2026 · 15:06 — Icone per le pagine dei database
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
 > «Dammi la possibilità di aggiungere e rimuovere icone alle pagine contenute in un database»
 
-- **[Nuova funzionalità]** Le pagine contenute in un database (le righe)
+- **[Nuova funzionalità]** **[📱 Mobile]** Le pagine contenute in un database (le righe)
   hanno la loro icona, e **si vede nel database accanto al nome**: nella
   tabella, nell'elenco, nelle schede della bacheca, nelle barre del
   calendario e della linea temporale, e fra le righe senza data. Una riga
@@ -10259,7 +10337,7 @@ L'utente, parola per parola:
   viste (bacheca, elenco, calendario, linea temporale) usano lo stesso
   pezzo ma non le ho aperte
 
-### 🆕 v0.61 — 23/09/2026 · 14:14 — La barra laterale: preferiti, albero, ricerca, cestino, avvio e impostazioni
+### 🆕 v0.38 — 23/09/2026 · 14:14 — La barra laterale: preferiti, albero, ricerca, cestino, avvio e impostazioni
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
@@ -10303,7 +10381,7 @@ L'utente, parola per parola:
 Poi:
 > «Ah una cosa: come hai fatto con l'icona delle impostazioni della pagina, l'icona della sidebar falla uguale a quella, ossia anche sopra la copertina, con un pallino in background e che faccia notare le tre lineette»
 
-- **[Nuova funzionalità]** **Barra laterale** che scorre da sinistra sopra la
+- **[Nuova funzionalità]** **[📱 Mobile]** **Barra laterale** che scorre da sinistra sopra la
   pagina, aperta dal pulsante con le tre lineette: stesso cerchio grigio
   semitrasparente dei tre puntini, sospeso sopra la copertina, e accanto
   a indietro nelle sottopagine (`FloatingPageButton`). Nel database a
@@ -10317,7 +10395,7 @@ Poi:
   pages, l'albero delle pagine, Search, Startup window, Backup e
   Notifications grigie, Trash, Import/Export/Connections grigie, Settings.
   Tutte le voci della barra sono tradotte (vedi sotto)
-- **[Nuova funzionalità]** **L'albero delle pagine**, come Notion ed Esplora
+- **[Nuova funzionalità]** **[📱 Mobile]** **L'albero delle pagine**, come Notion ed Esplora
   file: parte dal menu principale (aperto), ogni pagina ha la sua icona e
   il triangolino **solo se dentro c'è qualcosa**. Toccando il triangolino si
   apre e chiude; toccando il nome si va **dritti alla pagina**, senza
@@ -10330,20 +10408,20 @@ Poi:
   un ramo alla volta e si ricarica a ogni apertura della barra. Un
   collegamento all'indietro (una pagina che richiama una delle sue
   antenate) si mostra ma non si riapre, altrimenti la fila non finirebbe
-- **[Nuova funzionalità]** **Pagine preferite**: l'elenco, una sotto
+- **[Nuova funzionalità]** **[📱 Mobile]** **Pagine preferite**: l'elenco, una sotto
   l'altra, con data e ora di aggiunta. Si ordina per data di aggiunta o per
   nome, crescente o decrescente, e la scelta resta salvata. Nuova colonna
   `favoritedAt` (**migrazione 23→24**); i preferiti che c'erano già non
   hanno una data vera e lo dicono ("Date added unknown") invece di
   inventarla. Le pagine nel cestino non compaiono fra i preferiti
-- **[Nuova funzionalità]** **Search** rifatta: cerca nei titoli e, con
+- **[Nuova funzionalità]** **[📱 Mobile]** **Search** rifatta: cerca nei titoli e, con
   "Search in content" (acceso di partenza), nel testo dei blocchi, nelle
   tabelle semplici e nei nomi delle righe dei database. Ogni risultato
   mostra **il pezzo di frase con la parola evidenziata**. "Search in trash"
   include le pagine buttate, segnate "In trash". Le altre otto opzioni ci
   sono, grigie; "Search in titles" è grigia **ma accesa**, perché nei
   titoli si cerca sempre
-- **[Nuova funzionalità]** **Trash**: le pagine buttate, con data e giorni
+- **[Nuova funzionalità]** **[📱 Mobile]** **Trash**: le pagine buttate, con data e giorni
   che restano. Aperta, una pagina del cestino è **in sola lettura** e ha in
   cima una barra con **Restore** — torna **in fondo al menu principale**, o
   alla sua riga se era la pagina di una riga — e **Delete permanently**,
@@ -10358,11 +10436,11 @@ Poi:
 - La conferma di "Move to trash" ora dice che la pagina va nel cestino e
   **quando se ne andrà** secondo la regola scelta (prima diceva che un
   cestino non c'era)
-- **[Nuova funzionalità]** **Startup window**: l'app parte dall'ultima pagina
+- **[Nuova funzionalità]** **[📱 Mobile]** **Startup window**: l'app parte dall'ultima pagina
   aperta, dal menu principale o da una pagina scelta da un elenco. Se
   quella pagina non c'è più o è nel cestino si parte dal menu principale.
   Una rotazione o un cambio di tema non rifanno il salto
-- **[Nuova funzionalità]** **Settings**, salvate sul telefono
+- **[Nuova funzionalità]** **[📱 Mobile]** **Settings**, salvate sul telefono
   (`AppSettings`, `SharedPreferences`, non nel database: sono scelte del
   telefono, non contenuto):
   - **Font** e **Font size** grigie
@@ -10425,13 +10503,13 @@ Poi:
   l'app, riparte dal database aperto per ultimo. Nessun crash. Prove
   ripulite e impostazioni rimesse come le aveva l'utente
 
-### 🆕 v0.60 — 23/09/2026 · 09:28 — Il menu "/" filtra davvero
+### ✏️ v0.37.1 — 23/09/2026 · 09:28 — Il menu "/" filtra davvero
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
 > «Se scrivo /d , non mi appare nella selezione del comando divider»
 
-- **[Bug fix]** **Scrivendo "/d" il menu spariva alla "d".** Il menu "/"
+- **[Bug fix]** **[📱 Mobile]** **Scrivendo "/d" il menu spariva alla "d".** Il menu "/"
   si chiudeva a ogni tocco fuori da sé, e per Android anche **la
   tastiera è "fuori"**: è un'altra finestra. Quindi la prima lettera
   battuta dopo la barra lo chiudeva, e il filtro non si è mai visto
@@ -10441,7 +10519,7 @@ L'utente, parola per parola:
   (`dismissOnClickOutside = false`), come per il menu del "+": si chiude
   lo stesso scegliendo una voce, togliendo la barra, portando il cursore
   prima di lei o su un'altra riga, con uno spazio, o perdendo il fuoco
-- **[Nuova funzionalità]** **Con un filtro, prima le voci che somigliano
+- **[Modifica]** **[📱 Mobile]** **Con un filtro, prima le voci che somigliano
   di più.** Il filtro teneva ogni voce che *contenesse* le lettere,
   nell'ordine del catalogo: con "/d" erano sedici, e "Divider" veniva
   settima, sotto il bordo del riquadro. Ora vince chi **comincia** così,
@@ -10451,7 +10529,7 @@ L'utente, parola per parola:
   famiglie (Basic blocks, Media, Database) non si separano più, altrimenti
   con "/data" le voci di base passerebbero comunque davanti. A ogni
   lettera la lista ricomincia dall'alto
-- **[Bug fix]** **Scegliendo Divider la pagina scivolava fino al database
+- **[Bug fix]** **[📱 Mobile]** **Scegliendo Divider la pagina scivolava fino al database
   e la tastiera accennava a chiudersi.** Ogni gruppo di righe di testo è
   una casella sola, riconosciuta dalla sua prima riga: se la prima riga
   diventa un divisore, la casella cambia identità e viene distrutta col
@@ -10459,14 +10537,14 @@ L'utente, parola per parola:
   barra sparita, tastiera che scende e risale, pagina che scorre. Adesso,
   come già per il toggle, il fuoco si posa prima sul campo invisibile e
   da lì passa alla riga nuova sotto il divisore. Vale anche dal "+"
-- **[Bug fix]** **La barra resta mentre il cursore cambia riga.** Nei
+- **[Bug fix]** **[📱 Mobile]** **La barra resta mentre il cursore cambia riga.** Nei
   passaggi dal campo invisibile (divisore, toggle, casella che torna
   testo) nessuna riga ha il fuoco per un centinaio di millisecondi, e la
   barra spariva e tornava. Ora, perso il fuoco a tastiera aperta, aspetta
   tre decimi di secondo prima di andarsene (`BAR_HANDOFF_GRACE_MS`); a
   tastiera chiusa se ne va subito come prima. Il prezzo: passando al
   titolo della pagina la barra resta un attimo in più
-- **[Bug fix]** **Il divisore si portava dietro il comando.** Veniva
+- **[Bug fix]** **[📱 Mobile]** **Il divisore si portava dietro il comando.** Veniva
   salvato per intero dalla copia della riga che aveva in mano la
   schermata, che aveva ancora dentro "/d": invisibile, ma nel database.
   Stesso difetto della "/" nei toggle, stesso rimedio: si scrive solo il
@@ -10482,13 +10560,13 @@ L'utente, parola per parola:
   del testo, **tutta la riga** diventa divisore e il testo resta nascosto
   dentro. Su Notion il divisore va invece sotto e il testo resta
 
-### 🔧 v0.59.1 — 23/09/2026 · 09:12 — Gli scatti dentro i toggle
+### 🔧 v0.37.0.1 — 23/09/2026 · 09:12 — Gli scatti dentro i toggle
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
 > «Le lettere sotto i toggle e le stesse create scattano, scompaiono e ricompaiono. Quando cancello qualcosa di un blocco dentro un toggle succede che, riusando backspace e quindi andando sopra, la toolbar sopra la tastiera scatta di un po' di più rispetto ai soliti scattini. Faccio anche caso che il text cursor e la lettera appena passata scattano quando vado poi a capo sotto»
 
-- **[Bug fix]** **Andando a capo dentro un toggle la riga appena scritta
+- **[Bug fix]** **[📱 Mobile]** **Andando a capo dentro un toggle la riga appena scritta
   spariva per un attimo e il cursore scendeva di colpo.** Le righe dentro
   un toggle sono campi separati, e l'Invio mette la riga nuova **sopra**
   col testo prima del cursore (è quello che tiene ferma la tastiera):
@@ -10514,7 +10592,7 @@ L'utente, parola per parola:
   arriva invece **come prima**, dopo che il database l'ha scritta:
   mandarcelo prima vorrebbe dire scrivere lettere in una riga che nel
   database ancora non esiste, e perderle
-- **[Bug fix]** **Salendo col backspace da una riga vuota la barra sopra
+- **[Bug fix]** **[📱 Mobile]** **Salendo col backspace da una riga vuota la barra sopra
   la tastiera spariva e tornava.** Il fuoco passava dal campo invisibile,
   la riga veniva cancellata e 60 ms dopo il cursore andava su quella di
   sopra: per tutto quel tempo nessuna riga aveva il fuoco, e la barra si
@@ -10544,13 +10622,13 @@ L'utente, parola per parola:
   in fondo al titolo. Dopo le prove la pagina è stata rimessa com'era
   dalla copia del database fatta prima
 
-### 🆕 v0.59 — 23/09/2026 · 00:49 — Icone anche sui database
+### 🆕 v0.37 — 23/09/2026 · 00:49 — Icone anche sui database
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
 > «Dammi la possibilità di aggiungere e rimuovere icone ai database, essendo ora delle pagine convertibili»
 
-- **[Nuova funzionalità]** Un database può avere la sua icona, prima del
+- **[Nuova funzionalità]** **[📱 Mobile]** Un database può avere la sua icona, prima del
   nome: più piccola quando sta dentro una pagina, grande quanto quella
   delle pagine quando è aperto a schermo intero. Per metterla c'è la
   voce **Icon** nelle impostazioni del database; quando c'è, si cambia
@@ -10573,13 +10651,13 @@ L'utente, parola per parola:
   toccata → la finestra offre anche Remove, Remove → icona sparita e
   **file della copia cancellato**, copertina intatta
 
-### 🆕 v0.58 — 23/09/2026 · 00:37 — La copertina sale fin sotto la barra del telefono
+### ✏️ v0.36.1 — 23/09/2026 · 00:37 — La copertina sale fin sotto la barra del telefono
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
 > «C'è quello spazio inutile tra la copertina e la barra del telefono dove ci sono ora, icona del WiFi e batteria. Sposta tutto fino a sotto il pixel dove finisce la barra. I tre puntini mettimeli tranquillamente sopra la copertina, magari con un cerchietto con colore background grigio semi chiaro. Poi ti dico se mi piace»
 
-- **[Nuova funzionalità]** Tolta la barra in alto delle pagine: occupava
+- **[Modifica]** **[📱 Mobile]** Tolta la barra in alto delle pagine: occupava
   una fascia vuota fra l'orologio e la copertina solo per ospitare due
   icone. Ora la copertina comincia **subito sotto l'ultimo pixel della
   barra del telefono**, e indietro e tre puntini stanno **sospesi sopra**
@@ -10596,18 +10674,18 @@ L'utente, parola per parola:
 - Il database aperto a schermo intero ha ancora la barra classica: lì
   non c'è una copertina da far salire
 
-### 🆕 v0.57 — 23/09/2026 · 00:29 — Turn into page / Turn into database
+### 🆕 v0.36 — 23/09/2026 · 00:29 — Turn into page / Turn into database
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
 > «Mettimi nelle impostazioni dei database un'opzione chiamata 'Turn into page' che mi consente di convertire quel database in una pagina, come se la potessi visualizzare direttamente in full page. Per rimetterla in visualizzazione classica come Database, mi metterai un'opzione nelle impostazioni della pagina con l'icona dei tre puntini chiamata 'Turn into database' che non solo mi farà ritornare alla schermata di prima, ma anche che me la rifarà vedere come prima in un database aperto.»
 
-- **[Nuova funzionalità]** Nelle impostazioni di un database dentro una
+- **[Nuova funzionalità]** **[📱 Mobile]** Nelle impostazioni di un database dentro una
   pagina c'è **Turn into page**: il database smette di essere mostrato
   lì e diventa un collegamento (📄 col suo nome) che lo apre a schermo
   intero. Toccata la voce, il database **si apre subito** a schermo
   intero, che è come lo si vedrà da lì in poi
-- **[Nuova funzionalità]** Nel menu dei tre puntini del database a
+- **[Nuova funzionalità]** **[📱 Mobile]** Nel menu dei tre puntini del database a
   schermo intero c'è **Turn into database**: torna a vedersi dentro la
   pagina che lo richiama, e si **torna indietro** su quella pagina, dove
   lo si ritrova aperto come prima
@@ -10621,7 +10699,7 @@ L'utente, parola per parola:
   dall'icona ↗ è ancora dentro la sua pagina, e lì la voce non c'è.
   Si ricontrolla a ogni apertura del menu, perché nel frattempo può
   essere cambiato dall'altra schermata
-- **[Bug fix]** Un collegamento a pagina che punta a un database lo
+- **[Bug fix]** **[📱 Mobile]** Un collegamento a pagina che punta a un database lo
   apre **come database**. Prima contava solo il tipo del blocco, e un
   collegamento a pagina apriva sempre l'editor di testo: su un database
   avrebbe mostrato un foglio vuoto al posto delle righe
@@ -10631,7 +10709,7 @@ L'utente, parola per parola:
   → di nuovo nella pagina principale, aperto, con le stesse righe; e
   aperto dall'icona ↗ la voce non compare
 
-### 🆕 v0.56 — 23/09/2026 · 00:18 — I toggle, rifatti
+### ✏️ v0.35.2 — 23/09/2026 · 00:18 — I toggle, rifatti
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
@@ -10640,7 +10718,7 @@ L'utente, parola per parola:
 Poi:
 > «Non posso cancellare un toggle»
 
-- **[Bug fix]** **Aprire o chiudere un toggle cancellava tutto quello
+- **[Bug fix]** **[📱 Mobile]** **Aprire o chiudere un toggle cancellava tutto quello
   che conteneva.** Il salvataggio dei blocchi usava
   `@Insert(onConflict = REPLACE)`, e in SQLite `REPLACE` non aggiorna:
   **cancella la riga e ne inserisce una nuova**. La cancellazione fa
@@ -10653,27 +10731,27 @@ Poi:
   cancellata e i figli restano. Le altre `REPLACE` del progetto sono
   state controllate: creano sempre righe con id nuovi, quindi non
   toccano mai una riga esistente
-- **[Bug fix]** **La "/" che restava dentro ogni toggle creato dal menu
+- **[Bug fix]** **[📱 Mobile]** **La "/" che restava dentro ogni toggle creato dal menu
   "/".** Si scrive `/toggle`, il campo toglie comando e barra e salva;
   subito dopo il cambio di tipo salvava **il blocco intero** con la
   copia che la UI aveva in mano prima — e riscriveva il testo vecchio,
   barra compresa. Ora `updateBlockType` scrive **solo la colonna del
   tipo**, come già facevano le altre modifiche di un campo solo
-- **[Bug fix]** **La freccia**: da chiuso un triangolino verso destra,
+- **[Bug fix]** **[📱 Mobile]** **La freccia**: da chiuso un triangolino verso destra,
   da aperto verso il basso, come su Notion. Prima erano le frecce a
   parentesi di Material, e da aperto puntava in su
-- **[Bug fix]** **In un toggle nuovo non si poteva scrivere.** Aperto e
+- **[Bug fix]** **[📱 Mobile]** **In un toggle nuovo non si poteva scrivere.** Aperto e
   vuoto non mostrava niente, e il pulsante "+ Add inside" compariva
   solo se c'era già almeno un figlio. Ora compare la riga grigia
   *Empty toggle. Tap to add a block inside.*; con dei figli non c'è più
   nessun pulsante in più, si aggiunge con l'Invio come su Notion
-- **[Bug fix]** **L'Invio nel titolo faceva uscire il titolo dal
+- **[Bug fix]** **[📱 Mobile]** **L'Invio nel titolo faceva uscire il titolo dal
   toggle.** Veniva trattato come un paragrafo: la riga nuova nasceva
   sopra col testo prima del cursore — cioè col titolo — e il toggle
   restava vuoto sotto. Ora (`enterInToggle`) a toggle **aperto** la riga
   nuova è il **primo figlio**; a toggle **chiuso** è un **altro toggle**
   subito sotto, perché dentro non si vedrebbe
-- **[Bug fix]** **Dopo un Invio dentro il toggle le lettere finivano
+- **[Bug fix]** **[📱 Mobile]** **Dopo un Invio dentro il toggle le lettere finivano
   nella riga sbagliata**: "1", Invio, "2" dava "12" nella riga di
   sopra. Le righe dentro un toggle stavano in una colonna **senza
   `key`**, quindi Compose le riconosceva dalla posizione: la riga nuova
@@ -10683,19 +10761,19 @@ Poi:
   col registro `NOTE`, che mostrava la lettera arrivare a un campo che
   non aveva il fuoco. Il testo di primo livello non aveva il problema
   perché la lista che lo contiene le chiavi le ha già
-- **[Nuova funzionalità]** **Backspace su una riga vuota dentro un
+- **[Modifica]** **[📱 Mobile]** **Backspace su una riga vuota dentro un
   toggle la toglie** e porta il cursore su quella sopra, o sul titolo
   se era la prima (`removeEmptyNestedLine`). Prima non succedeva niente
   e una riga vuota creata per sbaglio restava lì
-- **[Nuova funzionalità]** Creato un toggle dal menu "/" o dal "+", **il
+- **[Modifica]** **[📱 Mobile]** Creato un toggle dal menu "/" o dal "+", **il
   cursore va sul suo titolo** e la tastiera resta su: prima si chiudeva
   e bisognava ritoccare la riga. Il fuoco si posa per un istante sul
   campo invisibile, perché il campo condiviso in cui si stava scrivendo
   — se quella era la sua unica riga — muore col cursore dentro
-- **[Bug fix]** Le righe dentro un toggle sono **allineate sotto il testo
+- **[Bug fix]** **[📱 Mobile]** Le righe dentro un toggle sono **allineate sotto il testo
   del titolo** (`NESTED_INDENT` = freccia + stacco). Prima il rientro
   era un 20 fisso, quattro punti più corto, e stavano storte a sinistra
-- **[Nuova funzionalità]** **Un toggle si toglie col backspace**, come
+- **[Modifica]** **[📱 Mobile]** **Un toggle si toglie col backspace**, come
   su Notion: all'inizio del titolo **torna testo normale**, col suo
   titolo, e le righe che conteneva **escono e restano subito sotto**,
   allo stesso livello (`unmakeToggle`, `unnestAndConvert`). Un secondo
@@ -10710,15 +10788,15 @@ Poi:
   richiesta (`pendingCaret`) invece di mettersi sempre in fondo. In
   fondo, il backspace successivo avrebbe mangiato l'ultima lettera del
   titolo invece di unire la riga a quella sopra
-- **[Bug fix]** **Un toggle nuovo nasce aperto.** Lo stato aperto/chiuso
+- **[Bug fix]** **[📱 Mobile]** **Un toggle nuovo nasce aperto.** Lo stato aperto/chiuso
   sta nel blocco e ci restava anche cambiando tipo: una riga che era
   stata un toggle chiuso, rifatta toggle, rinasceva chiusa, e l'Invio
   nel titolo creava un secondo toggle sotto invece di scendere dentro
-- **[Bug fix]** Aprire/chiudere un toggle scrive **solo quella colonna**
+- **[Bug fix]** **[📱 Mobile]** Aprire/chiudere un toggle scrive **solo quella colonna**
   (`setExpanded`) e parte dalla versione più recente del blocco: prima
   salvava la copia che la freccia aveva in mano, che poteva avere un
   titolo più vecchio di quello appena scritto
-- **[Bug fix]** Il cestino della barra sulle righe vuote ora posa prima
+- **[Bug fix]** **[📱 Mobile]** Il cestino della barra sulle righe vuote ora posa prima
   il fuoco sul campo invisibile: la riga che sparisce aveva il cursore
   dentro, che è il modo in cui l'app si chiudeva
 - **Un dubbio aperto, dichiarato**: nel primo tentativo, trasformando in
@@ -10741,7 +10819,7 @@ Poi:
   → sparisce, cursore in fondo a quella sopra; due righe dentro,
   chiuso e riaperto → **entrambe ancora nel database**
 
-### 🆕 v0.55 — 22/09/2026 · 19:36 — Come si chiude il menu del "+"
+### ✏️ v0.35.1 — 22/09/2026 · 19:36 — Come si chiude il menu del "+"
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
@@ -10759,11 +10837,11 @@ Poi:
 Poi:
 > «Se tocco da qualsiasi parte della pagina, che non sia questa finestra di cui stiamo parlando, la finestra non scompare, ma il cambio del text cursor avviene comunque»
 
-- **[Nuova funzionalità]** Due modi, e sono quelli che vengono da sé:
+- **[Modifica]** **[📱 Mobile]** Due modi, e sono quelli che vengono da sé:
   **ritoccare il "+"**, che fa da interruttore, oppure **toccare una
   parte vuota della pagina**. La tastiera resta dov'è in entrambi i
   casi
-- **[Bug fix]** **Toccare la pagina non sposta più il cursore.** Il
+- **[Bug fix]** **[📱 Mobile]** **Toccare la pagina non sposta più il cursore.** Il
   menu si chiudeva già da solo al primo tocco fuori, ma quel tocco
   arrivava **anche alla pagina sotto**, che portava il cursore altrove:
   si tornava a scrivere e ci si ritrovava da un'altra parte
@@ -10798,7 +10876,7 @@ Poi:
   cursore si fosse spostato sarebbe finita all'inizio; è finita in
   fondo — `ProvaXY` — e il menu si era chiuso
 
-### 🆕 v0.54 — 22/09/2026 · 19:06 — Colore del testo e colore dietro al testo (il pennello)
+### 🆕 v0.35 — 22/09/2026 · 19:06 — Colore del testo e colore dietro al testo (il pennello)
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
@@ -10810,7 +10888,7 @@ Poi:
 Poi:
 > «Non mi fa muovere il pallino del colore del background»
 
-- **[Nuova funzionalità]** Un **pennello nella barra, accanto ad Aa**,
+- **[Nuova funzionalità]** **[📱 Mobile]** Un **pennello nella barra, accanto ad Aa**,
   apre un selettore di colore da cui si tinge il testo selezionato o la
   fascia dietro di lui. Due riquadri in cima, *Testo* e *Sfondo*, per
   passare dall'uno all'altro senza chiudere niente
@@ -10818,7 +10896,7 @@ Poi:
   interruttore come grassetto e corsivo, apre una finestra sua, e
   metterlo in fila con quelli avrebbe promesso un comportamento che non
   ha
-- **[Nuova funzionalità]** Il selettore è quello di Windows, che è
+- **[Nuova funzionalità]** **[📱 Mobile]** Il selettore è quello di Windows, che è
   quello chiesto guardando: riquadro grande con lo spettro (tinta da
   sinistra a destra, saturazione dall'alto in basso), striscia della
   luminosità a destra dal bianco al nero, i tre riquadri
@@ -10834,7 +10912,7 @@ Poi:
   quello che c'è scritto è un colore vero**: a metà di `#FF00` non c'è
   ancora niente da mostrare, e saltare a un colore a caso a ogni
   lettera sarebbe stato peggio che non muoversi
-- **[Bug fix]** **La selezione si mette da parte prima di aprire la
+- **[Bug fix]** **[📱 Mobile]** **La selezione si mette da parte prima di aprire la
   finestra.** Il pannello che sale dal basso toglie il fuoco al campo
   di scrittura, e un campo che perde il fuoco **chiude la selezione**
   riducendola a un cursore: al momento di applicare il colore non
@@ -10843,10 +10921,10 @@ Poi:
   mano (`reportSelection`) e il pennello ne fa una copia nell'istante
   in cui lo si tocca. I comandi della barra Aa non hanno mai avuto
   questo problema perché non aprono niente
-- **[Bug fix]** I blocchi isola si riallineavano al database **solo
+- **[Bug fix]** **[📱 Mobile]** I blocchi isola si riallineavano al database **solo
   quando cambiava il testo**, non la formattazione: il colore veniva
   salvato ma la riga restava com'era fino alla battuta successiva
-- **[Bug fix]** **Passando a "Background" il pallino non si muoveva
+- **[Bug fix]** **[📱 Mobile]** **Passando a "Background" il pallino non si muoveva
   più.** Lo stato del colore era legato anche al bersaglio
   (`remember(initialHex, background)`), quindi toccando il riquadro
   "Background" `remember` fabbricava uno stato **nuovo** — mentre i
@@ -10858,7 +10936,7 @@ Poi:
   con `rememberUpdatedState`. Cambiando bersaglio il colore adesso
   **resta quello che è**, che è anche più comodo — di solito si vuole
   lo stesso colore, o una sua correzione
-- **[Bug fix]** Il pallino si tiene **dentro i bordi** del riquadro:
+- **[Bug fix]** **[📱 Mobile]** Il pallino si tiene **dentro i bordi** del riquadro:
   sul rosso pieno cadeva nell'angolo in alto a sinistra e se ne vedeva
   un quarto, cioè sembrava non esserci
 - **Nel testo il colore sta sotto lo spoiler**: coperto, il velo deve
@@ -10874,7 +10952,7 @@ Poi:
   nel database; poi lo stesso su *Sfondo*, e `Nessun colore` che toglie
   solo quello lasciando il testo colorato
 
-### 🆕 v0.53 — 22/09/2026 · 18:36 — Il menu dei tre puntini di una pagina, e Updates
+### 🆕 v0.34 — 22/09/2026 · 18:36 — Il menu dei tre puntini di una pagina, e Updates
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
@@ -10882,14 +10960,14 @@ L'utente, parola per parola:
 > 22.10.2026 19:41= Esmepoi (con lo strikethrough) -> Esempio
 > Import ed Export mettile in grigio, poi in futuro le implementerai.»
 
-- **[Nuova funzionalità]** La **lente della ricerca sparisce** dalla
+- **[Nuova funzionalità]** **[📱 Mobile]** La **lente della ricerca sparisce** dalla
   barra in alto, su ogni pagina e sulla principale, e al suo posto —
   stessa posizione — ci sono i **tre puntini**. Dentro: Favorite,
   Search, Duplicate, Move to, Move to trash, Lock view, Lock page,
   Import, Export, Updates. Le cose che si fanno a una pagina intera
   stanno in un posto solo invece di essere sparse fra la barra e le
   impostazioni
-- **[Nuova funzionalità]** Lo stesso menu c'è anche sul **database
+- **[Nuova funzionalità]** **[📱 Mobile]** Lo stesso menu c'è anche sul **database
   aperto a schermo intero**: un database lì è una pagina come le altre.
   È un file a sé (`PageOptionsSheet.kt`) proprio perché lo aprono due
   schermate diverse, e due copie di un menu di comandi si separano al
@@ -10935,7 +11013,7 @@ L'utente, parola per parola:
   uno spento dice che è stato messo a riposo apposta. Cancellare invece
   resta possibile — il lucchetto protegge come è messo insieme il
   database, non la sua esistenza
-- **[Nuova funzionalità]** Una schermata che elenca cosa è stato
+- **[Nuova funzionalità]** **[📱 Mobile]** Una schermata che elenca cosa è stato
   cambiato nella pagina, dalla più recente, nella forma chiesta:
   `22.09.2026 18:34` e sotto il testo di prima **sbarrato**, una
   freccia, il testo di adesso
@@ -10946,7 +11024,7 @@ L'utente, parola per parola:
   quando cambia la struttura della pagina o quando si esce. È **lo
   stesso confine che l'Annulla usa già**, riusato invece di
   inventarne un secondo che prima o poi si sarebbe disallineato
-- **[Bug fix]** Il solo spostare il cursore, senza scrivere, non
+- **[Bug fix]** **[📱 Mobile]** Il solo spostare il cursore, senza scrivere, non
   chiudeva la sessione: la modifica restava in sospeso fino alla
   successiva e la cronologia aveva sempre un pezzo di ritardo. Ora la
   chiude la schermata quando cambia la riga a fuoco, e il titolo la
@@ -10975,14 +11053,14 @@ L'utente, parola per parola:
   spostato il cursore, e in "Updates" è comparsa **una riga sola** con
   la data giusta e la parola vecchia sbarrata
 
-### 🆕 v0.52 — 22/09/2026 · 15:19 — Preferiti, la base
+### 🆕 v0.33 — 22/09/2026 · 15:19 — Preferiti, la base
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
 > «Devo farti i complimenti: senza avertelo chiesto hai messo una piccola ma ultra importante feature, ossia quello di toccare con il dito la parola per scoprirla. Bravissimo.
 > Ora, nuova feature: dammi la possibilità di mettere come preferita una pagina (ovviamente non quella del menu principale )o un database. Per il momento, crea un archivio nascosto che più in là ti dirò di mettere in una sidebar che sempre in futuro ti dirò di implementare (ora non mi serve vedere la lista delle pagine preferite, ma solo per creare la base)»
 
-- **[Nuova funzionalità]** Una pagina o un database si possono mettere
+- **[Nuova funzionalità]** **[📱 Mobile]** Una pagina o un database si possono mettere
   fra i preferiti. **Per ora non c'è niente che li mostri**: è
   deliberato, serve la base su cui poggerà la barra laterale che verrà
 - **Una colonna sola per pagine e database** (`pages.isFavorite`, con
@@ -11014,13 +11092,13 @@ L'utente, parola per parola:
   l'interruttore acceso e spento su un database, controllando ogni
   volta il valore nel database
 
-### 🔧 v0.51.1 — 22/09/2026 · 14:52 — La formattazione sopravvive alla scrittura
+### 🔧 v0.32.0.1 — 22/09/2026 · 14:52 — La formattazione sopravvive alla scrittura
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
 > «Funziona ma una piccola cosa: scrivo le due lineette, scrivo la parola, scrivo le terza lineetta, scrivo la quarta e si censura subito, ma appena faccio spazio, backspace dopo lo spazio, o scrivo qualcosa, si rivede qualsiasi parola con lo spoiler per un attimo, solito scattino che scompare e riappare»
 
-- **[Bug fix]** **La parola censurata non riappare più a ogni tasto.**
+- **[Bug fix]** **[📱 Mobile]** **La parola censurata non riappare più a ogni tasto.**
   Gli span salvati sono sempre un giro indietro rispetto al campo — il
   campo ha già la lettera appena battuta, il database ce l'avrà fra
   qualche decina di millisecondi — e in quel fotogramma la
@@ -11036,7 +11114,7 @@ L'utente, parola per parola:
   continua a non disegnare niente. Lì la corrispondenza riga-blocco non
   è affidabile, e uno stile preso dal blocco sbagliato sarebbe peggio
   di nessuno stile
-- **[Bug fix]** Nel testo scorrevole ogni riga toccata veniva riscritta
+- **[Bug fix]** **[📱 Mobile]** Nel testo scorrevole ogni riga toccata veniva riscritta
   come **un unico pezzo senza formato**: bastava aggiungere una lettera
   in fondo a un paragrafo perché il grassetto di una parola lontana
   sparisse. Era un difetto vecchio, che non si notava perché quasi
@@ -11059,11 +11137,11 @@ L'utente, parola per parola:
   grassetto che scrivere nel database un testo diverso da quello che
   l'utente vede — è già successo una volta, e quella volta è costata
   dei blocchi svuotati
-- **[Bug fix]** Nei blocchi isola (toggle) la barra **Aa** formattava
+- **[Bug fix]** **[📱 Mobile]** Nei blocchi isola (toggle) la barra **Aa** formattava
   **una lettera prima** di quella selezionata: le posizioni della
   selezione contano anche l'a-capo nascosto in testa, gli span no
 
-### 🆕 v0.51 — 22/09/2026 · 14:45 — Testo coperto (spoiler)
+### 🆕 v0.32 — 22/09/2026 · 14:45 — Testo coperto (spoiler)
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
@@ -11072,12 +11150,12 @@ L'utente, parola per parola:
 Poi:
 > «Appena scrivo la seconda linea verticale dopo la parola, la parola stessa si vede con un background grigio. Quello che vorrei è che appena scrivo la quarta e ultima lineetta verticale è che si faccia subito la "censura spoiler"»
 
-- **[Nuova funzionalità]** Come su Discord e Telegram: si scrive
+- **[Nuova funzionalità]** **[📱 Mobile]** Come su Discord e Telegram: si scrive
   `||qualcosa||` e le quattro barre spariscono — sono un comando, non
   roba scritta — lasciando al loro posto una **fascia grigia** che
   copre le lettere. La stessa cosa si fa dalla barra **Aa**, con
   l'occhio sbarrato, su qualsiasi pezzo di testo selezionato
-- **[Nuova funzionalità]** Si scopre **toccandolo**: il pezzo coperto
+- **[Nuova funzionalità]** **[📱 Mobile]** Si scopre **toccandolo**: il pezzo coperto
   torna leggibile quando il cursore, o la selezione, ci sta **dentro**,
   e si ricopre appena il cursore se ne va o il campo perde il fuoco. Non
   serviva nient'altro: in un editor un tocco è già un cursore che si
@@ -11100,7 +11178,7 @@ Poi:
   `||a|| e ||b||` fa due spoiler separati invece di coprire anche la
   "e" in mezzo. In mezzo alle barre non ci può stare né un'altra barra
   né un a-capo
-- **[Nuova funzionalità]** Uno spoiler **non si allunga scrivendoci
+- **[Nuova funzionalità]** **[📱 Mobile]** Uno spoiler **non si allunga scrivendoci
   dopo**. Per tutto il resto (grassetto, corsivo...) continuare a
   scrivere continua la formattazione, che è quello che fanno tutti gli
   editor; qui no, perché il cursore resta proprio lì attaccato e la
@@ -11110,7 +11188,7 @@ Poi:
   dentro il JSON del testo, e il testo già salvato — che quella chiave
   non ce l'ha — si rilegge così com'è
 
-### 🆕 v0.50 — 22/09/2026 · 14:27 — Gli elenchi numerati cambiano modo di contare a ogni rientro
+### ✏️ v0.31.4 — 22/09/2026 · 14:27 — Gli elenchi numerati cambiano modo di contare a ogni rientro
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
@@ -11118,14 +11196,14 @@ L'utente, parola per parola:
 > Nuova feature: fai la stessa identica cosa ma quando faccio una Numbered list, e gli elementi sotto li indento a destra, fai sì che gli elementi sotto non siano sempre dei numeri ma fai come fa OneNote nella foto (i numeri 111, 222, 333, eccetera sono solo degli esempi). Ovviamente, se alcuni elementi sotto li indento a sinistra, fai sì che alla stessa posizione della colonna di ciò che indento a sinistra (in base a quello che c'è sopra sulla stessa linea non visibile) venga rispettato l'ordine.
 > I simboli in ordine saranno: numeri con un punto, numeri romani con punti, numeri con parentesi, numeri romani con parentesi, lettere con numeri, One Two Three eccetera, lettere con parentesi, First Second Third eccetera, e poi ricomincia con i numeri con un punto (tutto come vedi nella foto, ma rispetta l'ordine che ti ho scritto qui, non quello della foto, che ti serve solo per vedere come si scrivono)»
 
-- **[Nuova funzionalità]** Stessa idea dei puntati, otto modi in fila
+- **[Modifica]** **[📱 Mobile]** Stessa idea dei puntati, otto modi in fila
   (`NUMBERED_STYLES`): `1.`, `i.`, `1)`, `i)`, `a.`, `One.`, `a)`,
   `First.` — e poi si ricomincia da `1.`. Verificato sul telefono
   livello per livello, dallo zero all'otto: al nono rientro torna `1.`
 - **Assunto dichiarato**: "lettere con numeri" è stato inteso come
   **lettere col punto** (`a.` `b.` `c.`), in parallelo a "lettere con
   parentesi" (`a)`). Se si intendeva altro è una riga sola da cambiare
-- **[Bug fix]** **Ogni livello ha il suo contatore che riparte da uno**
+- **[Bug fix]** **[📱 Mobile]** **Ogni livello ha il suo contatore che riparte da uno**
   (`numberedListOrdinal`). Prima il numero veniva composto col ramo
   intero — `1.1.1` — e a quel punto i modi di scrivere delle colonne
   più interne non avevano senso: `i.` non può dire "uno punto uno".
@@ -11137,15 +11215,15 @@ L'utente, parola per parola:
   calcolo** (`letterOrdinal`, `z` → `aa`) invece di fermarsi alla zeta;
   le parole (`One`, `First`) si fermano a **venti** e oltre tornano
   cifre, perché "Thirtyseventh" si mangerebbe mezza riga
-- **[Nuova funzionalità]** Anche i numeri **dentro un toggle** passano
+- **[Modifica]** **[📱 Mobile]** Anche i numeri **dentro un toggle** passano
   dalla stessa funzione: allo stesso rientro un numero dentro un toggle
   e uno fuori devono essere scritti uguali
-- **[Bug fix]** La riga appena creata con l'Invio prende il numero
+- **[Bug fix]** **[📱 Mobile]** La riga appena creata con l'Invio prende il numero
   **previsto** (`carriedOrdinal + 1`) invece di nessun numero: è lo
   stesso rimedio dei pallini, e senza si vedeva il segno comparire in
   ritardo
 
-### 🆕 v0.49 — 22/09/2026 · 14:09 — Gli elenchi puntati cambiano segno a ogni rientro
+### ✏️ v0.31.3 — 22/09/2026 · 14:09 — Gli elenchi puntati cambiano segno a ogni rientro
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
@@ -11165,23 +11243,23 @@ Poi:
 Poi:
 > «Mi sono fatto io di funghi allucinogeni (scherzo) oppure alcuni bullet sono stortini? Tipo i rombini, i quadratini, il paragraph tra alcuni bullet non è uguale per tutti»
 
-- **[Nuova funzionalità]** Come su OneNote: `•` pieno, `◦` vuoto, `▪`
+- **[Modifica]** **[📱 Mobile]** Come su OneNote: `•` pieno, `◦` vuoto, `▪`
   quadratino pieno, `▫` quadratino vuoto, `◆` rombo pieno, `◇` rombo
   vuoto, `▸` triangolino pieno, `▹` triangolino vuoto — e poi si
   ricomincia
-- **[Nuova funzionalità]** Il segno dipende **solo dal livello di
+- **[Modifica]** **[📱 Mobile]** Il segno dipende **solo dal livello di
   rientro**, non da cosa c'era prima. È quello che serve per riportare
   indietro una riga: ritrova da sola il segno della colonna in cui
   arriva, qualunque strada abbia fatto. Con un contatore "prosegui da
   dove eri", due righe alla stessa altezza potrebbero finire con segni
   diversi
-- **[Nuova funzionalità]** Ognuno ha **il suo corpo**
+- **[Modifica]** **[📱 Mobile]** Ognuno ha **il suo corpo**
   (`BULLET_MARKER_SIZES`): questi caratteri sono disegnati molto
   diversi fra loro — un pallino occupa meno di un terzo del suo spazio,
   un rombo quasi due terzi — e con un'unica dimensione per tutti i
   pallini venivano minuscoli e i rombi delle macchie. Così si vedono
   della stessa misura
-- **[Bug fix]** **L'altezza della riga del testo scorrevole è sempre
+- **[Bug fix]** **[📱 Mobile]** **L'altezza della riga del testo scorrevole è sempre
   fissata** (`RUN_LINE_HEIGHT`, 24). Lasciandola decidere al carattere,
   ogni riga diventava alta quanto il segno più grande che conteneva: le
   righe coi pallini (scritti a 20) erano più alte di quelle coi rombi
@@ -11189,7 +11267,7 @@ Poi:
   storti i segni, ma a essere storte erano le righe. Misurato sulla
   stessa lista di diciassette punti: prima il passo fra una riga e
   l'altra andava da 34 a 48 punti, dopo è 43-44 su tutte
-- **[Nuova funzionalità]** I segni scendono di un filo sotto la riga di
+- **[Modifica]** **[📱 Mobile]** I segni scendono di un filo sotto la riga di
   base (`BULLET_MARKER_DROP`): appoggiati esattamente sulla riga di base
   sembravano un po' troppo in alto rispetto al testo. È una **frazione
   del corpo del segno**, non una misura fissa, così i pallini (scritti
@@ -11202,7 +11280,7 @@ Poi:
   quindi c'è margine. Dentro quei 24 la riga non si allarga; oltre, si
   allargherebbero solo le righe col segno più grande e l'elenco
   verrebbe a scalini
-- **[Bug fix]** **Il cursore non scatta più a inizio riga andando a
+- **[Bug fix]** **[📱 Mobile]** **Il cursore non scatta più a inizio riga andando a
   capo.** Subito dopo un Invio il campo ha una riga in più del
   database, e da quel punto in giù righe e blocchi non si
   corrispondevano: chiedendo "il blocco numero i" si otteneva quello
@@ -11216,24 +11294,24 @@ Poi:
   Cercarlo dall'inizio non funziona: andando a capo cambia testo anche
   la riga divisa. Verificato catturando il **primo fotogramma** dopo
   l'Invio: il pallino c'è già e il cursore è al suo posto
-- **[Nuova funzionalità]** Il tetto ai rientri sale **da 5 a 10**: con
+- **[Modifica]** **[📱 Mobile]** Il tetto ai rientri sale **da 5 a 10**: con
   cinque livelli il giro di otto non si sarebbe mai potuto vedere né
   finire né ricominciare
 
-### 🔧 v0.48.1 — 22/09/2026 · 13:54 — Copertina e titolo scorrono con la pagina
+### 🔧 v0.31.2.1 — 22/09/2026 · 13:54 — Copertina e titolo scorrono con la pagina
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
 > «Woah, attenzione: se scorro la pagina del menu principale, tutto lo spazio che va dal titolo compreso in sopra compresa la copertina rimane bloccato. Prima funzionava bene.
 > Vedi se è collegato»
 
-- **[Bug fix]** Stavano fuori dalla lista che scorre, quindi restavano
+- **[Bug fix]** **[📱 Mobile]** Stavano fuori dalla lista che scorre, quindi restavano
   inchiodati in cima mentre il testo scorreva sotto. Con una copertina
   alta si mangiavano mezza schermata che non si poteva recuperare. Ora
   sono la **prima voce della lista** e se ne vanno scorrendo, come su
   Notion. Non era una regressione recente: sono sempre stati lì fuori,
   si nota da quando c'è una copertina
-- **[Bug fix]** Sono **una voce sola** di proposito: gli indici della
+- **[Bug fix]** **[📱 Mobile]** Sono **una voce sola** di proposito: gli indici della
   lista servono anche a portare in vista la riga che prende il cursore,
   e uno scarto fisso (`HEADER_ITEM_COUNT`) è molto più facile da tenere
   giusto di uno variabile
@@ -11242,7 +11320,7 @@ L'utente, parola per parola:
   rischio vero, perché ora anche quel campo di testo può essere
   distrutto dallo scorrimento come gli altri dentro la lista
 
-### 🆕 v0.48 — 22/09/2026 · 13:29 — La barra sopra la tastiera, rifatta
+### ✏️ v0.31.2 — 22/09/2026 · 13:29 — La barra sopra la tastiera, rifatta
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
@@ -11251,17 +11329,17 @@ L'utente, parola per parola:
 Poi:
 > «Quando eseguo la gesture per andare indietro e far scomparire la tastiera, la toolbar ci mette qualche millisecondo in più a scomparire. Riusciresti a farlo allo stesso tempo della tastiera?»
 
-- **[Nuova funzionalità]** Ha un **grigio tutto suo**
+- **[Modifica]** **[📱 Mobile]** Ha un **grigio tutto suo**
   (`DarkSurfaceVariant`), più chiaro della pagina e diverso dalla
   tastiera: prima era dello stesso nero della pagina e non si capiva
   dove finisse una e cominciasse l'altra
-- **[Nuova funzionalità]** È **più bassa**: i pulsanti passano dai 48 di
+- **[Modifica]** **[📱 Mobile]** È **più bassa**: i pulsanti passano dai 48 di
   serie a 40 e le icone a 22 (`BAR_BUTTON_SIZE`, `BAR_ICON_SIZE`), e
   sparisce il margine sopra e sotto — l'altezza la danno i pulsanti, e
   ogni punto in più lì è una fascia in più che copre il testo. Tutti i
   pulsanti passano da `BarButton`, così non possono avere misure
   diverse fra loro
-- **[Bug fix]** **Se ne va insieme alla tastiera.** Il suo bordo
+- **[Bug fix]** **[📱 Mobile]** **Se ne va insieme alla tastiera.** Il suo bordo
   inferiore è appoggiato sopra la tastiera, quindi mentre quella scende
   la barra la segue — ma si fermava al bordo dello schermo e restava lì
   finché il sistema non dichiarava la tastiera chiusa: da fuori sembrava
@@ -11272,7 +11350,7 @@ Poi:
   invisibile e non si vede nessuno scatto. Col menu "+" aperto lo
   scorrimento è disattivato, perché lì la barra si vede anche senza
   tastiera
-- **[Bug fix]** È **attaccata alla tastiera**: restava sospesa di pochi
+- **[Bug fix]** **[📱 Mobile]** È **attaccata alla tastiera**: restava sospesa di pochi
   punti perché lo spazio per la barra di navigazione arrivava dallo
   `Scaffold` e quello per la tastiera da `imePadding`, e a tastiera
   aperta **si sommavano**. Ora il fondo prende l'unione dei due
@@ -11280,14 +11358,14 @@ Poi:
   alta, che è sempre quella giusta — a tastiera aperta la barra di
   navigazione le sta dietro e non occupa niente
 
-### 🔧 v0.47.1 — 22/09/2026 · 11:31 — La barra della formattazione non resta più a mezz'aria
+### 🔧 v0.31.1.1 — 22/09/2026 · 11:31 — La barra della formattazione non resta più a mezz'aria
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
 > «Perfetto, funziona tutto alla grande, ottimo lavoro ancora.
 > Adesso vorrei parlarti di un bug, prima di concludere la storia delle view dei databse (ci mancava la Gallery se non erro): se io, quando NON è aperta la tastiera, tocco su una qualsiasi parte di quello spazio cerchiato di rosso nella prima foto, appare il bug che vedi nella seconda foto, ossia, sempre quella dannata toolbar che va troppo in alto alla tastiera e il text cursor (compreso il focus) va sotto in fondo alla pagina»
 
-- **[Bug fix]** È il difetto che tornava da giorni, e la causa non era
+- **[Bug fix]** **[📱 Mobile]** È il difetto che tornava da giorni, e la causa non era
   nel codice ma nel **manifesto**: l'attività non dichiarava come
   comportarsi all'apertura della tastiera, e Android sceglieva da sé di
   far **scorrere su tutta la finestra** per tenere in vista il punto in
@@ -11295,12 +11373,12 @@ L'utente, parola per parola:
   Il guaio è che il codice aggiunge *già* lo spazio per la tastiera con
   `imePadding`: i due effetti si sommavano e la barra finiva staccata
   dalla tastiera, di quasi un'altezza di tastiera
-- **[Bug fix]** Con `android:windowSoftInputMode="adjustResize"` la
+- **[Bug fix]** **[📱 Mobile]** Con `android:windowSoftInputMode="adjustResize"` la
   finestra resta ferma e a fare spazio pensa solo `imePadding`, che sa
   dov'è davvero la tastiera. Verificato sullo stesso gesto che lo
   faceva comparire: il titolo ora **resta al suo posto** e la barra è
   incollata alla tastiera
-- **[Bug fix]** **Il tocco a vuoto non manda più il cursore in fondo
+- **[Bug fix]** **[📱 Mobile]** **Il tocco a vuoto non manda più il cursore in fondo
   alla pagina.** Il gestore "hai toccato lo spazio vuoto, continua a
   scrivere" copriva **tutta** la lista, quindi prendeva anche lo spazio
   accanto al titolo e i buchi fra una riga e l'altra: toccandoli, il
@@ -11309,7 +11387,7 @@ L'utente, parola per parola:
   l'ultimo blocco è davvero l'ultimo, non l'ultimo *visibile*.
   Verificato che il gesto utile continui a funzionare
 
-### 🆕 v0.47 — 22/09/2026 · 11:17 — Le caselle da spuntare entrano nel campo di testo condiviso
+### ✏️ v0.31.1 — 22/09/2026 · 11:17 — Le caselle da spuntare entrano nel campo di testo condiviso
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
@@ -11328,7 +11406,7 @@ Poi:
 > «Adesso, ogni volta che scrivo o cancello qualcosa su una checkbox o su un blocco di testo vuoto, tutto quello che contenuto in un blocco con una checkbox sotto di esso scatta scomparendo e ricomparendo, e per pochissimi millisecondi scatta a destra. Scatta solo ciò che sta in un blocco da checkbox.
 > EDIT: ho fatto caso che il text curor ora è troppo grande, più di prima. Mettilo standard»
 
-- **[Nuova funzionalità]** È la cura alla radice di tutta la famiglia di
+- **[Modifica]** **[📱 Mobile]** È la cura alla radice di tutta la famiglia di
   difetti delle caselle. Finché ognuna era un campo di testo **a sé**,
   andare a capo spostava il fuoco da un campo all'altro e ogni cambio di
   specie ne distruggeva uno mentre aveva il cursore: da lì la tastiera
@@ -11337,17 +11415,17 @@ Poi:
   Dentro il campo condiviso **andare a capo è solo scrivere un a-capo**,
   come fra due paragrafi: non c'è nessun fuoco da spostare e niente da
   distruggere
-- **[Nuova funzionalità]** Il quadratino non può stare *dentro* un campo
+- **[Modifica]** **[📱 Mobile]** Il quadratino non può stare *dentro* un campo
   di testo, quindi il testo gli riserva lo spazio con dei caratteri
   invisibili (`CHECKBOX_MARKER`) e il quadratino vero viene disegnato
   **sopra**, alla posizione che il campo stesso dichiara per quel
   carattere (`RunCheckboxOverlay`). Così resta incollato alla sua riga
   anche quando il testo va a capo da solo, e ha una zona di tocco vera
   invece di essere un carattere da centrare col dito
-- **[Nuova funzionalità]** L'overlay va messo **dopo** il campo dentro
+- **[Modifica]** **[📱 Mobile]** L'overlay va messo **dopo** il campo dentro
   il `Box`: in Compose i tocchi li riceve per primo l'ultimo figlio, e
   messo prima il quadratino non rispondeva — il tocco andava al testo
-- **[Nuova funzionalità]** Una casella spuntata ha il testo **sbarrato e
+- **[Modifica]** **[📱 Mobile]** Una casella spuntata ha il testo **sbarrato e
   smorto**, come su Notion. L'Invio ne crea un'altra non spuntata, e il
   backspace a inizio riga toglie il quadratino lasciando il testo: sono
   gli stessi due comportamenti che avevano già elenchi puntati e
@@ -11365,10 +11443,10 @@ Poi:
   creare una casella dal menu "/" lascia la tastiera aperta e si scrive
   subito. In tutte e quattro le prove `ImeTracker` **non ha registrato
   né `onHidden` né `onShown`**, e non c'è stato nessun crash
-- **[Nuova funzionalità]** Le righe con una casella **stanno più
+- **[Modifica]** **[📱 Mobile]** Le righe con una casella **stanno più
   larghe** (`CHECKBOX_LINE_HEIGHT`): il quadratino è piccolo e attaccate
   è facile spuntare quella sbagliata col dito
-- **[Bug fix]** **I quadratini non saltano più ad ogni tasto.**
+- **[Bug fix]** **[📱 Mobile]** **I quadratini non saltano più ad ogni tasto.**
   Scrivendo o cancellando, sparivano e riapparivano spostati di lato per
   un istante. Erano disegnati alle posizioni ricalcolate dal testo
   corrente del campo, mentre le coordinate arrivavano dalla misura del
@@ -11381,7 +11459,7 @@ Poi:
   spazio fra le caselle vuol dire cursore più alto. A 34 si notava; il
   valore sta a 27, appena sopra il naturale (24): cursore di misura
   normale e un po' d'aria fra una casella e l'altra
-- **[Nuova funzionalità]** Il testo si **centra** nella riga alta
+- **[Modifica]** **[📱 Mobile]** Il testo si **centra** nella riga alta
   (`lineHeightStyle`). Di suo Compose spartisce lo spazio in più in
   proporzione a quanto le lettere salgono e scendono, e il testo non
   finisce in mezzo: i quadratini, che invece stanno in mezzo,
@@ -11392,7 +11470,7 @@ Poi:
   a sé (`BlockRow`), perché i figli di un toggle si disegnano per conto
   loro
 
-### 🔧 v0.46.1 — 22/09/2026 · 10:27 — L'Invio dentro una casella non sposta più il fuoco
+### 🔧 v0.31.0.1 — 22/09/2026 · 10:27 — L'Invio dentro una casella non sposta più il fuoco
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
@@ -11409,7 +11487,7 @@ Poi:
 > 3) se cancello una checkbox, capita che tutto sotto (per esempio il database che trovi sotto) scatta, scompare ricompare dopo qualche millisecondo
 > 4) se io tocco invio quando mi trovo in un blocco dove c'è una checkbox, mi cancella quello che c'è scritto invece di andarmi a capo»
 
-- **[Bug fix]** Tre difetti diversi delle caselle da spuntare — la
+- **[Bug fix]** **[📱 Mobile]** Tre difetti diversi delle caselle da spuntare — la
   maiuscola che faceva uno scatto da minuscola a maiuscola, le lettere
   che finivano nella riga di prima andando a capo in fretta, e l'app che
   si chiudeva **senza messaggio** — avevano **una sola causa**, trovata
@@ -11421,7 +11499,7 @@ Poi:
   vecchio, e il campo appena lasciato viene distrutto mentre la tastiera
   gli sta ancora chiedendo dov'è il cursore — che è l'errore
   `LayoutCoordinate ... isAttached` con cui l'app spariva
-- **[Bug fix]** La cura è controintuitiva: **la riga nuova nasce sopra,
+- **[Bug fix]** **[📱 Mobile]** La cura è controintuitiva: **la riga nuova nasce sopra,
   non sotto.** Va a capo mettendo il testo *prima* del cursore in un
   blocco nuovo inserito sopra, e lasciando al blocco su cui si sta
   scrivendo — che il fuoco ce l'ha già — il testo *dopo* il cursore.
@@ -11429,16 +11507,16 @@ Poi:
   cambio di campo, niente tastiera staccata, niente da distruggere.
   Misurato: in una raffica di sedici a-capo, **zero** cambi di fuoco, e
   le lettere tutte al posto giusto
-- **[Bug fix]** La spunta e il "riparti da N" restano alla riga di
+- **[Bug fix]** **[📱 Mobile]** La spunta e il "riparti da N" restano alla riga di
   sopra, che è la continuazione di quella che c'era; la riga nuova nasce
   non spuntata, come su Notion
-- **[Bug fix]** L'indice del blocco viene **riletto dal database dentro
+- **[Bug fix]** **[📱 Mobile]** L'indice del blocco viene **riletto dal database dentro
   la transazione** (`PageRepository.splitBlockAbove`), e le divisioni si
   mettono in fila con un `Mutex`. Prima usavo l'indice della copia in
   mano alla schermata: andando a capo in fretta era di un a-capo fa, e
   **nascevano due blocchi con lo stesso posto** — visto davvero nel
   database, non ipotizzato
-- **[Bug fix]** **Il secondo a-capo di fila non veniva più fatto.**
+- **[Bug fix]** **[📱 Mobile]** **Il secondo a-capo di fila non veniva più fatto.**
   Effetto collaterale della cura, trovato subito dopo leggendo il
   database: il riconoscimento dell'"eco della tastiera" (vedi
   `SplitEcho`) è per campo, e ora che il campo sopravvive a tutte le
@@ -11448,7 +11526,7 @@ Poi:
   carattere vero: un'eco arriva subito dopo la divisione e senza niente
   in mezzo, quindi quella memoria non serve più. Verificato: tre a-capo
   in raffica danno tre righe, `Z` `W` `Q`
-- **[Bug fix]** **Un salvataggio di testo non sposta più il blocco.**
+- **[Bug fix]** **[📱 Mobile]** **Un salvataggio di testo non sposta più il blocco.**
   `updateBlockSpans` risalvava l'**entità intera**, quindi rispediva
   anche l'`orderIndex` e la spunta che la schermata aveva in mano: dopo
   un a-capo quella copia è di un istante prima, e il primo carattere
@@ -11456,7 +11534,7 @@ Poi:
   la riga nuova. Si vedeva come "scrivo, faccio invio, mi cancella
   quello che ho scritto". Ora scrive **solo la colonna del testo**
   (`BlockDao.setText`)
-- **[Bug fix]** **La tastiera non sparisce più** cancellando una casella
+- **[Bug fix]** **[📱 Mobile]** **La tastiera non sparisce più** cancellando una casella
   o andando a capo su una casella vuota, e **l'app non si chiude più**.
   Erano i due corni dello stesso problema: quel campo muore per forza (il
   blocco passa da riga a sé a testo scorrevole, che è un'altra
@@ -11466,7 +11544,7 @@ Poi:
   chiudevano l'app con `LayoutCoordinate ... isAttached`; con
   `clearFocus()` `ImeTracker` segnava `onHidden` e poi `onShown` 315 ms
   dopo
-- **[Bug fix]** La terza strada è **il posteggio della tastiera**: un
+- **[Bug fix]** **[📱 Mobile]** La terza strada è **il posteggio della tastiera**: un
   campo di testo alto un punto e invisibile, fuori dalla lista a
   scorrimento (dentro sparirebbe appena esce dallo schermo), su cui il
   fuoco si posa un istante prima che il campo vero venga distrutto. La
@@ -11475,7 +11553,7 @@ Poi:
   chiudono più l'app, e in una sequenza completa — scrivo, Invio,
   scrivo, Invio, backspace, scrivo — `ImeTracker` **non registra né
   `onHidden` né `onShown`**, cioè la tastiera non si muove mai
-- **[Bug fix]** Il posteggio serviva **anche al campo del testo
+- **[Bug fix]** **[📱 Mobile]** Il posteggio serviva **anche al campo del testo
   scorrevole**, non solo alle isole: riga vuota sotto una casella +
   backspace fonde la riga dentro la casella, la riga sparisce e con lei
   il suo campo. Era il caso più facile da incontrare e chiudeva l'app.
@@ -11507,7 +11585,7 @@ Poi:
   delle raffiche provate. È stata tolta la causa comune, che invece è
   stata misurata; la conferma vera arriva usando l'app a mano
 
-### 🆕 v0.46 — 22/09/2026 · 09:16 — Filtri su numeri e caselle, e la casella al centro della colonna
+### 🆕 v0.31 — 22/09/2026 · 09:16 — Filtri su numeri e caselle, e la casella al centro della colonna
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
@@ -11517,23 +11595,23 @@ L'utente, parola per parola:
 Poi:
 > «Questo è quello che succede (mi ero dimenticato lo screen)»
 
-- **[Nuova funzionalità]** Si filtra su **numeri** (da x a y, estremi
+- **[Nuova funzionalità]** **[📱 Mobile]** Si filtra su **numeri** (da x a y, estremi
   inclusi), **date**, **Select/MultiSelect** e **caselle da spuntare**.
   Restano fuori testo, indirizzo, mail e telefono: lì la domanda
   sarebbe "contiene queste lettere", cioè una ricerca, che è un'altra
   cosa e ancora non c'è
-- **[Nuova funzionalità]** Sui **numeri** basta un estremo: solo "da"
+- **[Nuova funzionalità]** **[📱 Mobile]** Sui **numeri** basta un estremo: solo "da"
   vuol dire "da lì in su", solo "a" vuol dire "fino a lì". Metà delle
   domande vere sono aperte da un lato ("sopra i 100"), e obbligare a
   scrivere un secondo numero inventato le renderebbe sbagliate. Una
   cella vuota non passa mai: non è zero, è "non c'è un numero"
-- **[Nuova funzionalità]** Sulle **caselle** si scelgono *Checked*,
+- **[Nuova funzionalità]** **[📱 Mobile]** Sulle **caselle** si scelgono *Checked*,
   *Unchecked* o tutte e due. Le celle mai toccate **non esistono nel
   database**: valgono "non spuntata", non "non lo so", altrimenti
   sparirebbero da tutti e due i filtri — il modo peggiore di sbagliare.
   Verificato sul telefono: *Checked* dà A, B, E, G e *Unchecked* dà
   C, F, Esempio, che sono esattamente i complementari letti in SQLite
-- **[Bug fix]** **Il tocco sullo spazio vuoto di una cella non fa più
+- **[Bug fix]** **[📱 Mobile]** **Il tocco sullo spazio vuoto di una cella non fa più
   niente.** Prima attraversava la tabella e arrivava alla pagina che le
   sta dietro, che lo intende come "scrivi qui": toccando accanto a una
   casella da spuntare il cursore finiva **sotto** al database e si
@@ -11542,50 +11620,50 @@ Poi:
   vengono serviti per primi, quindi la casella continua a rispondere
   (verificato: `mInputShown=false` prima e dopo il tocco a vuoto, e lo
   schermo byte per byte identico)
-- **[Nuova funzionalità]** Tenendo premuta l'intestazione di una
+- **[Nuova funzionalità]** **[📱 Mobile]** Tenendo premuta l'intestazione di una
   colonna **a caselle** compare **"Center"**, che mette il quadratino
   al centro della colonna invece che appoggiato al bordo sinistro; la
   stessa voce diventa poi "Align left". Essendo un allineamento e non
   una misura, resta al centro **qualunque larghezza** abbia la colonna
-- **[Nuova funzionalità]** L'opzione c'è solo per le caselle: è l'unico
+- **[Nuova funzionalità]** **[📱 Mobile]** L'opzione c'è solo per le caselle: è l'unico
   contenuto di cella che è un segno solo, dove l'allineamento si nota.
   Un testo o una data centrati renderebbero la colonna illeggibile,
   perché le righe non partirebbero più tutte dallo stesso punto
 - Sta in `centerContent` di `database_columns`, **schema alla versione
   21**
 
-### 🆕 v0.45 — 22/09/2026 · 01:46 — I filtri
+### 🆕 v0.30 — 22/09/2026 · 01:46 — I filtri
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
 > «Perché hai iniziato a parlare inglese? Non che io non lo capisca, anzi, ma continua in italiano per cortesia. Ora, nuova aggiunta. Dammi la possibilità di filtrare in base a quello che è presente tra le proprietà con un'icona Filter nelle impostazioni e con un'icona a sinistra di quella Sort che fa la stessa cosa: il filtro mi concede di far vedere pagine che corrispondono solo a date precise che io scelgo (se sono di un giorno solo o più giorni), a Select o MultiSelect a mia scelta. Metti anche un'iconcina nella pagina del filtro con un cestino per far sì che io possa cancellare il filtro»
 
-- **[Nuova funzionalità]** Le righe si possono **filtrare**: l'icona a
+- **[Nuova funzionalità]** **[📱 Mobile]** Le righe si possono **filtrare**: l'icona a
   sinistra di Sort nella barra della vista, e la voce **"Filter"**
   nelle impostazioni. Non sono due schermate gemelle ma **la stessa
   finestra** aperta da due posti: due copie si sarebbero separate al
   primo cambiamento, ed è il tipo di differenza che si nota solo
   usandole
-- **[Nuova funzionalità]** Sulle **date** una pagina passa se i suoi
+- **[Nuova funzionalità]** **[📱 Mobile]** Sulle **date** una pagina passa se i suoi
   giorni **toccano** quelli scelti, non se coincidono: un impegno dal 3
   al 7 compare filtrando il 5, altrimenti filtrare un giorno solo non
   mostrerebbe quasi mai niente. Le **date che si ripetono** contano
   tutte le loro volte, non solo la prima
-- **[Nuova funzionalità]** Sui **tag** passa chi ne ha **almeno uno**
+- **[Nuova funzionalità]** **[📱 Mobile]** Sui **tag** passa chi ne ha **almeno uno**
   fra quelli scelti, come il "contains any of" di Notion: chiederli
   tutti renderebbe inutile sceglierne più d'uno su una proprietà a
   selezione singola, dove nessuna riga potrebbe mai passare
-- **[Nuova funzionalità]** L'icona è **accesa di blu** quando un filtro
+- **[Nuova funzionalità]** **[📱 Mobile]** L'icona è **accesa di blu** quando un filtro
   c'è: senza, una tabella con metà delle pagine sembrerebbe una tabella
   che ha perso delle pagine. Il **cestino** in alto a destra nella
   finestra compare solo quando c'è davvero un filtro da buttare
-- **[Nuova funzionalità]** Il filtro vale per **tutte le viste**: la
+- **[Nuova funzionalità]** **[📱 Mobile]** Il filtro vale per **tutte le viste**: la
   domanda "fammi vedere solo queste pagine" non cambia senso passando
   alla bacheca o al calendario, e un filtro che si spegne cambiando
   vista sarebbe un filtro di cui non ci si può fidare. Se la proprietà
   su cui si filtrava viene cancellata, il filtro smette di valere
   invece di nascondere tutto
-- **[Nuova funzionalità]** Il filtro si salva sulla pagina
+- **[Nuova funzionalità]** **[📱 Mobile]** Il filtro si salva sulla pagina
   (`filterColumnId` e `filterValue`, **schema alla versione 20**). Il
   valore usa lo stesso formato delle celle, quindi a leggerlo è la
   stessa funzione che legge una data: due copie non possono separarsi.
@@ -11594,39 +11672,39 @@ L'utente, parola per parola:
 - **Limiti dichiarati**: **un filtro per volta** su una proprietà sola,
   come l'ordinamento; Notion ne concatena più d'uno con "and"/"or"
 
-### 🆕 v0.44 — 22/09/2026 · 01:39 — Colonne che si nascondono
+### 🆕 v0.29 — 22/09/2026 · 01:39 — Colonne che si nascondono
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
 > «Dammi la possibilità di decidere, tenendo premuto sul nome della proprietà di un database), se nascondere quella colonna o meno. Nelle impostazioni di quel database (tre lineette con i pallini) poi, mi metterai una voce chiamata "Property visibility", con una lista delle proprietà nascoste e lì deciderò quali rifar mostrare o no. Ovviamente dentro, mettimi due categorie, ossia 'Shown in table' con le proprietà visibili e 'Hidden in table' con quelle nascoste (come vedi nelle foto)»
 
-- **[Nuova funzionalità]** **Tenendo premuta l'intestazione** di una
+- **[Nuova funzionalità]** **[📱 Mobile]** **Tenendo premuta l'intestazione** di una
   colonna compare un menu con *Edit property* e **Hide**: la colonna
   sparisce dalla tabella, che si stringe di conseguenza
-- **[Nuova funzionalità]** Nelle impostazioni della vista c'è
+- **[Nuova funzionalità]** **[📱 Mobile]** Nelle impostazioni della vista c'è
   **"Property visibility"**, col numero di colonne nascoste accanto.
   Dentro, le due liste **"Shown in table"** e **"Hidden in table"**
   come su Notion, ciascuna col suo *Hide all* / *Show all*; toccando
   una riga la si sposta nell'altra lista
-- **[Nuova funzionalità]** **Nascosta non vuol dire cancellata**: i
+- **[Nuova funzionalità]** **[📱 Mobile]** **Nascosta non vuol dire cancellata**: i
   valori restano nelle celle (verificato leggendo il database prima e
   dopo), e la proprietà continua a comparire negli ordinamenti, nei
   raggruppamenti e nelle azioni di una riga. È solo una colonna in meno
   da scorrere in orizzontale, che su un telefono è il motivo per cui
   serve
-- **[Nuova funzionalità]** Nascondere sta **sull'intestazione** e
+- **[Nuova funzionalità]** **[📱 Mobile]** Nascondere sta **sull'intestazione** e
   rimostrare **nelle impostazioni**, non per simmetria mancata: si
   decide di nascondere guardando la tabella, mentre una colonna
   nascosta non ha più un'intestazione da tenere premuta
-- **[Nuova funzionalità]** "Name" non compare in nessuna delle due
+- **[Nuova funzionalità]** **[📱 Mobile]** "Name" non compare in nessuna delle due
   liste: è il titolo della pagina, non una proprietà, e una riga senza
   nome non si saprebbe più aprire
-- **[Nuova funzionalità]** Lo stato sta nella colonna `hidden` di
+- **[Nuova funzionalità]** **[📱 Mobile]** Lo stato sta nella colonna `hidden` di
   `database_columns` (**schema alla versione 19**), quindi vale per
   tutte le viste dello stesso database e sopravvive al riavvio
   (verificato: nascosta, app chiusa e riaperta, ancora nascosta)
 
-### 🆕 v0.43 — 22/09/2026 · 01:23 — Le date che si ripetono
+### 🆕 v0.28 — 22/09/2026 · 01:23 — Le date che si ripetono
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
@@ -11638,7 +11716,7 @@ Poi:
 Poi:
 > «Mi sono anche dimenticato una cosa, perdonami: se io faccio che un evento si ripete per esempio ogni domenica, fai sì che quella stessa pagina creata sia la stessa (e sincronizzata) per tutte le domeniche successive»
 
-- **[Nuova funzionalità]** Una data può **ripetersi**: dalla finestra
+- **[Nuova funzionalità]** **[📱 Mobile]** Una data può **ripetersi**: dalla finestra
   della data, riga **Repeat**, con le scorciatoie di Google Calendar
   costruite sul giorno scelto — *Daily*, *Weekly on Sunday*, *Monthly
   on the first Sunday*, *Annually on...*, *Every weekday* — e una
@@ -11646,7 +11724,7 @@ Poi:
   mesi/anni, in quali giorni della settimana, "il 21 del mese" oppure
   "il terzo lunedì", e quando finisce (mai / entro una data / dopo N
   volte)
-- **[Nuova funzionalità]** **Una pagina che si ripete resta una pagina
+- **[Nuova funzionalità]** **[📱 Mobile]** **Una pagina che si ripete resta una pagina
   sola.** Non vengono create copie: la regola sta attaccata alla data,
   e il calendario la trasforma in tante comparse quante ne servono per
   il periodo che si sta guardando. Aprirne una qualsiasi apre quella
@@ -11654,21 +11732,21 @@ Poi:
   che ci si aspetta, e l'unico modo per poter correggere "tutte le
   domeniche" con una modifica sola. Creare davvero una riga per ogni
   ripetizione riempirebbe il database di copie da correggere a una a una
-- **[Nuova funzionalità]** Le occorrenze si calcolano **solo per il
+- **[Nuova funzionalità]** **[📱 Mobile]** Le occorrenze si calcolano **solo per il
   periodo mostrato**: una regola senza fine genererebbe date
   all'infinito, e di quelle del 2043 non se ne fa niente nessuno
   finché non ci si arriva
-- **[Nuova funzionalità]** La riga fissa di ogni pagina nel calendario
+- **[Nuova funzionalità]** **[📱 Mobile]** La riga fissa di ogni pagina nel calendario
   si calcola sulle date **di partenza**, non sulle comparse: quelle
   cambiano da un mese all'altro e farebbero ballare la riga a seconda
   di dove ci si trova
-- **[Nuova funzionalità]** "Il terzo lunedì" e **"l'ultima domenica"**
+- **[Nuova funzionalità]** **[📱 Mobile]** "Il terzo lunedì" e **"l'ultima domenica"**
   sono due cose diverse: quando il giorno scelto è l'ultimo del suo
   tipo nel mese la regola diventa "l'ultimo", perché chi dice l'ultima
   domenica intende sempre l'ultima, anche nei mesi che ne hanno cinque.
   Allo stesso modo "ogni mese il 31" cade l'ultimo giorno nei mesi
   corti
-- **[Nuova funzionalità]** La regola si salva **accanto alla data**,
+- **[Nuova funzionalità]** **[📱 Mobile]** La regola si salva **accanto alla data**,
   come quarto campo del valore della cella (`RecurrenceCodec`): niente
   colonne nuove, niente migrazione, e le date scritte prima continuano
   a valere "capita una volta sola"
@@ -11677,18 +11755,18 @@ Poi:
   sono un pezzo a sé, con permesso di sistema, allarmi e
   riprogrammazione al riavvio, ed è stato deciso di farle dopo
 
-### 🆕 v0.42 — 22/09/2026 · 00:59 — Il menu "/"
+### 🆕 v0.27 — 22/09/2026 · 00:59 — Il menu "/"
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
 > «Quando scriverò /, mi apparirà in seguito ogni tipologia di testo che ti ho chiesto di creare per il campo di testo, ossia (qui ci scrivi la categoria BASIC BLOCKS) Text, Heading 1, Heading 2, Heading 3, Bulleted list, Numbered list, To-do list, Toggle list, Page, Callout, Quote, Table, Divider, Link to page, (qui ci scrivi la categoria MEDIA) Image, Video, Audio, Code, File, Web bookmark, (qui ci scrivi la categoria DATABASE) Table view, Board view, Gallery view, List view, Calendar view, Timeline View, Database inline, Database full page, Simple database (quello senza pagine che ti dicevo) e Linked view of data source. Le opzioni che ti ho detto di creare nella che ancora non ci sono, mettile comunque nella lista del / . Poi più in la ti chiederò di crearle»
 
-- **[Nuova funzionalità]** Scrivendo **"/"** dentro il testo si apre il
+- **[Nuova funzionalità]** **[📱 Mobile]** Scrivendo **"/"** dentro il testo si apre il
   menu dei blocchi, diviso in **Basic blocks / Media / Database** come
   su Notion. Quello che si scrive dopo la barra **filtra la lista**
   ("/tab" lascia Table e Table view), e la barra col filtro sparisce
   dal testo appena si sceglie: è un comando, non roba scritta
-- **[Nuova funzionalità]** **Le voci non ancora costruite ci sono
+- **[Nuova funzionalità]** **[📱 Mobile]** **Le voci non ancora costruite ci sono
   lo stesso, spente**: Callout, Quote, Link to page, tutto il gruppo
   Media, Gallery view, Database full page, Simple database, Linked
   view of data source. Dicono cosa c'è e cosa manca senza costringere
@@ -11696,110 +11774,110 @@ L'utente, parola per parola:
   **È l'unico posto dell'app dove una voce inerte è meglio di una voce
   assente**: qui si sta scegliendo da un catalogo, non cercando un
   comando che dovrebbe esserci
-- **[Nuova funzionalità]** Le voci delle viste database (**Table,
+- **[Nuova funzionalità]** **[📱 Mobile]** Le voci delle viste database (**Table,
   Board, List, Calendar, Timeline view**) creano il database dentro la
   pagina e gli mettono subito quella vista: "Calendar view" dà un
   calendario, non una tabella da cambiare a mano. Verificato sul
   telefono
-- **[Nuova funzionalità]** Il menu **non ruba il fuoco**
+- **[Nuova funzionalità]** **[📱 Mobile]** Il menu **non ruba il fuoco**
   (`focusable = false`): la tastiera resta aperta, perché il modo
   normale di usarlo è continuare a scrivere per filtrare
 - **Limite dichiarato**: il menu "/" funziona nel testo scorrevole
   (paragrafi, titoli, elenchi), non dentro una casella da spuntare o
   un toggle, che hanno un campo di testo tutto loro
 
-### 🆕 v0.41 — 22/09/2026 · 00:47 — Il calendario anche senza una proprietà Date
+### ✏️ v0.26.1 — 22/09/2026 · 00:47 — Il calendario anche senza una proprietà Date
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
 > «Quando creo un database e decido di visualizzarlo in modalità Calendar, tu fammi comunque vedere un calendario anche vuoto (perché giustamente non ci sono ancora eventi con date create) in modalità Month con il mese corrente, come se fosse un calendario che si vede dopo aver messo pagina e data. Poi sarò io a creare una pagina toccando su un giorno del mese. Adesso, se seleziono Calendar dopo aver creato un database, mi dice quello che vedi in foto»
 
-- **[Nuova funzionalità]** Scegliendo la vista Calendario su un
+- **[Modifica]** **[📱 Mobile]** Scegliendo la vista Calendario su un
   database appena creato, **il calendario si vede lo stesso**: mese
   corrente, vuoto, con i suoi giorni. Prima al suo posto c'era un
   cartello che spiegava che serviva una proprietà data e offriva di
   crearla — corretto ma inutile, perché un calendario vuoto si capisce
   da solo
-- **[Nuova funzionalità]** **La proprietà data la crea il primo
+- **[Modifica]** **[📱 Mobile]** **La proprietà data la crea il primo
   tocco.** Toccando un giorno nasce lì la pagina, e con lei la
   proprietà "Date" se il database non ne aveva una — che viene anche
   fissata come quella del calendario, così aggiungendone un'altra
   domani la vista non cambia colonna sotto i piedi. Chi tocca un
   giorno ha già detto tutto quello che serve: vuole una pagina, in
   quel giorno. L'impalcatura è un problema nostro
-- **[Nuova funzionalità]** Anche "+ New page" in fondo funziona senza
+- **[Modifica]** **[📱 Mobile]** Anche "+ New page" in fondo funziona senza
   proprietà data: crea la pagina datata oggi, e la proprietà con lei.
   La linea del tempo invece continua a chiedere la proprietà, perché
   lì una pagina senza date non ha nemmeno una barra da disegnare
 
-### 🆕 v0.40 — 22/09/2026 · 00:39 — Il menu del numero, come su OneNote
+### 🆕 v0.26 — 22/09/2026 · 00:39 — Il menu del numero, come su OneNote
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
 > «Qualche tempo fa, ti ho chiesto di resettare la lista se tengo premuto su un numero di una Numbered list. Ecco, ora se tengo premuto su quel numero, fai sì che appaiono queste opzioni che vedi in foto per modificare la lista come si fa su OneNote»
 
-- **[Nuova funzionalità]** **Tenendo premuto sul numero** si apre il
+- **[Nuova funzionalità]** **[📱 Mobile]** **Tenendo premuto sul numero** si apre il
   menu della lista, con le stesse quattro voci di OneNote: *Begin a new
   list here* (il conteggio riparte da 1 da lì), *Renumber as
   continuation of previous list* (toglie quel "riparti" e rimette la
   riga in fila), *Remove number* (la riga resta ma come paragrafo) e
   *Change to bullet*. Provate tutte e quattro sul telefono
-- **[Nuova funzionalità]** La voce *Renumber as continuation* c'è
+- **[Nuova funzionalità]** **[📱 Mobile]** La voce *Renumber as continuation* c'è
   sempre ma è **spenta quando non serve**, cioè quando quella riga non
   fa ripartire niente: toglierla del tutto farebbe ballare il menu fra
   un'apertura e l'altra, e una voce grigia dice anche *perché* non si
   può fare
-- **[Cambiamento]** **Un tocco semplice sul numero non fa più
+- **[Modifica]** **[📱 Mobile]** **Un tocco semplice sul numero non fa più
   ripartire il conteggio.** Era comodo da scoprire e scomodo da
   subire: rinumerava tutta la lista per un dito appoggiato male, senza
   chiedere niente. Ora quella è una voce del menu, dove la si sceglie
   apposta
 
-### 🆕 v0.39 — 22/09/2026 · 00:28 — Raggruppare la tabella
+### 🆕 v0.25 — 22/09/2026 · 00:28 — Raggruppare la tabella
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
 > «Dammi la possibilità di creare gruppi in base alla proprietà che decido io: come vedi nelle foto (per farti capire al massimo), metti tutte le opzioni che vedi del caso collegate alle proprietà, tipo gruppi di più pagine dello stesso Select o MultiSelect. Sempre come fa Notion»
 
-- **[Nuova funzionalità]** La tabella può **raggruppare le righe in
+- **[Nuova funzionalità]** **[📱 Mobile]** La tabella può **raggruppare le righe in
   base a una proprietà**, come su Notion: ogni gruppo ha la sua
   intestazione col valore e quante pagine contiene, la sua riga di
   intestazione delle colonne e il suo "+ New page". Si sceglie dalle
   impostazioni, voce **Group** (`tableGroupColumnId`, migrazione
   17→18)
-- **[Nuova funzionalità]** Si può raggruppare per **quasi tutto**: tag
+- **[Nuova funzionalità]** **[📱 Mobile]** Si può raggruppare per **quasi tutto**: tag
   singoli e multipli (l'intestazione è il tag colorato), caselle da
   spuntare (Checked/Unchecked), date (un gruppo per giorno), testo e
   numeri. Restano fuori "Creata il" e "Modificata il", che non sono
   celle ma proprietà della riga, e a istante esatto darebbero un
   gruppo per riga
-- **[Nuova funzionalità]** Con la **selezione multipla** una riga
+- **[Nuova funzionalità]** **[📱 Mobile]** Con la **selezione multipla** una riga
   compare in **tutti** i gruppi dei suoi tag: è quello che ci si
   aspetta da un raggruppamento, ed è anche il motivo per cui la
   bacheca non la sostiene — lì una scheda dovrebbe stare in due
   colonne insieme
-- **[Nuova funzionalità]** **"+ New page" dentro un gruppo crea la
+- **[Nuova funzionalità]** **[📱 Mobile]** **"+ New page" dentro un gruppo crea la
   pagina già con quel valore.** Verificato sul telefono: creata dentro
   il gruppo "PC", la riga nuova nasce col tag PC e resta lì, invece di
   finire fra quelle senza valore
-- **[Nuova funzionalità]** Il gruppo **"senza valore" sta sempre in
+- **[Nuova funzionalità]** **[📱 Mobile]** Il gruppo **"senza valore" sta sempre in
   fondo** e si chiama "No <proprietà>": davanti ruberebbe il primo
   sguardo alle righe già smistate. L'interruttore **"Hide empty
   groups"** nasconde i gruppi senza pagine, ed è acceso di suo, come
   su Notion; compare solo quando un raggruppamento c'è
-- **[Nuova funzionalità]** I gruppi si **chiudono e riaprono** toccando
+- **[Nuova funzionalità]** **[📱 Mobile]** I gruppi si **chiudono e riaprono** toccando
   l'intestazione. Quale sia chiuso non si salva nel database: è come
   si sta guardando la tabella adesso, non una proprietà del database
-- **[Nuova funzionalità]** Il raggruppamento della tabella è
+- **[Nuova funzionalità]** **[📱 Mobile]** Il raggruppamento della tabella è
   un'impostazione **diversa** da "Group by" della bacheca, di
   proposito: la bacheca senza colonne non esiste e quindi ripiega su
   una proprietà qualsiasi, la tabella invece funziona benissimo piatta
   e non deve rimescolarsi da sola. Cambiare vista non tocca l'altra
-- **[Nuova funzionalità]** Un tag rimasto nelle celle dopo che
+- **[Nuova funzionalità]** **[📱 Mobile]** Un tag rimasto nelle celle dopo che
   l'opzione è stata cancellata **non fa sparire le sue righe**: gli si
   dà comunque un gruppo, in fondo a quelli dichiarati
 
-### 🔧 v0.38.2 — 22/09/2026 · 00:03 — Copertine dritte, e la tastiera che non sparisce
+### 🔧 v0.24.2.2 — 22/09/2026 · 00:03 — Copertine dritte, e la tastiera che non sparisce
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
@@ -11807,7 +11885,7 @@ L'utente, parola per parola:
 > Secondo bug: quando cancello la check box, quando ne metto una nuova o quando faccio invio su una check box, la tastiera scompare. Può capitare che ne metto una nuova, mi sposta il cursore al blocco sopra senza che la tastiera scompaia.
 > Terzo bug: non posso ancora selezionare tutto il testo tra varie check box.»
 
-- **[Bug fix]** **Le copertine prese dalla galleria non escono più
+- **[Bug fix]** **[📱 Mobile]** **Le copertine prese dalla galleria non escono più
   coricate.** Le foto scattate col telefono ruotato non vengono salvate
   ruotate: i pixel restano come li ha letti il sensore e dentro al file
   c'è un'etichetta (EXIF) che dice di quanto girarli. La galleria la
@@ -11815,7 +11893,7 @@ L'utente, parola per parola:
   rotazione alla copia che si guarda — il file non viene toccato.
   Provato fabbricando un JPEG con l'etichetta "ruota di 90" e
   guardandolo dentro l'app
-- **[Bug fix]** **La tastiera non sparisce più** creando, cancellando o
+- **[Bug fix]** **[📱 Mobile]** **La tastiera non sparisce più** creando, cancellando o
   uscendo da una casella da spuntare. Erano due cose insieme: il
   cursore veniva richiesto sul campo nuovo solo `if (!imeVisible)`, ma
   subito dopo un cambio di fuoco la tastiera **risulta ancora aperta
@@ -11828,7 +11906,7 @@ L'utente, parola per parola:
   dopo l'Invio, dopo l'uscita dalla lista e dopo il backspace che
   toglie la casella
 
-### 🔧 v0.38.1 — 21/09/2026 · 20:49 — L'Invio continua la lista anche partendo da zero
+### 🔧 v0.24.2.1 — 21/09/2026 · 20:49 — L'Invio continua la lista anche partendo da zero
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
@@ -11837,7 +11915,7 @@ L'utente, parola per parola:
 Poi:
 > «La lista dopo 0 ancora non continua»
 
-- **[Bug fix]** **L'Invio continua la lista anche quando sotto ci sono
+- **[Bug fix]** **[📱 Mobile]** **L'Invio continua la lista anche quando sotto ci sono
   righe vuote.** Scrivendo `0.` (o qualsiasi numero), poi il testo, poi
   Invio, la riga nuova usciva come paragrafo e la lista si fermava. La
   causa non era la velocità: una riga vuota inserita in mezzo ad altre
@@ -11847,13 +11925,13 @@ Poi:
   sta il cursore. Trovato col log dopo una diagnosi sbagliata: la voce
   per esteso, con l'errore incluso, sta in "Strade già tentate"
 
-### 🆕 v0.38 — 21/09/2026 · 20:33 — Caselle da spuntare: cancellarle e uscirne
+### ✏️ v0.24.2 — 21/09/2026 · 20:33 — Caselle da spuntare: cancellarle e uscirne
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
 > «Se mi trovo sotto una check box, ed uso backspace per cancellare tutto quello che c'è sopra, non mi fa cancellare niente. Come se si trovasse completamente in alto, ma in realtà sopra c'è ancora roba. EDIT: le check box non si riescono a cancellare, ed ovviamente tutto quello che c'è sopra. EDIT 2: il contenuto delle check box non si può selezionare come se fosse testo. È lo stesso problema di qualche giorno fa, quando ti dicevo che la selezione del testo quando tengo premuto viene fatta solo su un blocco, e sopra o sotto si bloccava. Con le check box accade la stessa cosa. EDIT 3: il testo non è ancora perfettamente allineato al centro della check box. EDIT 4: se premo invio quando sto su una check box, crash l'app»
 
-- **[Bug fix]** **L'app non si chiude più premendo Invio su una casella
+- **[Bug fix]** **[📱 Mobile]** **L'app non si chiude più premendo Invio su una casella
   vuota.** Quella casella diventa un paragrafo (giusto, come Notion),
   ma così facendo cambia specie: da riga a sé a testo scorrevole, che
   per la UI è un posto diverso, e il campo di prima viene distrutto. Se
@@ -11863,23 +11941,23 @@ L'utente, parola per parola:
   true`). Ora il fuoco viene tolto **prima** che la riga sparisca, e
   rimesso subito dopo sul campo nuovo. Riprodotto in modo
   deterministico prima della correzione e riprovato quattro volte dopo
-- **[Nuova funzionalità]** **Backspace a inizio casella toglie la
+- **[Modifica]** **[📱 Mobile]** **Backspace a inizio casella toglie la
   casella** e lascia il testo, che diventa una riga normale — lo stesso
   gradino che il testo scorrevole fa già per gli elenchi. Da lì in poi
   la riga si fonde con quella sopra come tutte le altre: prima le
   caselle non si riuscivano a cancellare in nessun modo dalla
   tastiera
-- **[Nuova funzionalità]** **Backspace a inizio della riga sotto una
+- **[Modifica]** **[📱 Mobile]** **Backspace a inizio della riga sotto una
   casella la fonde dentro la casella.** Prima lì non succedeva niente:
   sembrava di essere in cima alla pagina mentre sopra c'era ancora
   roba. Le due cose insieme fanno sì che si possa cancellare
   all'indietro attraversando le caselle, senza trovare muri
-- **[Nuova funzionalità]** Per accorgersi del backspace a inizio riga,
+- **[Modifica]** **[📱 Mobile]** Per accorgersi del backspace a inizio riga,
   anche il campo delle caselle ha ora **l'a-capo nascosto in testa**
   (`RUN_LEAD`), lo stesso meccanismo del campo unito: la tastiera non
   manda eventi tasto intercettabili, ma se il backspace si mangia
   quell'a-capo il testo cambia, e un cambiamento si vede
-- **[Bug fix]** **La pagina non salta più portando in cima la riga a
+- **[Bug fix]** **[📱 Mobile]** **La pagina non salta più portando in cima la riga a
   fuoco.** Lo scorrimento automatico aggiunto per il blocco nato dietro
   la tastiera usava `animateScrollToItem`, che incolla la riga al bordo
   superiore: siccome una riga di testo scorrevole è alta quanto tutto
@@ -11887,17 +11965,17 @@ L'utente, parola per parola:
   fuori schermo e sembravano sparite (non lo erano: bastava scorrere,
   e nel database c'erano tutte). Ora si scorre **solo se la riga è
   tutta fuori**, e solo di quanto serve
-- **[Bug fix]** Il quadratino è alzato di 4,5dp invece di 3: misurando
+- **[Bug fix]** **[📱 Mobile]** Il quadratino è alzato di 4,5dp invece di 3: misurando
   ingrandendo lo schermo, il suo centro restava sotto il centro ottico
   delle maiuscole
 
-### 🆕 v0.37 — 21/09/2026 · 20:09 — Un elenco numerato può partire da zero
+### ✏️ v0.24.1 — 21/09/2026 · 20:09 — Un elenco numerato può partire da zero
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
 > «Di base, ogni numbered list deve partire da 1, ma se io manualmente dovessi scrivere 0. , fai sì che quella lista parta da 0, poi continua normalmente a 1, poi 2, eccetera»
 
-- **[Nuova funzionalità]** **Un elenco può partire da zero.** Di suo
+- **[Modifica]** **[📱 Mobile]** **Un elenco può partire da zero.** Di suo
   parte da 1, ma scrivendo `0.` parte da 0 e poi prosegue normale: 0,
   1, 2. Serve quando c'è un passo zero — un preambolo prima del primo
   punto vero. Era un solo controllo a vietarlo
@@ -11907,13 +11985,13 @@ L'utente, parola per parola:
   Verificato sul telefono e nel database: il blocco risulta salvato
   con numero di partenza 0, e le righe dopo sono `1.` e `2.`
 
-### 🔧 v0.36.1 — 21/09/2026 · 19:48 — Caselle da spuntare: in riga col testo, con la maiuscola, e l'Invio non si blocca
+### 🔧 v0.24.0.1 — 21/09/2026 · 19:48 — Caselle da spuntare: in riga col testo, con la maiuscola, e l'Invio non si blocca
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
 > «Quando scrivo delle check box, il testo non è allineato al quadratino. Fallo più piccolo e allineato con il testo. Inoltre, quando scrivo dopo le checkbox, la maiuscola non è automatica ad inizio frase. Altra cosa che riguarda le check box: quando faccio invio, scrivo a, faccio invio, scrivo a, capita che si bugga tutto, si chiude la tastiera e la toolbar sopra di essa si bugga come qualche giorno fa»
 
-- **[Bug fix]** Il quadratino è **più piccolo e in riga col testo**.
+- **[Bug fix]** **[📱 Mobile]** Il quadratino è **più piccolo e in riga col testo**.
   Era il `Checkbox` di Material, che porta con sé una zona di tocco da
   48dp e un quadrato da 20 che non si rimpiccioliscono: accanto a una
   riga alta 24 sembrava un bottone piazzato lì in mezzo. Ora è
@@ -11922,12 +12000,12 @@ L'utente, parola per parola:
   sulla riga non basta, perché dentro la riga il testo non sta in
   mezzo — sotto la linea di base c'è lo spazio per le code di g e p, e
   le lettere appaiono più in alto. Misurato sul telefono
-- **[Bug fix]** **La maiuscola a inizio frase** ora arriva anche nei
+- **[Bug fix]** **[📱 Mobile]** **La maiuscola a inizio frase** ora arriva anche nei
   blocchi, caselle comprese: va chiesta alla tastiera
   (`KeyboardCapitalization.Sentences`) e non era mai stata chiesta.
   Verificato guardando la tastiera: a casella vuota mostra le lettere
   maiuscole e lo shift acceso
-- **[Bug fix]** **Invio + scrivere in fretta non impasta più tutto in
+- **[Bug fix]** **[📱 Mobile]** **Invio + scrivere in fretta non impasta più tutto in
   una riga sola.** Era il bug per cui, facendo Invio e scrivendo senza
   aspettare, le lettere finivano tutte attaccate nella riga di prima,
   la tastiera si chiudeva e la barra sopra restava in uno stato
@@ -11936,58 +12014,58 @@ L'utente, parola per parola:
   nasceva dietro la tastiera e quindi non esisteva per il fuoco, e
   l'eco della tastiera che faceva dividere due volte lo stesso pezzo.
   Le prime due hanno la loro voce in "Strade già tentate"
-- **[Bug fix]** **Invio su una casella vuota** la trasforma in
+- **[Bug fix]** **[📱 Mobile]** **Invio su una casella vuota** la trasforma in
   paragrafo — come Notion — ma prima lasciava il cursore per strada e
   la tastiera si chiudeva in faccia: il blocco passa da "isola" a
   testo scorrevole, che per la UI è un altro posto, e il campo di
   prima viene distrutto. Ora il fuoco viene richiamato
 
-### 🆕 v0.36 — 20/09/2026 · 10:58 — La copertina si sposta e si ingrandisce
+### 🆕 v0.24 — 20/09/2026 · 10:58 — La copertina si sposta e si ingrandisce
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
 > «Quando metto un'immagine di copertina, dammi anche la possibilità di ingrandirla e spostarla sopra sotto destra e sinistra, sempre mantenendo la risoluzione base dell'immagine»
 
-- **[Nuova funzionalità]** La copertina si **sposta e si ingrandisce**:
+- **[Nuova funzionalità]** **[📱 Mobile]** La copertina si **sposta e si ingrandisce**:
   dalla finestra della copertina c'è "Reposition", e da lì il dito la
   trascina in tutte le direzioni e la pizzicata la ingrandisce fino a
   quattro volte. In alto una riga dice come si fa — un'immagine che
   smette di rispondere al tocco senza spiegare perché sembra rotta — e
   in basso ci sono "Cancel" e "Save"
-- **[Nuova funzionalità]** **Il file non viene mai toccato.** Nel
+- **[Nuova funzionalità]** **[📱 Mobile]** **Il file non viene mai toccato.** Nel
   database finiscono tre numeri (`coverScale`, `coverOffsetX`,
   `coverOffsetY`, migrazione 16→17): l'immagine resta intera alla sua
   risoluzione, e la striscia fa da finestra. Si può cambiare
   inquadratura all'infinito senza consumare niente, e togliendo
   l'ingrandimento si torna esattamente all'originale
-- **[Nuova funzionalità]** Lo spostamento è salvato in **frazioni di
+- **[Nuova funzionalità]** **[📱 Mobile]** Lo spostamento è salvato in **frazioni di
   striscia**, non in pixel: la stessa inquadratura vale su qualunque
   schermo, anche ruotando il telefono
-- **[Nuova funzionalità]** L'inquadratura di prova vive nella
+- **[Nuova funzionalità]** **[📱 Mobile]** L'inquadratura di prova vive nella
   schermata finché non si tocca "Save": scrivere nel database ad ogni
   millimetro di dito vorrebbe dire non poter più annullare, e far
   scrivere il disco sessanta volte al secondo
-- **[Nuova funzionalità]** L'immagine **non si può trascinare fuori**
+- **[Nuova funzionalità]** **[📱 Mobile]** L'immagine **non si può trascinare fuori**
   dalla striscia: il limite è calcolato su quanto sporge davvero
   (`coverPanLimit`), perché lasciarla scappare vorrebbe dire restare a
   guardare un rettangolo vuoto
-- **[Nuova funzionalità]** Cambiando copertina l'inquadratura **torna a
+- **[Nuova funzionalità]** **[📱 Mobile]** Cambiando copertina l'inquadratura **torna a
   zero**: era stata scelta guardando un'altra immagine, e su quella
   nuova darebbe un ritaglio deciso a caso
-- **[Nuova funzionalità]** Ingrandita, l'immagine viene **letta più
+- **[Nuova funzionalità]** **[📱 Mobile]** Ingrandita, l'immagine viene **letta più
   fine** (fino al doppio della larghezza dello schermo), altrimenti a
   ingrandimento 2 si vedrebbe sgranata. Il tetto lo mette
   `PageImageStore`, che non porta in memoria più di sei megapixel: una
   foto molto grande, al massimo dell'ingrandimento, può restare un po'
   morbida. È il prezzo per non far chiudere l'app
 
-### 🆕 v0.35 — 20/09/2026 · 10:48 — Le icone della barra della vista più piccole
+### ✏️ v0.23.1 — 20/09/2026 · 10:48 — Le icone della barra della vista più piccole
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
 > «L'icona Open as full page mettimela a destra di Sort. E in generale falle tutte (e quelle future) un po' più piccole»
 
-- **[Nuova funzionalità]** Le icone della barra della vista sono **più
+- **[Modifica]** **[📱 Mobile]** Le icone della barra della vista sono **più
   piccole** (20dp invece di 24, dentro un bottone da 40 invece che da
   48). La misura sta in `TOOLBAR_ICON_SIZE` e si usa attraverso
   `ToolbarIconButton`: le icone lì sopra devono restare tutte uguali
@@ -11995,13 +12073,13 @@ L'utente, parola per parola:
   misura a mano ogni volta è il modo sicuro perché prima o poi una sia
   diversa dalle altre
 
-### 🔧 v0.34.1 — 20/09/2026 · 10:44 — Rinominare un database a schermo intero non si perde più
+### 🔧 v0.23.0.1 — 20/09/2026 · 10:44 — Rinominare un database a schermo intero non si perde più
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
 > «Bug: se nascondo il titolo di un database, poi lo apro in full page, lo modifico e torno indietro, il titolo rimane quello di prima ossia Untitled, e se riapro in full page è ancora Untitled»
 
-- **[Bug fix]** **Rinominare un database a schermo intero non si
+- **[Bug fix]** **[📱 Mobile]** **Rinominare un database a schermo intero non si
   perde più tornando indietro.** La pagina era letta una volta sola
   all'apertura, e la stessa pagina sta aperta in due schermate insieme
   con due ViewModel diversi: quella rimasta nella pila di navigazione
@@ -12014,25 +12092,25 @@ L'utente, parola per parola:
   tutti e due i ViewModel: le due schermate vedono sempre la stessa
   cosa e nessuna delle due riscrive quello che aveva in mano
 
-### 🆕 v0.34 — 20/09/2026 · 10:30 — "Show title" per i database dentro le pagine
+### 🆕 v0.23 — 20/09/2026 · 10:30 — "Show title" per i database dentro le pagine
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
 > «Dammi la possibilità di mostrare o meno il titolo del database (tramite una voce nelle impostazioni, sempre l'icona delle tre lineette con i pallini) quando è visualizzato NON in full page in una pagina. Quando lo aprirò come full page, il titolo sarà obbligatoriamente presente»
 
-- **[Nuova funzionalità]** **"Show title"** nelle stesse impostazioni:
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Show title"** nelle stesse impostazioni:
   un interruttore che nasconde il titolo del database **quando è dentro
   una pagina**. Serve a chi il titolo l'ha già scritto sopra come
   intestazione e si ritrova a leggerlo due volte. La scelta è salvata
   per ogni database (`showEmbeddedTitle`, migrazione 15→16)
-- **[Nuova funzionalità]** **A schermo intero il titolo c'è sempre**, e
+- **[Nuova funzionalità]** **[📱 Mobile]** **A schermo intero il titolo c'è sempre**, e
   l'interruttore lì non compare nemmeno. Non è una dimenticanza:
   aperto da solo, il titolo è l'unica cosa che dice dove si è finiti, e
   poterlo togliere vorrebbe dire poter arrivare a una schermata senza
   nome. Verificato sul telefono: spento dentro la pagina, il titolo
   sparisce; aperto lo stesso database a schermo intero, è ancora lì
 
-### 🆕 v0.33 — 20/09/2026 · 10:21 — Un menu solo per il database: Delete nelle impostazioni, "Open as full page" accanto a Sort
+### ✏️ v0.22.1 — 20/09/2026 · 10:21 — Un menu solo per il database: Delete nelle impostazioni, "Open as full page" accanto a Sort
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
@@ -12041,12 +12119,12 @@ L'utente, parola per parola:
 Poi:
 > «Metti l'icona Open as full page vicino a quella Sort»
 
-- **[Nuova funzionalità]** Via i tre puntini accanto al titolo del
+- **[Modifica]** **[📱 Mobile]** Via i tre puntini accanto al titolo del
   database. **"Delete" è passato nelle impostazioni** — l'icona con le
   lineette e i pallini — in un gruppo a sé sotto quelle della vista:
   due menu diversi per le cose di uno stesso database erano un posto
   in più dove cercare, e il secondo conteneva due voci sole
-- **[Nuova funzionalità]** **"Open as full page" è invece un'icona
+- **[Modifica]** **[📱 Mobile]** **"Open as full page" è invece un'icona
   nella barra**, subito a destra di Sort. Le due cose sembrano simili ma non lo
   sono: aprire a schermo intero si fa spesso e di fretta, perché la
   tabella dentro la pagina sta stretta, mentre cancellare si fa una
@@ -12054,88 +12132,88 @@ Poi:
   tocco, la seconda due. L'icona compare solo dove ha senso: a
   schermo intero il database è già aperto, e lì non c'è
 
-### 🆕 v0.32 — 20/09/2026 · 10:17 — Ordinare le righe (Sort)
+### 🆕 v0.22 — 20/09/2026 · 10:17 — Ordinare le righe (Sort)
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
 > «Mi sono dimenticato, forse te ne ho già detta una senza farci caso. Mi riverrà in mente. Continuiamo con altre cose. Dammi la possibilità di ordinare in base alle proprietà presenti, quindi alfabeticamente se sono parole e numericamente se sono numeri o date, crescente e decrescente. Metti l'icona Sort come fa Notion come vedi nella foto»
 
-- **[Nuova funzionalità]** Le righe si possono **ordinare per una
+- **[Nuova funzionalità]** **[📱 Mobile]** Le righe si possono **ordinare per una
   qualsiasi proprietà**, crescente o decrescente, dall'icona **Sort**
   nella barra della vista — quella con le tre lineette che si
   accorciano, come su Notion. La scelta è salvata per ogni database
   (`sortColumnId` e `sortDescending`, migrazione 14→15)
-- **[Nuova funzionalità]** Il confronto dipende dal tipo: i numeri si
+- **[Nuova funzionalità]** **[📱 Mobile]** Il confronto dipende dal tipo: i numeri si
   confrontano **come numeri** (altrimenti "10" verrebbe prima di "9"),
   le date come istanti, le date di creazione e modifica dalla riga
   stessa, e tutto il resto alfabeticamente senza distinguere maiuscole
   e minuscole. Verificato sul telefono con 9, 10 e 100: crescente dà
   9-10-100 e decrescente 100-10-9, non l'ordine alfabetico 10-100-9
-- **[Nuova funzionalità]** Si può ordinare anche per **nome della
+- **[Nuova funzionalità]** **[📱 Mobile]** Si può ordinare anche per **nome della
   pagina**, che è una colonna della tabella ma non una proprietà del
   database: ha un identificatore riservato (`SORT_BY_NAME`) che
   nessun id vero può avere
-- **[Nuova funzionalità]** **Le celle vuote stanno in fondo in tutti e
+- **[Nuova funzionalità]** **[📱 Mobile]** **Le celle vuote stanno in fondo in tutti e
   due i versi.** Non è una svista: invertendo l'ordine ci si aspetta di
   vedere in cima l'ultimo valore, non una fila di righe senza niente
   scritto
-- **[Nuova funzionalità]** L'icona Sort è **accesa di blu** quando un
+- **[Nuova funzionalità]** **[📱 Mobile]** L'icona Sort è **accesa di blu** quando un
   ordinamento c'è: altrimenti non si saprebbe che le righe non sono
   più nell'ordine in cui sono state create. Il verso si cambia
   toccando l'ordinamento attivo dentro la finestra — sono due stati
   della stessa cosa, non due voci diverse
 
-### 🆕 v0.31 — 20/09/2026 · 09:38 — Icone e copertine delle pagine
+### 🆕 v0.21 — 20/09/2026 · 09:38 — Icone e copertine delle pagine
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
 > «Fai sì che io possa modificare icona e cover di ogni pagina da immagini che metto io tramite due pulsanti, Upload (che mi consente di aprire la mia galleria del telefono) e Link (dove posso mettere direttamente il link di un'immagine), persino del menu principale»
 
-- **[Nuova funzionalità]** Ogni pagina può avere un'**icona** e una
+- **[Nuova funzionalità]** **[📱 Mobile]** Ogni pagina può avere un'**icona** e una
   **copertina** scelte dall'utente, la pagina radice compresa. Si tocca
   l'icona (o la copertina, o "Add cover" quando non c'è) e si sceglie
   fra **Upload** e **Link**. Campi nuovi `iconImage` e `coverImage`
   (migrazione 13→14): senza immagine si continua a vedere l'emoji di
   sempre
-- **[Nuova funzionalità]** Upload usa il **selettore di foto di
+- **[Nuova funzionalità]** **[📱 Mobile]** Upload usa il **selettore di foto di
   sistema**, che non chiede il permesso di leggere tutta la galleria:
   l'utente sceglie una foto e l'app vede solo quella. Sul telefono si
   legge "notE avrà accesso solo alle foto che selezioni"
-- **[Nuova funzionalità]** **Il collegamento viene scaricato una volta
+- **[Nuova funzionalità]** **[📱 Mobile]** **Il collegamento viene scaricato una volta
   sola e il file resta sul telefono.** È la decisione importante di
   questa funzione: tenere l'indirizzo e scaricare l'immagine ogni volta
   avrebbe voluto dire un'app che senza rete mostra dei buchi, e che
   perde le immagini quando il sito le toglie. Così invece è una copia
   come tutto il resto. Il prezzo, dichiarato: se l'immagine cambia
   dall'altra parte, la nostra no
-- **[Nuova funzionalità]** Per questo è comparso il permesso
+- **[Nuova funzionalità]** **[📱 Mobile]** Per questo è comparso il permesso
   **INTERNET** nel manifest — l'unica cosa per cui l'app va in rete,
   solo quando si incolla un collegamento, mai da sola
-- **[Nuova funzionalità]** Nel database si salva il **nome** del file e
+- **[Nuova funzionalità]** **[📱 Mobile]** Nel database si salva il **nome** del file e
   non il percorso intero: la cartella dell'app cambia posto fra
   un'installazione e l'altra, o al ripristino di un backup, e un
   percorso scritto nel database diventerebbe un puntatore a niente
-- **[Nuova funzionalità]** Sostituire o togliere un'immagine
+- **[Nuova funzionalità]** **[📱 Mobile]** Sostituire o togliere un'immagine
   **cancella il file vecchio**. Senza, la cartella si riempirebbe di
   immagini che nessuno può più raggiungere. Verificato: dopo aver
   tolto icona e copertina la cartella è vuota
-- **[Nuova funzionalità]** Le immagini si caricano già rimpicciolite a
+- **[Nuova funzionalità]** **[📱 Mobile]** Le immagini si caricano già rimpicciolite a
   quanto serve davvero, con la misura presa dal riquadro che le
   contiene. Una foto da dodici megapixel in memoria sono quarantotto
   megabyte: caricarla intera per mostrarla larga un centimetro farebbe
   chiudere l'app
-- **[Nuova funzionalità]** Anche il blocco "collegamento a pagina"
+- **[Nuova funzionalità]** **[📱 Mobile]** Anche il blocco "collegamento a pagina"
   mostra l'immagine, se la pagina ne ha una: altrimenti la stessa
   pagina avrebbe due facce diverse a seconda di dove la si guarda
 
-### 🆕 v0.30 — 19/09/2026 · 22:35 — Chiusa la tastiera, il cursore si spegne
+### ✏️ v0.20.1 — 19/09/2026 · 22:35 — Chiusa la tastiera, il cursore si spegne
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
 > «Prima di continuare, tre cose piccole
 > 1) Fai sì che quando eseguo la gesture per andare indietro, mi si toglie il text cursor in qualsiasi parte del campo di testo o sui database»
 
-- **[Nuova funzionalità]** Chiusa la tastiera, **il cursore si
+- **[Modifica]** **[📱 Mobile]** Chiusa la tastiera, **il cursore si
   spegne** — nell'editor, nel titolo e nelle celle dei database, sia
   incorporati che a schermo intero. Prima il gesto indietro chiudeva
   solo la tastiera e lasciava il cursore a lampeggiare dentro il
@@ -12149,19 +12227,19 @@ L'utente, parola per parola:
   successivo. Se la tastiera torna, l'attesa viene annullata. Provato
   scrivendo tre righe separate da Invio: nessuna si perde
 
-### 🆕 v0.29 — 19/09/2026 · 22:33 — L'ora nella proprietà Date
+### 🆕 v0.20 — 19/09/2026 · 22:33 — L'ora nella proprietà Date
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
 > «Prima di implementare icone e cover per ogni pagina, per poi fare la Gallery view, aggiungi anche l'ora (non per forza obbligatoria) alla proprietà Date, come fa Notion come vedi nelle foto»
 
-- **[Nuova funzionalità]** La proprietà data può avere **anche l'ora**,
+- **[Nuova funzionalità]** **[📱 Mobile]** La proprietà data può avere **anche l'ora**,
   come su Notion: un interruttore "Include time" nella finestra della
   data, spento di default. Acceso, compaiono "Start time" e — se c'è
   una data di fine — "End time". Spento, la data continua a valere il
   giorno intero, che è quello che serve alla grandissima parte delle
   pagine
-- **[Nuova funzionalità]** Il valore della cella non ha cambiato
+- **[Nuova funzionalità]** **[📱 Mobile]** Il valore della cella non ha cambiato
   forma: erano già millisecondi, e i millisecondi l'ora ce l'hanno
   dentro. È stato aggiunto un terzo campo, `t`, che dice se **conta**.
   Non si indovina dai millisecondi: indovinarlo vorrebbe dire dire "se
@@ -12169,36 +12247,36 @@ L'utente, parola per parola:
   a mezzanotte perderebbe la sua. I valori scritti prima non hanno il
   terzo campo e valgono "senza ora", che è quello che erano — nessuna
   migrazione necessaria
-- **[Nuova funzionalità]** La finestra della data è diventata una
+- **[Nuova funzionalità]** **[📱 Mobile]** La finestra della data è diventata una
   finestra a scomparsa come quella di Notion, con i pulsanti in testa.
   In fondo, sotto al calendario e agli interruttori, finivano fuori
   schermo: si sceglieva una data senza poterla confermare. Stessa
   lezione della finestra delle proprietà. C'è anche **Clear**, che
   prima si otteneva solo confermando senza aver scelto niente
-- **[Bug fix]** Il selettore di Material lavora in **mezzanotte UTC**,
+- **[Bug fix]** **[📱 Mobile]** Il selettore di Material lavora in **mezzanotte UTC**,
   non locale, e il codice ne prendeva i millisecondi e li salvava
   così com'erano. In Italia non si notava — mezzanotte UTC è l'una o
   le due del mattino dello stesso giorno — ma a ovest di Greenwich la
   data si sarebbe spostata indietro di un giorno. Ora la conversione
   passa sempre per il giorno, in un senso e nell'altro
-- **[Nuova funzionalità]** La linea del tempo colloca le barre
+- **[Nuova funzionalità]** **[📱 Mobile]** La linea del tempo colloca le barre
   all'**istante** e non al giorno: con l'ora accesa, a ingrandimento
   "ore" una pagina che comincia alle 14:30 sta a metà pomeriggio. La
   posizione è in giorni con la frazione, non in giorni interi. Una
   pagina senza ora continua a occupare il giorno intero, e una con
   l'ora ma senza fine è un istante — si vede lo stesso perché le
   barre hanno una larghezza minima
-- **[Nuova funzionalità]** Anche l'ordine delle righe nel calendario e
+- **[Nuova funzionalità]** **[📱 Mobile]** Anche l'ordine delle righe nel calendario e
   nella linea del tempo guarda l'istante: due pagine dello stesso
   giorno a ore diverse hanno un ordine naturale, ed è quello
 
-### 🆕 v0.28 — 19/09/2026 · 22:15 — Sette ingrandimenti della Timeline
+### 🆕 v0.19 — 19/09/2026 · 22:15 — Sette ingrandimenti della Timeline
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
 > «Fai come fa Notion: metti la possibilità di cambiare in visualizzazione ad ore, giorno, settimana, bi settimana, mese, quatrimestrale e annuale. Penta annuale no»
 
-- **[Nuova funzionalità]** **Sette ingrandimenti** come su Notion —
+- **[Nuova funzionalità]** **[📱 Mobile]** **Sette ingrandimenti** come su Notion —
   Hours, Day, Week, Bi-week, Month, Quarter, Year — dalla stessa
   finestra ("Select a zoom level"), salvati per ogni database
   (`PageEntity.timelineZoom`, migrazione 12→13). Manca "5 anni":
@@ -12209,62 +12287,62 @@ L'utente, parola per parola:
   giorni durano, così un mese di ventotto giorni è più stretto di uno
   di trentuno e le barre restano incollate alle loro date invece di
   scivolare rispetto alle etichette
-- **[Bug fix]** Agli ingrandimenti larghi i numeri dei giorni si
+- **[Bug fix]** **[📱 Mobile]** Agli ingrandimenti larghi i numeri dei giorni si
   leggevano sbagliati — "2" dove c'era scritto "25". La casella di un
   giorno è più stretta di due cifre e il testo veniva tagliato a metà.
   Ora si misura libero e sborda sulle caselle accanto, che tanto sono
   mute (`wrapContentWidth(unbounded = true)`), e il numero viene
   scritto una casella ogni tot invece che su tutte
-- **[Bug fix]** A ingrandimento "Quarter" le etichette delle settimane
+- **[Bug fix]** **[📱 Mobile]** A ingrandimento "Quarter" le etichette delle settimane
   si accavallavano: una casella da una settimana è larga 22 punti e
   "13 Sep" ne vuole il doppio. Ora portano solo il giorno, una
   settimana sì e una no; il mese lo dice l'intestazione ferma sopra
   l'asse
-- **[Bug fix]** A ingrandimento "ore" la linea del tempo si apriva a
+- **[Bug fix]** **[📱 Mobile]** A ingrandimento "ore" la linea del tempo si apriva a
   mezzanotte, cioè mezza giornata lontano da quello che sta
   succedendo. Il bersaglio dell'apertura (e del pulsante Today) è
   l'**istante** di adesso, non la mezzanotte di oggi
 
-### 🆕 v0.27 — 19/09/2026 · 21:55 — La vista Timeline
+### 🆕 v0.18 — 19/09/2026 · 21:55 — La vista Timeline
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
 > «Perfetto, a meno che ci siano altri bug che boh magari sarai in grado te di captare come prima senza che io me ne accorga, inizia la Timeline»
 
-- **[Nuova funzionalità]** **Timeline**: un asse di giorni che scorre
+- **[Nuova funzionalità]** **[📱 Mobile]** **Timeline**: un asse di giorni che scorre
   in orizzontale e una riga per pagina, con la barra lunga quanto i
   giorni che copre. È il calendario srotolato — lì il tempo va a capo
   ogni settimana e una pagina lunga si spezza in più pezzi, qui il
   tempo è una riga sola e la barra è intera, che è tutto il punto di
   una linea del tempo: confrontare a colpo d'occhio durate e
   sovrapposizioni
-- **[Nuova funzionalità]** Le righe seguono **lo stesso ordine del
+- **[Nuova funzionalità]** **[📱 Mobile]** Le righe seguono **lo stesso ordine del
   calendario** — le pagine per data, la prima in alto, con le stesse
   regole per i pareggi — così passando da una vista all'altra non si
   perde il filo. Qui però ogni riga ha per forza la sua pagina, quindi
   non restano righe vuote
-- **[Nuova funzionalità]** I nomi stanno in una colonna ferma a
+- **[Nuova funzionalità]** **[📱 Mobile]** I nomi stanno in una colonna ferma a
   sinistra: scorrendo di mesi le barre se ne vanno, e senza i nomi
   accanto non si saprebbe più di chi è quella che si sta guardando
-- **[Nuova funzionalità]** Il mese sta in un'intestazione ferma sopra
+- **[Nuova funzionalità]** **[📱 Mobile]** Il mese sta in un'intestazione ferma sopra
   l'asse e segue il primo giorno che si vede. Scritto sull'asse
   starebbe all'inizio del suo tratto e scorrendo di qualche giorno
   sparirebbe a sinistra, lasciando una fila di numeri senza sapere di
   quale mese sono. Legge la posizione dello scorrimento **dentro di
   sé**, così mentre il dito trascina si ridisegna solo quella scritta
   e non tutta la linea del tempo
-- **[Nuova funzionalità]** I fine settimana si riconoscono dallo
+- **[Nuova funzionalità]** **[📱 Mobile]** I fine settimana si riconoscono dallo
   sfondo invece che da una lettera, e i giorni portano solo il numero:
   le caselle vengono composte tutte insieme, quindi ogni testo in meno
   è un testo in meno moltiplicato per la lunghezza dell'asse
 
-### 🆕 v0.26 — 19/09/2026 · 20:14 — Today nel calendario, sempre al suo posto
+### 🆕 v0.17 — 19/09/2026 · 20:14 — Today nel calendario, sempre al suo posto
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
 > «Funziona tutto. So che questa sarà una cazzata, ma vorrei chiedertelo comunque: vedo che quando sto alal settimana del giorno corrente, Today sparisce. Anche se non fa nulla, lascialo lì comunque per favore»
 
-- **[Nuova funzionalità]** Pulsante **Today** a destra dei tre
+- **[Nuova funzionalità]** **[📱 Mobile]** Pulsante **Today** a destra dei tre
   pulsanti della modalità: riporta a oggi da qualunque distanza, in
   tutte e tre. Sta lì **sempre**, anche quando si è già su oggi e non
   farebbe niente: era stato fatto comparire solo da lontano, ma un
@@ -12272,7 +12350,7 @@ L'utente, parola per parola:
   cambiare aspetto alla riga da sola mentre si sfoglia. Scelta
   dell'utente, ed è quella giusta
 
-### 🆕 v0.25 — 19/09/2026 · 20:07 — Ogni pagina ha la sua riga nel calendario, e la settimana non scatta più
+### ✏️ v0.16.1 — 19/09/2026 · 20:07 — Ogni pagina ha la sua riga nel calendario, e la settimana non scatta più
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
@@ -12290,7 +12368,7 @@ Poi:
 Poi:
 > «Lo scattino lo vedevo solo quando scorrevo a destra o sinistra nella visualizzazione Week. Vedevo che i rettangolini delle pagine scattavano, ossia sparivano e ricomparivano dopo pochissimi millisecondi, ma ora non c'è più (credo). Devo essere onesto poi, non penso mai che arriverò ad avere quaranta pagine, ma per quelle che mi servono vorrei che fosse fatto tutto bene. Fallo all'infinito per favore. Dopo che hai fatto riprovo gli scattini se ci sono, se non ci sono continuiamo con le altre modalità di visualizzazione di un database»
 
-- **[Bug fix]** Cambiando settimana col dito le pagine sparivano e
+- **[Bug fix]** **[📱 Mobile]** Cambiando settimana col dito le pagine sparivano e
   ricomparivano con uno scatto. Al termine dello scorrimento cambiano
   due cose — la settimana mostrata e l'azzeramento dello spostamento —
   e venivano scritte una dopo l'altra: potevano finire in due
@@ -12302,7 +12380,7 @@ Poi:
   normale invece di un `Animatable` proprio per poterlo fare: due
   valori si rendono veri insieme solo se sono tutti e due stati
   normali
-- **[Bug fix]** Lo scatto però non era finito lì, e la causa vera era
+- **[Bug fix]** **[📱 Mobile]** Lo scatto però non era finito lì, e la causa vera era
   un'altra: **la molla dell'animazione rimbalzava**. Lanciata dalla
   spinta del dito superava la meta e tornava indietro, e superare la
   meta vuol dire scoprire il bordo oltre la settimana accanto, dove
@@ -12320,7 +12398,7 @@ Poi:
   fotogramma mostra spesso la settimana di partenza. È un artefatto
   della registrazione, non dell'app — succede in tutte e tre le
   registrazioni fatte, sempre in fondo
-- **[Nuova funzionalità]** Le pagine del calendario si comportano come
+- **[Modifica]** **[📱 Mobile]** Le pagine del calendario si comportano come
   **blocchi impilati**: ordinate per data dall'alto verso il basso,
   ognuna con la sua riga, e **la riga non cambia mai**. Quando la data
   di una pagina finisce, la sua riga resta **vuota** nelle settimane
@@ -12336,7 +12414,7 @@ Poi:
   viene da prima resta sopra a una che comincia lunedì. A parità di
   data l'ordine è comunque sempre lo stesso, altrimenti due pagine
   dello stesso giorno si scambierebbero di posto ad ogni ridisegno
-- **[Nuova funzionalità]** Le righe si contano su **tutto il
+- **[Modifica]** **[📱 Mobile]** Le righe si contano su **tutto il
   database**, non sul periodo che si sta guardando: una pagina tiene la
   sua riga in ogni settimana, in ogni mese e in ogni anno, per sempre.
   È una scelta esplicita dell'utente, fatta sapendone il prezzo.
@@ -12347,7 +12425,7 @@ Poi:
   ordine di data sta alla decima riga anche nelle settimane in cui è
   l'unica, con nove righe vuote sopra — e ogni settimana è alta quanto
   la griglia intera, perché la griglia delle righe è una cosa sola
-- **[Nuova funzionalità]** Lo scorrimento della settimana è ora un
+- **[Modifica]** **[📱 Mobile]** Lo scorrimento della settimana è ora un
   `HorizontalPager`, lo stesso componente con cui si sfogliano le
   pagine ovunque su Android. Prima era scritto a mano: tre settimane
   affiancate, uno scostamento seguito col dito e una molla per farlo
@@ -12358,7 +12436,7 @@ Poi:
   preparate prima che il dito si muova (`beyondBoundsPageCount = 1`),
   e il calcolo dei pezzi e delle loro righe è memorizzato invece di
   essere rifatto ad ogni fotogramma
-- **[Bug fix]** Nella tabella, toccare una cella di tipo data apriva
+- **[Bug fix]** **[📱 Mobile]** Nella tabella, toccare una cella di tipo data apriva
   il calendario **solo centrando il trattino**, largo pochi punti: da
   qualsiasi altro punto della cella il tocco cadeva sulla pagina sotto
   il database, che rispondeva mettendosi a scrivere in fondo. La zona
@@ -12367,7 +12445,7 @@ Poi:
   lasciare fuori nemmeno i bordi (`CellContent`, parametro
   `cellPadding`)
 
-### 🆕 v0.24 — 19/09/2026 · 15:35 — La vista ad anno, e la settimana che si sfoglia col dito
+### 🆕 v0.16 — 19/09/2026 · 15:35 — La vista ad anno, e la settimana che si sfoglia col dito
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
@@ -12378,14 +12456,14 @@ L'utente, parola per parola:
 Poi:
 > «Quando scorro a destra o a sinistra, mi fa mostrare tutto per un attimo e poi scompare tutto. Solo la prima volta però»
 
-- **[Nuova funzionalità]** **Vista ad anno**, a sinistra di Mese e
+- **[Nuova funzionalità]** **[📱 Mobile]** **Vista ad anno**, a sinistra di Mese e
   Settimana: dodici mesi in miniatura, tre per riga, tutto l'anno in
   una schermata. Niente barre — a un centimetro per mese non si
   leggerebbero — ma i giorni con almeno una pagina sono cerchiati, e
   basta a far vedere dove si concentra il lavoro. Toccando un mese lo
   si apre da vicino, che è l'unica cosa sensata da fare con un mese
   alto un centimetro
-- **[Nuova funzionalità]** Le tre modalità hanno sostituito il vecchio
+- **[Nuova funzionalità]** **[📱 Mobile]** Le tre modalità hanno sostituito il vecchio
   sì/no `calendarWeekView` con `PageEntity.calendarMode`
   (migrazione 11→12), che travasa il valore precedente. La colonna
   vecchia **resta nel database**: SQLite sa cancellare una colonna solo
@@ -12393,7 +12471,7 @@ Poi:
   tabella delle pagine per togliere un campo inutilizzato è un rischio
   che non vale il guadagno. Stessa scelta già fatta per
   `numberResetHere`
-- **[Nuova funzionalità]** Nella settimana si passa da una all'altra
+- **[Nuova funzionalità]** **[📱 Mobile]** Nella settimana si passa da una all'altra
   **trascinando col dito**. Dentro una finestra larga una settimana ne
   stanno tre affiancate — la precedente, quella mostrata, la successiva
   — e il trascinamento sposta la fila, così sotto il dito si vede
@@ -12405,7 +12483,7 @@ Poi:
   tre settimane sono alte uguali apposta: se ognuna prendesse la
   propria altezza, trascinando si vedrebbe la riga crescere e
   rimpicciolirsi
-- **[Bug fix]** Al primo trascinamento la settimana compariva per un
+- **[Bug fix]** **[📱 Mobile]** Al primo trascinamento la settimana compariva per un
   istante e poi spariva tutto. Le tre settimane erano una `Row` larga
   tre schermi, e lì **due vincoli di larghezza si sono sommati**:
   dentro una `Row` un figlio senza peso viene misurato con *lo spazio
@@ -12426,13 +12504,13 @@ Poi:
   sempre il contenitore che sta dando al figlio un vincolo diverso da
   quello che si immagina**
 
-### 🆕 v0.23 — 19/09/2026 · 14:56 — Barre lunghe quanto i giorni, e la vista a settimana
+### 🆕 v0.15 — 19/09/2026 · 14:56 — Barre lunghe quanto i giorni, e la vista a settimana
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
 > «Funziona, ora fai le barre e la vista a settimana»
 
-- **[Nuova funzionalità]** **Barre lunghe quanto i giorni coperti**.
+- **[Nuova funzionalità]** **[📱 Mobile]** **Barre lunghe quanto i giorni coperti**.
   Ogni settimana calcola da sé quali pagine la attraversano e le
   dispone su corsie, le più lunghe in alto, in modo che due pagine
   sovrapposte nel tempo non finiscano una sopra l'altra
@@ -12440,27 +12518,27 @@ L'utente, parola per parola:
   di tre giorni occupa tre settimi della riga su qualunque schermo. Una
   pagina a cavallo di due settimane produce due pezzi, e il lato dove
   prosegue viene disegnato squadrato invece che arrotondato
-- **[Nuova funzionalità]** **Vista a settimana**, accanto a quella a
+- **[Nuova funzionalità]** **[📱 Mobile]** **Vista a settimana**, accanto a quella a
   mese (`PageEntity.calendarWeekView`, migrazione 10→11). Nel mese
   l'altezza di una settimana è fissa — sei settimane devono entrare
   nello schermo — e le barre oltre la terza diventano un "+N"; nella
   settimana l'altezza segue quante pagine ci sono davvero, perché lo
   spazio c'è e nasconderle sarebbe gratuito
 
-### 🆕 v0.22 — 19/09/2026 · 14:42 — Date di inizio e di fine
+### 🆕 v0.14 — 19/09/2026 · 14:42 — Date di inizio e di fine
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
 > «Ora un'altra cosa: su Notion non solo puoi fare "Date started" e "Date finished", ma nella visualizzazione Calendar (con anche vista a settimana) le pagine rispettano la lunghezza dei giorni corrispondenti nella visualizzazione settimana»
 
-- **[Nuova funzionalità]** **Intervalli di date**: una cella data può
+- **[Nuova funzionalità]** **[📱 Mobile]** **Intervalli di date**: una cella data può
   avere un inizio e una fine ("Date started"/"Date finished"), scelti
   con il selettore a intervallo di Material 3. Sono salvati come due
   numeri separati da un trattino nella stessa cella, così il tipo della
   colonna non cambia e le date singole già scritte continuano a
   leggersi
 
-### 🆕 v0.21 — 19/09/2026 · 14:38 — La vista Calendar
+### 🆕 v0.13 — 19/09/2026 · 14:38 — La vista Calendar
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
@@ -12475,36 +12553,36 @@ Poi:
 Poi:
 > «Ok, ora funziona, ma dammi la possibilità di creare pagine toccando su un giorno del calendario»
 
-- **[Nuova funzionalità]** **Calendar**: le pagine collocate nel giorno
+- **[Nuova funzionalità]** **[📱 Mobile]** **Calendar**: le pagine collocate nel giorno
   della loro proprietà data, mese per mese, con i giorni fuori mese
   smorzati e oggi evidenziato. La proprietà si sceglie da Settings →
   Date property (`PageEntity.calendarDateColumnId`, migrazione 9→10);
   se non è scelta si usa la prima data che c'è
-- **[Bug fix]** In Calendar e Board `+ New page` sembrava non creare
+- **[Bug fix]** **[📱 Mobile]** In Calendar e Board `+ New page` sembrava non creare
   niente: la pagina nasceva senza data e senza tag, cioè **fuori da
   quello che si stava guardando** — la si ritrovava solo passando a
   Table. Ora nel calendario nasce datata oggi e il calendario torna al
   mese corrente per mostrarla; nella bacheca nasce già assegnata alla
   colonna
-- **[Bug fix]** Quando la proprietà su cui la vista si regge non
+- **[Bug fix]** **[📱 Mobile]** Quando la proprietà su cui la vista si regge non
   esiste, `+ New page` spariva e restava solo un messaggio: creava
   pagine invisibili. Ora il messaggio offre di creare la proprietà che
   manca (`MissingPropertyNotice`), e il pulsante torna appena c'è
-- **[Nuova funzionalità]** Toccare un giorno crea lì una pagina già
+- **[Nuova funzionalità]** **[📱 Mobile]** Toccare un giorno crea lì una pagina già
   datata. I giorni stanno in uno strato sotto e le barre in uno sopra:
   gli spazi vuoti fra una barra e l'altra lasciano passare il tocco al
   giorno, mentre toccare una barra apre la sua pagina
 
-### 🆕 v0.20 — 19/09/2026 · 14:11 — Il pulsante della vista sotto il titolo cambia la vista
+### ✏️ v0.12.1 — 19/09/2026 · 14:11 — Il pulsante della vista sotto il titolo cambia la vista
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
 > «Ottimo, funziona. Prima ti chiedo di darmi la possibilità di cambiare visualizzazione del database (Table, Board, List, e quelle nuove che metterai) anche sul pulsante sotto il titolo del database. Adesso c'è scritto Table, e se ci tocco non mi fa nulla. DopoAggiorna il README»
 
-- **[Nuova funzionalità]** Il pulsante della vista sotto il titolo apre
+- **[Modifica]** **[📱 Mobile]** Il pulsante della vista sotto il titolo apre
   il selettore del layout (prima era un'etichetta inerte)
 
-### 🔧 v0.19.1 — 19/09/2026 · 14:06 — Toccando sotto il database si scrive sotto, e il testo non finisce dietro la tastiera
+### 🔧 v0.12.0.1 — 19/09/2026 · 14:06 — Toccando sotto il database si scrive sotto, e il testo non finisce dietro la tastiera
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
@@ -12525,11 +12603,11 @@ Poi:
 Poi:
 > «FUNZIONA!»
 
-- **[Bug fix]** Toccare sotto l'ultimo blocco riportava a scrivere
+- **[Bug fix]** **[📱 Mobile]** Toccare sotto l'ultimo blocco riportava a scrivere
   *sopra* di lui quando non era scrivibile (database, divisore,
   tabella, collegamento): si cercava l'ultimo blocco **scrivibile**
   invece dell'ultimo e basta. Ora ne viene creato uno nuovo dopo
-- **[Bug fix]** Scrivendo in fondo a una pagina lunga il cursore
+- **[Bug fix]** **[📱 Mobile]** Scrivendo in fondo a una pagina lunga il cursore
   finiva dietro la tastiera e la pagina restava ferma. Causa: un campo
   di testo che **cresce in altezza** invece di scorrere al proprio
   interno chiede di essere reso visibile solo quando prende il fuoco,
@@ -12542,7 +12620,7 @@ Poi:
   cioè lontano dal cursore. In più quello scorrimento litigava con
   l'animazione della tastiera e lasciava un buco fra barra e tastiera
 
-### 🆕 v0.19 — 19/09/2026 · 11:29 — I database dentro le pagine, con "Open as full page" e Delete
+### 🆕 v0.12 — 19/09/2026 · 11:29 — I database dentro le pagine, con "Open as full page" e Delete
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
@@ -12551,22 +12629,22 @@ L'utente, parola per parola:
 Poi:
 > «Se faccio un database mi appare la visualizzazione come ti ho chiesto e l'hai fatto bene, ma nell'icona delle impostazioni (dove c'è open as full page), mettimici anche Delete. Devo poter cancellarlo, no?»
 
-- **[Nuova funzionalità]** Un database creato dal menu "+" **appare e si
+- **[Nuova funzionalità]** **[📱 Mobile]** Un database creato dal menu "+" **appare e si
   modifica dentro la pagina**, come un blocco fra gli altri, invece di
   aprirsi come schermata a sé. Il menu "..." accanto al suo nome lo apre
   a schermo intero o lo elimina. Il contenuto della schermata database è
   stato estratto in un unico pezzo (`DatabaseContent`) usato in entrambi
   i posti: due copie avrebbero significato correggere ogni cosa due volte
-- **[Nuova funzionalità]** Eliminare un database incorporato cancella
+- **[Nuova funzionalità]** **[📱 Mobile]** Eliminare un database incorporato cancella
   anche la pagina-database con colonne e righe. Diverso da un
   collegamento a pagina, dove il blocco rimanda a qualcosa che vive per
   conto suo: qui il blocco **è** quel contenuto, e lasciarne i dati
   vorrebbe dire lasciarli dove non si può più arrivare
-- **[Bug fix]** Il database incorporato non scorre per conto suo: prende
+- **[Bug fix]** **[📱 Mobile]** Il database incorporato non scorre per conto suo: prende
   l'altezza che gli serve e lascia scorrere la pagina. Due aree che
   scorrono una dentro l'altra si rubano il gesto a vicenda
 
-### 🆕 v0.18 — 19/09/2026 · 11:27 — Maiuscola automatica nei titoli, e il database largo quanto la pagina
+### 🆕 v0.11 — 19/09/2026 · 11:27 — Maiuscola automatica nei titoli, e il database largo quanto la pagina
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
@@ -12574,14 +12652,14 @@ L'utente, parola per parola:
 > 1) quando cancello un titolo, forse perché c'è scritto Untitled o forse perché voglio modificarlo, come vedi nella prima foto, quando sto per scrivere, non mi mette in automatico la prima lettera maiuscola. Fallo per favore
 > 2) come vedi nella seconda foto, in ogni pagina o modo, fai sì che i database non abbiano lo spazio a sinistra come accade nella prima foto, ma fammeli attaccati a inistra come nella seconda foto»
 
-- **[Nuova funzionalità]** Maiuscola automatica sui titoli (pagina,
+- **[Nuova funzionalità]** **[📱 Mobile]** Maiuscola automatica sui titoli (pagina,
   database, nome di una riga) e sulle celle di testo. Non su email,
   URL e telefono, dove sarebbe da cancellare ogni volta
-- **[Bug fix]** Il margine laterale della pagina lo applicava la lista a
+- **[Bug fix]** **[📱 Mobile]** Il margine laterale della pagina lo applicava la lista a
   tutti i blocchi: ora se lo mette ogni blocco, così il database può
   usare tutta la larghezza come a schermo intero (`PAGE_SIDE_PADDING`)
 
-### 🆕 v0.17 — 19/09/2026 · 11:11 — Le proprietà Select diventano tag, come su Notion
+### ✏️ v0.10.1 — 19/09/2026 · 11:11 — Le proprietà Select diventano tag, come su Notion
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
@@ -12596,12 +12674,12 @@ Poi:
 Poi:
 > «Quando seleziono 'Select' o 'Multi-select' sotto 'Property name'  mi appare 'Tags are created directly in the cells of this column'. Toglilo»
 
-- **[Nuova funzionalità]** Le proprietà a selezione sono diventate tag
+- **[Modifica]** **[📱 Mobile]** Le proprietà a selezione sono diventate tag
   veri: pastiglie colorate, finestra dedicata con "Create a tag" e
   "Select an existing option", colori assegnati a giro (`TAG_COLORS`).
   Una cella vuota resta vuota, senza trattini
 
-### 🆕 v0.16 — 19/09/2026 · 10:57 — La vista Board
+### 🆕 v0.10 — 19/09/2026 · 10:57 — La vista Board
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
@@ -12613,7 +12691,7 @@ Poi:
 Poi:
 > «MERAVIGLIOSO! Una piccola cosa però, nella visualizzazione Board, le pagine senza un Select mettimele in fondo a destra. Prima quelle con un tag e poi quelle senza alla fine a destra»
 
-- **[Nuova funzionalità]** **Board**: una colonna per ogni valore di una
+- **[Nuova funzionalità]** **[📱 Mobile]** **Board**: una colonna per ogni valore di una
   proprietà a selezione singola, righe come schede, colonna delle non
   smistate in fondo a destra, e `+ New` che crea la riga **già
   assegnata** a quella colonna. La proprietà si sceglie da Settings →
@@ -12621,29 +12699,29 @@ Poi:
   scelta si usa la prima adatta. Solo selezione singola: con quella
   multipla una riga starebbe in più colonne insieme. **Non c'è ancora il
   trascinamento** delle schede tra colonne
-- **[Bug fix]** Una colonna a selezione appena creata era un vicolo
+- **[Bug fix]** **[📱 Mobile]** Una colonna a selezione appena creata era un vicolo
   cieco: la cella mostrava solo un trattino e le opzioni si potevano
   scrivere unicamente alla creazione, in un campo che stava **sotto**
   l'elenco degli undici tipi e quindi fuori schermo. Ora si creano
   dalla cella, e il campo è sopra l'elenco
 
-### 🆕 v0.15 — 19/09/2026 · 10:31 — I grigi di Notion dappertutto
+### ✏️ v0.9.1 — 19/09/2026 · 10:31 — I grigi di Notion dappertutto
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
 > «Dappertutto, mettimi il colore del background come nella prima foto. Invece, nelel finestre che appaiono, tipo quelle in Actions o quelle che appaiono che non coprono tutto lo sfondo che si aprono per esempio dal basso, metti il colore del background e il colore dei rettangolo di ogni opzione come quelli della seconda foto»
 
-- **[Nuova funzionalità]** Tre grigi campionati dalle schermate di
+- **[Modifica]** **[📱 Mobile]** Tre grigi campionati dalle schermate di
   Notion: `#191919` per le pagine, `#202020` per le finestre che salgono
   dal basso, `#252525` per i riquadri che raggruppano le voci dentro
   quelle finestre
-- **[Nuova funzionalità]** L'app è sempre scura e **non usa più i colori
+- **[Modifica]** **[📱 Mobile]** L'app è sempre scura e **non usa più i colori
   dinamici** (Material You). Erano una scelta deliberata, ma tingevano
   di viola o verde proprio gli sfondi che devono restare quei grigi
   precisi. Prima l'editor era nero fisso e il resto seguiva il telefono:
   metà app in un modo e metà nell'altro
 
-### 🔧 v0.14.2 — 19/09/2026 · 10:22 — All'avvio subito la pagina, senza il lampo bianco
+### 🔧 v0.9.0.2 — 19/09/2026 · 10:22 — All'avvio subito la pagina, senza il lampo bianco
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
@@ -12655,14 +12733,14 @@ Poi:
 Poi:
 > «Non puoi farmi vedere direttamente il menu prinicipale?»
 
-- **[Bug fix]** Lampo bianco all'avvio: il tema della finestra era
+- **[Bug fix]** **[📱 Mobile]** Lampo bianco all'avvio: il tema della finestra era
   `Theme.Material.Light`, e il suo sfondo è quello che Android usa per
   la schermata iniziale. **Quella schermata da Android 12 non si può
   disattivare**, si può solo farle prendere i colori dell'app: sfondo
   `#191919` e icona trasparente (`values-v31/themes.xml`). L'avvio a
   freddo misura 389 ms, quindi non c'è lentezza da nascondere
 
-### 🔧 v0.14.1 — 19/09/2026 · 10:16 — La griglia della tabella, come un foglio di calcolo
+### 🔧 v0.9.0.1 — 19/09/2026 · 10:16 — La griglia della tabella, come un foglio di calcolo
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
@@ -12673,12 +12751,12 @@ L'utente, parola per parola:
 Poi:
 > «Anche le righe, fai messo solo le colonne. Stessa cosa per gli spazzi sopra le righe (ossia dove ci sono scritte le proprietà di quella colonna)»
 
-- **[Bug fix]** Le linee orizzontali della tabella erano invisibili:
+- **[Bug fix]** **[📱 Mobile]** Le linee orizzontali della tabella erano invisibili:
   dentro un contenitore che scorre in orizzontale la larghezza
   disponibile è illimitata, e una linea che chiede "tutta la larghezza"
   ne ottiene zero. Ora la larghezza della tabella viene calcolata
 
-### 🆕 v0.14 — 19/09/2026 · 10:09 — Le viste: Table e List, da Settings → Layout
+### 🆕 v0.9 — 19/09/2026 · 10:09 — Le viste: Table e List, da Settings → Layout
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
@@ -12687,18 +12765,18 @@ L'utente, parola per parola:
 Poi:
 > «Se faccio New property della colonna a destra di quella principale, mi apre il menu, seleziono per esempio Number ma non mi fa fare nulla, rimane lì impiantatro»
 
-- **[Nuova funzionalità]** La vista si sceglie da Settings → Layout, con
+- **[Nuova funzionalità]** **[📱 Mobile]** La vista si sceglie da Settings → Layout, con
   la griglia di riquadri come su Notion, ed è salvata per ogni database
   (`PageEntity.databaseLayout`, migrazione 7→8). Oltre a **Table** ci
   sono **List** (le righe senza griglia; si tocca e si apre la pagina) e
   **Board**
-- **[Bug fix]** Nella finestra delle proprietà i pulsanti Cancel e Add
+- **[Bug fix]** **[📱 Mobile]** Nella finestra delle proprietà i pulsanti Cancel e Add
   stavano in fondo, dopo l'elenco dei tipi: si sceglieva un tipo e non
   si vedeva più come confermare. Ora sono in un'intestazione fissa. E
   con il nome vuoto Add non faceva niente **in silenzio**: adesso la
   proprietà prende il nome del tipo
 
-### 🆕 v0.13 — 19/09/2026 · 09:58 — Il database un punto alla volta: impostazioni, azioni di una riga, Done nei titoli
+### 🆕 v0.8 — 19/09/2026 · 09:58 — Il database un punto alla volta: impostazioni, azioni di una riga, Done nei titoli
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
@@ -12735,16 +12813,16 @@ Poi:
 Poi:
 > «Sì, metti anche lì Done. Il simbolino dell'invio quando scrivo un titolo non ha senso. Se voglio modificare qualcosa del corpo di una testo tocco direttamente il testo.»
 
-- **[Bug fix]** Il tocco prolungato su una riga non apriva mai le
+- **[Bug fix]** **[📱 Mobile]** Il tocco prolungato su una riga non apriva mai le
   azioni: il campo di testo della cella si prendeva il gesto per
   selezionare le parole, e restavano i pallini della selezione appesi
   sopra le finestre. Il nome è testo semplice finché non lo si tocca,
   così un unico rilevatore gestisce tocco e tocco prolungato
-- **[Bug fix]** Il titolo della pagina di una riga e il nome della riga
+- **[Bug fix]** **[📱 Mobile]** Il titolo della pagina di una riga e il nome della riga
   erano due valori scollegati: rinominando dall'interno, tornando
   indietro si ritrovava il nome vecchio. Ora sono allineati nei due sensi
 
-### 🆕 v0.12 — 18/09/2026 · 23:14 — I database rifatti da capo, come quelli di Notion
+### 🆕 v0.7 — 18/09/2026 · 23:14 — I database rifatti da capo, come quelli di Notion
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
@@ -12759,7 +12837,7 @@ Poi:
 Poi:
 > «Quando rinomino una pagina in un database, proibiscimi letteralmente di andare a capo. Non serve»
 
-- **[Nuova funzionalità]** `DatabaseViewScreen` riscritta da zero
+- **[Nuova funzionalità]** **[📱 Mobile]** `DatabaseViewScreen` riscritta da zero
   seguendo la UI mobile di Notion: titolo grande e modificabile dentro
   il contenuto (non nella barra), riga con la vista attiva ("Table") e
   il pulsante per aggiungere una pagina, intestazioni con l'icona del
@@ -12767,33 +12845,33 @@ Poi:
   aprirla come pagina, `+ New page` in fondo. **Il magazzino dati non è
   stato toccato**: colonne/righe/celle con la riga collegata a una
   pagina *sono già* il modello di Notion, era la UI a non assomigliargli
-- **[Nuova funzionalità]** Finestra delle proprietà a scomparsa dal
+- **[Nuova funzionalità]** **[📱 Mobile]** Finestra delle proprietà a scomparsa dal
   basso, come su Notion: nome, elenco dei tipi con ricerca e icone, e —
   quando si modifica una colonna esistente — sposta a sinistra/destra
   ed elimina. Si apre toccando l'intestazione di una colonna o
   `+ Add property`. Prima una colonna creata era immutabile: sbagliare
   nome o tipo costringeva a rifarla perdendo i dati
-- **[Nuova funzionalità]** Sei tipi di proprietà nuovi: Multi-select,
+- **[Nuova funzionalità]** **[📱 Mobile]** Sei tipi di proprietà nuovi: Multi-select,
   URL, Email, Phone, Created time, Last edited time. Quelli mostrati da
   Notion e **non** realizzabili qui sono elencati nei Limiti noti
-- **[Nuova funzionalità]** `updatedAt` sulle righe (migrazione 6→7) per
+- **[Nuova funzionalità]** **[📱 Mobile]** `updatedAt` sulle righe (migrazione 6→7) per
   "Last edited time": viene aggiornato sia cambiando il titolo sia
   modificando una cella. Ammette null, perché per le righe già
   esistenti la data vera non è ricostruibile — in quel caso si mostra
   la data di creazione
-- **[Bug fix]** Una colonna aggiunta dopo averne eliminata una in mezzo
+- **[Bug fix]** **[📱 Mobile]** Una colonna aggiunta dopo averne eliminata una in mezzo
   riceveva un `orderIndex` già occupato (veniva contato il numero di
   colonne invece di prendere il massimo più uno). Due colonne con lo
   stesso indice non si possono riordinare: lo scambio non cambia nulla.
   Lo stesso difetto è ancora presente in `addRow`, dove per ora non si
   nota perché le righe non si possono riordinare
-- **[Bug fix]** Cambiare il titolo di una riga riscriveva l'intera
+- **[Bug fix]** **[📱 Mobile]** Cambiare il titolo di una riga riscriveva l'intera
   entità partendo dalla copia in mano alla UI: scrivendo mentre la
   pagina collegata veniva creata si poteva azzerare `linkedPageId`, e
   la riga perdeva la sua pagina. Ora il salvataggio tocca solo il
   titolo (stessa lezione del tocco sul numero negli elenchi)
 
-### 🔧 v0.11.1 — 18/09/2026 · 22:51 — Backspace su una riga rientrata toglie un rientro per volta
+### 🔧 v0.6.0.1 — 18/09/2026 · 22:51 — Backspace su una riga rientrata toglie un rientro per volta
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
@@ -12801,12 +12879,12 @@ L'utente, parola per parola:
 >
 > Un piccolo problema: quando scrivo 1., 2., 3., 4., sposto a destra 4. e diventa 3.1, poi a capo 3.2, 3.3, se io elimino 3.3 facendo backspace mi rimane sulla stessa altezza del 3.2, ma se rifaccio backspace non mi ritorna al paragrafo iniziale del 3., bensì sul 3.2. Dappertutto, se io rifaccio backspace mi ritorna alll átezza del 3.. Hai capito cosa intendo?»
 
-- **[Bug fix]** Backspace a inizio di una riga rientrata (un `3.3` sotto
+- **[Bug fix]** **[📱 Mobile]** Backspace a inizio di una riga rientrata (un `3.3` sotto
   un `3.2`) ora toglie **un rientro per volta** fino al margine, e solo
   allora fonde la riga con quella sopra: è il "gradino alla volta" di
-  v0.8
+  v0.4.2
 
-### 🆕 v0.11 — 18/09/2026 · 22:43 — Elenchi numerati su più livelli: 1.1, 1.2
+### 🆕 v0.6 — 18/09/2026 · 22:43 — Elenchi numerati su più livelli: 1.1, 1.2
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
@@ -12829,25 +12907,25 @@ Poi:
 Poi:
 > «Perfetto, risolto. Mi sono però accorto di un'altra cosa: quando scrivo 1., mi crea la lista, scrivo a (sempre per esempio, per velocizzare il riconoscimento dei bug), vado a capo, e vedo come se il text cursor lampeggiasse all'inizio del nuovo blocco, ossia prima del 2 nel blocco dove si trova 2., ma proprio per un istante che però lo riconosco. Come mai?»
 
-- **[Nuova funzionalità]** Numerazione su più livelli guidata dal
+- **[Nuova funzionalità]** **[📱 Mobile]** Numerazione su più livelli guidata dal
   rientro: `1.` al margine, `1.1` `1.2` spostando a destra, `1.1.1` a
   due rientri. Spostare un elemento lo rinumera, e con lui tutti quelli
   che seguono. Il conteggio tiene un contatore per livello: risalendo,
   quelli più profondi vengono dimenticati, ed è per questo che `2.1`
   riparte da 1 (`PageEditorViewModel.numberedListLabel`)
-- **[Bug fix]** Spazi verticali enormi sopra e sotto le righe rientrate.
+- **[Bug fix]** **[📱 Mobile]** Spazi verticali enormi sopra e sotto le righe rientrate.
   Il rientro era fatto con un `ParagraphStyle`, ma applicare uno stile
   di paragrafo a una parte di un `AnnotatedString` spezza il testo in
   paragrafi separati, e l'a-capo che finisce al confine viene reso come
   una riga vuota in più. Ora il rientro sono spazi dentro il prefisso
   (`INDENT_SPACES`) e il testo resta un paragrafo solo
-- **[Bug fix]** Il pulsante rientro (e sposta su/giù, ed elimina)
+- **[Bug fix]** **[📱 Mobile]** Il pulsante rientro (e sposta su/giù, ed elimina)
   agivano sulla riga precedente se premuti subito dopo un Invio: la
   riga nuova esiste nel campo prima di esistere nella lista dei
   blocchi, quindi non si riusciva ad associarla e il "blocco a fuoco"
   restava indietro di uno. Ora il calcolo viene rifatto anche quando la
   lista dei blocchi cambia, non solo quando si scrive
-- **[Bug fix]** Per un istante dopo l'Invio il cursore lampeggiava al
+- **[Bug fix]** **[📱 Mobile]** Per un istante dopo l'Invio il cursore lampeggiava al
   margine sinistro della riga nuova, prima di saltare dopo il numero.
   La riga esiste nel campo prima che il suo blocco arrivi dal database,
   quindi per un attimo veniva disegnata senza numero. Ora il prefisso
@@ -12856,7 +12934,7 @@ Poi:
   di ciò che si disegna: non tocca né i dati né l'editing, quindi nel
   caso peggiore sbaglia un numero per un fotogramma
 
-### 🆕 v0.10 — 18/09/2026 · 22:24 — Toccare il numero fa ripartire l'elenco, anche nel testo
+### ✏️ v0.5.1 — 18/09/2026 · 22:24 — Toccare il numero fa ripartire l'elenco, anche nel testo
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
@@ -12865,13 +12943,13 @@ L'utente, parola per parola:
 Poi:
 > «Toccando il quinto numero dall'alto, mi resetta perfettamente la lista, ma c'è un problema, come ben vedi: mi cancella quello che c'era scritto»
 
-- **[Nuova funzionalità]** Toccare il numero di un elenco funziona anche
+- **[Modifica]** **[📱 Mobile]** Toccare il numero di un elenco funziona anche
   nel testo unito, non più solo dentro i toggle: il numero è disegnato
   dalla trasformazione visiva, quindi gli si mette sopra una zona
   invisibile posizionata con il `TextLayoutResult`. Il calcolo dei
   prefissi è stato estratto in `runPrefixes` perché chi li disegna e chi
   li rende toccabili devono per forza essere d'accordo
-- **[Bug fix]** Toccare il numero cancellava il testo di quella riga.
+- **[Bug fix]** **[📱 Mobile]** Toccare il numero cancellava il testo di quella riga.
   `pointerInput` non si rigenera quando cambia solo il contenuto del
   blocco (la chiave era l'id), quindi la lambda del tocco teneva una
   copia dell'entità com'era alla nascita — vuota — e salvarla riscriveva
@@ -12879,7 +12957,7 @@ Poi:
   colonne della numerazione. **Regola generale: non catturare entità
   dentro una lambda che non si ricompone; passare l'id e rileggere.**
 
-### 🆕 v0.9 — 18/09/2026 · 22:14 — Scrivere "1." a inizio riga crea un elenco numerato
+### 🆕 v0.5 — 18/09/2026 · 22:14 — Scrivere "1." a inizio riga crea un elenco numerato
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
@@ -12888,18 +12966,18 @@ L'utente, parola per parola:
 Poi:
 > «La mia richiesta è specifrica in una situazione, ossia quando lo scrivere 1. è all'inizio del blocco. Se io scrivo 1., 2. eccetera dopo la primissima lettera/ numero di un blocco, non voglio creare una lista numerata. Hai capito?»
 
-- **[Nuova funzionalità]** Scrivere `1.` (o `5.`, o qualsiasi numero) e
+- **[Nuova funzionalità]** **[📱 Mobile]** Scrivere `1.` (o `5.`, o qualsiasi numero) e
   basta, a inizio blocco, crea un elenco numerato che parte da quel
   numero. Scatta solo se il numero è l'unica cosa scritta nel blocco:
   `abc 1.` non converte niente, come richiesto
-- **[Nuova funzionalità]** Elenchi numerati che partono da un numero
+- **[Nuova funzionalità]** **[📱 Mobile]** Elenchi numerati che partono da un numero
   scelto: nuovo campo `numberStartsAt`, che sostituisce il vecchio
   `numberResetHere` (era il caso particolare "riparti da 1")
-- **[Nuova funzionalità]** Prima migrazione vera dello schema (5→6) e
+- **[Nuova funzionalità]** **[📱 Mobile]** Prima migrazione vera dello schema (5→6) e
   rimozione di `fallbackToDestructiveMigration`. Da qui in poi i dati
   sul telefono sopravvivono ai cambi di schema
 
-### 🔧 v0.8.1 — 18/09/2026 · 22:02 — L'Invio va a capo e la lista continua
+### 🔧 v0.4.2.1 — 18/09/2026 · 22:02 — L'Invio va a capo e la lista continua
 *(Claude Code sul PC)*
 
 L'utente, parola per parola:
@@ -12923,7 +13001,7 @@ Poi:
 Poi:
 > «FUNZIONA TUTTO»
 
-- **[Bug fix]** Il primo carattere scritto dopo un Invio finiva sulla
+- **[Bug fix]** **[📱 Mobile]** Il primo carattere scritto dopo un Invio finiva sulla
   riga precedente. Causa: l'area "tocca lo spazio vuoto sotto l'ultimo
   blocco per scrivere" usava `Modifier.clickable`, che in Compose si
   attiva **anche col tasto Invio** quando un elemento interno ha il
@@ -12935,7 +13013,7 @@ Poi:
   dispositivo: l'Invio risultava corretto (cursore a 2), e 79 ms dopo
   arrivava una richiesta di focus che lo riportava a 1
 
-### 🆕 v0.8 — 18/09/2026 · 21:19 — Backspace a inizio riga smonta la riga un gradino alla volta
+### ✏️ v0.4.2 — 18/09/2026 · 21:19 — Backspace a inizio riga smonta la riga un gradino alla volta
 *(Claude Code sul PC: la prima cosa fatta sul progetto arrivato
 dall'altra chat, scelta dall'utente fra i «Limiti noti» del README)*
 
@@ -12946,7 +13024,7 @@ E poi:
 > «@"C:\Users\Utente\Downloads\NotionLocal/"
 > Come ti invio la cartella? Così va bene, o te lo mando zippato?»
 
-- **[Nuova funzionalità]** Backspace a inizio riga "smonta" la riga un
+- **[Modifica]** **[📱 Mobile]** Backspace a inizio riga "smonta" la riga un
   gradino alla volta invece di fonderla subito con quella sopra, come
   in Notion: prima toglie il marcatore di elenco, poi toglie un rientro
   per volta fino al margine, e solo allora fonde. Vale **anche per il
@@ -12958,23 +13036,23 @@ E poi:
   (`backspaceAtLineStart`), non nella UI, perché solo lì il gruppo di
   blocchi è quello aggiornato
 
-### 🆕 v0.7 — 17/09/2026 · 22:37 — L'icona dalla foto dell'utente e il nome "notE"
+### ✏️ v0.4.1 — 17/09/2026 · 22:37 — L'icona dalla foto dell'utente e il nome "notE"
 *(nell'altra chat, «Home»: la data e l'ora sono quelle dei file
 dell'icona e del nome dell'app)*
 
-- **[Nuova funzionalità]** Icona adattiva da foto dell'utente; nome
+- **[Modifica]** **[📱 Mobile]** Icona adattiva da foto dell'utente; nome
   app cambiato in "notE"
 
-### 🔧 v0.6.2 — fra l'8 e il 18/09/2026 · ora non registrata — Sfondo nero e barra dello stesso colore
+### 🔧 v0.4.0.2 — fra l'8 e il 18/09/2026 · ora non registrata — Sfondo nero e barra dello stesso colore
 *(nell'altra chat, «Home», fra l'8 e il 18/09/2026: di queste modifiche
 non restano né la data né l'ora né l'ordine, e sono nell'ordine in cui
 le elencava il README del 18/09)*
 
-- **[Bug fix]** Sfondo nero fisso con testo e cursore bianchi
-- **[Bug fix]** Barra sopra la tastiera dello stesso colore dello
+- **[Bug fix]** **[📱 Mobile]** Sfondo nero fisso con testo e cursore bianchi
+- **[Bug fix]** **[📱 Mobile]** Barra sopra la tastiera dello stesso colore dello
   sfondo, invece di un grigio che creava una cucitura visibile
 
-### 🔧 v0.6.1 — fra l'8 e il 18/09/2026 · ora non registrata — Altri bug fix: divisore, tabelle, menu "+"
+### 🔧 v0.4.0.1 — fra l'8 e il 18/09/2026 · ora non registrata — Altri bug fix: divisore, tabelle, menu "+"
 *(nell'altra chat, «Home», fra l'8 e il 18/09/2026: di queste modifiche
 non restano né la data né l'ora né l'ordine, e sono nell'ordine in cui
 le elencava il README del 18/09)*
@@ -12983,49 +13061,49 @@ le elencava il README del 18/09)*
 - Ridimensionare una tabella cancellava il testo già scritto
 - Ciclo di apertura/chiusura continua del menu "+"
 
-### 🆕 v0.6 — fra l'8 e il 18/09/2026 · ora non registrata — Database: il calendario per le date, le righe come pagine
+### 🆕 v0.4 — fra l'8 e il 18/09/2026 · ora non registrata — Database: il calendario per le date, le righe come pagine
 *(nell'altra chat, «Home», fra l'8 e il 18/09/2026: di queste modifiche
 non restano né la data né l'ora né l'ordine, e sono nell'ordine in cui
 le elencava il README del 18/09)*
 
-- **[Nuova funzionalità]** Selettore di data vero (calendario)
-- **[Nuova funzionalità]** Apertura di una riga come pagina
-- **[Nuova funzionalità]** Eliminazione colonne con tocco prolungato
+- **[Nuova funzionalità]** **[📱 Mobile]** Selettore di data vero (calendario)
+- **[Nuova funzionalità]** **[📱 Mobile]** Apertura di una riga come pagina
+- **[Nuova funzionalità]** **[📱 Mobile]** Eliminazione colonne con tocco prolungato
 
-### 🆕 v0.5 — fra l'8 e il 18/09/2026 · ora non registrata — Tastiera e interazione: Invio, backspace e tastiera Samsung
+### 🆕 v0.3 — fra l'8 e il 18/09/2026 · ora non registrata — Tastiera e interazione: Invio, backspace e tastiera Samsung
 *(nell'altra chat, «Home», fra l'8 e il 18/09/2026: di queste modifiche
 non restano né la data né l'ora né l'ordine, e sono nell'ordine in cui
 le elencava il README del 18/09)*
 
-- **[Bug fix]** Modifiche scartate silenziosamente quando la lista di
+- **[Bug fix]** **[📱 Mobile]** Modifiche scartate silenziosamente quando la lista di
   blocchi nota alla UI era obsoleta — causa profonda di Invio da
   premere due volte, liste che non continuavano, tipo ereditato a caso
-- **[Bug fix]** Invio che non andava a capo al primo colpo
+- **[Bug fix]** **[📱 Mobile]** Invio che non andava a capo al primo colpo
   (risincronizzazione col database troppo aggressiva)
-- **[Bug fix]** Tipo di blocco ereditato dal blocco sbagliato premendo
+- **[Bug fix]** **[📱 Mobile]** Tipo di blocco ereditato dal blocco sbagliato premendo
   Invio; titoli che si propagavano alla riga successiva
-- **[Bug fix]** Cambio tipo dal menu "+" applicato al blocco sbagliato
+- **[Bug fix]** **[📱 Mobile]** Cambio tipo dal menu "+" applicato al blocco sbagliato
   mentre si scriveva
-- **[Bug fix]** Backspace su blocco vuoto: due tentativi falliti di
+- **[Bug fix]** **[📱 Mobile]** Backspace su blocco vuoto: due tentativi falliti di
   intercettarlo come tasto, poi rimosso — resta il pulsante nella barra
-- **[Nuova funzionalità]** Tocco ovunque sotto il titolo per scrivere
-- **[Bug fix]** Caratteri duplicati e tastiera che si chiudeva da sola
+- **[Nuova funzionalità]** **[📱 Mobile]** Tocco ovunque sotto il titolo per scrivere
+- **[Bug fix]** **[📱 Mobile]** Caratteri duplicati e tastiera che si chiudeva da sola
   (mitigazioni per la tastiera Samsung)
-- **[Bug fix]** Selezione più fluida: niente salvataggio su database ad
+- **[Bug fix]** **[📱 Mobile]** Selezione più fluida: niente salvataggio su database ad
   ogni movimento della selezione
 
-### 🆕 v0.4 — fra l'8 e il 18/09/2026 · ora non registrata — Aa, Undo/Redo, numerazione e rientri
+### 🆕 v0.2 — fra l'8 e il 18/09/2026 · ora non registrata — Aa, Undo/Redo, numerazione e rientri
 *(nell'altra chat, «Home», fra l'8 e il 18/09/2026: di queste modifiche
 non restano né la data né l'ora né l'ordine, e sono nell'ordine in cui
 le elencava il README del 18/09)*
 
-- **[Nuova funzionalità]** Formattazione inline "Aa"
+- **[Nuova funzionalità]** **[📱 Mobile]** Formattazione inline "Aa"
   (grassetto/corsivo/sottolineato/barrato), poi estesa al testo unito
-- **[Nuova funzionalità]** Undo/Redo
-- **[Nuova funzionalità]** Reset della numerazione nelle liste
-- **[Nuova funzionalità]** Indenta/disindenta e sposta su/giù
+- **[Nuova funzionalità]** **[📱 Mobile]** Undo/Redo
+- **[Nuova funzionalità]** **[📱 Mobile]** Reset della numerazione nelle liste
+- **[Nuova funzionalità]** **[📱 Mobile]** Indenta/disindenta e sposta su/giù
 
-### 🆕 v0.3 — fra l'8 e il 18/09/2026 · ora non registrata — Struttura e navigazione: la radice è una pagina, il "+" nella barra
+### ✏️ v0.1.2 — fra l'8 e il 18/09/2026 · ora non registrata — Struttura e navigazione: la radice è una pagina, il "+" nella barra
 *(nell'altra chat, «Home», fra l'8 e il 18/09/2026: di queste modifiche
 non restano né la data né l'ora né l'ordine, e sono nell'ordine in cui
 le elencava il README del 18/09)*
@@ -13036,7 +13114,7 @@ le elencava il README del 18/09)*
   Page/Database nel menu "+" della barra
 - Menu "+" ridisegnato come griglia a icone su due colonne
 
-### 🆕 v0.2 — fra l'8 e il 18/09/2026 · ora non registrata — Il testo in un campo solo: ripensato il modello di editing
+### ✏️ v0.1.1 — fra l'8 e il 18/09/2026 · ora non registrata — Il testo in un campo solo: ripensato il modello di editing
 *(nell'altra chat, «Home», fra l'8 e il 18/09/2026: di queste modifiche
 non restano né la data né l'ora né l'ordine, e sono nell'ordine in cui
 le elencava il README del 18/09)*
@@ -13049,10 +13127,21 @@ deliberate" sopra per il contesto completo.
 *(nell'altra chat, «Home»: la data e l'ora sono quelle dei primi file
 del progetto, `build.gradle.kts` e `settings.gradle.kts`)*
 
-- **[Nuova funzionalità]** **notE**: un'app di note e database in stile
+- **[Nuova funzionalità]** **[📱 Mobile]** **notE**: un'app di note e database in stile
   Notion per Android, con **tutti i dati salvati sul telefono** (SQLite
   via Room): nessuna rete, nessun account, nessun cloud. Il nome
   interno del progetto è NotionLocal
+
+## Vecchia numerazione
+
+**Fino al 21/10/2026 le versioni avevano un altro numero**: 🆕 v0.N per
+una richiesta che portava qualcosa di nuovo o toglieva qualcosa, 🔧
+v0.N.1 per una che correggeva soltanto. Quel giorno, su richiesta
+dell'utente, la Cronologia è stata riletta da capo e rinumerata come è
+adesso (vedi l'inizio della Cronologia). I commit fatti prima portano il
+numero vecchio nel messaggio; qui, per ognuno, quello di adesso:
+
+v0.1 → v0.1 · v0.2 → v0.1.1 · v0.3 → v0.1.2 · v0.4 → v0.2 · v0.5 → v0.3 · v0.6 → v0.4 · v0.6.1 → v0.4.0.1 · v0.6.2 → v0.4.0.2 · v0.7 → v0.4.1 · v0.8 → v0.4.2 · v0.8.1 → v0.4.2.1 · v0.9 → v0.5 · v0.10 → v0.5.1 · v0.11 → v0.6 · v0.11.1 → v0.6.0.1 · v0.12 → v0.7 · v0.13 → v0.8 · v0.14 → v0.9 · v0.14.1 → v0.9.0.1 · v0.14.2 → v0.9.0.2 · v0.15 → v0.9.1 · v0.16 → v0.10 · v0.17 → v0.10.1 · v0.18 → v0.11 · v0.19 → v0.12 · v0.19.1 → v0.12.0.1 · v0.20 → v0.12.1 · v0.21 → v0.13 · v0.22 → v0.14 · v0.23 → v0.15 · v0.24 → v0.16 · v0.25 → v0.16.1 · v0.26 → v0.17 · v0.27 → v0.18 · v0.28 → v0.19 · v0.29 → v0.20 · v0.30 → v0.20.1 · v0.31 → v0.21 · v0.32 → v0.22 · v0.33 → v0.22.1 · v0.34 → v0.23 · v0.34.1 → v0.23.0.1 · v0.35 → v0.23.1 · v0.36 → v0.24 · v0.36.1 → v0.24.0.1 · v0.37 → v0.24.1 · v0.38 → v0.24.2 · v0.38.1 → v0.24.2.1 · v0.38.2 → v0.24.2.2 · v0.39 → v0.25 · v0.40 → v0.26 · v0.41 → v0.26.1 · v0.42 → v0.27 · v0.43 → v0.28 · v0.44 → v0.29 · v0.45 → v0.30 · v0.46 → v0.31 · v0.46.1 → v0.31.0.1 · v0.47 → v0.31.1 · v0.47.1 → v0.31.1.1 · v0.48 → v0.31.2 · v0.48.1 → v0.31.2.1 · v0.49 → v0.31.3 · v0.50 → v0.31.4 · v0.51 → v0.32 · v0.51.1 → v0.32.0.1 · v0.52 → v0.33 · v0.53 → v0.34 · v0.54 → v0.35 · v0.55 → v0.35.1 · v0.56 → v0.35.2 · v0.57 → v0.36 · v0.58 → v0.36.1 · v0.59 → v0.37 · v0.59.1 → v0.37.0.1 · v0.60 → v0.37.1 · v0.61 → v0.38 · v0.62 → v0.39 · v0.63 → v0.40 · v0.64 → v0.41 · v0.65 → v0.42 · v0.66 → v0.43 · v0.67 → v0.44 · v0.68 → v0.44.1 · v0.69 → v0.44.2 · v0.70 → v0.45 · v0.71 → v0.46 · v0.72 → v0.46.1 · v0.73 → v0.46.2 · v0.74 → v0.47 · v0.75 → v0.48 · v0.76 → v0.49 · v0.77 → v0.50 · v0.77.1 → v0.50.0.1 · v0.78 → v0.51 · v0.78.1 → v0.51.0.1 · v0.79 → v0.51.1 · v0.80 → v0.52 · v0.81 → v0.52.1 · v0.82 → v0.52.2 · v0.83 → v0.52.3 · v0.84 → v0.52.4 · v0.85 → v0.52.5 · v0.86 → v0.52.6 · v0.87 → v0.53 · v0.88 → v0.54 · v0.89 → v0.54.1 · v0.90 → v0.54.2 · v0.91 → v0.54.3 · v0.92 → v0.55 · v0.93 → v0.56 · v0.94 → v0.57 · v0.94.1 → v0.57.0.1 · v0.95 → v0.58 · v0.95.1 → v0.58.0.1 · v0.96 → v0.59 · v0.97 → v0.60 · v0.98 → v0.61 · v0.98.1 → v0.61.0.1 · v0.99 → v0.62 · v0.100 → v0.63 · v0.101 → v0.64 · v0.101.1 → v0.64.0.1 · v0.102 → v0.65 · v0.102.1 → v0.65.0.1 · v0.102.2 → v0.65.0.2 · v0.103 → v0.65.1 · v0.104 → v0.65.2 · v0.105 → v0.65.3 · v0.105.1 → v0.65.3.1 · v0.105.2 → v0.65.3.2 · v0.106 → v0.66 · v0.106.1 → v0.66.0.1 · v0.107 → v0.67 · v0.108 → v0.68 · v0.109 → v0.69 · v0.110 → v0.70 · v0.110.1 → v0.70.0.1 · v0.110.2 → v0.70.0.2 · v0.111 → v0.71 · v0.112 → v0.71.1 · v0.113 → v0.72 · v0.114 → v0.73 · v0.115 → v0.74 · v0.115.1 → v0.74.0.1 · v0.116 → v0.75 · v0.117 → v0.76 · v0.118 → v0.76.1 · v0.119 → v0.77 · v0.120 → v0.78 · v0.120.1 → v0.78.0.1 · v0.121 → v0.78.1 · v0.122 → v0.79 · v0.122.1 → v0.79.0.1 · v0.123 → v0.79.1 · v0.124 → v0.80 · v0.125 → v0.80.1 · v0.126 → v0.81 · v0.127 → v0.81.1 · v0.128 → v0.82 · v0.129 → v0.82.1 · v0.129.1 → v0.82.1.1 · v0.130 → v0.83 · v0.131 → v0.84 · v0.132 → v0.84.1 · v0.133 → v0.85 · v0.134 → v0.85.1 · v0.135 → v0.86 · v0.136 → v0.86.1 · v0.137 → v0.86.2 · v0.138 → v0.86.3 · v0.139 → v0.86.4 · v0.140 → v0.87 · v0.140.1 → v0.87.0.1 · v0.141 → v0.88 · v0.141.1 → v0.88.0.1 · v0.142 → v0.88.1 · v0.143 → v0.89 · v0.144 → v0.89.1 · v0.145 → v0.90 · v0.145.1 → v0.90.0.1 · v0.146 → v0.91 · v0.147 → v0.92 · v0.148 → v0.93 · v0.149 → v0.94 · v0.150 → v0.95 · v0.151 → v0.96 · v0.152 → v0.97 · v0.153 → v0.98 · v0.153.1 → v0.98.0.1 · v0.154 → v0.98.1 · v0.155 → v0.99 · v0.156 → v0.99.1 · v0.157 → v0.100 · v0.158 → v0.101 · v0.158.1 → v0.101.1 · v0.158.2 → v0.101.2 · v0.158.3 → v0.101.3 · v0.159 → v0.102 · v0.160 → v0.102.1 · v0.161 → v0.102.2 · v0.162 → v0.102.3 · v0.163 → v0.103 · v0.163.1 → v0.103.1 · v0.164 → v0.103.2 · v0.165 → v0.103.3 · v0.166 → v0.104 · v0.167 → v0.104.1 · v0.167.1 → v0.104.1.1 · v0.168 → v0.105 · v0.168.1 → v0.105.1 · v0.169 → v0.105.2 · v0.170 → v0.106 · v0.171 → v0.107 · v0.172 → v0.107.1 · v0.173 → v0.108 · v0.174 → v0.109 · v0.175 → v0.110 · v0.176 → v0.110.1 · v0.177 → v0.110.2 · v0.178 → v0.111 · v0.179 → v0.112 · v0.180 → v0.113 · v0.181 → v0.113.1 · v0.182 → v0.113.2 · v0.182.1 → v0.113.2.1 · v0.183 → v0.113.3 · v0.184 → v0.114 · v0.185 → v0.115 · v0.186 → v0.116 · v0.186.1 → v0.116.0.1 · v0.186.2 → v0.116.0.2 · v0.187 → v0.117 · v0.188 → v0.118 · v0.188.1 → v0.118.0.1 · v0.188.2 → v0.118.0.2 · v0.189 → v0.118.1 · v0.190 → v0.118.2 · v0.190.1 → v0.118.2.1 · v0.191 → v0.119 · v0.192 → v0.120 · v0.193 → v0.121 · v0.194 → v0.122 · v0.195 → v0.123 · v0.195.1 → v0.123.0.1 · v0.196 → v0.124
 
 ## Struttura del progetto
 
@@ -13204,9 +13293,11 @@ aggiornamenti" — dal suo titolo fino al `## ` dopo — negli asset
 dell'app come `patch_notes.md` (con `addGeneratedSourceDirectory`, così
 Gradle sa che va rifatta quando il README cambia). Dallo stesso README
 vengono `versionName`, il numero del primo titolo "### … v0.N — " (la
-versione più recente), e `versionCode`, quanti titoli di versione ci
-sono. Quindi: **una voce nuova nel README è una versione nuova
-dell'app** alla prossima compilazione. `PatchNotesTest` legge l'asset
+versione più recente; fino a quattro parti, v0.N.M.K, dal 21/10/2026), e
+`versionCode`, quanti titoli di versione ci sono: per questo rinumerare la
+Cronologia, come il 21/10/2026, non lo fa tornare indietro e il telefono
+accetta l'aggiornamento. Quindi: **una voce nuova nel README è una
+versione nuova dell'app** alla prossima compilazione. `PatchNotesTest` legge l'asset
 come fa l'app e lo confronta col README.
 
 Prima di installare una build che cambia lo schema conviene portarsi

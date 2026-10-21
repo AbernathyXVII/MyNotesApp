@@ -32,7 +32,7 @@ import kotlin.math.roundToInt
  * Di suo Compose, quando un campo di testo prende il fuoco o la tastiera
  * accorcia lo schermo, porta in vista **tutto il campo**. Finché il testo di
  * una pagina era un campo solo, alto quanto la pagina, non succedeva niente;
- * coi pezzi di 50 righe (v0.181) "tutto il campo" vuol dire mettere l'inizio
+ * coi pezzi di 50 righe (v0.113.1) "tutto il campo" vuol dire mettere l'inizio
  * del pezzo in cima allo schermo (toccando a metà pagina, la pagina saltava
  * su) o la sua fine appena sopra la tastiera (unendo col backspace una riga a
  * quella del pezzo sopra, la pagina saltava giù).

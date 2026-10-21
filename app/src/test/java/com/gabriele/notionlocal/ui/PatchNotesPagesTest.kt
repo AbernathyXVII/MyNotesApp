@@ -52,7 +52,7 @@ class PatchNotesPagesTest {
 
     /**
      * Un testo che è solo di quella versione: la richiesta parola per parola, o,
-     * dove manca (v0.186.1, riassunta), la prima modifica. Non il primo
+     * dove manca (v0.116.0.1, riassunta), la prima modifica. Non il primo
      * paragrafo: la riga in corsivo sotto il titolo si ripete uguale.
      */
     private fun bodyOf(version: PatchVersion) =
