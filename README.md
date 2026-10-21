@@ -2099,7 +2099,7 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 gg/mm/aaaa)" accanto al titolo.
 
 ### ✏️ v0.124.1 — 21/10/2026 · 01:14 — La Cronologia riletta e rinumerata: aggiunte, modifiche e correzioni, e la piattaforma di ogni voce
-*(Claude Code sul PC; Cronologia riletta versione per versione; installata sul telefono come 0.124.1, la schermata Patch Notes non ancora guardata lì; 729 test passati)*
+*(Claude Code sul PC; Cronologia riletta versione per versione; provata sul telefono in Settings → Patch Notes: "v0.124.1" sotto la voce, l'elenco con ✏️ v0.124.1 e 🆕 v0.124, le etichette delle piattaforme nella pagina della versione; 729 test passati)*
 
 L'utente, parola per parola:
 > «Una cosa importante: ricomincia da capo a rileggere ogni patch note
