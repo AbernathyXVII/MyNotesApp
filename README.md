@@ -2104,6 +2104,32 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### ✏️ v0.128.1 — 26/10/2026 · 16:43 — Le sotto-righe: la riga principale si spunta da sola, e si ordinano a blocchi
+*(Claude Code sul PC; provata sul telefono su "Food", guardando l'ordine senza toccare le caselle; la spunta che risale provata coi test; 775 test passati)*
+
+L'utente, parola per parola:
+> «Ok, grazie mille. Andiamo avanti con nuove feature o modifiche.
+> Fai sì che se attivo tutte le checkbox delle voci nelle sub-row, allora si
+> attiva in automatico la checkbox della row principale, e se le sub-row
+> hanno un valore relativo ad una property che ottiene una sorting rule fai
+> sì che esse vengono rispettate»
+
+- **[Modifica]** **[📱 Mobile]** **Spuntate tutte le sotto-righe, si spunta
+  da sola la riga principale**, nella stessa colonna Checkbox; e se anche
+  lei è una sotto-riga, risale fino in cima. Togliendo la spunta a una
+  sotto-riga, la riga principale resta com'è
+- **[Modifica]** **[📱 Mobile]** **Una riga con le sue sotto-righe si
+  ordina come un blocco**: sta al posto del primo dei suoi elementi (lei o
+  una sotto-riga), e dentro il blocco le sotto-righe seguono le stesse
+  regole. In "Food", ordinata con le non spuntate in cima, "Rosticceria"
+  era spuntata e scendeva fra le spuntate portandosi dietro "Patate al
+  forno", "Bocconcini di pollo" e "Fettine di pollo panate", ancora da
+  prendere: ora il blocco sta in alto con le non spuntate, e quando le tre
+  sono prese va giù
+- **[Progetto]** `DatabaseRepository.setCheckbox` (in una transazione, con
+  `DatabaseDao.getSubRows`), `sortedAsBlocks` in `SubRows.kt`, usata da
+  `DatabaseViewModel.sortRows`. Test: `SubRowCheckboxTest`
+
 ### 🔧 v0.128.0.1 — 26/10/2026 · 16:30 — L'app non si chiude più con una bacheca raggruppata per data giorno per giorno
 *(Claude Code sul PC; provata sul telefono sulla vista "Weekly" di "KPOP Music Shows", che la faceva chiudere, col database confrontato prima e dopo; 771 test passati)*
 

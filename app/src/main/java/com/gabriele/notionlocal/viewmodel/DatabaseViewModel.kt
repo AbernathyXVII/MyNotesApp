@@ -28,6 +28,7 @@ import com.gabriele.notionlocal.data.dao.RowCover
 import com.gabriele.notionlocal.data.entity.CalendarMode
 import com.gabriele.notionlocal.data.entity.ColumnType
 import com.gabriele.notionlocal.data.entity.DatabaseSnapshot
+import com.gabriele.notionlocal.data.entity.sortedAsBlocks
 import com.gabriele.notionlocal.data.entity.DateGroupBy
 import com.gabriele.notionlocal.data.entity.GroupSlot
 import com.gabriele.notionlocal.data.entity.encodeDateGroupings
@@ -938,11 +939,14 @@ class DatabaseViewModel(
         // seconda conta solo fra le righe che per la prima sono pari. Fra
         // quelle pari anche per lei resta l'ordine di prima (`sortedWith`
         // non le rimescola).
-        return keyed.sortedWith { a, b ->
+        val sorted = keyed.sortedWith { a, b ->
             rules.indices.firstNotNullOfOrNull { i ->
                 compareForSort(a.second[i], b.second[i], rules[i].descending).takeIf { it != 0 }
             } ?: 0
         }.map { it.first }
+        // Una riga con le sue sotto-righe si ordina come un blocco (dal
+        // 26/10/2026): vedi `sortedAsBlocks`.
+        return sortedAsBlocks(sorted)
     }
 
     /** Una regola di ordinamento: la proprietà (null = il nome della riga) e il verso. */
@@ -2228,6 +2232,9 @@ class DatabaseViewModel(
             if (column.type == ColumnType.RELATION) {
                 // Con la gemella, se la Relation vale nei due sensi.
                 repository.setRelation(row.id, rawColumn(column.id) ?: column, value)
+            } else if (column.type == ColumnType.CHECKBOX) {
+                // Spuntate tutte le sotto-righe, si spunta la riga principale.
+                repository.setCheckbox(row.id, column.id, value)
             } else {
                 repository.setCellValue(row.id, column.id, value)
             }

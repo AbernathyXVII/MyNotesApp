@@ -97,6 +97,10 @@ interface DatabaseDao {
     @Query("SELECT * FROM database_rows WHERE id = :rowId LIMIT 1")
     suspend fun getRowById(rowId: String): DatabaseRowEntity?
 
+    /** Le sotto-righe di una riga (vedi `SubRows.kt`). */
+    @Query("SELECT * FROM database_rows WHERE parentRowId = :parentId")
+    suspend fun getSubRows(parentId: String): List<DatabaseRowEntity>
+
     /**
      * Rinomina la riga collegata a una pagina. Il titolo di una
      * pagina-riga e il nome della riga nella tabella sono la stessa

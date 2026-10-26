@@ -52,6 +52,49 @@ fun rowTree(rows: List<DatabaseRowEntity>): List<TreeRow> {
     return out
 }
 
+/**
+ * **Le sotto-righe nell'ordinamento** (dal 26/10/2026, chiesto dall'utente):
+ * una riga con le sue sotto-righe si ordina come un blocco, al posto del
+ * primo dei suoi elementi (lei o una sotto-riga, a qualunque livello); dentro
+ * il blocco le sotto-righe seguono le stesse regole. In "Food", con le non
+ * spuntate in cima, una "Rosticceria" spuntata che ha dentro cose ancora da
+ * prendere sta in alto con le non spuntate, invece di portarsele giù.
+ * `sorted` sono le righe già messe in ordine dalle regole.
+ */
+fun sortedAsBlocks(sorted: List<DatabaseRowEntity>): List<DatabaseRowEntity> {
+    if (sorted.none { it.parentRowId != null }) return sorted
+    val ids = sorted.mapTo(HashSet()) { it.id }
+    fun parentOf(row: DatabaseRowEntity) = row.parentRowId?.takeIf { it in ids && it != row.id }
+    val children = sorted.groupBy { parentOf(it) }
+    val position = HashMap<String, Int>(sorted.size).also { map -> sorted.forEachIndexed { i, row -> map[row.id] = i } }
+
+    // Il posto di un blocco: il primo fra la riga e tutte le sue sotto-righe.
+    val rank = HashMap<String, Int>()
+    val visiting = HashSet<String>()
+    fun rankOf(row: DatabaseRowEntity): Int {
+        rank[row.id]?.let { return it }
+        val own = position.getValue(row.id)
+        // Righe che si fanno da sotto-riga a vicenda: ognuna al suo posto.
+        if (!visiting.add(row.id)) return own
+        val best = children[row.id].orEmpty().minOfOrNull { rankOf(it) }?.coerceAtMost(own) ?: own
+        visiting.remove(row.id)
+        rank[row.id] = best
+        return best
+    }
+
+    val out = ArrayList<DatabaseRowEntity>(sorted.size)
+    val seen = HashSet<String>()
+    fun place(row: DatabaseRowEntity) {
+        if (!seen.add(row.id)) return
+        out += row
+        children[row.id].orEmpty().sortedBy { rankOf(it) }.forEach { place(it) }
+    }
+    children[null].orEmpty().sortedBy { rankOf(it) }.forEach { place(it) }
+    // Quelle in un giro di sotto-righe (non dovrebbe succedere) non spariscono.
+    sorted.filter { it.id !in seen }.forEach { out += it }
+    return out
+}
+
 /** Se fra queste righe qualcuna ha sotto di sé un'altra di loro: allora nella tabella c'è l'albero. */
 fun hasSubRows(rows: List<DatabaseRowEntity>): Boolean {
     if (rows.none { it.parentRowId != null }) return false

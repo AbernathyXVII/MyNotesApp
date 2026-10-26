@@ -298,6 +298,28 @@ class DatabaseRepository(private val db: AppDatabase) {
         }
     }
 
+    /**
+     * **Una casella, e la riga principale che si spunta da sola** (dal
+     * 26/10/2026, chiesto dall'utente): spuntata l'ultima sotto-riga che
+     * mancava, si spunta anche la riga da cui sono nate, e così via verso
+     * l'alto se anche lei è una sotto-riga. Togliendo la spunta, la riga
+     * principale resta com'è. In una transazione: le righe si ridisegnano una
+     * volta sola, già al loro posto.
+     */
+    suspend fun setCheckbox(rowId: String, columnId: String, value: String) = db.withTransaction {
+        setCellValue(rowId, columnId, value)
+        if (value != "true") return@withTransaction
+        val seen = hashSetOf(rowId)
+        var child = dao.getRowById(rowId)
+        while (child != null) {
+            val parentId = child.parentRowId?.takeIf { seen.add(it) } ?: break
+            val siblings = dao.getSubRows(parentId)
+            if (siblings.any { dao.getCell(it.id, columnId)?.value != "true" }) break
+            if (dao.getCell(parentId, columnId)?.value != "true") setCellValue(parentId, columnId, "true")
+            child = dao.getRowById(parentId)
+        }
+    }
+
     // --- "Relation" (dal 21/10/2026): vedi `Relations.kt` ---
 
     /** Scrive una cella e segna la riga come modificata, come `setCellValue`, dentro una transazione già aperta. */
