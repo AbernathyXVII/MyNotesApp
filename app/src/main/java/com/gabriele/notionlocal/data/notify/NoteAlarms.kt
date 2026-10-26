@@ -9,6 +9,7 @@ import com.gabriele.notionlocal.data.AppDatabase
 import com.gabriele.notionlocal.data.settings.AppSettings
 import com.gabriele.notionlocal.data.widgets.WidgetStore
 import com.gabriele.notionlocal.ui.i18n.NotifyStrings
+import com.gabriele.notionlocal.ui.i18n.ReminderTexts
 import com.gabriele.notionlocal.ui.i18n.Strings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -117,7 +118,12 @@ object NoteAlarms {
         Notifier.postReminders(app, due)
     }
 
-    private fun words() = ReminderWords(untitled = Strings.untitled, starts = NotifyStrings.starts, ends = NotifyStrings.ends)
+    private fun words() = ReminderWords(
+        untitled = Strings.untitled,
+        starts = NotifyStrings.starts,
+        ends = NotifyStrings.ends,
+        startsIn = { ReminderTexts.startsIn(it) }
+    )
 
     private fun prefs(context: Context) = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 

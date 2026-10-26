@@ -2,6 +2,7 @@ package com.gabriele.notionlocal.data.notify
 
 import com.gabriele.notionlocal.data.AppDatabase
 import com.gabriele.notionlocal.data.entity.DateRange
+import com.gabriele.notionlocal.data.entity.ReminderUnit
 import com.gabriele.notionlocal.data.entity.RichTextSpan
 import com.gabriele.notionlocal.data.entity.parseDateRange
 import com.gabriele.notionlocal.data.entity.plainText
@@ -63,8 +64,22 @@ data class DateReminderRow(
     val databaseTitle: String
 )
 
-/** Le parole della notifica di una data che ha inizio e fine. */
-data class ReminderWords(val untitled: String, val starts: String, val ends: String)
+/**
+ * Le parole della notifica di una data: che ha inizio e fine, e quella in
+ * anticipo ([startsIn] coi minuti che mancano: "Starts in 3 days").
+ */
+data class ReminderWords(
+    val untitled: String,
+    val starts: String,
+    val ends: String,
+    val startsIn: (Int) -> String = { "" }
+)
+
+/**
+ * Un momento in cui suona una data: [before] minuti prima dell'inizio, o
+ * all'inizio (0), o alla fine ([isEnd]).
+ */
+data class DateReminderTime(val at: Long, val isEnd: Boolean = false, val before: Int = 0)
 
 /**
  * Il momento esatto in cui suona una data: all'ora, se la data ce l'ha,
@@ -78,12 +93,19 @@ fun notifyInstant(millis: Long, hasTime: Boolean, zone: ZoneId): Long {
 
 /**
  * I momenti in cui suona una data fra `from` (escluso) e `to` (compreso):
- * l'inizio e, se c'è, la fine (`true` = fine). Una data che si ripete suona
- * a ogni ripetizione, e la fine di ogni ripetizione cade tanti giorni dopo
- * quanti ne separano la fine dall'inizio della prima.
+ * l'inizio e, se c'è, la fine. Una data che si ripete suona a ogni
+ * ripetizione, e la fine di ogni ripetizione cade tanti giorni dopo quanti
+ * ne separano la fine dall'inizio della prima.
+ *
+ * **Con le notifiche in anticipo** (dal 26/10/2026, `DateRange.reminders`)
+ * suona anche tanti minuti prima dell'inizio, contati sull'orologio: "un
+ * giorno prima" è alla stessa ora del giorno prima anche se in mezzo
+ * cambia l'ora legale. La fine suona solo con la notifica all'inizio (0),
+ * come prima.
  */
-fun dateReminderTimes(range: DateRange, zone: ZoneId, from: Long, to: Long): List<Pair<Long, Boolean>> {
+fun dateReminderTimes(range: DateRange, zone: ZoneId, from: Long, to: Long): List<DateReminderTime> {
     if (!range.notify || to <= from) return emptyList()
+    val reminders = range.reminders.ifEmpty { listOf(0) }
     val start = Instant.ofEpochMilli(range.start).atZone(zone)
     val end = range.end?.let { Instant.ofEpochMilli(it).atZone(zone) }
     val startTime = if (range.hasTime) start.toLocalTime() else DEFAULT_NOTIFY_TIME
@@ -96,20 +118,26 @@ fun dateReminderTimes(range: DateRange, zone: ZoneId, from: Long, to: Long): Lis
     } else {
         // Anche le ripetizioni partite prima di `from` possono avere la
         // fine dopo: la finestra si allarga all'indietro di quanto dura.
+        // E quelle dopo `to` possono avere una notifica in anticipo prima:
+        // si allarga in avanti di quanto è lontana la più lontana.
         val fromDay = Instant.ofEpochMilli(from).atZone(zone).toLocalDate().minusDays((spanDays ?: 0) + 1)
-        val toDay = Instant.ofEpochMilli(to).atZone(zone).toLocalDate()
+        val ahead = (reminders.max() + ReminderUnit.DAYS.minutes - 1) / ReminderUnit.DAYS.minutes
+        val toDay = Instant.ofEpochMilli(to).atZone(zone).toLocalDate().plusDays(ahead.toLong())
         rule.occurrences(start.toLocalDate(), fromDay, toDay)
     }
 
-    val result = mutableListOf<Pair<Long, Boolean>>()
+    val result = mutableListOf<DateReminderTime>()
     for (day in startDates) {
-        result += LocalDateTime.of(day, startTime).atZone(zone).toInstant().toEpochMilli() to false
-        if (spanDays != null && endTime != null) {
-            result += LocalDateTime.of(day.plusDays(spanDays), endTime).atZone(zone).toInstant().toEpochMilli() to true
+        val startsAt = LocalDateTime.of(day, startTime)
+        for (before in reminders) {
+            result += DateReminderTime(startsAt.minusMinutes(before.toLong()).atZone(zone).toInstant().toEpochMilli(), before = before)
+        }
+        if (0 in reminders && spanDays != null && endTime != null) {
+            result += DateReminderTime(LocalDateTime.of(day.plusDays(spanDays), endTime).atZone(zone).toInstant().toEpochMilli(), isEnd = true)
         }
     }
     // Inizio e fine nello stesso istante (un giorno solo, senza ora): una notifica sola.
-    return result.filter { (at, _) -> at > from && at <= to }.distinctBy { it.first }
+    return result.filter { it.at > from && it.at <= to }.distinctBy { it.at }
 }
 
 private val json = Json { ignoreUnknownKeys = true }
@@ -134,16 +162,24 @@ fun blockReminders(rows: List<NotificationBlockRow>, from: Long, to: Long, untit
 fun dateReminders(rows: List<DateReminderRow>, zone: ZoneId, from: Long, to: Long, words: ReminderWords): List<ReminderFire> =
     rows.flatMap { row ->
         val range = parseDateRange(row.value) ?: return@flatMap emptyList()
-        dateReminderTimes(range, zone, from, to).map { (at, isEnd) ->
+        dateReminderTimes(range, zone, from, to).map { time ->
             val database = row.databaseTitle.ifBlank { words.untitled }
             ReminderFire(
-                key = "d:${row.rowId}:${row.columnId}:$at:${if (isEnd) "e" else "s"}",
-                at = at,
+                // Quella all'inizio e alla fine con la chiave di sempre; quelle
+                // in anticipo con quanti minuti prima.
+                key = "d:${row.rowId}:${row.columnId}:${time.at}:" + when {
+                    time.isEnd -> "e"
+                    time.before > 0 -> "b${time.before}"
+                    else -> "s"
+                },
+                at = time.at,
                 // Il nome della pagina della riga: "Revive +".
                 title = row.rowTitle.ifBlank { words.untitled },
                 body = when {
+                    // "Starts in 3 days": quanto manca.
+                    time.before > 0 -> "$database · ${words.startsIn(time.before)}"
                     range.end == null -> database
-                    isEnd -> "$database · ${words.ends}"
+                    time.isEnd -> "$database · ${words.ends}"
                     else -> "$database · ${words.starts}"
                 },
                 rowId = row.rowId,

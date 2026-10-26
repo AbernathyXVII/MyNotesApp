@@ -64,7 +64,9 @@ data class EventDraft(
     val recurrence: Recurrence? = null,
     val notify: Boolean = false,
     /** "#RRGGBB" di `EVENT_COLORS`, o null per il colore di sempre. */
-    val color: String? = null
+    val color: String? = null,
+    /** Le notifiche, in minuti prima dell'inizio (vedi `DateRange.reminders`). */
+    val reminders: List<Int> = listOf(0)
 ) {
     /** Spostando l'inizio, la fine lo segue e l'evento dura quanto prima, come su Google Calendar. */
     fun withStart(newStart: LocalDateTime): EventDraft =
@@ -99,7 +101,8 @@ data class EventDraft(
                 end = last.takeIf { it.isAfter(first) }?.let { millis(it.atStartOfDay()) },
                 hasTime = false,
                 recurrence = recurrence,
-                notify = notify
+                notify = notify,
+                reminders = reminders
             )
         } else {
             encodeDateRange(
@@ -107,7 +110,8 @@ data class EventDraft(
                 end = millis(end),
                 hasTime = true,
                 recurrence = recurrence,
-                notify = notify
+                notify = notify,
+                reminders = reminders
             )
         }
     }
@@ -136,7 +140,8 @@ data class EventDraft(
                 allDay = !range.hasTime,
                 recurrence = range.recurrence,
                 notify = range.notify,
-                color = row.eventColor
+                color = row.eventColor,
+                reminders = range.reminders
             )
         }
     }

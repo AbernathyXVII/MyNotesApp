@@ -8379,6 +8379,8 @@ private fun DateEditorSheet(
     var withEndDate by remember { mutableStateOf(range?.end != null) }
     var includeTime by remember { mutableStateOf(range?.hasTime == true) }
     var includeNotification by remember { mutableStateOf(range?.notify == true) }
+    // Le notifiche, in minuti prima dell'inizio (dal 26/10/2026): vedi `ReminderList`.
+    var reminders by remember { mutableStateOf(range?.takeIf { it.notify }?.reminders ?: listOf(0)) }
     // Senza un'ora salvata si propone quella di adesso, al minuto, e la fine
     // un'ora dopo.
     val now = remember { LocalTime.now(AppSettings.zoneId).withSecond(0).withNano(0) }
@@ -8454,7 +8456,8 @@ private fun DateEditorSheet(
                         end = endAt?.toEpochMillis(),
                         hasTime = includeTime,
                         recurrence = recurrence,
-                        notify = includeNotification
+                        notify = includeNotification,
+                        reminders = reminders
                     )
                 )
             }) { Text(Strings.done) }
@@ -8560,6 +8563,7 @@ private fun DateEditorSheet(
                 includeNotification = on
                 if (on) {
                     includeTime = true
+                    if (reminders.isEmpty()) reminders = listOf(0)
                     NotificationPermission.request()
                 }
             }
@@ -8571,26 +8575,37 @@ private fun DateEditorSheet(
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = DbStrings.includeNotification,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    if (includeNotification) {
-                        Text(
-                            text = DbStrings.notificationWhen(
-                                hasTime = includeTime,
-                                hasEnd = withEndDate && endDate != null
-                            ),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
+                Text(
+                    text = DbStrings.includeNotification,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.weight(1f)
+                )
                 Switch(
                     checked = includeNotification,
                     onCheckedChange = { setIncludeNotification(it) }
+                )
+            }
+            // **Più notifiche, come su Google Calendar** (dal 26/10/2026):
+            // quella all'inizio dice quando suona, come prima sotto
+            // l'interruttore; le altre quanto prima. Tolta l'ultima, la
+            // notifica si spegne, e riaccendendola si riparte dall'inizio.
+            if (includeNotification) {
+                ReminderList(
+                    reminders = reminders,
+                    atStartLabel = DbStrings.notificationWhen(
+                        hasTime = includeTime,
+                        hasEnd = withEndDate && endDate != null
+                    ),
+                    onChange = { changed ->
+                        if (changed.isEmpty()) {
+                            includeNotification = false
+                            reminders = listOf(0)
+                        } else {
+                            reminders = changed
+                        }
+                    },
+                    indent = 32.dp
                 )
             }
 

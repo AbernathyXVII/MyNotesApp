@@ -2104,6 +2104,40 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.130 — 26/10/2026 · 17:44 — Più notifiche per una data, come su Google Calendar
+*(Claude Code sul PC; provata sul telefono aprendo la finestra della data e chiudendola senza salvare; 795 test passati)*
+
+L'utente, parola per parola:
+> «Concedimi di mettere più notifiche ad un evento come Google Calendar,
+> tipo la notifica dieci ore prima, tre giorni prima, due settimane prima,
+> eccetera»
+
+- **[Nuova funzionalità]** **[📱 Mobile]** **Più notifiche per una data**,
+  come su Google Calendar: con "Include notification" acceso, sotto c'è una
+  riga per ogni notifica, con la X per toglierla, e "Add notification" per
+  aggiungerne un'altra. Con un tocco: 10 minuti, 30 minuti, un'ora, un
+  giorno o una settimana prima (e all'inizio, se la si era tolta); da
+  "Custom…" un numero qualsiasi di minuti, ore, giorni o settimane prima,
+  fino a un anno: "10 ore prima", "3 giorni prima", "2 settimane prima".
+  C'è sia nella finestra della proprietà Date sia in "More options" degli
+  eventi del calendario. Tolta l'ultima, la notifica si spegne
+- **[Nuova funzionalità]** **[📱 Mobile]** La notifica in anticipo dice
+  quanto manca: "Concerti · Inizia tra 3 giorni". Quella all'inizio resta
+  com'era, e suona anche alla fine se la data ce l'ha; senza di lei, alla
+  fine non suona niente. Una data che si ripete suona prima di ogni volta.
+  "Un giorno prima" è alla stessa ora del giorno prima anche quando in
+  mezzo cambia l'ora legale
+- **[Progetto]** `DateRange.reminders`: i minuti prima dell'inizio. Nel
+  valore della cella stanno fra la ripetizione e la "n", che resta l'ultimo
+  campo (`start|end|t|regola|0,600,4320|n`): la sveglia le trova con la
+  stessa ricerca di prima, e le date salvate prima (solo la "n") valgono
+  "all'inizio". `dateReminderTimes` dà `DateReminderTime` (quando, se è la
+  fine, quanti minuti prima) e conta le ripetizioni anche dopo la finestra,
+  per quelle in anticipo. Le parole in `ReminderTexts` (8 lingue),
+  l'elenco in `ReminderList` (`DateRemindersUi.kt`). Test:
+  `DateRemindersTest` (10), `ReminderListTest` (3), `NotificationsTest`
+  aggiornato
+
 ### 🔧 v0.129.0.1 — 26/10/2026 · 17:29 — La freccia dei collegamenti dentro la pagina non copre più l'ultima lettera
 *(Claude Code sul PC; provata sul telefono su "Fast notes"; 782 test passati)*
 

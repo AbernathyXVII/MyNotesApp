@@ -117,7 +117,7 @@ class NotificationsTest {
     fun aDayWithoutTimeRingsAtNine() {
         val range = DateRange(start = dayMillis(LocalDate.of(2026, 2, 23)), end = null, notify = true)
         val times = dateReminderTimes(range, rome, millis(now.minusYears(1)), millis(now.plusYears(1)))
-        assertEquals(listOf(millis(LocalDateTime.of(2026, 2, 23, 9, 0)) to false), times)
+        assertEquals(listOf(DateReminderTime(millis(LocalDateTime.of(2026, 2, 23, 9, 0)))), times)
     }
 
     @Test
@@ -130,8 +130,8 @@ class NotificationsTest {
         val times = dateReminderTimes(range, rome, millis(now), millis(now.plusYears(1)))
         assertEquals(
             listOf(
-                millis(LocalDateTime.of(2026, 10, 23, 9, 0)) to false,
-                millis(LocalDateTime.of(2026, 12, 17, 9, 0)) to true
+                DateReminderTime(millis(LocalDateTime.of(2026, 10, 23, 9, 0))),
+                DateReminderTime(millis(LocalDateTime.of(2026, 12, 17, 9, 0)), isEnd = true)
             ),
             times
         )
@@ -141,7 +141,7 @@ class NotificationsTest {
     fun withTheTimeItRingsAtThatTime() {
         val at = LocalDateTime.of(2026, 10, 22, 17, 41)
         val range = DateRange(start = millis(at), end = null, hasTime = true, notify = true)
-        assertEquals(listOf(millis(at) to false), dateReminderTimes(range, rome, millis(now), millis(now.plusYears(1))))
+        assertEquals(listOf(DateReminderTime(millis(at))), dateReminderTimes(range, rome, millis(now), millis(now.plusYears(1))))
     }
 
     @Test
@@ -161,7 +161,7 @@ class NotificationsTest {
         )
         val times = dateReminderTimes(range, rome, millis(now), millis(LocalDateTime.of(2026, 10, 20, 0, 0)))
         assertEquals(
-            listOf(2, 9, 16).map { millis(LocalDateTime.of(2026, 10, it, 9, 0)) to false },
+            listOf(2, 9, 16).map { DateReminderTime(millis(LocalDateTime.of(2026, 10, it, 9, 0))) },
             times
         )
     }

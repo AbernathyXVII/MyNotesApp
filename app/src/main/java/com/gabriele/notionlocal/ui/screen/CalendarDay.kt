@@ -761,25 +761,31 @@ internal fun EventEditorSheet(
 
             HorizontalDivider()
             val toggleNotify = { on: Boolean ->
-                onChange(draft.copy(notify = on))
+                onChange(draft.copy(notify = on, reminders = draft.reminders.ifEmpty { listOf(0) }))
                 if (on) NotificationPermission.request()
             }
             EditorLine(icon = { Icon(Icons.Filled.Notifications, contentDescription = null) }, onClick = { toggleNotify(!draft.notify) }) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = DbStrings.includeNotification,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    if (draft.notify) {
-                        Text(
-                            text = DbStrings.notificationWhen(hasTime = !draft.allDay, hasEnd = true),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
+                Text(
+                    text = DbStrings.includeNotification,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.weight(1f)
+                )
                 Switch(checked = draft.notify, onCheckedChange = { toggleNotify(it) })
+            }
+            // Più notifiche, come su Google Calendar (dal 26/10/2026): vedi `ReminderList`.
+            if (draft.notify) {
+                ReminderList(
+                    reminders = draft.reminders,
+                    atStartLabel = DbStrings.notificationWhen(hasTime = !draft.allDay, hasEnd = true),
+                    onChange = { changed ->
+                        onChange(
+                            if (changed.isEmpty()) draft.copy(notify = false, reminders = listOf(0))
+                            else draft.copy(reminders = changed)
+                        )
+                    },
+                    indent = 56.dp
+                )
             }
 
             HorizontalDivider()
