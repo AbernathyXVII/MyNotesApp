@@ -8,13 +8,21 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.click
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasScrollToIndexAction
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isPopup
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import com.gabriele.notionlocal.data.settings.AppSettings
@@ -231,6 +239,63 @@ class SportsWidgetTest {
         assertTrue(shows("Ball possession"))
         assertTrue(shows("42%"))
         assertTrue(shows("246 (74%)"))
+    }
+
+    @Test
+    fun standingsWithTheZonesLikeSofascore() {
+        WidgetStore.addSportCompetition(widgetId, SPORT_CATALOG.first { it.league == "ita.1" }.toCompetition())
+        val serieA = sports().competitions.single()
+        val now = System.currentTimeMillis()
+        val board = parseScoreboard(resource("seriea_scoreboard.json"), Sport.SOCCER)!!
+        val rounds = buildRounds(board, Sport.SOCCER)
+        // Le zone che ESPN dava alla Serie A il 26/10/2026: 1-4, 5-6, 7 e 18-20.
+        val table = parseStandings(resource("soccer_ita_1_standings.json"), Sport.SOCCER).single()
+        val zones = table.rows.mapIndexed { i, row ->
+            when (i + 1) {
+                in 1..4 -> row.copy(zone = "Champions League", zoneColor = "#81D6AC")
+                5, 6 -> row.copy(zone = "Europa League", zoneColor = "#B2BFD0")
+                7 -> row.copy(zone = "Conference League qualifying", zoneColor = "#B2BFD0")
+                in 18..20 -> row.copy(zone = "Relegated", zoneColor = "#FF7F84")
+                else -> row
+            }
+        }
+        WidgetStore.setSportReport(
+            widgetId,
+            serieA.id,
+            SportReport(
+                fetchedAt = now,
+                matches = board.matches,
+                standings = listOf(table.copy(rows = zones)),
+                standingsFetchedAt = now,
+                rounds = rounds,
+                roundsFetchedAt = now,
+                round = currentRound(rounds, LocalDate.of(2026, 10, 17))
+            )
+        )
+        WidgetStore.state.widgets.filter { it.id != widgetId }.forEach { WidgetStore.remove(it.id) }
+
+        compose.setContent {
+            NotionLocalTheme {
+                Column(modifier = Modifier.width(300.dp).background(SidebarBackground)) { WidgetsSection(active = false) }
+            }
+        }
+        compose.waitForIdle()
+        // Un tocco sulla giornata, e la classifica.
+        // In cima alla giornata, sul titolo: al centro ci sono le partite.
+        compose.onNodeWithText("Matchday 7 · Fri 16 – Mon 19 Oct").performTouchInput { click(Offset(centerX, 10f)) }
+        compose.waitForIdle()
+        compose.onNodeWithText("Standings").performClick()
+        compose.waitForIdle()
+        fun count(text: String) = compose.onAllNodesWithText(text).fetchSemanticsNodes().size
+        // Il nome di ogni zona una volta sola, sopra la sua prima squadra.
+        assertEquals(1, count("Champions League"))
+        assertEquals(1, count("Europa League"))
+        assertEquals(1, count("Conference League Qualification"))
+        // La classifica è l'unica lista della finestra: in fondo, la retrocessione.
+        compose.onNode(hasScrollToIndexAction() and hasAnyAncestor(isPopup())).performScrollToNode(hasText("Relegation"))
+        compose.waitForIdle()
+        assertEquals(1, count("Relegation"))
+        assertEquals(0, count("Relegated"))
     }
 
     private fun saveScreenshot(name: String) = saveScreenshot(name, 900)

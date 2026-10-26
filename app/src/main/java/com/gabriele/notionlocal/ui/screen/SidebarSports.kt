@@ -22,6 +22,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -85,6 +88,10 @@ import com.gabriele.notionlocal.data.widgets.SportRound
 import com.gabriele.notionlocal.data.widgets.SportsUpdates
 import com.gabriele.notionlocal.data.widgets.SportsWidget
 import com.gabriele.notionlocal.data.widgets.StandingGroup
+import com.gabriele.notionlocal.data.widgets.StandingRow
+import com.gabriele.notionlocal.data.widgets.StandingZone
+import com.gabriele.notionlocal.data.widgets.standingZoneLabel
+import com.gabriele.notionlocal.data.widgets.standingZoneOf
 import com.gabriele.notionlocal.data.widgets.WidgetStore
 import com.gabriele.notionlocal.data.widgets.competitionFlag
 import com.gabriele.notionlocal.data.widgets.currentRound
@@ -890,21 +897,81 @@ private fun StandingsTable(groups: List<StandingGroup>, sport: Sport) {
                 )
                 HorizontalDivider()
             }
-            items(group.rows, key = { "g$g-${it.rank}-${it.team}" }) { row ->
-                StandingLine(rank = row.rank.toString(), team = teamDisplayName(row.team), values = row.values, logo = row.logo)
+            itemsIndexed(group.rows, key = { _, it -> "g$g-${it.rank}-${it.team}" }) { r, row ->
+                // Come Sofascore: il nome della zona sopra la sua prima squadra, e
+                // la parentesi colorata a sinistra dal nome all'ultima squadra.
+                val color = zoneColorOf(row)
+                val first = color != null && group.rows.getOrNull(r - 1)?.zone != row.zone
+                val last = color != null && group.rows.getOrNull(r + 1)?.zone != row.zone
+                Column {
+                    if (first) {
+                        Text(
+                            standingZoneLabel(row.zone),
+                            color = NotionGray400,
+                            fontSize = 11.sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier
+                                .padding(top = 8.dp)
+                                .fillMaxWidth()
+                                .zoneBracket(color!!, top = true, bottom = false)
+                                .padding(start = ZONE_GUTTER, top = 2.dp, bottom = 2.dp)
+                        )
+                    }
+                    StandingLine(
+                        rank = row.rank.toString(),
+                        team = teamDisplayName(row.team),
+                        values = row.values,
+                        logo = row.logo,
+                        modifier = if (color == null) Modifier else Modifier.zoneBracket(color, top = false, bottom = last)
+                    )
+                }
             }
         }
         item { Spacer(modifier = Modifier.height(24.dp)) }
     }
 }
 
+/** Lo spazio a sinistra di ogni riga, per la parentesi delle zone. */
+private val ZONE_GUTTER = 12.dp
+
+/** Il colore della zona di [row], come su Sofascore; per le altre quello di ESPN. Null a metà classifica. */
+private fun zoneColorOf(row: StandingRow): Color? = when (standingZoneOf(row.zone)) {
+    null -> null
+    StandingZone.CHAMPIONS, StandingZone.PROMOTION -> Color(0xFF3DAA4F)
+    StandingZone.CHAMPIONS_QUALIFYING, StandingZone.PROMOTION_PLAYOFF -> Color(0xFF8ACB6E)
+    StandingZone.EUROPA -> Color(0xFF2F7FE6)
+    StandingZone.CONFERENCE -> Color(0xFF1FC1C8)
+    StandingZone.RELEGATION_PLAYOFF -> Color(0xFFF08A3C)
+    StandingZone.RELEGATION -> Color(0xFFE2484C)
+    StandingZone.OTHER -> row.zoneColor.takeIf { it.isNotEmpty() }?.let { Color(("FF" + it.drop(1)).toLong(16)) } ?: NotionGray400
+}
+
+/**
+ * Un pezzo della parentesi di una zona, sul margine sinistro: la linea, e un
+ * trattino verso destra in cima ([top], a metà del nome della zona) e in fondo ([bottom]).
+ */
+private fun Modifier.zoneBracket(color: Color, top: Boolean, bottom: Boolean): Modifier = drawBehind {
+    val stroke = 2.dp.toPx()
+    val tick = 6.dp.toPx()
+    val x = stroke / 2
+    val from = if (top) size.height / 2 else 0f
+    val to = if (bottom) size.height - 3.dp.toPx() else size.height
+    drawLine(color, Offset(x, from), Offset(x, to), stroke)
+    if (top) drawLine(color, Offset(0f, from), Offset(tick, from), stroke)
+    if (bottom) drawLine(color, Offset(0f, to), Offset(tick, to), stroke)
+}
+
 /** Una riga della classifica; [logo] null è l'intestazione. */
 @Composable
-private fun StandingLine(rank: String, team: String, values: List<String>, logo: String?) {
+private fun StandingLine(rank: String, team: String, values: List<String>, logo: String?, modifier: Modifier = Modifier) {
     val header = logo == null
     val color = if (header) NotionGray400 else NotionWhite
     val size = if (header) 11.sp else 13.sp
-    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp), verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        modifier = Modifier.fillMaxWidth().then(modifier).padding(start = ZONE_GUTTER, top = 5.dp, bottom = 5.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         Text(rank, color = NotionGray400, fontSize = size, modifier = Modifier.width(28.dp))
         if (logo == null) Spacer(modifier = Modifier.width(22.dp)) else {
             TeamLogo(logo, 16.dp)

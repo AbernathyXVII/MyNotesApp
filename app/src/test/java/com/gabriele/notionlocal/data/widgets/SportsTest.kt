@@ -190,6 +190,45 @@ class SportsTest {
     }
 
     @Test
+    fun standingZonesFromTheNotesOfEspn() {
+        // Come la Serie A di ESPN il 26/10/2026, accorciata; con il colore "##" che a volte ESPN sbaglia.
+        val json = """
+            {"children":[{"name":"2026-2027 Italian Serie A","standings":{"entries":[
+              {"team":{"shortDisplayName":"Inter Milan"},"stats":[{"name":"rank","value":1}],"note":{"color":"#81D6AC","description":"Champions League","rank":1}},
+              {"team":{"shortDisplayName":"Juventus"},"stats":[{"name":"rank","value":7}],"note":{"color":"##B2BFD0","description":"Conference League qualifying","rank":7}},
+              {"team":{"shortDisplayName":"Torino"},"stats":[{"name":"rank","value":8}]},
+              {"team":{"shortDisplayName":"Parma"},"stats":[{"name":"rank","value":19}],"note":{"color":"#FF7F84","description":"Relegated","rank":19}}
+            ]}}]}
+        """.trimIndent()
+        val rows = parseStandings(json, Sport.SOCCER).single().rows
+        assertEquals(listOf("Champions League", "Conference League qualifying", "", "Relegated"), rows.map { it.zone })
+        assertEquals(listOf("#81D6AC", "#B2BFD0", "", "#FF7F84"), rows.map { it.zoneColor })
+        // I nomi come su Sofascore.
+        assertEquals(
+            listOf("Champions League", "Conference League Qualification", "Relegation", "Relegation playoff"),
+            listOf("Champions League", "Conference League qualifying", "Relegated", "Relegation playoff").map { standingZoneLabel(it) }
+        )
+        // Le zone, dai nomi che ESPN usa nei campionati europei, in Serie B e nelle coppe.
+        mapOf(
+            "Champions League" to StandingZone.CHAMPIONS,
+            "Champions League qualifying" to StandingZone.CHAMPIONS_QUALIFYING,
+            "Europa League" to StandingZone.EUROPA,
+            "Europa League qualifying" to StandingZone.EUROPA,
+            "Conference League qualifying" to StandingZone.CONFERENCE,
+            "Promotion" to StandingZone.PROMOTION,
+            "Promotion playoffs" to StandingZone.PROMOTION_PLAYOFF,
+            "Relegation playoff" to StandingZone.RELEGATION_PLAYOFF,
+            "Relegation" to StandingZone.RELEGATION,
+            "Relegated" to StandingZone.RELEGATION,
+            "Eliminated" to StandingZone.RELEGATION,
+            "Qualifies for round of 16" to StandingZone.OTHER
+        ).forEach { (description, zone) -> assertEquals(description, zone, standingZoneOf(description)) }
+        assertNull(standingZoneOf(""))
+        assertEquals("", standingZoneColor("rosso"))
+        assertEquals("", standingZoneColor(null))
+    }
+
+    @Test
     fun theSeasonAndTheOthers() {
         // La stagione come la dà ESPN nella risposta della Serie A.
         val info = parseScoreboard(resource("seriea_scoreboard.json"), Sport.SOCCER)!!.season!!

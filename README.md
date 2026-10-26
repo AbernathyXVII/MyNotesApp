@@ -2104,6 +2104,42 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.129 — 26/10/2026 · 17:07 — Le zone della classifica come su Sofascore: Champions, Europa, Conference e retrocessione
+*(Claude Code sul PC; provata sul telefono sulla classifica della Serie A; 779 test passati)*
+
+L'utente, parola per parola (con due foto della classifica della Serie A
+su Sofascore):
+> «Nelle classifiche dei campionati, fai delle piccole divisioni con dei
+> colori (come fa Sofascore nella foto che ti mando) per chi va in Champions
+> League, chi in Europa League, chi in Conference League e chi viene
+> retrocesso nella seconda categoria»
+
+- **[Nuova funzionalità]** **[📱 Mobile]** **Le zone nella classifica dei
+  campionati**, come su Sofascore: sopra la prima squadra di ogni zona il
+  suo nome in piccolo ("Champions League", "Europa League", "Conference
+  League Qualification", "Relegation"), e sul margine sinistro una
+  parentesi colorata dal nome all'ultima squadra della zona: verde la
+  Champions, blu l'Europa League, azzurro la Conference, rosso la
+  retrocessione. Ci sono anche le altre zone che ESPN segna: verde chiaro i
+  preliminari di Champions e i playoff per la promozione (Serie B),
+  arancione lo spareggio per non retrocedere (Bundesliga, Ligue 1); nelle
+  coppe europee, le fasi a eliminazione diretta col colore di ESPN. Vale
+  anche per le stagioni passate
+- **[Nota]** Le zone sono quelle di ESPN, squadra per squadra, e possono
+  essere diverse da quelle di Sofascore: oggi in Serie A ESPN dà l'Europa
+  League alla 5ª e alla 6ª e la Conference alla 7ª, Sofascore l'Europa alla
+  5ª e la Conference alla 6ª. Una squadra che va in Europa con la coppa
+  nazionale ha la sua zona anche a metà classifica (in Liga il Villarreal,
+  10°, con l'Europa League). NBA, NFL e MLB: ESPN non dà zone e la
+  classifica resta com'era. Una classifica già scaricata prende le zone
+  quando si aggiorna (al massimo mezz'ora, o subito con la freccia)
+- **[Progetto]** `StandingRow` ha `zone` e `zoneColor` (la "note" di ESPN;
+  il colore "##B5E7CE", che ESPN a volte scrive così, si ripulisce);
+  `standingZoneOf` e `standingZoneLabel` in `Sports.kt`; la parentesi è
+  `Modifier.zoneBracket` in `SidebarSports.kt`, e ogni riga della classifica
+  ha a sinistra 12 dp per lei. Test: `SportsTest.standingZonesFromTheNotesOfEspn`,
+  `SportsWidgetTest.standingsWithTheZonesLikeSofascore`
+
 ### ✏️ v0.128.2 — 26/10/2026 · 16:49 — La riga principale è spuntata solo quando lo sono tutte le sue sotto-righe
 *(Claude Code sul PC; provata coi test, sul telefono solo installata: le caselle di "Food" non le ho toccate; 777 test passati)*
 

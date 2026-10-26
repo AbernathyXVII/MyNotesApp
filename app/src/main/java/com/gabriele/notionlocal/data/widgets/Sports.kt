@@ -290,7 +290,50 @@ data class StandingGroup(
 )
 
 @Serializable
-data class StandingRow(val rank: Int, val team: String, val values: List<String>, val logo: String = "")
+data class StandingRow(
+    val rank: Int,
+    val team: String,
+    val values: List<String>,
+    val logo: String = "",
+    /** La zona secondo ESPN ("Champions League", "Relegated"…), vuota a metà classifica. */
+    val zone: String = "",
+    /** Il colore che ESPN dà alla zona ("#81D6AC"), per quelle che non hanno un colore loro. */
+    val zoneColor: String = ""
+)
+
+/**
+ * **Le zone della classifica**, coi colori di Sofascore (26/10/2026, chiesto
+ * dall'utente): Champions, Europa e Conference League, promozione,
+ * spareggi e retrocessione.
+ */
+enum class StandingZone { CHAMPIONS, CHAMPIONS_QUALIFYING, EUROPA, CONFERENCE, PROMOTION, PROMOTION_PLAYOFF, RELEGATION_PLAYOFF, RELEGATION, OTHER }
+
+/** Che zona è [description] (la nota di ESPN); null se non c'è. */
+fun standingZoneOf(description: String): StandingZone? {
+    val text = description.lowercase()
+    return when {
+        text.isBlank() -> null
+        "relegat" in text && "playoff" in text -> StandingZone.RELEGATION_PLAYOFF
+        "relegat" in text || "eliminated" in text -> StandingZone.RELEGATION
+        "conference" in text -> StandingZone.CONFERENCE
+        "europa" in text -> StandingZone.EUROPA
+        "champions" in text && "qualif" in text -> StandingZone.CHAMPIONS_QUALIFYING
+        "champions" in text -> StandingZone.CHAMPIONS
+        "promotion" in text && "playoff" in text -> StandingZone.PROMOTION_PLAYOFF
+        "promotion" in text -> StandingZone.PROMOTION
+        else -> StandingZone.OTHER
+    }
+}
+
+/** Il nome della zona sopra le sue squadre, con le parole di Sofascore ("Relegation", "… Qualification"). */
+fun standingZoneLabel(description: String): String =
+    if (description.trim().equals("Relegated", ignoreCase = true)) "Relegation"
+    else description.trim().replace(Regex("\\bqualifying\\b", RegexOption.IGNORE_CASE), "Qualification")
+
+/** "#81D6AC" com'è, "##B5E7CE" (capita, in ESPN) senza il cancelletto in più; "" se non è un colore. */
+fun standingZoneColor(text: String?): String =
+    text?.trim()?.trimStart('#')?.takeIf { it.length == 6 && it.all { c -> c.isDigit() || c.lowercaseChar() in 'a'..'f' } }
+        ?.let { "#$it" }.orEmpty()
 
 /** Va riscaricata: non c'è, o è vecchia (più in fretta se c'è una partita in corso). */
 fun SportReport?.isStale(now: Long): Boolean = this == null || matchesStale(matches, fetchedAt, now)
@@ -609,11 +652,15 @@ fun parseStandings(json: String, sport: Sport): List<StandingGroup> = runCatchin
                 }.sortedWith(compareBy<Triple<Int, Double?, Map<String, JsonObject>>> { it.second ?: Double.MAX_VALUE }.thenBy { it.first })
                 val rows = ranked.mapIndexed { position, (i, _, s) ->
                     val team = entries[i].obj("team")
+                    // La zona: "note" della squadra (nel calcio; negli altri sport ESPN non la dà).
+                    val note = entries[i].obj("note")
                     StandingRow(
                         rank = position + 1,
                         team = team?.string("shortDisplayName") ?: team?.string("displayName") ?: "?",
                         values = columns.map { s[it]?.string("displayValue").orEmpty() },
-                        logo = team?.let { logoOf(it) }.orEmpty()
+                        logo = team?.let { logoOf(it) }.orEmpty(),
+                        zone = note?.string("description")?.trim().orEmpty(),
+                        zoneColor = standingZoneColor(note?.string("color"))
                     )
                 }
                 groups += StandingGroup(name = child.string("name").orEmpty(), columns = header, rows = rows)
