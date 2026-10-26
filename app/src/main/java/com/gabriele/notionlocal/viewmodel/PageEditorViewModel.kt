@@ -3548,7 +3548,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         if (newLines != linesBefore) lastTypedAt = System.currentTimeMillis()
         // Qui, subito, solo quello che serve ad Annulla e alla cronologia:
         // guardano la modifica così come l'ha fatta l'utente.
-        val shownRun = resolveRun(runBlockIds) ?: return
+        val shownRun = runOfField(runBlockIds, linesBefore) ?: resolveRun(runBlockIds) ?: return
         val shownOld = if (linesBefore != null && linesBefore.size == shownRun.size) {
             linesBefore
         } else {
@@ -3571,10 +3571,46 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
                 val fresh = repository.getBlocksOnce(pageId)
                 // La riga vuota di una pagina nuova non è ancora nel database.
                 val unsaved = placeholder?.takeIf { p -> p.pageId == pageId && fresh.none { it.id == p.id } }
-                val runBlocks = resolveRun(runBlockIds, fresh + listOfNotNull(unsaved)) ?: return@withLock
+                val all = fresh + listOfNotNull(unsaved)
+                val runBlocks = runOfField(runBlockIds, linesBefore, all) ?: resolveRun(runBlockIds, all) ?: return@withLock
                 writeRunChange(pageId, runBlocks, unsaved, newLines, linesBefore, caretLine, paste.copy(links = paste.links + links))
             }
         }
+    }
+
+    /**
+     * **Le righe del campo, quando i pezzi sono cambiati sotto di lui** (dal
+     * 26/10/2026, trovato dall'utente in "Fast notes": cambiando solo il corpo
+     * di "Anki field codes", 34 righe sotto erano ricomparse doppie, tutte
+     * come punti elenco). Le righe sullo schermo stanno in un campo solo
+     * (`keepVisibleTogether`) e, quando non si scrive, si ridividono in pezzi
+     * da 50 (`rechunk`): per un momento il campo ha ancora le righe di prima,
+     * mentre [resolveRun] guarda i confini di adesso e trova solo le prime 50.
+     * Le altre del campo sembravano scritte in quel momento, e diventavano
+     * righe nuove col tipo della cinquantesima ("English meaning", un punto
+     * elenco); o, col campo più corto del pezzo, sparivano.
+     *
+     * Allora, se le righe che il campo dice di avere ci sono ancora, una dopo
+     * l'altra e con lo stesso testo che aveva lui, il gruppo è il suo: campo e
+     * database parlano delle stesse righe. Altrimenti (Invio premuto prima
+     * che la schermata si aggiorni, una riga sparita) decide [resolveRun].
+     */
+    private fun runOfField(
+        runBlockIds: List<String>,
+        linesBefore: List<String>?,
+        all: List<BlockEntity> = _blocks.value
+    ): List<BlockEntity>? {
+        if (linesBefore == null || runBlockIds.isEmpty() || runBlockIds.size != linesBefore.size) return null
+        val byId = all.associateBy { it.id }
+        val blocks = runBlockIds.map { id -> byId[id] ?: return null }
+        val parentId = blocks.first().parentBlockId
+        if (blocks.any { it.parentBlockId != parentId || !isFlowingTextType(it.type) }) return null
+        val siblings = all.filter { it.parentBlockId == parentId }.sortedBy { it.orderIndex }
+        val first = siblings.indexOfFirst { it.id == runBlockIds.first() }
+        if (first < 0 || first + blocks.size > siblings.size) return null
+        if (siblings.subList(first, first + blocks.size).map { it.id } != runBlockIds) return null
+        if (blocks.map { plainTextOf(it) } != linesBefore) return null
+        return blocks
     }
 
     /**

@@ -137,6 +137,52 @@ class ChunkSelectionTest {
         assertTrue(runs().all { it.blocks.size <= PageEditorViewModel.CHUNK_MAX_LINES + onScreen.size })
     }
 
+    /** Il testo delle righe, nell'ordine della pagina. */
+    private fun pageTexts() = top().sortedBy { it.orderIndex }.map { viewModel.plainTextOf(it) }
+
+    private fun textsOf(ids: List<String>) = ids.map { id -> viewModel.plainTextOf(viewModel.blocks.value.first { it.id == id }) }
+
+    /**
+     * **Il campo rimasto con le righe di prima** (26/10/2026, trovato
+     * dall'utente in "Fast notes": cambiato il corpo di "Anki field codes",
+     * le righe sotto la cinquantesima erano ricomparse doppie, tutte come la
+     * cinquantesima). Le righe sullo schermo erano un campo solo; smesso di
+     * scrivere i pezzi tornano da 50, e per un momento il campo ha ancora le
+     * sue 100 righe.
+     */
+    @Test
+    fun aFieldLeftWithTheLinesOfBeforeDoesNotDuplicateThem() {
+        assertTrue(viewModel.joinChunkAfter(lines[49].id))
+        val fieldIds = lines.take(100).map { it.id }
+        val fieldLines = textsOf(fieldIds)
+        viewModel.setEditing(true)
+        viewModel.setEditing(false)
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(3))
+        assertEquals(listOf(50, 50, 20), runs().map { it.blocks.size })
+        // Il campo è ancora quello di prima: un tocco sposta solo il cursore...
+        viewModel.updateRun(fieldIds, fieldLines, fieldLines, caretLine = 2)
+        // ...e poi una lettera nella riga 60, che ora sta nel pezzo dopo.
+        val typed = fieldLines.toMutableList().also { it[60] = "riga 60!" }
+        viewModel.updateRun(fieldIds, typed, fieldLines, caretLine = 60)
+        waitFor("la lettera") { pageTexts().contains("riga 60!") }
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(1))
+        // Nessuna riga in più, e ognuna al suo posto.
+        assertEquals(lines.indices.map { if (it == 60) "riga 60!" else "riga $it" }, pageTexts())
+    }
+
+    /** Il contrario: il pezzo ha preso quello dopo, il campo ha ancora le sue 50 righe. */
+    @Test
+    fun aFieldShorterThanItsPieceDoesNotLoseTheOtherLines() {
+        val fieldIds = lines.take(50).map { it.id }
+        val fieldLines = textsOf(fieldIds)
+        assertTrue(viewModel.joinChunkAfter(lines[49].id))
+        val typed = fieldLines.toMutableList().also { it[10] = "riga 10!" }
+        viewModel.updateRun(fieldIds, typed, fieldLines, caretLine = 10)
+        waitFor("la lettera") { pageTexts().contains("riga 10!") }
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(1))
+        assertEquals(lines.indices.map { if (it == 10) "riga 10!" else "riga $it" }, pageTexts())
+    }
+
     @Test
     fun whenTheWritingIsOverThePiecesSplitAgain() {
         viewModel.setEditing(true)

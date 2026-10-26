@@ -2104,6 +2104,45 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🔧 v0.130.0.1 — 26/10/2026 · 23:35 — Le righe non si duplicano più quando la pagina ridivide i suoi pezzi
+*(Claude Code sul PC; sul telefono controllata "Fast notes" dopo aver tolto la seconda copia, la correzione provata coi test; 797 test passati)*
+
+L'utente, parola per parola:
+> «21 ottobre, poco prima delle 19:09: in Fast notes, nel database
+> Notebook, modificando solo il size font di Anki field codes mi ha creato
+> disordine nelle scritte sotto, mi ha creato dei punti della bulleted list
+> random senza che glielo chiedessi. Riesci a sistemarmelo questo
+> problema?»
+
+E dopo: «Sì: correggi il bug e togli la seconda copia della sezione Anki da
+Fast notes, tenendo quella che avevo già sistemato.»
+
+- **[Bug fix]** **[📱 Mobile]** **Righe doppie, tutte come punti elenco,
+  sotto la cinquantesima riga di una pagina.** Le righe sullo schermo stanno
+  in un campo solo e, quando non si scrive, la pagina le ridivide in pezzi
+  da 50: se in quel momento il campo riceveva un tocco o una modifica (come
+  il cambio di corpo di "Anki field codes"), le sue righe oltre la
+  cinquantesima sembravano appena scritte e diventavano righe nuove col tipo
+  della cinquantesima. In "Fast notes" la cinquantesima era "English
+  meaning", un punto elenco di secondo livello: 34 righe della sezione Anki
+  erano ricomparse lì sotto, tutte punti elenco, con le originali più giù. Al
+  contrario, un campo più corto del suo pezzo poteva far sparire le righe che
+  non aveva. Ora la modifica va alle righe che il campo ha davvero
+- **[Nota]** Dalle copie del database fatte sul PC: alle 20:01 del 20/10
+  la sezione Anki era in ordine, la notte dopo era già doppia (con le copie
+  delle 13:55 del 21/10 uguali). È successo quindi il 20/10 dopo le 20:01, non
+  il 21/10. La prima copia, quella sistemata dall'utente il 21/10, resta; la
+  seconda (60 righe, da `<h2 class="english">{{English meaning}}</h1>` al
+  secondo "Simplified radical", prima di "Creepy things") è stata tolta.
+  Fatto il 26/10 alle 23:33 sul telefono: "Fast notes" da 323 a 263 righe,
+  controllo del database ok, la copia di prima tenuta sul PC
+- **[Progetto]** `PageEditorViewModel.runOfField`: se le righe che il campo
+  manda a `updateRun` ci sono ancora, una dopo l'altra e con lo stesso testo
+  di prima, il gruppo è il loro e non quello che `resolveRun` ricostruisce coi
+  confini dei pezzi di adesso. Test: `ChunkSelectionTest` (+2: il campo
+  rimasto con 100 righe e quello rimasto con 50), che senza la correzione
+  falliscono tutti e due
+
 ### 🆕 v0.130 — 26/10/2026 · 17:44 — Più notifiche per una data, come su Google Calendar
 *(Claude Code sul PC; provata sul telefono aprendo la finestra della data e chiudendola senza salvare; 795 test passati)*
 
