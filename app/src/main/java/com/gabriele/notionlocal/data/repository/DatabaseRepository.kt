@@ -299,23 +299,25 @@ class DatabaseRepository(private val db: AppDatabase) {
     }
 
     /**
-     * **Una casella, e la riga principale che si spunta da sola** (dal
-     * 26/10/2026, chiesto dall'utente): spuntata l'ultima sotto-riga che
-     * mancava, si spunta anche la riga da cui sono nate, e così via verso
-     * l'alto se anche lei è una sotto-riga. Togliendo la spunta, la riga
-     * principale resta com'è. In una transazione: le righe si ridisegnano una
-     * volta sola, già al loro posto.
+     * **Una casella, e la riga principale che la segue** (dal 26/10/2026,
+     * chiesto dall'utente): la riga da cui sono nate le sotto-righe è
+     * spuntata solo quando lo sono tutte. Spuntata l'ultima che mancava, si
+     * spunta anche lei; tolta la spunta a una, si toglie anche a lei; e una
+     * spuntata a mano con sotto qualcosa ancora da fare si sistema appena se
+     * ne tocca una. Lo stesso verso l'alto, se anche lei è una sotto-riga. In
+     * una transazione: le righe si ridisegnano una volta sola, già al loro posto.
      */
     suspend fun setCheckbox(rowId: String, columnId: String, value: String) = db.withTransaction {
         setCellValue(rowId, columnId, value)
-        if (value != "true") return@withTransaction
         val seen = hashSetOf(rowId)
         var child = dao.getRowById(rowId)
         while (child != null) {
             val parentId = child.parentRowId?.takeIf { seen.add(it) } ?: break
-            val siblings = dao.getSubRows(parentId)
-            if (siblings.any { dao.getCell(it.id, columnId)?.value != "true" }) break
-            if (dao.getCell(parentId, columnId)?.value != "true") setCellValue(parentId, columnId, "true")
+            val allChecked = dao.getSubRows(parentId).all { dao.getCell(it.id, columnId)?.value == "true" }
+            val parentChecked = dao.getCell(parentId, columnId)?.value == "true"
+            // Già com'è giusto: sopra di lei non cambia niente.
+            if (allChecked == parentChecked) break
+            setCellValue(parentId, columnId, if (allChecked) "true" else "false")
             child = dao.getRowById(parentId)
         }
     }

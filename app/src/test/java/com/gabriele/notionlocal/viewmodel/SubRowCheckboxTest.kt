@@ -86,7 +86,9 @@ class SubRowCheckboxTest {
     private fun waitFor(what: String, condition: () -> Boolean) {
         val end = System.currentTimeMillis() + 5_000
         while (System.currentTimeMillis() < end) {
-            shadowOf(Looper.getMainLooper()).idle()
+            // Anche l'orologio dell'app va avanti: dopo una spunta le righe
+            // restano ferme un momento (`CHECKBOX_SETTLE_MS`) prima di spostarsi.
+            shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(10))
             if (condition()) return
             Thread.sleep(10)
         }
@@ -122,12 +124,37 @@ class SubRowCheckboxTest {
         waitFor("il blocco fra le spuntate") {
             shown() == listOf("Pasta", "Rosticceria", "  Patate al forno", "  Bocconcini di pollo", "Spazzolino")
         }
-        // Togliendo una spunta, la riga principale resta com'è.
+        // Togliendo una spunta si toglie anche alla riga principale (26/10/2026),
+        // e il blocco torna su con le cose da prendere.
         viewModel.setCellValue(pollo, checkbox, "false")
-        waitFor("pollo da prendere") { !checked(pollo) }
-        Thread.sleep(300)
-        shadowOf(Looper.getMainLooper()).idle()
+        waitFor("pollo da prendere, e la Rosticceria con lui") { !checked(pollo) && !checked(rosticceria) }
+        assertEquals(true, checked(patate))
+        waitFor("il blocco in alto") {
+            shown() == listOf("Pasta", "Rosticceria", "  Bocconcini di pollo", "  Patate al forno", "Spazzolino")
+        }
+    }
+
+    @Test
+    fun aMainRowCheckedByHandFollowsItsSubRowsAtTheFirstTouch() {
+        // Come "Rosticceria" in "Food": spuntata a mano, con sotto cose ancora da prendere.
         assertEquals(true, checked(rosticceria))
+        viewModel.setCellValue(patate, checkbox, "true")
+        waitFor("si toglie la spunta: il pollo manca ancora") { checked(patate) && !checked(rosticceria) }
+    }
+
+    @Test
+    fun uncheckingGoesUpThroughEveryLevel() = runBlocking<Unit> {
+        // Tutto preso: patate (con l'olio sotto), pollo e la Rosticceria.
+        val olio = DatabaseRowEntity(id = "olio", pageId = food.id, title = "Olio", orderIndex = 5, parentRowId = patate.id)
+        db.databaseDao().insertRow(olio)
+        listOf(olio, patate, pollo).forEach {
+            db.databaseDao().insertCell(DatabaseCellEntity(rowId = it.id, columnId = checkbox.id, value = "true"))
+        }
+        waitFor("tutto spuntato") { viewModel.tableState.value.rows.any { it.id == olio.id } && checked(olio) && checked(patate) && checked(pollo) }
+        // Tolto l'olio: niente più patate né Rosticceria; il pollo resta.
+        viewModel.setCellValue(olio, checkbox, "false")
+        waitFor("su fino in cima") { !checked(olio) && !checked(patate) && !checked(rosticceria) }
+        assertEquals(true, checked(pollo))
     }
 
     @Test

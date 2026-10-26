@@ -2104,6 +2104,24 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### ✏️ v0.128.2 — 26/10/2026 · 16:49 — La riga principale è spuntata solo quando lo sono tutte le sue sotto-righe
+*(Claude Code sul PC; provata coi test, sul telefono solo installata: le caselle di "Food" non le ho toccate; 777 test passati)*
+
+L'utente, parola per parola:
+> «Sì: se tolgo la spunta a una sotto-riga, toglila anche dalla riga
+> principale, così è spuntata solo quando lo sono tutte.»
+
+- **[Modifica]** **[📱 Mobile]** **Togliendo la spunta a una sotto-riga si
+  toglie anche alla riga principale**, e su fino in cima. Una riga
+  principale spuntata a mano con sotto qualcosa ancora da fare (come
+  "Rosticceria" in "Food") si sistema appena si tocca una delle sue
+  sotto-righe: resta spuntata solo se lo sono tutte
+- **[Progetto]** `DatabaseRepository.setCheckbox`: a ogni casella di una
+  sotto-riga, la riga principale prende "tutte spuntate sì/no", su finché
+  non c'è niente da cambiare. Test: `SubRowCheckboxTest` (6), che ora fa
+  andare avanti anche l'orologio dell'app (le righe restano ferme
+  `CHECKBOX_SETTLE_MS` dopo una spunta)
+
 ### ✏️ v0.128.1 — 26/10/2026 · 16:43 — Le sotto-righe: la riga principale si spunta da sola, e si ordinano a blocchi
 *(Claude Code sul PC; provata sul telefono su "Food", guardando l'ordine senza toccare le caselle; la spunta che risale provata coi test; 775 test passati)*
 
