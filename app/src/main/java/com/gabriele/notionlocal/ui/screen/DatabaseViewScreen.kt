@@ -2521,8 +2521,13 @@ private fun TableLayout(
             }
         }
 
-        val groups = buildRowGroups(state, groupColumn, hideEmptyGroups, dateBy = dateGroupings.table)
-        groups.forEach { group ->
+        // I primi gruppi e "Load more" (dal 26/10/2026): vedi `DATABASE_GROUP_LIMIT`.
+        val groupLimits = LocalRowLimits.current
+        val groupsKey = "table-groups:" + groupColumn.id
+        val shownGroups = groupLimits.limit(
+            groupsKey, buildRowGroups(state, groupColumn, hideEmptyGroups, dateBy = dateGroupings.table), DATABASE_GROUP_LIMIT
+        ) { it.key }
+        shownGroups.items.forEach { group ->
             val isCollapsed = collapsed[group.key] == true
             GroupHeaderRow(
                 group = group,
@@ -2536,7 +2541,11 @@ private fun TableLayout(
                 } else {
                     // **I sottogruppi**: dentro il gruppo, le sue righe
                     // divise secondo la seconda proprietà, un po' rientrate.
-                    buildRowGroups(state, subGroupColumn, hideEmptySubGroups, group.rows, dateBy = dateGroupings.tableSub).forEach { sub ->
+                    val subsKey = "table-subgroups:" + group.key
+                    val shownSubs = groupLimits.limit(
+                        subsKey, buildRowGroups(state, subGroupColumn, hideEmptySubGroups, group.rows, dateBy = dateGroupings.tableSub), DATABASE_GROUP_LIMIT
+                    ) { it.key }
+                    shownSubs.items.forEach { sub ->
                         val subKey = group.key + SUB_GROUP_KEY_SEPARATOR + sub.key
                         val subCollapsed = collapsed[subKey] == true
                         GroupHeaderRow(
@@ -2551,9 +2560,15 @@ private fun TableLayout(
                         }
                         Spacer(modifier = Modifier.size(8.dp))
                     }
+                    if (shownSubs.hidden > 0) {
+                        LoadMoreButton(shownSubs.hidden, onClick = { groupLimits?.more(subsKey, DATABASE_GROUP_LIMIT) })
+                    }
                 }
             }
             Spacer(modifier = Modifier.size(12.dp))
+        }
+        if (shownGroups.hidden > 0) {
+            LoadMoreButton(shownGroups.hidden, onClick = { groupLimits?.more(groupsKey, DATABASE_GROUP_LIMIT) })
         }
     }
     }
@@ -3444,9 +3459,23 @@ internal fun BoardLayout(
     val dateGroupings = LocalDateGroupings.current
     // Tutte le colonne dei tag, anche vuote, e sempre quella senza valore;
     // con "Hide empty groups" solo quelle con almeno una scheda.
-    val groups = buildRowGroups(
+    val allGroups = buildRowGroups(
         state, groupColumn, hideEmpty = hideEmptyGroups, keepEmptyNone = !hideEmptyGroups, dateBy = dateGroupings.board
     )
+    // Le prime colonne e "Load more" (dal 26/10/2026): vedi `DATABASE_GROUP_LIMIT`.
+    // Quella senza valore resta sempre, in fondo: è dove nasce una scheda nuova.
+    val limits = LocalRowLimits.current
+    val columnsKey = "board-columns:" + groupColumn.id
+    val shownColumns = limits.limit(columnsKey, allGroups.filter { it.key.isNotEmpty() }, DATABASE_GROUP_LIMIT) { it.key }
+    val groups = shownColumns.items + allGroups.filter { it.key.isEmpty() }
+    @Composable
+    fun moreColumns() {
+        if (shownColumns.hidden > 0) {
+            BoardColumnBox(null) {
+                LoadMoreButton(shownColumns.hidden, onClick = { limits?.more(columnsKey, DATABASE_GROUP_LIMIT) })
+            }
+        }
+    }
     val tagged = groupColumn.type == ColumnType.SELECT || groupColumn.type == ColumnType.MULTI_SELECT
     val onPage = MaterialTheme.colorScheme.onBackground
     // **"Color columns"** (dal 30/09/2026, sul modello di Notion che l'utente
@@ -3493,13 +3522,13 @@ internal fun BoardLayout(
                     )
                 }
             }
+            moreColumns()
         }
         return
     }
 
     val allSubGroups = buildRowGroups(state, subGroupColumn, hideEmptySubGroups, dateBy = dateGroupings.boardSub)
     // Le prime fasce e "Load more" (dal 21/10/2026), come le schede: vedi `BOARD_BAND_LIMIT`.
-    val limits = LocalRowLimits.current
     val bandsKey = "board-bands:" + subGroupColumn.id
     val shownBands = limits.limit(bandsKey, allSubGroups, BOARD_BAND_LIMIT) { it.key }
     val subGroups = shownBands.items
@@ -3514,6 +3543,7 @@ internal fun BoardLayout(
                     BoardColumnHeader(group, tagged, tint, accentOf(tint))
                 }
             }
+            moreColumns()
         }
         subGroups.forEach { sub ->
             val isCollapsed = collapsed[sub.key] == true

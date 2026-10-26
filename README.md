@@ -2104,6 +2104,42 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🔧 v0.128.0.1 — 26/10/2026 · 16:30 — L'app non si chiude più con una bacheca raggruppata per data giorno per giorno
+*(Claude Code sul PC; provata sul telefono sulla vista "Weekly" di "KPOP Music Shows", che la faceva chiudere, col database confrontato prima e dopo; 771 test passati)*
+
+L'utente, parola per parola:
+> «Forse devo aver modificato la vista del database board con delle
+> impostazioni di visualizzazione tali da far crashare l'app. È perché l'ho
+> fatto io, ma quando hai la possibilità cercare di sistemare al più presto
+> questi crash. Prima però finisci i quattro punti che ti ho chiesto
+> giovedì»
+
+- **[Bug fix]** **[📱 Mobile]** **L'app si chiudeva aprendo "KPOP"** (21 e
+  24/10, memoria esaurita): la vista "Weekly" di "KPOP Music Shows" aveva
+  "Group by" su "Win date", che senza "Date by" raggruppa giorno per giorno,
+  e la bacheca disegnava insieme una colonna per ogni giorno con una
+  vittoria, più di 4.000. Ora **le colonne della bacheca si vedono 12 alla
+  volta**, con "**Load more**" dopo l'ultima (sulla vista "Weekly": "Load
+  more 4256"); la colonna senza valore resta sempre, perché lì nascono le
+  schede nuove. Lo stesso per **i gruppi e i sottogruppi di una tabella
+  dentro una pagina**, che si disegnavano tutti insieme (a schermo intero
+  si disegnano già solo quelli sullo schermo). Non era un errore
+  dell'utente: la bacheca deve reggere qualunque raggruppamento
+- **[Nota]** Per installare questa versione l'app sul telefono è stata
+  **disinstallata e reinstallata coi dati rimessi dentro**: la chiave con
+  cui il PC firma l'app (`.android\debug.keystore`, usata anche per la
+  release) non c'era più, la cartella era stata svuotata fra il 21 e il
+  26/10, e il telefono rifiuta un aggiornamento firmato con un'altra
+  chiave. Prima: copia di tutti i dati dell'app sul PC (132 file, controllati
+  uno per uno con l'MD5, database integro), due copie dell'archivio; poi
+  disinstallazione, installazione con la chiave nuova, dati rimessi (di
+  nuovo 132 file uguali, stessi conteggi e stessa impronta di tutti i
+  blocchi). La password delle pagine bloccate è nelle impostazioni dell'app,
+  ed è tornata con loro
+- **[Progetto]** `DATABASE_GROUP_LIMIT` = 12 (`RowLimits.kt`). Test:
+  `BoardLayoutTest`, una bacheca con 30 giorni: 12 colonne, "Load more 18" e
+  quella senza data
+
 ### 🆕 v0.128 — 26/10/2026 · 16:14 — Il tipo dentro "Edit property", impostazioni più corte e "Hide empty groups" nella bacheca
 *(Claude Code sul PC; "Edit property" e le impostazioni provate sul telefono sul Pokédex; "Hide empty groups" provato coi test, sul telefono con la v0.128.0.1; 770 test passati)*
 

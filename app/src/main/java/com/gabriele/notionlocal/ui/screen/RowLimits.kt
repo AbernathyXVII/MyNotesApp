@@ -80,6 +80,15 @@ internal fun <T> RowLimits?.limit(key: String, items: List<T>, first: Int = DATA
  */
 internal const val BOARD_BAND_LIMIT = 12
 
+/**
+ * **I gruppi, 12 alla volta** (dal 26/10/2026): le colonne della bacheca e i
+ * gruppi e sottogruppi di una tabella dentro una pagina, che si disegnano
+ * tutti insieme. Raggruppando per una data giorno per giorno, le vittorie
+ * K-pop dell'utente facevano 4.000 colonne, e la memoria finiva: l'app si
+ * chiudeva aprendo la pagina. "Load more" ne aggiunge altri 12.
+ */
+internal const val DATABASE_GROUP_LIMIT = 12
+
 /** Null dove le righe si vedono tutte, senza limite. */
 internal val LocalRowLimits = staticCompositionLocalOf<RowLimits?> { null }
 

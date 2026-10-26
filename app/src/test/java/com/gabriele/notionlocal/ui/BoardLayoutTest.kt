@@ -184,4 +184,35 @@ class BoardLayoutTest {
         assertInColumn("Pasta", "Cibo")
         assertInColumn("Shampoo", "Casa")
     }
+
+    @Test
+    fun aBoardWithThousandsOfColumnsShowsTwelveAndLoadMore() {
+        // Raggruppata per una data giorno per giorno (26/10/2026): l'app si
+        // chiudeva per la memoria, con 4.000 colonne disegnate insieme.
+        val day = DatabaseColumnEntity(id = "day", pageId = "food", name = "Giorno", type = ColumnType.DATE, orderIndex = 0)
+        val rows = (0 until 30).map { DatabaseRowEntity(id = "r$it", pageId = "food", title = "Riga $it", orderIndex = it) } +
+            DatabaseRowEntity(id = "senza", pageId = "food", title = "Senza data", orderIndex = 30)
+        val cells = (0 until 30).associate { ("r$it" to "day") to java.time.LocalDate.of(2026, 1, 1).plusDays(it.toLong())
+            .atStartOfDay(AppSettings.zoneId).toInstant().toEpochMilli().toString() }
+        compose.setContent {
+            NotionLocalTheme {
+                androidx.compose.runtime.CompositionLocalProvider(com.gabriele.notionlocal.ui.screen.LocalRowLimits provides com.gabriele.notionlocal.ui.screen.RowLimits()) {
+                    BoardLayout(
+                        state = DatabaseTableState(columns = listOf(day), rows = rows, cellValues = cells),
+                        groupColumn = day,
+                        newRowTick = 0,
+                        onOpenRow = {},
+                        onRowLongPress = {},
+                        onAddRowInGroup = {},
+                        onAddGroupProperty = {}
+                    )
+                }
+            }
+        }
+        compose.waitForIdle()
+        assertEquals(12, (0 until 30).count { compose.onAllNodesWithText("Riga $it").fetchSemanticsNodes().isNotEmpty() })
+        // La colonna senza data resta, per le schede nuove; le altre 18 dietro "Load more".
+        assertEquals(1, compose.onAllNodesWithText("Senza data").fetchSemanticsNodes().size)
+        assertEquals(1, compose.onAllNodesWithText("18").fetchSemanticsNodes().size)
+    }
 }
