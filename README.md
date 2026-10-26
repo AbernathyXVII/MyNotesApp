@@ -2104,6 +2104,29 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.131 — 26/10/2026 · 23:43 — "Hide “New”" nella bacheca
+*(Claude Code sul PC; provata sul telefono su "KPOP Music Shows", dove è rimasta accesa; 800 test passati)*
+
+L'utente, parola per parola (con la foto della bacheca di "KPOP Music
+Shows", piena di "+ New"):
+> «Vedi in questa schermata? Tutte quelle finestre New mi danno parecchio
+> fastidio (non che sia colpa tua ovviamente). Mettimi un'opzione
+> nell'icona delle tre lineette orizzontali che mi consente di nascondere
+> tutti i New nella schermata Board»
+
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Hide “New”"** nelle
+  impostazioni della bacheca (le tre lineette), sotto "Hide empty groups":
+  acceso, sotto le schede di ogni colonna non c'è più "+ New", né nelle
+  colonne né nelle fasce, con o senza "Color columns". Nelle fasce una
+  colonna senza schede non lascia una striscia colorata vuota, solo il suo
+  posto. Vale per la vista in cui lo si accende, come le altre impostazioni
+  della bacheca; di suo è spento
+- **[Progetto]** `PageEntity.boardHideNew` (migrazione 61→62, spenta per
+  tutte le viste); in `BoardColumnCards` `onAdd` null vuol dire niente
+  "New", e nelle fasce la cella vuota resta senza colore. Test:
+  `BoardLayoutTest` (+2), `MigrationTest.from61EveryBoardStillShowsNew`
+  (schema `v61.sql`)
+
 ### 🔧 v0.130.0.1 — 26/10/2026 · 23:35 — Le righe non si duplicano più quando la pagina ridivide i suoi pezzi
 *(Claude Code sul PC; sul telefono controllata "Fast notes" dopo aver tolto la seconda copia, la correzione provata coi test; 797 test passati)*
 

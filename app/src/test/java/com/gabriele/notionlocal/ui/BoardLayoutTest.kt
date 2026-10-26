@@ -70,7 +70,14 @@ class BoardLayoutTest {
         AppSettings.init(ApplicationProvider.getApplicationContext())
     }
 
-    private fun show(group: DatabaseColumnEntity, sub: DatabaseColumnEntity? = null, hideEmptySubGroups: Boolean = true, hideEmptyGroups: Boolean = false) {
+    private fun show(
+        group: DatabaseColumnEntity,
+        sub: DatabaseColumnEntity? = null,
+        hideEmptySubGroups: Boolean = true,
+        hideEmptyGroups: Boolean = false,
+        hideNew: Boolean = false,
+        colorCards: Boolean = false
+    ) {
         compose.setContent {
             NotionLocalTheme {
                 BoardLayout(
@@ -79,6 +86,8 @@ class BoardLayoutTest {
                     subGroupColumn = sub,
                     hideEmptyGroups = hideEmptyGroups,
                     hideEmptySubGroups = hideEmptySubGroups,
+                    colorCards = colorCards,
+                    hideNew = hideNew,
                     newRowTick = 0,
                     onOpenRow = {},
                     onRowLongPress = {},
@@ -183,6 +192,26 @@ class BoardLayoutTest {
         assertEquals(0, compose.onAllNodesWithText("No Tipologia", substring = true, ignoreCase = true).fetchSemanticsNodes().size)
         assertInColumn("Pasta", "Cibo")
         assertInColumn("Shampoo", "Casa")
+    }
+
+    @Test
+    fun hideNewTakesAwayEveryNewInTheSubGroups() {
+        // "Hide New" (26/10/2026, chiesto dall'utente): nelle fasce, come in
+        // "KPOP Music Shows", e con le colonne colorate; le schede restano.
+        // Spento, i "New" ci sono come prima (vedi gli altri test).
+        show(shop, kind, hideNew = true, colorCards = true)
+        assertEquals(0, compose.onAllNodesWithText("New").fetchSemanticsNodes().size)
+        assertInColumn("Pasta", "IPERPOLI")
+        assertInColumn("Shampoo", "Lidl")
+    }
+
+    @Test
+    fun hideNewTakesAwayEveryNewWithoutSubGroups() {
+        // Senza fasce: niente "New", e la colonna senza valore resta.
+        show(shop, hideNew = true)
+        assertEquals(0, compose.onAllNodesWithText("New").fetchSemanticsNodes().size)
+        compose.onNodeWithText("No Supermercato").assertIsDisplayed()
+        assertInColumn("Pasta", "IPERPOLI")
     }
 
     @Test

@@ -684,6 +684,12 @@ object DbStrings {
     val propertyVisibility get() = t("Property visibility", "Visibilità delle proprietà", "Sichtbarkeit der Eigenschaften", "Visibilité des propriétés", "Visibilidad de propiedades", "属性可见性", "속성 표시", "プロパティの表示")
     val dateProperty get() = t("Date property", "Proprietà data", "Datumseigenschaft", "Propriété de date", "Propiedad de fecha", "日期属性", "날짜 속성", "日付プロパティ")
     val hideEmptyGroups get() = t("Hide empty groups", "Nascondi i gruppi vuoti", "Leere Gruppen ausblenden", "Masquer les groupes vides", "Ocultar grupos vacíos", "隐藏空分组", "빈 그룹 숨기기", "空のグループを非表示")
+
+    /** "Hide New" della bacheca (dal 26/10/2026), con la parola del pulsante com'è scritta sotto le schede. */
+    val hideNew: String get() {
+        val word = newShort
+        return t("Hide “$word”", "Nascondi “$word”", "„$word“ ausblenden", "Masquer « $word »", "Ocultar «$word»", "隐藏“$word”", "‘$word’ 숨기기", "「$word」を非表示")
+    }
     val allShown get() = t("All shown", "Tutte visibili", "Alle sichtbar", "Toutes affichées", "Todas visibles", "全部显示", "모두 표시", "すべて表示")
     fun nHidden(n: Int) = t("$n hidden", "$n nascoste", "$n ausgeblendet", "$n masquées", "$n ocultas", "已隐藏 $n 个", "${n}개 숨김", "${n}件非表示")
     val change get() = t("Change", "Cambia", "Ändern", "Changer", "Cambiar", "更改", "변경", "変更")

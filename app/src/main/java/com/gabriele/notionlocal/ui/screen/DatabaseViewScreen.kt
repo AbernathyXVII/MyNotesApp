@@ -1583,6 +1583,7 @@ private fun DatabaseViewBody(
                     hideEmptyGroups = page?.boardHideEmptyGroups == true,
                     hideEmptySubGroups = page?.boardHideEmptySubGroups != false,
                     colorCards = page?.colorBoardCards == true,
+                    hideNew = page?.boardHideNew == true,
                     newRowTick = newRowTick,
                     onOpenRow = openRow,
                     onRowLongPress = { row ->
@@ -1744,6 +1745,8 @@ private fun DatabaseViewBody(
             onSetBoardSubGroupColumn = { viewModel.setBoardSubGroupColumn(it) },
             boardHideEmptyGroups = page?.boardHideEmptyGroups == true,
             onSetBoardHideEmptyGroups = { viewModel.setBoardHideEmptyGroups(it) },
+            boardHideNew = page?.boardHideNew == true,
+            onSetBoardHideNew = { viewModel.setBoardHideNew(it) },
             boardHideEmptySubGroups = page?.boardHideEmptySubGroups != false,
             onSetBoardHideEmptySubGroups = { viewModel.setBoardHideEmptySubGroups(it) },
             dateGroupings = parseDateGroupings(page?.dateGroupingJson),
@@ -3436,6 +3439,8 @@ internal fun BoardLayout(
     hideEmptySubGroups: Boolean = true,
     /** "Color columns": ogni colonna, con le sue schede, del colore del suo tag. */
     colorCards: Boolean = false,
+    /** "Hide New" (dal 26/10/2026): niente "+ New" sotto le schede. */
+    hideNew: Boolean = false,
     newRowTick: Int,
     onOpenRow: (DatabaseRowEntity) -> Unit,
     onRowLongPress: (DatabaseRowEntity) -> Unit,
@@ -3518,7 +3523,7 @@ internal fun BoardLayout(
                         accent = accentOf(tint),
                         onOpenRow = onOpenRow,
                         onRowLongPress = onRowLongPress,
-                        onAdd = { onAddRowInGroup(group.key) }
+                        onAdd = { onAddRowInGroup(group.key) }.takeUnless { hideNew }
                     )
                 }
             }
@@ -3564,9 +3569,14 @@ internal fun BoardLayout(
                 Row(verticalAlignment = Alignment.Top) {
                     groups.forEach { group ->
                         val tint = tints[group.key]
-                        BoardColumnBox(tint, top = if (tint != null) 8.dp else 0.dp) {
+                        val cards = group.rows.filter { it.id in inSub }
+                        // Con "Hide New" una colonna senza schede nella fascia
+                        // non lascia una striscia colorata vuota: resta solo
+                        // il suo posto, così le altre restano in fila.
+                        val boxTint = tint.takeUnless { hideNew && cards.isEmpty() }
+                        BoardColumnBox(boxTint, top = if (boxTint != null) 8.dp else 0.dp) {
                             BoardColumnCards(
-                                rows = group.rows.filter { it.id in inSub },
+                                rows = cards,
                                 limitKey = "board:" + sub.key + SUB_GROUP_KEY_SEPARATOR + group.key,
                                 state = state,
                                 hiddenColumnIds = hidden,
@@ -3574,7 +3584,7 @@ internal fun BoardLayout(
                                 accent = accentOf(tint),
                                 onOpenRow = onOpenRow,
                                 onRowLongPress = onRowLongPress,
-                                onAdd = { onAddRowInSubGroup(group.key, sub.key) }
+                                onAdd = { onAddRowInSubGroup(group.key, sub.key) }.takeUnless { hideNew }
                             )
                         }
                     }
@@ -3645,7 +3655,10 @@ private fun BoardColumnHeader(group: RowGroup, tagged: Boolean, tint: Color?, ac
     }
 }
 
-/** Le schede di una colonna della bacheca (o della sua parte in una fascia) e "New" sotto. */
+/**
+ * Le schede di una colonna della bacheca (o della sua parte in una fascia) e
+ * "New" sotto; [onAdd] null, con "Hide New", senza.
+ */
 @Composable
 private fun BoardColumnCards(
     rows: List<DatabaseRowEntity>,
@@ -3657,7 +3670,7 @@ private fun BoardColumnCards(
     accent: Color?,
     onOpenRow: (DatabaseRowEntity) -> Unit,
     onRowLongPress: (DatabaseRowEntity) -> Unit,
-    onAdd: () -> Unit
+    onAdd: (() -> Unit)?
 ) {
     val pageBackground = MaterialTheme.colorScheme.background
     // **Le prime schede e "Load more"**, anche a pagina intera (dal
@@ -3678,7 +3691,10 @@ private fun BoardColumnCards(
     }
     if (shown.hidden > 0) LoadMoreButton(shown.hidden, onClick = { limits?.more(limitKey) })
 
-    if (tint != null && accent != null) {
+    if (onAdd == null) {
+        // "Hide New": niente. Una colonna senza schede resta larga com'è
+        // (`BoardColumnBox`), così quelle accanto restano in fila.
+    } else if (tint != null && accent != null) {
         // Come su Notion: "New" largo quanto la colonna, col
         // bordo e la scritta del colore del tag.
         Row(
@@ -9931,6 +9947,9 @@ private fun SettingsSheet(
     /** "Hide empty groups" della bacheca (dal 21/10/2026). */
     boardHideEmptyGroups: Boolean = false,
     onSetBoardHideEmptyGroups: ((Boolean) -> Unit)? = null,
+    /** "Hide New" della bacheca (dal 26/10/2026). */
+    boardHideNew: Boolean = false,
+    onSetBoardHideNew: ((Boolean) -> Unit)? = null,
     boardHideEmptySubGroups: Boolean = true,
     onSetBoardHideEmptySubGroups: ((Boolean) -> Unit)? = null,
     /** "Date by" dei quattro raggruppamenti (dal 21/10/2026), per quelli per data. */
@@ -10101,6 +10120,19 @@ private fun SettingsSheet(
                                     checked = boardHideEmptyGroups,
                                     enabled = !viewLocked,
                                     onCheckedChange = onSetBoardHideEmptyGroups
+                                )
+                            }
+                            // **"Hide New"** (dal 26/10/2026, chiesto dall'utente:
+                            // "tutte quelle finestre New mi danno parecchio
+                            // fastidio"): niente "+ New" sotto le schede.
+                            if (groupColumn != null && onSetBoardHideNew != null) {
+                                HorizontalDivider()
+                                SettingsToggleRow(
+                                    icon = Icons.Filled.Add,
+                                    label = DbStrings.hideNew,
+                                    checked = boardHideNew,
+                                    enabled = !viewLocked,
+                                    onCheckedChange = onSetBoardHideNew
                                 )
                             }
                             // **"Sub groups"** anche qui (dal 14/10/2026, chiesto

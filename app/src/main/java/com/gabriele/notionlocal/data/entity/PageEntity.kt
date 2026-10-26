@@ -322,6 +322,11 @@ data class PageEntity(
     // valore ("No Music show"), non si vedono. Di suo spento: la bacheca le
     // mostra tutte, com'era.
     var boardHideEmptyGroups: Boolean = false,
+    // **"Hide New" della bacheca** (dal 26/10/2026, chiesto dall'utente: "tutte
+    // quelle finestre New mi danno parecchio fastidio"): sotto le schede di
+    // ogni colonna, e di ogni colonna nelle fasce, niente "+ New". Di suo
+    // spento, come prima.
+    var boardHideNew: Boolean = false,
     // **"Date by"** (dal 21/10/2026): raggruppando per una data, gruppi per
     // giorno, settimana, mese o anno, dal più vecchio o dal più recente, per
     // ognuno dei quattro raggruppamenti della vista. Null = per giorno, dal

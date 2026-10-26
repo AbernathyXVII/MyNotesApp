@@ -60,7 +60,7 @@ import kotlinx.serialization.json.Json
         NotebookSectionEntity::class,
         PersonalWordEntity::class
     ],
-    version = 61,
+    version = 62,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -802,6 +802,13 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** "Hide New" della bacheca (26/10/2026): spento, i "+ New" si vedono come prima. */
+        private val MIGRATION_61_62 = object : Migration(61, 62) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE pages ADD COLUMN boardHideNew INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         /** "Hide empty groups" della bacheca (21/10/2026): spento, le colonne vuote si vedono come prima. */
         private val MIGRATION_60_61 = object : Migration(60, 61) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -947,7 +954,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_57_58,
                         MIGRATION_58_59,
                         MIGRATION_59_60,
-                        MIGRATION_60_61
+                        MIGRATION_60_61,
+                        MIGRATION_61_62
                     )
                     .build()
                 INSTANCE = instance

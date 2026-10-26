@@ -1370,6 +1370,14 @@ class DatabaseViewModel(
         viewModelScope.launch { pageRepository.updatePage(updated) }
     }
 
+    /** "Hide New" della bacheca (dal 26/10/2026): niente "+ New" sotto le schede. */
+    fun setBoardHideNew(hide: Boolean) {
+        val current = _page.value ?: return
+        val updated = current.copy(boardHideNew = hide)
+        _page.value = updated
+        viewModelScope.launch { pageRepository.updatePage(updated) }
+    }
+
     fun setBoardHideEmptySubGroups(hide: Boolean) {
         val current = _page.value ?: return
         val updated = current.copy(boardHideEmptySubGroups = hide)
