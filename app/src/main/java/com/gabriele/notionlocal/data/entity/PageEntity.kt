@@ -317,6 +317,11 @@ data class PageEntity(
     // Se le fasce senza nemmeno una pagina si nascondono, come
     // `hideEmptySubGroups` per la tabella.
     var boardHideEmptySubGroups: Boolean = true,
+    // **"Hide empty groups" della bacheca** (dal 21/10/2026, chiesto
+    // dall'utente): le colonne senza nemmeno una scheda, anche quella senza
+    // valore ("No Music show"), non si vedono. Di suo spento: la bacheca le
+    // mostra tutte, com'era.
+    var boardHideEmptyGroups: Boolean = false,
     // **"Date by"** (dal 21/10/2026): raggruppando per una data, gruppi per
     // giorno, settimana, mese o anno, dal più vecchio o dal più recente, per
     // ognuno dei quattro raggruppamenti della vista. Null = per giorno, dal

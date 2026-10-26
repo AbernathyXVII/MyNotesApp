@@ -1358,6 +1358,14 @@ class DatabaseViewModel(
     }
 
     /** Se le fasce della bacheca senza nemmeno una pagina si nascondono. */
+    /** "Hide empty groups" della bacheca (dal 21/10/2026): le colonne senza schede si nascondono. */
+    fun setBoardHideEmptyGroups(hide: Boolean) {
+        val current = _page.value ?: return
+        val updated = current.copy(boardHideEmptyGroups = hide)
+        _page.value = updated
+        viewModelScope.launch { pageRepository.updatePage(updated) }
+    }
+
     fun setBoardHideEmptySubGroups(hide: Boolean) {
         val current = _page.value ?: return
         val updated = current.copy(boardHideEmptySubGroups = hide)

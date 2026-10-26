@@ -533,7 +533,7 @@ private sealed class PropertyTarget {
      * del tipo; altrimenti "Edit property": il nome e, per i numeri, formato,
      * cifre e "Show as".
      */
-    data class Existing(val column: DatabaseColumnEntity, val changeType: Boolean = false) : PropertyTarget()
+    data class Existing(val column: DatabaseColumnEntity) : PropertyTarget()
 }
 
 /** Di quale colonna si sceglie il calcolo: `key` è l'id, o `NAME_CALCULATION_KEY`; `type` null = il nome. */
@@ -1511,10 +1511,6 @@ private fun DatabaseViewBody(
                     },
                     onTitleChange = { row, title -> viewModel.updateRowTitle(row, title) },
                     onTitleEditing = { editing -> if (editing) viewModel.startTitleEdit() else viewModel.endTitleEdit() },
-                    onChangeTypeProperty = {
-                        focusManager.clearFocus()
-                        propertyTarget = PropertyTarget.Existing(it, changeType = true)
-                    },
                     calculations = calculations,
                     onCalculate = {
                         focusManager.clearFocus()
@@ -1584,6 +1580,7 @@ private fun DatabaseViewBody(
                     state = state,
                     groupColumn = viewModel.boardGroupColumn(),
                     subGroupColumn = viewModel.boardSubGroupColumn(),
+                    hideEmptyGroups = page?.boardHideEmptyGroups == true,
                     hideEmptySubGroups = page?.boardHideEmptySubGroups != false,
                     colorCards = page?.colorBoardCards == true,
                     newRowTick = newRowTick,
@@ -1718,7 +1715,10 @@ private fun DatabaseViewBody(
     if (showSettings) {
         SettingsSheet(
             hasIcon = dataPage?.hasChosenIcon == true,
-            onEditIcon = if (contentLocked) {
+            // Dentro una pagina l'icona sta nei sei puntini ("Edit icon"): qui
+            // c'è solo a schermo intero, dove i sei puntini non ci sono (dal
+            // 21/10/2026, chiesto dall'utente).
+            onEditIcon = if (contentLocked || onOpenBlockMenu != null) {
                 null
             } else {
                 {
@@ -1742,6 +1742,8 @@ private fun DatabaseViewBody(
             onSetHideEmptySubGroups = { viewModel.setHideEmptySubGroups(it) },
             boardSubGroupColumn = viewModel.boardSubGroupColumn(),
             onSetBoardSubGroupColumn = { viewModel.setBoardSubGroupColumn(it) },
+            boardHideEmptyGroups = page?.boardHideEmptyGroups == true,
+            onSetBoardHideEmptyGroups = { viewModel.setBoardHideEmptyGroups(it) },
             boardHideEmptySubGroups = page?.boardHideEmptySubGroups != false,
             onSetBoardHideEmptySubGroups = { viewModel.setBoardHideEmptySubGroups(it) },
             dateGroupings = parseDateGroupings(page?.dateGroupingJson),
@@ -1802,24 +1804,7 @@ private fun DatabaseViewBody(
                 null
             },
             showTitle = hostPage?.showEmbeddedTitle != false,
-            isFavorite = hostPage?.isFavorite == true,
-            onSetFavorite = { hostViewModel.setFavorite(it) },
-            viewLocked = viewLocked,
-            onTurnIntoPage = onTurnIntoPage?.let {
-                {
-                    showSettings = false
-                    it()
-                }
-            },
-            // Cancellare stava nei tre puntini accanto al titolo: due
-            // menu diversi per le cose di uno stesso database erano un
-            // posto in più dove cercare.
-            onDelete = onDelete?.let {
-                {
-                    showSettings = false
-                    it()
-                }
-            }
+            viewLocked = viewLocked
         )
     }
 
@@ -2131,7 +2116,6 @@ private fun TableLayout(
     onAddRowInSubGroup: (String, String) -> Unit = { _, _ -> },
     /** Si scrive il nome di una riga (true) o si è finito (false): l'ordine resta fermo intanto. */
     onTitleEditing: (Boolean) -> Unit = {},
-    onChangeTypeProperty: (DatabaseColumnEntity) -> Unit = {},
     /** I calcoli di questa vista, per colonna (vedi `CalculationFooter`). */
     calculations: Map<String, Calculation> = emptyMap(),
     onCalculate: (CalculateTarget) -> Unit = {},
@@ -2253,7 +2237,6 @@ private fun TableLayout(
                 onHideProperty = onHideProperty,
                 onToggleCenterProperty = onToggleCenterProperty,
                 onAddProperty = onAddProperty,
-                onChangeTypeProperty = onChangeTypeProperty,
                 onCalculate = onCalculate,
                 onSetAllChecked = onSetAllChecked,
                 fitColumns = fitColumns,
@@ -2410,7 +2393,6 @@ private fun TableLayout(
                 onHideProperty = onHideProperty,
                 onToggleCenterProperty = onToggleCenterProperty,
                 onAddProperty = onAddProperty,
-                onChangeTypeProperty = onChangeTypeProperty,
                 onCalculate = onCalculate,
                 onSetAllChecked = onSetAllChecked,
                 fitColumns = fitColumns,
@@ -2476,7 +2458,6 @@ private fun TableLayout(
                 onHideProperty = onHideProperty,
                 onToggleCenterProperty = onToggleCenterProperty,
                 onAddProperty = onAddProperty,
-                onChangeTypeProperty = onChangeTypeProperty,
                 onCalculate = onCalculate,
                 onSetAllChecked = onSetAllChecked,
                 fitColumns = fitColumns,
@@ -2833,7 +2814,6 @@ private fun TableHeaderRow(
     onHideProperty: (DatabaseColumnEntity) -> Unit,
     onToggleCenterProperty: (DatabaseColumnEntity, CellAlignment) -> Unit,
     onAddProperty: () -> Unit,
-    onChangeTypeProperty: (DatabaseColumnEntity) -> Unit = {},
     onCalculate: (CalculateTarget) -> Unit = {},
     onSetAllChecked: (DatabaseColumnEntity, Boolean) -> Unit = { _, _ -> },
     fitColumns: Set<String> = emptySet(),
@@ -2878,7 +2858,6 @@ private fun TableHeaderRow(
                 onMove = { delta -> onMoveProperty(column, delta) },
                 onHide = { onHideProperty(column) },
                 onAlign = { alignment -> onToggleCenterProperty(column, alignment) },
-                onChangeType = { onChangeTypeProperty(column) },
                 onCalculate = { onCalculate(CalculateTarget(column.id, column.type, DbStrings.columnName(column.name))) },
                 onSetAllChecked = { checked -> onSetAllChecked(column, checked) },
                 canResize = !viewLocked,
@@ -3437,6 +3416,8 @@ internal fun BoardLayout(
     groupColumn: DatabaseColumnEntity?,
     /** La proprietà delle fasce, o null per la bacheca di sempre. */
     subGroupColumn: DatabaseColumnEntity? = null,
+    /** "Hide empty groups" (dal 21/10/2026): niente colonne senza schede, nemmeno quella senza valore. */
+    hideEmptyGroups: Boolean = false,
     hideEmptySubGroups: Boolean = true,
     /** "Color columns": ogni colonna, con le sue schede, del colore del suo tag. */
     colorCards: Boolean = false,
@@ -3461,8 +3442,11 @@ internal fun BoardLayout(
     }
 
     val dateGroupings = LocalDateGroupings.current
-    // Tutte le colonne dei tag, anche vuote, e sempre quella senza valore.
-    val groups = buildRowGroups(state, groupColumn, hideEmpty = false, keepEmptyNone = true, dateBy = dateGroupings.board)
+    // Tutte le colonne dei tag, anche vuote, e sempre quella senza valore;
+    // con "Hide empty groups" solo quelle con almeno una scheda.
+    val groups = buildRowGroups(
+        state, groupColumn, hideEmpty = hideEmptyGroups, keepEmptyNone = !hideEmptyGroups, dateBy = dateGroupings.board
+    )
     val tagged = groupColumn.type == ColumnType.SELECT || groupColumn.type == ColumnType.MULTI_SELECT
     val onPage = MaterialTheme.colorScheme.onBackground
     // **"Color columns"** (dal 30/09/2026, sul modello di Notion che l'utente
@@ -6729,7 +6713,6 @@ private fun PropertyHeaderCell(
     onMove: (Int) -> Unit,
     onHide: () -> Unit,
     onAlign: (CellAlignment) -> Unit,
-    onChangeType: () -> Unit = {},
     onCalculate: () -> Unit = {},
     /** Solo per le caselle: "Activate all" (true) e "Deactivate all" (false). */
     onSetAllChecked: (Boolean) -> Unit = {},
@@ -6816,18 +6799,8 @@ private fun PropertyHeaderCell(
                     onEdit()
                 }
             )
-            // Il tipo si cambia da qui (dal 26/09/2026): "Edit property" ha le
-            // impostazioni della proprietà, come su Notion.
-            DropdownMenuItem(
-                text = { Text(DbStrings.changeType) },
-                leadingIcon = {
-                    Icon(Icons.Filled.SwapHoriz, contentDescription = null)
-                },
-                onClick = {
-                    menuOpen = false
-                    onChangeType()
-                }
-            )
+            // "Change type" non c'è più (dal 21/10/2026, chiesto dall'utente):
+            // il tipo si cambia dentro "Edit property", sotto il nome.
             // **Solo per le caselle** (dal 29/09/2026, chiesto dall'utente):
             // spuntarle o toglierle tutte in un colpo, sulle righe che si
             // vedono. Con il database bloccato restano grigie, come le celle.
@@ -9910,6 +9883,9 @@ private fun SettingsSheet(
     /** Le fasce della bacheca (dal 14/10/2026): la proprietà scelta, e come cambiarla. */
     boardSubGroupColumn: DatabaseColumnEntity? = null,
     onSetBoardSubGroupColumn: ((String?) -> Unit)? = null,
+    /** "Hide empty groups" della bacheca (dal 21/10/2026). */
+    boardHideEmptyGroups: Boolean = false,
+    onSetBoardHideEmptyGroups: ((Boolean) -> Unit)? = null,
     boardHideEmptySubGroups: Boolean = true,
     onSetBoardHideEmptySubGroups: ((Boolean) -> Unit)? = null,
     /** "Date by" dei quattro raggruppamenti (dal 21/10/2026), per quelli per data. */
@@ -9950,8 +9926,6 @@ private fun SettingsSheet(
     /** Null quando il database è a schermo intero: lì il titolo c'è sempre. */
     onSetShowTitle: ((Boolean) -> Unit)? = null,
     showTitle: Boolean = true,
-    isFavorite: Boolean = false,
-    onSetFavorite: ((Boolean) -> Unit)? = null,
     /**
      * Vista bloccata ("Lock view"): le voci che cambiano
      * l'impaginazione si vedono ma non rispondono. Cancellare invece
@@ -9961,12 +9935,7 @@ private fun SettingsSheet(
      * sarebbe una trappola.
      */
     viewLocked: Boolean = false,
-    /**
-     * Null a schermo intero: "Turn into page" riguarda il database
-     * **dentro una pagina**, e aperto da solo è già una pagina.
-     */
-    onTurnIntoPage: (() -> Unit)? = null,
-    onDelete: (() -> Unit)? = null,
+
     /** La vista Chart: le sue impostazioni, e la finestrella dei tipi. */
     chartSettings: ChartSettings = ChartSettings(),
     onSetChartSettings: (ChartSettings) -> Unit = {},
@@ -10076,6 +10045,19 @@ private fun SettingsSheet(
                                 value = groupColumn?.name?.let(DbStrings::columnName) ?: DbStrings.none,
                                 onClick = { page = SettingsPage.GROUP_BY }
                             )
+                            // **"Hide empty groups"** anche nella bacheca (dal
+                            // 21/10/2026, chiesto dall'utente): le colonne senza
+                            // schede, anche quella senza valore, si nascondono.
+                            if (groupColumn != null && onSetBoardHideEmptyGroups != null) {
+                                HorizontalDivider()
+                                SettingsToggleRow(
+                                    icon = Icons.Filled.VisibilityOff,
+                                    label = DbStrings.hideEmptyGroups,
+                                    checked = boardHideEmptyGroups,
+                                    enabled = !viewLocked,
+                                    onCheckedChange = onSetBoardHideEmptyGroups
+                                )
+                            }
                             // **"Sub groups"** anche qui (dal 14/10/2026, chiesto
                             // dall'utente): le fasce orizzontali, come su Notion.
                             if (groupColumn != null && onSetBoardSubGroupColumn != null) {
@@ -10250,34 +10232,20 @@ private fun SettingsSheet(
                                 .let { if (it == 0) DbStrings.allShown else DbStrings.nHidden(it) },
                             onClick = { page = SettingsPage.PROPERTY_VISIBILITY }
                         )
-                        // **L'icona del database.** Sta qui perché un
-                        // database senza icona non ha niente da toccare
+                        // **L'icona del database**, solo a schermo intero (dal
+                        // 21/10/2026): dentro una pagina sta nei sei puntini.
+                        // Un database senza icona non ha niente da toccare
                         // accanto al nome: questa voce è il modo di
-                        // mettergliene una. Quando c'è, si cambia e si
-                        // toglie anche toccandola direttamente.
-                        HorizontalDivider()
-                        SettingsRow(
-                            icon = Icons.Filled.Image,
-                            label = EditorStrings.icon,
-                            value = if (hasIcon) DbStrings.change else DbStrings.none,
-                            onClick = onEditIcon ?: {},
-                            enabled = onEditIcon != null
-                        )
-                        // I preferiti stanno qui e non fra le icone
-                        // della barra: questa finestra è l'unico posto
-                        // che si raggiunge sia col database dentro una
-                        // pagina sia aperto a schermo intero, quindi è
-                        // anche l'unico dove l'interruttore non va
-                        // messo due volte. Per le pagine normali invece
-                        // è una stellina nella barra in alto: lì di
-                        // impostazioni non ce n'è nessun'altra.
-                        if (onSetFavorite != null) {
+                        // mettergliene una. "Favorite", "Turn into page" e
+                        // "Delete" non ci sono più: stanno nei sei puntini e,
+                        // a schermo intero, nei tre puntini in alto.
+                        if (onEditIcon != null) {
                             HorizontalDivider()
-                            SettingsToggleRow(
-                                icon = if (isFavorite) Icons.Filled.Star else Icons.Filled.StarBorder,
-                                label = Strings.favorite,
-                                checked = isFavorite,
-                                onCheckedChange = onSetFavorite
+                            SettingsRow(
+                                icon = Icons.Filled.Image,
+                                label = EditorStrings.icon,
+                                value = if (hasIcon) DbStrings.change else DbStrings.none,
+                                onClick = onEditIcon
                             )
                         }
                         // Solo dentro una pagina: a schermo intero il
@@ -10307,40 +10275,6 @@ private fun SettingsSheet(
                         )
                     }
 
-                    // Cancellare è una cosa che si fa al database
-                    // intero, non a una delle sue parti: sta in un
-                    // gruppo a sé, staccato dalle impostazioni della
-                    // vista. Aprire a schermo intero invece è
-                    // diventata un'icona nella barra, perché è una
-                    // cosa che si fa spesso e di fretta.
-                    //
-                    // "Turn into page" sta nello stesso gruppo per la
-                    // stessa ragione: cambia **dove vive** il database,
-                    // non come è impaginato. Non tocca righe né colonne,
-                    // quindi non è rossa come Delete.
-                    if (onTurnIntoPage != null || onDelete != null) {
-                        Spacer(modifier = Modifier.size(12.dp))
-                        SheetGroup {
-                            if (onTurnIntoPage != null) {
-                                SettingsRow(
-                                    icon = Icons.Filled.Description,
-                                    label = Strings.turnIntoPage,
-                                    value = "",
-                                    onClick = onTurnIntoPage
-                                )
-                            }
-                            if (onTurnIntoPage != null && onDelete != null) HorizontalDivider()
-                            if (onDelete != null) {
-                                SettingsRow(
-                                    icon = Icons.Filled.Delete,
-                                    label = Strings.delete,
-                                    value = "",
-                                    onClick = onDelete,
-                                    danger = true
-                                )
-                            }
-                        }
-                    }
                 }
 
                 SettingsPage.CHART -> ChartSettingsDetail(
@@ -10864,11 +10798,10 @@ private fun PropertySheet(
     onDelete: () -> Unit
 ) {
     val existing = (target as? PropertyTarget.Existing)?.column
-    // **"Change type" e "Edit property" separati** (dal 26/09/2026, chiesto
-    // dall'utente): il tipo si cambia dalla sua voce; "Edit property" ha il
-    // nome e, per una colonna Number, formato, cifre decimali e "Show as".
-    val changeTypeOnly = (target as? PropertyTarget.Existing)?.changeType == true
-    val showTypes = existing == null || changeTypeOnly
+    // **Tutto in "Edit property"** (dal 21/10/2026, chiesto dall'utente): il
+    // nome, sotto tutti i tipi, e sotto il tipo scelto le sue impostazioni
+    // (Number, Duration, Relation, Rollup). Dal 26/09/2026 il tipo si cambiava
+    // da una voce a sé, "Change type", che non c'è più.
     var number by remember(existing?.id) { mutableStateOf(existing?.numberSettings() ?: NumberSettings()) }
     var duration by remember(existing?.id) { mutableStateOf(durationFormatOf(existing?.durationFormat)) }
 
@@ -10877,6 +10810,9 @@ private fun PropertySheet(
         mutableStateOf(existing?.type ?: (target as? PropertyTarget.New)?.initialType ?: ColumnType.TEXT)
     }
     var typeQuery by remember(existing?.id) { mutableStateOf("") }
+    val typeOrder = remember(existing?.id) {
+        existing?.type?.let { current -> listOf(current) + ColumnType.entries.filter { it != current } } ?: ColumnType.entries
+    }
     // I tag esistenti si portano dietro etichette e colori, e da qui non
     // si toccano: si salvano così come sono.
     val optionsJson = existing?.optionsJson ?: "[]"
@@ -10957,11 +10893,7 @@ private fun PropertySheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = when {
-                        existing == null -> DbStrings.newProperty
-                        changeTypeOnly -> DbStrings.changeType
-                        else -> DbStrings.editProperty
-                    },
+                    text = if (existing == null) DbStrings.newProperty else DbStrings.editProperty,
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f),
                     fontWeight = FontWeight.Bold
@@ -10993,36 +10925,12 @@ private fun PropertySheet(
         ) {
             Spacer(modifier = Modifier.size(16.dp))
 
-            if (!changeTypeOnly) {
-                SheetTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    placeholder = DbStrings.propertyName,
-                    leading = Icons.Filled.Notes
-                )
-            }
-
-            // "Edit property" di una colonna Number: formato, cifre, "Show as".
-            if (!showTypes && existing?.type == ColumnType.NUMBER) {
-                Spacer(modifier = Modifier.size(12.dp))
-                NumberSettingsSection(settings = number, onChange = { number = it })
-            }
-
-            // "Edit property" di una colonna Date non ha più niente in più: Date
-            // format e Time format sono in Settings, per tutta l'app (dal 16/10/2026).
-
-            // "Edit property" di una colonna Duration: fino a quale unità si scrive.
-            if (!showTypes && existing?.type == ColumnType.DURATION) {
-                Spacer(modifier = Modifier.size(12.dp))
-                DurationSettingsSection(format = duration, onChange = { duration = it })
-            }
-
-            // "Edit property" di una Relation o di un Rollup: le loro scelte.
-            if (!showTypes && (existing?.type == ColumnType.RELATION || existing?.type == ColumnType.ROLLUP)) {
-                linkSettings()
-            }
-
-            if (showTypes) {
+            SheetTextField(
+                value = name,
+                onValueChange = { name = it },
+                placeholder = DbStrings.propertyName,
+                leading = Icons.Filled.Notes
+            )
 
             // Qui non si scrivono le opzioni di un tag. Prima c'era un
             // campo per elencarle separate da virgola, ed era una
@@ -11047,7 +10955,10 @@ private fun PropertySheet(
             )
             Spacer(modifier = Modifier.size(8.dp))
 
-            ColumnType.entries
+            // Per una proprietà che c'è già, il suo tipo in cima, con le sue
+            // impostazioni: senza scorrere si vede com'è adesso. Gli altri dopo,
+            // nell'ordine di sempre, che non cambia scegliendone un altro.
+            typeOrder
                 .filter { it.displayName().contains(typeQuery, ignoreCase = true) }
                 .forEach { type ->
                     Row(
@@ -11073,20 +10984,27 @@ private fun PropertySheet(
                             )
                         }
                     }
-                    // Scelta una Relation o un Rollup, le loro domande subito sotto,
-                    // dove si sta guardando.
+                    // Sotto il tipo scelto, le sue impostazioni, dove si sta guardando:
+                    // Number (formato, cifre, "Show as"), Duration (fino a quale
+                    // unità), Relation e Rollup. Date non ne ha più: Date format e
+                    // Time format sono in Settings, per tutta l'app (dal 16/10/2026).
                     if (type == selectedType) {
-                        Column(modifier = Modifier.padding(start = 32.dp, bottom = 8.dp)) { linkSettings() }
+                        Column(modifier = Modifier.padding(start = 32.dp, bottom = 8.dp)) {
+                            when (type) {
+                                ColumnType.NUMBER -> NumberSettingsSection(settings = number, onChange = { number = it })
+                                ColumnType.DURATION -> DurationSettingsSection(format = duration, onChange = { duration = it })
+                                else -> linkSettings()
+                            }
+                        }
                     }
                 }
-            }
 
             // Qui non si sposta la colonna: "Move to left" e "Move to
             // right" stanno in cima al menu che si apre tenendo premuta
             // l'intestazione, e averle in due posti voleva dire due
             // versioni della stessa cosa (in questa finestra, per di
             // più, comparivano e sparivano a seconda della colonna).
-            if (existing != null && !changeTypeOnly) {
+            if (existing != null) {
                 Spacer(modifier = Modifier.size(20.dp))
                 HorizontalDivider()
                 SheetAction(Icons.Filled.Delete, DbStrings.deleteProperty, isDestructive = true) {

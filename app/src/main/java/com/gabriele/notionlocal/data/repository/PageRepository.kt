@@ -2443,6 +2443,7 @@ class PageRepository(private val db: AppDatabase) {
                 colorBoardCards = next.colorBoardCards,
                 boardSubGroupColumnId = next.boardSubGroupColumnId,
                 boardHideEmptySubGroups = next.boardHideEmptySubGroups,
+                boardHideEmptyGroups = next.boardHideEmptyGroups,
                 // "Date by" (dal 21/10/2026): settimane, mesi o anni della vista dopo.
                 dateGroupingJson = next.dateGroupingJson,
                 calendarDateColumnId = next.calendarDateColumnId,

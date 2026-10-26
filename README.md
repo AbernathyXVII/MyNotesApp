@@ -2104,6 +2104,60 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.128 — 26/10/2026 · 16:14 — Il tipo dentro "Edit property", impostazioni più corte e "Hide empty groups" nella bacheca
+*(Claude Code sul PC; "Edit property" e le impostazioni provate sul telefono sul Pokédex; "Hide empty groups" provato coi test, sul telefono con la v0.128.0.1; 770 test passati)*
+
+L'utente, parola per parola:
+> «Vorrei chiederti quattro modifiche importanti, ma ho paura che dovrò
+> aspettare fino a lunedì pomeriggio perché ho quasi finito il limite
+> settimanale:
+> 1) Nei database, le voci di Change type mettile dentro Edit property,
+> cosicché dentro Edit property ci sia tutto quello che riguarda il
+> modificare la proprietà. Inoltre, tutte le opzioni saranno visibili se
+> tocco una proprietà. Tutte le opzioni di Change Type mettile sotto la barra
+> per rinominare il nome della proprietà.
+> 2) Nelle tre lineette orizzontali con i pallini, togli le voci Icon, Turn
+> into page, Favorite e Delete. Già stanno nell'icona dei sei puntini.
+> 3) Nell'icona dei sei puntini dei database, a cosa servivano Turn into e
+> Color? Sono grigie e neanche mi ricordo a cosa servono
+> 4) Come sto facendo caso, per esempio, alla vista Board del database delle
+> vittorie ai music show delle canzoni KPOP, mettimi un'opzione nelle
+> impostazioni delle tre lineette orizzontali di ogni database esistente e
+> futuro che mi consente di nascondere o mostrare la colonna che non ha
+> nessun entry (sempre nel caso del database che ti ho appena nominato, la
+> colonna dove c'è scritto 'No Music Show')»
+
+- **[Modifica]** **[📱 Mobile]** **Il tipo si cambia dentro "Edit
+  property"**: toccando una proprietà si vede tutto, il nome in alto e
+  sotto tutti i tipi; sotto il tipo scelto le sue impostazioni (Number:
+  formato, cifre, "Show as"; Duration; Relation; Rollup). Il tipo che la
+  proprietà ha adesso sta in cima alla lista, con le sue impostazioni, gli
+  altri dopo nell'ordine di sempre. "Change type", nel menu che si apre
+  tenendo premuta l'intestazione, non c'è più
+- **[Rimosso]** **[📱 Mobile]** Dalle impostazioni del database (l'icona
+  con le tre lineette e i pallini) via **Favorite**, **Turn into page** e
+  **Delete**: stanno nei sei puntini e, a schermo intero, nei tre puntini
+  in alto. **Icon** resta solo a schermo intero, dove i sei puntini non ci
+  sono e altrimenti un database senza icona non avrebbe modo di averne una
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Hide empty groups" anche
+  nella bacheca**, sotto "Group by": le colonne senza nemmeno una scheda non
+  si vedono, compresa quella senza valore ("No Music show"). Di suo spento,
+  in ogni bacheca, nuova o di prima: le colonne si vedono tutte, com'era. Se
+  una scheda nasce senza valore, la sua colonna torna
+- **[Nota]** Sulla domanda 3: nei sei puntini di un database "**Turn
+  into**" è la voce che sulle righe di testo le trasforma in un altro tipo
+  di blocco (titolo, elenco, casella…); per una pagina o un database non è
+  mai stata costruita, e c'è grigia come nei menu "/" e "+". "**Color**"
+  colora il nome di una pagina nel suo collegamento; un database dentro la
+  pagina non ha quel nome da colorare. Su un database tutte e due non fanno
+  niente. In "KPOP Music Shows" la colonna "No Music show" non era vuota: ci
+  sta la riga senza nome che c'era prima delle vittorie, e "Hide empty
+  groups" la lascia finché c'è
+- **[Progetto]** `PageEntity.boardHideEmptyGroups` (migrazione 60→61,
+  schema di prova `v60.sql`), copiato anche togliendo la vista di partenza.
+  Test: `BoardLayoutTest` (di suo tutte le colonne; con l'interruttore solo
+  quelle con schede), `MigrationTest` dalla 60
+
 ### 🆕 v0.127 — 21/10/2026 · 13:35 — "Data source": una vista con le righe di un altro database, e i tre database K-pop in uno
 *(Claude Code sul PC; provata sul telefono su "KPOP Music Shows", col database confrontato prima e dopo; 767 test passati)*
 

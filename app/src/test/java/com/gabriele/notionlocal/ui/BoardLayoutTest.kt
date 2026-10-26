@@ -70,13 +70,14 @@ class BoardLayoutTest {
         AppSettings.init(ApplicationProvider.getApplicationContext())
     }
 
-    private fun show(group: DatabaseColumnEntity, sub: DatabaseColumnEntity? = null, hideEmptySubGroups: Boolean = true) {
+    private fun show(group: DatabaseColumnEntity, sub: DatabaseColumnEntity? = null, hideEmptySubGroups: Boolean = true, hideEmptyGroups: Boolean = false) {
         compose.setContent {
             NotionLocalTheme {
                 BoardLayout(
                     state = state,
                     groupColumn = group,
                     subGroupColumn = sub,
+                    hideEmptyGroups = hideEmptyGroups,
                     hideEmptySubGroups = hideEmptySubGroups,
                     newRowTick = 0,
                     onOpenRow = {},
@@ -164,5 +165,23 @@ class BoardLayoutTest {
         compose.onAllNodesWithText("New")[2].performClick()
         compose.waitForIdle()
         assertEquals("", addedInGroup)
+    }
+
+    @Test
+    fun ofItsOwnTheBoardShowsTheEmptyColumns() {
+        // "Altro" è vuota, e c'è la colonna senza valore.
+        show(kind)
+        assertEquals(1, compose.onAllNodesWithText("Altro").fetchSemanticsNodes().size)
+        assertEquals(1, compose.onAllNodesWithText("No Tipologia", substring = true, ignoreCase = true).fetchSemanticsNodes().size)
+    }
+
+    @Test
+    fun hideEmptyGroupsTakesAwayTheColumnsWithoutCards() {
+        // Con "Hide empty groups" (21/10/2026) restano solo quelle con schede.
+        show(kind, hideEmptyGroups = true)
+        assertEquals(0, compose.onAllNodesWithText("Altro").fetchSemanticsNodes().size)
+        assertEquals(0, compose.onAllNodesWithText("No Tipologia", substring = true, ignoreCase = true).fetchSemanticsNodes().size)
+        assertInColumn("Pasta", "Cibo")
+        assertInColumn("Shampoo", "Casa")
     }
 }
