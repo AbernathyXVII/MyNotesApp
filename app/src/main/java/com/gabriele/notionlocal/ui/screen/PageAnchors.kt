@@ -109,7 +109,8 @@ internal fun DrawScope.drawPinRibbon(top: Float, left: Float, color: Color) {
 /**
  * **La freccia dei collegamenti dentro la pagina**, dopo l'ultima lettera:
  * così si distinguono da quelli a un sito. Sta nello spazio che le lascia
- * [BLOCK_LINK_GAP] (vedi dove si costruisce il testo della riga).
+ * [markBlockLinkEnd] (vedi dove si costruisce il testo della riga), o, a
+ * fine riga, nel vuoto che c'è già dopo.
  */
 internal fun DrawScope.drawBlockLinkArrows(layout: TextLayoutResult?, color: Color) {
     val text = layout?.layoutInput?.text ?: return
@@ -122,14 +123,10 @@ internal fun DrawScope.drawBlockLinkArrows(layout: TextLayoutResult?, color: Col
         if (last < mark.start) continue
         val box = layout.getBoundingBox(last)
         val fontPx = layout.layoutInput.style.fontSize.let { if (it.isSp) it.toPx() else box.height * 0.7f }
-        // Metà dello spazio in più sta dopo la lettera: la freccia ci sta dentro.
-        val room = fontPx * BLOCK_LINK_GAP_EM / 2
-        val arrow = room * 0.8f
-        val endX = box.right - room * 0.1f
-        val startX = endX - arrow
+        val (startX, endX) = blockLinkArrowSpan(box.right, fontPx)
         val y = box.top + box.height * 0.42f
         val stroke = Stroke(width = 1.4.dp.toPx(), cap = StrokeCap.Round)
-        val head = arrow * 0.45f
+        val head = (endX - startX) * 0.45f
         val path = Path().apply {
             moveTo(startX, y)
             lineTo(endX, y)
@@ -141,17 +138,39 @@ internal fun DrawScope.drawBlockLinkArrows(layout: TextLayoutResult?, color: Col
     }
 }
 
+/**
+ * Dove sta la freccia, da sinistra a destra: subito dopo l'ultima lettera
+ * del collegamento, che finisce a [letterRight], dentro la metà dello spazio
+ * in più che il carattere dopo ha davanti a sé.
+ */
+internal fun blockLinkArrowSpan(letterRight: Float, fontPx: Float): Pair<Float, Float> {
+    val room = fontPx * BLOCK_LINK_GAP_EM / 2
+    val start = letterRight + room * 0.2f
+    return start to start + room * 0.7f
+}
+
 /** Lo spazio in più dopo l'ultima lettera di un collegamento dentro la pagina, per la freccia. */
 internal const val BLOCK_LINK_GAP_EM = 0.9f
 
 /**
- * Lo spazio per la freccia, sull'ultima lettera di un collegamento dentro la
- * pagina. [next] è il pezzo di testo dopo: se continua lo stesso collegamento
- * (un pezzo in grassetto in mezzo), la freccia va alla fine di quello.
+ * Lo spazio per la freccia dopo un collegamento dentro la pagina, che va da
+ * [start] a [end]. [next] è il pezzo di testo dopo: se continua lo stesso
+ * collegamento (un pezzo in grassetto in mezzo), la freccia va alla fine di
+ * quello.
+ *
+ * **Lo spazio lo prende il carattere dopo, non l'ultima lettera** (26/10/2026,
+ * l'utente: "Emergenc y", con la freccia sopra la y). Android divide lo
+ * spazio in più fra prima e dopo la lettera: allargando l'ultima, metà le
+ * finiva davanti e la staccava dalle altre; e a fine riga (sul telefono
+ * dell'utente, Android 17) la metà dietro non c'era, così la freccia le
+ * cadeva sopra. Allargato il carattere dopo (di solito lo spazio), la sua
+ * metà davanti è il posto della freccia. Se il collegamento chiude la riga,
+ * dopo c'è già il vuoto e non serve niente.
  */
 internal fun AnnotatedString.Builder.markBlockLinkEnd(span: RichTextSpan, next: RichTextSpan?, start: Int, end: Int) {
     if (end <= start || blockLinkTarget(span.link) == null || next?.link == span.link) return
-    addStyle(SpanStyle(letterSpacing = BLOCK_LINK_GAP_EM.em), end - 1, end)
+    if (next == null || next.text.isEmpty() || next.text[0] == '\n') return
+    addStyle(SpanStyle(letterSpacing = BLOCK_LINK_GAP_EM.em), end, end + 1)
 }
 
 /**

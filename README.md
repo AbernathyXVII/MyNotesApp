@@ -2104,6 +2104,31 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🔧 v0.129.0.1 — 26/10/2026 · 17:29 — La freccia dei collegamenti dentro la pagina non copre più l'ultima lettera
+*(Claude Code sul PC; provata sul telefono su "Fast notes"; 782 test passati)*
+
+L'utente, parola per parola:
+> «Guarda in Fast notes, facendo l'unione dei titoli del sommario, Emergency
+> si bugga e l'icona del link si sovrappone alla y che senza alcun motivo
+> logico è stata spostata a destra con uno spazio»
+
+- **[Bug fix]** **[📱 Mobile]** **La freccia dei collegamenti a una riga
+  della pagina** (l'indice navigabile, dalla v0.118) **copriva l'ultima
+  lettera**, e quella lettera stava staccata dalle altre con uno spazio
+  davanti: "Emergenc y", "Creepy thing s", "Anki field code s" nel sommario
+  di "Fast notes". Ora l'ultima lettera resta attaccata alle altre e la
+  freccia viene subito dopo; se dopo il collegamento la riga continua, è la
+  parola dopo a spostarsi un po' per farle posto
+- **[Progetto]** Per far posto alla freccia si allargava l'ultima lettera
+  (`letterSpacing`), ma Android divide lo spazio in più fra prima e dopo la
+  lettera: metà le finiva davanti, e a fine riga (sul telefono, Android 17)
+  la metà dietro non c'era, così la freccia le cadeva sopra. Ora
+  `markBlockLinkEnd` (in `PageAnchors.kt`) allarga il carattere dopo il
+  collegamento, di solito lo spazio, e niente se il collegamento chiude la
+  riga; `drawBlockLinkArrows` disegna la freccia dopo la lettera
+  (`blockLinkArrowSpan`). Test: `BlockLinkArrowTest` (3), che misura dove
+  cadono le lettere
+
 ### 🆕 v0.129 — 26/10/2026 · 17:07 — Le zone della classifica come su Sofascore: Champions, Europa, Conference e retrocessione
 *(Claude Code sul PC; provata sul telefono sulla classifica della Serie A; 779 test passati)*
 
