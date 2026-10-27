@@ -2105,7 +2105,7 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 gg/mm/aaaa)" accanto al titolo.
 
 ### 🔧 v0.131.0.1 — 27/10/2026 · 08:12 — La tastiera nella home non lagga più
-*(Claude Code sul PC; misurata sul telefono nella home, prima e dopo, aprendo la tastiera nel titolo, in una cella e in una riga vuota; 801 test passati)*
+*(Claude Code sul PC; misurata sul telefono nella home, prima e dopo, aprendo la tastiera nel titolo, in una cella e in una riga vuota; 802 test passati)*
 
 L'utente, parola per parola:
 > «Nella home continua a laggare la tastiera quando la apro e quando la
@@ -2139,6 +2139,15 @@ L'utente, parola per parola:
   in `offset { }`). Test: `PageFocusRecomposeTest` (il cursore che entra e
   esce dal titolo non fa ripartire il database della pagina: senza la
   correzione ripartiva 24 volte)
+- **[Progetto]** Poi l'utente: «Hai fatto sì che non riaccada più in
+  futuro?». Un secondo test, `theKeyboardMovingLeavesThePageAlone`, manda
+  alla pagina le altezze della tastiera una dopo l'altra, come il telefono a
+  ogni fotogramma, su e giù: la barra sale con lei, e dell'app si rifanno
+  solo il cursore che si spegne a tastiera chiusa e la barretta di
+  scorrimento. Qualunque altra cosa che un giorno leggesse la tastiera
+  mentre si costruisce lo schermo lo fa fallire; con la lettura di prima
+  nella barra la pagina si rifaceva 18 volte. Nei test, finché nessuno gliela
+  manda, per Compose la tastiera è "visibile": il test prima la chiude
 
 ### 🆕 v0.131 — 26/10/2026 · 23:43 — "Hide “New”" nella bacheca
 *(Claude Code sul PC; provata sul telefono su "KPOP Music Shows", dove è rimasta accesa; 800 test passati)*
