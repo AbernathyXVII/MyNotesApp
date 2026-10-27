@@ -2104,6 +2104,56 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.138 — 27/10/2026 · 20:04 — Il widget "Countdown", coi foglietti che si sfogliano
+*(Claude Code sul PC; provata sul telefono aggiungendo il widget dalla barra laterale: Natale col conto giusto, i secondi che si sfogliano (visti in una registrazione dello schermo), il tocco lungo che apre la finestra, "Add countdown" che ne mette uno sotto e "Delete"; poi il widget di prova è stato tolto; 865 test passati)*
+
+L'utente, parola per parola (con uno screenshot del Countdown di Indify:
+"Christmas", e sotto i foglietti di Months, Weeks, Days, Hours, Minutes e
+Seconds):
+> «Come esiste già in Notion tramite Indify, implementa il widget Countdown.
+> Tenendoci premuto, posso modificare anni, mesi, giorni, ore, minuti e secondi
+> di una data sia passata che futura, e l'effetto di ognuna di questa unità del
+> tempo che passa sarà quello dei classici fogli di un calendario che si
+> abbassano sfogliandosi. Nell'icona in alto a destra dei tre puntini, dove ho
+> la possibilità di aggiungerne altri, consentimi di metterli uno sotto
+> l'altro, quindi non a scorrimento orizzontale. Questo è perché vorrei che i
+> Countdown si vedessero tutti»
+
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Countdown" fra i widget** (in
+  fondo alla lista di "Add widget"). Nasce col prossimo Natale a mezzanotte,
+  come nella foto. Sotto il titolo, sei foglietti chiari con le cifre scure:
+  mesi, settimane, giorni, ore, minuti e secondi che mancano, coi nomi in
+  azzurro sotto. I mesi sono quelli del calendario (dal 31 gennaio "un mese"
+  arriva al 28 febbraio) e possono essere più di dodici, come su Indify; quello
+  che resta va in settimane, giorni, ore, minuti e secondi. Una data già
+  passata conta il tempo trascorso da allora
+- **[Nuova funzionalità]** **[📱 Mobile]** **Ogni numero che cambia si
+  sfoglia** come i fogli di un calendario: la metà di sopra col numero vecchio
+  si piega in avanti attorno alla cerniera e scende, e dall'altra parte arriva
+  la metà di sotto del numero nuovo, in mezzo secondo. I secondi si sfogliano
+  ogni secondo, le altre unità quando cambiano. Come gli altri widget, si
+  muovono solo con la barra laterale aperta
+- **[Nuova funzionalità]** **[📱 Mobile]** **Tenendo premuto un countdown si
+  cambia**: il nome e, uno per campo, anno, mese, giorno, ora, minuto e
+  secondo, sia nel futuro sia nel passato. Una data che non esiste (il 31
+  aprile) non si salva, e lo dice. Dalla stessa finestra il countdown si può
+  anche togliere ("Delete")
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Add countdown" nei tre puntini**
+  del widget: un countdown in più, che va sotto gli altri, uno sotto l'altro e
+  non a scorrimento orizzontale, così si vedono tutti. Quello nuovo parte da
+  domani a mezzanotte, da cambiare nella stessa finestra
+- **[Progetto]** `Countdown.kt` (`CountdownWidget` col nome `"countdown"` nei
+  widget salvati, `CountdownEntry`, `countdownParts`, `christmasCountdown`);
+  `WidgetStore.add(kind, firstCountdown)`, `addCountdown`, `updateCountdown`,
+  `removeCountdown`, `WidgetKind.COUNTDOWN`; `CountdownWidgetUi.kt`
+  (`CountdownView`, `CountdownBlock`, `FlipTile` con le due metà ferme e quella
+  che gira, `CountdownEditorDialog`); le scritte in `WidgetStrings`, nelle otto
+  lingue. Test: `CountdownTest` (i conti, Natale, il salvataggio),
+  `CountdownUiTest` (il tocco lungo che cambia l'anno, "Add countdown" che lo
+  mette sotto, "Delete"; il foglietto che a metà corsa mostra il numero vecchio
+  e il nuovo, alla fine solo il nuovo); in `WidgetsRenderTest` due countdown
+  nell'immagine dei widget
+
 ### 🔧 v0.137.0.1 — 27/10/2026 · 19:42 — In "Change type" le righe dei tipi non si spostano più scegliendone uno
 *(Claude Code sul PC; provata coi test, che senza la correzione falliscono; sul telefono solo installata; 857 test passati)*
 

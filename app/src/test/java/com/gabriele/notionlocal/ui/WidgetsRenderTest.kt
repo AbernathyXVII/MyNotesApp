@@ -13,6 +13,9 @@ import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import com.gabriele.notionlocal.data.settings.AppSettings
 import com.gabriele.notionlocal.data.widgets.CounterWidget
+import com.gabriele.notionlocal.data.widgets.CountdownEntry
+import com.gabriele.notionlocal.data.widgets.CountdownWidget
+import com.gabriele.notionlocal.data.widgets.christmasCountdown
 import com.gabriele.notionlocal.data.widgets.LifeProgressWidget
 import com.gabriele.notionlocal.data.widgets.ProgressBarSetting
 import com.gabriele.notionlocal.data.widgets.ProgressKind
@@ -96,6 +99,10 @@ class WidgetsRenderTest {
         val counter = state.widgets.filterIsInstance<CounterWidget>().single()
         repeat(3) { WidgetStore.changeCounter(counter.id, +1) }
         WidgetStore.renameCounter(counter.id, "Caffè")
+        // Il Countdown (27/10/2026): Natale e una data passata, uno sotto l'altro.
+        val countdown = state.widgets.filterIsInstance<CountdownWidget>().single()
+        WidgetStore.addCountdown(countdown.id, christmasCountdown("Christmas", LocalDate.now()))
+        WidgetStore.addCountdown(countdown.id, CountdownEntry(name = "Laurea", target = "2024-07-18T10:30:00"))
 
         compose.setContent {
             NotionLocalTheme {

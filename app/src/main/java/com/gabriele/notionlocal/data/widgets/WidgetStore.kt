@@ -133,8 +133,12 @@ object WidgetStore {
 
     fun setHidden(hidden: Boolean) = update { it.copy(hidden = hidden) }
 
-    /** Un widget nuovo, in fondo. Gli orologi partono col fuso dell'app, l'avanzamento con le sue quattro barre. */
-    fun add(kind: WidgetKind) = update { s ->
+    /**
+     * Un widget nuovo, in fondo. Gli orologi partono col fuso dell'app,
+     * l'avanzamento con le sue quattro barre; il Countdown con [firstCountdown]
+     * (il prossimo Natale, dalla barra laterale), se c'è.
+     */
+    fun add(kind: WidgetKind, firstCountdown: CountdownEntry? = null) = update { s ->
         val widget: Widget = when (kind) {
             WidgetKind.TIME_ZONES -> TimeZonesWidget(clocks = listOf(ClockSetting(zoneId = AppSettings.timeZoneId)))
             WidgetKind.LIFE_PROGRESS -> LifeProgressWidget()
@@ -145,6 +149,7 @@ object WidgetStore {
             WidgetKind.WEATHER -> WeatherWidget()
             WidgetKind.SPORTS -> SportsWidget()
             WidgetKind.STOCKS -> StocksWidget()
+            WidgetKind.COUNTDOWN -> CountdownWidget(countdowns = listOfNotNull(firstCountdown))
         }
         s.copy(widgets = s.widgets + widget)
     }
@@ -293,6 +298,19 @@ object WidgetStore {
     fun changeCounter(widgetId: String, delta: Int) = updateWidget<CounterWidget>(widgetId) { it.copy(value = it.value + delta) }
     fun resetCounter(widgetId: String) = updateWidget<CounterWidget>(widgetId) { it.copy(value = 0) }
     fun renameCounter(widgetId: String, name: String) = updateWidget<CounterWidget>(widgetId) { it.copy(name = name) }
+
+    // --- Countdown (dal 27/10/2026): vedi `Countdown.kt` ---
+
+    /** Un countdown in più, in fondo: si vedono uno sotto l'altro. */
+    fun addCountdown(widgetId: String, entry: CountdownEntry) =
+        updateWidget<CountdownWidget>(widgetId) { it.copy(countdowns = it.countdowns + entry) }
+
+    /** Il nome o la data di un countdown, cambiati tenendolo premuto. */
+    fun updateCountdown(widgetId: String, entry: CountdownEntry) =
+        updateWidget<CountdownWidget>(widgetId) { w -> w.copy(countdowns = w.countdowns.map { if (it.id == entry.id) entry else it }) }
+
+    fun removeCountdown(widgetId: String, entryId: String) =
+        updateWidget<CountdownWidget>(widgetId) { w -> w.copy(countdowns = w.countdowns.filterNot { it.id == entryId }) }
 
     /** I suoni del contatore: accesi o spenti, e quale per + e quale per −. */
     fun setCounterSounds(widgetId: String, on: Boolean, plus: CounterSound, minus: CounterSound) =
@@ -499,4 +517,4 @@ object WidgetStore {
 }
 
 /** I widget che si possono aggiungere, nell'ordine del menu. */
-enum class WidgetKind { TIME_ZONES, LIFE_PROGRESS, COUNTER, POMODORO, STOPWATCH, TIMER, WEATHER, SPORTS, STOCKS }
+enum class WidgetKind { TIME_ZONES, LIFE_PROGRESS, COUNTER, POMODORO, STOPWATCH, TIMER, WEATHER, SPORTS, STOCKS, COUNTDOWN }

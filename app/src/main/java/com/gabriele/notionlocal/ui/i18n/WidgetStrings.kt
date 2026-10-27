@@ -41,7 +41,38 @@ object WidgetStrings {
         com.gabriele.notionlocal.data.widgets.WidgetKind.WEATHER -> weather
         com.gabriele.notionlocal.data.widgets.WidgetKind.SPORTS -> sports
         com.gabriele.notionlocal.data.widgets.WidgetKind.STOCKS -> stocks
+        com.gabriele.notionlocal.data.widgets.WidgetKind.COUNTDOWN -> countdown
     }
+
+    // --- Countdown (dal 27/10/2026), vedi `Countdown.kt` ---
+
+    val countdown get() = t("Countdown", "Conto alla rovescia", "Countdown", "Compte à rebours", "Cuenta atrás", "倒计时", "카운트다운", "カウントダウン")
+    val addCountdown get() = t("Add countdown", "Aggiungi un conto alla rovescia", "Countdown hinzufügen", "Ajouter un compte à rebours", "Añadir cuenta atrás", "添加倒计时", "카운트다운 추가", "カウントダウンを追加")
+    val editCountdown get() = t("Edit countdown", "Modifica il conto alla rovescia", "Countdown bearbeiten", "Modifier le compte à rebours", "Editar cuenta atrás", "编辑倒计时", "카운트다운 편집", "カウントダウンを編集")
+    val christmas get() = t("Christmas", "Natale", "Weihnachten", "Noël", "Navidad", "圣诞节", "크리스마스", "クリスマス")
+    val countdownMonths get() = t("Months", "Mesi", "Monate", "Mois", "Meses", "月", "개월", "か月")
+    val countdownWeeks get() = t("Weeks", "Settimane", "Wochen", "Semaines", "Semanas", "周", "주", "週")
+    val countdownDays get() = t("Days", "Giorni", "Tage", "Jours", "Días", "天", "일", "日")
+    val countdownHours get() = t("Hours", "Ore", "Stunden", "Heures", "Horas", "时", "시간", "時間")
+    val countdownMinutes get() = t("Minutes", "Minuti", "Minuten", "Minutes", "Minutos", "分", "분", "分")
+    val countdownSeconds get() = t("Seconds", "Secondi", "Sekunden", "Secondes", "Segundos", "秒", "초", "秒")
+    val fieldYear get() = t("Year", "Anno", "Jahr", "Année", "Año", "年", "년", "年")
+    val fieldMonth get() = t("Month", "Mese", "Monat", "Mois", "Mes", "月", "월", "月")
+    val fieldDay get() = t("Day", "Giorno", "Tag", "Jour", "Día", "日", "일", "日")
+    val fieldHour get() = t("Hour", "Ora", "Stunde", "Heure", "Hora", "时", "시", "時")
+    val fieldMinute get() = t("Minute", "Minuto", "Minute", "Minute", "Minuto", "分", "분", "分")
+    val fieldSecond get() = t("Second", "Secondo", "Sekunde", "Seconde", "Segundo", "秒", "초", "秒")
+    val countdownPastNote get() = t(
+        "A date in the past counts the time since then",
+        "Una data passata conta il tempo trascorso da allora",
+        "Ein vergangenes Datum zählt die Zeit seitdem",
+        "Une date passée compte le temps écoulé depuis",
+        "Una fecha pasada cuenta el tiempo transcurrido desde entonces",
+        "过去的日期会计算从那时起经过的时间",
+        "지난 날짜는 그때부터 지난 시간을 세요",
+        "過去の日付はそれから経った時間を数えます"
+    )
+    val noSuchDate get() = t("This date doesn't exist", "Questa data non esiste", "Dieses Datum gibt es nicht", "Cette date n'existe pas", "Esta fecha no existe", "此日期不存在", "존재하지 않는 날짜예요", "この日付は存在しません")
     val stocks get() = t("Stocks", "Borsa", "Börse", "Bourse", "Bolsa", "股票", "주식", "株式")
 
     // --- Borsa (dal 17/10/2026) ---

@@ -85,6 +85,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gabriele.notionlocal.data.widgets.ClockSetting
 import com.gabriele.notionlocal.data.widgets.CounterWidget
+import com.gabriele.notionlocal.data.widgets.CountdownWidget
+import com.gabriele.notionlocal.data.widgets.christmasCountdown
 import com.gabriele.notionlocal.data.widgets.DEFAULT_BAR_COLOR
 import com.gabriele.notionlocal.data.widgets.LifeProgressWidget
 import com.gabriele.notionlocal.data.widgets.PomodoroPhase
@@ -255,6 +257,8 @@ private fun WidgetCard(widget: Widget, index: Int, count: Int, now: Long, active
     var sportsCompetitions by remember(widget.id) { mutableStateOf(false) }
     // E per i titoli della borsa.
     var stockList by remember(widget.id) { mutableStateOf(false) }
+    // Un countdown nuovo, dai tre puntini (dal 27/10/2026).
+    var countdownAdding by remember(widget.id) { mutableStateOf(false) }
     Column(
         modifier = Modifier
             .padding(horizontal = 12.dp, vertical = 5.dp)
@@ -345,6 +349,13 @@ private fun WidgetCard(widget: Widget, index: Int, count: Int, now: Long, active
                             onClick = { menuOpen = false; StocksUpdates.refresh(widget, force = true) }
                         )
                     }
+                    // **Un countdown in più** (dal 27/10/2026), sotto gli altri.
+                    if (widget is CountdownWidget) {
+                        DropdownMenuItem(
+                            text = { Text(WidgetStrings.addCountdown) },
+                            onClick = { menuOpen = false; countdownAdding = true }
+                        )
+                    }
                     // **Il decimale sulle percentuali** (dal 29/09/2026).
                     if (widget is LifeProgressWidget) {
                         DropdownMenuItem(
@@ -393,6 +404,12 @@ private fun WidgetCard(widget: Widget, index: Int, count: Int, now: Long, active
                     managing = stockList,
                     onManagingChange = { stockList = it }
                 )
+                is CountdownWidget -> CountdownView(
+                    widget = widget,
+                    now = now,
+                    adding = countdownAdding,
+                    onAddingChange = { countdownAdding = it }
+                )
             }
         }
     }
@@ -433,6 +450,7 @@ private fun Widget.kind(): WidgetKind = when (this) {
     is WeatherWidget -> WidgetKind.WEATHER
     is SportsWidget -> WidgetKind.SPORTS
     is StocksWidget -> WidgetKind.STOCKS
+    is CountdownWidget -> WidgetKind.COUNTDOWN
 }
 
 @Composable
@@ -444,7 +462,16 @@ private fun AddWidgetButton() {
             WidgetKind.entries.forEach { kind ->
                 DropdownMenuItem(
                     text = { Text(WidgetStrings.kindName(kind)) },
-                    onClick = { open = false; WidgetStore.add(kind) }
+                    onClick = {
+                        open = false
+                        // Il Countdown nasce col prossimo Natale, come nella foto dell'utente.
+                        val first = if (kind == WidgetKind.COUNTDOWN) {
+                            christmasCountdown(WidgetStrings.christmas, LocalDate.now(AppSettings.zoneId))
+                        } else {
+                            null
+                        }
+                        WidgetStore.add(kind, first)
+                    }
                 )
             }
         }
