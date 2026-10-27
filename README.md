@@ -2104,6 +2104,28 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🔧 v0.137.0.1 — 27/10/2026 · 19:42 — In "Change type" le righe dei tipi non si spostano più scegliendone uno
+*(Claude Code sul PC; provata coi test, che senza la correzione falliscono; sul telefono solo installata; 857 test passati)*
+
+L'utente, parola per parola:
+> «C'è un piccolo bug grafico nel cambio del tipo della proprietà: quando ne
+> seleziono uno, è come se si ingrandisse e sposta di poco sopra o sotto
+> quello sotto. Riesci a capire di cosa si tratta? Perdonami se non riesco a
+> spiegarmi bene»
+
+- **[Bug fix]** **[📱 Mobile]** **Scegliendo un tipo, le righe sotto restano
+  ferme.** Sotto il tipo scelto c'è il riquadro delle sue impostazioni (il
+  formato dei numeri, la durata, la Relation, il Rollup); per i tipi che non
+  ne hanno (Text, Date, Select…) restava vuoto ma col suo margine di 8 punti
+  sotto. Così la riga scelta si allungava un poco e quelle sotto scendevano,
+  per risalire scegliendone un'altra. Ora il riquadro c'è solo per i tipi con
+  le impostazioni, e la spunta del tipo scelto è grande come la sua icona, così
+  la riga non si alza nemmeno per lei. Vale anche nella finestra della
+  proprietà dalle impostazioni del database
+- **[Progetto]** `TYPES_WITH_SETTINGS` in `DatabaseViewScreen.kt`. Test:
+  `PropertyMenuTest` (+1: scelto "Date", fra la sua riga e quella sotto la
+  stessa distanza che fra le altre)
+
 ### 🆕 v0.137 — 27/10/2026 · 19:32 — Il menu di una proprietà si apre col tocco, a gruppi come su Notion
 *(Claude Code sul PC; provata sul telefono aprendo il menu di una proprietà del Main calendar e chiudendolo senza toccare niente; 856 test passati)*
 

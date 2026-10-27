@@ -151,6 +151,25 @@ class PropertyMenuTest {
     }
 
     @Test
+    fun choosingATypeWithoutSettingsMovesNothing() {
+        // 27/10/2026, l'utente: scegliendo un tipo "è come se si ingrandisse e
+        // sposta di poco [...] quello sotto". Le righe dei tipi restano alla
+        // stessa distanza, qualunque sia quello scelto (Number, che ha le sue
+        // impostazioni, sta in cima: è quello di adesso).
+        open()
+        compose.onNodeWithText("Voto").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Change type").performClick()
+        compose.waitForIdle()
+        compose.onNodeWithText("Date").performScrollTo().performClick()
+        compose.waitForIdle()
+        val date = topOf("Date")
+        val duration = topOf("Duration")
+        val checkbox = topOf("Checkbox")
+        assertEquals("fra Date (scelto) e Duration come fra Duration e Checkbox", checkbox - duration, duration - date, 0.5f)
+    }
+
+    @Test
     fun theNameIsWrittenInTheTopLine() {
         open()
         compose.onNodeWithText("Voto").performClick()

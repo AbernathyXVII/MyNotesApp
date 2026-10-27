@@ -554,6 +554,9 @@ private sealed class PropertyTarget {
  */
 private enum class PropertyMode { FULL, TYPE }
 
+/** I tipi con impostazioni loro, che compaiono sotto quando li si sceglie nella finestra della proprietà. */
+internal val TYPES_WITH_SETTINGS = setOf(ColumnType.NUMBER, ColumnType.DURATION, ColumnType.RELATION, ColumnType.ROLLUP)
+
 /** Di quale colonna si sceglie il calcolo: `key` è l'id, o `NAME_CALCULATION_KEY`; `type` null = il nome. */
 private data class CalculateTarget(val key: String, val type: ColumnType?, val title: String)
 
@@ -11165,9 +11168,11 @@ private fun PropertySheet(
                         Spacer(modifier = Modifier.size(12.dp))
                         Text(type.displayName(), modifier = Modifier.weight(1f))
                         if (type == selectedType) {
+                            // Grande come l'icona del tipo: la riga scelta non si alza.
                             Icon(
                                 Icons.Filled.Check,
                                 contentDescription = DbStrings.selected,
+                                modifier = Modifier.size(20.dp),
                                 tint = MaterialTheme.colorScheme.primary
                             )
                         }
@@ -11176,7 +11181,11 @@ private fun PropertySheet(
                     // Number (formato, cifre, "Show as"), Duration (fino a quale
                     // unità), Relation e Rollup. Date non ne ha più: Date format e
                     // Time format sono in Settings, per tutta l'app (dal 16/10/2026).
-                    if (type == selectedType) {
+                    // Solo i tipi che le hanno (corretto il 27/10/2026, l'utente: "è come se
+                    // si ingrandisse e sposta di poco [...] quello sotto"): per gli altri
+                    // il riquadro restava vuoto ma col suo margine sotto, e scegliendoli
+                    // le righe sotto scendevano di 8 punti, per risalire scegliendone un altro.
+                    if (type == selectedType && type in TYPES_WITH_SETTINGS) {
                         Column(modifier = Modifier.padding(start = 32.dp, bottom = 8.dp)) {
                             when (type) {
                                 ColumnType.NUMBER -> NumberSettingsSection(settings = number, onChange = { number = it })
