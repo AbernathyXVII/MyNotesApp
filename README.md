@@ -2104,6 +2104,26 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🔧 v0.134.0.2 — 27/10/2026 · 14:45 — "Fit to content" misura la scritta di una cella URL, non il link intero
+*(Claude Code sul PC; provata sul telefono guardando la vista tabella del Main calendar, senza toccare niente: la colonna URL ora è larga quanto "Meeting Teams"; 845 test passati)*
+
+L'utente, parola per parola:
+> «C'è un piccolo bug, guarda pure nel database Main calendar: ho messo un
+> link per un link di invito ad un meeting su Microsoft Teams, ma
+> rinominandolo ad una mia scritta manuale, quando tengo premuto sulla
+> proprietà Date e tocco Fit to content, la grandezza rimane come se fosse
+> visualizzato il link per intero, quando in realtà la scritta che ho messo
+> io, ossia Meeting Teams, è molto piccola»
+
+- **[Bug fix]** **[📱 Mobile]** **Con "Fit to content", una colonna URL è
+  larga quanto quello che mostra.** Nella vista tabella del Main calendar la
+  cella URL mostrava "Meeting Teams" ("Show as…", v0.133), ma la colonna si
+  misurava sul link di Teams intero, 70 lettere. Guasto della v0.133: la
+  misura di "Fit to content" non sapeva della scritta. Ora misura la scritta
+  quando c'è, il link quando non c'è
+- **[Progetto]** `cellFitWidth(linkLabel)`, che `fitWidths` prende da
+  `DatabaseTableState.linkLabels`. Test: `PageLinkTest` (+1)
+
 ### 🔧 v0.134.0.1 — 27/10/2026 · 14:35 — Il + e il − del Counter sono istantanei
 *(Claude Code sul PC; misurata sul telefono su una release provvisoria, tre volte + e − sul contatore dell'utente, che è tornato a 0; 844 test passati)*
 

@@ -2639,7 +2639,8 @@ private fun fitWidths(
                     cellFitWidth(
                         column, row, state.cellValues[row.id to column.id].orEmpty(), typography, measure,
                         pageTitle = { linkedPages[it]?.title },
-                        related = related
+                        related = related,
+                        linkLabel = state.linkLabels[row.id to column.id]?.text
                     ) + 24.dp
                 } ?: 0.dp
                 val calc = validCalculation(calculations, column.id, column.type)?.let {
@@ -2684,9 +2685,17 @@ internal fun cellFitWidth(
     measure: (String, ComposeTextStyle) -> Dp,
     /** I database collegati dalle Relation (vedi `LocalRelated`). */
     related: Map<String, DatabaseSnapshot> = emptyMap(),
+    /**
+     * Di una cella URL, la scritta che mostra al posto del link ("Show as…",
+     * vedi `DatabaseCellEntity.linkLabel`): si misura lei, che è quello che si
+     * vede (corretto il 27/10/2026: "Fit to content" faceva la colonna larga
+     * quanto il link intero).
+     */
+    linkLabel: String? = null,
     /** Il titolo della pagina di una cella "Page link", o null se non c'è più. */
     pageTitle: (String) -> String? = { null }
 ): Dp = when (column.type) {
+    ColumnType.URL -> measure(linkLabel?.takeIf { value.isNotBlank() } ?: value, typography.bodyMedium) + 2.dp
     ColumnType.CHECKBOX -> 24.dp
     // Ogni riga collegata: la freccia, 3 punti, il nome, e 8 fra l'una e l'altra (`RelatedRowLink`).
     ColumnType.RELATION -> relationTitles(value, column.relationConfig()?.let { related[it.database] })

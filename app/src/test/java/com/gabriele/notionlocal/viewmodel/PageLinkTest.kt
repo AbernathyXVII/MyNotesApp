@@ -138,4 +138,18 @@ class PageLinkTest {
         assertEquals((DbStrings.pageNotFound.length * 7).dp, cellFitWidth(link, jam, "sparita", Typography(), measure) { titles[it] })
         assertEquals(0.dp, cellFitWidth(link, jam, "", Typography(), measure) { titles[it] })
     }
+
+    @Test
+    fun fitToContentMeasuresWhatAUrlCellShows() {
+        // 27/10/2026, nel Main calendar dell'utente: un link di Teams lungo
+        // 70 lettere, mostrato come "Meeting Teams". La colonna si misura su
+        // quello che si vede, non sul link intero.
+        val measure: (String, androidx.compose.ui.text.TextStyle) -> androidx.compose.ui.unit.Dp = { text, _ -> (text.length * 7).dp }
+        val url = DatabaseColumnEntity(pageId = "db", name = "URL", type = ColumnType.URL, orderIndex = 0)
+        val teams = "https://teams.microsoft.com/l/meetup-join/19%3ameeting_abcdefghijklmno"
+        assertEquals(("Meeting Teams".length * 7 + 2).dp, cellFitWidth(url, jam, teams, Typography(), measure, linkLabel = "Meeting Teams"))
+        // Senza scritta, il link intero come prima; una cella vuota non ha niente da misurare.
+        assertEquals((teams.length * 7 + 2).dp, cellFitWidth(url, jam, teams, Typography(), measure))
+        assertEquals(2.dp, cellFitWidth(url, jam, "", Typography(), measure, linkLabel = "Meeting Teams"))
+    }
 }
