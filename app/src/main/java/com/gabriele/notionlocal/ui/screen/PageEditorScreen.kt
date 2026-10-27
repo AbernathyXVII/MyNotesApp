@@ -35,6 +35,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -4670,8 +4671,11 @@ private fun bulletIndexFor(indent: Int): Int =
  */
 internal fun bulletMarkerFor(indent: Int): String = BULLET_MARKERS[bulletIndexFor(indent)]
 
-/** Con che corpo va scritto quel segno. */
-private fun bulletMarkerSizeFor(indent: Int): TextUnit = BULLET_MARKER_SIZES[bulletIndexFor(indent)]
+/**
+ * Con che corpo va scritto quel segno. `internal` per i pezzi delle pagine
+ * lunghe: vedi `PageEditorViewModel.markerSizeOf`.
+ */
+internal fun bulletMarkerSizeFor(indent: Int): TextUnit = BULLET_MARKER_SIZES[bulletIndexFor(indent)]
 
 /**
  * Cosa viene disegnato davanti a una riga del testo unito: gli spazi del
@@ -5241,12 +5245,65 @@ internal fun fontStyleOf(span: RichTextSpan): SpanStyle? {
  * `MergedTextRunField`), e darla riga per riga vorrebbe dire uno
  * `ParagraphStyle` dentro la trasformazione — la strada che in passato ha
  * fatto smettere di disegnare il campo e cancellato del testo ("Strade già
- * tentate" nel README).
+ * tentate" nel README). Per questo una riga più grande delle altre sta in un
+ * campo suo (dal 27/10/2026, vedi `PageEditorViewModel.lineLookOf`): prima
+ * allungava tutte le righe del suo pezzo da 50.
  */
 internal fun lineScaleFor(spans: List<RichTextSpan>): Float {
     val largest = spans.maxOfOrNull { it.size ?: DEFAULT_PAGE_FONT_SIZE } ?: DEFAULT_PAGE_FONT_SIZE
     return (largest / DEFAULT_PAGE_FONT_SIZE.toFloat()).coerceAtLeast(1f)
 }
+
+/**
+ * **Quanto Compose ha aggiunto sopra la prima riga e sotto l'ultima di un
+ * campo** (dal 27/10/2026). Quando un segno della prima o dell'ultima riga
+ * sporge dalla riga — il pallino nascosto davanti a una riga rientrata,
+ * l'accento di "É" — Compose allunga il testo di quel tanto, ma solo ai due
+ * capi: dentro il campo no. Due pezzi di fila avevano così fra loro qualche
+ * punto in più, che spariva quando la pagina li univa in un campo solo
+ * (`PageEditorViewModel.keepVisibleTogether`): in "Fast notes" fra
+ * `</div> <h1 class="hint hanzi">` e "BACK", e scorrendo lo spazio cambiava
+ * da solo. Misurato sul telefono: righe di 68 pixel, la prima, "BACK", di 73.
+ *
+ * Le righe hanno tutte la stessa altezza (il `lineHeight` del campo), quindi
+ * quello che la prima e l'ultima hanno in più è proprio l'aggiunta. Con una
+ * riga sola non si sa quanto sta sopra e quanto sotto, e non si toglie niente.
+ */
+internal class TextEdges {
+    var top = 0
+        private set
+    var bottom = 0
+        private set
+
+    fun measure(layout: TextLayoutResult, lineHeightPx: Float) {
+        val last = layout.lineCount - 1
+        if (last < 1) {
+            top = 0
+            bottom = 0
+            return
+        }
+        top = (layout.getLineBottom(0) - layout.getLineTop(0) - lineHeightPx).roundToInt().coerceAtLeast(0)
+        bottom = (layout.getLineBottom(last) - layout.getLineTop(last) - lineHeightPx).roundToInt().coerceAtLeast(0)
+    }
+}
+
+/**
+ * Toglie al campo quello che Compose gli ha aggiunto ai capi ([TextEdges]),
+ * sopra se il pezzo continua quello di sopra ([top]) e sotto se continua in
+ * quello di sotto ([bottom]): così due pezzi di fila si toccano come le righe
+ * di un campo solo. Il campo sale di quanto si toglie sopra. Le misure le
+ * scrive il campo stesso mentre si misura, qui dentro, quindi sono già quelle
+ * di questo giro.
+ */
+internal fun Modifier.trimTextEdges(edges: TextEdges, top: Boolean, bottom: Boolean): Modifier =
+    layout { measurable, constraints ->
+        val placeable = measurable.measure(constraints)
+        val cutTop = if (top) edges.top else 0
+        val cutBottom = if (bottom) edges.bottom else 0
+        layout(placeable.width, (placeable.height - cutTop - cutBottom).coerceAtLeast(0)) {
+            placeable.place(0, -cutTop)
+        }
+    }
 
 private val SCRIPT_SIZE = 0.7.em
 
@@ -5799,6 +5856,14 @@ private fun MergedTextRunField(
         viewModel.updateRun(runBlocks.map { it.id }, newLines, lines, word.line)
     }
 
+    // L'altezza di ogni riga del campo: vedi il commento sul `lineHeight`
+    // del `textStyle` qui sotto.
+    val lineHeight = (
+        if (runBlocks.any { it.type == BlockType.CHECKBOX }) CHECKBOX_LINE_HEIGHT else RUN_LINE_HEIGHT
+        ).times(lineScale).value.plus(blockSpacing).sp
+    val lineHeightPx = with(LocalDensity.current) { ceil(lineHeight.toPx()) }
+    val edges = remember { TextEdges() }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -5810,6 +5875,8 @@ private fun MergedTextRunField(
                 top = if (joinsAbove) 0.dp else 4.dp,
                 bottom = if (joinsBelow) 0.dp else 4.dp
             )
+            // Due pezzi di fila si toccano come le righe di un campo solo.
+            .trimTextEdges(edges, top = joinsAbove, bottom = joinsBelow)
             // Dopo i margini: le coordinate sono quelle del campo.
             .followCaretOnly(caretInView)
     ) {
@@ -5817,7 +5884,10 @@ private fun MergedTextRunField(
     AutoCaps {
         BasicTextField(
             value = fieldValue,
-            onTextLayout = { textLayout = it },
+            onTextLayout = {
+                textLayout = it
+                edges.measure(it, lineHeightPx)
+            },
             onValueChange = { pastedValue ->
                 // I link di un incolla (vedi `PasteLinks.kt`): si tengono da
                 // parte, e il campo resta col testo e basta.
@@ -6106,7 +6176,9 @@ private fun MergedTextRunField(
             // righe stanno più larghe: il quadratino è piccolo e attaccate
             // è facile spuntare quella sbagliata. Vale per tutto il campo,
             // non riga per riga — vedi `CHECKBOX_LINE_HEIGHT` per il
-            // perché.
+            // perché. Dal 27/10/2026 le caselle e le righe normali stanno
+            // in campi diversi (`PageEditorViewModel.lineLookOf`), così le
+            // righe normali vicine non si allargano con loro.
             // Il testo più grande scelto con la barra Aa allunga qui le righe
             // (`lineScale`): il `textStyle` dell'intero campo è il posto dove
             // il README dice che le misure si possono toccare senza rischi.
@@ -6123,13 +6195,7 @@ private fun MergedTextRunField(
                 // storte erano le righe. Fissandola, tutte le righe sono
                 // alte uguale e i segni si appoggiano tutti allo stesso
                 // modo, qualunque corpo abbiano.
-                lineHeight = (
-                    if (runBlocks.any { it.type == BlockType.CHECKBOX }) {
-                        CHECKBOX_LINE_HEIGHT
-                    } else {
-                        RUN_LINE_HEIGHT
-                    } * lineScale
-                    ).value.plus(blockSpacing).sp,
+                lineHeight = lineHeight,
                 // **Il testo si centra nella riga alta.** Di suo Compose
                 // spartisce lo spazio in più in proporzione a quanto le
                 // lettere salgono e scendono, e il risultato è che il testo

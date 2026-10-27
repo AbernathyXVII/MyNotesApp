@@ -20,6 +20,7 @@ import com.gabriele.notionlocal.data.entity.MEDIA_TYPES
 import com.gabriele.notionlocal.data.entity.MULTILINE_TYPES
 import com.gabriele.notionlocal.data.entity.attrsForNewLine
 import com.gabriele.notionlocal.data.entity.heldListType
+import com.gabriele.notionlocal.ui.screen.bulletMarkerSizeFor
 import com.gabriele.notionlocal.data.entity.MARKER_LIST_TYPES
 import com.gabriele.notionlocal.data.entity.PageParagraph
 import com.gabriele.notionlocal.data.entity.ParagraphLook
@@ -451,6 +452,9 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         var chars = 0
         var inRun = false
         var previousId: String? = null
+        var previousLook: LineLook? = null
+        // Il segno della prima riga del pezzo: vedi `markerSizeOf`.
+        var pieceMarker = 0f
         fun close() {
             key?.let { next[it] = members }
             key = null
@@ -461,9 +465,15 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
                 close()
                 inRun = false
                 previousId = null
+                previousLook = null
                 continue
             }
             val length = plainTextOf(block).length + 1
+            // Una riga che appare diversa da quella sopra comincia un pezzo,
+            // anche sullo schermo (vedi `lineLookOf`).
+            val look = lineLookOf(block)
+            val lookChanged = previousLook != null && look != previousLook
+            previousLook = look
             // Fra due righe sullo schermo un confine non si mette (vedi `keepVisibleTogether`).
             val onScreen = previousId in visibleLineIds && block.id in visibleLineIds
             previousId = block.id
@@ -472,13 +482,21 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
                 inRun = true
                 lines = 0
                 chars = 0
-            } else if (!onScreen) {
+                pieceMarker = markerSizeOf(block)
+            } else if (lookChanged || !onScreen) {
                 val existing = starts[block.id]
-                if (existing != null || lines >= CHUNK_MAX_LINES || chars + length > CHUNK_MAX_CHARS) {
+                val due = existing != null || lines >= CHUNK_MAX_LINES || chars + length > CHUNK_MAX_CHARS
+                // Un pezzo comincia con lo stesso segno della prima riga di
+                // quello sopra (vedi `markerSizeOf`); se non arriva, al doppio
+                // della misura lo si taglia lo stesso.
+                val sameMarker = markerSizeOf(block) == pieceMarker
+                val tooBig = lines >= 2 * CHUNK_MAX_LINES || chars + length > 2 * CHUNK_MAX_CHARS
+                if (lookChanged || (due && sameMarker) || tooBig) {
                     close()
                     key = existing ?: ("chunk:" + block.id)
                     lines = 0
                     chars = 0
+                    pieceMarker = markerSizeOf(block)
                 }
             }
             if (key != null) members += block.id
@@ -491,6 +509,52 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
             _chunkVersion.value++
         }
     }
+
+    /** Come appare una riga nel suo campo: vedi [lineLookOf]. */
+    private data class LineLook(val checkbox: Boolean, val largestSize: Int)
+
+    /**
+     * **Come appare una riga** (dal 27/10/2026): se è una casella da spuntare,
+     * e il corpo più grande scelto per lei con la barra Aa (mai meno di quello
+     * normale). Il campo di testo ha un'altezza di riga sola per tutte le sue
+     * righe, e la prende da qui (`CHECKBOX_LINE_HEIGHT` e `lineScaleFor` nella
+     * schermata): due righe che appaiono diverse non stanno quindi nello stesso
+     * pezzo ([rechunk]), e non ci finiscono unendo i pezzi sullo schermo
+     * ([keepVisibleTogether]).
+     *
+     * Trovato dall'utente in "Fast notes": i titoli col corpo a 20 ("Anki field
+     * codes", "Creepy things", "Emergency") allungavano tutte le righe del loro
+     * pezzo da 50, quelle sotto avevano più spazio di quelle in cima, e
+     * scorrendo lo spazio cambiava da solo, perché i pezzi sullo schermo si
+     * univano e si ridividevano portando le righe dentro e fuori dal campo
+     * allungato.
+     */
+    private fun lineLookOf(block: BlockEntity): LineLook = LineLook(
+        checkbox = block.type == BlockType.CHECKBOX,
+        largestSize = maxOf(DEFAULT_PAGE_FONT_SIZE, spansOf(block).maxOfOrNull { it.size ?: DEFAULT_PAGE_FONT_SIZE } ?: DEFAULT_PAGE_FONT_SIZE)
+    )
+
+    /**
+     * **Il corpo del segno dell'elenco puntato davanti alla riga**, anche
+     * quando è nascosto perché la riga ne tiene solo il posto; 0 senza segno
+     * (dal 27/10/2026).
+     *
+     * Compose mette il testo dentro le righe di un campo guardando **solo la
+     * prima**: se lì c'è un pallino, scritto più grande del testo (a 20,
+     * `bulletMarkerSizeFor`), il testo di tutto il campo scende di qualche
+     * pixel. Misurato in "Fast notes": la riga di base a 60 pixel dalla cima
+     * della riga nel pezzo che cominciava con "◦ BACK", a 49 in quello sopra.
+     * Quando i due pezzi si univano il testo risaliva: lo spazio fra le righe
+     * cambiava da solo. Per questo un pezzo comincia solo con una riga che ha
+     * lo stesso segno della prima del pezzo sopra ([rechunk]), e due pezzi che
+     * cominciano diversi non si uniscono ([keepVisibleTogether]).
+     */
+    private fun markerSizeOf(block: BlockEntity): Float =
+        if (block.type == BlockType.BULLET_LIST_ITEM || block.heldListType == BlockType.BULLET_LIST_ITEM) {
+            bulletMarkerSizeFor(block.indentLevel.coerceAtLeast(0)).value
+        } else {
+            0f
+        }
 
     /**
      * Le righe nuove di un pezzo entrano nella sua lista: messe in cima a
@@ -577,6 +641,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         val typing = System.currentTimeMillis() - lastTypedAt < TYPING_QUIET_MS
         val top = _blocks.value.filter { it.parentBlockId == null }
         val starts = chunkStartsOf(top)
+        val byId = top.associateBy { it.id }
 
         // I pezzi della pagina, gruppo per gruppo: chiave (null per il primo
         // di un gruppo, che ha quella del gruppo) e righe.
@@ -604,6 +669,16 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
                 val above = pieces[i - 1]
                 val below = pieces[i]
                 if (above.ids.last() !in visibleLineIds || below.ids.first() !in visibleLineIds) {
+                    i++
+                    continue
+                }
+                // Righe che appaiono diverse restano in campi diversi (vedi
+                // `lineLookOf`), e un pezzo che comincia con un segno diverso da
+                // quello sopra non gli si unisce: il suo testo si sposterebbe
+                // (vedi `markerSizeOf`).
+                if (lineLookOf(byId.getValue(above.ids.last())) != lineLookOf(byId.getValue(below.ids.first())) ||
+                    markerSizeOf(byId.getValue(above.ids.first())) != markerSizeOf(byId.getValue(below.ids.first()))
+                ) {
                     i++
                     continue
                 }

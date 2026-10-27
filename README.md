@@ -2104,6 +2104,62 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🔧 v0.131.0.2 — 27/10/2026 · 09:17 — Lo spazio fra le righe non cambia più da solo
+*(Claude Code sul PC; provata sul telefono in Fast notes: righe a 44 punti in cima, sotto Anki field codes e più giù, e la pagina fermata in quattro punti fotografata subito e dopo 3 secondi, identica a parte la barretta di scorrimento; 806 test passati)*
+
+L'utente, parola per parola:
+> «In Fast notes lo spacing tra i blocchi è buggato. Da Anki field codes in
+> giù lo spacing è diverso rispetto alle prime righe. Ed inoltre capita
+> quasi sempre che scorrendo ancora più giù lo spacing tra le righe cambia da
+> solo. Cerca di far sì che non capiti più lì e altrove per favore»
+
+Le righe di testo di fila stanno in campi, pezzi da 50 righe. Scorrendo, i
+pezzi che si vedono si uniscono in un campo solo e poi si ridividono (v0.113.1
+e successive). Tre cose di un campo dipendevano da quali righe ci sono
+dentro, e quindi cambiavano quando le righe passavano da un campo all'altro:
+
+- **[Bug fix]** **[📱 Mobile]** **L'altezza delle righe.** Un campo ha
+  un'altezza di riga sola: quella che serve al carattere più grande che
+  contiene, più larga se c'è una casella da spuntare. In "Fast notes" i
+  titoli col corpo a 20 ("Anki field codes", "Creepy things", "Emergency")
+  allungavano così tutte le righe del loro pezzo: sotto "Anki field codes"
+  distavano 54 punti invece di 44. Ora una riga che appare diversa da quella
+  sopra (corpo più grande, o casella fra righe normali, o il contrario)
+  comincia un campo suo, e campi diversi non si uniscono
+- **[Bug fix]** **[📱 Mobile]** **Dove sta il testo dentro le righe.**
+  Compose lo decide guardando **solo la prima riga** del campo: se lì c'è un
+  pallino (scritto a 20, più grande del testo), il testo di tutto il campo
+  scende di 11 pixel. Misurato: la riga di base a 60 pixel dalla cima della
+  riga nel pezzo che cominciava con "◦ BACK", a 49 in quello sopra; unendoli
+  il testo risaliva. Ora un pezzo comincia solo con una riga che ha lo stesso
+  segno della prima del pezzo sopra (se non arriva, al doppio della misura lo
+  si taglia lo stesso), e due pezzi che cominciano diversi non si uniscono
+- **[Bug fix]** **[📱 Mobile]** **Lo spazio ai capi del campo.** Quando un
+  segno della prima o dell'ultima riga sporge (il pallino, l'accento di "É"),
+  Compose allunga il testo di quel tanto, ma solo ai due capi: fra due pezzi
+  c'erano 5 pixel in più che sparivano unendoli. Ora fra due pezzi di fila
+  quell'aggiunta si toglie, e si toccano come le righe di un campo solo.
+  Vale in tutte le pagine
+- **[Nota]** Mentre si scrive i campi non si ridividono (v0.113.1): una riga
+  nuova scritta subito sotto un titolo grande ne prende lo spazio finché non
+  si smette di scrivere. E la selezione col dito che arriva in fondo a un
+  campo si porta dietro quello dopo (dal 19/10/2026): in quel momento lo
+  spazio può ancora cambiare. Nei due punti in cui due pezzi ora non si
+  uniscono, la selezione che li attraversa li unisce così
+- **[Progetto]** `PageEditorViewModel.lineLookOf` (casella, corpo più grande)
+  e `markerSizeOf` (il corpo del pallino, anche nascosto): `rechunk` comincia
+  un pezzo dove cambia il primo (anche fra righe sullo schermo) e taglia i 50
+  solo dove il secondo è quello della prima riga del pezzo;
+  `keepVisibleTogether` non unisce pezzi che non vanno. `TextEdges` e
+  `trimTextEdges` in `MergedTextRunField`, con l'altezza di riga del campo in
+  un posto solo (`lineHeight`). Trovato con un registro provvisorio sul
+  telefono (altezza delle righe e riga di base di ogni campo), poi tolto.
+  Test: `LineLookChunksTest` (il titolo e le caselle in campi loro; la pagina
+  che scorre a finestre di 20 righe non cambia mai l'altezza di riga di una
+  riga normale; in un elenco puntato con righe normali ogni pezzo comincia
+  come il primo, anche scorrendo; le righe uguali si uniscono ancora), che
+  senza le correzioni falliscono
+
 ### 🔧 v0.131.0.1 — 27/10/2026 · 08:12 — La tastiera nella home non lagga più
 *(Claude Code sul PC; misurata sul telefono nella home, prima e dopo, aprendo la tastiera nel titolo, in una cella e in una riga vuota; 802 test passati)*
 
