@@ -66,6 +66,27 @@ class CounterSoundsTest {
     }
 
     @Test
+    fun eachSoundBecomesAWavFileForTheSoundPool() {
+        // 27/10/2026: i suoni passano dal `SoundPool`, che li legge da un file.
+        val samples = CounterSounds.samples(CounterSound.CLICK)
+        val wav = CounterSounds.wav(samples)
+        val header = java.nio.ByteBuffer.wrap(wav).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+        assertEquals(44 + samples.size * 2, wav.size)
+        assertEquals("RIFF", String(wav, 0, 4))
+        assertEquals(wav.size - 8, header.getInt(4))
+        assertEquals("WAVEfmt ", String(wav, 8, 8))
+        assertEquals(1, header.getShort(20).toInt()) // PCM
+        assertEquals(1, header.getShort(22).toInt()) // mono
+        assertEquals(COUNTER_SAMPLE_RATE, header.getInt(24))
+        assertEquals(16, header.getShort(34).toInt())
+        assertEquals("data", String(wav, 36, 4))
+        assertEquals(samples[10], header.getShort(44 + 20))
+        // Prepararli e suonarli non si ferma su niente, anche prima che siano pronti.
+        CounterSounds.prepare(ApplicationProvider.getApplicationContext())
+        CounterSounds.play(CounterSound.CLICK, volume = 60)
+    }
+
+    @Test
     fun soundsAreSavedWithTheCounter() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         WidgetStore.init(context)

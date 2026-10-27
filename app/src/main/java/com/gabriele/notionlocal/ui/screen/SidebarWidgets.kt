@@ -10,6 +10,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.LaunchedEffect
 import androidx.core.content.IntentCompat
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -1008,15 +1009,19 @@ private fun DateField(label: String, day: LocalDate, onClick: () -> Unit) {
 
 @Composable
 private fun CounterView(widget: CounterWidget) {
+    // I suoni pronti prima del primo tocco (dal 27/10/2026): vedi `CounterSounds.prepare`.
+    val context = LocalContext.current
+    LaunchedEffect(Unit) { CounterSounds.prepare(context) }
     Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         if (widget.name.isNotBlank()) {
             Text(widget.name, color = NotionWhite, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
             Spacer(modifier = Modifier.height(4.dp))
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
+            // Prima il numero, poi il suono (dal 27/10/2026): il suono non lo fa aspettare.
             SquareButton(Icons.Filled.Remove, WidgetStrings.decrease) {
-                if (widget.soundsOn) CounterSounds.play(CounterSound.of(widget.minusSound), widget.volume)
                 WidgetStore.changeCounter(widget.id, -1)
+                if (widget.soundsOn) CounterSounds.play(CounterSound.of(widget.minusSound), widget.volume)
             }
             Text(
                 text = Formats.number(widget.value.toString()),
@@ -1027,8 +1032,8 @@ private fun CounterView(widget: CounterWidget) {
                 modifier = Modifier.widthIn(min = 72.dp).padding(horizontal = 8.dp)
             )
             SquareButton(Icons.Filled.Add, WidgetStrings.increase) {
-                if (widget.soundsOn) CounterSounds.play(CounterSound.of(widget.plusSound), widget.volume)
                 WidgetStore.changeCounter(widget.id, +1)
+                if (widget.soundsOn) CounterSounds.play(CounterSound.of(widget.plusSound), widget.volume)
             }
         }
         Spacer(modifier = Modifier.height(4.dp))

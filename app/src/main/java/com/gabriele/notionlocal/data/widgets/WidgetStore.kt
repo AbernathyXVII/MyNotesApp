@@ -56,6 +56,7 @@ object WidgetStore {
     val state: WidgetsState get() = stateHolder.value
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val saver = java.util.concurrent.Executors.newSingleThreadExecutor()
     private var alarm: Job? = null
     private var lastSystemAlarmEnd: Long? = null
 
@@ -114,7 +115,12 @@ object WidgetStore {
         val next = transform(previous)
         if (next == previous) return
         stateHolder.value = next
-        if (::prefs.isInitialized) prefs.edit().putString(KEY_STATE, json.encodeToString(next)).apply()
+        // Scritto da un filo a parte, uno dopo l'altro (dal 27/10/2026): il
+        // tocco sul + del contatore non aspetta il JSON di tutti i widget.
+        if (::prefs.isInitialized) {
+            val saved = prefs
+            saver.execute { saved.edit().putString(KEY_STATE, json.encodeToString(next)).apply() }
+        }
         if (::appContext.isInitialized) TimerNotifications.sync(appContext, previous, next)
         scheduleAlarm()
     }

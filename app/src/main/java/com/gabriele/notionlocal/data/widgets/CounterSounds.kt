@@ -1,8 +1,15 @@
 package com.gabriele.notionlocal.data.widgets
 
+import android.content.Context
 import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
+import android.media.SoundPool
+import java.io.File
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.exp
@@ -115,19 +122,100 @@ object CounterSounds {
         return share * share
     }
 
-    private val tracks = mutableMapOf<CounterSound, AudioTrack>()
+    // **Subito, senza far aspettare il numero** (dal 27/10/2026, chiesto
+    // dall'utente: il + e il − del Counter avevano "quel piccolo delay").
+    // Misurato sul telefono: far partire il suono con `AudioTrack` (stop,
+    // ricarica, play) teneva fermo il filo principale 65-74 ms a ogni tocco,
+    // e il numero cambiava solo dopo. Ora i suoni stanno in un `SoundPool`, il
+    // lettore di Android per i suoni brevi: `play` torna subito e il suono
+    // parte dal suo filo, con meno attesa. Finché il `SoundPool` non è pronto
+    // (appena aperta l'app) suona come prima, ma da un filo a parte.
+
+    private val worker = Executors.newSingleThreadExecutor()
+    @Volatile
+    private var pool: SoundPool? = null
+    /** I suoni pronti nel `SoundPool`, col loro numero. */
+    private val ready = ConcurrentHashMap<CounterSound, Int>()
+    private val loading = ConcurrentHashMap<Int, CounterSound>()
 
     /**
-     * Suona [sound] a [volume] (da 0 a 100, vedi [gain]); se stava ancora
-     * suonando, ricomincia. A zero, o senza audio, non fa niente.
+     * Prepara i suoni, una volta sola e da un filo a parte: ognuno diventa un
+     * piccolo file WAV nella cache dell'app, che il `SoundPool` carica. Si
+     * chiama quando il contatore si vede, così al primo tocco sono pronti.
      */
-    @Synchronized
+    fun prepare(context: Context) {
+        val dir = File(context.applicationContext.cacheDir, "counter_sounds")
+        worker.execute {
+            if (pool != null) return@execute
+            runCatching {
+                val sounds = SoundPool.Builder()
+                    .setMaxStreams(4)
+                    .setAudioAttributes(sonification())
+                    .build()
+                sounds.setOnLoadCompleteListener { _, id, status ->
+                    val sound = loading.remove(id)
+                    if (status == 0 && sound != null) ready[sound] = id
+                }
+                pool = sounds
+                dir.mkdirs()
+                CounterSound.entries.forEach { sound ->
+                    val bytes = wav(samples(sound))
+                    val file = File(dir, "${sound.name}.wav")
+                    if (!file.exists() || file.length() != bytes.size.toLong()) file.writeBytes(bytes)
+                    loading[sounds.load(file.path, 1)] = sound
+                }
+            }
+        }
+    }
+
+    /**
+     * Suona [sound] a [volume] (da 0 a 100, vedi [gain]). A zero, o senza
+     * audio, non fa niente. Non aspetta il suono: torna subito.
+     */
     fun play(sound: CounterSound, volume: Int = 100) {
         if (volume <= 0) return
+        val gain = gain(volume)
+        val id = ready[sound]
+        val sounds = pool
+        if (id != null && sounds != null) {
+            sounds.play(id, gain, gain, 1, 0, 1f)
+        } else {
+            worker.execute { playWithTrack(sound, gain) }
+        }
+    }
+
+    /** Il file WAV di un suono: l'intestazione di 44 byte e l'onda, 16 bit mono. */
+    internal fun wav(samples: ShortArray): ByteArray {
+        val data = samples.size * 2
+        val buffer = ByteBuffer.allocate(44 + data).order(ByteOrder.LITTLE_ENDIAN)
+        buffer.put("RIFF".toByteArray()).putInt(36 + data).put("WAVE".toByteArray())
+        buffer.put("fmt ".toByteArray()).putInt(16)
+            .putShort(1) // PCM
+            .putShort(1) // mono
+            .putInt(COUNTER_SAMPLE_RATE)
+            .putInt(COUNTER_SAMPLE_RATE * 2)
+            .putShort(2)
+            .putShort(16)
+        buffer.put("data".toByteArray()).putInt(data)
+        samples.forEach { buffer.putShort(it) }
+        return buffer.array()
+    }
+
+    /** Come il suono dei tasti: segue il volume di sistema e il silenzioso. */
+    private fun sonification(): AudioAttributes = AudioAttributes.Builder()
+        .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
+        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+        .build()
+
+    private val tracks = mutableMapOf<CounterSound, AudioTrack>()
+
+    /** Il modo di prima, finché il `SoundPool` non è pronto: se stava ancora suonando, ricomincia. */
+    @Synchronized
+    private fun playWithTrack(sound: CounterSound, gain: Float) {
         runCatching {
             val track = tracks.getOrPut(sound) { trackFor(samples(sound)) }
             if (track.playState == AudioTrack.PLAYSTATE_PLAYING) track.stop()
-            track.setVolume(gain(volume))
+            track.setVolume(gain)
             track.reloadStaticData()
             track.play()
         }
@@ -135,13 +223,7 @@ object CounterSounds {
 
     private fun trackFor(samples: ShortArray): AudioTrack {
         val track = AudioTrack.Builder()
-            .setAudioAttributes(
-                AudioAttributes.Builder()
-                    // Come il suono dei tasti: segue il volume di sistema e il silenzioso.
-                    .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .build()
-            )
+            .setAudioAttributes(sonification())
             .setAudioFormat(
                 AudioFormat.Builder()
                     .setEncoding(AudioFormat.ENCODING_PCM_16BIT)

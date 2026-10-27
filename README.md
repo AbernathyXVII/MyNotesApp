@@ -2104,6 +2104,35 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🔧 v0.134.0.1 — 27/10/2026 · 14:35 — Il + e il − del Counter sono istantanei
+*(Claude Code sul PC; misurata sul telefono su una release provvisoria, tre volte + e − sul contatore dell'utente, che è tornato a 0; 844 test passati)*
+
+L'utente, parola per parola:
+> «Perdonami se sono ultra pignolo: noto che c'è quel piccolo delay quando
+> premo sul + o sul - del widget Counter. Tanto piccolo però quanto
+> parecchio fastidioso. Sono quasi convinto che quando lo hai implementato
+> non era così. Dico bene, o è una mia impressione? A prescindere, me lo puoi
+> fare istantaneo?»
+
+- **[Bug fix]** **[📱 Mobile]** **Il numero del Counter cambia appena si
+  tocca + o −.** Aveva ragione l'utente: il contatore è nato il 24/09 senza
+  suoni, e i suoni sono arrivati con la v0.179 (18/10). Misurato sul
+  telefono: a ogni tocco far partire il click con `AudioTrack` (stop, ricarica
+  e play) teneva fermo l'app 65-74 ms, e solo dopo cambiava il numero, circa
+  80 ms dopo il tocco. Ora prima cambia il numero e poi parte il suono, da un
+  `SoundPool` (il lettore di Android per i suoni brevi) che non fa aspettare
+  nessuno: misurato di nuovo, il numero cambia 2-9 ms dopo il tocco e il
+  tocco stesso dura meno di 1 ms. I suoni sono gli stessi di prima, col loro
+  volume
+- **[Bug fix]** **[📱 Mobile]** Lo stato dei widget si scrive in memoria da un
+  filo a parte, uno dopo l'altro: un tocco su un widget non aspetta più il
+  JSON di tutti i widget (3-10 ms a tocco)
+- **[Progetto]** `CounterSounds`: `prepare` (un WAV per suono nella cache,
+  caricato nel `SoundPool`; lo chiama `CounterView`), `play` che non aspetta
+  (finché il `SoundPool` non è pronto, il modo di prima su un filo a parte),
+  `wav`; `WidgetStore.update` salva con `saver`. Test: `CounterSoundsTest`
+  (+1, il file WAV)
+
 ### 🆕 v0.134 — 27/10/2026 · 14:22 — "Full or page line": ogni pagina sceglie se le righe lunghe restano intere o vanno a capo
 *(Claude Code sul PC; provata sul telefono in "Paragraph – prova", con "Full line view" spento in Settings: una riga lunga scritta in fondo, "Full or page line" nei tre puntini con "Default (Page line)", poi "Full line" (la riga non va più a capo) e "Page line" (di nuovo a capo); la pagina rimessa su "Default" e la riga tolta, confrontata col database (migrazione 63→64 compresa); 843 test passati)*
 
