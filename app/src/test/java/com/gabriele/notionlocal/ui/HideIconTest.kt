@@ -4,11 +4,10 @@ import android.app.Application
 import android.content.Context
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.longClick
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.performScrollTo
 import androidx.room.withTransaction
 import androidx.test.core.app.ApplicationProvider
 import com.gabriele.notionlocal.data.AppDatabase
@@ -33,8 +32,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * **"Hide icon"** (27/10/2026, chiesto dall'utente): tenendo premuta
- * l'intestazione di una proprietà, la sua icona si nasconde, e torna con
+ * **"Hide icon"** (27/10/2026, chiesto dall'utente): dal menu
+ * dell'intestazione di una proprietà, la sua icona si nasconde, e torna con
  * "Show icon". Di suo si vede. Vale anche per il "Aa" della proprietà
  * principale. Qui in un database dentro una pagina, come sul telefono.
  */
@@ -77,8 +76,9 @@ class HideIconTest {
         compose.waitForIdle()
     }
 
+    /** Il menu di una proprietà: dal 27/10/2026 si apre toccandone l'intestazione. */
     private fun menuOf(header: String) {
-        compose.onNodeWithText(header).performTouchInput { longClick() }
+        compose.onNodeWithText(header).performClick()
         compose.waitForIdle()
     }
 
@@ -95,17 +95,17 @@ class HideIconTest {
         assertEquals(false to false, stored())
 
         menuOf("Date")
-        compose.onNodeWithText("Hide icon").performClick()
+        compose.onNodeWithText("Hide icon").performScrollTo().performClick()
         waitFor { stored().first }
         // Tenendo premuta di nuovo, la voce è diventata "Show icon".
         menuOf("Date")
-        compose.onNodeWithText("Show icon").performClick()
+        compose.onNodeWithText("Show icon").performScrollTo().performClick()
         waitFor { !stored().first }
 
         // Il "Aa" della proprietà principale.
         assertEquals(1, compose.onAllNodesWithText("Aa").fetchSemanticsNodes().size)
         menuOf("Name")
-        compose.onNodeWithText("Hide icon").performClick()
+        compose.onNodeWithText("Hide icon").performScrollTo().performClick()
         waitFor { stored().second }
         compose.waitUntil(5_000) { compose.onAllNodesWithText("Aa").fetchSemanticsNodes().isEmpty() }
         assertEquals(false to true, stored())

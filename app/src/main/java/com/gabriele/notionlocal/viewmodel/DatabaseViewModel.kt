@@ -1763,6 +1763,16 @@ class DatabaseViewModel(
             _dataPage.value?.nameColumnOrder ?: -1
         ) + 1
 
+    /**
+     * Il nome nuovo di una proprietà, scritto nella riga in cima al suo menu
+     * (dal 27/10/2026, come su Notion): solo il nome, il resto com'è.
+     */
+    fun renameColumn(columnId: String, name: String) {
+        val column = rawColumn(columnId) ?: return
+        if (column.name == name) return
+        viewModelScope.launch { repository.updateColumn(column.copy(name = name)) }
+    }
+
     fun deleteColumn(column: DatabaseColumnEntity) {
         // Una Relation nei due sensi si porta via la gemella.
         viewModelScope.launch { repository.deleteColumnWithTwin(rawColumn(column.id) ?: column) }

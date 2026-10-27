@@ -380,6 +380,26 @@ object DbStrings {
     val moveLeft get() = t("Move to left","Sposta a sinistra", "Nach links", "Déplacer à gauche", "Mover a la izquierda", "左移", "왼쪽으로 이동", "左へ移動")
     val moveRight get() = t("Move to right","Sposta a destra", "Nach rechts", "Déplacer à droite", "Mover a la derecha", "右移", "오른쪽으로 이동", "右へ移動")
     val deleteProperty get() = t("Delete property", "Elimina proprietà", "Eigenschaft löschen", "Supprimer la propriété", "Eliminar propiedad", "删除属性", "속성 삭제", "プロパティを削除")
+    fun deletePropertyTitle(name: String) = t(
+        "Delete \"$name\"?",
+        "Eliminare \"$name\"?",
+        "\"$name\" löschen?",
+        "Supprimer « $name » ?",
+        "¿Eliminar \"$name\"?",
+        "删除“$name”？",
+        "'$name'을(를) 삭제할까요?",
+        "「$name」を削除しますか？"
+    )
+    val deletePropertyNote get() = t(
+        "Its values in every row are deleted too.",
+        "Se ne vanno anche i suoi valori in tutte le righe.",
+        "Auch ihre Werte in allen Zeilen werden gelöscht.",
+        "Ses valeurs dans toutes les lignes sont aussi supprimées.",
+        "También se eliminan sus valores en todas las filas.",
+        "所有行中它的值也会被删除。",
+        "모든 행의 값도 함께 삭제돼요.",
+        "すべての行のこのプロパティの値も削除されます。"
+    )
     val noPropertiesYet get() = t("This database has no properties yet.", "Questo database non ha ancora proprietà.", "Diese Datenbank hat noch keine Eigenschaften.", "Cette base de données n'a pas encore de propriétés.", "Esta base de datos aún no tiene propiedades.", "此数据库还没有属性。", "이 데이터베이스에는 아직 속성이 없습니다.", "このデータベースにはまだプロパティがありません。")
 
     // --- Tag ---

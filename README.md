@@ -2104,6 +2104,74 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.137 — 27/10/2026 · 19:32 — Il menu di una proprietà si apre col tocco, a gruppi come su Notion
+*(Claude Code sul PC; provata sul telefono aprendo il menu di una proprietà del Main calendar e chiudendolo senza toccare niente; 856 test passati)*
+
+L'utente, parola per parola (con due screenshot di Notion su telefono, la
+tabella e il menu "Edit property"):
+> «Nuove feature e modifiche per le proprietà dei database: d'ora in poi,
+> tenere premuto su una proprietà non farà più nulla, ed ora tutte le opzioni
+> che appaiono se ci tengo premuto me le fai apparire (nello stesso identico
+> ordine) quando tocco su una proprietà. D'ora in poi deve essere il classico
+> dei tocchi che faccio dappertutto. Quando tocco su una proprietà, mi
+> appariranno le stesse opzioni che esistono e che mi appaiono quando tengo
+> premuto con delle aggiunte, ossia
+> 1) Change type sotto Edit property (tutti i tipi delle diverse proprietà che
+> ora, prima del cambiamento, si vedono quando eseguo un tocco semplice saranno
+> invece dentro Change type);
+> 2) Filter;
+> 3) Sort.
+> Queste tre "nuove" opzioni non fanno nient'altro di diverso che facevano già
+> da prima di questa aggiunta. Ovviamente, i filtri e le regole di
+> ordinamento devono sincronizzarsi tra queste opzioni e quelle delle icone
+> nella parte in alto dei database. È solo un'aggiunta grafica (ti faccio
+> vedere come desidero che si vedano con uno screen da Notion su telefono)»
+
+E mentre lo facevo:
+> «Una cosa, alla fine di tutto togli Edit property proprio, tanto non serve a
+> nulla. Avrei voluto farlo tipo Notion ma devo pensare a fare alcune cose
+> particolari, meglio di no»
+
+- **[Modifica]** **[📱 Mobile]** **Toccando l'intestazione di una proprietà
+  si apre il suo menu; tenerla premuta non fa più niente.** Il menu non è più
+  la tendina di prima ma una finestra che sale dal basso, a gruppi di voci con
+  la freccetta su quelle che aprono un'altra finestra, come quella di Notion.
+  Le voci sono quelle di prima, nello stesso ordine: "Move to left" e "Move to
+  right"; "Activate all" e "Deactivate all" (solo le caselle); "Align left",
+  "Center" e "Align right"; "Resize column" e "Fit to content"; "Hide", "Hide
+  icon" e "Calculate". Lo stesso per la proprietà principale (Name): "Rename",
+  gli spostamenti, "Calculate", "Hide icon" e la larghezza
+- **[Nuova funzionalità]** **[📱 Mobile]** Nel menu, dopo gli spostamenti:
+  **"Change type"**, coi tipi che prima stavano nella finestra della proprietà
+  (sotto quello di adesso, le sue impostazioni: il formato dei numeri, la
+  durata, la Relation, il Rollup); **"Filter"**, la finestra del filtro delle
+  icone in cima, che parte già dai valori di questa proprietà; **"Sort"**, la
+  finestra dell'ordinamento delle icone in cima. Sono le stesse finestre, quindi
+  il filtro e le regole di ordinamento sono gli stessi da tutte e due le parti.
+  Con "Lock view" sono grigie, come le icone. Per Name c'è "Sort" (il filtro in
+  cima non lavora sul nome)
+- **[Rimosso]** **[📱 Mobile]** **"Edit property" non c'è più nel menu.** Il
+  nome si scrive direttamente nella riga in cima al menu, accanto all'icona,
+  come su Notion: chiudendo il menu la proprietà lo prende. Le impostazioni del
+  tipo stanno in "Change type"
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Delete property" in fondo al
+  menu**, in rosso come su Notion (prima stava dentro "Edit property"). Prima
+  di cancellare chiede, perché se ne vanno anche i valori di tutte le righe.
+  Con il database bloccato è grigio, e il nome non si cambia
+- **[Modifica]** **[📱 Mobile]** Dalle impostazioni del database (Properties),
+  dove un'intestazione da toccare non c'è (la bacheca, il calendario, la
+  galleria), toccando una proprietà si apre come prima la sua finestra con nome
+  e tipi
+- **[Progetto]** `PropertyMenu.kt` (`PropertyMenuSheet` con la riga del nome,
+  `PropertyMenuGroup`, `PropertyMenuChevronRow`, `PropertyMenuActions` in
+  `LocalPropertyMenuActions`); in `DatabaseViewScreen.kt` `PropertyHeaderCell` e
+  `NameHeaderCell` con `combinedClickable` (il tocco lungo non fa niente),
+  `columnWidthRows`, `PropertyMode` (`FULL`, `TYPE`), `FilterSheet(startColumnId)`;
+  `DatabaseViewModel.renameColumn`; `DbStrings.deletePropertyTitle`,
+  `deletePropertyNote`. Test: `PropertyMenuTest` (l'ordine delle voci, il tocco
+  lungo, "Change type", il nome nella riga in cima, "Delete property" con la
+  domanda, "Filter" e "Sort"), `HideIconTest` col tocco
+
 ### 🆕 v0.136 — 27/10/2026 · 19:10 — "Back" per tornare in cima quando si è scesi molto in una pagina
 *(Claude Code sul PC; provata sul telefono sulla pagina principale, scorrendo dal margine sinistro: scendendo compare, salendo se ne va, toccato riporta in cima; 850 test passati)*
 

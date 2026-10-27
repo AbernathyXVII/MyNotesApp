@@ -141,6 +141,7 @@ import androidx.compose.material.icons.filled.FormatListBulleted
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material.icons.filled.Notes
 import androidx.compose.material.icons.filled.OpenInFull
 import androidx.compose.material.icons.filled.OpenWith
@@ -540,13 +541,18 @@ private val displayLocale: Locale get() = AppSettings.language.locale
 private sealed class PropertyTarget {
     /** `initialType` serve a chi la propone già sapendo che tipo serve (il calendario una data, la bacheca una selezione). */
     data class New(val initialType: ColumnType = ColumnType.TEXT) : PropertyTarget()
-    /**
-     * `changeType`: aperta da "Change type" (dal 26/09/2026), solo la scelta
-     * del tipo; altrimenti "Edit property": il nome e, per i numeri, formato,
-     * cifre e "Show as".
-     */
-    data class Existing(val column: DatabaseColumnEntity) : PropertyTarget()
+    /** [mode]: tutto, o solo "Edit property" o "Change type" dal menu dell'intestazione (`PropertyMode`). */
+    data class Existing(val column: DatabaseColumnEntity, val mode: PropertyMode = PropertyMode.FULL) : PropertyTarget()
 }
+
+/**
+ * Cosa mostra la finestra di una proprietà che c'è già (dal 27/10/2026). Da
+ * "Change type" nel menu dell'intestazione solo i tipi, con sotto quello
+ * scelto le sue impostazioni (Number, Duration, Relation, Rollup); dalle
+ * impostazioni del database, dove un'intestazione da toccare non c'è (la
+ * bacheca, il calendario…), il nome e i tipi insieme come prima.
+ */
+private enum class PropertyMode { FULL, TYPE }
 
 /** Di quale colonna si sceglie il calcolo: `key` è l'id, o `NAME_CALCULATION_KEY`; `type` null = il nome. */
 private data class CalculateTarget(val key: String, val type: ColumnType?, val title: String)
@@ -1116,6 +1122,8 @@ private fun DatabaseViewBody(
     var showSettings by remember { mutableStateOf(false) }
     var showSort by remember { mutableStateOf(false) }
     var showFilter by remember { mutableStateOf(false) }
+    /** La proprietà da cui parte il filtro aperto dal menu di un'intestazione; null dalle icone. */
+    var filterStart by remember { mutableStateOf<String?>(null) }
     // Su quale schermata aprire le impostazioni: il pulsante della vista
     // porta dritto al selettore, l'icona dei cursori all'elenco completo.
     var settingsInitialPage by remember { mutableStateOf(SettingsPage.ROOT) }
@@ -1225,6 +1233,35 @@ private fun DatabaseViewBody(
     val propertyIcons = remember(dataPage?.hideNameIcon, viewModel) {
         PropertyIcons(dataPage?.hideNameIcon == true, viewModel::setPropertyIconHidden)
     }
+    // "Change type", "Filter" e "Sort" nel menu di un'intestazione (dal 27/10/2026):
+    // le stesse finestre delle icone in cima, quindi lo stesso filtro e lo stesso ordinamento.
+    val propertyMenuActions = remember(viewLocked, contentLocked) {
+        PropertyMenuActions(
+            rename = if (contentLocked) null else { column, name -> viewModel.renameColumn(column.id, name) },
+            delete = if (contentLocked) null else { column -> viewModel.deleteColumn(column) },
+            changeType = { column ->
+                focusManager.clearFocus()
+                propertyTarget = PropertyTarget.Existing(column, PropertyMode.TYPE)
+            },
+            filter = if (viewLocked) {
+                null
+            } else {
+                { columnId ->
+                    focusManager.clearFocus()
+                    filterStart = columnId
+                    showFilter = true
+                }
+            },
+            sort = if (viewLocked) {
+                null
+            } else {
+                {
+                    focusManager.clearFocus()
+                    showSort = true
+                }
+            }
+        )
+    }
 
     CompositionLocalProvider(
         LocalRelated provides viewRelated,
@@ -1233,6 +1270,7 @@ private fun DatabaseViewBody(
         LocalDatabaseLocked provides contentLocked,
         LocalNameColumnTitle provides dataPage?.nameColumnTitle,
         LocalPropertyIcons provides propertyIcons,
+        LocalPropertyMenuActions provides propertyMenuActions,
         LocalRowIcons provides rowIcons,
         LocalSimpleDatabase provides simple,
         LocalRowSearch provides state.search,
@@ -1414,6 +1452,7 @@ private fun DatabaseViewBody(
             } else {
                 {
                     focusManager.clearFocus()
+                    filterStart = null
                     showFilter = true
                 }
             },
@@ -1513,10 +1552,6 @@ private fun DatabaseViewBody(
                 DatabaseLayout.TABLE -> TableLayout(
                     state = state,
                     viewLocked = viewLocked,
-                    onEditProperty = {
-                        focusManager.clearFocus()
-                        propertyTarget = PropertyTarget.Existing(it)
-                    },
                     onMoveProperty = { column, delta -> viewModel.moveColumn(column.id, delta) },
                     nameColumnOrder = dataPage?.nameColumnOrder ?: -1,
                     onMoveName = { delta -> viewModel.moveColumn(NAME_COLUMN_KEY, delta) },
@@ -1848,6 +1883,7 @@ private fun DatabaseViewBody(
             columns = state.columns,
             filterColumnId = page?.filterColumnId,
             filterValue = page?.filterValue.orEmpty(),
+            startColumnId = filterStart,
             onSetFilter = { columnId, value -> viewModel.setFilter(columnId, value) },
             onClear = { viewModel.clearFilter() },
             onDismiss = { showFilter = false }
@@ -2109,7 +2145,6 @@ private fun TableLayout(
     hideEmptySubGroups: Boolean = true,
     /** "Lock view": le colonne non si spostano, e le due voci restano grigie. */
     viewLocked: Boolean,
-    onEditProperty: (DatabaseColumnEntity) -> Unit,
     onMoveProperty: (DatabaseColumnEntity, Int) -> Unit,
     /** Dove sta Name fra le colonne (`PageEntity.nameColumnOrder`, vedi `namePosition`). */
     nameColumnOrder: Int = -1,
@@ -2252,7 +2287,6 @@ private fun TableLayout(
             TableHeaderRow(
                 columns = shownColumns,
                 viewLocked = viewLocked,
-                onEditProperty = onEditProperty,
                 onMoveProperty = onMoveProperty,
                 namePlace = namePlace,
                 onMoveName = onMoveName,
@@ -2408,7 +2442,6 @@ private fun TableLayout(
             TableHeaderRow(
                 columns = shownColumns,
                 viewLocked = viewLocked,
-                onEditProperty = onEditProperty,
                 onMoveProperty = onMoveProperty,
                 namePlace = namePlace,
                 onMoveName = onMoveName,
@@ -2473,7 +2506,6 @@ private fun TableLayout(
             TableHeaderRow(
                 columns = shownColumns,
                 viewLocked = viewLocked,
-                onEditProperty = onEditProperty,
                 onMoveProperty = onMoveProperty,
                 namePlace = namePlace,
                 onMoveName = onMoveName,
@@ -2858,7 +2890,6 @@ private val SUB_GROUP_INDENT = 20.dp
 private fun TableHeaderRow(
     columns: List<DatabaseColumnEntity>,
     viewLocked: Boolean,
-    onEditProperty: (DatabaseColumnEntity) -> Unit,
     onMoveProperty: (DatabaseColumnEntity, Int) -> Unit,
     /** Dove sta Name fra `columns`: 0 = prima di tutte, `columns.size` = in fondo. */
     namePlace: Int = 0,
@@ -2906,8 +2937,6 @@ private fun TableHeaderRow(
                 column = column,
                 canMoveLeft = !viewLocked && place(index) > 0,
                 canMoveRight = !viewLocked && place(index) < columns.size,
-                onClick = { onEditProperty(column) },
-                onEdit = { onEditProperty(column) },
                 onMove = { delta -> onMoveProperty(column, delta) },
                 onHide = { onHideProperty(column) },
                 onAlign = { alignment -> onToggleCenterProperty(column, alignment) },
@@ -6182,6 +6211,8 @@ private fun FilterSheet(
     columns: List<DatabaseColumnEntity>,
     filterColumnId: String?,
     filterValue: String,
+    /** Aperta dal menu di un'intestazione (dal 27/10/2026): parte dai valori di quella proprietà. */
+    startColumnId: String? = null,
     onSetFilter: (String?, String?) -> Unit,
     onClear: () -> Unit,
     onDismiss: () -> Unit
@@ -6189,9 +6220,11 @@ private fun FilterSheet(
     // Quale proprietà si sta componendo. Parte da quella già filtrata,
     // così riaprendo il filtro si torna dove lo si era lasciato invece
     // che all'elenco delle proprietà.
-    var chosenId by remember(filterColumnId) { mutableStateOf(filterColumnId) }
-    val chosen = columns.find { it.id == chosenId }
     val filterable = columns.filter { it.isFilterable() }
+    var chosenId by remember(filterColumnId, startColumnId) {
+        mutableStateOf(startColumnId?.takeIf { id -> filterable.any { it.id == id } } ?: filterColumnId)
+    }
+    val chosen = columns.find { it.id == chosenId }
 
     NoteBottomSheet(
         onDismissRequest = onDismiss,
@@ -6596,6 +6629,7 @@ private fun NameHeaderCell(
     val label = nameColumnLabel()
     val custom = LocalNameColumnTitle.current
     val icons = LocalPropertyIcons.current
+    val actions = LocalPropertyMenuActions.current
     // Bloccato il database, il nome resta com'è.
     val rename = onRename?.takeIf { !LocalDatabaseLocked.current }
     val wrap = LocalWrapCells.current
@@ -6605,8 +6639,9 @@ private fun NameHeaderCell(
             .width(LocalTableWidths.current.name)
             .clipToBounds()
             .then(if (wrap) Modifier.heightIn(min = ROW_HEIGHT).fillMaxHeight() else Modifier.height(ROW_HEIGHT))
-            // Un tocco rinomina, come sulle altre proprietà apre le loro impostazioni.
-            .combinedClickable(onClick = { if (rename != null) renaming = true }, onLongClick = { menuOpen = true })
+            // Un tocco apre il menu, come sulle altre proprietà (dal 27/10/2026);
+            // tenere premuto non fa niente.
+            .combinedClickable(onClick = { menuOpen = true }, onLongClick = {})
             .padding(horizontal = 12.dp)
             .cellWrapPadding(),
         verticalAlignment = Alignment.CenterVertically
@@ -6628,76 +6663,56 @@ private fun NameHeaderCell(
             overflow = TextOverflow.Ellipsis
         )
     }
-    // Anche il nome ha il suo calcolo (quante pagine, quante col nome…).
-    DropdownMenu(
-        expanded = menuOpen,
-        onDismissRequest = { menuOpen = false },
-        modifier = Modifier.background(DarkSheet)
-    ) {
-        // **Rename** (dal 18/10/2026, chiesto dall'utente): il nome della
-        // proprietà principale di questo database.
-        DropdownMenuItem(
-            text = { Text(DbStrings.renameProperty) },
-            leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) },
-            enabled = rename != null,
-            onClick = {
-                menuOpen = false
-                renaming = true
-            }
-        )
-        // **Name si sposta** (dal 29/09/2026: "permettimi di spostare
-        // ovunque io voglia anche la colonna Name"): in cima, come nel menu
-        // delle altre colonne.
-        DropdownMenuItem(
-            text = { Text(DbStrings.moveLeft) },
-            leadingIcon = { Icon(Icons.Filled.KeyboardArrowLeft, contentDescription = null) },
-            enabled = canMoveLeft,
-            onClick = {
-                menuOpen = false
-                onMove(-1)
-            }
-        )
-        DropdownMenuItem(
-            text = { Text(DbStrings.moveRight) },
-            leadingIcon = { Icon(Icons.Filled.KeyboardArrowRight, contentDescription = null) },
-            enabled = canMoveRight,
-            onClick = {
-                menuOpen = false
-                onMove(1)
-            }
-        )
-        DropdownMenuItem(
-            text = { Text(DbStrings.calculate) },
-            leadingIcon = { Icon(Icons.Filled.Functions, contentDescription = null) },
-            onClick = {
-                menuOpen = false
-                onCalculate()
-            }
-        )
-        // "Hide icon" anche per il suo "Aa" (dal 27/10/2026).
-        if (icons != null) {
-            DropdownMenuItem(
-                text = { Text(if (icons.nameHidden) DbStrings.showIcon else DbStrings.hideIcon) },
-                leadingIcon = { Text("Aa", style = MaterialTheme.typography.labelLarge) },
-                onClick = {
-                    menuOpen = false
-                    icons.setHidden(null, !icons.nameHidden)
-                }
-            )
-        }
-        ColumnWidthMenuItems(
-            canResize = canResize,
-            fit = fit,
-            onResize = {
-                menuOpen = false
-                onResize()
-            },
-            onFitChange = {
-                menuOpen = false
-                onFitChange(it)
-            }
-        )
     }
+    if (menuOpen) {
+        fun pick(action: () -> Unit): () -> Unit = {
+            menuOpen = false
+            action()
+        }
+        PropertyMenuSheet(
+            name = label,
+            icon = { Text("Aa", style = MaterialTheme.typography.labelLarge) },
+            onHeader = rename?.let { pick { renaming = true } },
+            onDismiss = { menuOpen = false }
+        ) {
+            // **Rename** (dal 18/10/2026, chiesto dall'utente): il nome della
+            // proprietà principale di questo database.
+            PropertyMenuGroup(
+                listOf({ OptionRow(Icons.Filled.Edit, DbStrings.renameProperty, enabled = rename != null, onClick = pick { renaming = true }) })
+            )
+            // **Name si sposta** (dal 29/09/2026: "permettimi di spostare
+            // ovunque io voglia anche la colonna Name").
+            PropertyMenuGroup(
+                listOf(
+                    { OptionRow(Icons.Filled.KeyboardArrowLeft, DbStrings.moveLeft, enabled = canMoveLeft, onClick = pick { onMove(-1) }) },
+                    { OptionRow(Icons.Filled.KeyboardArrowRight, DbStrings.moveRight, enabled = canMoveRight, onClick = pick { onMove(1) }) }
+                )
+            )
+            // "Sort" come per le altre proprietà (dal 27/10/2026); il filtro
+            // invece non c'è: in cima al database Name non si filtra.
+            if (actions != null) {
+                PropertyMenuGroup(
+                    listOf({ PropertyMenuChevronRow(Icons.Filled.Sort, DbStrings.sort, enabled = actions.sort != null, onClick = pick { actions.sort?.invoke() }) })
+                )
+            }
+            // Anche il nome ha il suo calcolo (quante pagine, quante col nome…),
+            // e "Hide icon" per il suo "Aa" (dal 27/10/2026).
+            PropertyMenuGroup(
+                listOfNotNull(
+                    { PropertyMenuChevronRow(Icons.Filled.Functions, DbStrings.calculate, onClick = pick(onCalculate)) },
+                    icons?.let { i ->
+                        {
+                            OptionRow(
+                                Icons.Filled.TextFields,
+                                if (i.nameHidden) DbStrings.showIcon else DbStrings.hideIcon,
+                                onClick = pick { i.setHidden(null, !i.nameHidden) }
+                            )
+                        }
+                    }
+                )
+            )
+            PropertyMenuGroup(columnWidthRows(canResize, fit, onResize = pick(onResize), onFitChange = { menuOpen = false; onFitChange(it) }))
+        }
     }
     if (renaming && rename != null) {
         RenameMainPropertyDialog(
@@ -6743,46 +6758,43 @@ private fun RenameMainPropertyDialog(current: String, onDismiss: () -> Unit, onS
 }
 
 /**
- * **La larghezza di una colonna**, nel menu della sua intestazione (dal
- * 29/09/2026): "Resize column" fa comparire il segnalino sul bordo destro
- * della colonna, da trascinare; "Fit to content", acceso, la tiene larga
- * quanto il suo contenuto.
+ * "Resize column" e "Fit to content", le due voci della larghezza: nel menu
+ * di ogni colonna e in quello di Name. Con "Lock view" restano grigie.
  */
-@Composable
-private fun ColumnWidthMenuItems(
+private fun columnWidthRows(
     canResize: Boolean,
     fit: Boolean,
     onResize: () -> Unit,
     onFitChange: (Boolean) -> Unit
-) {
-    DropdownMenuItem(
-        text = { Text(DbStrings.resizeColumn) },
-        leadingIcon = { Icon(Icons.Filled.SettingsEthernet, contentDescription = null) },
-        enabled = canResize,
-        onClick = onResize
-    )
-    DropdownMenuItem(
-        text = { Text(DbStrings.fitToContent) },
-        leadingIcon = { Icon(Icons.Filled.FitScreen, contentDescription = null) },
-        trailingIcon = {
-            Switch(
-                checked = fit,
-                onCheckedChange = null,
-                enabled = canResize,
-                modifier = Modifier.scale(0.75f)
-            )
-        },
-        enabled = canResize,
-        onClick = { onFitChange(!fit) }
-    )
-}
+): List<@Composable () -> Unit> = listOf(
+    { OptionRow(icon = Icons.Filled.SettingsEthernet, label = DbStrings.resizeColumn, enabled = canResize, onClick = onResize) },
+    {
+        OptionRow(
+            icon = Icons.Filled.FitScreen,
+            label = DbStrings.fitToContent,
+            enabled = canResize,
+            onClick = { onFitChange(!fit) },
+            trailing = {
+                Switch(
+                    checked = fit,
+                    onCheckedChange = null,
+                    enabled = canResize,
+                    modifier = Modifier.scale(0.75f)
+                )
+            }
+        )
+    }
+)
 
 /**
- * L'intestazione di una colonna. Toccarla apre la finestra della
- * proprietà, come su Notion; **tenendola premuta** compare il menu con,
- * nell'ordine, "Move to left", "Move to right", "Edit property",
- * "Center" (solo per le caselle) e "Hide" per togliere di mezzo la
- * colonna senza cancellarla.
+ * L'intestazione di una colonna. **Toccarla apre il suo menu** (dal
+ * 27/10/2026, chiesto dall'utente: "tenere premuto su una proprietà non farà
+ * più nulla"), una finestra a gruppi come su Notion (`PropertyMenu.kt`). Le
+ * voci, nell'ordine di sempre: "Move to left" e "Move to right"; "Edit
+ * property" e, sotto, "Change type"; "Filter" e "Sort", le stesse finestre
+ * delle icone in cima; "Activate all" e "Deactivate all" (solo le caselle);
+ * dove sta il contenuto delle celle; "Resize column" e "Fit to content";
+ * "Hide", "Hide icon" e "Calculate".
  *
  * Gli spostamenti che non si possono fare restano **grigi** invece di
  * sparire: la prima colonna non va più a sinistra, l'ultima non va più a
@@ -6795,7 +6807,7 @@ private fun ColumnWidthMenuItems(
  * che si decide guardando la tabella — "questa non mi serve adesso" —
  * e cercarla in un menu a tre livelli vorrebbe dire non usarla mai.
  * Rimostrarla invece sta nelle impostazioni: una colonna nascosta non
- * ha più un'intestazione da tenere premuta.
+ * ha più un'intestazione da toccare.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -6803,8 +6815,6 @@ private fun PropertyHeaderCell(
     column: DatabaseColumnEntity,
     canMoveLeft: Boolean,
     canMoveRight: Boolean,
-    onClick: () -> Unit,
-    onEdit: () -> Unit,
     onMove: (Int) -> Unit,
     onHide: () -> Unit,
     onAlign: (CellAlignment) -> Unit,
@@ -6818,7 +6828,10 @@ private fun PropertyHeaderCell(
     onFitChange: (Boolean) -> Unit = {}
 ) {
     var menuOpen by remember(column.id) { mutableStateOf(false) }
+    var confirmDelete by remember(column.id) { mutableStateOf(false) }
     val dataLocked = LocalDatabaseLocked.current
+    val icons = LocalPropertyIcons.current
+    val actions = LocalPropertyMenuActions.current
 
     val wrap = LocalWrapCells.current
     Box(modifier = if (wrap) Modifier.fillMaxHeight() else Modifier) {
@@ -6827,10 +6840,9 @@ private fun PropertyHeaderCell(
                 .width(LocalTableWidths.current.of(column))
                 .clipToBounds()
                 .then(if (wrap) Modifier.heightIn(min = ROW_HEIGHT).fillMaxHeight() else Modifier.height(ROW_HEIGHT))
-                .combinedClickable(
-                    onClick = onClick,
-                    onLongClick = { menuOpen = true }
-                )
+                // Il tocco apre il menu; tenere premuto non fa niente (dal 27/10/2026),
+                // e non conta nemmeno come un tocco quando si alza il dito.
+                .combinedClickable(onClick = { menuOpen = true }, onLongClick = {})
                 .padding(horizontal = 12.dp)
                 .cellWrapPadding(),
             verticalAlignment = Alignment.CenterVertically
@@ -6854,143 +6866,146 @@ private fun PropertyHeaderCell(
                 overflow = TextOverflow.Ellipsis
             )
         }
+    }
 
-        DropdownMenu(
-            expanded = menuOpen,
-            onDismissRequest = { menuOpen = false },
-            modifier = Modifier.background(DarkSheet)
+    if (menuOpen) {
+        // Ogni voce chiude il menu e poi fa la sua cosa.
+        fun pick(action: () -> Unit): () -> Unit = {
+            menuOpen = false
+            action()
+        }
+        PropertyMenuSheet(
+            name = DbStrings.columnName(column.name),
+            icon = { Icon(column.type.icon(), contentDescription = null, modifier = Modifier.size(20.dp)) },
+            onHeader = null,
+            onDismiss = { menuOpen = false },
+            onRename = actions?.rename?.let { rename -> { name: String -> rename(column, name) } }
         ) {
-            // Gli spostamenti stanno **in cima**, sopra Edit property:
-            // l'ha chiesto l'utente, perché spostare è la cosa per cui si
-            // tiene premuta un'intestazione (per modificarla basta
-            // toccarla). In cima e sempre nello stesso posto, grigie
-            // quando non si può, si trovano senza leggere il menu.
-            DropdownMenuItem(
-                text = { Text(DbStrings.moveLeft) },
-                leadingIcon = {
-                    Icon(Icons.Filled.KeyboardArrowLeft, contentDescription = null)
-                },
-                enabled = canMoveLeft,
-                onClick = {
-                    menuOpen = false
-                    onMove(-1)
-                }
+            // Gli spostamenti **in cima**: l'ha chiesto l'utente, perché
+            // spostare è la cosa per cui si apre il menu di un'intestazione.
+            PropertyMenuGroup(
+                listOf(
+                    { OptionRow(Icons.Filled.KeyboardArrowLeft, DbStrings.moveLeft, enabled = canMoveLeft, onClick = pick { onMove(-1) }) },
+                    { OptionRow(Icons.Filled.KeyboardArrowRight, DbStrings.moveRight, enabled = canMoveRight, onClick = pick { onMove(1) }) }
+                )
             )
-            DropdownMenuItem(
-                text = { Text(DbStrings.moveRight) },
-                leadingIcon = {
-                    Icon(Icons.Filled.KeyboardArrowRight, contentDescription = null)
-                },
-                enabled = canMoveRight,
-                onClick = {
-                    menuOpen = false
-                    onMove(1)
-                }
-            )
-            DropdownMenuItem(
-                text = { Text(DbStrings.editProperty) },
-                leadingIcon = {
-                    Icon(Icons.Filled.Tune, contentDescription = null)
-                },
-                onClick = {
-                    menuOpen = false
-                    onEdit()
-                }
-            )
-            // "Change type" non c'è più (dal 21/10/2026, chiesto dall'utente):
-            // il tipo si cambia dentro "Edit property", sotto il nome.
+            // "Change type": i tipi, e sotto quello di adesso le sue impostazioni
+            // (Number, Duration, Relation, Rollup). "Edit property" non c'è più
+            // (27/10/2026, chiesto dall'utente): il nome si scrive qui in cima.
+            if (actions != null) {
+                PropertyMenuGroup(
+                    listOf({ PropertyMenuChevronRow(Icons.Filled.SwapHoriz, DbStrings.changeType, onClick = pick { actions.changeType(column) }) })
+                )
+            }
+            // Le stesse finestre delle icone in cima al database: il filtro parte
+            // da questa proprietà. Con "Lock view" grigie, come le icone.
+            if (actions != null) {
+                PropertyMenuGroup(
+                    listOf(
+                        {
+                            PropertyMenuChevronRow(
+                                Icons.Filled.FilterList,
+                                DbStrings.filter,
+                                enabled = actions.filter != null,
+                                onClick = pick { actions.filter?.invoke(column.id) }
+                            )
+                        },
+                        {
+                            PropertyMenuChevronRow(
+                                Icons.Filled.Sort,
+                                DbStrings.sort,
+                                enabled = actions.sort != null,
+                                onClick = pick { actions.sort?.invoke() }
+                            )
+                        }
+                    )
+                )
+            }
             // **Solo per le caselle** (dal 29/09/2026, chiesto dall'utente):
             // spuntarle o toglierle tutte in un colpo, sulle righe che si
             // vedono. Con il database bloccato restano grigie, come le celle.
             if (column.type == ColumnType.CHECKBOX) {
-                DropdownMenuItem(
-                    text = { Text(DbStrings.activateAll) },
-                    leadingIcon = { Icon(Icons.Filled.CheckBox, contentDescription = null) },
-                    enabled = !dataLocked,
-                    onClick = {
-                        menuOpen = false
-                        onSetAllChecked(true)
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text(DbStrings.deactivateAll) },
-                    leadingIcon = { Icon(Icons.Filled.CheckBoxOutlineBlank, contentDescription = null) },
-                    enabled = !dataLocked,
-                    onClick = {
-                        menuOpen = false
-                        onSetAllChecked(false)
-                    }
+                PropertyMenuGroup(
+                    listOf(
+                        { OptionRow(Icons.Filled.CheckBox, DbStrings.activateAll, enabled = !dataLocked, onClick = pick { onSetAllChecked(true) }) },
+                        { OptionRow(Icons.Filled.CheckBoxOutlineBlank, DbStrings.deactivateAll, enabled = !dataLocked, onClick = pick { onSetAllChecked(false) }) }
+                    )
                 )
             }
             // **Dove sta il contenuto delle celle** (dal 26/09/2026, per ogni
             // tipo; prima solo le caselle si centravano): a sinistra, al
             // centro o a destra. L'intestazione resta sempre a sinistra.
-            listOf(
-                Triple(CellAlignment.LEFT, DbStrings.alignLeft, Icons.Filled.FormatAlignLeft),
-                Triple(CellAlignment.CENTER, DbStrings.center, Icons.Filled.FormatAlignCenter),
-                Triple(CellAlignment.RIGHT, DbStrings.alignRight, Icons.Filled.FormatAlignRight)
-            ).forEach { (alignment, label, icon) ->
-                DropdownMenuItem(
-                    text = { Text(label) },
-                    leadingIcon = { Icon(icon, contentDescription = null) },
-                    trailingIcon = if (column.cellAlignment == alignment) {
-                        { Icon(Icons.Filled.Check, contentDescription = DbStrings.selected) }
-                    } else {
-                        null
+            PropertyMenuGroup(
+                listOf(
+                    Triple(CellAlignment.LEFT, DbStrings.alignLeft, Icons.Filled.FormatAlignLeft),
+                    Triple(CellAlignment.CENTER, DbStrings.center, Icons.Filled.FormatAlignCenter),
+                    Triple(CellAlignment.RIGHT, DbStrings.alignRight, Icons.Filled.FormatAlignRight)
+                ).map { (alignment, label, icon) ->
+                    {
+                        OptionRow(
+                            icon = icon,
+                            label = label,
+                            onClick = pick { onAlign(alignment) },
+                            trailing = if (column.cellAlignment == alignment) {
+                                { Icon(Icons.Filled.Check, contentDescription = DbStrings.selected, tint = MaterialTheme.colorScheme.primary) }
+                            } else {
+                                null
+                            }
+                        )
+                    }
+                }
+            )
+            PropertyMenuGroup(columnWidthRows(canResize, fit, onResize = pick(onResize), onFitChange = { menuOpen = false; onFitChange(it) }))
+            PropertyMenuGroup(
+                listOfNotNull(
+                    { OptionRow(Icons.Filled.VisibilityOff, DbStrings.hide, onClick = pick(onHide)) },
+                    // **"Hide icon"** (dal 27/10/2026, chiesto dall'utente): l'icona
+                    // accanto al nome se ne va, o torna con "Show icon". Accanto, la
+                    // sua stessa icona.
+                    icons?.let { i ->
+                        {
+                            OptionRow(
+                                column.type.icon(),
+                                if (column.hideIcon) DbStrings.showIcon else DbStrings.hideIcon,
+                                onClick = pick { i.setHidden(column.id, !column.hideIcon) }
+                            )
+                        }
                     },
-                    onClick = {
-                        menuOpen = false
-                        onAlign(alignment)
-                    }
+                    // Il calcolo in fondo alla colonna (dal 26/09/2026).
+                    { PropertyMenuChevronRow(Icons.Filled.Functions, DbStrings.calculate, onClick = pick(onCalculate)) }
+                )
+            )
+            // In fondo, in rosso, come su Notion: prima stava dentro "Edit property".
+            if (actions != null) {
+                PropertyMenuGroup(
+                    listOf({
+                        OptionRow(
+                            Icons.Filled.Delete,
+                            DbStrings.deleteProperty,
+                            enabled = actions.delete != null,
+                            tint = MaterialTheme.colorScheme.error,
+                            onClick = pick { confirmDelete = true }
+                        )
+                    })
                 )
             }
-            ColumnWidthMenuItems(
-                canResize = canResize,
-                fit = fit,
-                onResize = {
-                    menuOpen = false
-                    onResize()
-                },
-                onFitChange = {
-                    menuOpen = false
-                    onFitChange(it)
-                }
-            )
-            DropdownMenuItem(
-                text = { Text(DbStrings.hide) },
-                leadingIcon = {
-                    Icon(Icons.Filled.VisibilityOff, contentDescription = null)
-                },
-                onClick = {
-                    menuOpen = false
-                    onHide()
-                }
-            )
-            // **"Hide icon"** (dal 27/10/2026, chiesto dall'utente): l'icona
-            // accanto al nome se ne va, o torna con "Show icon". Accanto, la
-            // sua stessa icona.
-            LocalPropertyIcons.current?.let { icons ->
-                DropdownMenuItem(
-                    text = { Text(if (column.hideIcon) DbStrings.showIcon else DbStrings.hideIcon) },
-                    leadingIcon = { Icon(column.type.icon(), contentDescription = null) },
-                    onClick = {
-                        menuOpen = false
-                        icons.setHidden(column.id, !column.hideIcon)
-                    }
-                )
-            }
-            // Il calcolo in fondo alla colonna (dal 26/09/2026).
-            DropdownMenuItem(
-                text = { Text(DbStrings.calculate) },
-                leadingIcon = {
-                    Icon(Icons.Filled.Functions, contentDescription = null)
-                },
-                onClick = {
-                    menuOpen = false
-                    onCalculate()
-                }
-            )
         }
+    }
+
+    // Con la proprietà se ne vanno i suoi valori in tutte le righe: si chiede.
+    if (confirmDelete) {
+        AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { Text(DbStrings.deletePropertyTitle(DbStrings.columnName(column.name))) },
+            text = { Text(DbStrings.deletePropertyNote) },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmDelete = false
+                    actions?.delete?.invoke(column)
+                }) { Text(Strings.delete, color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text(Strings.cancel) } }
+        )
     }
 }
 
@@ -10961,6 +10976,7 @@ private fun PropertySheet(
     onDelete: () -> Unit
 ) {
     val existing = (target as? PropertyTarget.Existing)?.column
+    val mode = (target as? PropertyTarget.Existing)?.mode ?: PropertyMode.FULL
     // **Tutto in "Edit property"** (dal 21/10/2026, chiesto dall'utente): il
     // nome, sotto tutti i tipi, e sotto il tipo scelto le sue impostazioni
     // (Number, Duration, Relation, Rollup). Dal 26/09/2026 il tipo si cambiava
@@ -11056,7 +11072,11 @@ private fun PropertySheet(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = if (existing == null) DbStrings.newProperty else DbStrings.editProperty,
+                    text = when {
+                        existing == null -> DbStrings.newProperty
+                        mode == PropertyMode.TYPE -> DbStrings.changeType
+                        else -> DbStrings.editProperty
+                    },
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f),
                     fontWeight = FontWeight.Bold
@@ -11088,12 +11108,16 @@ private fun PropertySheet(
         ) {
             Spacer(modifier = Modifier.size(16.dp))
 
+            // "Change type" (dal 27/10/2026) ha solo i tipi: il nome sta in "Edit property".
+            if (mode != PropertyMode.TYPE) {
             SheetTextField(
                 value = name,
                 onValueChange = { name = it },
                 placeholder = DbStrings.propertyName,
                 leading = Icons.Filled.Notes
             )
+            }
+
 
             // Qui non si scrivono le opzioni di un tag. Prima c'era un
             // campo per elencarle separate da virgola, ed era una
@@ -11103,7 +11127,8 @@ private fun PropertySheet(
             // si creano e si modificano dalla cella, che è l'unico
             // posto in cui esiste anche il loro colore.
 
-            Spacer(modifier = Modifier.size(20.dp))
+            run {
+            Spacer(modifier = Modifier.size(if (mode == PropertyMode.TYPE) 0.dp else 20.dp))
             Text(
                 DbStrings.type,
                 style = MaterialTheme.typography.labelMedium,
@@ -11161,13 +11186,14 @@ private fun PropertySheet(
                         }
                     }
                 }
+            }
 
             // Qui non si sposta la colonna: "Move to left" e "Move to
             // right" stanno in cima al menu che si apre tenendo premuta
             // l'intestazione, e averle in due posti voleva dire due
             // versioni della stessa cosa (in questa finestra, per di
             // più, comparivano e sparivano a seconda della colonna).
-            if (existing != null) {
+            if (existing != null && mode != PropertyMode.TYPE) {
                 Spacer(modifier = Modifier.size(20.dp))
                 HorizontalDivider()
                 SheetAction(Icons.Filled.Delete, DbStrings.deleteProperty, isDestructive = true) {
