@@ -1832,6 +1832,8 @@ private fun PageEditorContent(
             // cima, sotto i pulsanti sospesi, e si illumina; "Back" riporta
             // dov'era la pagina. Una riga dentro un toggle porta al toggle.
             var linkReturn by remember(pageId) { mutableStateOf<LinkReturn?>(null) }
+            // **"Back" quando si è scesi molto** (dal 27/10/2026): vedi `BackToTop.kt`.
+            val backToTop = rememberBackToTop(listState)
             val movedBlockNow by viewModel.movedBlock.collectAsStateWithLifecycle()
             val veilColor = MaterialTheme.colorScheme.primary
             val jumpScope = rememberCoroutineScope()
@@ -2581,6 +2583,8 @@ private fun PageEditorContent(
                 state = listState,
                 modifier = Modifier
                     .fillMaxSize()
+                    // Il verso del dito, per "Back" quando si è scesi molto (`BackToTop.kt`).
+                    .nestedScroll(backToTop.connection)
                     // Con tutta la pagina selezionata, un tocco la lascia (vedi `PageSelection.kt`).
                     .tapToEndPageSelection(pageSelected) { pageSelected = false }
                     .stickyViewport(stickyViewport)
@@ -2642,6 +2646,14 @@ private fun PageEditorContent(
                         .padding(bottom = 24.dp)
                 )
             }
+            BackToTopButton(
+                state = backToTop,
+                list = listState,
+                allowed = !pageSelected && linkReturn == null && !drawingMode,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 40.dp)
+            )
             linkReturn?.takeIf { !pageSelected }?.let { back ->
                 LinkBackButton(
                     back = back,

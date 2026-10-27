@@ -2104,6 +2104,35 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.136 — 27/10/2026 · 19:10 — "Back" per tornare in cima quando si è scesi molto in una pagina
+*(Claude Code sul PC; provata sul telefono sulla pagina principale, scorrendo dal margine sinistro: scendendo compare, salendo se ne va, toccato riporta in cima; 850 test passati)*
+
+L'utente, parola per parola:
+> «Nuova feature: quando scorro molto sotto in una pagina qualsiasi, fai sì
+> che appaia un pulsantino al centro in basso chiamato Back (con l'icona una
+> freccette rivolta verso l'alto) come hai fatto in una delle ultime versioni
+> con il discorso del sommario di una pagina, quando collego una scritta di
+> un'indice ad un'altra scritta magari con un font size diverso.
+> A proposito, implementando questa cosa che ti ho appena chiesto, ovviamente
+> l'app deve capire che, se vado manualmente verso l'alto, l'icona non deve
+> apparire»
+
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Back" in basso al centro quando
+  si è scesi molto**, in ogni pagina: lo stesso pulsantino dell'indice, con la
+  freccia in su. Compare scendendo col dito oltre una schermata e mezza dalla
+  cima; toccandolo la pagina torna in cima e il pulsante se ne va. **Salendo a
+  mano non compare**, e se c'era se ne va: conta l'ultimo verso in cui il dito
+  ha fatto scorrere la pagina, non gli spostamenti che fa l'app da sé (il
+  cursore portato in vista, il salto di un collegamento). Non c'è mentre si
+  scrive (tastiera aperta, coprirebbe il testo), con tutta la pagina
+  selezionata, mentre si disegna, e quando c'è già il "Back" di un
+  collegamento dell'indice
+- **[Progetto]** `BackToTop.kt` (`BackToTop` col verso del dito da una
+  `NestedScrollConnection` sulla lista della pagina e la distanza dalla cima
+  stimata come la barretta di scorrimento, `ItemSizes`; `BackToTopButton`);
+  `BackPill` in `PageAnchors.kt`, la pillola comune ai due "Back". Test:
+  `BackToTopTest` (giù compare, su se ne va, giù torna, toccato si va in cima)
+
 ### 🔧 v0.135.0.1 — 27/10/2026 · 18:58 — "---" fa il divisore senza lasciare i trattini né righe doppie
 *(Claude Code sul PC; provata coi test sul PC; sul telefono la prova la fa l'utente, che stava usando la pagina di prova; 849 test passati)*
 

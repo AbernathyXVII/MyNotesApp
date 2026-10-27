@@ -220,17 +220,26 @@ internal fun LinkBackButton(back: LinkReturn, onBack: () -> Unit, onTimeout: () 
         delay(LINK_BACK_MS)
         timeout()
     }
+    BackPill(upward = back.upward, tag = LINK_BACK_TAG, onClick = onBack, modifier = modifier)
+}
+
+/**
+ * La pillola "Back" con la sua freccia, in su o in giù: quella dell'indice e,
+ * dal 27/10/2026, quella che riporta in cima a una pagina lunga (`BackToTop.kt`).
+ */
+@Composable
+internal fun BackPill(upward: Boolean, tag: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
-            .testTag(LINK_BACK_TAG)
+            .testTag(tag)
             .clip(RoundedCornerShape(20.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant)
-            .clickable(onClick = onBack)
+            .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
-            if (back.upward) Icons.Filled.ArrowUpward else Icons.Filled.ArrowDownward,
+            if (upward) Icons.Filled.ArrowUpward else Icons.Filled.ArrowDownward,
             contentDescription = null,
             modifier = Modifier.size(16.dp),
             tint = MaterialTheme.colorScheme.onSurfaceVariant
