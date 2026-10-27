@@ -2104,6 +2104,42 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🔧 v0.131.0.1 — 27/10/2026 · 08:12 — La tastiera nella home non lagga più
+*(Claude Code sul PC; misurata sul telefono nella home, prima e dopo, aprendo la tastiera nel titolo, in una cella e in una riga vuota; 801 test passati)*
+
+L'utente, parola per parola:
+> «Nella home continua a laggare la tastiera quando la apro e quando la
+> chiudo. Saresti in grado di risolvere questo problema una volta per
+> tutte?»
+
+- **[Bug fix]** **[📱 Mobile]** **Aprendo e chiudendo la tastiera i database
+  della pagina non si rifanno più.** Quando la tastiera si apre o si chiude
+  (e quando il cursore entra o esce) la pagina si aggiorna un paio di volte,
+  ed è giusto; ma con lei si rifacevano da capo tutti i database che ha
+  dentro. Nella home sono dieci, tenuti pronti anche fuori dallo schermo,
+  con la tabella di "Habit tracker 2026" e le sue migliaia di caselle: fino
+  a 60–117 ms per fotogramma, su 8. Misurato sul telefono aprendo e chiudendo
+  la tastiera cinque volte (release, `dumpsys gfxinfo`), fotogrammi in
+  ritardo e i più lenti (99%):
+  - nel titolo della home: **13,9% → 7,2%**, 69 → 18–20 ms
+  - in una cella di "Habit tracker 2026": **15% → 6,4%**, 73–85 → 16 ms
+  - in una riga vuota in fondo, con la barra sopra la tastiera: **18% →
+    8–10%**, 97–117 → 19–20 ms
+  Quelli che restano lenti sono uno o due all'inizio e alla fine: compare o
+  sparisce la goccia del cursore (una finestrella a sé) e la barra
+- **[Progetto]** Tre cose, trovate con una traccia di sistema e i nomi delle
+  funzioni di Compose accesi solo per la prova (`Composer.setTracer`):
+  `openBlockMenu` rifatto a ogni giro della pagina, che le isole leggono
+  (`PageItemEnv.onOpenBlockMenu`) e che quindi le faceva ridisegnare tutte
+  (ora `remember`); il contenuto della `LazyColumn` della pagina rifatto a
+  ogni giro, che faceva ripartire tutte le voci tenute pronte (ora
+  `listContent`, rifatto solo se cambia quello che mostra); e l'altezza
+  della tastiera letta per la barra mentre la si costruiva, che a barra
+  aperta rifaceva la pagina a ogni fotogramma della corsa (ora la si legge
+  in `offset { }`). Test: `PageFocusRecomposeTest` (il cursore che entra e
+  esce dal titolo non fa ripartire il database della pagina: senza la
+  correzione ripartiva 24 volte)
+
 ### 🆕 v0.131 — 26/10/2026 · 23:43 — "Hide “New”" nella bacheca
 *(Claude Code sul PC; provata sul telefono su "KPOP Music Shows", dove è rimasta accesa; 800 test passati)*
 

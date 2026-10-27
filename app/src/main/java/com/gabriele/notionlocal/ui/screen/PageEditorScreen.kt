@@ -111,6 +111,7 @@ import androidx.compose.ui.platform.LocalView
 import android.view.KeyEvent
 import kotlinx.coroutines.flow.flowOf
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.relocation.BringIntoViewRequester
@@ -1583,12 +1584,21 @@ private fun PageEditorContent(
     // la pagina — righe in cui il cursore non entra. Su una pagina
     // bloccata o nel cestino non c'è, come non c'è la barra: quasi tutte
     // le sue voci cambiano la pagina.
-    val openBlockMenu: ((String) -> Unit)? = if (readOnlyPage) {
-        null
-    } else {
-        { id ->
-            focusManager.clearFocus()
-            blockMenuFor = id
+    //
+    // **Sempre la stessa funzione** (dal 27/10/2026): le isole la leggono
+    // (`PageItemEnv.onOpenBlockMenu`), e rifatta a ogni giro della pagina —
+    // la tastiera che si apre o si chiude, il cursore che entra nel titolo —
+    // le faceva ridisegnare tutte, coi database dentro: nella home dieci,
+    // tutti costruiti anche fuori dallo schermo, ed era il lag della
+    // tastiera (misurato: fino a 69 ms per fotogramma, su 8).
+    val openBlockMenu: ((String) -> Unit)? = remember(readOnlyPage, focusManager) {
+        if (readOnlyPage) {
+            null
+        } else {
+            { id ->
+                focusManager.clearFocus()
+                blockMenuFor = id
+            }
         }
     }
 
@@ -2453,6 +2463,96 @@ private fun PageEditorContent(
                 onNavigateToDatabase = onNavigateToDatabase,
                 onOpenBlockMenu = openBlockMenu
             )
+            // **Il contenuto della lista resta lo stesso finché non cambia quello
+            // che mostra** (dal 27/10/2026). Rifatto a ogni giro della pagina, la
+            // lista ripartiva da capo con tutte le voci che tiene pronte — nella
+            // home tredici, i database fuori dallo schermo compresi — anche quando
+            // a cambiare era solo la tastiera che si apriva o si chiudeva: mezzo
+            // millisecondo l'una, abbastanza per perdere il fotogramma.
+            val listContent: LazyListScope.() -> Unit = remember(
+                pageHeader, renderItems, itemEnv, paragraphLook, ordinals, childrenOf, continuedRuns,
+                continuingRuns, sideScroll, movedBlockNow, veilColor, pageSelected, focusRequestBlockId, formatRequest
+            ) {
+                {
+                    // **La copertina e il titolo scorrono col resto.**
+                    //
+                    // Stavano fuori dalla lista, quindi restavano
+                    // inchiodati in cima mentre il testo scorreva
+                    // sotto: con una copertina alta si mangiavano
+                    // mezza schermata che non si poteva recuperare.
+                    // Messi qui dentro come prima voce se ne vanno
+                    // scorrendo, come su Notion.
+                    //
+                    // Sono **una voce sola** di proposito: gli indici
+                    // della lista servono altrove per portare in vista
+                    // la riga che prende il cursore, e uno scarto fisso
+                    // di uno e' molto piu' facile da tenere giusto di
+                    // uno variabile.
+                    item(key = PAGE_HEADER_KEY) {
+                        KeepComposed()
+                        // Nel titolo "Select all" prende solo il titolo.
+                        PlainTextToolbar { PageHeaderSlot(pageHeader) }
+                    }
+
+                    items(renderItems, key = { item -> renderItemKey(item) }) { item ->
+                        KeepComposed()
+                        // I campi di testo della voce sanno in quale voce stanno:
+                        // con "Full line view" serve a sapere se si vedono.
+                        CompositionLocalProvider(
+                            LocalSideItemKey provides renderItemKey(item),
+                            LocalParagraphLook provides paragraphLook
+                        ) {
+                        // **Ogni voce si ridisegna solo se è cambiata** (dal
+                        // 18/10/2026): riceve solo quello che mostra, e le
+                        // richieste di fuoco e di formato solo se sono per lei.
+                        // Prima riceveva tutta la pagina, e a ogni tasto si
+                        // rifacevano tutte le voci già viste, database compresi.
+                        when (item) {
+                            is RenderItem.Run -> {
+                                val content = RunContent(item.blocks, item.blocks.numbersFrom(ordinals))
+                                Column(Modifier.pageVeil(pageSelected, veilColor)) {
+                                RunItem(
+                                    content = content,
+                                    runKey = item.key,
+                                    joinsAbove = item.key in continuingRuns,
+                                    joinsBelow = item.key in continuedRuns,
+                                    env = itemEnv,
+                                    focusRequestBlockId = focusRequestBlockId?.takeIf { id -> item.blocks.any { it.id == id } },
+                                    formatRequest = formatRequest?.takeIf { r -> item.blocks.any { it.id == r.first } }
+                                )
+                                }
+                            }
+                            is RenderItem.Island -> {
+                                val content = IslandContent(item.block, scopeOf(item.block, childrenOf))
+                                // Una tabella arrivata al suo bordo non si trascina
+                                // dietro il testo della pagina (vedi `KeepSidewaysInside`).
+                                // Col pin ha il segnalibro, e arrivandoci si illumina (`PageAnchors.kt`).
+                                // **Una colonna, non un `Box`** (dal 20/10/2026): un blocco può
+                                // disegnare più pezzi uno sotto l'altro, come il database e la
+                                // riga alla sua fine; nel `Box` messo il 19/10 finivano uno
+                                // sopra l'altro, e la riga stava in cima al database.
+                                // Lo spazio fra i blocchi ("Paragraph"): metà sopra e
+                                // metà sotto, come fa l'altezza di riga nei campi di testo.
+                                val islandSpacing = paragraphLook.spacingOf(item.block)
+                                Column(
+                                    (if (sideScroll != null) Modifier.nestedScroll(KeepSidewaysInside) else Modifier)
+                                        .padding(vertical = (islandSpacing / 2f).sp.toDpIn(LocalDensity.current))
+                                        .anchorDecor(item.block.id, item.block.attrs.linkTarget, movedBlockNow, PAGE_SIDE_PADDING)
+                                        .pageVeil(pageSelected, veilColor)
+                                ) {
+                                    IslandItem(
+                                        content = content,
+                                        env = itemEnv,
+                                        focusRequestBlockId = focusRequestBlockId?.takeIf { id -> content.scope.any { it.id == id } },
+                                        formatRequest = formatRequest?.takeIf { r -> content.scope.any { it.id == r.first } }
+                                    )
+                                }
+                            }
+                        }
+                        }
+                    }
+                }
+            }
             LazyColumn(
                 state = listState,
                 modifier = Modifier
@@ -2490,86 +2590,9 @@ private fun PageEditorContent(
                                 viewModel.focusLastBlock()
                             }
                         }
-                    }
-            ) {
-                // **La copertina e il titolo scorrono col resto.**
-                //
-                // Stavano fuori dalla lista, quindi restavano
-                // inchiodati in cima mentre il testo scorreva
-                // sotto: con una copertina alta si mangiavano
-                // mezza schermata che non si poteva recuperare.
-                // Messi qui dentro come prima voce se ne vanno
-                // scorrendo, come su Notion.
-                //
-                // Sono **una voce sola** di proposito: gli indici
-                // della lista servono altrove per portare in vista
-                // la riga che prende il cursore, e uno scarto fisso
-                // di uno e' molto piu' facile da tenere giusto di
-                // uno variabile.
-                item(key = PAGE_HEADER_KEY) {
-                    KeepComposed()
-                    // Nel titolo "Select all" prende solo il titolo.
-                    PlainTextToolbar { PageHeaderSlot(pageHeader) }
-                }
-
-                items(renderItems, key = { item -> renderItemKey(item) }) { item ->
-                    KeepComposed()
-                    // I campi di testo della voce sanno in quale voce stanno:
-                    // con "Full line view" serve a sapere se si vedono.
-                    CompositionLocalProvider(
-                        LocalSideItemKey provides renderItemKey(item),
-                        LocalParagraphLook provides paragraphLook
-                    ) {
-                    // **Ogni voce si ridisegna solo se è cambiata** (dal
-                    // 18/10/2026): riceve solo quello che mostra, e le
-                    // richieste di fuoco e di formato solo se sono per lei.
-                    // Prima riceveva tutta la pagina, e a ogni tasto si
-                    // rifacevano tutte le voci già viste, database compresi.
-                    when (item) {
-                        is RenderItem.Run -> {
-                            val content = RunContent(item.blocks, item.blocks.numbersFrom(ordinals))
-                            Column(Modifier.pageVeil(pageSelected, veilColor)) {
-                            RunItem(
-                                content = content,
-                                runKey = item.key,
-                                joinsAbove = item.key in continuingRuns,
-                                joinsBelow = item.key in continuedRuns,
-                                env = itemEnv,
-                                focusRequestBlockId = focusRequestBlockId?.takeIf { id -> item.blocks.any { it.id == id } },
-                                formatRequest = formatRequest?.takeIf { r -> item.blocks.any { it.id == r.first } }
-                            )
-                            }
-                        }
-                        is RenderItem.Island -> {
-                            val content = IslandContent(item.block, scopeOf(item.block, childrenOf))
-                            // Una tabella arrivata al suo bordo non si trascina
-                            // dietro il testo della pagina (vedi `KeepSidewaysInside`).
-                            // Col pin ha il segnalibro, e arrivandoci si illumina (`PageAnchors.kt`).
-                            // **Una colonna, non un `Box`** (dal 20/10/2026): un blocco può
-                            // disegnare più pezzi uno sotto l'altro, come il database e la
-                            // riga alla sua fine; nel `Box` messo il 19/10 finivano uno
-                            // sopra l'altro, e la riga stava in cima al database.
-                            // Lo spazio fra i blocchi ("Paragraph"): metà sopra e
-                            // metà sotto, come fa l'altezza di riga nei campi di testo.
-                            val islandSpacing = paragraphLook.spacingOf(item.block)
-                            Column(
-                                (if (sideScroll != null) Modifier.nestedScroll(KeepSidewaysInside) else Modifier)
-                                    .padding(vertical = (islandSpacing / 2f).sp.toDpIn(LocalDensity.current))
-                                    .anchorDecor(item.block.id, item.block.attrs.linkTarget, movedBlockNow, PAGE_SIDE_PADDING)
-                                    .pageVeil(pageSelected, veilColor)
-                            ) {
-                                IslandItem(
-                                    content = content,
-                                    env = itemEnv,
-                                    focusRequestBlockId = focusRequestBlockId?.takeIf { id -> content.scope.any { it.id == id } },
-                                    formatRequest = formatRequest?.takeIf { r -> content.scope.any { it.id == r.first } }
-                                )
-                            }
-                        }
-                    }
-                    }
-                }
-            }
+                    },
+                content = listContent
+            )
             // **La barretta di scorrimento** (dal 20/10/2026), sul bordo destro.
             PageScrollIndicator(listState, modifier = Modifier.align(Alignment.TopEnd))
             if (pageSelected) {
@@ -2667,21 +2690,22 @@ private fun PageEditorContent(
                 // stesso momento della tastiera. Quando poi il sistema
                 // la smonta, è già invisibile e non si vede nessuno
                 // scatto.
-                val density = LocalDensity.current
-                val imeBottomPx = WindowInsets.ime.getBottom(density)
+                //
+                // La tastiera si legge **mentre si piazza la barra**, non
+                // mentre la si costruisce (dal 27/10/2026): letta qui, a ogni
+                // fotogramma della sua corsa si rifaceva tutta la pagina.
+                val ime = WindowInsets.ime
                 var barHeightPx by remember { mutableStateOf(0) }
                 // Col menu "+" aperto la barra si vede anche senza
                 // tastiera: lì non deve scivolare da nessuna parte.
-                val slideAway = if (showTypeMenu) {
-                    0
-                } else {
-                    (barHeightPx - imeBottomPx).coerceAtLeast(0)
-                }
+                val slides = !showTypeMenu
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .onSizeChanged { barHeightPx = it.height }
-                        .offset { IntOffset(0, slideAway) }
+                        .offset {
+                            IntOffset(0, if (slides) (barHeightPx - ime.getBottom(this)).coerceAtLeast(0) else 0)
+                        }
                         .background(DarkSurfaceVariant)
                         .horizontalScroll(rememberScrollState())
                         // Nessun margine sopra e sotto: l'altezza la
