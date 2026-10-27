@@ -83,7 +83,7 @@ class MigrationTest {
         assertNull(page.sourceDatabaseId)
         assertNull(page.viewHiddenColumnIds)
         assertNull(page.cardCoverScale)
-        assertEquals(64, db.openHelper.readableDatabase.version)
+        assertEquals(65, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -99,7 +99,7 @@ class MigrationTest {
         assertNull(yahei.cardCoverScale)
         assertNull(yahei.cardCoverOffsetX)
         assertNull(yahei.cardCoverOffsetY)
-        assertEquals(64, db.openHelper.readableDatabase.version)
+        assertEquals(65, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -127,7 +127,7 @@ class MigrationTest {
         assertEquals(listOf(RichTextSpan(text = "", color = "#E03E3E")), spans("b2"))
         // Una pagina senza font resta com'era.
         assertEquals(listOf(RichTextSpan(text = "Normale")), spans("b3"))
-        assertEquals(64, db.openHelper.readableDatabase.version)
+        assertEquals(65, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -139,7 +139,7 @@ class MigrationTest {
         assertNull(block.notifyAt)
         assertTrue(db.blockDao().getNotificationRows().isEmpty())
         assertTrue(db.databaseDao().getNotifyingDateCells().isEmpty())
-        assertEquals(64, db.openHelper.readableDatabase.version)
+        assertEquals(65, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -159,7 +159,7 @@ class MigrationTest {
             )
         )
         assertEquals("b1", db.inkDao().getForPageOnce("p1").single().anchor)
-        assertEquals(64, db.openHelper.readableDatabase.version)
+        assertEquals(65, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -169,7 +169,7 @@ class MigrationTest {
         assertEquals("Pagina alla 33", page.title)
         assertFalse(page.isProtected)
         assertEquals(0, db.pageDao().countProtected())
-        assertEquals(64, db.openHelper.readableDatabase.version)
+        assertEquals(65, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -180,7 +180,7 @@ class MigrationTest {
         assertNull(page.notebookSectionId)
         assertTrue(db.notebookDao().getNotebooksOnce().isEmpty())
         assertEquals(0, db.notebookDao().countProtectedSections())
-        assertEquals(64, db.openHelper.readableDatabase.version)
+        assertEquals(65, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -194,7 +194,7 @@ class MigrationTest {
         assertTrue(column.showNumber)
         assertFalse(column.ringCentered)
         assertNull(db.pageDao().getById("db1")!!.viewCalculations)
-        assertEquals(64, db.openHelper.readableDatabase.version)
+        assertEquals(65, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -204,7 +204,7 @@ class MigrationTest {
         assertNull(columns.getValue("c1").contentAlignment)
         assertEquals(CellAlignment.LEFT, columns.getValue("c1").cellAlignment)
         assertEquals(CellAlignment.CENTER, columns.getValue("c2").cellAlignment)
-        assertEquals(64, db.openHelper.readableDatabase.version)
+        assertEquals(65, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -213,7 +213,7 @@ class MigrationTest {
         val date = db.databaseDao().getColumnsForPageOnce("db1").single { it.id == "c3" }
         assertNull(date.dateFormat)
         assertNull(date.timeFormat)
-        assertEquals(64, db.openHelper.readableDatabase.version)
+        assertEquals(65, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -222,7 +222,7 @@ class MigrationTest {
         val pages = db.pageDao()
         listOf("p1", "db1", "rp1").forEach { id -> assertFalse(pages.getById(id)!!.isTemplate) }
         assertEquals("r1", db.databaseDao().getRowsLinkingTo("rp1").single().id)
-        assertEquals(64, db.openHelper.readableDatabase.version)
+        assertEquals(65, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -231,7 +231,7 @@ class MigrationTest {
         val pages = db.pageDao()
         listOf("p1", "db1", "rp1").forEach { id -> assertNull(pages.getById(id)!!.chartSettings) }
         assertEquals("Database alla 39", pages.getById("db1")!!.title)
-        assertEquals(64, db.openHelper.readableDatabase.version)
+        assertEquals(65, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -240,7 +240,7 @@ class MigrationTest {
         val pages = db.pageDao()
         listOf("p1", "db1", "rp1").forEach { id -> assertNull(pages.getById(id)!!.tableSubGroupColumnId) }
         assertEquals("Database alla 40", pages.getById("db1")!!.title)
-        assertEquals(64, db.openHelper.readableDatabase.version)
+        assertEquals(65, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -251,7 +251,7 @@ class MigrationTest {
         assertEquals(true, pages.getById("p1")!!.hideEmptySubGroups)
         assertEquals(false, pages.getById("db1")!!.hideEmptySubGroups)
         assertEquals(false, pages.getById("db1")!!.hideEmptyGroups)
-        assertEquals(64, db.openHelper.readableDatabase.version)
+        assertEquals(65, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -266,7 +266,7 @@ class MigrationTest {
         }
         assertEquals(emptyList<Any>(), pages.getViewsOnce("db1"))
         assertEquals("Database alla 42", pages.getById("db1")!!.title)
-        assertEquals(64, db.openHelper.readableDatabase.version)
+        assertEquals(65, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -278,7 +278,7 @@ class MigrationTest {
             assertNull(pages.getById(id)!!.fitColumns)
         }
         assertEquals("Database alla 43", pages.getById("db1")!!.title)
-        assertEquals(64, db.openHelper.readableDatabase.version)
+        assertEquals(65, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -288,7 +288,7 @@ class MigrationTest {
         assertEquals("Riga alla 44", row.title)
         assertNull(row.parentRowId)
         assertEquals(false, row.subRowsCollapsed)
-        assertEquals(64, db.openHelper.readableDatabase.version)
+        assertEquals(65, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -298,7 +298,7 @@ class MigrationTest {
         listOf("p1", "db1", "rp1").forEach { id -> assertEquals(-1, pages.getById(id)!!.nameColumnOrder) }
         assertEquals("Database alla 45", pages.getById("db1")!!.title)
         assertEquals("Date", db.databaseDao().getColumnsForPageOnce("db1").single().name)
-        assertEquals(64, db.openHelper.readableDatabase.version)
+        assertEquals(65, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -309,7 +309,7 @@ class MigrationTest {
         assertNull(column.durationFormat)
         assertEquals(-1, db.pageDao().getById("db1")!!.nameColumnOrder)
         assertEquals("Database alla 46", db.pageDao().getById("db1")!!.title)
-        assertEquals(64, db.openHelper.readableDatabase.version)
+        assertEquals(65, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -318,7 +318,7 @@ class MigrationTest {
         val pages = db.pageDao()
         listOf("p1", "db1", "rp1").forEach { id -> assertEquals(0, pages.getById(id)!!.cellOverflow) }
         assertEquals("Database alla 47", pages.getById("db1")!!.title)
-        assertEquals(64, db.openHelper.readableDatabase.version)
+        assertEquals(65, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -327,7 +327,7 @@ class MigrationTest {
         val pages = db.pageDao()
         listOf("p1", "db1", "rp1").forEach { id -> assertEquals(false, pages.getById(id)!!.colorBoardCards) }
         assertEquals("Database alla 48", pages.getById("db1")!!.title)
-        assertEquals(64, db.openHelper.readableDatabase.version)
+        assertEquals(65, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -339,7 +339,7 @@ class MigrationTest {
         assertEquals("Riga alla 49", row.title)
         assertNull(row.eventColor)
         assertEquals("Database alla 49", db.pageDao().getById("db1")!!.title)
-        assertEquals(64, db.openHelper.readableDatabase.version)
+        assertEquals(65, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -357,7 +357,7 @@ class MigrationTest {
             assertNull(page.thenSortColumnId)
             assertEquals(false, page.thenSortDescending)
         }
-        assertEquals(64, db.openHelper.readableDatabase.version)
+        assertEquals(65, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -371,7 +371,7 @@ class MigrationTest {
         assertEquals("[{\"text\":\"Riga alla 51\"}]", block.textJson)
         assertEquals("{}", block.attrsJson)
         assertEquals(BlockAttrs(), block.attrs)
-        assertEquals(64, db.openHelper.readableDatabase.version)
+        assertEquals(65, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -388,7 +388,7 @@ class MigrationTest {
         val callout = db.blockDao().getById("b1")!!
         assertEquals(BlockType.CALLOUT, callout.type)
         assertEquals(BlockAttrs(icon = "🔥"), callout.attrs)
-        assertEquals(64, db.openHelper.readableDatabase.version)
+        assertEquals(65, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -400,7 +400,7 @@ class MigrationTest {
         assertEquals("Home|#E03E3E", database.iconSymbol)
         assertFalse(database.freezeFirstColumn)
         assertFalse(database.freezeFirstRow)
-        assertEquals(64, db.openHelper.readableDatabase.version)
+        assertEquals(65, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -417,7 +417,7 @@ class MigrationTest {
         assertEquals(emptyList<PersonalWordEntity>(), db.personalWordDao().observeAll().first())
         db.personalWordDao().insert(PersonalWordEntity("notE"))
         assertEquals(listOf("notE"), db.personalWordDao().observeAll().first().map { it.word })
-        assertEquals(64, db.openHelper.readableDatabase.version)
+        assertEquals(65, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -433,7 +433,7 @@ class MigrationTest {
         assertTrue(database.boardHideEmptySubGroups)
         assertEquals(1, database.proofingMode)
         assertEquals("it", database.proofingLanguage)
-        assertEquals(64, db.openHelper.readableDatabase.version)
+        assertEquals(65, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -451,7 +451,7 @@ class MigrationTest {
         assertNull(database.sortColumnId)
         assertNull(database.thenSortColumnId)
         assertTrue(database.boardHideEmptySubGroups)
-        assertEquals(64, db.openHelper.readableDatabase.version)
+        assertEquals(65, db.openHelper.readableDatabase.version)
     }
 
     @Test
@@ -463,7 +463,7 @@ class MigrationTest {
         assertEquals("Database alla 57", database.title)
         assertNull(database.nameColumnTitle)
         assertEquals(2, database.nameColumnOrder)
-        assertEquals(64, db.openHelper.readableDatabase.version)
+        assertEquals(65, db.openHelper.readableDatabase.version)
         // E il nome nuovo si salva.
         db.pageDao().setNameColumnTitle("db1", "Titolo")
         assertEquals("Titolo", db.pageDao().getById("db1")!!.nameColumnTitle)
@@ -478,7 +478,7 @@ class MigrationTest {
         assertEquals("Database alla 58", database.title)
         assertEquals("Titolo", database.nameColumnTitle)
         assertNull(database.paragraphJson)
-        assertEquals(64, db.openHelper.readableDatabase.version)
+        assertEquals(65, db.openHelper.readableDatabase.version)
         // E quello nuovo si salva.
         db.pageDao().setParagraph("db1", """{"blockSpacing":8}""")
         assertEquals("""{"blockSpacing":8}""", db.pageDao().getById("db1")!!.paragraphJson)
@@ -493,7 +493,7 @@ class MigrationTest {
         assertEquals("Database alla 59", database.title)
         assertEquals("""{"blockSpacing":8}""", database.paragraphJson)
         assertNull(database.dateGroupingJson)
-        assertEquals(64, db.openHelper.readableDatabase.version)
+        assertEquals(65, db.openHelper.readableDatabase.version)
         // E quello nuovo si salva.
         db.pageDao().update(database.copy(dateGroupingJson = """{"board":{"unit":"WEEK"}}"""))
         assertEquals("""{"board":{"unit":"WEEK"}}""", db.pageDao().getById("db1")!!.dateGroupingJson)
@@ -508,7 +508,7 @@ class MigrationTest {
         assertEquals("Database alla 60", database.title)
         assertEquals("""{"boardSub":{"unit":"WEEK"}}""", database.dateGroupingJson)
         assertFalse(database.boardHideEmptyGroups)
-        assertEquals(64, db.openHelper.readableDatabase.version)
+        assertEquals(65, db.openHelper.readableDatabase.version)
         db.pageDao().update(database.copy(boardHideEmptyGroups = true))
         assertTrue(db.pageDao().getById("db1")!!.boardHideEmptyGroups)
     }
@@ -522,7 +522,7 @@ class MigrationTest {
         assertEquals("Database alla 61", database.title)
         assertTrue(database.boardHideEmptyGroups)
         assertFalse(database.boardHideNew)
-        assertEquals(64, db.openHelper.readableDatabase.version)
+        assertEquals(65, db.openHelper.readableDatabase.version)
         db.pageDao().update(database.copy(boardHideNew = true))
         assertTrue(db.pageDao().getById("db1")!!.boardHideNew)
     }
@@ -537,7 +537,7 @@ class MigrationTest {
         assertEquals("https://bulbapedia.bulbagarden.net/wiki/Bulbasaur", cell.value)
         assertNull(cell.linkLabel)
         assertFalse(cell.linkLabelIsTitle)
-        assertEquals(64, db.openHelper.readableDatabase.version)
+        assertEquals(65, db.openHelper.readableDatabase.version)
         db.databaseDao().updateCell(cell.copy(linkLabel = "Bulbasaur (Pokémon)", linkLabelIsTitle = true))
         assertEquals(LinkLabel("Bulbasaur (Pokémon)", isTitle = true), db.databaseDao().getCell("r1", "url")!!.label)
     }
@@ -551,8 +551,26 @@ class MigrationTest {
         assertEquals("Database alla 63", database.title)
         assertEquals(FULL_LINE_DEFAULT, database.fullLineMode)
         assertEquals(LinkLabel("Bulbasaur (Pokémon)", isTitle = true), db.databaseDao().getCell("r1", "url")!!.label)
-        assertEquals(64, db.openHelper.readableDatabase.version)
+        assertEquals(65, db.openHelper.readableDatabase.version)
         db.pageDao().setFullLineMode("db1", FULL_LINE_OFF)
         assertEquals(FULL_LINE_OFF, db.pageDao().getById("db1")!!.fullLineMode)
+    }
+
+    @Test
+    fun from64EveryPropertyStillShowsItsIcon() = runBlocking<Unit> {
+        // "Hide icon" delle proprietà (27/10/2026): tutte le icone si vedono,
+        // anche il "Aa" della proprietà principale; il resto non cambia.
+        val db = AppDatabase.getInstance(databaseAtVersion(64))
+        val database = db.pageDao().getById("db1")!!
+        assertEquals("Database alla 64", database.title)
+        assertEquals(FULL_LINE_OFF, database.fullLineMode)
+        assertFalse(database.hideNameIcon)
+        val url = db.databaseDao().getColumnsForPageOnce("db1").single()
+        assertFalse(url.hideIcon)
+        assertEquals(65, db.openHelper.readableDatabase.version)
+        db.databaseDao().updateColumn(url.copy(hideIcon = true))
+        db.pageDao().setHideNameIcon("db1", true)
+        assertTrue(db.databaseDao().getColumnsForPageOnce("db1").single().hideIcon)
+        assertTrue(db.pageDao().getById("db1")!!.hideNameIcon)
     }
 }

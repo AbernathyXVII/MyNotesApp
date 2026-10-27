@@ -215,6 +215,12 @@ data class DatabaseColumnEntity(
      * sinistra. Letto con `cellAlignment`.
      */
     var contentAlignment: String? = null,
+    /**
+     * **"Hide icon"** (dal 27/10/2026, chiesto dall'utente), tenendo premuta
+     * l'intestazione: l'icona del tipo accanto al nome della proprietà non si
+     * vede, nella tabella e fra le proprietà di una riga. Di suo si vede.
+     */
+    var hideIcon: Boolean = false,
     // --- Solo per le colonne Date (dal 26/09/2026), "Edit property" ---
     /**
      * Come si scriveva la data in questa colonna (il nome di uno stile

@@ -1478,6 +1478,22 @@ class DatabaseViewModel(
         viewModelScope.launch { pageRepository.setNameColumnTitle(pageId, clean) }
     }
 
+    /**
+     * **"Hide icon"** (dal 27/10/2026, chiesto dall'utente), tenendo premuta
+     * l'intestazione: l'icona accanto al nome di una proprietà ([columnId]),
+     * o il suo "Aa" per la proprietà principale (null), si nasconde o torna.
+     * Sta nel database: anche le viste collegate la seguono.
+     */
+    fun setPropertyIconHidden(columnId: String?, hidden: Boolean) {
+        if (columnId == null) {
+            val pageId = dataPageId ?: return
+            viewModelScope.launch { pageRepository.setHideNameIcon(pageId, hidden) }
+        } else {
+            val column = rawColumn(columnId) ?: return
+            viewModelScope.launch { repository.updateColumn(column.copy(hideIcon = hidden)) }
+        }
+    }
+
     /** **"Freeze first column"** della tabella (dal 08/10/2026), di questa vista. */
     fun setFreezeFirstColumn(freeze: Boolean) {
         val current = _page.value ?: return

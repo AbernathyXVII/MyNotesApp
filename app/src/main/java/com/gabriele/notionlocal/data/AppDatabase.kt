@@ -60,7 +60,7 @@ import kotlinx.serialization.json.Json
         NotebookSectionEntity::class,
         PersonalWordEntity::class
     ],
-    version = 64,
+    version = 65,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -802,6 +802,14 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** "Hide icon" delle proprietà (27/10/2026): tutte le icone si vedono, come prima. */
+        private val MIGRATION_64_65 = object : Migration(64, 65) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE database_columns ADD COLUMN hideIcon INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE pages ADD COLUMN hideNameIcon INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         /** "Full or page line" delle pagine (27/10/2026): tutte come Settings. */
         private val MIGRATION_63_64 = object : Migration(63, 64) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -972,7 +980,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_60_61,
                         MIGRATION_61_62,
                         MIGRATION_62_63,
-                        MIGRATION_63_64
+                        MIGRATION_63_64,
+                        MIGRATION_64_65
                     )
                     .build()
                 INSTANCE = instance

@@ -814,6 +814,9 @@ object DbStrings {
     val pasteLink get() = t("Paste link", "Incolla link", "Link einfügen", "Coller le lien", "Pegar enlace", "粘贴链接", "링크 붙여넣기", "リンクを貼り付け")
     val linkCopied get() = t("Link copied", "Link copiato", "Link kopiert", "Lien copié", "Enlace copiado", "链接已复制", "링크를 복사했어요", "リンクをコピーしました")
     val showLinkAs get() = t("Show as…", "Mostra come…", "Anzeigen als…", "Afficher comme…", "Mostrar como…", "显示为…", "표시 방식…", "表示方法…")
+    // "Hide icon" tenendo premuta una proprietà (dal 27/10/2026).
+    val hideIcon get() = t("Hide icon", "Nascondi icona", "Symbol ausblenden", "Masquer l'icône", "Ocultar icono", "隐藏图标", "아이콘 숨기기", "アイコンを隠す")
+    val showIcon get() = t("Show icon", "Mostra icona", "Symbol anzeigen", "Afficher l'icône", "Mostrar icono", "显示图标", "아이콘 보이기", "アイコンを表示")
     val cantOpenLink get() = t(
         "This link can't be opened",
         "Questo link non si può aprire",

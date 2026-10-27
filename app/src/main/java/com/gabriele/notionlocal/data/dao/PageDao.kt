@@ -103,6 +103,10 @@ interface PageDao {
     @Query("UPDATE pages SET nameColumnTitle = :title WHERE id = :pageId")
     suspend fun setNameColumnTitle(pageId: String, title: String?)
 
+    /** "Hide icon" della proprietà principale: vedi `PageEntity.hideNameIcon`. */
+    @Query("UPDATE pages SET hideNameIcon = :hidden WHERE id = :pageId")
+    suspend fun setHideNameIcon(pageId: String, hidden: Boolean)
+
     /** Dove sta la colonna Name del database: vedi `PageEntity.nameColumnOrder`. */
     @Query("UPDATE pages SET nameColumnOrder = :order WHERE id = :pageId")
     suspend fun setNameColumnOrder(pageId: String, order: Int)

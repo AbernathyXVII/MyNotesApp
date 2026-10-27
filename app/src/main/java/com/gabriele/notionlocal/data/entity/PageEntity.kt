@@ -282,6 +282,9 @@ data class PageEntity(
     // Null = "Name", tradotto nella lingua dell'app. Sta nel database, non
     // nella vista: le viste collegate mostrano quello della loro origine.
     var nameColumnTitle: String? = null,
+    // **"Hide icon" della proprietà principale** (dal 27/10/2026): il suo "Aa"
+    // non si vede. Sta nel database, come il suo nome.
+    var hideNameIcon: Boolean = false,
     // **Il testo lungo nelle celle** (dal 30/09/2026), di questa vista: tre
     // puntini, colonna allargata o a capo. Vedi `CellOverflow`. La colonna
     // del database si chiama ancora `wrapCells`: nata sì/no, il suo 0 e il

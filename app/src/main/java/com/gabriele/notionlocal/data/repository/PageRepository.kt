@@ -2391,6 +2391,9 @@ class PageRepository(private val db: AppDatabase) {
     suspend fun setNameColumnTitle(databaseId: String, title: String?) =
         pageDao.setNameColumnTitle(databaseId, title)
 
+    /** "Hide icon" della proprietà principale di un database: vedi `PageEntity.hideNameIcon`. */
+    suspend fun setHideNameIcon(databaseId: String, hidden: Boolean) = pageDao.setHideNameIcon(databaseId, hidden)
+
     /** Quale vista di un database si vede: null (o il database stesso) = la sua. */
     suspend fun setActiveView(hostId: String, viewId: String?) =
         pageDao.setActiveView(hostId, viewId?.takeIf { it != hostId })

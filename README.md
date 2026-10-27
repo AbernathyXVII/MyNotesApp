@@ -2104,6 +2104,36 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.135 — 27/10/2026 · 17:55 — "Hide icon": l'icona di una proprietà si può nascondere
+*(Claude Code sul PC; provata sul telefono solo aprendo il menu dell'intestazione nel Main calendar, senza toccare la voce: nascondere e rimostrare l'icona è provato dai test sul PC; 847 test passati)*
+
+L'utente, parola per parola:
+> «Tenendo premuto su un proprietà, implementa un'opzione che si chiama Hide
+> icon che mi consente di nascondere l'icona appartenente alla proprietà dei
+> database. Di default, l'icona sarà sempre visibile e sarò io manualmente ad
+> ogni proprietà di ogni database a nasconderla»
+
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Hide icon" tenendo premuta
+  l'intestazione di una proprietà**, sotto "Hide", con accanto l'icona stessa:
+  l'icona del tipo (il calendario di una data, la catena di un link…) se ne va
+  e il nome parte dal bordo della colonna. Tenendo premuto di nuovo la voce è
+  diventata **"Show icon"**, e l'icona torna. Vale anche per il **"Aa" della
+  proprietà principale** (Name). Di suo ogni icona si vede: le proprietà che
+  c'erano restano come prima, e si sceglie una per una, database per database
+- **[Modifica]** **[📱 Mobile]** Una proprietà con l'icona nascosta non la
+  mostra nemmeno fra le proprietà di una riga (in cima alla sua pagina e nella
+  finestra della riga): lì resta il suo posto vuoto, così i nomi stanno in
+  colonna. Con "Fit to content" la colonna non conta più lo spazio
+  dell'icona. Nei menu per scegliere una proprietà (filtri, ordinamento,
+  impostazioni) le icone restano, per riconoscere il tipo
+- **[Progetto]** `DatabaseColumnEntity.hideIcon` e `PageEntity.hideNameIcon`
+  (database v65, migrazione 64→65: tutte le icone si vedono);
+  `DatabaseViewModel.setPropertyIconHidden`, `PageDao.setHideNameIcon`;
+  `LocalPropertyIcons` (`PropertyIcons`) per le intestazioni;
+  `nameFitWidth(iconHidden)`. Test: `HideIconTest` (in un database dentro una
+  pagina: "Hide icon", "Show icon" e il "Aa"), `MigrationTest` (+1, dalla v64
+  con `schema/v64.sql`)
+
 ### 🔧 v0.134.0.2 — 27/10/2026 · 14:45 — "Fit to content" misura la scritta di una cella URL, non il link intero
 *(Claude Code sul PC; provata sul telefono guardando la vista tabella del Main calendar, senza toccare niente: la colonna URL ora è larga quanto "Meeting Teams"; 845 test passati)*
 

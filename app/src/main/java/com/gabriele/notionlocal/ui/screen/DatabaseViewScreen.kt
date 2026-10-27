@@ -379,6 +379,17 @@ private val LocalTableWidths = compositionLocalOf { TableWidths(NAME_COLUMN_WIDT
  */
 internal val LocalNameColumnTitle = compositionLocalOf<String?> { null }
 
+/**
+ * **"Hide icon"** delle proprietà (dal 27/10/2026, chiesto dall'utente): se il
+ * "Aa" della proprietà principale è nascosto, e come nascondere o rimostrare
+ * un'icona (`columnId` null = la proprietà principale). Passa da qui come
+ * `LocalNameColumnTitle`. Null dove non si può cambiare.
+ */
+@Stable
+internal class PropertyIcons(val nameHidden: Boolean, val setHidden: (columnId: String?, hidden: Boolean) -> Unit)
+
+internal val LocalPropertyIcons = compositionLocalOf<PropertyIcons?> { null }
+
 /** "Name", o il nome dato alla proprietà principale del database aperto. */
 @Composable
 internal fun nameColumnLabel(): String = DbStrings.nameColumn(LocalNameColumnTitle.current)
@@ -1211,12 +1222,17 @@ private fun DatabaseViewBody(
 
     val cellLinkLabels = remember(state.linkLabels, viewModel) { CellLinkLabels(state.linkLabels, viewModel::setCellLinkLabel) }
 
+    val propertyIcons = remember(dataPage?.hideNameIcon, viewModel) {
+        PropertyIcons(dataPage?.hideNameIcon == true, viewModel::setPropertyIconHidden)
+    }
+
     CompositionLocalProvider(
         LocalRelated provides viewRelated,
         LocalRelationActions provides relationActions,
         LocalLinkedPages provides viewLinkedPages,
         LocalDatabaseLocked provides contentLocked,
         LocalNameColumnTitle provides dataPage?.nameColumnTitle,
+        LocalPropertyIcons provides propertyIcons,
         LocalRowIcons provides rowIcons,
         LocalSimpleDatabase provides simple,
         LocalRowSearch provides state.search,
@@ -2604,7 +2620,8 @@ private fun fitWidths(
     val linkedPages = LocalLinkedPages.current
     val related = LocalRelated.current
     val nameLabel = nameColumnLabel()
-    return remember(state, columns, keys, calculations, subRowKeys, typography, density, simple, icons, linkedPages, related, nameLabel) {
+    val nameIconHidden = LocalPropertyIcons.current?.nameHidden == true
+    return remember(state, columns, keys, calculations, subRowKeys, typography, density, simple, icons, linkedPages, related, nameLabel, nameIconHidden) {
         if (keys.isEmpty()) return@remember emptyMap()
         val measure: (String, ComposeTextStyle) -> Dp = { text, style ->
             if (text.isEmpty()) {
@@ -2628,13 +2645,15 @@ private fun fitWidths(
                 val tree = rowTree(state.rows)
                 val depths = tree.associate { it.row.id to it.depth }
                 val slot = if (hasSubRows(state.rows)) SUB_ROW_ARROW_SLOT + 4.dp else 0.dp
-                val names = nameFitWidth(tree.map { it.row }, simple, icons.keys, typography, measure, nameLabel) { row ->
+                val names = nameFitWidth(tree.map { it.row }, simple, icons.keys, typography, measure, nameLabel, nameIconHidden) { row ->
                     SUB_ROW_INDENT * (depths[row.id] ?: 0) + slot
                 }
                 put(NAME_COLUMN_KEY, maxOf(names, calc))
             }
             columns.filter { it.id in keys }.forEach { column ->
-                val header = 12.dp + 16.dp + 8.dp + measure(DbStrings.columnName(column.name), typography.labelLarge) + 12.dp
+                // L'icona e il suo spazio, se non è nascosta ("Hide icon").
+                val icon = if (column.hideIcon) 0.dp else 16.dp + 8.dp
+                val header = 12.dp + icon + measure(DbStrings.columnName(column.name), typography.labelLarge) + 12.dp
                 val cells = state.rows.maxOfOrNull { row ->
                     cellFitWidth(
                         column, row, state.cellValues[row.id to column.id].orEmpty(), typography, measure,
@@ -2664,10 +2683,13 @@ internal fun nameFitWidth(
     measure: (String, ComposeTextStyle) -> Dp,
     /** Il nome della colonna: "Name", o quello dato dall'utente. */
     nameLabel: String = DbStrings.name,
+    /** Il suo "Aa" nascosto ("Hide icon", dal 27/10/2026). */
+    iconHidden: Boolean = false,
     /** Quanto rientra il nome di una riga: le sotto-righe, e il posto della freccia. */
     extraStart: (DatabaseRowEntity) -> Dp = { 0.dp }
 ): Dp {
-    val header = 12.dp + measure("Aa", typography.labelLarge) + 8.dp + measure(nameLabel, typography.labelLarge) + 12.dp
+    val icon = if (iconHidden) 0.dp else measure("Aa", typography.labelLarge) + 8.dp
+    val header = 12.dp + icon + measure(nameLabel, typography.labelLarge) + 12.dp
     val open = if (simple) 0.dp else measure(DbStrings.open, typography.labelSmall) + 16.dp + 8.dp
     val cells = rows.maxOfOrNull { row ->
         12.dp + extraStart(row) + (if (row.id in withIcon) ROW_ICON_SIZE + 6.dp else 0.dp) +
@@ -6573,6 +6595,7 @@ private fun NameHeaderCell(
     var renaming by remember { mutableStateOf(false) }
     val label = nameColumnLabel()
     val custom = LocalNameColumnTitle.current
+    val icons = LocalPropertyIcons.current
     // Bloccato il database, il nome resta com'è.
     val rename = onRename?.takeIf { !LocalDatabaseLocked.current }
     val wrap = LocalWrapCells.current
@@ -6588,12 +6611,14 @@ private fun NameHeaderCell(
             .cellWrapPadding(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            "Aa",
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.size(8.dp))
+        if (icons?.nameHidden != true) {
+            Text(
+                "Aa",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.size(8.dp))
+        }
         Text(
             label,
             style = MaterialTheme.typography.labelLarge,
@@ -6649,6 +6674,17 @@ private fun NameHeaderCell(
                 onCalculate()
             }
         )
+        // "Hide icon" anche per il suo "Aa" (dal 27/10/2026).
+        if (icons != null) {
+            DropdownMenuItem(
+                text = { Text(if (icons.nameHidden) DbStrings.showIcon else DbStrings.hideIcon) },
+                leadingIcon = { Text("Aa", style = MaterialTheme.typography.labelLarge) },
+                onClick = {
+                    menuOpen = false
+                    icons.setHidden(null, !icons.nameHidden)
+                }
+            )
+        }
         ColumnWidthMenuItems(
             canResize = canResize,
             fit = fit,
@@ -6799,13 +6835,16 @@ private fun PropertyHeaderCell(
                 .cellWrapPadding(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                column.type.icon(),
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.size(8.dp))
+            // "Hide icon" (dal 27/10/2026): senza l'icona il nome parte dal bordo.
+            if (!column.hideIcon) {
+                Icon(
+                    column.type.icon(),
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.size(8.dp))
+            }
             // Con "Wrap in the cell" il titolo va a capo invece di finire oltre il bordo.
             Text(
                 text = DbStrings.columnName(column.name),
@@ -6927,6 +6966,19 @@ private fun PropertyHeaderCell(
                     onHide()
                 }
             )
+            // **"Hide icon"** (dal 27/10/2026, chiesto dall'utente): l'icona
+            // accanto al nome se ne va, o torna con "Show icon". Accanto, la
+            // sua stessa icona.
+            LocalPropertyIcons.current?.let { icons ->
+                DropdownMenuItem(
+                    text = { Text(if (column.hideIcon) DbStrings.showIcon else DbStrings.hideIcon) },
+                    leadingIcon = { Icon(column.type.icon(), contentDescription = null) },
+                    onClick = {
+                        menuOpen = false
+                        icons.setHidden(column.id, !column.hideIcon)
+                    }
+                )
+            }
             // Il calcolo in fondo alla colonna (dal 26/09/2026).
             DropdownMenuItem(
                 text = { Text(DbStrings.calculate) },
@@ -9690,12 +9742,17 @@ private fun RowPropertiesList(
                 .padding(vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                column.type.icon(),
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            // "Hide icon" (dal 27/10/2026): resta il suo posto, così i nomi stanno in colonna.
+            if (column.hideIcon) {
+                Spacer(modifier = Modifier.size(18.dp))
+            } else {
+                Icon(
+                    column.type.icon(),
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
             Spacer(modifier = Modifier.size(12.dp))
             Text(
                 text = DbStrings.columnName(column.name),
@@ -9801,12 +9858,17 @@ internal fun RowPageProperties(
                             .padding(vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(
-                            column.type.icon(),
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                        // "Hide icon" (dal 27/10/2026): resta il suo posto, così i nomi stanno in colonna.
+                        if (column.hideIcon) {
+                            Spacer(modifier = Modifier.size(18.dp))
+                        } else {
+                            Icon(
+                                column.type.icon(),
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                         Spacer(modifier = Modifier.size(10.dp))
                         Row(
                             modifier = Modifier.width(120.dp),
