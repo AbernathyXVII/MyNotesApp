@@ -162,6 +162,45 @@ class LineLookChunksTest {
     }
 
     @Test
+    fun theFieldWithTheCursorLetsTheBigTitleGoAndKeepsItsKey() = runBlocking<Unit> {
+        // Una pagina col solo titolo a 50; sotto si scrivono due righe, e mentre
+        // si scrive i campi non si ridividono: finiscono nel campo del titolo.
+        val short = PageEntity(title = "Corta")
+        val title = BlockEntity(pageId = short.id, textJson = """[{"text":"Titolo","size":50}]""", orderIndex = 0)
+        pages.createPage(short)
+        db.blockDao().insertAll(listOf(title))
+        val vm = PageEditorViewModel(pages)
+        vm.load(short.id)
+        waitFor("il titolo") { vm.blocks.value.size == 1 }
+        fun top() = vm.blocks.value.filter { it.parentBlockId == null }
+        fun runs() = groupIntoRenderItems(top(), vm.chunkStartsOf(top())).filterIsInstance<RenderItem.Run>()
+        fun idOf(text: String) = top().single { vm.plainTextOf(it) == text }.id
+        vm.setEditing(true)
+        vm.updateRun(listOf(title.id), listOf("Titolo", "uno", "due"), listOf("Titolo"), caretLine = 1)
+        waitFor("le righe scritte") { vm.blocks.value.size == 3 }
+        val before = runs().single().key
+
+        // Mentre si scrive non si tocca niente; dopo la pausa il titolo esce.
+        assertTrue(vm.keepVisibleTogether(top().map { it.id }, focusedId = idOf("uno")))
+        assertEquals(1, runs().size)
+        Thread.sleep(PageEditorViewModel.TYPING_QUIET_MS + 100)
+        vm.keepVisibleTogether(top().map { it.id }, focusedId = idOf("uno"))
+        val after = runs()
+        assertEquals(listOf(listOf("Titolo"), listOf("uno", "due")), after.map { run -> run.blocks.map { vm.plainTextOf(it) } })
+        // Il campo col cursore è lo stesso di prima: stessa chiave.
+        assertEquals(before, after.single { run -> run.blocks.any { it.id == idOf("uno") } }.key)
+        assertEquals(after.size, after.map { it.key }.toSet().size)
+
+        // Smesso di scrivere, i pezzi si rifanno: il titolo riprende la chiave
+        // del gruppo, e le chiavi restano tutte diverse.
+        vm.setEditing(false)
+        shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofSeconds(3))
+        assertEquals(before, runs().first().key)
+        assertEquals(runs().size, runs().map { it.key }.toSet().size)
+        assertEquals(listOf(listOf("Titolo"), listOf("uno", "due")), runs().map { run -> run.blocks.map { vm.plainTextOf(it) } })
+    }
+
+    @Test
     fun linesThatLookAlikeStillJoinOnTheScreen() {
         // Le righe 45-55 sullo schermo: il confine dei 50 fra loro se ne va...
         viewModel.keepVisibleTogether(lines.subList(45, 56).map { it.id }, focusedId = null)

@@ -169,6 +169,28 @@ fun applyTextEdit(spans: List<RichTextSpan>, oldText: String, newText: String): 
 }
 
 /**
+ * Il testo inserito con la formattazione [format] del punto in cui entra,
+ * **tranne il corpo per quello che va a finire in una riga nuova** (dal
+ * 27/10/2026, chiesto dall'utente: "se dovessi modificare il font size di un
+ * blocco, per esempio un titolo a 50, e poi vado a capo per scrivere altro,
+ * fai sì che il font size venga resettato a 16 per tutti i nuovi blocchi").
+ * Dopo il primo a-capo il testo sta in righe nate adesso, e il corpo scelto
+ * per la riga di sopra non le segue; il resto della formattazione sì, come
+ * prima. Succedeva scrivendo subito dopo l'Invio, prima che la riga nuova
+ * fosse nel database: Invio e lettere arrivavano insieme, un pezzo solo
+ * inserito in fondo al titolo. Un Invio in mezzo al titolo non tocca niente:
+ * la metà che scende è testo che c'era già, e tiene il suo corpo.
+ */
+private fun insertedSpans(format: RichTextSpan, insertText: String): List<RichTextSpan> {
+    val firstBreak = insertText.indexOf('\n')
+    if (firstBreak < 0 || format.size == null) return listOf(format.copy(text = insertText))
+    return listOf(
+        format.copy(text = insertText.substring(0, firstBreak + 1)),
+        format.copy(text = insertText.substring(firstBreak + 1), size = null)
+    )
+}
+
+/**
  * Sostituisce l'intervallo [deleteStart, deleteEnd) del testo con
  * insertText, spezzando gli span ai bordi dove necessario. Il testo
  * inserito eredita la formattazione dello span che copre deleteStart.
@@ -188,7 +210,7 @@ fun spliceSpans(spans: List<RichTextSpan>, deleteStart: Int, deleteEnd: Int, ins
             spanEnd <= deleteStart -> result.add(span)
             spanStart >= deleteEnd -> {
                 if (!inserted && inheritedFormat != null) {
-                    result.add(inheritedFormat.copy(text = insertText))
+                    result.addAll(insertedSpans(inheritedFormat, insertText))
                     inserted = true
                 }
                 result.add(span)
@@ -198,7 +220,7 @@ fun spliceSpans(spans: List<RichTextSpan>, deleteStart: Int, deleteEnd: Int, ins
                     result.add(span.copy(text = span.text.substring(0, deleteStart - spanStart)))
                 }
                 if (!inserted && inheritedFormat != null) {
-                    result.add(inheritedFormat.copy(text = insertText))
+                    result.addAll(insertedSpans(inheritedFormat, insertText))
                     inserted = true
                 }
                 if (spanEnd > deleteEnd) {
@@ -208,7 +230,7 @@ fun spliceSpans(spans: List<RichTextSpan>, deleteStart: Int, deleteEnd: Int, ins
         }
     }
     if (!inserted && inheritedFormat != null) {
-        result.add(inheritedFormat.copy(text = insertText))
+        result.addAll(insertedSpans(inheritedFormat, insertText))
     }
     return result.filter { it.text.isNotEmpty() }.merged()
         .ifEmpty { listOf(RichTextSpan(text = "")) }

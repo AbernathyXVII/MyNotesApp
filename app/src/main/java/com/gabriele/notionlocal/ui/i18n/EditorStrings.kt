@@ -20,6 +20,8 @@ object EditorStrings {
     /** Toccando font o corpo senza niente di selezionato: valgono per il testo selezionato. */
     val selectTextFirst get() = t("Select some text first", "Seleziona prima del testo", "Wähle zuerst Text aus", "Sélectionnez d'abord du texte", "Selecciona primero un texto", "请先选择文字", "먼저 텍스트를 선택하세요", "先にテキストを選択してください")
     fun fontSizeRange(min: Int, max: Int) = t("From $min to $max", "Da $min a $max", "Von $min bis $max", "De $min à $max", "De $min a $max", "$min 到 $max", "$min~$max", "$min～$max")
+    /** Il pulsante che rimette il corpo normale (16) nella finestra del corpo. */
+    val defaultFontSize get() = t("Default", "Predefinito", "Standard", "Par défaut", "Predeterminado", "默认", "기본값", "デフォルト")
 
     // --- Il menu di un blocco (sei puntini nella barra, o il dito tenuto su una pagina) ---
 

@@ -21,6 +21,7 @@ import com.gabriele.notionlocal.data.entity.MULTILINE_TYPES
 import com.gabriele.notionlocal.data.entity.attrsForNewLine
 import com.gabriele.notionlocal.data.entity.heldListType
 import com.gabriele.notionlocal.ui.screen.bulletMarkerSizeFor
+import com.gabriele.notionlocal.ui.screen.runGroupKey
 import com.gabriele.notionlocal.data.entity.MARKER_LIST_TYPES
 import com.gabriele.notionlocal.data.entity.PageParagraph
 import com.gabriele.notionlocal.data.entity.ParagraphLook
@@ -493,7 +494,11 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
                 val tooBig = lines >= 2 * CHUNK_MAX_LINES || chars + length > 2 * CHUNK_MAX_CHARS
                 if (lookChanged || (due && sameMarker) || tooBig) {
                     close()
-                    key = existing ?: ("chunk:" + block.id)
+                    // La chiave del gruppo scritta per esteso serviva solo al
+                    // campo col cursore (vedi `keepVisibleTogether`): senza
+                    // cursore il pezzo ne prende una sua, e il primo torna
+                    // quello del gruppo.
+                    key = existing?.takeUnless { it.startsWith("run:") } ?: ("chunk:" + block.id)
                     lines = 0
                     chars = 0
                     pieceMarker = markerSizeOf(block)
@@ -637,7 +642,8 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
      */
     fun keepVisibleTogether(visibleIds: Collection<String>, focusedId: String?): Boolean {
         visibleLineIds = visibleIds.toHashSet()
-        if (visibleLineIds.size < 2 || chunkMembers.isEmpty()) return false
+        val joining = visibleLineIds.size >= 2 && chunkMembers.isNotEmpty()
+        if (!joining && focusedId == null) return false
         val typing = System.currentTimeMillis() - lastTypedAt < TYPING_QUIET_MS
         val top = _blocks.value.filter { it.parentBlockId == null }
         val starts = chunkStartsOf(top)
@@ -646,24 +652,87 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         // I pezzi della pagina, gruppo per gruppo: chiave (null per il primo
         // di un gruppo, che ha quella del gruppo) e righe.
         class Piece(val key: String?, val ids: MutableList<String>)
-        val groups = mutableListOf<MutableList<Piece>>()
-        var group: MutableList<Piece>? = null
+        class Group(val key: String, val pieces: MutableList<Piece>)
+        val groups = mutableListOf<Group>()
+        var group: Group? = null
+        var islandAbove: BlockEntity? = null
         for (block in top) {
             if (!isFlowingTextType(block.type)) {
                 group = null
+                islandAbove = block
                 continue
             }
-            val current = group ?: mutableListOf<Piece>().also {
+            val current = group ?: Group(runGroupKey(islandAbove, block), mutableListOf()).also {
                 groups += it
                 group = it
             }
             val key = starts[block.id]
-            if (current.isEmpty() || key != null) current += Piece(key, mutableListOf(block.id)) else current.last().ids += block.id
+            if (current.pieces.isEmpty() || key != null) current.pieces += Piece(key, mutableListOf(block.id)) else current.pieces.last().ids += block.id
         }
 
         var changed = false
         var skippedForTyping = false
-        for (pieces in groups) {
+        // **Il campo col cursore cambia da un lato solo per volta** (dal
+        // 27/10/2026): sa rimettere il cursore sulle stesse lettere quando delle
+        // righe gli arrivano o gli escono sopra, oppure sotto, non tutte e due
+        // insieme. Lasciato uscire il titolo di sopra e unito subito il pezzo di
+        // sotto, il cursore restava allo stesso numero e finiva qualche riga più
+        // giù (provato sul telefono: le lettere scritte dopo finivano in "1. Primo
+        // numero"). Il resto si fa al giro dopo, che arriva perché i pezzi sono
+        // cambiati.
+        var focusedChanged = false
+
+        // **Il campo col cursore tiene solo le righe che appaiono come quella
+        // col cursore** (dal 27/10/2026, chiesto dall'utente: "se dovessi
+        // modificare il font size di un blocco, per esempio un titolo a 50, e poi
+        // vado a capo per scrivere altro..."). Le righe scritte sotto un titolo
+        // grande restavano nel suo campo finché la tastiera era aperta, alte come
+        // lui e col cursore alto come lui: sembravano scritte a 50, e invece erano
+        // a 16. Come per l'unione qui sotto, si aspetta che non si scriva da un
+        // po' (la tastiera ricomincerebbe la parola); poi le righe diverse escono
+        // dal campo, sopra e sotto, e il campo resta lui — con la sua chiave, per
+        // esteso se era quella del gruppo — quindi il cursore non si muove.
+        if (focusedId != null) {
+            for (g in groups) {
+                val at = g.pieces.indexOfFirst { focusedId in it.ids }
+                if (at < 0) continue
+                val piece = g.pieces[at]
+                val look = lineLookOf(byId.getValue(focusedId))
+                val f = piece.ids.indexOf(focusedId)
+                var from = f
+                while (from > 0 && lineLookOf(byId.getValue(piece.ids[from - 1])) == look) from--
+                var to = f
+                while (to < piece.ids.size - 1 && lineLookOf(byId.getValue(piece.ids[to + 1])) == look) to++
+                if (from == 0 && to == piece.ids.size - 1) break
+                if (typing) {
+                    skippedForTyping = true
+                    break
+                }
+                // Un lato per volta, prima quello di sopra: il campo sa rimettere
+                // il cursore quando le righe escono da un lato solo. L'altro
+                // al giro dopo, che arriva perché i pezzi sono cambiati.
+                g.pieces.removeAt(at)
+                g.pieces.addAll(
+                    at,
+                    if (from > 0) {
+                        listOf(
+                            Piece("look:" + piece.ids.first(), piece.ids.subList(0, from).toMutableList()),
+                            Piece(piece.key ?: g.key, piece.ids.subList(from, piece.ids.size).toMutableList())
+                        )
+                    } else {
+                        listOf(
+                            Piece(piece.key, piece.ids.subList(0, to + 1).toMutableList()),
+                            Piece("chunk:" + piece.ids[to + 1], piece.ids.subList(to + 1, piece.ids.size).toMutableList())
+                        )
+                    }
+                )
+                changed = true
+                focusedChanged = true
+                break
+            }
+        }
+
+        for (pieces in groups.takeIf { joining }.orEmpty().map { it.pieces }) {
             var i = 1
             while (i < pieces.size) {
                 val above = pieces[i - 1]
@@ -690,10 +759,11 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
                         i++
                         continue
                     }
-                    if (above.ids.size + below.ids.size > FOCUSED_CHUNK_CAP) {
+                    if (above.ids.size + below.ids.size > FOCUSED_CHUNK_CAP || focusedChanged) {
                         i++
                         continue
                     }
+                    focusedChanged = true
                 }
                 if (focusBelow) {
                     below.ids.addAll(0, above.ids)
@@ -707,7 +777,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         }
         if (changed) {
             chunkMembers = buildMap {
-                for (pieces in groups) for (piece in pieces) piece.key?.let { put(it, piece.ids.toList()) }
+                for (g in groups) for (piece in g.pieces) piece.key?.let { put(it, piece.ids.toList()) }
             }
             _chunkVersion.value++
             if (!editing) scheduleRechunk()

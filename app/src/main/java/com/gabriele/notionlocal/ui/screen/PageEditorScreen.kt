@@ -56,6 +56,7 @@ import com.gabriele.notionlocal.ui.theme.lookalike
 import com.gabriele.notionlocal.ui.theme.group
 import com.gabriele.notionlocal.ui.theme.fontFamily
 import com.gabriele.notionlocal.ui.theme.DEFAULT_PAGE_FONT_SIZE
+import androidx.compose.material3.OutlinedButton
 import com.gabriele.notionlocal.ui.theme.MIN_PAGE_FONT_SIZE
 import com.gabriele.notionlocal.ui.theme.MAX_PAGE_FONT_SIZE
 import com.gabriele.notionlocal.ui.theme.DarkSheet
@@ -802,6 +803,10 @@ private fun FontSizeChip(
  * tastiera) si accende solo se il numero sta fra 5 e 72, e sotto la
  * casella c'è scritto quali sono i limiti — diventa rosso se si esce.
  *
+ * **"Default"** accanto alla casella (dal 27/10/2026, chiesto dall'utente:
+ * "se non mi dovessi ricordare che quello standard è 16") rimette il corpo
+ * normale, `DEFAULT_PAGE_FONT_SIZE`, e chiude la finestra.
+ *
  * Chiusa la finestra il cursore non torna da solo nella pagina: si
  * tocca il punto dove si vuole riprendere a scrivere. Rimetterlo da qui
  * vorrebbe dire spostare il fuoco a comando mentre la tastiera cambia
@@ -827,31 +832,37 @@ private fun FontSizeDialog(
         title = { Text(EditorStrings.fontSize, color = NotionWhite) },
         text = {
             Column {
-                AutoCaps {
-                    OutlinedTextField(
-                        value = field,
-                        onValueChange = { typed ->
-                            val digits = typed.text.filter { it.isDigit() }.take(2)
-                            field = if (digits == typed.text) {
-                                typed
-                            } else {
-                                TextFieldValue(digits, TextRange(digits.length))
-                            }
-                        },
-                        singleLine = true,
-                        textStyle = MaterialTheme.typography.titleLarge.copy(color = NotionWhite),
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Number,
-                            imeAction = ImeAction.Done
-                        ),
-                        keyboardActions = KeyboardActions(onDone = {
-                            if (valid) onConfirm(value!!)
-                        }),
-                        isError = field.text.isNotEmpty() && !valid,
-                        modifier = Modifier
-                            .width(96.dp)
-                            .focusRequester(focus)
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    AutoCaps {
+                        OutlinedTextField(
+                            value = field,
+                            onValueChange = { typed ->
+                                val digits = typed.text.filter { it.isDigit() }.take(2)
+                                field = if (digits == typed.text) {
+                                    typed
+                                } else {
+                                    TextFieldValue(digits, TextRange(digits.length))
+                                }
+                            },
+                            singleLine = true,
+                            textStyle = MaterialTheme.typography.titleLarge.copy(color = NotionWhite),
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Number,
+                                imeAction = ImeAction.Done
+                            ),
+                            keyboardActions = KeyboardActions(onDone = {
+                                if (valid) onConfirm(value!!)
+                            }),
+                            isError = field.text.isNotEmpty() && !valid,
+                            modifier = Modifier
+                                .width(96.dp)
+                                .focusRequester(focus)
+                        )
+                    }
+                    Spacer(modifier = Modifier.size(12.dp))
+                    OutlinedButton(onClick = { onConfirm(DEFAULT_PAGE_FONT_SIZE) }) {
+                        Text(EditorStrings.defaultFontSize, color = NotionWhite)
+                    }
                 }
                 Spacer(modifier = Modifier.size(8.dp))
                 Text(
@@ -1297,6 +1308,15 @@ private fun renderItemBlockIds(item: RenderItem): List<String> = when (item) {
  * possono avere la stessa isola sopra, né stare tutti e due in cima:
  * fra due gruppi c'è sempre un'isola, altrimenti sarebbero uno solo.
  */
+/**
+ * La chiave del primo campo di un gruppo di righe: l'isola che gli sta sopra,
+ * o l'inizio della pagina (vedi `groupIntoRenderItems`). Anche il ViewModel la
+ * scrive per esteso, quando il campo col cursore deve tenerla anche se sopra
+ * di lui nasce un altro campo (`PageEditorViewModel.keepVisibleTogether`).
+ */
+internal fun runGroupKey(islandAbove: BlockEntity?, firstLine: BlockEntity): String =
+    "run:" + (islandAbove?.id ?: ("top:" + firstLine.pageId))
+
 internal fun groupIntoRenderItems(
     blocks: List<BlockEntity>,
     /**
@@ -1314,7 +1334,7 @@ internal fun groupIntoRenderItems(
     var islandAbove: BlockEntity? = null
     fun closeRun() {
         if (currentRun.isEmpty()) return
-        val key = currentKey ?: ("run:" + (islandAbove?.id ?: ("top:" + currentRun.first().pageId)))
+        val key = currentKey ?: runGroupKey(islandAbove, currentRun.first())
         result.add(RenderItem.Run(currentRun.toList(), key))
         currentRun = mutableListOf()
         currentKey = null
@@ -5552,6 +5572,29 @@ private fun MergedTextRunField(
             val shift = officialNow.length - fieldValue.text.length
             val sel = fieldValue.selection
             fieldValue = TextFieldValue(officialNow, TextRange(sel.start + shift, sel.end + shift))
+        }
+    }
+    // **E delle righe ne escono** (dal 27/10/2026): quelle che appaiono
+    // diverse da quella col cursore, sopra o sotto (vedi
+    // `PageEditorViewModel.keepVisibleTogether`). Il cursore resta sulle stesse
+    // lettere: uscendo le righe di sopra, torna indietro di quanto erano lunghe.
+    if (pendingText == null && officialNow.length < fieldValue.text.length) {
+        val firstLine = runBlocks.first().id
+        val sel = fieldValue.selection
+        if (firstLine == shownFirstLine[0] && fieldValue.text.startsWith(officialNow + "\n")) {
+            val end = officialNow.length
+            fieldValue = TextFieldValue(officialNow, TextRange(sel.start.coerceAtMost(end), sel.end.coerceAtMost(end)))
+        } else if (firstLine != shownFirstLine[0] && runBlocks.none { it.id == shownFirstLine[0] } &&
+            officialNow.startsWith(RUN_LEAD) && fieldValue.text.endsWith("\n" + bodyOf(officialNow))
+        ) {
+            val shift = fieldValue.text.length - officialNow.length
+            fieldValue = TextFieldValue(
+                officialNow,
+                TextRange(
+                    (sel.start - shift).coerceAtLeast(RUN_LEAD.length),
+                    (sel.end - shift).coerceAtLeast(RUN_LEAD.length)
+                )
+            )
         }
     }
     shownFirstLine[0] = runBlocks.first().id

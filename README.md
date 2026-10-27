@@ -2104,6 +2104,59 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.132 — 27/10/2026 · 09:42 — "Default" per il corpo, e sotto un titolo grande si scrive a 16
+*(Claude Code sul PC; provata sul telefono in "Paragraph – prova": "Default" nella finestra, un titolo a 50, Invio e una riga scritta sotto, che dopo la pausa torna alla sua altezza col cursore dove si scriveva; la pagina poi rimessa com'era, confrontata col database; 813 test passati)*
+
+L'utente, parola per parola:
+> «Una modifica importante per quanto riguarda il font size: nella sua
+> selezione mettimi una pulsantino con la scritta Default, cosicché se non
+> mi dovessi ricordare che quello standard è 16 allora premo Default e me lo
+> setta a 16. Ed un'altra cosa: se dovessi modificare il font size di un
+> blocco, per esempio un titolo a 50, e poi vado a capo per scrivere altro,
+> fai sì che il font size venga resettato a 16 per tutti i nuovi blocchi,
+> senza che ogni volta devo rimettere 16»
+
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Default" nella finestra del
+  corpo** (barra Aa → il numero), accanto alla casella: rimette il corpo
+  normale, 16, al testo selezionato e chiude la finestra. In italiano
+  "Predefinito", nelle altre lingue dell'app la parola loro
+- **[Modifica]** **[📱 Mobile]** **Sotto un titolo grande si scrive a 16, e
+  lo si vede subito.** Nel database le righe nuove nascevano già senza
+  corpo, cioè a 16; quello che sembrava 50 era il campo di testo: la riga
+  nuova stava nello stesso campo del titolo, e un campo ha un'altezza di
+  riga sola, quella che serve al carattere più grande. Le righe scritte sotto
+  restavano così alte come il titolo, **col cursore alto come il titolo**,
+  finché la tastiera era aperta (i campi non si ridividono mentre il cursore è
+  nella pagina). Ora, appena si smette di scrivere per due secondi, le righe
+  che appaiono diverse da quella col cursore escono dal suo campo: il titolo
+  va in un campo suo e le righe nuove tornano alla loro altezza. Il campo col
+  cursore resta lui, quindi la tastiera non si chiude e il cursore resta dove
+  si scriveva. Vale anche al contrario (scrivendo nel titolo, le righe normali
+  escono) e per le caselle da spuntare fra righe normali
+- **[Bug fix]** **[📱 Mobile]** Trovato provandolo sul telefono: uscito il
+  titolo, nello stesso giro il campo col cursore si univa anche alle righe di
+  sotto, e cambiando sopra e sotto insieme non sapeva dove rimettere il
+  cursore, che finiva qualche riga più giù (le lettere scritte dopo finivano in
+  "1. Primo numero"). Ora il campo col cursore cambia da un lato solo per
+  volta, e il resto al giro dopo; vale anche per le unioni dei pezzi
+  sullo schermo, che potevano fare lo stesso
+- **[Modifica]** **[📱 Mobile]** Scrivendo subito dopo l'Invio, prima che la
+  riga nuova fosse nel database, per un istante la si vedeva col corpo del
+  titolo: ora anche quella previsione la mostra a 16. Il resto della
+  formattazione (grassetto, colore…) continua come prima, e un Invio in mezzo
+  a un titolo lascia alla metà che scende il suo corpo
+- **[Progetto]** `EditorStrings.defaultFontSize`, `FontSizeDialog`;
+  `insertedSpans` in `spliceSpans` (il testo dopo il primo a-capo di un pezzo
+  inserito non eredita `size`); in `PageEditorViewModel.keepVisibleTogether` il
+  campo col cursore lascia uscire le righe di aspetto diverso, un lato per
+  volta, tenendo la sua chiave (per esteso con `runGroupKey` se era quella del
+  gruppo; `rechunk` poi la rifà), e `MergedTextRunField` rimette il cursore
+  quando delle righe escono. Test: `NewLineFontSizeTest` (+5),
+  `NewLineSizeUiTest` (Invio e lettere nel campo vero: nel database a 16, poi
+  il titolo in un campo suo e il cursore in fondo ad "Altro"),
+  `LineLookChunksTest` (+1: la chiave del campo col cursore resta, e dopo
+  `rechunk` le chiavi sono ancora tutte diverse)
+
 ### 🔧 v0.131.0.2 — 27/10/2026 · 09:17 — Lo spazio fra le righe non cambia più da solo
 *(Claude Code sul PC; provata sul telefono in Fast notes: righe a 44 punti in cima, sotto Anki field codes e più giù, e la pagina fermata in quattro punti fotografata subito e dopo 3 secondi, identica a parte la barretta di scorrimento; 806 test passati)*
 
