@@ -19,12 +19,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -58,6 +60,9 @@ import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.gabriele.notionlocal.data.BlockFiles
 import com.gabriele.notionlocal.data.entity.CellAlignment
+import com.gabriele.notionlocal.data.entity.DatabaseColumnEntity
+import com.gabriele.notionlocal.data.entity.DatabaseRowEntity
+import com.gabriele.notionlocal.data.entity.LinkLabel
 import com.gabriele.notionlocal.ui.i18n.DbStrings
 import com.gabriele.notionlocal.ui.theme.DarkSheet
 
@@ -187,6 +192,18 @@ internal fun FullTextPopup(
     }
 }
 
+/**
+ * **Le scritte delle celle URL** di una vista, e come cambiarle (dal
+ * 27/10/2026, vedi `DatabaseCellEntity.linkLabel`). Passano da qui, come
+ * `LocalDatabaseLocked`, perché le celle stanno sotto molti livelli.
+ */
+internal class CellLinkLabels(
+    val labels: Map<Pair<String, String>, LinkLabel>,
+    val set: (DatabaseRowEntity, DatabaseColumnEntity, LinkLabel?) -> Unit
+)
+
+internal val LocalCellLinkLabels = compositionLocalOf<CellLinkLabels?> { null }
+
 internal val FULL_TEXT_MIN_WIDTH = 260.dp
 internal val FULL_TEXT_PADDING_H = 12.dp
 private val FULL_TEXT_PADDING_V = 10.dp
@@ -212,6 +229,10 @@ internal fun TextLikeCell(
     idleVisual: (@Composable (String) -> Unit)? = null,
     /** Una cella URL: con un indirizzo dentro, il tocco lo apre e il tocco lungo dà il menu (vedi sotto). */
     isLink: Boolean = false,
+    /** Di una cella URL: la scritta al posto del link (vedi `DatabaseCellEntity.linkLabel`), null = il link. */
+    linkLabel: LinkLabel? = null,
+    /** "Show as…" nel menu del link; null = non si può cambiare. */
+    onLinkLabel: ((LinkLabel?) -> Unit)? = null,
     cellKey: String
 ) {
     val wrap = LocalWrapCells.current
@@ -281,6 +302,7 @@ internal fun TextLikeCell(
             val context = LocalContext.current
             val haptics = LocalHapticFeedback.current
             var linkMenu by remember(cellKey) { mutableStateOf(false) }
+            var showAs by remember(cellKey) { mutableStateOf(false) }
             /** Si scrive nella cella; `inPlace` anche se il testo non ci sta, invece del riquadro del testo intero. */
             fun startEditing(inPlace: Boolean = false) {
                 if (cut && !wrap && !showsVisual && !inPlace) {
@@ -313,7 +335,8 @@ internal fun TextLikeCell(
                     idleVisual(localValue)
                 } else {
                     Text(
-                        text = if (localValue.isBlank()) localValue else shown(localValue),
+                        // "Show as…" (dal 27/10/2026): il titolo della pagina o la scritta scelta.
+                        text = if (localValue.isBlank()) localValue else if (link && linkLabel != null) linkLabel.text else shown(localValue),
                         style = if (link) textStyle.copy(textDecoration = TextDecoration.Underline) else textStyle,
                         maxLines = cellMaxLines,
                         overflow = TextOverflow.Ellipsis,
@@ -341,6 +364,18 @@ internal fun TextLikeCell(
                             }
                         )
                     }
+                    // **"Show as…"** (dal 27/10/2026, chiesto dall'utente): il link
+                    // per intero, il titolo della pagina web o una scritta propria.
+                    if (!locked && onLinkLabel != null) {
+                        DropdownMenuItem(
+                            text = { Text(DbStrings.showLinkAs) },
+                            leadingIcon = { Icon(Icons.Filled.TextFields, contentDescription = null) },
+                            onClick = {
+                                linkMenu = false
+                                showAs = true
+                            }
+                        )
+                    }
                     DropdownMenuItem(
                         text = { Text(DbStrings.copyLink) },
                         leadingIcon = { Icon(Icons.Filled.ContentCopy, contentDescription = null) },
@@ -363,6 +398,17 @@ internal fun TextLikeCell(
                             }
                         )
                     }
+                }
+                if (showAs && onLinkLabel != null) {
+                    LinkShowDialog(
+                        value = localValue,
+                        current = linkLabel,
+                        onDismiss = { showAs = false },
+                        onSave = { label ->
+                            showAs = false
+                            onLinkLabel(label)
+                        }
+                    )
                 }
             }
         }

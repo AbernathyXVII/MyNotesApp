@@ -10,6 +10,7 @@ import com.gabriele.notionlocal.data.entity.DATE_NOTIFY_FLAG
 import com.gabriele.notionlocal.data.entity.DatabaseCellEntity
 import com.gabriele.notionlocal.data.entity.DatabaseColumnEntity
 import com.gabriele.notionlocal.data.entity.DatabaseRowEntity
+import com.gabriele.notionlocal.data.entity.LinkLabel
 import com.gabriele.notionlocal.data.entity.MULTI_VALUE_SEPARATOR
 import com.gabriele.notionlocal.data.entity.RichTextSpan
 import com.gabriele.notionlocal.data.entity.ColumnType
@@ -282,7 +283,10 @@ class DatabaseRepository(private val db: AppDatabase) {
     suspend fun setCellValue(rowId: String, columnId: String, value: String) {
         val existing = dao.getCell(rowId, columnId)
         if (existing != null) {
-            dao.updateCell(existing.copy(value = value))
+            // Svuotata, la cella non ha più un link da mostrare in un altro modo.
+            dao.updateCell(
+                if (value.isBlank()) existing.copy(value = value, linkLabel = null, linkLabelIsTitle = false) else existing.copy(value = value)
+            )
         } else {
             dao.insertCell(
                 DatabaseCellEntity(rowId = rowId, columnId = columnId, value = value)
@@ -296,6 +300,20 @@ class DatabaseRepository(private val db: AppDatabase) {
         if (value.endsWith(NOTIFY_SUFFIX) || existing?.value?.endsWith(NOTIFY_SUFFIX) == true) {
             NoteAlarms.reschedule()
         }
+    }
+
+    /**
+     * **La scritta di una cella URL** (dal 27/10/2026, "Show as…"): [label]
+     * al posto del link, o null per il link per intero. Solo in una cella
+     * che ha già il suo link. [expectedValue], se c'è, è il link per cui la
+     * scritta è stata letta: se nel frattempo è cambiato, non si scrive.
+     */
+    suspend fun setCellLinkLabel(rowId: String, columnId: String, label: LinkLabel?, expectedValue: String? = null) {
+        val existing = dao.getCell(rowId, columnId) ?: return
+        if (existing.value.isBlank() || (expectedValue != null && existing.value != expectedValue)) return
+        if (existing.label == label) return
+        dao.updateCell(existing.copy(linkLabel = label?.text, linkLabelIsTitle = label?.isTitle == true))
+        dao.touchRow(rowId, System.currentTimeMillis())
     }
 
     /**

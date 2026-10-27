@@ -587,6 +587,37 @@ fun linkRunAt(spans: List<RichTextSpan>, caret: Int): IntRange? {
     return starts[first] until starts[last] + spans[last].text.length
 }
 
+private val BARE_LINK_START = Regex("^(https?://|www\\.)", RegexOption.IGNORE_CASE)
+
+/**
+ * **Un sito scritto come testo semplice** (dal 27/10/2026), senza un
+ * collegamento: la parola fra due spazi che contiene il tratto
+ * [[start], [end]) e comincia con "http://", "https://" o "www.". La
+ * punteggiatura attaccata ai bordi non conta: le virgolette e la parentesi
+ * prima, il punto, la virgola e la parentesi chiusa dopo — tranne quella
+ * che chiude una parentesi dell'indirizzo stesso, come in
+ * ".../wiki/Bulbasaur_(Pokémon)". Null se lì non c'è un sito.
+ */
+fun bareLinkAt(text: String, start: Int, end: Int): IntRange? {
+    if (start < 0 || end > text.length || start > end) return null
+    if ((start until end).any { text[it].isWhitespace() }) return null
+    var from = start
+    while (from > 0 && !text[from - 1].isWhitespace()) from--
+    var to = end
+    while (to < text.length && !text[to].isWhitespace()) to++
+    while (from < to && text[from] in "([{<\"'«") from++
+    while (to > from) {
+        val last = text[to - 1]
+        val closesItsOwn = last == ')' && text.substring(from, to).count { it == '(' } >= text.substring(from, to).count { it == ')' }
+        if (last in ".,;:!?]}>\"'»" || (last == ')' && !closesItsOwn)) to-- else break
+    }
+    val word = text.substring(from.coerceAtMost(to), to)
+    val prefix = BARE_LINK_START.find(word) ?: return null
+    // Dopo "https://" o "www." ci vuole almeno un nome con un punto.
+    if (!word.substring(prefix.value.length).contains('.')) return null
+    return from until to
+}
+
 /** Lo span che contiene il carattere in posizione `index`, o null fuori dal testo. */
 fun spanAt(spans: List<RichTextSpan>, index: Int): RichTextSpan? {
     if (index < 0) return null

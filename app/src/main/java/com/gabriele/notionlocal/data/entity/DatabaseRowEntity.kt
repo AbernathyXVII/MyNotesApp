@@ -85,5 +85,20 @@ data class DatabaseCellEntity(
     @PrimaryKey val id: String = UUID.randomUUID().toString(),
     val rowId: String,
     val columnId: String,
-    var value: String = ""
-)
+    var value: String = "",
+    /**
+     * **Cosa mostra una cella URL al posto del link** (dal 27/10/2026,
+     * chiesto dall'utente, "Show as…" nel menu della cella): il titolo della
+     * pagina web o una scritta dell'utente. Null = il link per intero, come
+     * prima. Il link resta `value`: è lui che si apre, si copia, si cerca e
+     * si ordina.
+     */
+    var linkLabel: String? = null,
+    /** [linkLabel] è il titolo della pagina, letto dal sito: cambiando il link si rilegge. */
+    var linkLabelIsTitle: Boolean = false
+) {
+    val label: LinkLabel? get() = linkLabel?.let { LinkLabel(it, linkLabelIsTitle) }
+}
+
+/** La scritta di una cella URL: vedi `DatabaseCellEntity.linkLabel`. */
+data class LinkLabel(val text: String, val isTitle: Boolean)

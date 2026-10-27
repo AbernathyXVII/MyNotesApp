@@ -10,6 +10,21 @@ import java.net.URL
 data class LinkPreview(val title: String?, val description: String?, val imageUrl: String?)
 
 /**
+ * **Il titolo di una pagina web** (dal 27/10/2026), da mostrare al posto del
+ * suo link: nel testo e nelle celle URL ("Page title", vedi
+ * `LinkShowChoices`). È quello dell'anteprima dei segnalibri; null senza rete.
+ * Nei test si sostituisce [source], che se no andrebbe in rete.
+ */
+object LinkTitles {
+    @Volatile
+    var source: suspend (String) -> String? = { url -> LinkPreviews.fetch(url)?.title }
+
+    /** Il titolo della pagina all'indirizzo [url], su una riga sola; null se non c'è. */
+    suspend fun read(url: String): String? =
+        source(url)?.replace(Regex("\\s+"), " ")?.trim()?.takeIf { it.isNotEmpty() }
+}
+
+/**
  * **L'anteprima di un segnalibro** (dal 06/10/2026, "Web bookmark"): si legge
  * l'inizio della pagina del sito e se ne prendono il titolo, la descrizione
  * e l'immagine che il sito stesso indica per le anteprime (i tag "og:" che

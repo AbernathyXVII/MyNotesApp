@@ -24,6 +24,7 @@ import com.gabriele.notionlocal.data.entity.parseFitColumns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gabriele.notionlocal.data.PageImageStore
+import com.gabriele.notionlocal.data.LinkTitles
 import com.gabriele.notionlocal.data.dao.RowCover
 import com.gabriele.notionlocal.data.entity.CalendarMode
 import com.gabriele.notionlocal.data.entity.ColumnType
@@ -45,6 +46,7 @@ import com.gabriele.notionlocal.data.entity.ChartSettings
 import com.gabriele.notionlocal.data.entity.encodeChartSettings
 import com.gabriele.notionlocal.data.entity.DatabaseColumnEntity
 import com.gabriele.notionlocal.data.entity.DatabaseRowEntity
+import com.gabriele.notionlocal.data.entity.LinkLabel
 import com.gabriele.notionlocal.data.entity.GALLERY_DEFAULT_PREVIEW
 import com.gabriele.notionlocal.data.entity.GalleryCardPreview
 import com.gabriele.notionlocal.data.entity.GalleryCardSize
@@ -75,6 +77,7 @@ import com.gabriele.notionlocal.data.repository.PageRepository
 import com.gabriele.notionlocal.data.repository.RowPreviewLine
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import com.gabriele.notionlocal.ui.screen.linkUri
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -149,10 +152,15 @@ data class RowSearch(val query: String, val foundInside: Set<String>)
  */
 internal const val CHECKBOX_SETTLE_MS = 200L
 
+/** Quanto si aspetta a rileggere il titolo di una cella URL il cui link è cambiato: lo si sta forse ancora scrivendo. */
+private const val LINK_TITLE_PAUSE_MS = 1_500L
+
 data class DatabaseTableState(
     val columns: List<DatabaseColumnEntity> = emptyList(),
     val rows: List<DatabaseRowEntity> = emptyList(),
     val cellValues: Map<Pair<String, String>, String> = emptyMap(),
+    /** Le scritte delle celle URL al posto del link (dal 27/10/2026): vedi `DatabaseCellEntity.linkLabel`. */
+    val linkLabels: Map<Pair<String, String>, LinkLabel> = emptyMap(),
     /** Null quando non si sta cercando niente. */
     val search: RowSearch? = null
 ) {
@@ -228,7 +236,9 @@ internal fun searchRows(
      */
     addedWhileSearching: Set<String> = emptySet(),
     /** I database collegati dalle Relation, per i nomi delle righe collegate. */
-    related: Map<String, DatabaseSnapshot> = emptyMap()
+    related: Map<String, DatabaseSnapshot> = emptyMap(),
+    /** Le scritte delle celle URL (dal 27/10/2026): si cerca anche quello che si vede. */
+    linkLabels: Map<Pair<String, String>, LinkLabel> = emptyMap()
 ): Pair<List<DatabaseRowEntity>, RowSearch?> {
     val wanted = query.trim()
     if (wanted.isEmpty()) return rows to null
@@ -243,6 +253,7 @@ internal fun searchRows(
             val readable = when (column.type) {
                 ColumnType.COLOR -> parseColorCell(raw).text
                 ColumnType.RELATION -> relationTitles(raw, column.relationConfig()?.let { related[it.database] }).joinToString(" ")
+                ColumnType.URL -> linkLabels[row.id to column.id]?.let { raw + " " + it.text } ?: raw
                 else -> raw
             }
             readable.replace(MULTI_VALUE_SEPARATOR, " ").contains(wanted, ignoreCase = true)
@@ -708,12 +719,14 @@ class DatabaseViewModel(
                         rows.filter { it.id in ids || it.id in held }
                     }
                 }
-                val (kept, search) = searchRows(filtered, columns, cellValues, query, index, added, related)
+                val linkLabels = cells.mapNotNull { cell -> cell.label?.let { (cell.rowId to cell.columnId) to it } }.toMap()
+                val (kept, search) = searchRows(filtered, columns, cellValues, query, index, added, related, linkLabels)
                 val sorted = sortRows(kept, columns, cellValues, page, rollups, related)
                 DatabaseTableState(
                     columns = columns,
                     rows = frozen?.let { order -> keepOrder(sorted, order) } ?: sorted,
                     cellValues = cellValues,
+                    linkLabels = linkLabels,
                     search = search
                 )
             }
@@ -2245,7 +2258,34 @@ class DatabaseViewModel(
                 repository.setCheckbox(row.id, column.id, value)
             } else {
                 repository.setCellValue(row.id, column.id, value)
+                if (column.type == ColumnType.URL) rereadLinkTitle(row.id, column.id, value)
             }
+        }
+    }
+
+    /** "Show as…" di una cella URL (dal 27/10/2026): la scritta al posto del link, o null per il link. */
+    fun setCellLinkLabel(row: DatabaseRowEntity, column: DatabaseColumnEntity, label: LinkLabel?) {
+        viewModelScope.launch { repository.setCellLinkLabel(row.id, column.id, label) }
+    }
+
+    private val titleReads = mutableMapOf<Pair<String, String>, Job>()
+
+    /**
+     * **Il link di una cella che mostra il titolo della sua pagina è
+     * cambiato** (scritto o incollato): il titolo si rilegge per il link
+     * nuovo, dopo una pausa perché lo si sta forse ancora scrivendo. Se non
+     * arriva (senza rete), la cella torna a mostrare il link: il titolo
+     * vecchio sarebbe quello di un'altra pagina.
+     */
+    private fun rereadLinkTitle(rowId: String, columnId: String, value: String) {
+        val key = rowId to columnId
+        if (_tableState.value.linkLabels[key]?.isTitle != true || value.isBlank()) return
+        titleReads.remove(key)?.cancel()
+        titleReads[key] = viewModelScope.launch {
+            delay(LINK_TITLE_PAUSE_MS)
+            val title = LinkTitles.read(linkUri(value))
+            repository.setCellLinkLabel(rowId, columnId, title?.let { LinkLabel(it, isTitle = true) }, expectedValue = value)
+            titleReads.remove(key)
         }
     }
 

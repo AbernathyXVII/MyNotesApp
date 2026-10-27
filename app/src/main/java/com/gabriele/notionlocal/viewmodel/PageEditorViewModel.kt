@@ -42,6 +42,7 @@ import com.gabriele.notionlocal.data.entity.CopiedLine
 import com.gabriele.notionlocal.data.entity.applyPaste
 import com.gabriele.notionlocal.data.entity.sliceSpans
 import com.gabriele.notionlocal.data.entity.applyTextEdit
+import com.gabriele.notionlocal.data.entity.bareLinkAt
 import com.gabriele.notionlocal.data.entity.joinLines
 import com.gabriele.notionlocal.data.entity.linkInRange
 import com.gabriele.notionlocal.data.entity.linkRunAt
@@ -52,6 +53,7 @@ import com.gabriele.notionlocal.data.entity.setFormatInRange
 import com.gabriele.notionlocal.data.entity.setLinkInRange
 import com.gabriele.notionlocal.data.entity.setSizeInRange
 import com.gabriele.notionlocal.data.entity.spanAt
+import com.gabriele.notionlocal.data.entity.spliceSpans
 import com.gabriele.notionlocal.data.entity.splitLines
 import com.gabriele.notionlocal.data.entity.toggleFormatInRange
 import com.gabriele.notionlocal.data.entity.withSubscript
@@ -929,9 +931,11 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         val selection = SelectionSnapshot(blockIds, start, end)
         liveSelection = selection
         _selectionTypography.value = typographyAt(selection)
+        val linked = linkSelection(selection)
         _selectionLink.value = SelectionLink(
             hasText = start < end,
-            link = linkSelection(selection)?.let { linkOf(it) }
+            link = linked?.let { linkOf(it) },
+            onSite = linked != null && start == end
         )
     }
 
@@ -1069,8 +1073,12 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
     // già un collegamento (per cambiarlo o toglierlo). Come per il pennello,
     // la selezione si mette da parte prima di aprire la finestrella.
 
-    /** `hasText` = c'è del testo selezionato; `link` = il collegamento che c'è già lì, se c'è. */
-    data class SelectionLink(val hasText: Boolean, val link: String?)
+    /**
+     * `hasText` = c'è del testo selezionato; `link` = il collegamento che c'è
+     * già lì, se c'è; `onSite` = il solo cursore sta in un collegamento o in
+     * un sito scritto come testo (dal 27/10/2026, vedi `linkSelection`).
+     */
+    data class SelectionLink(val hasText: Boolean, val link: String?, val onSite: Boolean = false)
 
     private val _selectionLink = MutableStateFlow(SelectionLink(hasText = false, link = null))
     val selectionLink: StateFlow<SelectionLink> = _selectionLink
@@ -1079,9 +1087,14 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
      * Il testo a cui va il collegamento: quello selezionato o, con il solo
      * cursore dentro un collegamento, tutto quel collegamento. Null se non
      * c'è né l'uno né l'altro.
+     *
+     * **Dal 27/10/2026 si prende il link intero** anche quando ne è
+     * selezionato solo un pezzo — tenendo premuto su un link si seleziona
+     * una parola sola — e lo stesso per **un sito scritto come testo
+     * semplice** ("https://…" o "www.…", vedi `bareLinkAt`): quello che si
+     * vede di un link si cambia tutto insieme (vedi `LinkDialog`).
      */
     private fun linkSelection(selection: SelectionSnapshot): SelectionSnapshot? {
-        if (selection.start < selection.end) return selection
         val all = _blocks.value
         var pos = 0
         for (id in selection.blockIds) {
@@ -1089,10 +1102,47 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
             val spans = spansOf(block)
             val length = spans.plainText().length
             if (selection.start <= pos + length) {
-                val run = linkRunAt(spans, selection.start - pos) ?: return null
-                return selection.copy(start = pos + run.first, end = pos + run.last + 1)
+                // Una selezione su più righe resta com'è.
+                if (selection.end > pos + length) return selection.takeIf { it.start < it.end }
+                val from = selection.start - pos
+                val to = selection.end - pos
+                val run = if (from < to) {
+                    linkRunAt(spans, from + 1)?.takeIf { from >= it.first && to <= it.last + 1 }
+                } else {
+                    linkRunAt(spans, from)
+                } ?: bareLinkAt(spans.plainText(), from, to)?.takeIf { linkInRange(spans, it.first, it.last + 1) == null }
+                if (run != null) return selection.copy(start = pos + run.first, end = pos + run.last + 1)
+                return selection.takeIf { it.start < it.end }
             }
             pos += length + 1 // +1 per l'a-capo che separa i blocchi
+        }
+        return null
+    }
+
+    /**
+     * Il testo del link messo da parte, com'è scritto, per la finestrella: è
+     * lui che "Show" cambia. Null se prende più righe (lì si cambia solo
+     * l'indirizzo).
+     */
+    fun capturedLinkText(): String? {
+        val selection = capturedSelection?.let { linkSelection(it) } ?: return null
+        val (block, from, to) = singleBlockRange(selection) ?: return null
+        return spansOf(block).plainText().substring(from, to)
+    }
+
+    /** Il blocco in cui sta tutta la selezione, con le posizioni dentro di lui; null se ne prende più d'uno. */
+    private fun singleBlockRange(selection: SelectionSnapshot): Triple<BlockEntity, Int, Int>? {
+        if (selection.start >= selection.end) return null
+        val all = _blocks.value
+        var pos = 0
+        for (id in selection.blockIds) {
+            val block = all.find { it.id == id } ?: continue
+            val length = spansOf(block).plainText().length
+            if (selection.start <= pos + length) {
+                if (selection.end > pos + length) return null
+                return Triple(block, selection.start - pos, selection.end - pos)
+            }
+            pos += length + 1
         }
         return null
     }
@@ -1121,12 +1171,46 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
      * null. Falso se non c'era testo selezionato né un collegamento sotto il
      * cursore.
      */
-    fun applyLinkToCapturedSelection(url: String?): Boolean {
+    fun applyLinkToCapturedSelection(url: String?, shown: String? = null): Boolean {
         val selection = capturedSelection?.let { linkSelection(it) } ?: return false
+        if (url != null && shown != null) return replaceLinkText(selection, url, shown)
         transformRun(selection) { spans, from, to -> setLinkInRange(spans, from, to, url) }
         _selectionLink.value = _selectionLink.value.copy(link = url)
         return true
     }
+
+    /**
+     * **Quello che si vede del link** (dal 27/10/2026, chiesto dall'utente:
+     * "il link per intero", "il titolo della pagina web" o "una scritta che
+     * io scriverò manualmente"): il testo del link diventa [shown], con la
+     * formattazione che aveva (grassetto, colore…) e il collegamento [url].
+     * Il campo col cursore prende il testo nuovo come per Annulla
+     * (`externalChangeTick`), e il cursore va in fondo al link.
+     */
+    private fun replaceLinkText(selection: SelectionSnapshot, url: String, shown: String): Boolean {
+        val (block, from, to) = singleBlockRange(selection) ?: return false
+        val text = shown.replace('\n', ' ')
+        val spans = spansOf(block)
+        val newSpans = if (spans.plainText().substring(from, to) == text) {
+            setLinkInRange(spans, from, to, url)
+        } else {
+            setLinkInRange(spliceSpans(spans, from, to, text), from, from + text.length, url)
+        }
+        snapshotForStructuralChange()
+        lastTextEditSnapshotBlockId = null
+        val updated = block.copy(textJson = json.encodeToString(newSpans))
+        _externalChangeTick.value += 1
+        _linkTextChanges.tryEmit(LinkTextChange(block.id, newSpans, from + text.length))
+        viewModelScope.launch { repository.saveBlock(updated) }
+        _selectionLink.value = _selectionLink.value.copy(link = url)
+        return true
+    }
+
+    /** Il testo nuovo di un link e dove va il cursore (in fondo al link), per i campi: vedi `replaceLinkText`. */
+    data class LinkTextChange(val blockId: String, val spans: List<RichTextSpan>, val caret: Int)
+
+    private val _linkTextChanges = MutableSharedFlow<LinkTextChange>(extraBufferCapacity = 4)
+    val linkTextChanges: SharedFlow<LinkTextChange> = _linkTextChanges
 
     /** Il font sul testo messo da parte; falso se non c'era testo selezionato. */
     fun applyFontToCapturedSelection(font: PageFont?): Boolean {

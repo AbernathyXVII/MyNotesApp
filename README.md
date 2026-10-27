@@ -2104,6 +2104,56 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.133 — 27/10/2026 · 13:44 — Cosa si vede di un link: l'indirizzo, il titolo della pagina o una scritta tua
+*(Claude Code sul PC; provata sul telefono in "Paragraph – prova": un sito scritto in fondo a una riga, l'icona del link col solo cursore, "Page title" ("Example Domain", letto dal sito), "Your text", di nuovo "Full link", e una parola tenuta premuta che prende tutto il link; la riga poi rimessa com'era, confrontata col database (migrazione 62→63 compresa). "Show as…" delle celle URL provato solo nei test sul PC: sul telefono non c'è un database di prova; 836 test passati)*
+
+L'utente, parola per parola:
+> «Concedimi di modificare quello che si vede quando c'è un sito scritto in
+> un campo testo normale o in un database, con tre opzioni: 1) il link per
+> intero; 2) il titolo della pagina web; 3) una scritta che io scriverò
+> manualmente.»
+
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Show" nella finestra del link
+  del testo** (l'icona del link nella barra sopra la tastiera): sotto
+  l'indirizzo, tre scelte per quello che si legge nella pagina. **"Full
+  link"** è l'indirizzo per intero; **"Page title"** è il titolo della pagina
+  web, letto dal sito quando lo si sceglie (serve la rete: senza, la finestra
+  scrive "No title found"); **"Your text"** è una scritta scritta a mano. Il
+  testo del link cambia e tiene la sua formattazione (grassetto, colore…), il
+  link resta lo stesso e il cursore va in fondo al link. Si cambia di nuovo
+  dalla stessa finestra, o con Annulla
+- **[Nuova funzionalità]** **[📱 Mobile]** **Un sito scritto come testo
+  semplice** ("https://…" o "www.…", senza link): col solo cursore dentro
+  compare l'icona del link, e la finestra parte con quell'indirizzo già
+  scritto. Con "Done" diventa un link, e "Show" vale anche qui. Le parentesi,
+  le virgolette e il punto attaccati intorno non fanno parte dell'indirizzo
+- **[Modifica]** **[📱 Mobile]** Tenendo premuto su un link si seleziona una
+  parola sola: l'icona del link ora prende **tutto il link**. Cambiarlo,
+  toglierlo o cambiarne la scritta vale per tutto il link, non più solo per
+  quella parola
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Show as…" nelle celle URL dei
+  database** (tocco lungo sulla cella, con "Edit link", "Copy link" e "Paste
+  link"): le stesse tre scelte. La cella mostra il titolo o la scritta al
+  posto dell'indirizzo, e così fanno le schede della bacheca, della galleria e
+  dell'elenco e le proprietà in cima alla pagina di una riga. Il tocco apre
+  sempre il link, e la lente trova anche la scritta. Se il link della cella
+  cambia e lei mostrava il titolo, il titolo si rilegge per il link nuovo
+  (senza rete torna l'indirizzo per intero); una scritta tua resta. Svuotata
+  la cella, la scritta se ne va
+- **[Progetto]** `DatabaseCellEntity.linkLabel` e `linkLabelIsTitle`
+  (database v63; con la migrazione 62→63 le celle di prima mostrano il link
+  come sempre); `LinkTitles` (il titolo dell'anteprima dei segnalibri,
+  `LinkPreviews`); in `TextLinks.kt` `LinkShowChoices`, `LinkShowState`,
+  `LinkShowDialog` e `LinkDialog(shown, onSave(url, testo))`; `bareLinkAt` in
+  `RichText.kt`. In `PageEditorViewModel`, `linkSelection` prende il link
+  intero e il sito scritto come testo, e ci sono `capturedLinkText`,
+  `replaceLinkText` e `linkTextChanges`: i campi prendono subito il testo
+  nuovo, col cursore in fondo al link. In `DatabaseViewModel`,
+  `setCellLinkLabel`, `rereadLinkTitle` e `DatabaseTableState.linkLabels`, che
+  arrivano alle celle con `LocalCellLinkLabels`. Test: `BareLinkTest`,
+  `LinkShowTest`, `CellLinkLabelTest`, `LinkShowDialogTest`, e `MigrationTest`
+  (+1, dalla v62 con `schema/v62.sql`)
+
 ### 🆕 v0.132 — 27/10/2026 · 09:42 — "Default" per il corpo, e sotto un titolo grande si scrive a 16
 *(Claude Code sul PC; provata sul telefono in "Paragraph – prova": "Default" nella finestra, un titolo a 50, Invio e una riga scritta sotto, che dopo la pausa torna alla sua altezza col cursore dove si scriveva; la pagina poi rimessa com'era, confrontata col database; 813 test passati)*
 

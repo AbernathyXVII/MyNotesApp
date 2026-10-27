@@ -60,7 +60,7 @@ import kotlinx.serialization.json.Json
         NotebookSectionEntity::class,
         PersonalWordEntity::class
     ],
-    version = 62,
+    version = 63,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -802,6 +802,14 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** La scritta delle celle URL (27/10/2026): nessuna, si vede il link come prima. */
+        private val MIGRATION_62_63 = object : Migration(62, 63) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE database_cells ADD COLUMN linkLabel TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE database_cells ADD COLUMN linkLabelIsTitle INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         /** "Hide New" della bacheca (26/10/2026): spento, i "+ New" si vedono come prima. */
         private val MIGRATION_61_62 = object : Migration(61, 62) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -955,7 +963,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_58_59,
                         MIGRATION_59_60,
                         MIGRATION_60_61,
-                        MIGRATION_61_62
+                        MIGRATION_61_62,
+                        MIGRATION_62_63
                     )
                     .build()
                 INSTANCE = instance

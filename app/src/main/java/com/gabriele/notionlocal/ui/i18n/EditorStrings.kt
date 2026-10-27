@@ -129,6 +129,14 @@ object EditorStrings {
     val unpinLinkTarget get() = t("Unpin link target", "Togli dalle destinazioni", "Linkziel lösen", "Retirer des cibles de lien", "Quitar de los destinos", "取消固定链接目标", "링크 대상 고정 해제", "リンク先の固定を解除")
     val linkWeb get() = t("Web", "Web", "Web", "Web", "Web", "网页", "웹", "ウェブ")
     val linkInThisPage get() = t("In this page", "In questa pagina", "Auf dieser Seite", "Dans cette page", "En esta página", "本页内", "이 페이지", "このページ内")
+    // --- Quello che si vede di un link (dal 27/10/2026), vedi `LinkShowChoices` ---
+    val linkShow get() = t("Show", "Mostra", "Anzeigen", "Afficher", "Mostrar", "显示", "표시", "表示")
+    val linkShowLink get() = t("Full link", "Il link per intero", "Ganzer Link", "Lien complet", "Enlace completo", "完整链接", "전체 링크", "リンク全体")
+    val linkShowTitle get() = t("Page title", "Il titolo della pagina", "Seitentitel", "Titre de la page", "Título de la página", "网页标题", "페이지 제목", "ページのタイトル")
+    val linkShowText get() = t("Your text", "Una scritta tua", "Eigener Text", "Votre texte", "Tu texto", "自定义文字", "직접 입력한 텍스트", "自分で入力した文字")
+    val linkTextHint get() = t("Text to show", "Il testo da mostrare", "Angezeigter Text", "Texte à afficher", "Texto que se muestra", "要显示的文字", "표시할 텍스트", "表示する文字")
+    val linkReadingTitle get() = t("Reading the title…", "Leggo il titolo…", "Titel wird gelesen…", "Lecture du titre…", "Leyendo el título…", "正在读取标题…", "제목을 읽는 중…", "タイトルを読み込み中…")
+    val linkNoTitle get() = t("No title found", "Titolo non trovato", "Kein Titel gefunden", "Aucun titre trouvé", "No se encontró el título", "未找到标题", "제목을 찾을 수 없어요", "タイトルが見つかりません")
     val noLinkTargets get() = t(
         "Nothing to link to yet. Pin a line from its six-dot menu, or write it in large text.",
         "Ancora niente a cui collegarsi. Fissa una riga dal suo menu dei sei puntini, o scrivila in grande.",

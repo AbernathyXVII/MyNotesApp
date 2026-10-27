@@ -40,7 +40,7 @@ class LinkDialogTargetsTest {
         AppSettings.init(ApplicationProvider.getApplicationContext())
         compose.setContent {
             NotionLocalTheme {
-                LinkDialog(current = current, targets = targets, onDismiss = {}, onSave = { saved = it }, onRemove = {})
+                LinkDialog(current = current, targets = targets, onDismiss = {}, onSave = { url, _ -> saved = url }, onRemove = {})
             }
         }
         compose.waitForIdle()

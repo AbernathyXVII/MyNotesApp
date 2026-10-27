@@ -2944,8 +2944,9 @@ private fun PageEditorContent(
                             // cursore sta in un link (per cambiarlo o
                             // toglierlo). La selezione si mette da parte
                             // come per il pennello: la finestrella porta via
-                            // il fuoco.
-                            if (selectionLink.hasText || selectionLink.link != null) {
+                            // il fuoco. Dal 27/10/2026 anche col cursore in un
+                            // sito scritto come testo ("https://…", "www.…").
+                            if (selectionLink.hasText || selectionLink.link != null || selectionLink.onSite) {
                                 BarButton(onClick = {
                                     viewModel.captureSelection()
                                     linkDialogFor = viewModel.capturedLink().orEmpty()
@@ -3168,13 +3169,16 @@ private fun PageEditorContent(
     linkDialogFor?.let { current ->
         // Le righe della pagina a cui collegarsi, lette all'apertura.
         val targets = remember { viewModel.linkTargets() }
+        // Il testo del link com'è scritto adesso: "Show" lo cambia.
+        val shown = remember { viewModel.capturedLinkText() }
         LinkDialog(
             current = current.ifEmpty { null },
+            shown = shown,
             targets = targets,
             onDismiss = { linkDialogFor = null },
-            onSave = { url ->
+            onSave = { url, text ->
                 linkDialogFor = null
-                if (!viewModel.applyLinkToCapturedSelection(url)) {
+                if (!viewModel.applyLinkToCapturedSelection(url, text)) {
                     Toast.makeText(context, EditorStrings.selectTextFirst, Toast.LENGTH_SHORT).show()
                 }
             },
@@ -5599,6 +5603,18 @@ private fun MergedTextRunField(
     }
     shownFirstLine[0] = runBlocks.first().id
 
+    // **Il testo di un link cambiato dalla sua finestrella** (dal 27/10/2026,
+    // vedi `PageEditorViewModel.replaceLinkText`): arriva dal database come
+    // un Annulla, e il cursore va in fondo al link invece di restare dove
+    // finiva il testo di prima.
+    var linkTextCaret by remember(runKey) { mutableStateOf<PageEditorViewModel.LinkTextChange?>(null) }
+    val linesNow by rememberUpdatedState(runBlocks)
+    LaunchedEffect(runKey) {
+        viewModel.linkTextChanges.collect { change ->
+            if (linesNow.any { it.id == change.blockId }) linkTextCaret = change
+        }
+    }
+
     LaunchedEffect(runBlocks) {
         val official = runFieldText(runBlocks, viewModel)
         when {
@@ -5611,7 +5627,17 @@ private fun MergedTextRunField(
             // Nessuna modifica nostra in sospeso e il testo è diverso:
             // è cambiato davvero da fuori, adeguiamoci.
             official != fieldValue.text -> {
-                val clampedCursor = fieldValue.selection.end.coerceIn(1, official.length)
+                val change = linkTextCaret
+                val line = change?.let { c -> runBlocks.indexOfFirst { it.id == c.blockId } } ?: -1
+                val linkEnd = if (change != null && line >= 0 && viewModel.spansOf(runBlocks[line]) == change.spans) {
+                    linkTextCaret = null
+                    var pos = RUN_LEAD.length
+                    for (i in 0 until line) pos += viewModel.plainTextOf(runBlocks[i]).length + 1
+                    pos + change.caret
+                } else {
+                    null
+                }
+                val clampedCursor = (linkEnd ?: fieldValue.selection.end).coerceIn(1, official.length)
                 fieldValue = TextFieldValue(official, TextRange(clampedCursor))
             }
         }
@@ -6761,6 +6787,20 @@ private fun BlockRow(
         viewModel.externalSpans.collect { (id, spans) ->
             if (id == block.id && spans.plainText() == bodyOf(editState.fieldValue.text)) {
                 editState = editState.copy(spans = spans)
+            }
+        }
+    }
+    // Il testo nuovo di un link (dal 27/10/2026, vedi
+    // `PageEditorViewModel.replaceLinkText`): subito, anche col fuoco, col
+    // cursore in fondo al link.
+    LaunchedEffect(block.id) {
+        viewModel.linkTextChanges.collect { change ->
+            if (change.blockId == block.id) {
+                val text = change.spans.plainText()
+                editState = BlockEditState(
+                    change.spans,
+                    TextFieldValue(RUN_LEAD + text, TextRange(RUN_LEAD.length + change.caret.coerceIn(0, text.length)))
+                )
             }
         }
     }

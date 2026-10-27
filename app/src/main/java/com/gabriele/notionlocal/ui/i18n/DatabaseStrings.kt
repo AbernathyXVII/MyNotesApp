@@ -813,6 +813,7 @@ object DbStrings {
     val copyLink get() = t("Copy link", "Copia link", "Link kopieren", "Copier le lien", "Copiar enlace", "复制链接", "링크 복사", "リンクをコピー")
     val pasteLink get() = t("Paste link", "Incolla link", "Link einfügen", "Coller le lien", "Pegar enlace", "粘贴链接", "링크 붙여넣기", "リンクを貼り付け")
     val linkCopied get() = t("Link copied", "Link copiato", "Link kopiert", "Lien copié", "Enlace copiado", "链接已复制", "링크를 복사했어요", "リンクをコピーしました")
+    val showLinkAs get() = t("Show as…", "Mostra come…", "Anzeigen als…", "Afficher comme…", "Mostrar como…", "显示为…", "표시 방식…", "表示方法…")
     val cantOpenLink get() = t(
         "This link can't be opened",
         "Questo link non si può aprire",

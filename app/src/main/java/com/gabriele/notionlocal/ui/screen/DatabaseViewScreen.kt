@@ -61,6 +61,7 @@ import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.VisualTransformation
 import com.gabriele.notionlocal.ui.i18n.EditorStrings
 import com.gabriele.notionlocal.ui.i18n.DbStrings
+import com.gabriele.notionlocal.data.entity.LinkLabel
 import com.gabriele.notionlocal.data.settings.AppSettings
 import com.gabriele.notionlocal.ui.format.Formats
 import com.gabriele.notionlocal.ui.i18n.Strings
@@ -1208,6 +1209,8 @@ private fun DatabaseViewBody(
         }
     }
 
+    val cellLinkLabels = remember(state.linkLabels, viewModel) { CellLinkLabels(state.linkLabels, viewModel::setCellLinkLabel) }
+
     CompositionLocalProvider(
         LocalRelated provides viewRelated,
         LocalRelationActions provides relationActions,
@@ -1217,6 +1220,7 @@ private fun DatabaseViewBody(
         LocalRowIcons provides rowIcons,
         LocalSimpleDatabase provides simple,
         LocalRowSearch provides state.search,
+        LocalCellLinkLabels provides cellLinkLabels,
         LocalTitleEditRequest provides TitleEditRequest(editTitleOf, viewModel::consumeEditTitle),
         LocalRowLimits provides rowLimits,
         LocalDateGroupings provides parseDateGroupings(page?.dateGroupingJson)
@@ -3810,7 +3814,7 @@ private fun BoardCard(
                 val value = state.cellValues[row.id to column.id].orEmpty()
                 if (value.isNotBlank()) {
                     Spacer(modifier = Modifier.size(6.dp))
-                    CardPropertyValue(column, value)
+                    CardPropertyValue(column, value, linkLabel = state.linkLabels[row.id to column.id])
                 }
             }
     }
@@ -4805,7 +4809,7 @@ private fun ListRow(
             val value = state.cellValues[row.id to column.id].orEmpty()
             if (value.isNotBlank()) {
                 Spacer(modifier = Modifier.size(10.dp))
-                CardPropertyValue(column, value)
+                CardPropertyValue(column, value, linkLabel = state.linkLabels[row.id to column.id])
             }
         }
     }
@@ -5217,7 +5221,7 @@ private fun GalleryCard(
                 }
                 if (shown) {
                     Spacer(modifier = Modifier.size(4.dp))
-                    CardPropertyValue(column, value, overflow = TextOverflow.Ellipsis)
+                    CardPropertyValue(column, value, overflow = TextOverflow.Ellipsis, linkLabel = state.linkLabels[row.id to column.id])
                 }
             }
         }
@@ -7412,6 +7416,7 @@ private fun CellContent(
             }
 
             else -> {
+                val linkLabels = LocalCellLinkLabels.current
                 // TEXT, NUMBER, URL, EMAIL, PHONE: un campo libero, che
                 // cambia solo il tipo di tastiera proposta. Testo semplice
                 // finché non lo si tocca (dal 30/09/2026): vedi `TextLikeCell`.
@@ -7442,6 +7447,9 @@ private fun CellContent(
                     // **Un URL si apre** (dal 05/10/2026): tocco = apri, tocco
                     // lungo = modifica, copia, incolla. Vedi `TextLikeCell`.
                     isLink = column.type == ColumnType.URL,
+                    // E si mostra come si è scelto (dal 27/10/2026, "Show as…").
+                    linkLabel = linkLabels?.labels?.get(row.id to column.id)?.takeIf { column.type == ColumnType.URL },
+                    onLinkLabel = linkLabels?.takeIf { column.type == ColumnType.URL }?.let { labels -> { label -> labels.set(row, column, label) } },
                     cellKey = cellKey
                 )
             }
@@ -8269,7 +8277,9 @@ private fun ColorCellSheet(
 private fun CardPropertyValue(
     column: DatabaseColumnEntity,
     value: String,
-    overflow: TextOverflow = TextOverflow.Clip
+    overflow: TextOverflow = TextOverflow.Clip,
+    /** Di una cella URL, la scritta scelta con "Show as…" (dal 27/10/2026). */
+    linkLabel: LinkLabel? = null
 ) {
     // "Image": la miniatura, intera.
     if (column.type == ColumnType.IMAGE) {
@@ -8311,7 +8321,7 @@ private fun CardPropertyValue(
     }
     if (column.type != ColumnType.COLOR) {
         Text(
-            text = listCellLabel(column, value),
+            text = linkLabel?.takeIf { column.type == ColumnType.URL }?.text ?: listCellLabel(column, value),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
@@ -9745,7 +9755,12 @@ internal fun RowPageProperties(
 
     RelationHost(viewModel = viewModel, onOpenPage = onOpenPage) {
     PageLinkHost(factory = factory, linkedPages = linkedPages, onOpenPage = onOpenPage) {
-    CompositionLocalProvider(LocalDatabaseLocked provides !canEdit, LocalNameColumnTitle provides dataPage?.nameColumnTitle) {
+    val cellLinkLabels = remember(state.linkLabels, viewModel) { CellLinkLabels(state.linkLabels, viewModel::setCellLinkLabel) }
+    CompositionLocalProvider(
+        LocalDatabaseLocked provides !canEdit,
+        LocalNameColumnTitle provides dataPage?.nameColumnTitle,
+        LocalCellLinkLabels provides cellLinkLabels
+    ) {
         Column(
             modifier = modifier
                 .fillMaxWidth()
