@@ -148,6 +148,7 @@ import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material.icons.filled.Notes
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Lock
@@ -922,7 +923,7 @@ private val LocalFocusPark = staticCompositionLocalOf<FocusRequester?> { null }
  * stesso `Boolean` in otto firme di seguito è un modo sicuro di
  * dimenticarselo in una.
  */
-private val LocalPageLocked = staticCompositionLocalOf { false }
+internal val LocalPageLocked = staticCompositionLocalOf { false }
 
 /**
  * Quanto aspettare, dopo che la tastiera si è chiusa, prima di
@@ -1384,9 +1385,20 @@ fun PageEditorScreen(
     // l'intestazione di OneNote invece di icona e copertina.
     val page by viewModel.page.collectAsStateWithLifecycle()
     val keyboardWatch = remember { KeyboardCloseWatch() }
+    // **I bottoni** (dal 27/10/2026): chi li fa partire e cosa serve alla
+    // finestra delle azioni. I blocchi di "Insert blocks" in questa pagina li
+    // mette l'editor, così si annullano.
+    val buttonRunner = rememberButtonRunController(
+        pages = factory.pageRepository,
+        onOpenPage = { id, isDatabase -> if (isDatabase) onNavigateToDatabase(id) else onNavigateToPage(id) },
+        onInsert = viewModel::insertButtonBlocks
+    )
+    val buttonEnv = remember(factory) { ButtonEditorEnv(factory.pageRepository, factory, factory.imageStore) }
     CompositionLocalProvider(
         LocalInNotebook provides (page?.notebookSectionId != null),
         LocalKeyboardCloseWatch provides keyboardWatch,
+        LocalButtonRunController provides buttonRunner,
+        LocalButtonEditorEnv provides buttonEnv,
         // Il correttore della pagina, se è acceso: vedi `ProofingUi.kt`.
         LocalProofing provides rememberPageProofing(page, viewModel),
         // Il testo incollato da un'altra app porta i suoi link: vedi `PasteLinks.kt`.
@@ -1407,6 +1419,7 @@ fun PageEditorScreen(
             onOpenSiblingRow = onOpenSiblingRow,
             viewModel = viewModel
         )
+        ButtonRunDialogs(buttonRunner)
     }
 }
 
@@ -1490,6 +1503,8 @@ private fun PageEditorContent(
     var linkedViewRequest by remember { mutableStateOf<LinkedViewRequest?>(null) }
     // "Link to page": la riga per cui si sta scegliendo la pagina.
     var linkToPageFor by remember { mutableStateOf<BlockEntity?>(null) }
+    // "Link to button": la riga per cui si sta scegliendo il bottone (dal 27/10/2026).
+    var linkButtonFor by remember { mutableStateOf<BlockEntity?>(null) }
     var linkableDatabases by remember { mutableStateOf<List<PageRepository.LinkableDatabase>?>(null) }
     val askLinkedViewSource: (BlockEntity, Boolean) -> Unit = { block, keepText ->
         // La tastiera se ne va sotto la finestra comunque, e la riga che
@@ -1985,6 +2000,15 @@ private fun PageEditorContent(
                     SlashAction.FullPageDatabase -> {
                         focusManager.clearFocus()
                         viewModel.convertToFullPageDatabase(block) { onNavigateToDatabase(it) }
+                    }
+                    // Il bottone non ha testo da scrivere: si apre la finestra delle azioni.
+                    SlashAction.Button -> {
+                        focusManager.clearFocus()
+                        viewModel.convertToButton(block)
+                    }
+                    SlashAction.LinkButton -> {
+                        focusManager.clearFocus()
+                        linkButtonFor = block
                     }
                     SlashAction.NotYet -> Unit
                 }
@@ -3257,8 +3281,10 @@ private fun PageEditorContent(
             SlashAction.LinkedView -> askLinkedViewSource(block, true)
             // Il testo della riga diventa il nome del database, e si resta qui.
             SlashAction.FullPageDatabase -> viewModel.convertToFullPageDatabase(block, title = text) {}
+            // Il testo della riga diventa il nome del bottone.
+            SlashAction.Button -> viewModel.convertToButton(block, name = text)
             // Non sono in "Turn into" (vedi `TurnIntoList`): il testo andrebbe perso.
-            is SlashAction.Media, SlashAction.LinkToPage, SlashAction.NotYet -> Unit
+            is SlashAction.Media, SlashAction.LinkToPage, SlashAction.LinkButton, SlashAction.NotYet -> Unit
         }
     }
 
@@ -3278,6 +3304,20 @@ private fun PageEditorContent(
                     val pageId = node.pageId ?: node.rowId?.let { factory.pageRepository.ensureRowPage(it) }
                     if (pageId != null) viewModel.convertToPageMention(block, pageId)
                 }
+            }
+        )
+    }
+
+    // La finestra delle azioni di un bottone (dal 27/10/2026): vedi `ButtonEditHost`.
+    ButtonEditHost(viewModel)
+
+    linkButtonFor?.let { block ->
+        LinkToButtonSheet(
+            loadChoices = viewModel::buttonChoices,
+            onDismiss = { linkButtonFor = null },
+            onPick = { choice ->
+                linkButtonFor = null
+                viewModel.convertToLinkedButton(block, choice.blockId)
             }
         )
     }
@@ -4344,6 +4384,10 @@ internal sealed class SlashAction {
     object LinkToPage : SlashAction()
     /** "Database - Full page": un database nuovo che si apre a pagina intera (dal 06/10/2026). */
     object FullPageDatabase : SlashAction()
+    /** "Button": un bottone ancora senza azioni, e si apre la finestra per sceglierle (dal 27/10/2026). */
+    object Button : SlashAction()
+    /** "Link to button": si sceglie un bottone che c'è già, e la riga ne diventa una copia collegata (dal 27/10/2026). */
+    object LinkButton : SlashAction()
     /** Elencata ma non ancora costruita: si vede spenta. */
     object NotYet : SlashAction()
 }
@@ -4396,6 +4440,9 @@ internal val SLASH_ENTRIES: List<SlashEntry> = listOf(
     SlashEntry("Table", SlashCategory.BASIC, SlashAction.Type(BlockType.TABLE), Icons.Filled.TableChart),
     SlashEntry("Divider", SlashCategory.BASIC, SlashAction.Divider, Icons.Filled.Remove),
     SlashEntry("Link to page", SlashCategory.BASIC, SlashAction.LinkToPage, Icons.Filled.Link),
+    // I bottoni (dal 27/10/2026): vedi `data/buttons/Buttons.kt`.
+    SlashEntry("Button", SlashCategory.BASIC, SlashAction.Button, Icons.Filled.TouchApp),
+    SlashEntry("Link to button", SlashCategory.BASIC, SlashAction.LinkButton, Icons.Filled.Link),
 
     SlashEntry("Image", SlashCategory.MEDIA, SlashAction.Media(BlockType.IMAGE), Icons.Filled.Image),
     SlashEntry("Video", SlashCategory.MEDIA, SlashAction.Media(BlockType.VIDEO), Icons.Filled.Videocam),
@@ -4486,7 +4533,8 @@ private val NOTEBOOK_SLASH_ENTRIES: List<SlashEntry> by lazy {
     SLASH_ENTRIES.filter { entry ->
         entry.category != SlashCategory.DATABASE &&
             entry.action != SlashAction.PageLink &&
-            entry.label != "Link to page"
+            entry.label != "Link to page" &&
+            entry.action != SlashAction.LinkButton
     }
 }
 
@@ -6725,6 +6773,16 @@ private fun BlockRow(
             block = block,
             viewModel = viewModel,
             onOpenPage = { page -> if (page.isDatabase) onNavigateToDatabase(page.id) else onNavigateToPage(page.id) },
+            onLongPress = onOpenBlockMenu?.let { open -> { open(block.id) } },
+            modifier = Modifier.padding(start = PAGE_SIDE_PADDING + (depth * 20).dp, end = PAGE_SIDE_PADDING)
+        )
+        return
+    }
+
+    if (block.type == BlockType.BUTTON) {
+        ButtonBlockContent(
+            block = block,
+            viewModel = viewModel,
             onLongPress = onOpenBlockMenu?.let { open -> { open(block.id) } },
             modifier = Modifier.padding(start = PAGE_SIDE_PADDING + (depth * 20).dp, end = PAGE_SIDE_PADDING)
         )

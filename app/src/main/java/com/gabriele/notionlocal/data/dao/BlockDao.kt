@@ -253,6 +253,14 @@ interface BlockDao {
     @Query("SELECT * FROM blocks WHERE linkedPageId = :pageId")
     suspend fun getBlocksLinkingTo(pageId: String): List<BlockEntity>
 
+    /** Un blocco seguito nel tempo: il bottone vero di una copia collegata (dal 27/10/2026). */
+    @Query("SELECT * FROM blocks WHERE id = :blockId")
+    fun observeById(blockId: String): Flow<BlockEntity?>
+
+    /** Tutti i bottoni, dovunque stiano: "Link to button" (dal 27/10/2026). */
+    @Query("SELECT * FROM blocks WHERE type = 'BUTTON'")
+    suspend fun getButtonBlocks(): List<BlockEntity>
+
     /** Il posto più in fondo fra i blocchi di primo livello di una pagina. */
     @Query(
         "SELECT MAX(orderIndex) FROM blocks WHERE pageId = :pageId AND parentBlockId IS NULL"

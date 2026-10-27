@@ -189,6 +189,9 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material.icons.filled.Update
+import androidx.compose.material.icons.filled.TouchApp
+import com.gabriele.notionlocal.data.buttons.ButtonConfig
+import com.gabriele.notionlocal.ui.i18n.ButtonStrings
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.ViewColumn
 import androidx.compose.material.icons.filled.TableChart
@@ -555,7 +558,7 @@ private sealed class PropertyTarget {
 private enum class PropertyMode { FULL, TYPE }
 
 /** I tipi con impostazioni loro, che compaiono sotto quando li si sceglie nella finestra della proprietà. */
-internal val TYPES_WITH_SETTINGS = setOf(ColumnType.NUMBER, ColumnType.DURATION, ColumnType.RELATION, ColumnType.ROLLUP)
+internal val TYPES_WITH_SETTINGS = setOf(ColumnType.NUMBER, ColumnType.DURATION, ColumnType.RELATION, ColumnType.ROLLUP, ColumnType.BUTTON)
 
 /** Di quale colonna si sceglie il calcolo: `key` è l'id, o `NAME_CALCULATION_KEY`; `type` null = il nome. */
 private data class CalculateTarget(val key: String, val type: ColumnType?, val title: String)
@@ -679,7 +682,19 @@ fun DatabaseViewScreen(
             }
         }
     ) { padding ->
-        CompositionLocalProvider(LocalKeyboardCloseWatch provides keyboardWatch) {
+        // **I bottoni** (dal 27/10/2026): dentro una pagina li fa partire
+        // l'editor della pagina; qui, a tutto schermo, questa schermata.
+        val buttonRunner = rememberButtonRunController(
+            pages = factory.pageRepository,
+            onOpenPage = { id, isDatabase -> if (isDatabase) onOpenDatabase(id) else onOpenPage(id) }
+        )
+        val buttonEnv = remember(factory) { ButtonEditorEnv(factory.pageRepository, factory, factory.imageStore) }
+        CompositionLocalProvider(
+            LocalKeyboardCloseWatch provides keyboardWatch,
+            LocalButtonRunController provides buttonRunner,
+            LocalButtonEditorEnv provides buttonEnv
+        ) {
+        ButtonRunDialogs(buttonRunner)
         DatabaseContent(
             pageId = pageId,
             factory = factory,
@@ -1233,6 +1248,7 @@ private fun DatabaseViewBody(
 
     val cellLinkLabels = remember(state.linkLabels, viewModel) { CellLinkLabels(state.linkLabels, viewModel::setCellLinkLabel) }
 
+    var editingButton by remember { mutableStateOf<DatabaseColumnEntity?>(null) }
     val propertyIcons = remember(dataPage?.hideNameIcon, viewModel) {
         PropertyIcons(dataPage?.hideNameIcon == true, viewModel::setPropertyIconHidden)
     }
@@ -1262,7 +1278,24 @@ private fun DatabaseViewBody(
                     focusManager.clearFocus()
                     showSort = true
                 }
+            },
+            editButton = if (contentLocked) null else { column ->
+                focusManager.clearFocus()
+                editingButton = column
             }
+        )
+    }
+
+    // **Le azioni di una proprietà Button** (dal 27/10/2026): da "Edit
+    // actions" nel menu dell'intestazione, o toccando un bottone che non ne
+    // ha ancora. Valgono per tutte le righe.
+    editingButton?.let { column ->
+        ButtonEditorSheet(
+            initial = ButtonConfig.parse(column.optionsJson),
+            inDatabase = true,
+            thisPageDatabaseId = column.pageId,
+            onDismiss = { editingButton = null },
+            onSave = { viewModel.setButtonConfig(column.id, it) }
         )
     }
 
@@ -1274,6 +1307,7 @@ private fun DatabaseViewBody(
         LocalNameColumnTitle provides dataPage?.nameColumnTitle,
         LocalPropertyIcons provides propertyIcons,
         LocalPropertyMenuActions provides propertyMenuActions,
+        LocalButtonColumnEditor provides propertyMenuActions.editButton,
         LocalRowIcons provides rowIcons,
         LocalSimpleDatabase provides simple,
         LocalRowSearch provides state.search,
@@ -1896,7 +1930,8 @@ private fun DatabaseViewBody(
     if (showSort) {
         val rules = page?.sortRules().orEmpty().existingIn(state.columns)
         SortSheet(
-            columns = state.columns,
+            // Un bottone non ha un valore per cui ordinare (dal 27/10/2026).
+            columns = state.columns.filter { it.type != ColumnType.BUTTON },
             rules = rules,
             onPickFirst = { columnId ->
                 // Scegliendo una proprietà si parte sempre dal crescente: è
@@ -2759,6 +2794,11 @@ internal fun cellFitWidth(
         .fold(0.dp) { sum, title -> sum + 14.dp + 3.dp + measure(title.ifBlank { Strings.untitled }, typography.bodyMedium) + 8.dp }
     // Il quadrato dell'immagine, senza i 12 punti per lato delle altre celle.
     ColumnType.IMAGE -> IMAGE_CELL_SIZE - 24.dp
+    // Il bottone (dal 27/10/2026): la scritta, coi margini della pastiglia e l'icona se c'è.
+    ColumnType.BUTTON -> ButtonConfig.parse(column.optionsJson).let { config ->
+        measure(config.name.ifBlank { DbStrings.columnName(column.name) }, typography.bodyMedium) + 16.dp +
+            (if (config.hasIcon) 22.dp else 0.dp)
+    }
     // L'icona, 6 punti, il titolo (o "Page not found").
     ColumnType.PAGE_LINK -> if (value.isEmpty()) {
         0.dp
@@ -6900,9 +6940,23 @@ private fun PropertyHeaderCell(
                     listOf({ PropertyMenuChevronRow(Icons.Filled.SwapHoriz, DbStrings.changeType, onClick = pick { actions.changeType(column) }) })
                 )
             }
+            // **Le azioni di un bottone** (dal 27/10/2026). Un bottone non ha un
+            // valore: non si filtra, non si ordina e non si calcola.
+            if (column.type == ColumnType.BUTTON && actions != null) {
+                PropertyMenuGroup(
+                    listOf({
+                        PropertyMenuChevronRow(
+                            Icons.Filled.TouchApp,
+                            ButtonStrings.editActions,
+                            enabled = actions.editButton != null,
+                            onClick = pick { actions.editButton?.invoke(column) }
+                        )
+                    })
+                )
+            }
             // Le stesse finestre delle icone in cima al database: il filtro parte
             // da questa proprietà. Con "Lock view" grigie, come le icone.
-            if (actions != null) {
+            if (actions != null && column.type != ColumnType.BUTTON) {
                 PropertyMenuGroup(
                     listOf(
                         {
@@ -6975,7 +7029,9 @@ private fun PropertyHeaderCell(
                         }
                     },
                     // Il calcolo in fondo alla colonna (dal 26/09/2026).
-                    { PropertyMenuChevronRow(Icons.Filled.Functions, DbStrings.calculate, onClick = pick(onCalculate)) }
+                    column.takeIf { it.type != ColumnType.BUTTON }?.let {
+                        { PropertyMenuChevronRow(Icons.Filled.Functions, DbStrings.calculate, onClick = pick(onCalculate)) }
+                    }
                 )
             )
             // In fondo, in rosso, come su Notion: prima stava dentro "Edit property".
@@ -7446,6 +7502,9 @@ private fun CellContent(
                 contentPadding = cellPadding,
                 alignment = LocalCellAlignment.current.box
             )
+
+            // "Button" (dal 27/10/2026): vedi `ButtonUi.kt`.
+            ColumnType.BUTTON -> ButtonCell(column = column, row = row)
 
             ColumnType.DURATION -> DurationCell(
                 value = value,
@@ -11028,11 +11087,17 @@ private fun PropertySheet(
         ?: existingRelation?.reverse?.let { rev -> related[existingRelation.database]?.columns?.find { it.id == rev }?.name }
         ?: dataPage?.title?.ifBlank { null }
         ?: DbStrings.englishTypeName(ColumnType.RELATION)
+    // "Button" (dal 27/10/2026): le azioni, scelte da "Edit actions" qui sotto.
+    var buttonConfig by remember(existing?.id) {
+        mutableStateOf(existing?.takeIf { it.type == ColumnType.BUTTON }?.let { ButtonConfig.parse(it.optionsJson) } ?: ButtonConfig())
+    }
+    var editingActions by remember { mutableStateOf(false) }
     val saveOptions = when (selectedType) {
         ColumnType.RELATION -> relationDb?.let { encodeRelationConfig(RelationConfig(database = it)) } ?: "[]"
         ColumnType.ROLLUP -> rollupNow?.let(::encodeRollupConfig) ?: "[]"
-        // Lasciando una Relation o un Rollup, la loro configurazione non serve più.
-        else -> if (existing?.type == ColumnType.RELATION || existing?.type == ColumnType.ROLLUP) "[]" else optionsJson
+        ColumnType.BUTTON -> ButtonConfig.encode(buttonConfig)
+        // Lasciando una Relation, un Rollup o un bottone, la loro configurazione non serve più.
+        else -> if (existing?.type == ColumnType.RELATION || existing?.type == ColumnType.ROLLUP || existing?.type == ColumnType.BUTTON) "[]" else optionsJson
     }
     // Una Relation senza database non avrebbe righe da collegare.
     val canSave = selectedType != ColumnType.RELATION || relationDb != null
@@ -11190,6 +11255,10 @@ private fun PropertySheet(
                             when (type) {
                                 ColumnType.NUMBER -> NumberSettingsSection(settings = number, onChange = { number = it })
                                 ColumnType.DURATION -> DurationSettingsSection(format = duration, onChange = { duration = it })
+                                ColumnType.BUTTON -> SheetAction(
+                                    Icons.Filled.TouchApp,
+                                    ButtonStrings.editActions + " · " + ButtonStrings.actionsCount(buttonConfig.steps.size)
+                                ) { editingActions = true }
                                 else -> linkSettings()
                             }
                         }
@@ -11213,6 +11282,16 @@ private fun PropertySheet(
             Spacer(modifier = Modifier.size(24.dp))
         }
         }
+    }
+
+    if (editingActions) {
+        ButtonEditorSheet(
+            initial = buttonConfig,
+            inDatabase = true,
+            thisPageDatabaseId = existing?.pageId ?: dataPage?.id,
+            onDismiss = { editingActions = false },
+            onSave = { buttonConfig = it }
+        )
     }
 }
 
@@ -11335,6 +11414,8 @@ internal fun ColumnType.icon(): ImageVector = when (this) {
     ColumnType.IMAGE -> Icons.Filled.Image
     ColumnType.CREATED_TIME -> Icons.Filled.Schedule
     ColumnType.LAST_EDITED_TIME -> Icons.Filled.Update
+    // La mano che tocca, come l'icona del bottone di Notion.
+    ColumnType.BUTTON -> Icons.Filled.TouchApp
 }
 
 /**

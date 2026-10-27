@@ -41,6 +41,7 @@ import com.gabriele.notionlocal.data.entity.relationConfig
 import com.gabriele.notionlocal.data.entity.relationTitles
 import com.gabriele.notionlocal.data.entity.secondHopDatabases
 import com.gabriele.notionlocal.data.entity.canGroup
+import com.gabriele.notionlocal.data.buttons.ButtonConfig
 import com.gabriele.notionlocal.data.entity.DatabaseLayout
 import com.gabriele.notionlocal.data.entity.ChartSettings
 import com.gabriele.notionlocal.data.entity.encodeChartSettings
@@ -2271,10 +2272,15 @@ class DatabaseViewModel(
         viewModelScope.launch { repository.moveRowNextTo(pageId, row.id, target.id, before) }
     }
 
+    /** Le azioni di una proprietà Button (dal 27/10/2026): valgono per i bottoni di tutte le righe. */
+    fun setButtonConfig(columnId: String, config: ButtonConfig) {
+        viewModelScope.launch { repository.setColumnOptions(columnId, ButtonConfig.encode(config)) }
+    }
+
     fun setCellValue(row: DatabaseRowEntity, column: DatabaseColumnEntity, value: String) {
         if (column.type == ColumnType.CHECKBOX) holdAfterCheckbox(row, column, value)
-        // Un Rollup non ha un valore suo: si calcola.
-        if (column.type == ColumnType.ROLLUP) return
+        // Un Rollup non ha un valore suo: si calcola. Un bottone non ne ha.
+        if (column.type == ColumnType.ROLLUP || column.type == ColumnType.BUTTON) return
         viewModelScope.launch {
             if (column.type == ColumnType.RELATION) {
                 // Con la gemella, se la Relation vale nei due sensi.

@@ -57,7 +57,10 @@ import com.gabriele.notionlocal.ui.theme.NotionWhite
 internal fun LinkedSourcePickerSheet(
     databases: List<LinkableDatabase>?,
     onDismiss: () -> Unit,
-    onPick: (PageEntity) -> Unit
+    onPick: (PageEntity) -> Unit,
+    /** Il titolo e la spiegazione in cima: quelli della vista collegata, o del database di un bottone (dal 27/10/2026). */
+    title: String = DbStrings.linkedViewTitle,
+    hint: String? = DbStrings.linkedViewHint
 ) {
     var query by remember { mutableStateOf("") }
     NoteBottomSheet(
@@ -73,17 +76,21 @@ internal fun LinkedSourcePickerSheet(
                 .imePadding()
         ) {
             Text(
-                text = DbStrings.linkedViewTitle,
+                text = title,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(horizontal = 16.dp)
             )
-            Text(
-                text = DbStrings.linkedViewHint,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 12.dp)
-            )
+            if (hint != null) {
+                Text(
+                    text = hint,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 12.dp)
+                )
+            } else {
+                Spacer(modifier = Modifier.size(12.dp))
+            }
             Row(
                 modifier = Modifier
                     .padding(horizontal = 16.dp)

@@ -3,6 +3,8 @@ package com.gabriele.notionlocal.data.repository
 import com.gabriele.notionlocal.data.symbolField
 import androidx.room.withTransaction
 import com.gabriele.notionlocal.data.AppDatabase
+import com.gabriele.notionlocal.data.buttons.ButtonConfig
+import com.gabriele.notionlocal.data.buttons.InsertPlace
 import com.gabriele.notionlocal.data.IconChoice
 import com.gabriele.notionlocal.data.iconField
 import com.gabriele.notionlocal.data.imageField
@@ -23,6 +25,7 @@ import com.gabriele.notionlocal.data.entity.parseFitColumns
 import com.gabriele.notionlocal.data.entity.BlockType
 import com.gabriele.notionlocal.data.entity.DatabaseLayout
 import com.gabriele.notionlocal.data.entity.DatabaseCellEntity
+import com.gabriele.notionlocal.data.entity.DatabaseColumnEntity
 import com.gabriele.notionlocal.data.entity.DatabaseRowEntity
 import com.gabriele.notionlocal.data.entity.PageEditEntity
 import com.gabriele.notionlocal.data.entity.PageEntity
@@ -59,6 +62,9 @@ import java.util.UUID
  * salvati i dati, la UI non deve saperlo.
  */
 class PageRepository(private val db: AppDatabase) {
+
+    /** Il database dell'app, per chi lavora fra pagine e righe insieme: i bottoni (`ButtonRunner`). */
+    val database: AppDatabase get() = db
 
     private val pageDao = db.pageDao()
     private val blockDao = db.blockDao()
@@ -1885,6 +1891,104 @@ class PageRepository(private val db: AppDatabase) {
             }
             placed.id
         }
+
+    // --- I bottoni (dal 27/10/2026): vedi `data/buttons/Buttons.kt` ---
+
+    /**
+     * Il database vero di [databaseId] (quello di cui è una vista, se è una
+     * vista collegata), o null se non c'è più.
+     */
+    suspend fun realDatabase(databaseId: String): PageEntity? {
+        val page = pageDao.getById(databaseId) ?: return null
+        return (page.sourceDatabaseId?.let { pageDao.getById(it) } ?: page).takeIf { it.isDatabase && it.trashedAt == null }
+    }
+
+    /** Le proprietà del database vero di [databaseId], nel loro ordine: quelle che un bottone può cambiare. */
+    suspend fun databaseColumns(databaseId: String): List<DatabaseColumnEntity> {
+        val real = realDatabase(databaseId) ?: return emptyList()
+        return db.databaseDao().getColumnsForPageOnce(real.id).sortedBy { it.orderIndex }
+    }
+
+    /** Un blocco seguito nel tempo: il bottone vero di una copia collegata. */
+    fun observeBlock(blockId: String): Flow<BlockEntity?> = blockDao.observeById(blockId)
+
+    /**
+     * La riga di cui [pageId] è la pagina, o null: per un bottone che sta lì,
+     * "This page" è lei.
+     */
+    suspend fun rowOfPage(pageId: String): DatabaseRowEntity? =
+        db.databaseDao().getRowsLinkingTo(pageId).firstOrNull()
+
+    /** Un bottone da scegliere in "Link to button": il blocco, il suo nome e la pagina in cui sta. */
+    data class ButtonChoice(val blockId: String, val config: ButtonConfig, val page: PageEntity)
+
+    /**
+     * I bottoni veri (non le copie collegate) di tutte le pagine fuori dal
+     * cestino, tranne quelli dentro una pagina protetta e chiusa: per nome
+     * della pagina, poi nell'ordine della pagina.
+     */
+    suspend fun buttonChoices(): List<ButtonChoice> {
+        val pages = HashMap<String, PageEntity?>()
+        return blockDao.getButtonBlocks().mapNotNull { block ->
+            val attrs = block.attrs
+            if (attrs.buttonLink != null) return@mapNotNull null
+            val page = pages.getOrPut(block.pageId) { pageDao.getById(block.pageId) } ?: return@mapNotNull null
+            if (page.trashedAt != null || (page.isProtected && !AppLock.isUnlocked(page.id))) return@mapNotNull null
+            ButtonChoice(block.id, attrs.button ?: ButtonConfig(), page) to block.orderIndex
+        }.sortedWith(compareBy({ it.first.page.title.lowercase() }, { it.second })).map { it.first }
+    }
+
+    /**
+     * **Una copia collegata di un bottone** in fondo alla pagina [pageId]: se
+     * [sourceBlockId] è a sua volta una copia, si collega al bottone vero.
+     * Restituisce l'id del blocco nuovo, o null se il bottone non c'è più.
+     */
+    suspend fun addLinkedButton(sourceBlockId: String, pageId: String): String? {
+        val source = blockDao.getById(sourceBlockId) ?: return null
+        val realId = source.attrs.buttonLink ?: source.id
+        return insertBlocksAt(
+            pageId, null, InsertPlace.BOTTOM_OF_PAGE,
+            listOf(NewBlock(type = BlockType.BUTTON, attrs = BlockAttrs(buttonLink = realId)))
+        ).firstOrNull()
+    }
+
+    /**
+     * **"Insert blocks" di un bottone** (dal 27/10/2026): [blocks] in fila,
+     * sopra o sotto il blocco [anchorBlockId] e fra i suoi fratelli, o fra
+     * quelli di primo livello in cima o in fondo alla pagina. Si fa spazio
+     * spostando avanti quelli dopo, come per l'Invio. Restituisce gli id dei
+     * blocchi nuovi, in ordine.
+     */
+    suspend fun insertBlocksAt(
+        pageId: String,
+        anchorBlockId: String?,
+        place: InsertPlace,
+        blocks: List<NewBlock>
+    ): List<String> = db.withTransaction {
+        if (blocks.isEmpty()) return@withTransaction emptyList()
+        val anchor = anchorBlockId?.let { blockDao.getById(it) }?.takeIf { it.pageId == pageId }
+        val roots = blockDao.getBlocksForPageOnce(pageId).filter { it.parentBlockId == null }
+        val (parent, at) = when {
+            place == InsertPlace.ABOVE_BUTTON && anchor != null -> anchor.parentBlockId to anchor.orderIndex
+            place == InsertPlace.BELOW_BUTTON && anchor != null -> anchor.parentBlockId to anchor.orderIndex + 1
+            place == InsertPlace.TOP_OF_PAGE -> null to (roots.minOfOrNull { it.orderIndex } ?: 0)
+            else -> null to ((roots.maxOfOrNull { it.orderIndex } ?: -1) + 1)
+        }
+        blockDao.shiftOrderIndexes(pageId, parent, at, blocks.size)
+        blocks.mapIndexed { i, spec ->
+            val entity = BlockEntity(
+                pageId = pageId,
+                parentBlockId = parent,
+                type = spec.type,
+                textJson = json.encodeToString(spec.spans),
+                attrsJson = BlockAttrs.encode(spec.attrs),
+                indentLevel = spec.indentLevel,
+                orderIndex = at + i
+            )
+            blockDao.insert(entity)
+            entity.id
+        }
+    }
 
     /**
      * **Una riga vuota sopra o sotto un blocco** (`below`), fra i suoi

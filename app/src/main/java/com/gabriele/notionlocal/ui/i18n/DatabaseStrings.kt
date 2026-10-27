@@ -48,6 +48,7 @@ object DbStrings {
         ColumnType.IMAGE -> "Image"
         ColumnType.CREATED_TIME -> "Created time"
         ColumnType.LAST_EDITED_TIME -> "Last edited time"
+        ColumnType.BUTTON -> "Button"
     }
 
     fun typeName(type: ColumnType): String = when (type) {
@@ -68,6 +69,7 @@ object DbStrings {
         ColumnType.IMAGE -> t("Image", "Immagine", "Bild", "Image", "Imagen", "图片", "이미지", "画像")
         ColumnType.CREATED_TIME -> t("Created time", "Data di creazione", "Erstellt am", "Date de création", "Fecha de creación", "创建时间", "생성 일시", "作成日時")
         ColumnType.LAST_EDITED_TIME -> t("Last edited time", "Ultima modifica", "Zuletzt bearbeitet", "Dernière modification", "Última edición", "上次编辑时间", "마지막 편집 일시", "最終更新日時")
+        ColumnType.BUTTON -> t("Button", "Pulsante", "Schaltfläche", "Bouton", "Botón", "按钮", "버튼", "ボタン")
     }
 
     /**

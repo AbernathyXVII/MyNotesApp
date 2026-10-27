@@ -110,6 +110,17 @@ class DatabaseRepository(private val db: AppDatabase) {
 
     suspend fun deleteColumn(column: DatabaseColumnEntity) = dao.deleteColumn(column)
 
+    /**
+     * Le opzioni di una proprietà riscritte da sole, sulla proprietà com'è
+     * adesso nel database: le azioni di un bottone (dal 27/10/2026), senza
+     * rimettere com'era quello che nel frattempo è cambiato (il nome, la
+     * larghezza).
+     */
+    suspend fun setColumnOptions(columnId: String, optionsJson: String) {
+        val column = dao.getColumnById(columnId) ?: return
+        if (column.optionsJson != optionsJson) dao.updateColumn(column.copy(optionsJson = optionsJson))
+    }
+
     fun getRows(pageId: String): Flow<List<DatabaseRowEntity>> =
         dao.getRowsForPage(pageId)
 

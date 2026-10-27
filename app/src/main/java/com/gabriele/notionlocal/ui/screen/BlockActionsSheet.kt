@@ -30,6 +30,9 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.DriveFileMove
 import androidx.compose.material.icons.filled.TableRows
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.AddLink
+import androidx.compose.material.icons.filled.NorthEast
+import com.gabriele.notionlocal.ui.i18n.ButtonStrings
 import androidx.compose.material.icons.filled.EmojiEmotions
 import androidx.compose.material.icons.filled.FormatColorFill
 import androidx.compose.material.icons.filled.FormatLineSpacing
@@ -320,6 +323,48 @@ internal fun BlockActionsHost(
                         },
                         onMoveToLine = onMoveToLine
                     )
+                } else if (block.type == BlockType.BUTTON) {
+                    // **Un bottone** (dal 27/10/2026): cambiarne le azioni,
+                    // metterne una copia collegata altrove, e per una copia
+                    // tornare al bottone vero.
+                    val linkId = block.attrs.buttonLink
+                    val source by remember(linkId) {
+                        if (linkId == null) flowOf(null) else viewModel.observeBlock(linkId)
+                    }.collectAsStateWithLifecycle(initialValue = null)
+                    val config = if (linkId == null) block.attrs.button else source?.attrs?.button
+                    ObjectBlockMenu(
+                        title = config?.name?.ifBlank { null } ?: ButtonStrings.newButton,
+                        onMoveUp = onMoveUp,
+                        onMoveDown = onMoveDown,
+                        onAddLine = { below ->
+                            onDismiss()
+                            viewModel.addLineNextTo(block, below)
+                        },
+                        actions = listOfNotNull(
+                            ObjectAction(Icons.Filled.Edit, ButtonStrings.editButton) {
+                                onDismiss()
+                                viewModel.requestButtonEdit(block.id)
+                            }.takeIf { linkId == null || source != null },
+                            ObjectAction(Icons.Filled.AddLink, ButtonStrings.linkInAnotherPage) { step = BlockMenuStep.LINK_BUTTON }
+                                .takeIf { linkId == null || source != null },
+                            source?.let { original ->
+                                ObjectAction(Icons.Filled.NorthEast, ButtonStrings.goToOriginal) {
+                                    onDismiss()
+                                    if (original.pageId == block.pageId) viewModel.highlightBlock(original.id) else onNavigateToPage(original.pageId)
+                                }
+                            },
+                            ObjectAction(Icons.Filled.DriveFileMove, Strings.moveTo) { step = BlockMenuStep.MOVE_BLOCK }
+                        ),
+                        onDuplicate = {
+                            onDismiss()
+                            viewModel.duplicateBlock(block.id, imageStore)
+                        },
+                        onDelete = {
+                            onDismiss()
+                            viewModel.deleteBlock(block)
+                        },
+                        onMoveToLine = onMoveToLine
+                    )
                 } else if (block.type == BlockType.PAGE_MENTION) {
                     // **"Link to page"** (dal 06/10/2026): aprire la pagina,
                     // sceglierne un'altra, copiare o togliere il rimando — la
@@ -535,6 +580,29 @@ internal fun BlockActionsHost(
             )
         }
 
+        BlockMenuStep.LINK_BUTTON -> {
+            // "Link in another page" (dal 27/10/2026): la copia collegata va in fondo alla pagina scelta.
+            val appContext = context.applicationContext
+            DestinationPickerSheet(
+                factory = factory,
+                title = ButtonStrings.linkInAnotherPage,
+                hint = ButtonStrings.linkInAnotherPageHint,
+                viewModelKey = "link-button",
+                onDismiss = onDismiss,
+                onPick = { node ->
+                    onDismiss()
+                    menuScope.launch {
+                        val pageId = node.pageId ?: node.rowId?.let { factory.pageRepository.ensureRowPage(it) }
+                        if (pageId != null) {
+                            viewModel.linkButtonIn(block, pageId) {
+                                Toast.makeText(appContext, ButtonStrings.linkedTo, Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                }
+            )
+        }
+
         BlockMenuStep.PICK_MENTION -> DestinationPickerSheet(
             factory = factory,
             title = EditorStrings.blockType("Link to page"),
@@ -707,7 +775,9 @@ private enum class BlockMenuStep {
     /** Dove spostare un'immagine (dal 06/10/2026). */
     MOVE_BLOCK,
     /** "Move to line…": sotto quale riga della pagina (dal 20/10/2026). */
-    MOVE_TO_LINE
+    MOVE_TO_LINE,
+    /** "Link in another page" di un bottone: in quale pagina va la copia collegata (dal 27/10/2026). */
+    LINK_BUTTON
 }
 
 /**
@@ -1126,7 +1196,9 @@ private fun TurnIntoList(
     }
     // "Link to page", le immagini e gli altri file non ci sono: il testo
     // della riga andrebbe perso (dal 06/10/2026).
-    val entries = slashEntries().filter { it.action != SlashAction.LinkToPage && it.action !is SlashAction.Media }
+    val entries = slashEntries().filter {
+        it.action != SlashAction.LinkToPage && it.action !is SlashAction.Media && it.action != SlashAction.LinkButton
+    }
     OptionsGroup {
         entries.forEachIndexed { index, entry ->
             if (index > 0) HorizontalDivider()

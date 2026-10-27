@@ -156,6 +156,24 @@ object Notifier {
     private const val TEST_ID = 0x7E57
 
     /**
+     * **"Send notification" di un bottone** (dal 27/10/2026): una notifica
+     * subito, coi suoni e la priorità dei promemoria. Come quella di prova
+     * arriva anche con le notifiche messe a tacere dall'app, perché l'ha
+     * chiesta un tocco; false se Android non la lascia mostrare.
+     */
+    fun postButton(context: Context, title: String, text: String): Boolean {
+        ensureChannels(context)
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        }
+        // Un id nuovo ogni volta: due tocchi sono due notifiche.
+        val id = (System.nanoTime() and 0x7FFFFFFF).toInt()
+        val posted = post(context, currentRemindersChannel, id, title, text, intent)
+        if (posted && AppSettings.notificationPriority != NotificationPriority.LOW) ring(context, null)
+        return posted
+    }
+
+    /**
      * La fine di timer e fasi del pomodoro. Suona **anche senza il permesso
      * delle notifiche**, com'era prima che le notifiche ci fossero: chi ha
      * fatto partire un timer vuole sentirlo finire.

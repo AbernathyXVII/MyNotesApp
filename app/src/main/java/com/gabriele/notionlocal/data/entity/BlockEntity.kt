@@ -62,7 +62,14 @@ enum class BlockType {
      * pagina richiamata è in `BlockAttrs.pageId`, non in `linkedPageId`,
      * che è quello che costruisce l'albero delle pagine.
      */
-    PAGE_MENTION
+    PAGE_MENTION,
+    /**
+     * **Un bottone** (dal 27/10/2026, chiesto dall'utente, come i Buttons di
+     * Notion): toccato, esegue in fila le azioni di `BlockAttrs.button`. Con
+     * `BlockAttrs.buttonLink` è la copia collegata di un altro bottone, di cui
+     * usa le azioni. Vedi `data/buttons/Buttons.kt`.
+     */
+    BUTTON
 }
 
 /**

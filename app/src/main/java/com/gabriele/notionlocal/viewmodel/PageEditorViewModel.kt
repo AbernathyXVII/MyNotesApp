@@ -5,6 +5,9 @@ import com.gabriele.notionlocal.data.replacedImage
 import com.gabriele.notionlocal.data.imageField
 import com.gabriele.notionlocal.data.iconField
 import com.gabriele.notionlocal.data.IconChoice
+import com.gabriele.notionlocal.data.buttons.ButtonConfig
+import com.gabriele.notionlocal.data.buttons.InsertPlace
+import com.gabriele.notionlocal.data.entity.DatabaseRowEntity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gabriele.notionlocal.data.PageImageStore
@@ -3122,6 +3125,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
             type != BlockType.PAGE_LINK &&
             type != BlockType.DATABASE_LINK &&
             type != BlockType.PAGE_MENTION &&
+            type != BlockType.BUTTON &&
             type !in MEDIA_TYPES
 
     /**
@@ -4276,6 +4280,95 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         viewModelScope.launch {
             structuralEdits.withLock { blocksDb.setTypeAndAttrs(block.id, BlockType.PAGE_MENTION, BlockAttrs(pageId = pageId)) }
         }
+    }
+
+    // --- I bottoni (dal 27/10/2026): vedi `data/buttons/Buttons.kt` ---
+
+    private val _buttonEditRequest = MutableStateFlow<String?>(null)
+
+    /**
+     * Il bottone di cui aprire la finestra delle azioni. La chiedono il menu
+     * dei sei puntini ("Edit button") e i menu "/" e "+" per un bottone appena
+     * nato, ma la apre **il blocco**, come per le immagini (`mediaRequest`).
+     */
+    val buttonEditRequest: StateFlow<String?> = _buttonEditRequest
+
+    fun requestButtonEdit(blockId: String) {
+        _buttonEditRequest.value = blockId
+    }
+
+    fun consumeButtonEditRequest() {
+        _buttonEditRequest.value = null
+    }
+
+    /**
+     * **"Button"** dai menu "/" e "+": la riga diventa un bottone ancora senza
+     * azioni, e si apre subito la finestra per sceglierle. Con "Turn into" il
+     * testo della riga diventa il nome ([name]).
+     */
+    fun convertToButton(block: BlockEntity, name: String = "") {
+        snapshotForStructuralChange()
+        viewModelScope.launch {
+            structuralEdits.withLock {
+                val clean = name.lines().joinToString(" ").trim()
+                blocksDb.setTypeAndAttrs(block.id, BlockType.BUTTON, BlockAttrs(button = ButtonConfig(name = clean)))
+            }
+            _buttonEditRequest.value = block.id
+        }
+    }
+
+    /** **"Link to button"**: la riga diventa la copia collegata del bottone [sourceBlockId]. */
+    fun convertToLinkedButton(block: BlockEntity, sourceBlockId: String) {
+        snapshotForStructuralChange()
+        viewModelScope.launch {
+            structuralEdits.withLock { blocksDb.setTypeAndAttrs(block.id, BlockType.BUTTON, BlockAttrs(buttonLink = sourceBlockId)) }
+        }
+    }
+
+    /**
+     * Nome, icona e azioni di un bottone. Il bottone vero di una copia
+     * collegata può stare in un'altra pagina: lì l'Annulla di questa non
+     * arriva, e si scrive e basta.
+     */
+    fun saveButton(blockId: String, config: ButtonConfig) {
+        if (_blocks.value.any { it.id == blockId }) {
+            updateBlockAttrs(blockId) { it.copy(button = config) }
+        } else {
+            viewModelScope.launch { repository.updateBlockAttrs(blockId) { it.copy(button = config) } }
+        }
+    }
+
+    fun observeBlock(blockId: String): Flow<BlockEntity?> = repository.observeBlock(blockId)
+
+    /** La riga di cui la pagina aperta è la pagina: "This page" per i suoi bottoni. */
+    suspend fun rowOfPage(pageId: String): DatabaseRowEntity? = repository.rowOfPage(pageId)
+
+    suspend fun buttonChoices(): List<PageRepository.ButtonChoice> = repository.buttonChoices()
+
+    /** **"Link in another page"**: una copia collegata del bottone in fondo alla pagina [pageId]. */
+    fun linkButtonIn(block: BlockEntity, pageId: String, onDone: () -> Unit) {
+        viewModelScope.launch {
+            if (repository.addLinkedButton(block.id, pageId) != null) onDone()
+        }
+    }
+
+    /**
+     * **"Insert blocks" di un bottone nella pagina aperta**: si annulla in un
+     * passo solo, i campi di testo si rileggono (`externalChangeTick`) e il
+     * primo blocco nuovo si illumina. Null se i blocchi vanno in un'altra
+     * pagina, che il motore scrive da sé.
+     */
+    suspend fun insertButtonBlocks(pageId: String, anchorBlockId: String?, place: InsertPlace, blocks: List<NewBlock>): Boolean? {
+        if (pageId != currentPageId) return null
+        snapshotForStructuralChange()
+        val ids = structuralEdits.withLock { repository.insertBlocksAt(pageId, anchorBlockId, place, blocks) }
+        val first = ids.firstOrNull() ?: return false
+        _externalChangeTick.value += 1
+        viewModelScope.launch {
+            withTimeoutOrNull(FOCUS_HANDOFF_TIMEOUT_MS * 4) { _blocks.first { shown -> shown.any { it.id == first } } }
+            _movedBlock.value = MovedBlock(first, android.os.SystemClock.uptimeMillis())
+        }
+        return true
     }
 
     // --- Immagini, video, audio e file (dal 06/10/2026) ---

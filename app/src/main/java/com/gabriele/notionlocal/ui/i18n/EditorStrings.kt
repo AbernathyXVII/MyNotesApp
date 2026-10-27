@@ -91,6 +91,8 @@ object EditorStrings {
         "Callout" -> t("Callout", "Riquadro", "Hinweisbox", "Encadré", "Destacado", "标注", "콜아웃", "コールアウト")
         "Quote" -> t("Quote", "Citazione", "Zitat", "Citation", "Cita", "引用", "인용", "引用")
         "Link to page" -> t("Link to page", "Link a una pagina", "Link zu einer Seite", "Lien vers une page", "Enlace a una página", "链接到页面", "페이지 링크", "ページへのリンク")
+        "Button" -> t("Button", "Pulsante", "Schaltfläche", "Bouton", "Botón", "按钮", "버튼", "ボタン")
+        "Link to button" -> t("Link to button", "Collegamento a pulsante", "Link zu Schaltfläche", "Lien vers un bouton", "Enlace a botón", "链接到按钮", "버튼 링크", "ボタンへのリンク")
         "Image" -> t("Image", "Immagine", "Bild", "Image", "Imagen", "图片", "이미지", "画像")
         "Video" -> t("Video", "Video", "Video", "Vidéo", "Vídeo", "视频", "동영상", "動画")
         "Audio" -> t("Audio", "Audio", "Audio", "Audio", "Audio", "音频", "오디오", "音声")

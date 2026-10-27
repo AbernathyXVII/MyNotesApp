@@ -59,7 +59,14 @@ enum class ColumnType {
      */
     IMAGE,
     CREATED_TIME,
-    LAST_EDITED_TIME
+    LAST_EDITED_TIME,
+    /**
+     * **"Button"** (dal 27/10/2026, chiesto dall'utente, come su Notion): un
+     * bottone su ogni riga, con le azioni nell'`optionsJson` della colonna
+     * (`ButtonConfig`); "This page" è la riga del bottone toccato. Non ha un
+     * valore. Vedi `data/buttons/Buttons.kt`.
+     */
+    BUTTON
 }
 
 /**
@@ -80,7 +87,9 @@ val ColumnType.canGroup: Boolean
         this != ColumnType.DURATION &&
         // Relation e Rollup: id di righe, e un calcolo che cambia con loro.
         this != ColumnType.RELATION &&
-        this != ColumnType.ROLLUP
+        this != ColumnType.ROLLUP &&
+        // Un bottone non ha un valore.
+        this != ColumnType.BUTTON
 
 /**
  * Una singola opzione disponibile per una colonna SELECT. Serializzata

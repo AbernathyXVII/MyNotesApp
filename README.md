@@ -2104,6 +2104,101 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.139 — 27/10/2026 · 23:31 — I bottoni, come su Notion: un tocco e partono le azioni scelte
+*(Claude Code sul PC; provata sul telefono in "Paragraph – prova": "/button" apre la finestra, "Show confirmation" e "Insert blocks" con una casella, "Cancel" non fa niente e "Continue" mette la casella sotto il bottone, "Edit button" ritrova le azioni; in un database di prova la proprietà Button con "Edit pages in" → "This page" → "Toggle" spunta e toglie la spunta alla sua riga; poi tutto tolto, il database di prova nel cestino; 924 test passati)*
+
+L'utente, parola per parola:
+> «Ok, allora te lo riscrivo. Nel mentre stacco il telefono, per il momento
+> lavora sulla build e poi la instellerai, ma sappi che ti chiedo di fare
+> tante prove e test, perché quasi sicuramente verrà fuori buggata, essendo
+> una feature particolare.
+> Qui forse iniziamo ad entrare nel mondo delle automazioni: implementa la
+> funzione e proprietà Button: praticamente è una proprietà/ funzione che mi
+> consente di triggerare una qualsiasi azione. Questa è una funzione che ha
+> messo Notion due anni fa. Se non hai capito bene quello che ti ho chiesto,
+> ti chiedo per favore di cercare da qualche parte dove spiegano sicuramente
+> meglio di me come funzionano i bottoni. In pratica, quando attivo un
+> bottone per la prima volta, mi chiederà che cosa voglio fare (come se fosse
+> un automation con le funzionalità delle Routines di Samsung e degli
+> iPhone), tipo se tocco quel bottone allora accade questo, questo e
+> quest'altro. Concedimi anche di effettuare dei collegamenti ai bottoni se
+> li voglio spostare da qualche altra parte»
+
+- **[Nuova funzionalità]** **[📱 Mobile]** **Il blocco "Button"**, dai menu
+  "/" e "+" (o "Turn into", e il testo della riga diventa il nome): una
+  pastiglia grigia con l'icona e il nome, come su Notion. Al primo tocco,
+  quando non sa ancora cosa fare, apre la finestra delle azioni; dopo, ogni
+  tocco le fa tutte, in fila. Tenendolo premuto c'è il menu del blocco, con
+  "Edit button" per cambiarle, "Link in another page", "Move to",
+  "Duplicate" (una copia con le sue azioni, che non dipende dall'altra) e
+  "Delete"
+- **[Nuova funzionalità]** **[📱 Mobile]** **La finestra delle azioni**: in
+  cima il nome e l'icona (emoji, icone o un'immagine, dallo stesso selettore
+  delle pagine), sotto "When tapped" con le azioni, ognuna nel suo riquadro,
+  e "New action" per aggiungerne. Le azioni, come su Notion:
+  - **"Insert blocks"**: dei blocchi già scritti (testo, elenchi, caselle,
+    toggle, citazione, riquadro, divisore), sopra o sotto il bottone, o in
+    cima o in fondo alla pagina. Sotto il bottone, i blocchi di un tocco
+    nuovo vanno prima di quelli del tocco di prima;
+  - **"Add page to"**: una riga nuova in un database, col nome e i valori
+    delle proprietà, e se si vuole la si apre alla fine;
+  - **"Edit pages in"**: cambia le proprietà di "This page" (la riga del
+    bottone, o quella di cui è la pagina che contiene il bottone), oppure
+    delle righe di un database, tutte o solo quelle in cui una proprietà ha
+    un certo valore. Si può spuntare, togliere la spunta o invertire una
+    casella, aumentare o diminuire un numero, mettere la data di adesso o di
+    oggi, aggiungere o togliere un tag, scrivere un testo o il nome, svuotare;
+  - **"Show confirmation"**: una domanda; "Cancel" ferma le azioni dopo di lei;
+  - **"Open page or URL"**: alla fine si apre una pagina dell'app o un link;
+  - **"Send notification"**: una notifica sul telefono, subito.
+  Con "…" un'azione si sposta su o giù o si toglie. Come su Notion un'azione
+  a metà non si salva: "Done" dice cosa manca (il database, la pagina, il
+  valore). Le pagine e i link si aprono solo alla fine, così uscire dalla
+  pagina non lascia a metà le azioni dopo
+- **[Nuova funzionalità]** **[📱 Mobile]** **La proprietà "Button" dei
+  database** (fra i tipi, anche in "Change type"): un bottone su ogni riga,
+  con le stesse azioni per tutte, che lavorano su "This page", cioè la riga
+  del bottone toccato. Le azioni si scelgono sotto il tipo ("Edit actions"),
+  dal menu dell'intestazione, o toccando un bottone che non ne ha ancora. Sul
+  bottone c'è il nome della proprietà, o la scritta scelta nella finestra.
+  Un bottone non ha un valore: niente filtro, ordinamento, calcolo e grafico
+  su di lui, e "Fit to content" misura la sua scritta
+- **[Nuova funzionalità]** **[📱 Mobile]** **I collegamenti ai bottoni**: dal
+  menu di un bottone, "Link in another page" mette una copia collegata in
+  fondo alla pagina scelta; dal menu "/", "Link to button" fa della riga la
+  copia collegata di un bottone scelto da un elenco di tutti. La copia ha la
+  freccetta, mostra nome e icona del bottone vero e fa le sue azioni (i
+  blocchi vanno accanto a lei), e cambiandole da lei cambiano per tutte.
+  "Go to original" porta al bottone vero; se lui viene cancellato, la copia
+  si legge "Deleted button" e non fa niente
+- **[Nuova funzionalità]** **[📱 Mobile]** Dopo un tocco un avviso dice quello
+  che non si vede: le righe aggiunte o cambiate in un altro database, e
+  quello che non si è potuto fare (il database cancellato o protetto da
+  password, una proprietà sparita, la pagina bloccata, le notifiche spente),
+  mentre le altre azioni vanno avanti. Un filtro su una proprietà cancellata
+  non cambia niente, invece di cambiare tutte le righe
+- **[Nota]** Rispetto a Notion mancano le azioni che parlano con fuori o con
+  altre persone (Gmail, webhook, Slack, le notifiche agli altri) e le
+  variabili con le formule: notE vive sul telefono. "Annulla" toglie i
+  blocchi messi nella pagina aperta; le righe dei database cambiate da un
+  bottone si rimettono a mano
+- **[Progetto]** `data/buttons/Buttons.kt` (`ButtonConfig`, `ButtonStep`,
+  `PropertyEdit.applyTo`, `ButtonFilter.matches`), `ButtonRunner.kt` (il
+  motore, `ButtonHost`, `ButtonProblem`); `BlockType.BUTTON` con
+  `BlockAttrs.button` e `buttonLink`; `ColumnType.BUTTON` con le azioni
+  nell'`optionsJson`; `PageRepository.insertBlocksAt`, `addLinkedButton`,
+  `buttonChoices`; `ui/screen/ButtonEditor.kt` (la finestra), `ButtonUi.kt`
+  (`ButtonRunController`, `ButtonPill`, `ButtonBlockContent`,
+  `ButtonEditHost`, `ButtonCell`, `LinkToButtonSheet`); `ButtonStrings`
+  nelle otto lingue; `Notifier.postButton`. Nessuna migrazione: il database
+  resta alla versione 65. Test: `ButtonModelTest` (i conti di ogni tipo, il
+  filtro, il salvataggio), `ButtonRunnerTest` (ogni azione sul database vero,
+  la conferma, l'ordine, i problemi), `ButtonBlockTest` (menu "/", "Turn
+  into", Annulla, le copie collegate), `ButtonScreenTest` (l'editor vero:
+  tocco, domanda, finestra, menu del blocco, copia collegata, la proprietà
+  dei database), `ButtonsRenderTest` (l'immagine dei bottoni e della
+  finestra)
+
 ### 🆕 v0.138 — 27/10/2026 · 20:04 — Il widget "Countdown", coi foglietti che si sfogliano
 *(Claude Code sul PC; provata sul telefono aggiungendo il widget dalla barra laterale: Natale col conto giusto, i secondi che si sfogliano (visti in una registrazione dello schermo), il tocco lungo che apre la finestra, "Add countdown" che ne mette uno sotto e "Delete"; poi il widget di prova è stato tolto; 865 test passati)*
 

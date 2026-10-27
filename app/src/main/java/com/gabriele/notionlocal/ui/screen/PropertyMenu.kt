@@ -77,7 +77,9 @@ internal class PropertyMenuActions(
     val changeType: (DatabaseColumnEntity) -> Unit,
     /** Il filtro, già sulla proprietà data (null = la proprietà principale, che non si filtra). */
     val filter: ((String) -> Unit)?,
-    val sort: (() -> Unit)?
+    val sort: (() -> Unit)?,
+    /** "Edit actions" di una proprietà Button (dal 27/10/2026); null col database bloccato. */
+    val editButton: ((DatabaseColumnEntity) -> Unit)? = null
 )
 
 internal val LocalPropertyMenuActions = compositionLocalOf<PropertyMenuActions?> { null }

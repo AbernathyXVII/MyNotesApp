@@ -1,5 +1,6 @@
 package com.gabriele.notionlocal.data.entity
 
+import com.gabriele.notionlocal.data.buttons.ButtonConfig
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -86,14 +87,27 @@ data class BlockAttrs(
      * Lo spazio fra il numero, il pallino o la casella e il primo carattere,
      * in punti; null = quello della pagina. Vedi `ParagraphLook`.
      */
-    val markerGap: Int? = null
+    val markerGap: Int? = null,
+    /**
+     * **Il bottone** (dal 27/10/2026): nome, emoji e azioni. Vedi
+     * `data/buttons/Buttons.kt`.
+     */
+    val button: ButtonConfig? = null,
+    /**
+     * **La copia collegata di un bottone** (dal 27/10/2026, chiesto
+     * dall'utente: "effettuare dei collegamenti ai bottoni se li voglio
+     * spostare da qualche altra parte"): l'id del blocco del bottone vero, di
+     * cui questo mostra il nome ed esegue le azioni. Cambiando le azioni da
+     * una copia cambiano quelle del bottone vero, quindi di tutte.
+     */
+    val buttonLink: String? = null
 ) {
     /** L'elenco di cui questo paragrafo tiene il posto, o null. */
     val listIndentType: BlockType?
         get() = listIndent?.let { name -> LIST_INDENT_TYPES.find { it.name == name } }
 
     /** I file dell'app che questo blocco usa: vanno copiati con lui e cancellati con lui. */
-    val files: List<String> get() = listOfNotNull(file, iconImage, image)
+    val files: List<String> get() = listOfNotNull(file, iconImage, image, button?.iconImage)
 
     companion object {
         private val json = Json { ignoreUnknownKeys = true; encodeDefaults = false }
