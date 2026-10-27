@@ -171,6 +171,40 @@ class SubRowCheckboxTest {
     }
 
     @Test
+    fun theMainRowChecksAndUnchecksEverySubRow() = runBlocking<Unit> {
+        // Dal 27/10/2026: anche dall'alto verso il basso, fino in fondo (l'olio
+        // sta sotto le patate). Le altre righe non cambiano.
+        val olio = DatabaseRowEntity(id = "olio", pageId = food.id, title = "Olio", orderIndex = 5, parentRowId = patate.id)
+        db.databaseDao().insertRow(olio)
+        db.databaseDao().getCell(rosticceria.id, checkbox.id)?.let { db.databaseDao().updateCell(it.copy(value = "false")) }
+        waitFor("l'olio") { viewModel.tableState.value.rows.any { it.id == olio.id } && !checked(rosticceria) }
+        val before = db.databaseDao().getRowById(spazzolino.id)!!.updatedAt
+
+        viewModel.setCellValue(rosticceria, checkbox, "true")
+        waitFor("tutto il blocco spuntato") { checked(rosticceria) && checked(patate) && checked(pollo) && checked(olio) }
+        assertEquals(false, checked(pasta))
+        assertEquals(before, db.databaseDao().getRowById(spazzolino.id)!!.updatedAt)
+
+        viewModel.setCellValue(rosticceria, checkbox, "false")
+        waitFor("tutto il blocco da prendere") { !checked(rosticceria) && !checked(patate) && !checked(pollo) && !checked(olio) }
+        assertEquals(true, checked(spazzolino))
+    }
+
+    @Test
+    fun aSubRowWithItsOwnSubRowsPassesTheCheckDownAndUp() = runBlocking<Unit> {
+        // Le patate con l'olio sotto: spuntate le patate si spunta l'olio; col
+        // pollo già preso si spunta anche la Rosticceria.
+        val olio = DatabaseRowEntity(id = "olio", pageId = food.id, title = "Olio", orderIndex = 5, parentRowId = patate.id)
+        db.databaseDao().insertRow(olio)
+        db.databaseDao().getCell(rosticceria.id, checkbox.id)?.let { db.databaseDao().updateCell(it.copy(value = "false")) }
+        waitFor("l'olio") { viewModel.tableState.value.rows.any { it.id == olio.id } && !checked(rosticceria) }
+        viewModel.setCellValue(pollo, checkbox, "true")
+        waitFor("pollo") { checked(pollo) }
+        viewModel.setCellValue(patate, checkbox, "true")
+        waitFor("giù fino all'olio e su fino alla Rosticceria") { checked(olio) && checked(patate) && checked(rosticceria) }
+    }
+
+    @Test
     fun blocksTakeThePlaceOfTheirFirstRow() {
         // Già in ordine dalle regole: c, b1 (sotto b), a, b, d.
         val a = DatabaseRowEntity(id = "a", pageId = "x", title = "a")

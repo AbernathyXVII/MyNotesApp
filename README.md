@@ -2104,6 +2104,32 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### ✏️ v0.133.1 — 27/10/2026 · 14:05 — La spunta della riga principale scende a tutte le sue sotto-righe
+*(Claude Code sul PC; provata coi test, sul telefono solo installata: le caselle di "Food" sono dell'utente e non le ho toccate; 838 test passati)*
+
+L'utente, parola per parola:
+> «In un database quando ho delle le sub-row, se attivo tutte le checkbox
+> delle sub-row si attiva anche quella principale, ma se attivo o disattivo
+> la checkbox della row principale quelle sotto non si attivano o
+> disattivano. È un bug o mi sono dimenticato io di chiedertelo?»
+
+Non era un guasto: con la v0.128.1 e la v0.128.2 era stato chiesto solo il
+verso dalle sotto-righe alla riga principale. Poi, alla domanda se aggiungere
+l'altro verso:
+> «Sì, aggiungilo: se spunto o tolgo la spunta alla riga principale, fai lo
+> stesso su tutte le sue sotto-righe.»
+
+- **[Modifica]** **[📱 Mobile]** **Spuntando la riga principale si spuntano
+  tutte le sue sotto-righe**, e quelle sotto di loro, fino in fondo;
+  togliendole la spunta si toglie a tutte. Insieme a quello che c'era già, la
+  riga principale resta spuntata solo quando lo sono tutte le sue sotto-righe.
+  Spuntando una sotto-riga che ha sotto-righe sue, la spunta scende a loro e
+  poi risale come prima. Le righe che erano già com'è giusto non cambiano, e
+  non risultano modificate adesso ("Last edited time")
+- **[Progetto]** `DatabaseRepository.setCheckbox`: prima di risalire, la
+  casella scende a tutte le sotto-righe (con `getSubRows`, nella stessa
+  transazione). Test: `SubRowCheckboxTest` (+2)
+
 ### 🆕 v0.133 — 27/10/2026 · 13:44 — Cosa si vede di un link: l'indirizzo, il titolo della pagina o una scritta tua
 *(Claude Code sul PC; provata sul telefono in "Paragraph – prova": un sito scritto in fondo a una riga, l'icona del link col solo cursore, "Page title" ("Example Domain", letto dal sito), "Your text", di nuovo "Full link", e una parola tenuta premuta che prende tutto il link; la riga poi rimessa com'era, confrontata col database (migrazione 62→63 compresa). "Show as…" delle celle URL provato solo nei test sul PC: sul telefono non c'è un database di prova; 836 test passati)*
 

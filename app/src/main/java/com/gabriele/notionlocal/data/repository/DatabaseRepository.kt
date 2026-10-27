@@ -324,9 +324,24 @@ class DatabaseRepository(private val db: AppDatabase) {
      * spuntata a mano con sotto qualcosa ancora da fare si sistema appena se
      * ne tocca una. Lo stesso verso l'alto, se anche lei è una sotto-riga. In
      * una transazione: le righe si ridisegnano una volta sola, già al loro posto.
+     *
+     * **E verso il basso** (dal 27/10/2026, chiesto dall'utente: "se spunto o
+     * tolgo la spunta alla riga principale, fai lo stesso su tutte le sue
+     * sotto-righe"): la casella di una riga va uguale a tutte le sue
+     * sotto-righe, e alle loro, fino in fondo. Si scrivono solo quelle
+     * diverse, così le altre non risultano modificate adesso.
      */
     suspend fun setCheckbox(rowId: String, columnId: String, value: String) = db.withTransaction {
         setCellValue(rowId, columnId, value)
+        val checked = value == "true"
+        val below = ArrayDeque(dao.getSubRows(rowId))
+        val visited = hashSetOf(rowId)
+        while (below.isNotEmpty()) {
+            val sub = below.removeFirst()
+            if (!visited.add(sub.id)) continue
+            if ((dao.getCell(sub.id, columnId)?.value == "true") != checked) setCellValue(sub.id, columnId, value)
+            below.addAll(dao.getSubRows(sub.id))
+        }
         val seen = hashSetOf(rowId)
         var child = dao.getRowById(rowId)
         while (child != null) {
