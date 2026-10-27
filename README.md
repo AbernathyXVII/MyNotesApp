@@ -2104,6 +2104,46 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.134 — 27/10/2026 · 14:22 — "Full or page line": ogni pagina sceglie se le righe lunghe restano intere o vanno a capo
+*(Claude Code sul PC; provata sul telefono in "Paragraph – prova", con "Full line view" spento in Settings: una riga lunga scritta in fondo, "Full or page line" nei tre puntini con "Default (Page line)", poi "Full line" (la riga non va più a capo) e "Page line" (di nuovo a capo); la pagina rimessa su "Default" e la riga tolta, confrontata col database (migrazione 63→64 compresa); 843 test passati)*
+
+L'utente, parola per parola:
+> «Concedimi di avere la Full line view anche in ogni pagina esistente e
+> futura. In Settings rimarranno così, ma nelle impostazioni di ogni pagina
+> ci saranno tre opzioni:
+> 1) Default (ossia la scelta impostata in Settings)
+> 2) Full line (ossia che le scritte che vanno oltre la finestra vedibile del
+> telefono devono essere viste scorrendo orizzontalmente sullo schermo,
+> quindi quando l'impostazione già esistente in Settings viene attivata)
+> 3) Page line (ossia che le scritte che vanno oltre la finestra vedibile del
+> telefono vengono messe a capo finché tutta la riga si vede sullo schermo,
+> quindi quando l'impostazione già esistente in Settings viene disattivata)»
+
+E subito dopo:
+> «Tre opzioni ovviamente raggruppate in una singola chiamata "Full or page
+> line", che poi si apre e mi consente di scegliere tra le tre opzioni»
+
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Full or page line" nei tre
+  puntini di ogni pagina**, sotto "Paragraph", con scritto accanto com'è
+  adesso. Si apre e si sceglie fra tre opzioni: **"Default"** fa come
+  "Full line view" in Settings, e tra parentesi dice cosa vuol dire adesso
+  ("Default (Full line)" o "Default (Page line)"); **"Full line"** lascia le
+  righe lunghe intere, da scorrere di lato; **"Page line"** le manda a capo,
+  così tutta la riga sta nello schermo. La scelta vale subito, anche a
+  pagina aperta
+- **[Modifica]** **[📱 Mobile]** Settings resta com'era e vale per tutte le
+  pagine lasciate su "Default": tutte quelle che c'erano, e quelle nuove.
+  Cambiandolo, quelle pagine lo seguono subito
+- **[Progetto]** `PageEntity.fullLineMode` (`FULL_LINE_DEFAULT`,
+  `FULL_LINE_ON`, `FULL_LINE_OFF`; database v64, migrazione 63→64: tutte le
+  pagine su "Default"); `FullLineChoice.kt` (`fullLinesOf`,
+  `fullLineSummary`, `PageFullLineSheet`), che `PageEditorContent` usa al
+  posto di `AppSettings.fullLineView`; `PageEditorViewModel.setFullLineMode`,
+  `PageDao.setFullLineMode` (non cambia la data della pagina, come il
+  correttore). Test: `FullLineChoiceTest` (una riga lunga nella pagina vera:
+  a capo o intera secondo la pagina e Settings), `MigrationTest` (+1, dalla
+  v63 con `schema/v63.sql`)
+
 ### ✏️ v0.133.1 — 27/10/2026 · 14:05 — La spunta della riga principale scende a tutte le sue sotto-righe
 *(Claude Code sul PC; provata coi test, sul telefono solo installata: le caselle di "Food" sono dell'utente e non le ho toccate; 838 test passati)*
 

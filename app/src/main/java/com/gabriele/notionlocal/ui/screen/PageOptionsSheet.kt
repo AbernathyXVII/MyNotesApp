@@ -41,6 +41,7 @@ import androidx.compose.runtime.setValue
 import com.gabriele.notionlocal.data.TextStats
 import com.gabriele.notionlocal.ui.format.Formats
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.WrapText
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.ContentCut
 import androidx.compose.material.icons.filled.Delete
@@ -171,6 +172,14 @@ fun PageOptionsSheet(
      */
     paragraphValue: String? = null,
     onParagraph: (() -> Unit)? = null,
+    /**
+     * **"Full or page line"** (dal 27/10/2026, chiesto dall'utente): le righe
+     * lunghe di questa pagina intere o a capo, o come Settings, con scritto
+     * accanto com'è adesso ([fullLineValue]). Null per i database: allora la
+     * voce non c'è. Vedi `FullLineChoice.kt`.
+     */
+    fullLineValue: String? = null,
+    onFullLine: (() -> Unit)? = null,
     /**
      * **"Web Clipper"** (dal 20/10/2026, chiesto dall'utente): la foto di un
      * sito nella pagina, come OneNote Web Clipper. Null per i database e le
@@ -367,6 +376,21 @@ fun PageOptionsSheet(
                                 )
                             },
                             onClick = onParagraph
+                        )
+                    }
+                    if (onFullLine != null) {
+                        HorizontalDivider()
+                        OptionRow(
+                            icon = Icons.AutoMirrored.Filled.WrapText,
+                            label = Strings.fullOrPageLine,
+                            trailing = {
+                                Text(
+                                    fullLineValue.orEmpty(),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            onClick = onFullLine
                         )
                     }
                 }

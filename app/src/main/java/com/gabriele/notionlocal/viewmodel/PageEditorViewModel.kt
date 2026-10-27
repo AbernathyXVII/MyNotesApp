@@ -1802,6 +1802,13 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         viewModelScope.launch { repository.setPageProofing(current.id, mode, language) }
     }
 
+    /** "Full or page line" dai tre puntini: come Settings, righe intere o righe a capo (vedi `PageEntity.fullLineMode`). */
+    fun setFullLineMode(mode: Int) {
+        val current = _page.value ?: return
+        _page.value = current.copy(fullLineMode = mode)
+        viewModelScope.launch { repository.setPageFullLine(current.id, mode) }
+    }
+
     // --- "Paragraph" (dal 21/10/2026): vedi `ParagraphLook` ---
 
     /** Le misure di questa pagina: quelle sue, o quelle di Settings. */

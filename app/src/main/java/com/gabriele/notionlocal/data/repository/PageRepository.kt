@@ -2765,6 +2765,9 @@ class PageRepository(private val db: AppDatabase) {
     /** Il correttore di una pagina: vedi `PageEntity.proofingMode`. */
     suspend fun setPageProofing(pageId: String, mode: Int, language: String?) = pageDao.setProofing(pageId, mode, language)
 
+    /** Le righe lunghe di una pagina: vedi `PageEntity.fullLineMode`. */
+    suspend fun setPageFullLine(pageId: String, mode: Int) = pageDao.setFullLineMode(pageId, mode)
+
     suspend fun setPageIgnoredWords(pageId: String, words: Set<String>) =
         pageDao.setProofingIgnored(pageId, words.sorted().joinToString("\n").ifEmpty { null })
 

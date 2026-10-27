@@ -1507,6 +1507,7 @@ private fun PageEditorContent(
     // "Paragraph" (dal 21/10/2026): della pagina dai tre puntini, o di un
     // gruppo di righe dalla barra sopra la tastiera e dal menu del blocco.
     var showPageParagraph by remember { mutableStateOf(false) }
+    var showFullLine by remember { mutableStateOf(false) }
     var paragraphLines by remember { mutableStateOf<List<BlockEntity>?>(null) }
     // "Web Clipper" dai tre puntini (dal 20/10/2026): il pannello, poi la foto in corso.
     var webClipperOpen by remember { mutableStateOf(false) }
@@ -1776,7 +1777,9 @@ private fun PageEditorContent(
             // view"): le righe lunghe non vanno a capo e scorrono di lato,
             // tutte insieme. Vedi `FullLineView.kt`.
             val sideOffset = rememberSaveable(pageId) { mutableFloatStateOf(0f) }
-            val sideScroll = if (AppSettings.fullLineView) {
+            // Dal 27/10/2026 la pagina può scegliere da sé ("Full or page line",
+            // vedi `FullLineChoice.kt`); su "Default" vale Settings.
+            val sideScroll = if (fullLinesOf(page)) {
                 remember(listState, sideOffset) { SideScroll(listState, sideOffset) }
             } else {
                 null
@@ -3399,6 +3402,11 @@ private fun PageEditorContent(
                     focusManager.clearFocus()
                     showPageParagraph = true
                 },
+                fullLineValue = fullLineSummary(current),
+                onFullLine = {
+                    showPageOptions = false
+                    showFullLine = true
+                },
                 onWebClipper = if (isTrashed) null else {
                     {
                         showPageOptions = false
@@ -3476,6 +3484,13 @@ private fun PageEditorContent(
                 onSetProofing = viewModel::setProofing,
                 onStopIgnoring = viewModel::stopIgnoring,
                 onDismiss = { showProofing = false }
+            )
+        }
+        if (showFullLine) {
+            PageFullLineSheet(
+                page = current,
+                onSet = viewModel::setFullLineMode,
+                onDismiss = { showFullLine = false }
             )
         }
         if (showPageParagraph) {

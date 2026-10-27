@@ -305,6 +305,11 @@ data class PageEntity(
     // dall'utente), dai tre puntini: lo spazio fra i blocchi e dopo i
     // marcatori degli elenchi. Null = come Settings. Vedi `PageParagraph`.
     var paragraphJson: String? = null,
+    // **"Full or page line" di questa pagina** (dal 27/10/2026, chiesto
+    // dall'utente), dai tre puntini: `FULL_LINE_DEFAULT` segue Settings ("Full
+    // line view"), `FULL_LINE_ON` le righe lunghe scorrono di lato,
+    // `FULL_LINE_OFF` vanno a capo. Vedi `fullLinesOf`.
+    var fullLineMode: Int = FULL_LINE_DEFAULT,
     // **"Color columns"** della bacheca (dal 30/09/2026), di questa vista:
     // ogni colonna, con le sue schede, del colore del suo tag.
     var colorBoardCards: Boolean = false,
@@ -475,6 +480,13 @@ data class PageEntity(
 const val PROOFING_DEFAULT = 0
 const val PROOFING_ON = 1
 const val PROOFING_OFF = 2
+
+/** Le righe lunghe della pagina come dice Settings: vedi `PageEntity.fullLineMode`. */
+const val FULL_LINE_DEFAULT = 0
+/** "Full line": le righe lunghe non vanno a capo e scorrono di lato. */
+const val FULL_LINE_ON = 1
+/** "Page line": le righe lunghe vanno a capo dentro lo schermo. */
+const val FULL_LINE_OFF = 2
 
 /** Le parole ignorate in una pagina, come insieme. */
 val PageEntity.ignoredWords: Set<String>

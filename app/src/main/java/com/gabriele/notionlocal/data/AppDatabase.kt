@@ -60,7 +60,7 @@ import kotlinx.serialization.json.Json
         NotebookSectionEntity::class,
         PersonalWordEntity::class
     ],
-    version = 63,
+    version = 64,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -802,6 +802,13 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /** "Full or page line" delle pagine (27/10/2026): tutte come Settings. */
+        private val MIGRATION_63_64 = object : Migration(63, 64) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE pages ADD COLUMN fullLineMode INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         /** La scritta delle celle URL (27/10/2026): nessuna, si vede il link come prima. */
         private val MIGRATION_62_63 = object : Migration(62, 63) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -964,7 +971,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_59_60,
                         MIGRATION_60_61,
                         MIGRATION_61_62,
-                        MIGRATION_62_63
+                        MIGRATION_62_63,
+                        MIGRATION_63_64
                     )
                     .build()
                 INSTANCE = instance

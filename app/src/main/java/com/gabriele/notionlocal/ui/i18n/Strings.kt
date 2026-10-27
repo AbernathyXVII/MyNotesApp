@@ -454,6 +454,41 @@ object Strings {
         "긴 줄이 줄바꿈되지 않아요. 옆으로 밀어 끝까지 읽으세요",
         "長い行を折り返しません。横にスワイプすると最後まで読めます"
     )
+    // "Full or page line" di una pagina (dal 27/10/2026): vedi `FullLineChoice.kt`.
+    val fullOrPageLine get() = t("Full or page line", "Righe intere o a capo", "Ganze oder umbrochene Zeilen", "Lignes entières ou coupées", "Líneas completas o partidas", "整行或换行", "전체 줄 또는 줄바꿈", "行全体か折り返しか")
+    val fullLine get() = t("Full line", "Righe intere", "Ganze Zeilen", "Lignes entières", "Líneas completas", "整行", "전체 줄", "行全体")
+    val pageLine get() = t("Page line", "Righe a capo", "Umbrochene Zeilen", "Lignes coupées", "Líneas partidas", "换行", "줄바꿈", "折り返し")
+    fun fullLineDefault(what: String) = t("Default ($what)", "Predefinito ($what)", "Standard ($what)", "Par défaut ($what)", "Predeterminado ($what)", "默认（$what）", "기본값 ($what)", "デフォルト（$what）")
+    val fullLineDefaultDetail get() = t(
+        "As \"Full line view\" in Settings",
+        "Come \"Visualizzazione totale\" in Impostazioni",
+        "Wie \"Ganze Zeilen\" in den Einstellungen",
+        "Comme « Lignes entières » dans les réglages",
+        "Como \"Líneas completas\" en Ajustes",
+        "与设置中的“整行显示”相同",
+        "설정의 '줄 전체 보기'와 같아요",
+        "設定の「行全体を表示」と同じ"
+    )
+    val pageLineDetail get() = t(
+        "Long lines wrap so that the whole line fits on the screen",
+        "Le righe lunghe vanno a capo, così tutta la riga sta nello schermo",
+        "Lange Zeilen werden umbrochen, damit die ganze Zeile auf den Bildschirm passt",
+        "Les longues lignes passent à la ligne pour tenir entières à l'écran",
+        "Las líneas largas se parten para que quepan enteras en la pantalla",
+        "长行自动换行，整行都显示在屏幕内",
+        "긴 줄이 줄바꿈되어 화면 안에 다 보여요",
+        "長い行を折り返して、行全体が画面に収まります"
+    )
+    val fullOrPageLineNote get() = t(
+        "Only for this page: how long lines are shown",
+        "Solo per questa pagina: come si vedono le righe lunghe",
+        "Nur für diese Seite: wie lange Zeilen angezeigt werden",
+        "Pour cette page seulement : l'affichage des longues lignes",
+        "Solo para esta página: cómo se ven las líneas largas",
+        "仅限此页面：长行的显示方式",
+        "이 페이지만: 긴 줄을 보여주는 방식",
+        "このページだけ：長い行の表示方法"
+    )
     val animations get() = t("Animations", "Animazioni", "Animationen", "Animations", "Animaciones", "动画", "애니메이션", "アニメーション")
     val animationsOn get() = t("On", "Attive", "An", "Activées", "Activadas", "开启", "켜기", "オン")
     val animationsReduced get() = t("Reduced", "Ridotte", "Reduziert", "Réduites", "Reducidas", "减少", "줄이기", "控えめ")
