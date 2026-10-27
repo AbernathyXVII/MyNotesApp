@@ -2104,6 +2104,40 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🔧 v0.135.0.1 — 27/10/2026 · 18:58 — "---" fa il divisore senza lasciare i trattini né righe doppie
+*(Claude Code sul PC; provata coi test sul PC; sul telefono la prova la fa l'utente, che stava usando la pagina di prova; 849 test passati)*
+
+L'utente, parola per parola:
+> «Guarda in paragraph: ho scritto tre lineette orizzontali per scrivere il
+> divider e guarda cosa mi ha fatto. Mi ha lasciato le tre lineette e creato
+> il divider. Sistemami questa cosa per favore»
+
+E poi, rifacendolo in un elenco numerato:
+> «Non solo le tre lineette sono rimaste tra il 2 e il 4, non solo mi ha
+> riscritto il terzo numero della lista, non solo mi ha messo il divider
+> sotto, ma si è anche buggato ricreando la lista con i numeri 3 e 4 sotto
+> il divider»
+
+- **[Bug fix]** **[📱 Mobile]** **Scrivendo "---" la riga diventa un divisore,
+  e il campo di testo lo mostra subito come sta davvero.** Nel database era
+  già tutto giusto: la riga diventava il divisore, senza trattini, e le righe
+  sotto andavano sotto di lui. Il campo in cui si scriveva invece restava
+  com'era prima, coi trattini, col numero dell'elenco e con le righe che ormai
+  stavano sotto il divisore — che così si vedevano due volte, sopra nel campo
+  vecchio e sotto il divisore. Il campo aspettava indietro dal database il
+  testo senza i trattini; sul telefono il database salta quel passaggio e
+  arriva già diviso, e il campo, convinto di avere ancora una modifica in
+  viaggio, non si aggiornava più. Ora, fatto il divisore, il campo prende
+  quello che c'è nel database, come dopo Annulla. Una riga vuota in più sopra
+  il divisore (la prima volta, in fondo alla pagina) veniva da lì: il campo
+  rimasto indietro la riscriveva
+- **[Progetto]** `PageEditorViewModel.convertToDividerAndFocusNext` fa scattare
+  `externalChangeTick` dopo il cambio. Test: `DividerShortcutUiTest` (Invio e
+  "---" in fondo alla pagina, e "---" in mezzo a un elenco numerato: nel
+  database e nei campi ogni riga una volta sola, senza trattini). Sul PC il
+  guasto non si ripete (il database lì risponde in tempo): la prova vera è
+  sul telefono
+
 ### 🆕 v0.135 — 27/10/2026 · 17:55 — "Hide icon": l'icona di una proprietà si può nascondere
 *(Claude Code sul PC; provata sul telefono solo aprendo il menu dell'intestazione nel Main calendar, senza toccare la voce: nascondere e rimostrare l'icona è provato dai test sul PC; 847 test passati)*
 

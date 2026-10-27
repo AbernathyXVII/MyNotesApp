@@ -2583,6 +2583,15 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
                 if (liftChildren) repository.unnestChildren(block.id)
                 repository.turnIntoDividerWithLineBelow(block.id, newBlockId, carried)
             }
+            // **Il campo da cui viene la riga prende quello che c'è adesso**
+            // (corretto il 27/10/2026, trovato dall'utente con "---" in mezzo a
+            // un elenco): diventata divisore, la riga esce dal suo campo con
+            // quelle sotto. Il campo aspettava ancora indietro il testo senza i
+            // trattini; sul telefono il database lo salta e arriva già diviso,
+            // e il campo, convinto di avere una modifica in viaggio, restava
+            // com'era — coi trattini, i numeri di prima e le righe sotto il
+            // divisore viste due volte. Come per Annulla (`externalChangeTick`).
+            _externalChangeTick.value += 1
             delay(IME_SETTLE_DELAY_MS)
             _focusRequestBlockId.value = newBlockId
         }
