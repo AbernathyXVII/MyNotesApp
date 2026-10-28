@@ -2104,6 +2104,24 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🔧 v0.140.0.1 — 28/10/2026 · 09:54 — La domanda del ripristino scrive la data del backup
+*(Claude Code sul PC; provata sul telefono: la domanda ora dice «replaced by the backup of 28.10.2026 09:53», poi annullata; 939 test passati)*
+
+L'utente, parola per parola:
+> «Prova il ripristino»
+
+Provandolo sul telefono (fatto un backup, ripristinato, e il backup dopo
+identico a quello ripristinato: le 13 tabelle con le loro 29.619 righe, i 55
+file delle pagine e le preferenze), la domanda prima del ripristino usava la
+scritta dell'elenco dei backup.
+
+- **[Bug fix]** **[📱 Mobile]** **"Ripristinare questo backup?" dice la data
+  vera del backup**: «sostituito dal backup del 28/10/2026 09:51», invece di
+  «sostituito dal backup del Oggi alle 09:51», che in italiano non si legge.
+  L'elenco dei backup resta con "Oggi alle…" e "Ieri alle…"
+- **[Progetto]** In `BackupScreen.kt` la domanda prende `Formats.dateTime`.
+  Test: `BackupScreenTest` (+1 controllo: la data nella domanda)
+
 ### 🆕 v0.140 — 28/10/2026 · 08:31 — Il backup ogni giorno, "Carica su Proton Drive" e il ripristino
 *(Claude Code sul PC; provata sul telefono: "Fai un backup adesso" fa in 6 secondi un backup di 27 MB in Download/notE backup, con dentro il database sano (versione 65), i 55 file delle pagine e le preferenze; "Carica su Proton Drive" lo ha copiato in Proton Drive/Documents/notE backup, identico byte per byte all'originale, e la volta dopo "Salva come" si apre già lì; il ripristino provato solo coi test; 939 test passati)*
 

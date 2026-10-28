@@ -237,7 +237,8 @@ fun BackupScreen(onBack: () -> Unit, onRestart: (Context) -> Unit = ::restartApp
                         file = file,
                         enabled = busy == null,
                         onUpload = { upload(file) },
-                        onRestore = { restoreChoice = RestoreChoice(whenLabel(file.createdAt)) { Backups.storage.open(file) } },
+                        // Nella domanda la data vera: "del 28/10/2026 09:51", non "del Oggi alle 09:51".
+                        onRestore = { restoreChoice = RestoreChoice(Formats.dateTime(file.createdAt)) { Backups.storage.open(file) } },
                         onDelete = { deleting = file }
                     )
                 }

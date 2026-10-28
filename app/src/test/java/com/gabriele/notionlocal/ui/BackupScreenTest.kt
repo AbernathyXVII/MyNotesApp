@@ -23,6 +23,7 @@ import com.gabriele.notionlocal.data.backup.Backups
 import com.gabriele.notionlocal.data.backup.DirectoryStorage
 import com.gabriele.notionlocal.data.entity.PageEntity
 import com.gabriele.notionlocal.data.settings.AppSettings
+import com.gabriele.notionlocal.ui.format.Formats
 import com.gabriele.notionlocal.ui.screen.BackupScreen
 import com.gabriele.notionlocal.ui.theme.NotionLocalTheme
 import kotlinx.coroutines.runBlocking
@@ -179,6 +180,9 @@ class BackupScreenTest {
         compose.onNode(hasText("Restore") and hasClickAction()).performClick()
         waitFor("la domanda") { shown("Restore this backup?") }
         assertTrue(shown("First a backup of now is made", substring = true))
+        // La data vera del backup, non la scritta dell'elenco ("Today at…").
+        val date = Formats.dateTime(Backups.list().first().createdAt)
+        assertTrue(shown("the backup of $date.", substring = true))
         compose.onNode(hasText("Restore") and hasClickAction()).performClick()
         waitFor("la riapertura") { restarted }
         assertTrue(File(context.filesDir, "restore-pending/ready").exists())
