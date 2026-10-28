@@ -386,6 +386,16 @@ data class PageEntity(
     // della tabella ma non una proprietà nel database. Si legge e si scrive
     // con `sortRules()` e `withSortRules()`: vedi `SortRules.kt`.
     var sortRulesJson: String? = null,
+    // **I raggruppamenti, quanti se ne vogliono** (dal 28/10/2026, chiesto
+    // dall'utente: "la stessa cosa con il Group"): un elenco JSON di
+    // `GroupRuleSpec`, nell'ordine in cui contano, della tabella e della
+    // bacheca. null = nessuno (la bacheca prende allora la prima proprietà a
+    // selezione singola). Prendono il posto di gruppo e sottogruppo
+    // (`tableGroupColumnId`, `tableSubGroupColumnId`, `boardGroupColumnId`,
+    // `boardSubGroupColumnId`, i loro "Hide empty" e `dateGroupingJson`), che
+    // la migrazione 65→66 ha spostato qui e svuotato. Vedi `GroupRules.kt`.
+    var tableGroupRulesJson: String? = null,
+    var boardGroupRulesJson: String? = null,
     // In base a quale proprietà sono filtrate le righe, e su quale
     // valore. null = nessun filtro, cioè tutte le pagine — che è come
     // stavano prima che il filtro esistesse.

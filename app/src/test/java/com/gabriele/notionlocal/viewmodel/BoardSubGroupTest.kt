@@ -9,6 +9,7 @@ import com.gabriele.notionlocal.data.entity.ColumnType
 import com.gabriele.notionlocal.data.entity.DatabaseColumnEntity
 import com.gabriele.notionlocal.data.entity.DatabaseLayout
 import com.gabriele.notionlocal.data.entity.PageEntity
+import com.gabriele.notionlocal.data.entity.boardGroupRules
 import com.gabriele.notionlocal.data.entity.parseDateRange
 import com.gabriele.notionlocal.data.repository.DatabaseRepository
 import com.gabriele.notionlocal.data.repository.PageRepository
@@ -18,8 +19,6 @@ import java.time.LocalDate
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
@@ -31,7 +30,8 @@ import org.robolectric.annotation.Config
 /**
  * **La bacheca raggruppata per quasi ogni proprietà, e le sue fasce**
  * (14/10/2026): prima si sceglieva solo fra le proprietà a selezione
- * singola, e i sottogruppi c'erano solo nella tabella.
+ * singola, e i sottogruppi c'erano solo nella tabella. Dal 28/10/2026 le
+ * fasce sono le regole dopo la prima, quante se ne vogliono.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34], application = Application::class)
@@ -91,50 +91,54 @@ class BoardSubGroupTest {
     }
 
     @Test
-    fun subGroupsAreSavedAndNeverOnTheColumnsProperty() {
-        viewModel.setBoardSubGroupColumn(kind.id)
-        assertEquals(kind.id, viewModel.boardSubGroupColumn()?.id)
-        waitFor("salvati") { saved().boardSubGroupColumnId == kind.id }
-        // Sulla stessa proprietà delle colonne non dividerebbero niente.
-        viewModel.setBoardSubGroupColumn(shop.id)
-        assertNull(viewModel.boardSubGroupColumn())
-        // Un colore nemmeno.
-        viewModel.setBoardSubGroupColumn(color.id)
-        assertNull(viewModel.boardSubGroupColumn())
-        viewModel.setBoardSubGroupColumn(null)
-        waitFor("tolti") { saved().boardSubGroupColumnId == null }
+    fun theBandsAreTheRulesAfterTheFirstAndNeverOnTheColumnsProperty() {
+        // Senza regole, le colonne di ripiego compaiono come prima regola.
+        assertEquals(listOf(shop.id), viewModel.groupRulesShown(board = true).map { it.column })
+        viewModel.addGroupRule(board = true, kind.id)
+        viewModel.addGroupRule(board = true, day.id)
+        assertEquals(listOf(shop.id, kind.id, day.id), viewModel.boardGroupLevels().map { it.column.id })
+        waitFor("salvate") { saved().boardGroupRules().map { it.column } == listOf(shop.id, kind.id, day.id) }
+        // Le colonne mostrano anche quelle vuote; le fasce di suo no.
+        assertEquals(listOf(false, true, true), viewModel.boardGroupLevels().map { it.hideEmpty })
+        // La proprietà delle colonne non fa anche una fascia.
+        viewModel.addGroupRule(board = true, shop.id)
+        assertEquals(3, viewModel.boardGroupLevels().size)
+        // Un colore non si legge: anche in una regola, si salta.
+        viewModel.addGroupRule(board = true, color.id)
+        assertEquals(listOf(shop.id, kind.id, day.id), viewModel.boardGroupLevels().map { it.column.id })
     }
 
     @Test
-    fun choosingTheSubGroupPropertyForTheColumnsRemovesTheSubGroups() {
+    fun choosingABandPropertyForTheColumnsTakesItOutOfTheBands() {
         viewModel.setBoardGroupColumn(shop.id)
-        viewModel.setBoardSubGroupColumn(kind.id)
+        viewModel.addGroupRule(board = true, kind.id)
+        viewModel.addGroupRule(board = true, bought.id)
         viewModel.setBoardGroupColumn(kind.id)
-        assertNull(viewModel.boardSubGroupColumn())
-        waitFor("tolti anche nel database") { saved().let { it.boardGroupColumnId == kind.id && it.boardSubGroupColumnId == null } }
+        assertEquals(listOf(kind.id, bought.id), viewModel.boardGroupLevels().map { it.column.id })
+        waitFor("anche nel database") { saved().boardGroupRules().map { it.column } == listOf(kind.id, bought.id) }
     }
 
     @Test
-    fun theBoardAndTheTableHaveTheirOwnSubGroups() {
-        viewModel.setBoardSubGroupColumn(kind.id)
-        viewModel.setTableGroupColumn(kind.id)
-        viewModel.setTableSubGroupColumn(bought.id)
-        assertEquals(kind.id, viewModel.boardSubGroupColumn()?.id)
-        assertEquals(bought.id, viewModel.tableSubGroupColumn()?.id)
-        viewModel.setBoardHideEmptySubGroups(false)
-        waitFor("salvato") { saved().let { !it.boardHideEmptySubGroups && it.hideEmptySubGroups } }
-        assertFalse(saved().boardHideEmptySubGroups)
-    }
-
-    @Test
-    fun aCardAddedInASubGroupGetsTheColumnAndTheSubGroupValues() {
+    fun removingAllTheRulesGoesBackToTheFirstSelect() {
         viewModel.setBoardGroupColumn(bought.id)
-        viewModel.setBoardSubGroupColumn(shop.id)
-        viewModel.addRowInSubGroup(bought.id, "true", shop.id, "IPERPOLI")
-        waitFor("la scheda nuova coi due valori") {
+        viewModel.addGroupRule(board = true, kind.id)
+        viewModel.removeAllGroupRules(board = true)
+        assertEquals(listOf(shop.id), viewModel.boardGroupLevels().map { it.column.id })
+        waitFor("tolte") { saved().boardGroupRulesJson == null }
+    }
+
+    @Test
+    fun aCardAddedInABandGetsTheColumnAndEveryBandValue() {
+        viewModel.setBoardGroupColumn(bought.id)
+        viewModel.addGroupRule(board = true, shop.id)
+        viewModel.addGroupRule(board = true, kind.id)
+        viewModel.addRowInGroups(listOf(bought.id to "true", shop.id to "IPERPOLI", kind.id to "Cibo"))
+        waitFor("la scheda nuova coi tre valori") {
             val state = viewModel.tableState.value
             val row = state.rows.singleOrNull() ?: return@waitFor false
-            state.cellValues[row.id to bought.id] == "true" && state.cellValues[row.id to shop.id] == "IPERPOLI"
+            state.cellValues[row.id to bought.id] == "true" &&
+                state.cellValues[row.id to shop.id] == "IPERPOLI" &&
+                state.cellValues[row.id to kind.id] == "Cibo"
         }
     }
 
@@ -143,7 +147,7 @@ class BoardSubGroupTest {
         // I gruppi per data sono giorni (`toEpochDay`): prima la cella
         // riceveva quel numero così com'era, cioè il 1° gennaio 1970.
         val october14 = LocalDate.of(2026, 10, 14)
-        viewModel.addRowInGroup(day.id, october14.toEpochDay().toString())
+        viewModel.addRowInGroups(listOf(day.id to october14.toEpochDay().toString()))
         waitFor("la riga del 14 ottobre") {
             val state = viewModel.tableState.value
             val row = state.rows.singleOrNull() ?: return@waitFor false

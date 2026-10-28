@@ -40,11 +40,8 @@ import androidx.compose.material.icons.filled.NorthEast
 import androidx.compose.material.icons.filled.CallMade
 import com.gabriele.notionlocal.data.entity.DatabaseSnapshot
 import com.gabriele.notionlocal.data.entity.DateGroupBy
-import com.gabriele.notionlocal.data.entity.DateGroupings
 import com.gabriele.notionlocal.data.entity.DateUnit
-import com.gabriele.notionlocal.data.entity.GroupSlot
 import com.gabriele.notionlocal.data.entity.endOf
-import com.gabriele.notionlocal.data.entity.parseDateGroupings
 import com.gabriele.notionlocal.data.entity.startOf
 import com.gabriele.notionlocal.data.entity.RelationConfig
 import com.gabriele.notionlocal.data.entity.RollupConfig
@@ -330,6 +327,8 @@ import com.gabriele.notionlocal.data.entity.RecurrenceEnd
 import com.gabriele.notionlocal.data.entity.RecurrenceFreq
 import com.gabriele.notionlocal.data.entity.SORT_BY_NAME
 import com.gabriele.notionlocal.data.entity.SortRuleSpec
+import com.gabriele.notionlocal.data.entity.GroupLevel
+import com.gabriele.notionlocal.data.entity.GroupRuleSpec
 import com.gabriele.notionlocal.data.entity.existingIn
 import com.gabriele.notionlocal.data.entity.sortRules
 import com.gabriele.notionlocal.data.entity.SelectOption
@@ -1198,13 +1197,8 @@ private fun DatabaseViewBody(
                     state,
                     ViewArrangement(
                         layout = shown?.databaseLayout ?: DatabaseLayout.TABLE,
-                        tableGroup = viewModel.tableGroupColumn(),
-                        tableSubGroup = viewModel.tableSubGroupColumn(),
-                        hideEmptyGroups = shown?.hideEmptyGroups != false,
-                        hideEmptySubGroups = shown?.hideEmptySubGroups != false,
-                        boardGroup = viewModel.boardGroupColumn(),
-                        boardSubGroup = viewModel.boardSubGroupColumn(),
-                        boardHideEmptySubGroups = shown?.boardHideEmptySubGroups != false,
+                        tableLevels = viewModel.tableGroupLevels(),
+                        boardLevels = viewModel.boardGroupLevels(),
                         dateColumn = viewModel.calendarDateColumn()
                     )
                 )
@@ -1335,8 +1329,7 @@ private fun DatabaseViewBody(
         LocalRowSearch provides state.search,
         LocalCellLinkLabels provides cellLinkLabels,
         LocalTitleEditRequest provides TitleEditRequest(editTitleOf, viewModel::consumeEditTitle),
-        LocalRowLimits provides rowLimits,
-        LocalDateGroupings provides parseDateGroupings(page?.dateGroupingJson)
+        LocalRowLimits provides rowLimits
     ) {
     Column(
         modifier = modifier
@@ -1669,22 +1662,9 @@ private fun DatabaseViewBody(
                     onSetOptionSecondColor = { columnId, label, hex, line ->
                         viewModel.setSelectOptionSecondColor(columnId, label, hex, line)
                     },
-                    groupColumn = viewModel.tableGroupColumn(),
-                    hideEmptyGroups = page?.hideEmptyGroups != false,
-                    hideEmptySubGroups = page?.hideEmptySubGroups != false,
-                    onAddRowInGroup = { value ->
-                        viewModel.tableGroupColumn()?.let { column ->
-                            viewModel.addRowInGroup(column.id, value)
-                        }
-                        newRowTick++
-                    },
-                    subGroupColumn = viewModel.tableSubGroupColumn(),
-                    onAddRowInSubGroup = { groupValue, subValue ->
-                        val group = viewModel.tableGroupColumn()
-                        val sub = viewModel.tableSubGroupColumn()
-                        if (group != null && sub != null) {
-                            viewModel.addRowInSubGroup(group.id, groupValue, sub.id, subValue)
-                        }
+                    groupLevels = viewModel.tableGroupLevels(),
+                    onAddRowInGroups = { keys ->
+                        viewModel.addRowInGroups(viewModel.tableGroupLevels().zip(keys) { level, key -> level.column.id to key })
                         newRowTick++
                     },
                     lazy = lazyBody
@@ -1692,10 +1672,7 @@ private fun DatabaseViewBody(
 
                 DatabaseLayout.BOARD -> BoardLayout(
                     state = state,
-                    groupColumn = viewModel.boardGroupColumn(),
-                    subGroupColumn = viewModel.boardSubGroupColumn(),
-                    hideEmptyGroups = page?.boardHideEmptyGroups == true,
-                    hideEmptySubGroups = page?.boardHideEmptySubGroups != false,
+                    levels = viewModel.boardGroupLevels(),
                     colorCards = page?.colorBoardCards == true,
                     hideNew = page?.boardHideNew == true,
                     newRowTick = newRowTick,
@@ -1704,17 +1681,8 @@ private fun DatabaseViewBody(
                         focusManager.clearFocus()
                         rowActionsFor = row
                     },
-                    onAddRowInGroup = { groupValue ->
-                        viewModel.boardGroupColumn()?.let { column ->
-                            viewModel.addRowInGroup(column.id, groupValue)
-                        }
-                    },
-                    onAddRowInSubGroup = { groupValue, subValue ->
-                        val group = viewModel.boardGroupColumn()
-                        val sub = viewModel.boardSubGroupColumn()
-                        if (group != null && sub != null) {
-                            viewModel.addRowInSubGroup(group.id, groupValue, sub.id, subValue)
-                        }
+                    onAddRowInGroups = { keys ->
+                        viewModel.addRowInGroups(viewModel.boardGroupLevels().zip(keys) { level, key -> level.column.id to key })
                     },
                     onAddGroupProperty = {
                         focusManager.clearFocus()
@@ -1845,26 +1813,23 @@ private fun DatabaseViewBody(
             layout = page?.databaseLayout ?: DatabaseLayout.TABLE,
             groupColumn = viewModel.boardGroupColumn(),
             dateColumn = viewModel.calendarDateColumn(),
-            tableGroupColumn = viewModel.tableGroupColumn(),
-            hideEmptyGroups = page?.hideEmptyGroups != false,
-            onSetTableGroupColumn = { viewModel.setTableGroupColumn(it) },
-            onSetHideEmptyGroups = { viewModel.setHideEmptyGroups(it) },
+            tableGroupRules = viewModel.groupRulesShown(board = false),
+            boardGroupRules = viewModel.groupRulesShown(board = true),
+            groupActions = remember(viewModel) {
+                GroupRuleActions(
+                    add = viewModel::addGroupRule,
+                    setColumn = viewModel::setGroupRuleColumn,
+                    move = viewModel::moveGroupRule,
+                    remove = viewModel::removeGroupRule,
+                    removeAll = viewModel::removeAllGroupRules,
+                    setHideEmpty = viewModel::setGroupRuleHideEmpty,
+                    setDateBy = viewModel::setGroupRuleDateBy
+                )
+            },
             colorBoardCards = page?.colorBoardCards == true,
             onSetColorBoardCards = { viewModel.setColorBoardCards(it) },
-            tableSubGroupColumn = viewModel.tableSubGroupColumn(),
-            onSetTableSubGroupColumn = { viewModel.setTableSubGroupColumn(it) },
-            hideEmptySubGroups = page?.hideEmptySubGroups != false,
-            onSetHideEmptySubGroups = { viewModel.setHideEmptySubGroups(it) },
-            boardSubGroupColumn = viewModel.boardSubGroupColumn(),
-            onSetBoardSubGroupColumn = { viewModel.setBoardSubGroupColumn(it) },
-            boardHideEmptyGroups = page?.boardHideEmptyGroups == true,
-            onSetBoardHideEmptyGroups = { viewModel.setBoardHideEmptyGroups(it) },
             boardHideNew = page?.boardHideNew == true,
             onSetBoardHideNew = { viewModel.setBoardHideNew(it) },
-            boardHideEmptySubGroups = page?.boardHideEmptySubGroups != false,
-            onSetBoardHideEmptySubGroups = { viewModel.setBoardHideEmptySubGroups(it) },
-            dateGroupings = parseDateGroupings(page?.dateGroupingJson),
-            onSetDateGrouping = { slot, by -> viewModel.setDateGrouping(slot, by) },
             cellOverflow = CellOverflow.of(page?.cellOverflow ?: 0),
             onSetCellOverflow = { viewModel.setCellOverflow(it) },
             freezeFirstColumn = page?.freezeFirstColumn == true,
@@ -1897,7 +1862,6 @@ private fun DatabaseViewBody(
                 showSettings = false
                 choosingChartType = true
             },
-            onSetGroupColumn = { viewModel.setBoardGroupColumn(it.id) },
             onSetDateColumn = { viewModel.setCalendarDateColumn(it.id) },
             galleryPreview = page?.galleryCardPreview ?: GALLERY_DEFAULT_PREVIEW,
             gallerySize = page?.galleryCardSize ?: GALLERY_DEFAULT_SIZE,
@@ -2020,22 +1984,7 @@ private fun DatabaseViewBody(
         // Le righe accanto, come si vedono adesso: nella tabella intera, nel
         // gruppo o nel sottogruppo dove la si è toccata.
         val place = rowPlace
-        val siblings = place?.let {
-            val group = viewModel.tableGroupColumn()
-            val sub = viewModel.tableSubGroupColumn()
-            when {
-                it.groupKey == null || group == null -> state.rows
-                else -> buildRowGroups(state, group, page?.hideEmptyGroups != false, dateBy = parseDateGroupings(page?.dateGroupingJson).table)
-                    .find { g -> g.key == it.groupKey }?.rows?.let { groupRows ->
-                        if (it.subKey == null || sub == null) {
-                            groupRows
-                        } else {
-                            buildRowGroups(state, sub, page?.hideEmptySubGroups != false, groupRows, dateBy = parseDateGroupings(page?.dateGroupingJson).tableSub)
-                                .find { s -> s.key == it.subKey }?.rows
-                        }
-                    }.orEmpty()
-            }
-        }
+        val siblings = place?.let { rowsAt(state, viewModel.tableGroupLevels(), it.path) }
         // Solo fra le righe dello stesso livello: una sotto-riga si sposta fra
         // le sorelle, sotto la sua riga; una principale fra le principali.
         val level = siblings?.let { list ->
@@ -2064,7 +2013,7 @@ private fun DatabaseViewBody(
         val onCreateSubRow: (() -> Unit)? = if (place != null && !contentLocked) {
             {
                 rowActionsFor = null
-                viewModel.addSubRow(live, inherit = listOfNotNull(viewModel.tableGroupColumn()?.id, viewModel.tableSubGroupColumn()?.id))
+                viewModel.addSubRow(live, inherit = viewModel.tableGroupLevels().map { it.column.id })
             }
         } else {
             null
@@ -2198,11 +2147,12 @@ private fun DatabaseViewBody(
 @Composable
 private fun TableLayout(
     state: DatabaseTableState,
-    /** Null quando non si raggruppa: la tabella piatta di sempre. */
-    groupColumn: DatabaseColumnEntity?,
-    hideEmptyGroups: Boolean,
-    /** Se i sottogruppi vuoti si nascondono: un interruttore a sé. */
-    hideEmptySubGroups: Boolean = true,
+    /**
+     * **I livelli dei gruppi** (dal 28/10/2026, quanti se ne vogliono): il
+     * primo fa i gruppi, il secondo divide ogni gruppo, e così via. Nessuno =
+     * la tabella piatta di sempre.
+     */
+    groupLevels: List<GroupLevel>,
     /** "Lock view": le colonne non si spostano, e le due voci restano grigie. */
     viewLocked: Boolean,
     onMoveProperty: (DatabaseColumnEntity, Int) -> Unit,
@@ -2226,12 +2176,8 @@ private fun TableLayout(
     onDeleteOption: (String, String) -> Unit,
     onMoveOptions: (String, List<String>) -> Unit,
     onSetOptionSecondColor: (String, String, String?, Boolean) -> Unit,
-    /** Crea una pagina già dentro il gruppo: riceve il valore del gruppo. */
-    onAddRowInGroup: (String) -> Unit,
-    /** I sottogruppi dentro ogni gruppo (dal 29/09/2026); null se non ce ne sono. */
-    subGroupColumn: DatabaseColumnEntity? = null,
-    /** Crea una pagina dentro un sottogruppo: valore del gruppo e del sottogruppo. */
-    onAddRowInSubGroup: (String, String) -> Unit = { _, _ -> },
+    /** Crea una pagina già dentro un gruppo: riceve le chiavi dei gruppi in cui sta, dal primo livello. */
+    onAddRowInGroups: (List<String>) -> Unit,
     /** Si scrive il nome di una riga (true) o si è finito (false): l'ordine resta fermo intanto. */
     onTitleEditing: (Boolean) -> Unit = {},
     /** I calcoli di questa vista, per colonna (vedi `CalculationFooter`). */
@@ -2260,7 +2206,7 @@ private fun TableLayout(
     /** A pagina intera: una lista che disegna solo le righe sullo schermo (vedi `LazyBody`). */
     lazy: LazyBody? = null
 ) {
-    val dateGroupings = LocalDateGroupings.current
+    val grouped = groupLevels.isNotEmpty()
     // Dentro un contenitore che scorre in orizzontale la larghezza
     // disponibile è illimitata: una linea che chiede "tutta la
     // larghezza" ne ottiene zero e sparisce. Le linee orizzontali vanno
@@ -2310,7 +2256,7 @@ private fun TableLayout(
     // Quali gruppi sono chiusi. Sta qui e non nel database perché è
     // come si sta guardando la tabella adesso, non una proprietà del
     // database: riaprendo la pagina si riparte con tutto aperto.
-    val collapsed = remember(groupColumn?.id, subGroupColumn?.id) { mutableStateMapOf<String, Boolean>() }
+    val collapsed = remember(groupLevels.map { it.column.id }) { mutableStateMapOf<String, Boolean>() }
 
     // Intestazione e righe scorrono insieme in orizzontale, così le
     // colonne restano allineate.
@@ -2336,7 +2282,7 @@ private fun TableLayout(
         LaunchedEffect(lazy.newRowTick) {
             if (lazy.newRowTick == seenTick) return@LaunchedEffect
             seenTick = lazy.newRowTick
-            if (groupColumn != null) return@LaunchedEffect
+            if (grouped) return@LaunchedEffect
             val before = rowCount
             withTimeoutOrNull(2_000) { snapshotFlow { rowCount }.first { it > before } } ?: return@LaunchedEffect
             listState.animateScrollToItem((listState.layoutInfo.totalItemsCount - 1).coerceAtLeast(0))
@@ -2408,7 +2354,34 @@ private fun TableLayout(
             if (onAddRow != null) item(key = "$prefix:add") { GroupNewRowButton(onAddRow) }
         }
 
-        val groups = if (groupColumn == null) emptyList() else buildRowGroups(state, groupColumn, hideEmptyGroups, dateBy = dateGroupings.table)
+        // **I gruppi a ogni livello** (dal 28/10/2026): dentro ogni gruppo, i
+        // gruppi del livello dopo, un po' più a destra; all'ultimo, le righe.
+        fun LazyListScope.groupsAt(depth: Int, rows: List<DatabaseRowEntity>, path: List<String>) {
+            val level = groupLevels[depth]
+            buildRowGroups(state, level.column, level.hideEmpty, rows, dateBy = level.dateBy).forEach { group ->
+                val keys = path + group.key
+                val key = keys.joinToString(SUB_GROUP_KEY_SEPARATOR)
+                val isCollapsed = collapsed[key] == true
+                item(key = "group:$key") {
+                    GroupHeaderRow(
+                        group = group,
+                        collapsed = isCollapsed,
+                        width = tableWidth,
+                        indent = SUB_GROUP_INDENT * depth,
+                        onToggle = { collapsed[key] = !isCollapsed }
+                    )
+                }
+                if (!isCollapsed) {
+                    if (depth == groupLevels.lastIndex) {
+                        section("g:$key", group.rows, RowPlace(keys)) { onAddRowInGroups(keys) }
+                    } else {
+                        groupsAt(depth + 1, group.rows, keys)
+                    }
+                }
+                if (depth > 0) item(key = "gap:$key") { Spacer(modifier = Modifier.size(8.dp)) }
+            }
+        }
+
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val viewport = maxWidth
             Box(
@@ -2435,43 +2408,10 @@ private fun TableLayout(
                         .fillMaxHeight()
                         .keepFocusedAboveKeyboard()
                 ) {
-                    if (groupColumn == null) {
+                    if (!grouped) {
                         section("table", state.rows, RowPlace(), null)
                     } else {
-                        groups.forEach { group ->
-                            val isCollapsed = collapsed[group.key] == true
-                            item(key = "group:" + group.key) {
-                                GroupHeaderRow(
-                                    group = group,
-                                    collapsed = isCollapsed,
-                                    width = tableWidth,
-                                    onToggle = { collapsed[group.key] = !isCollapsed }
-                                )
-                            }
-                            if (!isCollapsed) {
-                                if (subGroupColumn == null) {
-                                    section("g:" + group.key, group.rows, RowPlace(group.key)) { onAddRowInGroup(group.key) }
-                                } else {
-                                    buildRowGroups(state, subGroupColumn, hideEmptySubGroups, group.rows, dateBy = dateGroupings.tableSub).forEach { sub ->
-                                        val subKey = group.key + SUB_GROUP_KEY_SEPARATOR + sub.key
-                                        val subCollapsed = collapsed[subKey] == true
-                                        item(key = "sub:$subKey") {
-                                            GroupHeaderRow(
-                                                group = sub,
-                                                collapsed = subCollapsed,
-                                                width = tableWidth,
-                                                indent = SUB_GROUP_INDENT,
-                                                onToggle = { collapsed[subKey] = !subCollapsed }
-                                            )
-                                        }
-                                        if (!subCollapsed) {
-                                            section("s:$subKey", sub.rows, RowPlace(group.key, sub.key)) { onAddRowInSubGroup(group.key, sub.key) }
-                                        }
-                                        item(key = "subgap:$subKey") { Spacer(modifier = Modifier.size(8.dp)) }
-                                    }
-                                }
-                            }
-                        }
+                        groupsAt(0, state.rows, emptyList())
                         item(key = "groups-end") { Spacer(modifier = Modifier.size(12.dp)) }
                     }
                     item(key = "trailing") { lazy.trailing() }
@@ -2497,7 +2437,7 @@ private fun TableLayout(
             }
             .horizontalScroll(horizontal)
     ) {
-        if (groupColumn == null) {
+        if (!grouped) {
             PinnedHeaderSection(pin = freezeFirstRow, header = {
             TableHeaderRow(
                 columns = shownColumns,
@@ -2638,53 +2578,42 @@ private fun TableLayout(
 
         // I primi gruppi e "Load more" (dal 26/10/2026): vedi `DATABASE_GROUP_LIMIT`.
         val groupLimits = LocalRowLimits.current
-        val groupsKey = "table-groups:" + groupColumn.id
-        val shownGroups = groupLimits.limit(
-            groupsKey, buildRowGroups(state, groupColumn, hideEmptyGroups, dateBy = dateGroupings.table), DATABASE_GROUP_LIMIT
-        ) { it.key }
-        shownGroups.items.forEach { group ->
-            val isCollapsed = collapsed[group.key] == true
-            GroupHeaderRow(
-                group = group,
-                collapsed = isCollapsed,
-                width = tableWidth,
-                onToggle = { collapsed[group.key] = !isCollapsed }
-            )
-            if (!isCollapsed) {
-                if (subGroupColumn == null) {
-                    GroupBody(group.rows, RowPlace(group.key)) { onAddRowInGroup(group.key) }
-                } else {
-                    // **I sottogruppi**: dentro il gruppo, le sue righe
-                    // divise secondo la seconda proprietà, un po' rientrate.
-                    val subsKey = "table-subgroups:" + group.key
-                    val shownSubs = groupLimits.limit(
-                        subsKey, buildRowGroups(state, subGroupColumn, hideEmptySubGroups, group.rows, dateBy = dateGroupings.tableSub), DATABASE_GROUP_LIMIT
-                    ) { it.key }
-                    shownSubs.items.forEach { sub ->
-                        val subKey = group.key + SUB_GROUP_KEY_SEPARATOR + sub.key
-                        val subCollapsed = collapsed[subKey] == true
-                        GroupHeaderRow(
-                            group = sub,
-                            collapsed = subCollapsed,
-                            width = tableWidth,
-                            indent = SUB_GROUP_INDENT,
-                            onToggle = { collapsed[subKey] = !subCollapsed }
-                        )
-                        if (!subCollapsed) {
-                            GroupBody(sub.rows, RowPlace(group.key, sub.key)) { onAddRowInSubGroup(group.key, sub.key) }
-                        }
-                        Spacer(modifier = Modifier.size(8.dp))
-                    }
-                    if (shownSubs.hidden > 0) {
-                        LoadMoreButton(shownSubs.hidden, onClick = { groupLimits?.more(subsKey, DATABASE_GROUP_LIMIT) })
+
+        // **I gruppi a ogni livello** (dal 28/10/2026, quanti se ne vogliono):
+        // dentro ogni gruppo, i gruppi del livello dopo, un po' più a destra;
+        // all'ultimo livello, le righe.
+        @Composable
+        fun GroupsAt(depth: Int, rows: List<DatabaseRowEntity>, path: List<String>) {
+            val level = groupLevels[depth]
+            val limitKey = if (depth == 0) "table-groups:" + level.column.id else "table-subgroups:" + path.joinToString(SUB_GROUP_KEY_SEPARATOR)
+            val shownGroups = groupLimits.limit(
+                limitKey, buildRowGroups(state, level.column, level.hideEmpty, rows, dateBy = level.dateBy), DATABASE_GROUP_LIMIT
+            ) { it.key }
+            shownGroups.items.forEach { group ->
+                val keys = path + group.key
+                val key = keys.joinToString(SUB_GROUP_KEY_SEPARATOR)
+                val isCollapsed = collapsed[key] == true
+                GroupHeaderRow(
+                    group = group,
+                    collapsed = isCollapsed,
+                    width = tableWidth,
+                    indent = SUB_GROUP_INDENT * depth,
+                    onToggle = { collapsed[key] = !isCollapsed }
+                )
+                if (!isCollapsed) {
+                    if (depth == groupLevels.lastIndex) {
+                        GroupBody(group.rows, RowPlace(keys)) { onAddRowInGroups(keys) }
+                    } else {
+                        GroupsAt(depth + 1, group.rows, keys)
                     }
                 }
+                Spacer(modifier = Modifier.size(if (depth == 0) 12.dp else 8.dp))
             }
-            Spacer(modifier = Modifier.size(12.dp))
+            if (shownGroups.hidden > 0) {
+                LoadMoreButton(shownGroups.hidden, onClick = { groupLimits?.more(limitKey, DATABASE_GROUP_LIMIT) })
+            }
         }
-        if (shownGroups.hidden > 0) {
-            LoadMoreButton(shownGroups.hidden, onClick = { groupLimits?.more(groupsKey, DATABASE_GROUP_LIMIT) })
-        }
+        GroupsAt(0, state.rows, emptyList())
     }
     }
 }
@@ -2937,7 +2866,20 @@ private fun ColumnResizeHandle(
  * le righe accanto — con la selezione multipla una riga sta in più gruppi,
  * e conta quello in cui la si è toccata.
  */
-private data class RowPlace(val groupKey: String? = null, val subKey: String? = null)
+private data class RowPlace(val path: List<String> = emptyList())
+
+/**
+ * Le righe del gruppo in [path] (le chiavi dei gruppi, dal primo livello),
+ * come si vedono adesso: tutte, senza gruppi; nessuna, se il gruppo non c'è più.
+ */
+internal fun rowsAt(state: DatabaseTableState, levels: List<GroupLevel>, path: List<String>): List<DatabaseRowEntity> {
+    var rows = state.rows
+    path.forEachIndexed { depth, key ->
+        val level = levels.getOrNull(depth) ?: return rows
+        rows = buildRowGroups(state, level.column, level.hideEmpty, rows, dateBy = level.dateBy).find { it.key == key }?.rows.orEmpty()
+    }
+    return rows
+}
 
 /** Fra la chiave del gruppo e quella del sottogruppo, nell'elenco di quelli chiusi. */
 private const val SUB_GROUP_KEY_SEPARATOR = "\u0000"
@@ -3546,8 +3488,6 @@ internal fun dateGroupLabel(unit: DateUnit, start: LocalDate): String = when (un
     DateUnit.YEAR -> start.year.toString()
 }
 
-/** "Date by" dei raggruppamenti di questa vista: lo mette la schermata del database. */
-internal val LocalDateGroupings = staticCompositionLocalOf { DateGroupings() }
 
 /**
  * La visualizzazione a bacheca: una colonna per ogni valore della
@@ -3572,12 +3512,13 @@ internal val LocalDateGroupings = staticCompositionLocalOf { DateGroupings() }
 @Composable
 internal fun BoardLayout(
     state: DatabaseTableState,
-    groupColumn: DatabaseColumnEntity?,
-    /** La proprietà delle fasce, o null per la bacheca di sempre. */
-    subGroupColumn: DatabaseColumnEntity? = null,
-    /** "Hide empty groups" (dal 21/10/2026): niente colonne senza schede, nemmeno quella senza valore. */
-    hideEmptyGroups: Boolean = false,
-    hideEmptySubGroups: Boolean = true,
+    /**
+     * **I livelli** (dal 28/10/2026, quanti se ne vogliono): il primo fa le
+     * colonne, gli altri le fasce, una dentro l'altra. Nessuno = non c'è una
+     * proprietà per le colonne. Con "Hide empty groups" (dal 21/10/2026) del
+     * primo, niente colonne senza schede, nemmeno quella senza valore.
+     */
+    levels: List<GroupLevel>,
     /** "Color columns": ogni colonna, con le sue schede, del colore del suo tag. */
     colorCards: Boolean = false,
     /** "Hide New" (dal 26/10/2026): niente "+ New" sotto le schede. */
@@ -3585,12 +3526,13 @@ internal fun BoardLayout(
     newRowTick: Int,
     onOpenRow: (DatabaseRowEntity) -> Unit,
     onRowLongPress: (DatabaseRowEntity) -> Unit,
-    onAddRowInGroup: (String) -> Unit,
-    /** "New" dentro una fascia: la riga nasce col valore della colonna e quello della fascia. */
-    onAddRowInSubGroup: (String, String) -> Unit = { _, _ -> },
+    /** "New" in una colonna (e nelle sue fasce): la riga nasce coi valori della colonna e delle fasce. */
+    onAddRowInGroups: (List<String>) -> Unit,
     onAddGroupProperty: () -> Unit
 ) {
-    if (groupColumn == null) {
+    val columnsLevel = levels.firstOrNull()
+    val groupColumn = columnsLevel?.column
+    if (columnsLevel == null || groupColumn == null) {
         // Senza una proprietà a selezione singola non ci sono colonne
         // da costruire. Meglio dirlo che mostrare una schermata vuota
         // lasciando credere che sia rotta.
@@ -3602,11 +3544,11 @@ internal fun BoardLayout(
         return
     }
 
-    val dateGroupings = LocalDateGroupings.current
     // Tutte le colonne dei tag, anche vuote, e sempre quella senza valore;
     // con "Hide empty groups" solo quelle con almeno una scheda.
+    val hideEmptyGroups = columnsLevel.hideEmpty
     val allGroups = buildRowGroups(
-        state, groupColumn, hideEmpty = hideEmptyGroups, keepEmptyNone = !hideEmptyGroups, dateBy = dateGroupings.board
+        state, groupColumn, hideEmpty = hideEmptyGroups, keepEmptyNone = !hideEmptyGroups, dateBy = columnsLevel.dateBy
     )
     // Le prime colonne e "Load more" (dal 26/10/2026): vedi `DATABASE_GROUP_LIMIT`.
     // Quella senza valore resta sempre, in fondo: è dove nasce una scheda nuova.
@@ -3635,7 +3577,8 @@ internal fun BoardLayout(
     fun accentOf(tint: Color?) = tint?.let { lerp(it, onPage, BOARD_ACCENT_LIGHT) }
     // Le proprietà che fanno da colonna e da fascia non si ripetono sulle
     // schede: sono già scritte in cima.
-    val hidden = setOfNotNull(groupColumn.id, subGroupColumn?.id)
+    val hidden = levels.mapTo(HashSet()) { it.column.id }
+    val bandLevels = levels.drop(1)
 
     val boardScroll = rememberScrollState()
 
@@ -3646,7 +3589,7 @@ internal fun BoardLayout(
         if (newRowTick > 0) boardScroll.animateScrollTo(boardScroll.maxValue)
     }
 
-    if (subGroupColumn == null) {
+    if (bandLevels.isEmpty()) {
         Row(
             modifier = Modifier.horizontalScroll(boardScroll),
             verticalAlignment = Alignment.Top
@@ -3664,7 +3607,7 @@ internal fun BoardLayout(
                         accent = accentOf(tint),
                         onOpenRow = onOpenRow,
                         onRowLongPress = onRowLongPress,
-                        onAdd = { onAddRowInGroup(group.key) }.takeUnless { hideNew }
+                        onAdd = { onAddRowInGroups(listOf(group.key)) }.takeUnless { hideNew }
                     )
                 }
             }
@@ -3673,14 +3616,79 @@ internal fun BoardLayout(
         return
     }
 
-    val allSubGroups = buildRowGroups(state, subGroupColumn, hideEmptySubGroups, dateBy = dateGroupings.boardSub)
-    // Le prime fasce e "Load more" (dal 21/10/2026), come le schede: vedi `BOARD_BAND_LIMIT`.
-    val bandsKey = "board-bands:" + subGroupColumn.id
-    val shownBands = limits.limit(bandsKey, allSubGroups, BOARD_BAND_LIMIT) { it.key }
-    val subGroups = shownBands.items
     // Quali fasce sono chiuse: come per i gruppi della tabella, è come si
     // sta guardando adesso, e riaprendo la pagina si riparte con tutto aperto.
-    val collapsed = remember(groupColumn.id, subGroupColumn.id) { mutableStateMapOf<String, Boolean>() }
+    val collapsed = remember(levels.map { it.column.id }) { mutableStateMapOf<String, Boolean>() }
+
+    /**
+     * **Le fasce a ogni livello** (dal 28/10/2026): dentro ogni fascia, quelle
+     * del livello dopo, un po' più a destra; all'ultimo, le colonne con le
+     * loro schede. Le prime fasce e "Load more" (dal 21/10/2026), come le
+     * schede: vedi `BOARD_BAND_LIMIT`.
+     */
+    @Composable
+    fun BandsAt(depth: Int, rows: List<DatabaseRowEntity>, path: List<String>) {
+        val level = bandLevels[depth]
+        val bandsKey = "board-bands:" + level.column.id + if (depth > 0) ":" + path.joinToString(SUB_GROUP_KEY_SEPARATOR) else ""
+        val shownBands = limits.limit(
+            bandsKey, buildRowGroups(state, level.column, level.hideEmpty, rows, dateBy = level.dateBy), BOARD_BAND_LIMIT
+        ) { it.key }
+        shownBands.items.forEach { band ->
+            val keys = path + band.key
+            val key = keys.joinToString(SUB_GROUP_KEY_SEPARATOR)
+            val isCollapsed = collapsed[key] == true
+            // Spostato quanto le colonne sono scorse, così il nome resta
+            // sempre sul bordo sinistro dello schermo (come la prima
+            // colonna ferma della tabella, `frozenFirstCell`).
+            Box(modifier = Modifier.offset { IntOffset(boardScroll.value, 0) }) {
+                GroupHeaderRow(
+                    group = band,
+                    collapsed = isCollapsed,
+                    width = BOARD_COLUMN_WIDTH,
+                    indent = 6.dp + SUB_GROUP_INDENT * depth,
+                    onToggle = { collapsed[key] = !isCollapsed }
+                )
+            }
+            if (!isCollapsed) {
+                if (depth == bandLevels.lastIndex) {
+                    val inBand = band.rows.mapTo(HashSet()) { it.id }
+                    Row(verticalAlignment = Alignment.Top) {
+                        groups.forEach { group ->
+                            val tint = tints[group.key]
+                            val cards = group.rows.filter { it.id in inBand }
+                            // Con "Hide New" una colonna senza schede nella fascia
+                            // non lascia una striscia colorata vuota: resta solo
+                            // il suo posto, così le altre restano in fila.
+                            val boxTint = tint.takeUnless { hideNew && cards.isEmpty() }
+                            BoardColumnBox(boxTint, top = if (boxTint != null) 8.dp else 0.dp) {
+                                BoardColumnCards(
+                                    rows = cards,
+                                    limitKey = "board:" + key + SUB_GROUP_KEY_SEPARATOR + group.key,
+                                    state = state,
+                                    hiddenColumnIds = hidden,
+                                    tint = tint,
+                                    accent = accentOf(tint),
+                                    onOpenRow = onOpenRow,
+                                    onRowLongPress = onRowLongPress,
+                                    onAdd = { onAddRowInGroups(listOf(group.key) + keys) }.takeUnless { hideNew }
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    BandsAt(depth + 1, band.rows, keys)
+                }
+            }
+            Spacer(modifier = Modifier.size(if (depth == 0) 12.dp else 8.dp))
+        }
+        if (shownBands.hidden > 0) {
+            // Fermo sul bordo sinistro come i nomi delle fasce.
+            Box(modifier = Modifier.offset { IntOffset(boardScroll.value, 0) }) {
+                LoadMoreButton(shownBands.hidden, onClick = { limits?.more(bandsKey, BOARD_BAND_LIMIT) })
+            }
+        }
+    }
+
     Column(modifier = Modifier.horizontalScroll(boardScroll)) {
         Row(verticalAlignment = Alignment.Top) {
             groups.forEach { group ->
@@ -3691,54 +3699,7 @@ internal fun BoardLayout(
             }
             moreColumns()
         }
-        subGroups.forEach { sub ->
-            val isCollapsed = collapsed[sub.key] == true
-            // Spostato quanto le colonne sono scorse, così il nome resta
-            // sempre sul bordo sinistro dello schermo (come la prima
-            // colonna ferma della tabella, `frozenFirstCell`).
-            Box(modifier = Modifier.offset { IntOffset(boardScroll.value, 0) }) {
-                GroupHeaderRow(
-                    group = sub,
-                    collapsed = isCollapsed,
-                    width = BOARD_COLUMN_WIDTH,
-                    indent = 6.dp,
-                    onToggle = { collapsed[sub.key] = !isCollapsed }
-                )
-            }
-            if (!isCollapsed) {
-                val inSub = sub.rows.mapTo(HashSet()) { it.id }
-                Row(verticalAlignment = Alignment.Top) {
-                    groups.forEach { group ->
-                        val tint = tints[group.key]
-                        val cards = group.rows.filter { it.id in inSub }
-                        // Con "Hide New" una colonna senza schede nella fascia
-                        // non lascia una striscia colorata vuota: resta solo
-                        // il suo posto, così le altre restano in fila.
-                        val boxTint = tint.takeUnless { hideNew && cards.isEmpty() }
-                        BoardColumnBox(boxTint, top = if (boxTint != null) 8.dp else 0.dp) {
-                            BoardColumnCards(
-                                rows = cards,
-                                limitKey = "board:" + sub.key + SUB_GROUP_KEY_SEPARATOR + group.key,
-                                state = state,
-                                hiddenColumnIds = hidden,
-                                tint = tint,
-                                accent = accentOf(tint),
-                                onOpenRow = onOpenRow,
-                                onRowLongPress = onRowLongPress,
-                                onAdd = { onAddRowInSubGroup(group.key, sub.key) }.takeUnless { hideNew }
-                            )
-                        }
-                    }
-                }
-            }
-            Spacer(modifier = Modifier.size(12.dp))
-        }
-        if (shownBands.hidden > 0) {
-            // Fermo sul bordo sinistro come i nomi delle fasce.
-            Box(modifier = Modifier.offset { IntOffset(boardScroll.value, 0) }) {
-                LoadMoreButton(shownBands.hidden, onClick = { limits?.more(bandsKey, BOARD_BAND_LIMIT) })
-            }
-        }
+        BandsAt(0, state.rows, emptyList())
     }
 }
 
@@ -9589,14 +9550,18 @@ private enum class SettingsPage {
     ROOT,
     EDIT_PROPERTIES,
     LAYOUT,
-    GROUP_BY,
-    /** Su quale proprietà raggruppa la **tabella**: `GROUP_BY` è della bacheca. */
-    TABLE_GROUP,
     /**
-     * I sottogruppi: della tabella, dentro ogni gruppo (dal 29/09/2026), o
-     * le fasce della bacheca (dal 14/10/2026). Quali, lo dice la vista.
+     * I raggruppamenti della **bacheca**: le colonne e le fasce. Dal
+     * 28/10/2026 un elenco di regole, quante se ne vogliono, come quello della
+     * tabella (`TABLE_GROUP`); "Sub groups" non c'è più.
      */
-    SUB_GROUP,
+    GROUP_BY,
+    /** I raggruppamenti della **tabella**: gruppi dentro i gruppi, quanti se ne vogliono. */
+    TABLE_GROUP,
+    /** "Add a group": le proprietà con cui fare un livello in più. */
+    GROUP_ADD,
+    /** Una regola: la sua proprietà, "Hide empty groups", "Date by" e "Remove group". */
+    GROUP_RULE,
     /** Il testo lungo nelle celle: tre puntini, colonna allargata o a capo (dal 30/09/2026). */
     CELL_OVERFLOW,
     /** Quali colonne si vedono nella tabella e quali no. */
@@ -10162,33 +10127,19 @@ private fun SettingsSheet(
     layout: DatabaseLayout,
     groupColumn: DatabaseColumnEntity?,
     dateColumn: DatabaseColumnEntity?,
-    /** Su cosa raggruppa la tabella, e se i gruppi vuoti si nascondono. */
-    tableGroupColumn: DatabaseColumnEntity? = null,
-    hideEmptyGroups: Boolean = true,
-    onSetTableGroupColumn: ((String?) -> Unit)? = null,
-    onSetHideEmptyGroups: ((Boolean) -> Unit)? = null,
+    /**
+     * **I raggruppamenti, quanti se ne vogliono** (dal 28/10/2026): le regole
+     * della tabella e della bacheca, nell'ordine in cui contano, e cosa farne.
+     */
+    tableGroupRules: List<GroupRuleSpec> = emptyList(),
+    boardGroupRules: List<GroupRuleSpec> = emptyList(),
+    groupActions: GroupRuleActions? = null,
     /** "Color columns" della bacheca (dal 30/09/2026). */
     colorBoardCards: Boolean = false,
     onSetColorBoardCards: ((Boolean) -> Unit)? = null,
-    /** I sottogruppi della tabella: la proprietà scelta, e come cambiarla. */
-    tableSubGroupColumn: DatabaseColumnEntity? = null,
-    onSetTableSubGroupColumn: ((String?) -> Unit)? = null,
-    hideEmptySubGroups: Boolean = true,
-    onSetHideEmptySubGroups: ((Boolean) -> Unit)? = null,
-    /** Le fasce della bacheca (dal 14/10/2026): la proprietà scelta, e come cambiarla. */
-    boardSubGroupColumn: DatabaseColumnEntity? = null,
-    onSetBoardSubGroupColumn: ((String?) -> Unit)? = null,
-    /** "Hide empty groups" della bacheca (dal 21/10/2026). */
-    boardHideEmptyGroups: Boolean = false,
-    onSetBoardHideEmptyGroups: ((Boolean) -> Unit)? = null,
     /** "Hide New" della bacheca (dal 26/10/2026). */
     boardHideNew: Boolean = false,
     onSetBoardHideNew: ((Boolean) -> Unit)? = null,
-    boardHideEmptySubGroups: Boolean = true,
-    onSetBoardHideEmptySubGroups: ((Boolean) -> Unit)? = null,
-    /** "Date by" dei quattro raggruppamenti (dal 21/10/2026), per quelli per data. */
-    dateGroupings: DateGroupings = DateGroupings(),
-    onSetDateGrouping: ((GroupSlot, DateGroupBy) -> Unit)? = null,
     /** Il testo lungo nelle celle della tabella (dal 30/09/2026). */
     cellOverflow: CellOverflow = CellOverflow.TRUNCATE,
     onSetCellOverflow: ((CellOverflow) -> Unit)? = null,
@@ -10206,7 +10157,6 @@ private fun SettingsSheet(
     initialPage: SettingsPage,
     onDismiss: () -> Unit,
     onSetLayout: (DatabaseLayout) -> Unit,
-    onSetGroupColumn: (DatabaseColumnEntity) -> Unit,
     onSetDateColumn: (DatabaseColumnEntity) -> Unit,
     /** Anteprima e dimensione delle schede: contano solo per la galleria. */
     galleryPreview: GalleryCardPreview = GALLERY_DEFAULT_PREVIEW,
@@ -10240,6 +10190,11 @@ private fun SettingsSheet(
     onPickChartType: () -> Unit = {}
 ) {
     var page by remember(initialPage) { mutableStateOf(initialPage) }
+    // La regola che si sta guardando in `GROUP_RULE`, per la sua proprietà.
+    var groupRuleColumn by remember { mutableStateOf<String?>(null) }
+    val board = layout == DatabaseLayout.BOARD
+    val groupRules = if (board) boardGroupRules else tableGroupRules
+    val groupsPage = if (board) SettingsPage.GROUP_BY else SettingsPage.TABLE_GROUP
     var chartPage by remember { mutableStateOf(ChartSettingsPage.GROUP) }
     var editingChartRange by remember { mutableStateOf(false) }
 
@@ -10257,7 +10212,8 @@ private fun SettingsSheet(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (page != SettingsPage.ROOT) {
-                    IconButton(onClick = { page = SettingsPage.ROOT }) {
+                    // Da una regola, o da "Add a group", si torna all'elenco dei gruppi.
+                    IconButton(onClick = { page = if (page == SettingsPage.GROUP_ADD || page == SettingsPage.GROUP_RULE) groupsPage else SettingsPage.ROOT }) {
                         Icon(Icons.Filled.KeyboardArrowLeft, contentDescription = Strings.back)
                     }
                 }
@@ -10268,7 +10224,8 @@ private fun SettingsSheet(
                         SettingsPage.LAYOUT -> DbStrings.layout
                         SettingsPage.GROUP_BY -> DbStrings.groupBy
                         SettingsPage.TABLE_GROUP -> DbStrings.group
-                        SettingsPage.SUB_GROUP -> DbStrings.subGroups
+                        SettingsPage.GROUP_ADD -> DbStrings.addGroup
+                        SettingsPage.GROUP_RULE -> columns.find { it.id == groupRuleColumn }?.name?.let(DbStrings::columnName) ?: DbStrings.group
                         SettingsPage.CELL_OVERFLOW -> DbStrings.longText
                         SettingsPage.PROPERTY_VISIBILITY -> DbStrings.propertyVisibility
                         SettingsPage.DATE_PROPERTY -> DbStrings.dateProperty
@@ -10339,23 +10296,13 @@ private fun SettingsSheet(
                             SettingsRow(
                                 icon = Icons.Filled.ViewColumn,
                                 label = DbStrings.groupBy,
-                            enabled = !viewLocked,
-                                value = groupColumn?.name?.let(DbStrings::columnName) ?: DbStrings.none,
+                                enabled = !viewLocked,
+                                value = groupRulesSummary(boardGroupRules, columns),
                                 onClick = { page = SettingsPage.GROUP_BY }
                             )
-                            // **"Hide empty groups"** anche nella bacheca (dal
-                            // 21/10/2026, chiesto dall'utente): le colonne senza
-                            // schede, anche quella senza valore, si nascondono.
-                            if (groupColumn != null && onSetBoardHideEmptyGroups != null) {
-                                HorizontalDivider()
-                                SettingsToggleRow(
-                                    icon = Icons.Filled.VisibilityOff,
-                                    label = DbStrings.hideEmptyGroups,
-                                    checked = boardHideEmptyGroups,
-                                    enabled = !viewLocked,
-                                    onCheckedChange = onSetBoardHideEmptyGroups
-                                )
-                            }
+                            // "Hide empty groups" (dal 21/10/2026) e le fasce ("Sub groups",
+                            // dal 14/10/2026) stanno dentro "Group by" dal 28/10/2026: ogni
+                            // regola ha il suo, e le fasce sono le regole dopo la prima.
                             // **"Hide New"** (dal 26/10/2026, chiesto dall'utente:
                             // "tutte quelle finestre New mi danno parecchio
                             // fastidio"): niente "+ New" sotto le schede.
@@ -10368,27 +10315,6 @@ private fun SettingsSheet(
                                     enabled = !viewLocked,
                                     onCheckedChange = onSetBoardHideNew
                                 )
-                            }
-                            // **"Sub groups"** anche qui (dal 14/10/2026, chiesto
-                            // dall'utente): le fasce orizzontali, come su Notion.
-                            if (groupColumn != null && onSetBoardSubGroupColumn != null) {
-                                HorizontalDivider()
-                                SettingsRow(
-                                    icon = Icons.Filled.SubdirectoryArrowRight,
-                                    label = DbStrings.subGroups,
-                                    enabled = !viewLocked,
-                                    value = boardSubGroupColumn?.name?.let(DbStrings::columnName) ?: DbStrings.none,
-                                    onClick = { page = SettingsPage.SUB_GROUP }
-                                )
-                                if (boardSubGroupColumn != null && onSetBoardHideEmptySubGroups != null) {
-                                    HorizontalDivider()
-                                    SettingsToggleRow(
-                                        icon = Icons.Filled.VisibilityOff,
-                                        label = DbStrings.hideEmptySubGroups,
-                                        checked = boardHideEmptySubGroups,
-                                        onCheckedChange = onSetBoardHideEmptySubGroups
-                                    )
-                                }
                             }
                             // **"Color columns"** (dal 30/09/2026, chiesto
                             // dall'utente): ogni colonna, con le sue schede,
@@ -10412,46 +10338,14 @@ private fun SettingsSheet(
                             SettingsRow(
                                 icon = Icons.Filled.Segment,
                                 label = DbStrings.group,
-                            enabled = !viewLocked,
-                                value = tableGroupColumn?.name?.let(DbStrings::columnName) ?: DbStrings.none,
+                                enabled = !viewLocked,
+                                value = groupRulesSummary(tableGroupRules, columns),
                                 onClick = { page = SettingsPage.TABLE_GROUP }
                             )
-                            // **"Sub groups"**, la quarta voce (dal 29/09/2026,
-                            // chiesto dall'utente): compare appena c'è un
-                            // raggruppamento, e fa gruppi dentro i gruppi.
-                            if (tableGroupColumn != null && onSetTableSubGroupColumn != null) {
-                                HorizontalDivider()
-                                SettingsRow(
-                                    icon = Icons.Filled.SubdirectoryArrowRight,
-                                    label = DbStrings.subGroups,
-                                    enabled = !viewLocked,
-                                    value = tableSubGroupColumn?.name?.let(DbStrings::columnName) ?: DbStrings.none,
-                                    onClick = { page = SettingsPage.SUB_GROUP }
-                                )
-                            }
-                            // L'interruttore compare solo quando i
-                            // gruppi ci sono: senza raggruppamento non
-                            // avrebbe niente da nascondere.
-                            if (tableGroupColumn != null && onSetHideEmptyGroups != null) {
-                                HorizontalDivider()
-                                SettingsToggleRow(
-                                    icon = Icons.Filled.VisibilityOff,
-                                    label = DbStrings.hideEmptyGroups,
-                                    checked = hideEmptyGroups,
-                                    onCheckedChange = onSetHideEmptyGroups
-                                )
-                            }
-                            // E quello dei sottogruppi, a sé (dal 29/09/2026):
-                            // solo quando i sottogruppi ci sono.
-                            if (tableGroupColumn != null && tableSubGroupColumn != null && onSetHideEmptySubGroups != null) {
-                                HorizontalDivider()
-                                SettingsToggleRow(
-                                    icon = Icons.Filled.VisibilityOff,
-                                    label = DbStrings.hideEmptySubGroups,
-                                    checked = hideEmptySubGroups,
-                                    onCheckedChange = onSetHideEmptySubGroups
-                                )
-                            }
+                            // "Sub groups" (dal 29/09/2026) e i due "Hide empty" stanno
+                            // dentro "Group" dal 28/10/2026 (chiesto dall'utente): i
+                            // gruppi dentro i gruppi sono le regole dopo la prima, e ogni
+                            // regola ha il suo "Hide empty groups".
                             // **"Long text"** (dal 30/09/2026, chiesto
                             // dall'utente): il testo che non ci sta finisce
                             // coi tre puntini, allarga la colonna o va a capo
@@ -10651,35 +10545,43 @@ private fun SettingsSheet(
                     }
                 }
 
-                SettingsPage.TABLE_GROUP -> {
-                    // Si può raggruppare per quasi tutto: vedi `canGroup`.
-                    val groupable = columns.filter { it.type.canGroup }
-                    SheetGroup {
-                        SettingsRow(
-                            icon = Icons.Filled.Block,
-                            label = DbStrings.none,
-                            value = if (tableGroupColumn == null) "✓" else null,
-                            onClick = { onSetTableGroupColumn?.invoke(null) }
-                        )
-                        groupable.forEach { column ->
-                            HorizontalDivider()
-                            SettingsRow(
-                                icon = column.type.icon(),
-                                label = DbStrings.columnName(column.name),
-                                value = if (column.id == tableGroupColumn?.id) "✓" else null,
-                                onClick = { onSetTableGroupColumn?.invoke(column.id) }
-                            )
-                        }
+                SettingsPage.TABLE_GROUP, SettingsPage.GROUP_BY -> GroupRulesPage(
+                    board = board,
+                    rules = groupRules,
+                    columns = columns,
+                    enabled = !viewLocked && groupActions != null,
+                    actions = groupActions,
+                    onAdd = { page = SettingsPage.GROUP_ADD },
+                    onOpen = { columnId ->
+                        groupRuleColumn = columnId
+                        page = SettingsPage.GROUP_RULE
                     }
-                    if (tableGroupColumn?.type == ColumnType.DATE && onSetDateGrouping != null) {
-                        DateGroupBySection(dateGroupings.table, enabled = !viewLocked) { onSetDateGrouping(GroupSlot.TABLE, it) }
+                )
+
+                SettingsPage.GROUP_ADD -> GroupAddPage(
+                    rules = groupRules,
+                    columns = columns,
+                    onChoose = { columnId ->
+                        groupActions?.add?.invoke(board, columnId)
+                        page = groupsPage
                     }
-                    if (groupable.isEmpty()) {
-                        Text(
-                            text = DbStrings.groupingNeedsProperty,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(vertical = 12.dp)
+                )
+
+                SettingsPage.GROUP_RULE -> {
+                    val rule = groupRules.find { it.column == groupRuleColumn }
+                    if (rule == null) {
+                        // Tolta (o cambiata da un'altra parte): si torna all'elenco.
+                        LaunchedEffect(Unit) { page = groupsPage }
+                    } else {
+                        GroupRulePage(
+                            board = board,
+                            rule = rule,
+                            rules = groupRules,
+                            columns = columns,
+                            enabled = !viewLocked && groupActions != null,
+                            actions = groupActions,
+                            onColumnChanged = { groupRuleColumn = it },
+                            onRemoved = { page = groupsPage }
                         )
                     }
                 }
@@ -10700,46 +10602,6 @@ private fun SettingsSheet(
                                 onClick = { onSetCellOverflow?.invoke(mode) }
                             )
                         }
-                    }
-                }
-
-                SettingsPage.SUB_GROUP -> {
-                    // Le stesse proprietà del raggruppamento, tranne quella
-                    // che fa già i gruppi (le colonne, nella bacheca):
-                    // dividere per lo stesso valore non darebbe niente.
-                    val board = layout == DatabaseLayout.BOARD
-                    val group = if (board) groupColumn else tableGroupColumn
-                    val chosen = if (board) boardSubGroupColumn else tableSubGroupColumn
-                    val onChoose = if (board) onSetBoardSubGroupColumn else onSetTableSubGroupColumn
-                    val groupable = columns.filter { it.type.canGroup && it.id != group?.id }
-                    SheetGroup {
-                        SettingsRow(
-                            icon = Icons.Filled.Block,
-                            label = DbStrings.none,
-                            value = if (chosen == null) "✓" else null,
-                            onClick = { onChoose?.invoke(null) }
-                        )
-                        groupable.forEach { column ->
-                            HorizontalDivider()
-                            SettingsRow(
-                                icon = column.type.icon(),
-                                label = DbStrings.columnName(column.name),
-                                value = if (column.id == chosen?.id) "✓" else null,
-                                onClick = { onChoose?.invoke(column.id) }
-                            )
-                        }
-                    }
-                    if (chosen?.type == ColumnType.DATE && onSetDateGrouping != null) {
-                        val slot = if (board) GroupSlot.BOARD_SUB else GroupSlot.TABLE_SUB
-                        DateGroupBySection(dateGroupings[slot], enabled = !viewLocked) { onSetDateGrouping(slot, it) }
-                    }
-                    if (groupable.isEmpty()) {
-                        Text(
-                            text = DbStrings.subGroupsNeedProperty,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(vertical = 12.dp)
-                        )
                     }
                 }
 
@@ -10802,36 +10664,6 @@ private fun SettingsSheet(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                    }
-                }
-
-                SettingsPage.GROUP_BY -> {
-                    // Le stesse proprietà della tabella (dal 14/10/2026):
-                    // prima solo quelle a selezione singola, e in Food
-                    // l'utente si vedeva offrire solo "Supermercato".
-                    val groupable = columns.filter { it.type.canGroup }
-                    if (groupable.isEmpty()) {
-                        Text(
-                            text = DbStrings.groupingNeedsProperty,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(vertical = 12.dp)
-                        )
-                    } else {
-                        SheetGroup {
-                            groupable.forEachIndexed { index, column ->
-                                if (index > 0) HorizontalDivider()
-                                SettingsRow(
-                                    icon = column.type.icon(),
-                                    label = DbStrings.columnName(column.name),
-                                    value = if (column.id == groupColumn?.id) "✓" else null,
-                                    onClick = { onSetGroupColumn(column) }
-                                )
-                            }
-                        }
-                        if (groupColumn?.type == ColumnType.DATE && onSetDateGrouping != null) {
-                            DateGroupBySection(dateGroupings.board, enabled = !viewLocked) { onSetDateGrouping(GroupSlot.BOARD, it) }
-                        }
                     }
                 }
 

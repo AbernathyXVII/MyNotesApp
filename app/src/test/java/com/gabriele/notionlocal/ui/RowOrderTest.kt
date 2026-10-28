@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.gabriele.notionlocal.data.entity.ColumnType
 import com.gabriele.notionlocal.data.entity.DatabaseColumnEntity
 import com.gabriele.notionlocal.data.entity.DatabaseLayout
+import com.gabriele.notionlocal.data.entity.GroupLevel
 import com.gabriele.notionlocal.data.entity.DatabaseRowEntity
 import com.gabriele.notionlocal.data.settings.AppSettings
 import com.gabriele.notionlocal.ui.screen.ViewArrangement
@@ -69,12 +70,23 @@ class RowOrderTest {
         // ALDI (sapone, pane), poi IPERPOLI (pasta, sale).
         assertEquals(
             listOf("sapone", "pane", "pasta", "sale"),
-            displayedRowIds(state, ViewArrangement(DatabaseLayout.TABLE, tableGroup = shop))
+            displayedRowIds(state, ViewArrangement(DatabaseLayout.TABLE, tableLevels = listOf(GroupLevel(shop))))
         )
         // E dentro ogni gruppo i sottogruppi: ALDI → Cibo (pane), Casa (sapone).
         assertEquals(
             listOf("pane", "sapone", "pasta", "sale"),
-            displayedRowIds(state, ViewArrangement(DatabaseLayout.TABLE, tableGroup = shop, tableSubGroup = kind))
+            displayedRowIds(state, ViewArrangement(DatabaseLayout.TABLE, tableLevels = listOf(GroupLevel(shop), GroupLevel(kind))))
+        )
+    }
+
+    @Test
+    fun aTableWithThreeLevelsGoesDeepFirst() {
+        // Dal 28/10/2026 i livelli sono quanti se ne vogliono: per tipo, poi
+        // supermercato, poi giorno. Cibo → ALDI (pane, senza giorno), IPERPOLI (pasta
+        // e sale, lo stesso giorno); Casa → ALDI (sapone).
+        assertEquals(
+            listOf("pane", "pasta", "sale", "sapone"),
+            displayedRowIds(state, ViewArrangement(DatabaseLayout.TABLE, tableLevels = listOf(GroupLevel(kind), GroupLevel(shop), GroupLevel(day))))
         )
     }
 
@@ -82,12 +94,12 @@ class RowOrderTest {
     fun aBoardGoesColumnByColumnAndLaneByLane() {
         assertEquals(
             listOf("sapone", "pane", "pasta", "sale"),
-            displayedRowIds(state, ViewArrangement(DatabaseLayout.BOARD, boardGroup = shop))
+            displayedRowIds(state, ViewArrangement(DatabaseLayout.BOARD, boardLevels = listOf(GroupLevel(shop))))
         )
         // Fascia Cibo (ALDI: pane; IPERPOLI: pasta, sale), poi fascia Casa (sapone).
         assertEquals(
             listOf("pane", "pasta", "sale", "sapone"),
-            displayedRowIds(state, ViewArrangement(DatabaseLayout.BOARD, boardGroup = shop, boardSubGroup = kind))
+            displayedRowIds(state, ViewArrangement(DatabaseLayout.BOARD, boardLevels = listOf(GroupLevel(shop), GroupLevel(kind))))
         )
     }
 

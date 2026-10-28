@@ -27,6 +27,9 @@ import com.gabriele.notionlocal.data.entity.PersonalWordEntity
 import com.gabriele.notionlocal.data.entity.RichTextSpan
 import com.gabriele.notionlocal.data.entity.SortRuleSpec
 import com.gabriele.notionlocal.data.entity.encodeSortRules
+import com.gabriele.notionlocal.data.entity.encodeGroupRules
+import com.gabriele.notionlocal.data.entity.legacyGroupRules
+import com.gabriele.notionlocal.data.entity.parseDateGroupings
 import com.gabriele.notionlocal.data.entity.TableCellEntity
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -60,7 +63,7 @@ import kotlinx.serialization.json.Json
         NotebookSectionEntity::class,
         PersonalWordEntity::class
     ],
-    version = 65,
+    version = 66,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -802,6 +805,59 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * I raggruppamenti, quanti se ne vogliono (28/10/2026): tutti in un
+         * elenco solo per la tabella e uno per la bacheca. Il gruppo e il
+         * sottogruppo di ogni vista ci passano dentro, coi loro "Hide empty
+         * groups" e "Date by", e i loro campi di prima si svuotano. Una bacheca
+         * con le fasce ma senza una proprietà scelta per le colonne usava la
+         * prima a selezione singola: diventa la sua prima regola.
+         */
+        private val MIGRATION_65_66 = object : Migration(65, 66) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE pages ADD COLUMN tableGroupRulesJson TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE pages ADD COLUMN boardGroupRulesJson TEXT DEFAULT NULL")
+                val moved = mutableListOf<Triple<String, String?, String?>>()
+                db.query(
+                    "SELECT id, sourceDatabaseId, tableGroupColumnId, tableSubGroupColumnId, hideEmptyGroups, " +
+                        "hideEmptySubGroups, boardGroupColumnId, boardSubGroupColumnId, boardHideEmptyGroups, " +
+                        "boardHideEmptySubGroups, dateGroupingJson FROM pages " +
+                        "WHERE tableGroupColumnId IS NOT NULL OR boardGroupColumnId IS NOT NULL OR boardSubGroupColumnId IS NOT NULL"
+                ).use { cursor ->
+                    while (cursor.moveToNext()) {
+                        fun text(i: Int) = if (cursor.isNull(i)) null else cursor.getString(i)
+                        val id = cursor.getString(0)
+                        val dates = parseDateGroupings(text(10))
+                        val table = legacyGroupRules(
+                            text(2), text(3), cursor.getInt(4) != 0, cursor.getInt(5) != 0, dates.table, dates.tableSub
+                        )
+                        val boardSub = text(7)
+                        val boardGroup = text(6) ?: boardSub?.let {
+                            // Le colonne di prima: la prima proprietà a selezione singola dei dati.
+                            db.query(
+                                "SELECT id FROM database_columns WHERE pageId = ? AND type = 'SELECT' ORDER BY orderIndex LIMIT 1",
+                                arrayOf<Any>(text(1) ?: id)
+                            ).use { c -> if (c.moveToFirst()) c.getString(0) else null }
+                        }
+                        val board = legacyGroupRules(
+                            boardGroup, boardSub, cursor.getInt(8) != 0, cursor.getInt(9) != 0, dates.board, dates.boardSub
+                        )
+                        moved += Triple(id, encodeGroupRules(table), encodeGroupRules(board))
+                    }
+                }
+                moved.forEach { (id, table, board) ->
+                    db.execSQL(
+                        "UPDATE pages SET tableGroupRulesJson = ?, boardGroupRulesJson = ? WHERE id = ?",
+                        arrayOf<Any?>(table, board, id)
+                    )
+                }
+                db.execSQL(
+                    "UPDATE pages SET tableGroupColumnId = NULL, tableSubGroupColumnId = NULL, " +
+                        "boardGroupColumnId = NULL, boardSubGroupColumnId = NULL, dateGroupingJson = NULL"
+                )
+            }
+        }
+
         /** "Hide icon" delle proprietà (27/10/2026): tutte le icone si vedono, come prima. */
         private val MIGRATION_64_65 = object : Migration(64, 65) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -988,7 +1044,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_61_62,
                         MIGRATION_62_63,
                         MIGRATION_63_64,
-                        MIGRATION_64_65
+                        MIGRATION_64_65,
+                        MIGRATION_65_66
                     )
                     .build()
                 INSTANCE = instance

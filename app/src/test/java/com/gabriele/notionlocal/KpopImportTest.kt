@@ -13,9 +13,8 @@ import com.gabriele.notionlocal.data.entity.DatabaseColumnEntity
 import com.gabriele.notionlocal.data.entity.DatabaseLayout
 import com.gabriele.notionlocal.data.entity.DatabaseRowEntity
 import com.gabriele.notionlocal.data.entity.DateUnit
-import com.gabriele.notionlocal.data.entity.GroupSlot
 import com.gabriele.notionlocal.data.entity.PageEntity
-import com.gabriele.notionlocal.data.entity.parseDateGroupings
+import com.gabriele.notionlocal.data.entity.boardGroupRules
 import com.gabriele.notionlocal.data.entity.relationConfig
 import com.gabriele.notionlocal.data.entity.relationIds
 import com.gabriele.notionlocal.data.repository.DatabaseRepository
@@ -129,8 +128,8 @@ class KpopImportTest {
         // La bacheca è la vista di partenza, con le settimane; poi le due Table.
         val host = db.pageDao().getById(wins.id)!!
         assertEquals(DatabaseLayout.BOARD, host.databaseLayout)
-        assertEquals(DateUnit.WEEK, parseDateGroupings(host.dateGroupingJson)[GroupSlot.BOARD_SUB].unit)
-        assertEquals(winDate.id, host.boardSubGroupColumnId)
+        assertEquals(DateUnit.WEEK, host.boardGroupRules()[1].dateBy.unit)
+        assertEquals(winDate.id, host.boardGroupRules()[1].column)
         assertEquals(null, host.activeViewId)
         val views = db.pageDao().getViewsOnce(wins.id)
         assertEquals(listOf("KPOP Songs", "KPOP Groups"), views.map { it.viewName })
@@ -178,9 +177,10 @@ class KpopImportTest {
 
         // La bacheca: fasce per settimana, dalla più recente; la Relation non si ripete sulle schede.
         val view = db.pageDao().getById(board.id)!!
-        assertEquals(winDate.id, view.boardSubGroupColumnId)
-        assertEquals(DateUnit.WEEK, parseDateGroupings(view.dateGroupingJson)[GroupSlot.BOARD_SUB].unit)
-        assertTrue(parseDateGroupings(view.dateGroupingJson)[GroupSlot.BOARD_SUB].newestFirst)
+        // Dal 28/10/2026: la seconda regola della bacheca, dopo le colonne per programma.
+        assertEquals(listOf(show.id, winDate.id), view.boardGroupRules().map { it.column })
+        assertEquals(DateUnit.WEEK, view.boardGroupRules()[1].dateBy.unit)
+        assertTrue(view.boardGroupRules()[1].dateBy.newestFirst)
         assertTrue(view.viewHiddenColumnIds!!.split(",").containsAll(listOf(winSong.id, album.id, release.id)))
     }
 

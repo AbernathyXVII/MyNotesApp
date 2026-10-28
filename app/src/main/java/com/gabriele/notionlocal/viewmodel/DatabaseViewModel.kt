@@ -31,9 +31,6 @@ import com.gabriele.notionlocal.data.entity.ColumnType
 import com.gabriele.notionlocal.data.entity.DatabaseSnapshot
 import com.gabriele.notionlocal.data.entity.sortedAsBlocks
 import com.gabriele.notionlocal.data.entity.DateGroupBy
-import com.gabriele.notionlocal.data.entity.GroupSlot
-import com.gabriele.notionlocal.data.entity.encodeDateGroupings
-import com.gabriele.notionlocal.data.entity.parseDateGroupings
 import com.gabriele.notionlocal.data.entity.RollupFormatting
 import com.gabriele.notionlocal.data.entity.RollupValue
 import com.gabriele.notionlocal.data.entity.computeRollups
@@ -42,6 +39,14 @@ import com.gabriele.notionlocal.data.entity.relationTitles
 import com.gabriele.notionlocal.data.entity.secondHopDatabases
 import com.gabriele.notionlocal.data.entity.canGroup
 import com.gabriele.notionlocal.data.buttons.ButtonConfig
+import com.gabriele.notionlocal.data.entity.BOARD_COLUMNS_HIDE_EMPTY
+import com.gabriele.notionlocal.data.entity.GroupLevel
+import com.gabriele.notionlocal.data.entity.GroupRuleSpec
+import com.gabriele.notionlocal.data.entity.boardGroupRules
+import com.gabriele.notionlocal.data.entity.groupRules
+import com.gabriele.notionlocal.data.entity.levelsIn
+import com.gabriele.notionlocal.data.entity.tableGroupRules
+import com.gabriele.notionlocal.data.entity.withGroupRules
 import com.gabriele.notionlocal.data.formula.FormulaConfig
 import com.gabriele.notionlocal.data.formula.FormulaEngine
 import com.gabriele.notionlocal.data.formula.FormulaValue
@@ -1376,112 +1381,107 @@ class DatabaseViewModel(
      * schede non si trascinano, quindi non c'è da decidere cosa vorrebbe
      * dire spostarla.
      */
-    fun boardGroupColumn(): DatabaseColumnEntity? {
+    fun boardGroupColumn(): DatabaseColumnEntity? = boardGroupLevels().firstOrNull()?.column
+
+    /**
+     * **I livelli della bacheca** (dal 28/10/2026): il primo fa le colonne, gli
+     * altri le fasce, una dentro l'altra. Senza regole (o con le proprietà
+     * cancellate) le colonne sono quelle della prima proprietà a selezione
+     * singola, e niente fasce.
+     */
+    fun boardGroupLevels(): List<GroupLevel> {
         val columns = _tableState.value.columns
-        val chosen = _page.value?.boardGroupColumnId?.let { id ->
-            columns.find { it.id == id }
-        }
-        return chosen?.takeIf { it.type.canGroup }
-            ?: columns.firstOrNull { it.type == ColumnType.SELECT }
+        val levels = _page.value?.boardGroupRules().orEmpty().levelsIn(columns)
+        if (levels.isNotEmpty()) return levels
+        return listOfNotNull(columns.firstOrNull { it.type == ColumnType.SELECT }?.let { GroupLevel(it, hideEmpty = BOARD_COLUMNS_HIDE_EMPTY) })
     }
 
     /**
-     * **Le fasce della bacheca** (dal 14/10/2026), o null se non ce ne sono:
-     * valgono solo quando la bacheca ha le sue colonne, e mai sulla stessa
-     * proprietà delle colonne.
+     * **I livelli dei gruppi della tabella** (dal 28/10/2026, chiesto
+     * dall'utente: "la stessa cosa [dei Sort] con il Group"): il primo fa i
+     * gruppi, il secondo divide ogni gruppo, e così via. Nessuno = la tabella
+     * piatta di sempre: qui non c'è ripiego, sceglierne uno al posto
+     * dell'utente vorrebbe dire rimescolargli le righe da solo.
      */
-    fun boardSubGroupColumn(): DatabaseColumnEntity? {
-        val group = boardGroupColumn() ?: return null
-        val id = _page.value?.boardSubGroupColumnId?.takeIf { it != group.id } ?: return null
-        return _tableState.value.columns.find { it.id == id }?.takeIf { it.type.canGroup }
+    fun tableGroupLevels(): List<GroupLevel> =
+        _page.value?.tableGroupRules().orEmpty().levelsIn(_tableState.value.columns)
+
+    fun groupLevels(board: Boolean): List<GroupLevel> = if (board) boardGroupLevels() else tableGroupLevels()
+
+    /**
+     * Le regole come le vede la finestra "Group": quelle su proprietà che ci
+     * sono ancora e si raggruppano. Nella bacheca senza regole, la colonna di
+     * ripiego compare come prima regola: è quella che si vede.
+     */
+    fun groupRulesShown(board: Boolean): List<GroupRuleSpec> {
+        val page = _page.value ?: return emptyList()
+        val columns = _tableState.value.columns
+        val rules = page.groupRules(board).filter { rule -> columns.any { it.id == rule.column && it.type.canGroup } }
+        if (board && rules.isEmpty()) {
+            return boardGroupLevels().map { GroupRuleSpec(it.column.id, it.hideEmpty, it.dateBy) }
+        }
+        return rules
     }
 
-    /** Sceglie la proprietà delle fasce della bacheca, o null per toglierle. */
-    fun setBoardSubGroupColumn(columnId: String?) {
+    /** Cambia le regole della tabella o della bacheca e le salva. */
+    private fun updateGroupRules(board: Boolean, change: (List<GroupRuleSpec>) -> List<GroupRuleSpec>) {
         val current = _page.value ?: return
-        val updated = current.copy(boardSubGroupColumnId = columnId)
+        val updated = current.withGroupRules(board, change(groupRulesShown(board)))
         _page.value = updated
         viewModelScope.launch { pageRepository.updatePage(updated) }
     }
 
-    /** Se le fasce della bacheca senza nemmeno una pagina si nascondono. */
-    /** "Hide empty groups" della bacheca (dal 21/10/2026): le colonne senza schede si nascondono. */
-    fun setBoardHideEmptyGroups(hide: Boolean) {
-        val current = _page.value ?: return
-        val updated = current.copy(boardHideEmptyGroups = hide)
-        _page.value = updated
-        viewModelScope.launch { pageRepository.updatePage(updated) }
+    /**
+     * **"Add a group"**: una regola in fondo, cioè un livello in più dentro gli
+     * altri. Le colonne della bacheca (la prima) di suo mostrano anche quelle
+     * vuote, come sempre; i gruppi della tabella e le fasce no.
+     */
+    fun addGroupRule(board: Boolean, columnId: String) = updateGroupRules(board) { rules ->
+        if (rules.any { it.column == columnId }) rules
+        else rules + GroupRuleSpec(columnId, hideEmpty = if (board && rules.isEmpty()) BOARD_COLUMNS_HIDE_EMPTY else true)
+    }
+
+    /** Una regola cambia proprietà; se quella era già in un'altra regola, le due si scambiano. */
+    fun setGroupRuleColumn(board: Boolean, columnId: String, newColumnId: String) = updateGroupRules(board) { rules ->
+        val other = rules.indexOfFirst { it.column == newColumnId }
+        rules.map { rule ->
+            when {
+                rule.column == columnId -> rule.copy(column = newColumnId, dateBy = DateGroupBy())
+                other >= 0 && rule.column == newColumnId -> rule.copy(column = columnId, dateBy = DateGroupBy())
+                else -> rule
+            }
+        }
+    }
+
+    /** Sposta una regola di un posto (-1 su, +1 giù): conta prima o dopo. */
+    fun moveGroupRule(board: Boolean, columnId: String, delta: Int) = updateGroupRules(board) { rules ->
+        val from = rules.indexOfFirst { it.column == columnId }
+        val to = from + delta
+        if (from < 0 || to !in rules.indices) rules
+        else rules.toMutableList().apply { add(to, removeAt(from)) }
+    }
+
+    fun removeGroupRule(board: Boolean, columnId: String) = updateGroupRules(board) { rules -> rules.filter { it.column != columnId } }
+
+    fun removeAllGroupRules(board: Boolean) = updateGroupRules(board) { emptyList() }
+
+    /** "Hide empty groups" di un livello: i suoi gruppi senza nemmeno una pagina si nascondono. */
+    fun setGroupRuleHideEmpty(board: Boolean, columnId: String, hide: Boolean) = updateGroupRules(board) { rules ->
+        rules.map { if (it.column == columnId) it.copy(hideEmpty = hide) else it }
+    }
+
+    /**
+     * **"Date by"** di un livello per data (dal 21/10/2026): giorni,
+     * settimane, mesi o anni, e da quale parte si comincia.
+     */
+    fun setGroupRuleDateBy(board: Boolean, columnId: String, by: DateGroupBy) = updateGroupRules(board) { rules ->
+        rules.map { if (it.column == columnId) it.copy(dateBy = by) else it }
     }
 
     /** "Hide New" della bacheca (dal 26/10/2026): niente "+ New" sotto le schede. */
     fun setBoardHideNew(hide: Boolean) {
         val current = _page.value ?: return
         val updated = current.copy(boardHideNew = hide)
-        _page.value = updated
-        viewModelScope.launch { pageRepository.updatePage(updated) }
-    }
-
-    fun setBoardHideEmptySubGroups(hide: Boolean) {
-        val current = _page.value ?: return
-        val updated = current.copy(boardHideEmptySubGroups = hide)
-        _page.value = updated
-        viewModelScope.launch { pageRepository.updatePage(updated) }
-    }
-
-    /**
-     * **"Date by"** di un raggruppamento per data (dal 21/10/2026): giorni,
-     * settimane, mesi o anni, e da quale parte si comincia. Vale per questa vista.
-     */
-    fun setDateGrouping(slot: GroupSlot, by: DateGroupBy) {
-        val current = _page.value ?: return
-        val groupings = parseDateGroupings(current.dateGroupingJson).with(slot, by)
-        val updated = current.copy(dateGroupingJson = encodeDateGroupings(groupings))
-        _page.value = updated
-        viewModelScope.launch { pageRepository.updatePage(updated) }
-    }
-
-    /**
-     * La proprietà in base a cui la tabella raggruppa le righe, o null
-     * se non si raggruppa.
-     *
-     * Qui **non c'è ripiego**, a differenza della bacheca: senza
-     * raggruppamento la tabella è la tabella di sempre, e sceglierne
-     * uno al posto dell'utente vorrebbe dire rimescolargli le righe da
-     * solo. Se la proprietà scelta viene cancellata, il raggruppamento
-     * semplicemente non c'è più.
-     */
-    fun tableGroupColumn(): DatabaseColumnEntity? {
-        val id = _page.value?.tableGroupColumnId ?: return null
-        return _tableState.value.columns.find { it.id == id }
-    }
-
-    /**
-     * Sceglie la proprietà su cui raggruppare, o null per togliere i gruppi.
-     * Senza gruppi i sottogruppi se ne vanno con loro; e se il gruppo diventa
-     * la proprietà dei sottogruppi, quelli non avrebbero più niente da dividere.
-     */
-    fun setTableGroupColumn(columnId: String?) {
-        val current = _page.value ?: return
-        val sub = current.tableSubGroupColumnId?.takeIf { columnId != null && it != columnId }
-        val updated = current.copy(tableGroupColumnId = columnId, tableSubGroupColumnId = sub)
-        _page.value = updated
-        viewModelScope.launch { pageRepository.updatePage(updated) }
-    }
-
-    /**
-     * **La proprietà dei sottogruppi** (dal 29/09/2026), o null se non ce ne
-     * sono: vale solo con un raggruppamento, e mai uguale al gruppo.
-     */
-    fun tableSubGroupColumn(): DatabaseColumnEntity? {
-        val group = tableGroupColumn() ?: return null
-        val id = _page.value?.tableSubGroupColumnId?.takeIf { it != group.id } ?: return null
-        return _tableState.value.columns.find { it.id == id }
-    }
-
-    /** Sceglie la proprietà dei sottogruppi, o null per toglierli. */
-    fun setTableSubGroupColumn(columnId: String?) {
-        val current = _page.value ?: return
-        val updated = current.copy(tableSubGroupColumnId = columnId)
         _page.value = updated
         viewModelScope.launch { pageRepository.updatePage(updated) }
     }
@@ -1544,22 +1544,6 @@ class DatabaseViewModel(
     fun setColorBoardCards(color: Boolean) {
         val current = _page.value ?: return
         val updated = current.copy(colorBoardCards = color)
-        _page.value = updated
-        viewModelScope.launch { pageRepository.updatePage(updated) }
-    }
-
-    /** Se i gruppi senza nemmeno una pagina si nascondono. */
-    fun setHideEmptyGroups(hide: Boolean) {
-        val current = _page.value ?: return
-        val updated = current.copy(hideEmptyGroups = hide)
-        _page.value = updated
-        viewModelScope.launch { pageRepository.updatePage(updated) }
-    }
-
-    /** Se i sottogruppi senza nemmeno una pagina si nascondono, a sé dai gruppi. */
-    fun setHideEmptySubGroups(hide: Boolean) {
-        val current = _page.value ?: return
-        val updated = current.copy(hideEmptySubGroups = hide)
         _page.value = updated
         viewModelScope.launch { pageRepository.updatePage(updated) }
     }
@@ -1692,15 +1676,15 @@ class DatabaseViewModel(
     }
 
     /**
-     * Sceglie la proprietà delle colonne della bacheca. Se è quella delle
-     * fasce, le fasce se ne vanno: non avrebbero più niente da dividere.
+     * Sceglie la proprietà delle colonne della bacheca: diventa la prima
+     * regola. Se faceva già delle fasce, da lì se ne va: dividere per lo
+     * stesso valore non darebbe niente.
      */
-    fun setBoardGroupColumn(columnId: String) {
-        val current = _page.value ?: return
-        val sub = current.boardSubGroupColumnId?.takeIf { it != columnId }
-        val updated = current.copy(boardGroupColumnId = columnId, boardSubGroupColumnId = sub)
-        _page.value = updated
-        viewModelScope.launch { pageRepository.updatePage(updated) }
+    fun setBoardGroupColumn(columnId: String) = updateGroupRules(board = true) { rules ->
+        val first = rules.firstOrNull()
+        val rest = rules.drop(1).filter { it.column != columnId }
+        if (first?.column == columnId) rules
+        else listOf(GroupRuleSpec(columnId, hideEmpty = first?.hideEmpty ?: BOARD_COLUMNS_HIDE_EMPTY)) + rest
     }
 
     fun setLayout(layout: DatabaseLayout) {
@@ -2199,38 +2183,22 @@ class DatabaseViewModel(
     }
 
     /**
-     * Aggiunge una riga già assegnata a una colonna della bacheca:
-     * creandola dentro "In corso" ci si aspetta che ci resti, non che
-     * compaia fra quelle senza valore e vada spostata a mano.
+     * **Una riga nata dentro un gruppo**, a qualunque livello: col valore di
+     * ognuno dei gruppi in cui sta ([path]: proprietà e chiave del gruppo,
+     * dal primo livello), così compare lì dove la si è chiesta.
      */
-    fun addRowInGroup(columnId: String, value: String) {
+    fun addRowInGroups(path: List<Pair<String, String>>) {
         val pageId = dataPageId ?: return
         viewModelScope.launch {
             val row = DatabaseRowEntity(pageId = pageId, orderIndex = nextRowIndex())
             keepVisibleWhileSearching(row.id)
             repository.addRow(row)
-            if (value.isNotEmpty()) {
-                repository.setCellValue(row.id, columnId, groupCellValue(columnId, value))
+            path.forEach { (columnId, key) ->
+                if (key.isNotEmpty()) repository.setCellValue(row.id, columnId, groupCellValue(columnId, key))
             }
-            fillFilterValue(row.id, skipColumnId = columnId)
-        }
-    }
-
-    /**
-     * Una riga nata dentro un sottogruppo: col valore del gruppo **e** quello
-     * del sottogruppo, così compare lì dove la si è chiesta.
-     */
-    fun addRowInSubGroup(groupColumnId: String, groupValue: String, subColumnId: String, subValue: String) {
-        val pageId = dataPageId ?: return
-        viewModelScope.launch {
-            val row = DatabaseRowEntity(pageId = pageId, orderIndex = nextRowIndex())
-            keepVisibleWhileSearching(row.id)
-            repository.addRow(row)
-            if (groupValue.isNotEmpty()) repository.setCellValue(row.id, groupColumnId, groupCellValue(groupColumnId, groupValue))
-            if (subValue.isNotEmpty()) repository.setCellValue(row.id, subColumnId, groupCellValue(subColumnId, subValue))
-            // Il valore del filtro non deve coprire quello del gruppo o del sottogruppo.
-            val skip = if (_page.value?.filterColumnId == subColumnId) subColumnId else groupColumnId
-            fillFilterValue(row.id, skipColumnId = skip)
+            // Il valore del filtro non deve coprire quello di un gruppo.
+            val filter = _page.value?.filterColumnId
+            fillFilterValue(row.id, skipColumnId = filter?.takeIf { f -> path.any { it.first == f } })
         }
     }
 

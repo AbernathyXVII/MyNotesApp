@@ -18,6 +18,7 @@ import com.gabriele.notionlocal.data.entity.relationConfig
 import com.gabriele.notionlocal.data.entity.relationIds
 import com.gabriele.notionlocal.data.entity.encodeColumnWidths
 import com.gabriele.notionlocal.data.entity.encodeSortRules
+import com.gabriele.notionlocal.data.entity.encodeGroupRulesMapped
 import com.gabriele.notionlocal.data.entity.parseSortRules
 import com.gabriele.notionlocal.data.entity.encodeFitColumns
 import com.gabriele.notionlocal.data.entity.parseColumnWidths
@@ -1431,10 +1432,9 @@ class PageRepository(private val db: AppDatabase) {
                     id = copyId,
                     iconImage = original.iconImage?.let { copyImage(it) },
                     coverImage = original.coverImage?.let { copyImage(it) },
-                    boardGroupColumnId = column(original.boardGroupColumnId),
-                    tableGroupColumnId = column(original.tableGroupColumnId),
-                    tableSubGroupColumnId = column(original.tableSubGroupColumnId),
-                    boardSubGroupColumnId = column(original.boardSubGroupColumnId),
+                    // I raggruppamenti (dal 28/10/2026): ogni regola sulla sua proprietà copiata.
+                    tableGroupRulesJson = encodeGroupRulesMapped(original.tableGroupRulesJson) { column(it) ?: it },
+                    boardGroupRulesJson = encodeGroupRulesMapped(original.boardGroupRulesJson) { column(it) ?: it },
                     calendarDateColumnId = column(original.calendarDateColumnId),
                     sortRulesJson = original.sortRulesJson?.let { json ->
                         encodeSortRules(parseSortRules(json).map { it.copy(column = column(it.column) ?: it.column) })
@@ -2537,23 +2537,17 @@ class PageRepository(private val db: AppDatabase) {
             host.copy(
                 databaseLayout = next.databaseLayout,
                 viewName = next.viewName,
-                boardGroupColumnId = next.boardGroupColumnId,
-                tableGroupColumnId = next.tableGroupColumnId,
-                hideEmptyGroups = next.hideEmptyGroups,
-                tableSubGroupColumnId = next.tableSubGroupColumnId,
-                hideEmptySubGroups = next.hideEmptySubGroups,
+                // I raggruppamenti della vista dopo (dal 28/10/2026 un elenco, coi loro
+                // "Hide empty groups" e "Date by").
+                tableGroupRulesJson = next.tableGroupRulesJson,
+                boardGroupRulesJson = next.boardGroupRulesJson,
                 columnWidths = next.columnWidths,
                 fitColumns = next.fitColumns,
                 cellOverflow = next.cellOverflow,
                 freezeFirstColumn = next.freezeFirstColumn,
                 freezeFirstRow = next.freezeFirstRow,
                 colorBoardCards = next.colorBoardCards,
-                boardSubGroupColumnId = next.boardSubGroupColumnId,
-                boardHideEmptySubGroups = next.boardHideEmptySubGroups,
-                boardHideEmptyGroups = next.boardHideEmptyGroups,
                 boardHideNew = next.boardHideNew,
-                // "Date by" (dal 21/10/2026): settimane, mesi o anni della vista dopo.
-                dateGroupingJson = next.dateGroupingJson,
                 calendarDateColumnId = next.calendarDateColumnId,
                 calendarWeekView = next.calendarWeekView,
                 calendarMode = next.calendarMode,

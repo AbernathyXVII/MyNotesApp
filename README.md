@@ -2104,6 +2104,54 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.142 — 28/10/2026 · 14:16 — I gruppi quanti se ne vogliono: "Add a group" dentro Group, e niente più "Sub groups"
+*(Claude Code sul PC; provata sul telefono: la bacheca "Weekly" di KPOP è rimasta com'era (colonne per programma, fasce per settimana dalla più recente) e in "Group by" ha 1 Music show (Columns) e 2 Win date (Bands, con "Week" e "Newest first"), poi la vista rimessa su "Songs"; in "Paragraph – prova" un database di prova con Tipo, Preso e Bio: "Add a group" tre volte, la tabella a tre livelli ognuno più a destra, "Add a group" grigio quando le proprietà sono finite; nella bacheca le colonne per Tipo e le fasce per Preso; poi il database di prova nel cestino; 986 test passati)*
+
+L'utente, parola per parola:
+> «Piccola pausa dai tuoi punti di ieri. Una nuova modifica.
+> Ti ricordi quando ti ho chiesto di crearmi tante regole per il sorting
+> quante me ne servono, quindi senza limiti? Fai per favore la stessa cosa
+> con il Group: appena ne creo uno, fai sì che sempre dentro Group non solo
+> la lista delle regole del grouping che io ho fatto, ma anche la
+> possibilità di farne altre. Quindi, l'opzione Sub group non apparirà più
+> sotto Group nelle impostazioni dei database»
+
+- **[Nuova funzionalità]** **[📱 Mobile]** **I gruppi della tabella, quanti se
+  ne vogliono**: dentro "Group" c'è in cima "Add a group" e sotto le regole,
+  numerate nell'ordine in cui contano: la prima fa i gruppi, la seconda
+  divide ogni gruppo, la terza ogni sottogruppo, e così via. Nella tabella
+  ogni livello sta un po' più a destra del suo gruppo e si chiude toccandolo;
+  "New page" dentro un gruppo crea la pagina coi valori di tutti i livelli,
+  e "Create sub row" li copia tutti
+- **[Nuova funzionalità]** **[📱 Mobile]** **Anche la bacheca** ("Group by"):
+  la prima regola fa le colonne ("Columns"), le altre le fasce ("Bands"), una
+  dentro l'altra, ognuna col suo nome fermo sul bordo sinistro
+- **[Modifica]** **[📱 Mobile]** **Ogni regola ha la sua pagina**, toccandola:
+  la proprietà (scegliendo quella di un'altra regola, le due si scambiano),
+  "Hide empty groups", per una data "Date by", e "Remove group". Il menu ⋮
+  accanto sposta la regola su o giù o la toglie; in fondo "Remove all groups"
+- **[Rimosso]** **[📱 Mobile]** **"Sub groups" e "Hide empty sub groups"**
+  dalle impostazioni del database, nella tabella e nella bacheca: i gruppi
+  dentro i gruppi sono le regole dopo la prima. Anche "Hide empty groups" non
+  sta più nella prima pagina: ogni regola ha il suo
+- **[Nota]** I raggruppamenti che c'erano restano com'erano: il gruppo e il
+  sottogruppo di ogni vista sono diventati le sue prime due regole, coi loro
+  "Hide empty" e "Date by"; una bacheca con le fasce ma senza una proprietà
+  scelta per le colonne ha come prima regola la prima a selezione singola,
+  quella che già si vedeva
+- **[Progetto]** `data/entity/GroupRules.kt` (`GroupRuleSpec`, `GroupLevel`,
+  `levelsIn`); migrazione 65→66 (`pages.tableGroupRulesJson` e
+  `boardGroupRulesJson`, coi campi di gruppo e sottogruppo spostati lì e
+  svuotati); nel `DatabaseViewModel` `tableGroupLevels`, `boardGroupLevels`,
+  `addGroupRule`, `moveGroupRule`, `setGroupRuleColumn`, `addRowInGroups`…;
+  `TableLayout` e `BoardLayout` disegnano un livello dentro l'altro;
+  `ui/screen/GroupRulesUi.kt` (l'elenco, "Add a group", la pagina della
+  regola); `RowNavigation` segue tutti i livelli. Test: `SubGroupTest` e
+  `BoardSubGroupTest` riscritti per le regole, `GroupRulesScreenTest` (la
+  pagina "Group", tre livelli nella tabella, la pagina della regola, la
+  bacheca), `BoardLayoutTest` (fasce dentro le fasce), `RowOrderTest` (tre
+  livelli), `MigrationTest` (dalla 65)
+
 ### 🆕 v0.141 — 28/10/2026 · 10:51 — Le formule nei database, come la proprietà Formula di Notion
 *(Claude Code sul PC; provata sul telefono in "Paragraph – prova": in un database di prova la proprietà "Totale" scelta in "New property" e scritta con "Edit formula" toccando le proprietà e gli operatori (`prop("Prezzo") * prop("Quanti")` fa 6 con 1,5 × 4); toccando la cella, la finestra con l'anteprima su quella riga; l'esempio "Days left" (3 giorni al 31/10), l'errore "The formula stops halfway", un "se… allora…" (`… > 5 ? "caro" : "ok"` dà "caro"), un sì/no che nella cella è una casella spuntata; il menu dell'intestazione con "Edit formula" e senza "Filter"; "Prezzo" rinominata "Costo" e la formula riscritta da sola; a campo vuoto la tastiera resta in minuscolo; poi il database di prova nel cestino; 976 test passati)*
 

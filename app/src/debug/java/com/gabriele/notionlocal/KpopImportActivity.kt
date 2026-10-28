@@ -13,7 +13,10 @@ import com.gabriele.notionlocal.data.entity.DatabaseCellEntity
 import com.gabriele.notionlocal.data.entity.DatabaseColumnEntity
 import com.gabriele.notionlocal.data.entity.DatabaseRowEntity
 import com.gabriele.notionlocal.data.entity.DateGroupBy
-import com.gabriele.notionlocal.data.entity.DateGroupings
+import com.gabriele.notionlocal.data.entity.GroupRuleSpec
+import com.gabriele.notionlocal.data.entity.BOARD_COLUMNS_HIDE_EMPTY
+import com.gabriele.notionlocal.data.entity.boardGroupRules
+import com.gabriele.notionlocal.data.entity.encodeGroupRules
 import com.gabriele.notionlocal.data.entity.DateUnit
 import com.gabriele.notionlocal.data.entity.PageEntity
 import com.gabriele.notionlocal.data.entity.RelationConfig
@@ -23,7 +26,6 @@ import com.gabriele.notionlocal.data.entity.SORT_BY_NAME
 import com.gabriele.notionlocal.data.entity.SelectOption
 import com.gabriele.notionlocal.data.entity.SortRuleSpec
 import com.gabriele.notionlocal.data.entity.TAG_COLORS
-import com.gabriele.notionlocal.data.entity.encodeDateGroupings
 import com.gabriele.notionlocal.data.entity.encodeRelationConfig
 import com.gabriele.notionlocal.data.entity.encodeRelationIds
 import com.gabriele.notionlocal.data.entity.encodeRollupConfig
@@ -194,10 +196,14 @@ class KpopImportActivity : ComponentActivity() {
             if (board != null) {
                 val hidden = (board.viewHiddenColumnIds.orEmpty().split(",").filter { it.isNotBlank() } +
                     listOf(winSongId) + columns.filter { it.name == "Album" || it.name == "Release date" }.map { it.id }).distinct()
+                // Dal 28/10/2026 le fasce sono la seconda regola dei raggruppamenti della bacheca.
+                val columnsRule = board.boardGroupRules().firstOrNull()
+                    ?: columns.sortedBy { it.orderIndex }.firstOrNull { it.type == ColumnType.SELECT }
+                        ?.let { GroupRuleSpec(it.id, hideEmpty = BOARD_COLUMNS_HIDE_EMPTY) }
+                val weeks = GroupRuleSpec(dateColumn.id, dateBy = DateGroupBy(DateUnit.WEEK, newestFirst = true))
                 pages.update(
                     board.copy(
-                        boardSubGroupColumnId = dateColumn.id,
-                        dateGroupingJson = encodeDateGroupings(DateGroupings(boardSub = DateGroupBy(DateUnit.WEEK, newestFirst = true))),
+                        boardGroupRulesJson = encodeGroupRules(listOfNotNull(columnsRule) + weeks),
                         viewHiddenColumnIds = hidden.joinToString(",")
                     )
                 )

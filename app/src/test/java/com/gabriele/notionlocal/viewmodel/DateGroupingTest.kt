@@ -15,6 +15,8 @@ import com.gabriele.notionlocal.data.entity.DateGroupings
 import com.gabriele.notionlocal.data.entity.DateUnit
 import com.gabriele.notionlocal.data.entity.GroupSlot
 import com.gabriele.notionlocal.data.entity.PageEntity
+import com.gabriele.notionlocal.data.entity.boardGroupRules
+import com.gabriele.notionlocal.data.entity.tableGroupRules
 import com.gabriele.notionlocal.data.entity.encodeDateGroupings
 import com.gabriele.notionlocal.data.entity.endOf
 import com.gabriele.notionlocal.data.entity.parseDateGroupings
@@ -170,17 +172,25 @@ class DateGroupingTest {
 
     @Test
     fun eachGroupingOfTheViewKeepsItsOwn() {
-        viewModel.setDateGrouping(GroupSlot.BOARD_SUB, DateGroupBy(DateUnit.WEEK, newestFirst = true))
-        viewModel.setDateGrouping(GroupSlot.TABLE, DateGroupBy(DateUnit.MONTH))
-        waitFor("salvati") { runBlocking { db.pageDao().getById(wins.id)!!.dateGroupingJson } != null }
-        val saved = parseDateGroupings(runBlocking { db.pageDao().getById(wins.id)!!.dateGroupingJson })
-        assertEquals(DateGroupBy(DateUnit.WEEK, newestFirst = true), saved[GroupSlot.BOARD_SUB])
-        assertEquals(DateGroupBy(DateUnit.MONTH), saved[GroupSlot.TABLE])
-        assertEquals(DateGroupBy(), saved[GroupSlot.BOARD])
-        // Tornati tutti come di suo, non resta niente da ricordare.
-        viewModel.setDateGrouping(GroupSlot.BOARD_SUB, DateGroupBy())
-        viewModel.setDateGrouping(GroupSlot.TABLE, DateGroupBy())
-        waitFor("tolti") { runBlocking { db.pageDao().getById(wins.id)!!.dateGroupingJson } == null }
+        // Dal 28/10/2026 "Date by" sta in ogni regola: le colonne per Music show,
+        // le fasce per settimana; la tabella per mese.
+        viewModel.setBoardGroupColumn(show.id)
+        viewModel.addGroupRule(board = true, winDate.id)
+        viewModel.setGroupRuleDateBy(board = true, winDate.id, DateGroupBy(DateUnit.WEEK, newestFirst = true))
+        viewModel.addGroupRule(board = false, winDate.id)
+        viewModel.setGroupRuleDateBy(board = false, winDate.id, DateGroupBy(DateUnit.MONTH))
+        waitFor("salvati") {
+            val page = runBlocking { db.pageDao().getById(wins.id)!! }
+            page.boardGroupRules().lastOrNull()?.dateBy?.unit == DateUnit.WEEK && page.tableGroupRules().singleOrNull()?.dateBy?.unit == DateUnit.MONTH
+        }
+        // La pagina del ViewModel arriva anche lei dal database: si aspetta l'ultima.
+        waitFor("i livelli") { viewModel.boardGroupLevels().size == 2 && viewModel.tableGroupLevels().size == 1 }
+        assertEquals(DateGroupBy(DateUnit.WEEK, newestFirst = true), viewModel.boardGroupLevels()[1].dateBy)
+        assertEquals(DateGroupBy(), viewModel.boardGroupLevels()[0].dateBy)
+        assertEquals(DateGroupBy(DateUnit.MONTH), viewModel.tableGroupLevels()[0].dateBy)
+        // Cambiando la proprietà di una regola, "Date by" riparte da capo.
+        viewModel.setGroupRuleColumn(board = false, winDate.id, show.id)
+        assertEquals(DateGroupBy(), viewModel.tableGroupLevels()[0].dateBy)
     }
 
     @Test

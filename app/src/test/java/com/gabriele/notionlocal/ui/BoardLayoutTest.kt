@@ -6,6 +6,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
@@ -13,6 +14,7 @@ import androidx.test.core.app.ApplicationProvider
 import com.gabriele.notionlocal.data.entity.ColumnType
 import com.gabriele.notionlocal.data.entity.DatabaseColumnEntity
 import com.gabriele.notionlocal.data.entity.DatabaseRowEntity
+import com.gabriele.notionlocal.data.entity.GroupLevel
 import com.gabriele.notionlocal.data.settings.AppSettings
 import com.gabriele.notionlocal.ui.screen.BoardLayout
 import com.gabriele.notionlocal.ui.theme.NotionLocalTheme
@@ -64,6 +66,7 @@ class BoardLayoutTest {
 
     private var addedInGroup: String? = null
     private var addedInSubGroup: Pair<String, String>? = null
+    private var addedIn: List<String>? = null
 
     @Before
     fun setUp() {
@@ -76,23 +79,28 @@ class BoardLayoutTest {
         hideEmptySubGroups: Boolean = true,
         hideEmptyGroups: Boolean = false,
         hideNew: Boolean = false,
-        colorCards: Boolean = false
+        colorCards: Boolean = false,
+        /** Le fasce dentro le fasce (dal 28/10/2026). */
+        more: List<GroupLevel> = emptyList()
     ) {
+        // Dal 28/10/2026 la bacheca riceve i livelli: le colonne, poi le fasce.
+        val levels = listOf(GroupLevel(group, hideEmptyGroups)) +
+            listOfNotNull(sub?.let { GroupLevel(it, hideEmptySubGroups) }) + more
         compose.setContent {
             NotionLocalTheme {
                 BoardLayout(
                     state = state,
-                    groupColumn = group,
-                    subGroupColumn = sub,
-                    hideEmptyGroups = hideEmptyGroups,
-                    hideEmptySubGroups = hideEmptySubGroups,
+                    levels = levels,
                     colorCards = colorCards,
                     hideNew = hideNew,
                     newRowTick = 0,
                     onOpenRow = {},
                     onRowLongPress = {},
-                    onAddRowInGroup = { addedInGroup = it },
-                    onAddRowInSubGroup = { group, subValue -> addedInSubGroup = group to subValue },
+                    onAddRowInGroups = { keys ->
+                        addedIn = keys
+                        if (keys.size == 1) addedInGroup = keys[0]
+                        if (keys.size == 2) addedInSubGroup = keys[0] to keys[1]
+                    },
                     onAddGroupProperty = {}
                 )
             }
@@ -151,6 +159,35 @@ class BoardLayoutTest {
         compose.onAllNodesWithText("New")[3].performClick()
         compose.waitForIdle()
         assertEquals("IPERPOLI" to "Casa", addedInSubGroup)
+    }
+
+    @Test
+    fun bandsInsideBands() {
+        // Dal 28/10/2026 le fasce sono quante se ne vogliono: dentro "Cibo" e
+        // "Casa", una fascia per "Preso". In "Casa" niente è preso: quella vuota
+        // si nasconde.
+        show(shop, kind, more = listOf(GroupLevel(bought)))
+        assertEquals(1, compose.onAllNodesWithText("Checked").fetchSemanticsNodes().size)
+        assertEquals(2, compose.onAllNodesWithText("Unchecked").fetchSemanticsNodes().size)
+        assertTrue(bounds("Cibo").top < bounds("Sale").top)
+        assertTrue(bounds("Sale").top < bounds("Pasta").top)
+        assertTrue(bounds("Pasta").top < bounds("Casa").top)
+        assertTrue(bounds("Casa").top < bounds("Shampoo").top)
+        assertInColumn("Sale", "IPERPOLI")
+        assertInColumn("Shampoo", "Lidl")
+        // Le fasce del livello dopo stanno un po' più a destra: si misura la
+        // scritta, non l'intestazione intera (larga quanto la colonna).
+        fun textLeft(text: String) = compose.onAllNodesWithText(text, useUnmergedTree = true).onFirst().getBoundsInRoot().left
+        assertTrue(textLeft("Checked") > textLeft("Cibo"))
+        // "New" nella prima fascia della prima: la colonna e le due fasce.
+        compose.onAllNodesWithText("New")[0].performClick()
+        compose.waitForIdle()
+        assertEquals(listOf("IPERPOLI", "Cibo", "true"), addedIn)
+        // Chiudendo "Cibo" se ne vanno anche le sue fasce.
+        compose.onNodeWithText("Cibo").performClick()
+        compose.waitForIdle()
+        assertEquals(0, compose.onAllNodesWithText("Checked").fetchSemanticsNodes().size)
+        assertEquals(1, compose.onAllNodesWithText("Unchecked").fetchSemanticsNodes().size)
     }
 
     @Test
@@ -228,11 +265,11 @@ class BoardLayoutTest {
                 androidx.compose.runtime.CompositionLocalProvider(com.gabriele.notionlocal.ui.screen.LocalRowLimits provides com.gabriele.notionlocal.ui.screen.RowLimits()) {
                     BoardLayout(
                         state = DatabaseTableState(columns = listOf(day), rows = rows, cellValues = cells),
-                        groupColumn = day,
+                        levels = listOf(GroupLevel(day, hideEmpty = false)),
                         newRowTick = 0,
                         onOpenRow = {},
                         onRowLongPress = {},
-                        onAddRowInGroup = {},
+                        onAddRowInGroups = {},
                         onAddGroupProperty = {}
                     )
                 }

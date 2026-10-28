@@ -125,13 +125,13 @@ class ViewSourceTest {
         assertFalse(databaseViews(db.pageDao().getById(wins.id)!!, db.pageDao().getViewsOnce(wins.id)).first().deletable)
         assertFalse(pages.deleteStartingView(wins.id))
         val board = pages.createView(wins.id, "Board", DatabaseLayout.BOARD)!!
-        db.pageDao().update(db.pageDao().getById(board)!!.copy(dateGroupingJson = """{"boardSub":{"unit":"WEEK"}}"""))
+        db.pageDao().update(db.pageDao().getById(board)!!.copy(boardGroupRulesJson = """[{"column":"x","dateBy":{"unit":"WEEK"}}]"""))
         assertTrue(databaseViews(db.pageDao().getById(wins.id)!!, db.pageDao().getViewsOnce(wins.id)).first().deletable)
         // Con una vista delle stesse righe: il database prende la sua bacheca, anche le settimane.
         assertTrue(pages.deleteStartingView(wins.id))
         val host = db.pageDao().getById(wins.id)!!
         assertEquals(DatabaseLayout.BOARD, host.databaseLayout)
-        assertEquals("""{"boardSub":{"unit":"WEEK"}}""", host.dateGroupingJson)
+        assertEquals("""[{"column":"x","dateBy":{"unit":"WEEK"}}]""", host.boardGroupRulesJson)
         assertEquals(listOf("Groups"), db.pageDao().getViewsOnce(wins.id).map { it.viewName })
         assertNull(db.pageDao().getById(board))
     }

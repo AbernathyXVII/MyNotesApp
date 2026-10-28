@@ -5,6 +5,9 @@ import com.gabriele.notionlocal.data.entity.ignoredWords
 import com.gabriele.notionlocal.data.entity.sortRules
 import com.gabriele.notionlocal.data.entity.encodeSortRules
 import com.gabriele.notionlocal.data.entity.SortRuleSpec
+import com.gabriele.notionlocal.data.entity.GroupRuleSpec
+import com.gabriele.notionlocal.data.entity.encodeGroupRules
+import com.gabriele.notionlocal.data.entity.tableGroupRules
 import com.gabriele.notionlocal.data.entity.PROOFING_ON
 import android.app.Application
 import androidx.room.Room
@@ -444,7 +447,7 @@ class PageRepositoryTest {
         val secret = db.databaseDao().getColumnsForPageOnce(database.id).single { it.name == "Secret" }
         db.pageDao().update(
             db.pageDao().getById(database.id)!!.copy(
-                tableGroupColumnId = status.id,
+                tableGroupRulesJson = encodeGroupRules(listOf(GroupRuleSpec(status.id))),
                 filterColumnId = status.id,
                 filterValue = "Done",
                 sortRulesJson = encodeSortRules(listOf(SortRuleSpec(status.id, descending = true)))
@@ -456,7 +459,7 @@ class PageRepositoryTest {
 
         assertEquals(database.id, view.sourceDatabaseId)
         assertTrue(view.isDatabase)
-        assertEquals(status.id, view.tableGroupColumnId)
+        assertEquals(listOf(GroupRuleSpec(status.id)), view.tableGroupRules())
         assertEquals(status.id, view.filterColumnId)
         assertEquals("Done", view.filterValue)
         assertEquals(listOf(SortRuleSpec(status.id, descending = true)), view.sortRules())

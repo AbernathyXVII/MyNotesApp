@@ -22,6 +22,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gabriele.notionlocal.data.entity.DatabaseColumnEntity
 import com.gabriele.notionlocal.data.entity.DatabaseLayout
+import com.gabriele.notionlocal.data.entity.DatabaseRowEntity
+import com.gabriele.notionlocal.data.entity.GroupLevel
 import com.gabriele.notionlocal.data.entity.parseDateRange
 import com.gabriele.notionlocal.data.entity.rowTree
 import com.gabriele.notionlocal.ui.i18n.DbStrings
@@ -57,13 +59,10 @@ internal object RowNavigation {
 /** Come si vede una vista: quello che serve a `displayedRowIds` per mettere le righe in fila. */
 internal class ViewArrangement(
     val layout: DatabaseLayout,
-    val tableGroup: DatabaseColumnEntity? = null,
-    val tableSubGroup: DatabaseColumnEntity? = null,
-    val hideEmptyGroups: Boolean = true,
-    val hideEmptySubGroups: Boolean = true,
-    val boardGroup: DatabaseColumnEntity? = null,
-    val boardSubGroup: DatabaseColumnEntity? = null,
-    val boardHideEmptySubGroups: Boolean = true,
+    /** I livelli dei gruppi della tabella (dal 28/10/2026 quanti se ne vogliono). */
+    val tableLevels: List<GroupLevel> = emptyList(),
+    /** Quelli della bacheca: il primo fa le colonne, gli altri le fasce. */
+    val boardLevels: List<GroupLevel> = emptyList(),
     val dateColumn: DatabaseColumnEntity? = null
 )
 
@@ -74,7 +73,7 @@ internal class ViewArrangement(
  *
  * - Tabella: gruppo dopo gruppo (e sottogruppo dopo sottogruppo), dentro
  *   ognuno con le sotto-righe aperte sotto la loro riga.
- * - Bacheca: colonna dopo colonna; con le fasce, fascia dopo fascia.
+ * - Bacheca: colonna dopo colonna; con le fasce, fascia dopo fascia (a ogni livello).
  * - Calendario e timeline: per data, come le barre della timeline, e in fondo
  *   le righe senza data.
  * - Lista, galleria, grafico: l'ordine della vista.
@@ -83,37 +82,34 @@ internal fun displayedRowIds(state: DatabaseTableState, view: ViewArrangement): 
     val out = LinkedHashSet<String>()
     when (view.layout) {
         DatabaseLayout.TABLE -> {
-            val group = view.tableGroup
-            if (group == null) {
-                rowTree(state.rows).forEach { out += it.row.id }
-            } else {
-                for (g in buildRowGroups(state, group, view.hideEmptyGroups)) {
-                    val sub = view.tableSubGroup
-                    if (sub == null) {
-                        rowTree(g.rows).forEach { out += it.row.id }
-                    } else {
-                        for (s in buildRowGroups(state, sub, view.hideEmptySubGroups, g.rows)) {
-                            rowTree(s.rows).forEach { out += it.row.id }
-                        }
-                    }
+            // Gruppo dopo gruppo, a ogni livello, e all'ultimo le righe.
+            fun walk(depth: Int, rows: List<DatabaseRowEntity>) {
+                val level = view.tableLevels.getOrNull(depth)
+                if (level == null) {
+                    rowTree(rows).forEach { out += it.row.id }
+                    return
                 }
+                for (g in buildRowGroups(state, level.column, level.hideEmpty, rows, dateBy = level.dateBy)) walk(depth + 1, g.rows)
             }
+            walk(0, state.rows)
         }
         DatabaseLayout.BOARD -> {
-            val group = view.boardGroup
-            if (group == null) {
+            val first = view.boardLevels.firstOrNull()
+            if (first == null) {
                 state.rows.forEach { out += it.id }
             } else {
-                val columns = buildRowGroups(state, group, hideEmpty = false, keepEmptyNone = true)
-                val sub = view.boardSubGroup
-                if (sub == null) {
-                    columns.forEach { c -> c.rows.forEach { out += it.id } }
-                } else {
-                    for (lane in buildRowGroups(state, sub, view.boardHideEmptySubGroups)) {
-                        val inLane = lane.rows.mapTo(HashSet()) { it.id }
-                        columns.forEach { c -> c.rows.forEach { if (it.id in inLane) out += it.id } }
+                val columns = buildRowGroups(state, first.column, hideEmpty = false, keepEmptyNone = true, dateBy = first.dateBy)
+                // Fascia dopo fascia, a ogni livello; in ognuna, colonna dopo colonna.
+                fun walk(depth: Int, rows: List<DatabaseRowEntity>) {
+                    val level = view.boardLevels.getOrNull(depth)
+                    if (level == null) {
+                        val inBand = rows.mapTo(HashSet()) { it.id }
+                        columns.forEach { c -> c.rows.forEach { if (it.id in inBand) out += it.id } }
+                        return
                     }
+                    for (band in buildRowGroups(state, level.column, level.hideEmpty, rows, dateBy = level.dateBy)) walk(depth + 1, band.rows)
                 }
+                walk(1, state.rows)
             }
         }
         DatabaseLayout.CALENDAR, DatabaseLayout.TIMELINE -> {

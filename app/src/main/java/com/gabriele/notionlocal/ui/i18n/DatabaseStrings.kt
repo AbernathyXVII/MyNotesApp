@@ -693,17 +693,43 @@ object DbStrings {
     val layout get() = t("Layout", "Vista", "Layout", "Disposition", "Diseño", "布局", "레이아웃", "レイアウト")
     val groupBy get() = t("Group by", "Raggruppa per", "Gruppieren nach", "Regrouper par", "Agrupar por", "分组依据", "그룹화 기준", "グループ化")
     val group get() = t("Group", "Gruppo", "Gruppe", "Groupe", "Grupo", "分组", "그룹", "グループ")
-    val hideEmptySubGroups get() = t("Hide empty sub groups", "Nascondi i sottogruppi vuoti", "Leere Untergruppen ausblenden", "Masquer les sous-groupes vides", "Ocultar subgrupos vacíos", "隐藏空子分组", "빈 하위 그룹 숨기기", "空のサブグループを非表示")
-    val subGroups get() = t("Sub groups", "Sottogruppi", "Untergruppen", "Sous-groupes", "Subgrupos", "子分组", "하위 그룹", "サブグループ")
-    val subGroupsNeedProperty get() = t(
-        "Add another property to make sub groups.",
-        "Aggiungi un'altra proprietà per fare i sottogruppi.",
-        "Füge eine weitere Eigenschaft hinzu, um Untergruppen zu bilden.",
-        "Ajoutez une autre propriété pour créer des sous-groupes.",
-        "Añade otra propiedad para crear subgrupos.",
-        "请再添加一个属性来创建子分组。",
-        "하위 그룹을 만들려면 속성을 하나 더 추가하세요.",
-        "サブグループを作るには、別のプロパティを追加してください。"
+    // --- I raggruppamenti, quanti se ne vogliono (dal 28/10/2026) ---
+
+    val addGroup get() = t("Add a group", "Aggiungi un gruppo", "Gruppe hinzufügen", "Ajouter un groupe", "Añadir un grupo", "添加分组", "그룹 추가", "グループを追加")
+    val noGroups get() = t("No groups yet", "Ancora nessun gruppo", "Noch keine Gruppen", "Aucun groupe pour l'instant", "Aún no hay grupos", "还没有分组", "아직 그룹이 없어요", "グループはまだありません")
+    val removeGroup get() = t("Remove group", "Togli il gruppo", "Gruppe entfernen", "Supprimer le groupe", "Quitar el grupo", "移除分组", "그룹 제거", "グループを解除")
+    val removeAllGroups get() = t("Remove all groups", "Togli tutti i gruppi", "Alle Gruppen entfernen", "Supprimer tous les groupes", "Quitar todos los grupos", "移除所有分组", "모든 그룹 제거", "すべてのグループを解除")
+    val boardColumns get() = t("Columns", "Colonne", "Spalten", "Colonnes", "Columnas", "列", "열", "列")
+    val boardBands get() = t("Bands", "Fasce", "Bänder", "Bandes", "Franjas", "横带", "가로 구역", "帯")
+    val groupRulesNote get() = t(
+        "Groups inside groups, in this order: the first one makes the groups, the next one splits each of them, and so on.",
+        "Gruppi dentro i gruppi, in quest'ordine: il primo fa i gruppi, il successivo divide ognuno di loro, e così via.",
+        "Gruppen in Gruppen, in dieser Reihenfolge: Die erste bildet die Gruppen, die nächste teilt jede davon, und so weiter.",
+        "Des groupes dans les groupes, dans cet ordre : le premier crée les groupes, le suivant divise chacun d'eux, et ainsi de suite.",
+        "Grupos dentro de grupos, en este orden: el primero crea los grupos, el siguiente divide cada uno, y así sucesivamente.",
+        "分组中的分组，按此顺序：第一个创建分组，下一个再拆分每个分组，依此类推。",
+        "그룹 안의 그룹, 이 순서대로: 첫 번째가 그룹을 만들고, 다음 것이 각 그룹을 나누는 식이에요.",
+        "グループの中のグループ。この順に、最初のものがグループを作り、次のものがそれぞれを分けます。"
+    )
+    val boardGroupRulesNote get() = t(
+        "The first one makes the columns; the others make the bands across them, one inside the other.",
+        "Il primo fa le colonne; gli altri le fasce orizzontali, una dentro l'altra.",
+        "Die erste bildet die Spalten, die anderen die Bänder quer darüber, eines im anderen.",
+        "Le premier crée les colonnes ; les autres les bandes horizontales, l'une dans l'autre.",
+        "El primero crea las columnas; los demás, las franjas horizontales, una dentro de otra.",
+        "第一个创建列；其余的创建横带，一层套一层。",
+        "첫 번째는 열을, 나머지는 가로 구역을 만들어요. 하나가 다른 것 안에 들어가요.",
+        "最初のものが列を、残りが横の帯を作ります。帯は入れ子になります。"
+    )
+    val groupsNeedMoreProperties get() = t(
+        "Every property that can make groups is already in a group.",
+        "Tutte le proprietà che possono fare gruppi sono già in un gruppo.",
+        "Jede Eigenschaft, die Gruppen bilden kann, ist schon in einer Gruppe.",
+        "Toutes les propriétés qui peuvent créer des groupes sont déjà dans un groupe.",
+        "Todas las propiedades que pueden crear grupos ya están en un grupo.",
+        "所有可以分组的属性都已在分组中。",
+        "그룹을 만들 수 있는 속성이 모두 이미 그룹에 있어요.",
+        "グループを作れるプロパティはすべて使われています。"
     )
     val propertyVisibility get() = t("Property visibility", "Visibilità delle proprietà", "Sichtbarkeit der Eigenschaften", "Visibilité des propriétés", "Visibilidad de propiedades", "属性可见性", "속성 표시", "プロパティの表示")
     val dateProperty get() = t("Date property", "Proprietà data", "Datumseigenschaft", "Propriété de date", "Propiedad de fecha", "日期属性", "날짜 속성", "日付プロパティ")
