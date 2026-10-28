@@ -63,7 +63,7 @@ import kotlinx.serialization.json.Json
         NotebookSectionEntity::class,
         PersonalWordEntity::class
     ],
-    version = 66,
+    version = 67,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -858,6 +858,27 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        /**
+         * Una cella sola per riga e proprietà (28/10/2026). Le doppie nate
+         * scrivendo in fretta in una cella vuota se ne vanno: resta la prima,
+         * che è quella su cui finivano le modifiche dopo (`getCell` prende la
+         * prima); le altre avevano solo le prime lettere. Poi l'indice unico.
+         */
+        private val MIGRATION_66_67 = object : Migration(66, 67) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                // `_rowid_` e non `rowid`: in questa tabella "rowId" è una colonna (la
+                // riga del database), e in SQLite copre il numero interno con quel nome.
+                db.execSQL(
+                    "DELETE FROM database_cells WHERE _rowid_ NOT IN " +
+                        "(SELECT MIN(_rowid_) FROM database_cells GROUP BY rowId, columnId)"
+                )
+                db.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS `index_database_cells_rowId_columnId` " +
+                        "ON `database_cells` (`rowId`, `columnId`)"
+                )
+            }
+        }
+
         /** "Hide icon" delle proprietà (27/10/2026): tutte le icone si vedono, come prima. */
         private val MIGRATION_64_65 = object : Migration(64, 65) {
             override fun migrate(db: SupportSQLiteDatabase) {
@@ -1045,7 +1066,8 @@ abstract class AppDatabase : RoomDatabase() {
                         MIGRATION_62_63,
                         MIGRATION_63_64,
                         MIGRATION_64_65,
-                        MIGRATION_65_66
+                        MIGRATION_65_66,
+                        MIGRATION_66_67
                     )
                     .build()
                 INSTANCE = instance

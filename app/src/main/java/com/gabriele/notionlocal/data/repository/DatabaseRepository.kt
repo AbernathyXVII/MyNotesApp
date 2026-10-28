@@ -292,20 +292,27 @@ class DatabaseRepository(private val db: AppDatabase) {
      * sapere se sta creando o modificando.
      */
     suspend fun setCellValue(rowId: String, columnId: String, value: String) {
-        val existing = dao.getCell(rowId, columnId)
-        if (existing != null) {
-            // Svuotata, la cella non ha più un link da mostrare in un altro modo.
-            dao.updateCell(
-                if (value.isBlank()) existing.copy(value = value, linkLabel = null, linkLabelIsTitle = false) else existing.copy(value = value)
-            )
-        } else {
-            dao.insertCell(
-                DatabaseCellEntity(rowId = rowId, columnId = columnId, value = value)
-            )
+        // **Leggere e scrivere in un colpo solo** (dal 28/10/2026): ogni lettera
+        // scritta salva la cella, e due salvataggi vicini su una cella vuota la
+        // trovavano vuota tutti e due e ne creavano due. Nella transazione il
+        // secondo aspetta il primo e trova la cella che lui ha appena creato.
+        val existing = db.withTransaction {
+            val existing = dao.getCell(rowId, columnId)
+            if (existing != null) {
+                // Svuotata, la cella non ha più un link da mostrare in un altro modo.
+                dao.updateCell(
+                    if (value.isBlank()) existing.copy(value = value, linkLabel = null, linkLabelIsTitle = false) else existing.copy(value = value)
+                )
+            } else {
+                dao.insertCell(
+                    DatabaseCellEntity(rowId = rowId, columnId = columnId, value = value)
+                )
+            }
+            // Modificare una cella è modificare la riga: è quello che
+            // "Last edited time" deve rispecchiare.
+            dao.touchRow(rowId, System.currentTimeMillis())
+            existing
         }
-        // Modificare una cella è modificare la riga: è quello che
-        // "Last edited time" deve rispecchiare.
-        dao.touchRow(rowId, System.currentTimeMillis())
         // Una data con "Include notification", accesa, spenta o spostata:
         // la sveglia va rimessa (vedi `NoteAlarms`).
         if (value.endsWith(NOTIFY_SUFFIX) || existing?.value?.endsWith(NOTIFY_SUFFIX) == true) {
@@ -319,10 +326,10 @@ class DatabaseRepository(private val db: AppDatabase) {
      * che ha già il suo link. [expectedValue], se c'è, è il link per cui la
      * scritta è stata letta: se nel frattempo è cambiato, non si scrive.
      */
-    suspend fun setCellLinkLabel(rowId: String, columnId: String, label: LinkLabel?, expectedValue: String? = null) {
-        val existing = dao.getCell(rowId, columnId) ?: return
-        if (existing.value.isBlank() || (expectedValue != null && existing.value != expectedValue)) return
-        if (existing.label == label) return
+    suspend fun setCellLinkLabel(rowId: String, columnId: String, label: LinkLabel?, expectedValue: String? = null) = db.withTransaction {
+        val existing = dao.getCell(rowId, columnId) ?: return@withTransaction
+        if (existing.value.isBlank() || (expectedValue != null && existing.value != expectedValue)) return@withTransaction
+        if (existing.label == label) return@withTransaction
         dao.updateCell(existing.copy(linkLabel = label?.text, linkLabelIsTitle = label?.isTitle == true))
         dao.touchRow(rowId, System.currentTimeMillis())
     }

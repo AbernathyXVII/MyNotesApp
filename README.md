@@ -2104,6 +2104,33 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🔧 v0.142.0.1 — 28/10/2026 · 14:38 — Scrivendo in fretta in una cella vuota non nasce più una cella doppia
+*(Claude Code sul PC; provata sul telefono in "Paragraph – prova": in un database di prova "Cibo" scritto velocissimo in due celle vuote, poi la tabella raggruppata per quella proprietà: un gruppo solo, "Cibo" con 2 righe (con la v0.142 erano "Ci" e "Cib"); l'app si apre coi dati dell'utente dopo la migrazione; poi il database di prova nel cestino; 991 test passati)*
+
+L'utente, parola per parola:
+> «Sì, correggilo»
+
+Provando la v0.142 sul telefono, nel database di prova "Cibo" scritto molto in
+fretta in due celle vuote era stato salvato come "Ci" e "Cib", anche se a
+schermo si leggeva "Cibo": si è visto quando i gruppi hanno ridisegnato la
+tabella. Nei database dell'utente (backup di stamattina, solo conteggi: 20.725
+celle) non c'era nessuna cella doppia.
+
+- **[Bug fix]** **[📱 Mobile]** **Una cella sola per riga e proprietà**: ogni
+  lettera scritta salva la cella, e due salvataggi vicini su una cella ancora
+  vuota la trovavano vuota tutti e due e ne creavano una ciascuno; le lettere
+  dopo finivano in una, e la tabella mostrava l'altra, rimasta indietro. Ora
+  il salvataggio legge e scrive in un colpo solo, e il database non accetta
+  più due celle per la stessa riga e la stessa proprietà
+- **[Nota]** Le celle doppie che ci fossero se ne vanno da sole all'apertura:
+  resta la prima, quella su cui finivano le modifiche
+- **[Progetto]** `DatabaseRepository.setCellValue` e `setCellLinkLabel` in una
+  transazione; `DatabaseCellEntity` con l'indice unico su (`rowId`,
+  `columnId`); migrazione 66→67 (via le doppie, poi l'indice). Test:
+  `CellWriteTest` (le lettere salvate una dopo l'altra senza aspettarsi, trenta
+  salvataggi da più thread, la seconda cella che prende il posto della prima,
+  la scritta del link), `MigrationTest` (dalla 66, con una cella doppia)
+
 ### 🆕 v0.142 — 28/10/2026 · 14:16 — I gruppi quanti se ne vogliono: "Add a group" dentro Group, e niente più "Sub groups"
 *(Claude Code sul PC; provata sul telefono: la bacheca "Weekly" di KPOP è rimasta com'era (colonne per programma, fasce per settimana dalla più recente) e in "Group by" ha 1 Music show (Columns) e 2 Win date (Bands, con "Week" e "Newest first"), poi la vista rimessa su "Songs"; in "Paragraph – prova" un database di prova con Tipo, Preso e Bio: "Add a group" tre volte, la tabella a tre livelli ognuno più a destra, "Add a group" grigio quando le proprietà sono finite; nella bacheca le colonne per Tipo e le fasce per Preso; poi il database di prova nel cestino; 986 test passati)*
 

@@ -79,7 +79,12 @@ data class DatabaseRowEntity(
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index("rowId"), Index("columnId")]
+    // **Una cella sola per riga e proprietà** (dal 28/10/2026): scrivendo molto
+    // in fretta in una cella vuota, due salvataggi la trovavano vuota tutti e
+    // due e ne creavano una ciascuno; poi si vedeva quella rimasta indietro
+    // ("Ci" invece di "Cibo"). Con questo indice una seconda cella prende il
+    // posto della prima (`insertCell` è REPLACE), e non ne nasce mai un'altra.
+    indices = [Index("rowId"), Index("columnId"), Index(value = ["rowId", "columnId"], unique = true)]
 )
 data class DatabaseCellEntity(
     @PrimaryKey val id: String = UUID.randomUUID().toString(),
