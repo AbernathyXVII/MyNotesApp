@@ -42,6 +42,9 @@ import com.gabriele.notionlocal.data.entity.relationTitles
 import com.gabriele.notionlocal.data.entity.secondHopDatabases
 import com.gabriele.notionlocal.data.entity.canGroup
 import com.gabriele.notionlocal.data.buttons.ButtonConfig
+import com.gabriele.notionlocal.data.formula.FormulaConfig
+import com.gabriele.notionlocal.data.formula.FormulaEngine
+import com.gabriele.notionlocal.data.formula.FormulaValue
 import com.gabriele.notionlocal.data.entity.DatabaseLayout
 import com.gabriele.notionlocal.data.entity.ChartSettings
 import com.gabriele.notionlocal.data.entity.encodeChartSettings
@@ -156,6 +159,12 @@ internal const val CHECKBOX_SETTLE_MS = 200L
 /** Quanto si aspetta a rileggere il titolo di una cella URL il cui link è cambiato: lo si sta forse ancora scrivendo. */
 private const val LINK_TITLE_PAUSE_MS = 1_500L
 
+/** L'anteprima di una formula: la riga su cui si è calcolata, e il risultato. */
+data class FormulaPreview(val row: DatabaseRowEntity, val value: FormulaValue)
+
+/** L'id della colonna finta con cui si prova la formula di una proprietà che non c'è ancora. */
+private const val PREVIEW_COLUMN_ID = "__formula_preview__"
+
 data class DatabaseTableState(
     val columns: List<DatabaseColumnEntity> = emptyList(),
     val rows: List<DatabaseRowEntity> = emptyList(),
@@ -163,7 +172,13 @@ data class DatabaseTableState(
     /** Le scritte delle celle URL al posto del link (dal 27/10/2026): vedi `DatabaseCellEntity.linkLabel`. */
     val linkLabels: Map<Pair<String, String>, LinkLabel> = emptyMap(),
     /** Null quando non si sta cercando niente. */
-    val search: RowSearch? = null
+    val search: RowSearch? = null,
+    /**
+     * **I risultati delle formule** (dal 28/10/2026), (riga, colonna) →
+     * valore: il numero, la data, la casella. In `cellValues` c'è il loro
+     * testo; qui quello che serve per la cella e per i calcoli in fondo.
+     */
+    val formulas: Map<Pair<String, String>, FormulaValue> = emptyMap()
 ) {
     /**
      * Le colonne da disegnare. `columns` resta l'elenco completo, perché
@@ -210,7 +225,9 @@ private val SEARCHABLE_COLUMN_TYPES = setOf(
     // Dal 21/10/2026: di una Relation si cercano i nomi delle righe collegate,
     // di un Rollup il testo che mostra.
     ColumnType.RELATION,
-    ColumnType.ROLLUP
+    ColumnType.ROLLUP,
+    // Dal 28/10/2026: di una formula il risultato, come si legge.
+    ColumnType.FORMULA
 )
 
 /**
@@ -703,12 +720,19 @@ class DatabaseViewModel(
                 // filtrare e ordinare, e messi fra le celle col testo che si
                 // legge; si ordinano per il loro numero o la loro data.
                 val rollups = computeRollups(columns, rows, storedValues, related, RollupFormatting.formatter)
-                // Quello che una colonna aveva prima di diventare un Rollup non si vede più.
-                val rollupIds = columns.filter { it.type == ColumnType.ROLLUP }.mapTo(HashSet()) { it.id }
-                val cellValues = if (rollupIds.isEmpty()) {
+                // **Le formule** (dal 28/10/2026): dopo i Rollup, che una
+                // formula può leggere; come loro, fra le celle col testo.
+                val nameTitles = setOfNotNull(FormulaEngine.NAME, page?.nameColumnTitle)
+                formulaInputs = FormulaInputs(columns, rows, storedValues, rollups, related, nameTitles)
+                val formulas = computeFormulas(columns, rows, storedValues, rollups, related, nameTitles)
+                // Quello che una colonna aveva prima di diventare un Rollup o una formula non si vede più.
+                val computedIds = columns.filter { it.type == ColumnType.ROLLUP || it.type == ColumnType.FORMULA }.mapTo(HashSet()) { it.id }
+                val cellValues = if (computedIds.isEmpty()) {
                     storedValues
                 } else {
-                    storedValues.filterKeys { it.second !in rollupIds } + rollups.mapValues { it.value.text }
+                    storedValues.filterKeys { it.second !in computedIds } +
+                        rollups.mapValues { it.value.text } +
+                        formulas.mapValues { FormulaEngine.display(it.value, RollupFormatting.formatter) }
                 }
                 // Prima si filtra e poi si ordina: ordinare righe che
                 // stanno per sparire è lavoro buttato, e il risultato
@@ -722,13 +746,14 @@ class DatabaseViewModel(
                 }
                 val linkLabels = cells.mapNotNull { cell -> cell.label?.let { (cell.rowId to cell.columnId) to it } }.toMap()
                 val (kept, search) = searchRows(filtered, columns, cellValues, query, index, added, related, linkLabels)
-                val sorted = sortRows(kept, columns, cellValues, page, rollups, related)
+                val sorted = sortRows(kept, columns, cellValues, page, rollups, related, formulas)
                 DatabaseTableState(
                     columns = columns,
                     rows = frozen?.let { order -> keepOrder(sorted, order) } ?: sorted,
                     cellValues = cellValues,
                     linkLabels = linkLabels,
-                    search = search
+                    search = search,
+                    formulas = formulas
                 )
             }
                 // **In background** (dal 18/10/2026): con un dizionario di
@@ -941,13 +966,14 @@ class DatabaseViewModel(
         cellValues: Map<Pair<String, String>, String>,
         page: PageEntity?,
         rollups: Map<Pair<String, String>, RollupValue> = emptyMap(),
-        related: Map<String, DatabaseSnapshot> = emptyMap()
+        related: Map<String, DatabaseSnapshot> = emptyMap(),
+        formulas: Map<Pair<String, String>, FormulaValue> = emptyMap()
     ): List<DatabaseRowEntity> {
         val rules = sortRulesOf(page, columns)
         if (rules.isEmpty()) return rows
 
         val keyed = rows.map { row ->
-            row to rules.map { rule -> sortValueOf(row, rule.column, cellValues, rollups, related) }
+            row to rules.map { rule -> sortValueOf(row, rule.column, cellValues, rollups, related, formulas) }
         }
         // **Prima la prima regola, poi la seconda** (dal 05/10/2026): la
         // seconda conta solo fra le righe che per la prima sono pari. Fra
@@ -999,7 +1025,8 @@ class DatabaseViewModel(
         column: DatabaseColumnEntity?,
         cellValues: Map<Pair<String, String>, String>,
         rollups: Map<Pair<String, String>, RollupValue> = emptyMap(),
-        related: Map<String, DatabaseSnapshot> = emptyMap()
+        related: Map<String, DatabaseSnapshot> = emptyMap(),
+        formulas: Map<Pair<String, String>, FormulaValue> = emptyMap()
     ): SortValue {
         if (column == null) return SortValue(null, row.title)
         val raw = cellValues[row.id to column.id].orEmpty()
@@ -1011,6 +1038,8 @@ class DatabaseViewModel(
             )
             // Per il numero o la data che dà, non per come è scritto.
             ColumnType.ROLLUP -> rollups[row.id to column.id]?.let { SortValue(it.number, it.text) } ?: SortValue(null, "")
+            // Una formula per il numero, la data o la casella che dà; un testo come un testo.
+            ColumnType.FORMULA -> formulas[row.id to column.id]?.let { SortValue(FormulaEngine.sortNumber(it), raw) } ?: SortValue(null, "")
             ColumnType.NUMBER -> SortValue(raw.toDoubleOrNull(), raw)
             // Il primo campo del valore di una data è l'istante di
             // inizio in millisecondi (il formato completo sta in
@@ -1771,8 +1800,71 @@ class DatabaseViewModel(
     fun renameColumn(columnId: String, name: String) {
         val column = rawColumn(columnId) ?: return
         if (column.name == name) return
-        viewModelScope.launch { repository.updateColumn(column.copy(name = name)) }
+        // Le formule che la leggono, prop("Vecchio"), leggono il nome nuovo (dal 28/10/2026).
+        val formulas = rawColumns.filter { it.type == ColumnType.FORMULA && it.id != columnId }.mapNotNull { formula ->
+            val config = FormulaConfig.parse(formula.optionsJson)
+            val renamed = FormulaEngine.renameProperty(config.expression, column.name, name)
+            if (renamed == config.expression) null else formula.copy(optionsJson = FormulaConfig.encode(config.copy(expression = renamed)))
+        }
+        viewModelScope.launch {
+            repository.updateColumn(column.copy(name = name))
+            formulas.forEach { repository.updateColumn(it) }
+        }
     }
+
+    /** La formula di una proprietà Formula: vale per tutte le righe. */
+    fun setFormula(columnId: String, expression: String) {
+        viewModelScope.launch { repository.setColumnOptions(columnId, FormulaConfig.encode(FormulaConfig(expression))) }
+    }
+
+    /**
+     * **L'anteprima della finestra della formula**: il risultato di
+     * [expression] nella riga [rowId] (o nella prima), come se fosse la
+     * formula della colonna [columnId] (null: una proprietà che non c'è ancora).
+     */
+    fun previewFormula(columnId: String?, expression: String, rowId: String?): FormulaPreview? {
+        val inputs = formulaInputs ?: return null
+        val row = inputs.rows.find { it.id == rowId } ?: inputs.rows.firstOrNull() ?: return null
+        val id = columnId ?: PREVIEW_COLUMN_ID
+        val options = FormulaConfig.encode(FormulaConfig(expression))
+        val columns = if (inputs.columns.any { it.id == id }) {
+            inputs.columns.map { if (it.id == id) it.copy(type = ColumnType.FORMULA, optionsJson = options) else it }
+        } else {
+            inputs.columns + DatabaseColumnEntity(id = id, pageId = row.pageId, name = id, type = ColumnType.FORMULA, optionsJson = options)
+        }
+        val value = FormulaEngine.computeAll(
+            columns, listOf(row), inputs.cells, inputs.rollups, inputs.related, inputs.nameTitles,
+            System.currentTimeMillis(), com.gabriele.notionlocal.data.settings.AppSettings.zoneId,
+            RollupFormatting.formatter, com.gabriele.notionlocal.data.settings.AppSettings.language.locale
+        )[row.id to id] ?: FormulaValue.Empty
+        return FormulaPreview(row, value)
+    }
+
+    private fun computeFormulas(
+        columns: List<DatabaseColumnEntity>,
+        rows: List<DatabaseRowEntity>,
+        cells: Map<Pair<String, String>, String>,
+        rollups: Map<Pair<String, String>, RollupValue>,
+        related: Map<String, DatabaseSnapshot>,
+        nameTitles: Set<String>
+    ): Map<Pair<String, String>, FormulaValue> = FormulaEngine.computeAll(
+        columns, rows, cells, rollups, related, nameTitles,
+        System.currentTimeMillis(), com.gabriele.notionlocal.data.settings.AppSettings.zoneId,
+        RollupFormatting.formatter, com.gabriele.notionlocal.data.settings.AppSettings.language.locale
+    )
+
+    /** Quello che le formule hanno letto l'ultima volta: per l'anteprima, senza rileggere il database. */
+    @Volatile
+    private var formulaInputs: FormulaInputs? = null
+
+    private class FormulaInputs(
+        val columns: List<DatabaseColumnEntity>,
+        val rows: List<DatabaseRowEntity>,
+        val cells: Map<Pair<String, String>, String>,
+        val rollups: Map<Pair<String, String>, RollupValue>,
+        val related: Map<String, DatabaseSnapshot>,
+        val nameTitles: Set<String>
+    )
 
     fun deleteColumn(column: DatabaseColumnEntity) {
         // Una Relation nei due sensi si porta via la gemella.
@@ -2279,8 +2371,8 @@ class DatabaseViewModel(
 
     fun setCellValue(row: DatabaseRowEntity, column: DatabaseColumnEntity, value: String) {
         if (column.type == ColumnType.CHECKBOX) holdAfterCheckbox(row, column, value)
-        // Un Rollup non ha un valore suo: si calcola. Un bottone non ne ha.
-        if (column.type == ColumnType.ROLLUP || column.type == ColumnType.BUTTON) return
+        // Un Rollup e una formula non hanno un valore loro: si calcolano. Un bottone non ne ha.
+        if (column.type == ColumnType.ROLLUP || column.type == ColumnType.BUTTON || column.type == ColumnType.FORMULA) return
         viewModelScope.launch {
             if (column.type == ColumnType.RELATION) {
                 // Con la gemella, se la Relation vale nei due sensi.

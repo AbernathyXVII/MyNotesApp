@@ -2104,6 +2104,67 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.141 — 28/10/2026 · 10:51 — Le formule nei database, come la proprietà Formula di Notion
+*(Claude Code sul PC; provata sul telefono in "Paragraph – prova": in un database di prova la proprietà "Totale" scelta in "New property" e scritta con "Edit formula" toccando le proprietà e gli operatori (`prop("Prezzo") * prop("Quanti")` fa 6 con 1,5 × 4); toccando la cella, la finestra con l'anteprima su quella riga; l'esempio "Days left" (3 giorni al 31/10), l'errore "The formula stops halfway", un "se… allora…" (`… > 5 ? "caro" : "ok"` dà "caro"), un sì/no che nella cella è una casella spuntata; il menu dell'intestazione con "Edit formula" e senza "Filter"; "Prezzo" rinominata "Costo" e la formula riscritta da sola; a campo vuoto la tastiera resta in minuscolo; poi il database di prova nel cestino; 976 test passati)*
+
+L'utente, parola per parola:
+> «Perfetto, grazie mille. Ora ti chiedo il terzo punto che mi hai detto
+> ieri: "Formule nei database, come la proprietà Formula di Notion: “giorni
+> che mancano”, “prezzo × quantità”, “se è spuntato allora…”. Hai già rollup
+> e calcoli in fondo alle colonne, ma non un valore calcolato riga per riga.
+> Usi tanti database (KPOP, Food, Habit tracker, Main calendar), quindi è
+> probabilmente la cosa che ti manca di più lì."»
+
+- **[Nuova funzionalità]** **[📱 Mobile]** **La proprietà "Formula"** (icona
+  Σ): un valore calcolato riga per riga dalle altre proprietà, che si
+  aggiorna da solo quando cambiano. Si scrive come su Notion:
+  `prop("Prezzo") * prop("Quantità")`, `dateBetween(prop("Scadenza"),
+  today(), "days")`, `if(prop("Fatto"), "✓ Finito", "Da fare")`. Si sceglie
+  fra i tipi in "Change type" o creando una proprietà; sotto il tipo c'è
+  "Edit formula"
+- **[Nuova funzionalità]** **[📱 Mobile]** **La finestra della formula**: si
+  apre toccando una cella della formula, o da "Edit formula" nel menu
+  dell'intestazione. In cima la formula; sotto, mentre si scrive, il
+  risultato su quella riga, o che cosa non va ("Missing “)”", "There's no
+  property “Boh”"…). Più giù, da toccare: le proprietà del database (scrivono
+  `prop("…")` dove sta il cursore), gli operatori, tre esempi già con le
+  proprietà del database e le funzioni, ognuna con cosa fa. Chiudendola, la
+  formula si salva
+- **[Nuova funzionalità]** **[📱 Mobile]** **Il linguaggio**: `+ - * / % ^`,
+  `== != > < >= <=` (anche `× ÷ ≥ ≤ ≠` e un `=` solo), `and or not` (o
+  `&& || !`), `condizione ? sì : no`, testi fra virgolette (anche quelle
+  curve della tastiera) e una sessantina di funzioni: logica (`if`, `ifs`,
+  `empty`…), numeri (`round`, `sum`, `min`, `max`…), testo (`concat`,
+  `contains`, `replaceAll`, `slice`…) e date (`now`, `today`, `dateAdd`,
+  `dateBetween`, `formatDate`, `year`, `day`…). Le unità delle date anche in
+  italiano ("giorni", "mesi"); in `formatDate` il testo fra `[ ]` resta com'è
+- **[Nuova funzionalità]** **[📱 Mobile]** **Che cosa dà**: un numero, un
+  testo, una data o un sì/no, che nella cella è una casella spuntata o vuota.
+  Una formula sbagliata scrive "Error" nella sua cella e non ferma le altre.
+  Una formula legge anche un'altra formula, un Rollup, i nomi di una
+  Relation, la data di creazione…; due formule che si leggono a vicenda lo
+  dicono invece di girare per sempre
+- **[Nuova funzionalità]** **[📱 Mobile]** **Ordinare, cercare, calcolare**:
+  una formula si ordina per il suo numero o la sua data (non come testo: 6
+  viene prima di 32), si trova con la ricerca, in fondo alla colonna ha anche
+  Sum, Average, Min, Max e le date, e fa i gruppi dei grafici. Si vede anche
+  nella pagina della riga, nelle schede e nella galleria. Non si filtra e non
+  raggruppa la tabella, come i Rollup
+- **[Nuova funzionalità]** **[📱 Mobile]** **Rinominando una proprietà**, le
+  formule che la leggono si riscrivono col nome nuovo
+- **[Progetto]** `data/formula/FormulaSyntax.kt` (come si legge una formula,
+  e gli errori), `FormulaEngine.kt` (il calcolo, le funzioni, le proprietà
+  di ogni riga, `renameProperty`); `ColumnType.FORMULA`; nel
+  `DatabaseViewModel` le formule si calcolano dopo i Rollup
+  (`DatabaseTableState.formulas`, `previewFormula`, `setFormula`);
+  `ui/screen/FormulaUi.kt` (la cella, la finestra); `FormulaStrings` nelle
+  otto lingue; `RollupFormatter.dateTime`. Test: `FormulaEngineTest` (gli
+  esempi dell'utente, operatori, funzioni, date, proprietà, errori, formule
+  che si leggono a vicenda, il rinominare), `FormulaViewModelTest` (col
+  database vero: i risultati, l'ordine, la ricerca, il rinominare,
+  l'anteprima), `FormulaScreenTest` (la cella, la finestra con l'anteprima,
+  il menu dell'intestazione, "Change type")
+
 ### 🔧 v0.140.0.1 — 28/10/2026 · 09:54 — La domanda del ripristino scrive la data del backup
 *(Claude Code sul PC; provata sul telefono: la domanda ora dice «replaced by the backup of 28.10.2026 09:53», poi annullata; 939 test passati)*
 

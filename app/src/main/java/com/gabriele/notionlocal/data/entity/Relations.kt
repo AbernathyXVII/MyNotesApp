@@ -157,6 +157,8 @@ data class RollupValue(
 interface RollupFormatter {
     fun number(value: Double): String
     fun date(millis: Long): String
+    /** Una data con l'ora (per le formule): senza, si scrive come una data. */
+    fun dateTime(millis: Long): String = date(millis)
     /** Il valore di una cella così come si legge (un tag, il testo di una cella colorata…). */
     fun cell(column: DatabaseColumnEntity, raw: String): String
 }
@@ -177,6 +179,9 @@ object PlainRollupFormatter : RollupFormatter {
         if (value == Math.floor(value) && !value.isInfinite()) value.toLong().toString() else value.toString()
 
     override fun date(millis: Long): String = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate().toString()
+
+    override fun dateTime(millis: Long): String =
+        Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDateTime().withSecond(0).withNano(0).toString().replace('T', ' ')
 
     override fun cell(column: DatabaseColumnEntity, raw: String): String = when (column.type) {
         ColumnType.CHECKBOX -> if (raw == "true") "✓" else ""

@@ -66,7 +66,14 @@ enum class ColumnType {
      * (`ButtonConfig`); "This page" è la riga del bottone toccato. Non ha un
      * valore. Vedi `data/buttons/Buttons.kt`.
      */
-    BUTTON
+    BUTTON,
+    /**
+     * **"Formula"** (dal 28/10/2026, chiesta dall'utente, come su Notion): un
+     * valore calcolato riga per riga dalle altre proprietà ("prezzo ×
+     * quantità", "giorni che mancano"). La formula sta nell'`optionsJson`
+     * (`FormulaConfig`); non ha un valore suo. Vedi `data/formula/`.
+     */
+    FORMULA
 }
 
 /**
@@ -88,8 +95,9 @@ val ColumnType.canGroup: Boolean
         // Relation e Rollup: id di righe, e un calcolo che cambia con loro.
         this != ColumnType.RELATION &&
         this != ColumnType.ROLLUP &&
-        // Un bottone non ha un valore.
-        this != ColumnType.BUTTON
+        // Un bottone non ha un valore; una formula è un calcolo, come un Rollup.
+        this != ColumnType.BUTTON &&
+        this != ColumnType.FORMULA
 
 /**
  * Una singola opzione disponibile per una colonna SELECT. Serializzata

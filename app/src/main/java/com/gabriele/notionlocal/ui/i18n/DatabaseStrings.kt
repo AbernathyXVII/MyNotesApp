@@ -49,6 +49,7 @@ object DbStrings {
         ColumnType.CREATED_TIME -> "Created time"
         ColumnType.LAST_EDITED_TIME -> "Last edited time"
         ColumnType.BUTTON -> "Button"
+        ColumnType.FORMULA -> "Formula"
     }
 
     fun typeName(type: ColumnType): String = when (type) {
@@ -70,6 +71,7 @@ object DbStrings {
         ColumnType.CREATED_TIME -> t("Created time", "Data di creazione", "Erstellt am", "Date de création", "Fecha de creación", "创建时间", "생성 일시", "作成日時")
         ColumnType.LAST_EDITED_TIME -> t("Last edited time", "Ultima modifica", "Zuletzt bearbeitet", "Dernière modification", "Última edición", "上次编辑时间", "마지막 편집 일시", "最終更新日時")
         ColumnType.BUTTON -> t("Button", "Pulsante", "Schaltfläche", "Bouton", "Botón", "按钮", "버튼", "ボタン")
+        ColumnType.FORMULA -> t("Formula", "Formula", "Formel", "Formule", "Fórmula", "公式", "수식", "数式")
     }
 
     /**

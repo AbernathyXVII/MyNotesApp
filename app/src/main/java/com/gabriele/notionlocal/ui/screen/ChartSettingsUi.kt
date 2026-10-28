@@ -254,7 +254,8 @@ internal fun ChartSettingsDetail(
             }
             // "Page link" no: le barre si chiamerebbero con l'id della pagina.
             // "Relation" sì (dal 21/10/2026): una barra per riga collegata, col suo nome.
-            // Un bottone non ha un valore (dal 27/10/2026).
+            // Un bottone non ha un valore (dal 27/10/2026). Una formula sì (dal
+            // 28/10/2026): una barra per ogni risultato, come un testo.
             columns.filter {
                 it.type != ColumnType.PAGE_LINK && it.type != ColumnType.IMAGE && it.type != ColumnType.DURATION && it.type != ColumnType.BUTTON
             }.forEach { column ->

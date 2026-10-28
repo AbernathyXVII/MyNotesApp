@@ -128,6 +128,8 @@ internal object AppRollupFormatter : RollupFormatter {
 
     override fun date(millis: Long): String = Formats.date(millis)
 
+    override fun dateTime(millis: Long): String = Formats.dateTime(millis)
+
     override fun cell(column: DatabaseColumnEntity, raw: String): String = when (column.type) {
         ColumnType.CHECKBOX -> if (raw == "true") "✓" else ""
         ColumnType.COLOR -> parseColorCell(raw).text

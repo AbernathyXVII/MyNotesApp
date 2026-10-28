@@ -148,10 +148,11 @@ fun calculationsFor(type: ColumnType?): Map<CalculationGroup, List<Calculation>>
         }
     )
     put(CalculationGroup.PERCENT, listOf(Calculation.PERCENT_EMPTY, Calculation.PERCENT_NOT_EMPTY))
-    if (type == ColumnType.DATE) {
+    // Una formula (dal 28/10/2026) può dare date o numeri: ha tutti e due.
+    if (type == ColumnType.DATE || type == ColumnType.FORMULA) {
         put(CalculationGroup.DATE, listOf(Calculation.EARLIEST_DATE, Calculation.LATEST_DATE, Calculation.DATE_RANGE))
     }
-    if (type == ColumnType.NUMBER) {
+    if (type == ColumnType.NUMBER || type == ColumnType.FORMULA) {
         put(
             CalculationGroup.MORE,
             listOf(Calculation.SUM, Calculation.AVERAGE, Calculation.MEDIAN, Calculation.MIN, Calculation.MAX, Calculation.RANGE)

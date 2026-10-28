@@ -15,6 +15,10 @@ import com.gabriele.notionlocal.data.entity.CellAlignment
 import androidx.compose.ui.draw.alpha
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.Functions
+import com.gabriele.notionlocal.data.formula.FormulaConfig
+import com.gabriele.notionlocal.data.formula.FormulaEngine
+import com.gabriele.notionlocal.data.formula.FormulaValue
+import com.gabriele.notionlocal.ui.i18n.FormulaStrings
 import com.gabriele.notionlocal.data.entity.parseViewCalculations
 import com.gabriele.notionlocal.data.entity.numberSettings
 import com.gabriele.notionlocal.data.entity.numberDisplayKind
@@ -558,7 +562,7 @@ private sealed class PropertyTarget {
 private enum class PropertyMode { FULL, TYPE }
 
 /** I tipi con impostazioni loro, che compaiono sotto quando li si sceglie nella finestra della proprietà. */
-internal val TYPES_WITH_SETTINGS = setOf(ColumnType.NUMBER, ColumnType.DURATION, ColumnType.RELATION, ColumnType.ROLLUP, ColumnType.BUTTON)
+internal val TYPES_WITH_SETTINGS = setOf(ColumnType.NUMBER, ColumnType.DURATION, ColumnType.RELATION, ColumnType.ROLLUP, ColumnType.BUTTON, ColumnType.FORMULA)
 
 /** Di quale colonna si sceglie il calcolo: `key` è l'id, o `NAME_CALCULATION_KEY`; `type` null = il nome. */
 private data class CalculateTarget(val key: String, val type: ColumnType?, val title: String)
@@ -1249,6 +1253,19 @@ private fun DatabaseViewBody(
     val cellLinkLabels = remember(state.linkLabels, viewModel) { CellLinkLabels(state.linkLabels, viewModel::setCellLinkLabel) }
 
     var editingButton by remember { mutableStateOf<DatabaseColumnEntity?>(null) }
+    // **La formula di una colonna** (dal 28/10/2026): da una cella (con
+    // l'anteprima su quella riga) o da "Edit formula" nell'intestazione.
+    var editingFormula by remember { mutableStateOf<Pair<DatabaseColumnEntity, String?>?>(null) }
+    val formulaEditor: ((DatabaseColumnEntity, String?) -> Unit)? = remember(contentLocked) {
+        if (contentLocked) {
+            null
+        } else {
+            { column, rowId ->
+                focusManager.clearFocus()
+                editingFormula = column to rowId
+            }
+        }
+    }
     val propertyIcons = remember(dataPage?.hideNameIcon, viewModel) {
         PropertyIcons(dataPage?.hideNameIcon == true, viewModel::setPropertyIconHidden)
     }
@@ -1298,8 +1315,13 @@ private fun DatabaseViewBody(
             onSave = { viewModel.setButtonConfig(column.id, it) }
         )
     }
+    editingFormula?.let { (column, rowId) ->
+        FormulaEditorFor(viewModel, column, rowId, onDismiss = { editingFormula = null })
+    }
 
     CompositionLocalProvider(
+        LocalFormulaValues provides state.formulas,
+        LocalFormulaEditor provides formulaEditor,
         LocalRelated provides viewRelated,
         LocalRelationActions provides relationActions,
         LocalLinkedPages provides viewLinkedPages,
@@ -3106,11 +3128,23 @@ private fun columnCalculationText(
             ColumnType.LAST_EDITED_TIME -> (row.updatedAt ?: row.createdAt).toString()
             ColumnType.COLOR -> parseColorCell(state.cellValues[row.id to column.id].orEmpty())
                 .let { if (it.isEmpty) "" else state.cellValues[row.id to column.id].orEmpty() }
+            // Di una formula il numero o l'istante, non come si legge ("1.234,5").
+            ColumnType.FORMULA -> formulaCalculationValue(state.formulas[row.id to column.id])
             else -> state.cellValues[row.id to column.id].orEmpty()
         }
     }
     val result = calculate(calc, column.type, values, startOfDate = { parseDateRange(it)?.start })
     return calculationText(result, column)
+}
+
+/** Il valore di una formula per i calcoli in fondo: un numero si somma, una data si confronta, un testo si conta. */
+private fun formulaCalculationValue(value: FormulaValue?): String = when (value) {
+    is FormulaValue.Num -> FormulaEngine.clean(value.value).takeIf { it.isFinite() }
+        ?.let { java.math.BigDecimal.valueOf(it).stripTrailingZeros().toPlainString() }.orEmpty()
+    is FormulaValue.Date -> value.millis.toString()
+    is FormulaValue.Bool -> if (value.value) "true" else ""
+    is FormulaValue.Text -> value.value
+    else -> ""
 }
 
 /**
@@ -6954,18 +6988,35 @@ private fun PropertyHeaderCell(
                     })
                 )
             }
+            // **La formula** (dal 28/10/2026): la sua finestra, con l'anteprima sulla prima riga.
+            if (column.type == ColumnType.FORMULA && actions != null) {
+                val editFormula = LocalFormulaEditor.current
+                PropertyMenuGroup(
+                    listOf({
+                        PropertyMenuChevronRow(
+                            Icons.Filled.Functions,
+                            FormulaStrings.editFormula,
+                            enabled = editFormula != null,
+                            onClick = pick { editFormula?.invoke(column, null) }
+                        )
+                    })
+                )
+            }
             // Le stesse finestre delle icone in cima al database: il filtro parte
             // da questa proprietà. Con "Lock view" grigie, come le icone.
             if (actions != null && column.type != ColumnType.BUTTON) {
                 PropertyMenuGroup(
-                    listOf(
-                        {
-                            PropertyMenuChevronRow(
-                                Icons.Filled.FilterList,
-                                DbStrings.filter,
-                                enabled = actions.filter != null,
-                                onClick = pick { actions.filter?.invoke(column.id) }
-                            )
+                    listOfNotNull<@Composable () -> Unit>(
+                        // Una formula si ordina ma non si filtra: il filtro sceglie fra valori scritti.
+                        if (column.type == ColumnType.FORMULA) null else {
+                            {
+                                PropertyMenuChevronRow(
+                                    Icons.Filled.FilterList,
+                                    DbStrings.filter,
+                                    enabled = actions.filter != null,
+                                    onClick = pick { actions.filter?.invoke(column.id) }
+                                )
+                            }
                         },
                         {
                             PropertyMenuChevronRow(
@@ -7432,7 +7483,8 @@ private fun CellContent(
         modifier = if (column.type == ColumnType.DATE || column.type == ColumnType.COLOR ||
             column.type == ColumnType.PAGE_LINK || column.type == ColumnType.IMAGE ||
             column.type == ColumnType.DURATION ||
-            column.type == ColumnType.RELATION || column.type == ColumnType.ROLLUP
+            column.type == ColumnType.RELATION || column.type == ColumnType.ROLLUP ||
+            column.type == ColumnType.FORMULA
         ) {
             Modifier
         } else {
@@ -7505,6 +7557,15 @@ private fun CellContent(
 
             // "Button" (dal 27/10/2026): vedi `ButtonUi.kt`.
             ColumnType.BUTTON -> ButtonCell(column = column, row = row)
+
+            // "Formula" (dal 28/10/2026): vedi `FormulaUi.kt`.
+            ColumnType.FORMULA -> FormulaCell(
+                column = column,
+                row = row,
+                text = value,
+                contentPadding = cellPadding,
+                alignment = LocalCellAlignment.current.box
+            )
 
             ColumnType.DURATION -> DurationCell(
                 value = value,
@@ -9895,6 +9956,14 @@ internal fun RowPageProperties(
     val canEdit = editable && dataPage?.isLocked != true
     var addingProperty by remember { mutableStateOf(false) }
     val linkedPages by viewModel.linkedPages.collectAsStateWithLifecycle()
+    // Le formule (dal 28/10/2026): toccandone una, la sua finestra, con l'anteprima su questa riga.
+    var editingFormula by remember { mutableStateOf<DatabaseColumnEntity?>(null) }
+    val formulaEditor: ((DatabaseColumnEntity, String?) -> Unit)? = remember(canEdit) {
+        if (canEdit) { { column, _ -> editingFormula = column } } else null
+    }
+    editingFormula?.let { column ->
+        FormulaEditorFor(viewModel, column, current.id, onDismiss = { editingFormula = null })
+    }
 
     RelationHost(viewModel = viewModel, onOpenPage = onOpenPage) {
     PageLinkHost(factory = factory, linkedPages = linkedPages, onOpenPage = onOpenPage) {
@@ -9902,7 +9971,9 @@ internal fun RowPageProperties(
     CompositionLocalProvider(
         LocalDatabaseLocked provides !canEdit,
         LocalNameColumnTitle provides dataPage?.nameColumnTitle,
-        LocalCellLinkLabels provides cellLinkLabels
+        LocalCellLinkLabels provides cellLinkLabels,
+        LocalFormulaValues provides state.formulas,
+        LocalFormulaEditor provides formulaEditor
     ) {
         Column(
             modifier = modifier
@@ -11092,12 +11163,24 @@ private fun PropertySheet(
         mutableStateOf(existing?.takeIf { it.type == ColumnType.BUTTON }?.let { ButtonConfig.parse(it.optionsJson) } ?: ButtonConfig())
     }
     var editingActions by remember { mutableStateOf(false) }
+    // "Formula" (dal 28/10/2026): la formula, scritta da "Edit formula" qui sotto.
+    var formula by remember(existing?.id) {
+        mutableStateOf(existing?.takeIf { it.type == ColumnType.FORMULA }?.let { FormulaConfig.parse(it.optionsJson).expression } ?: "")
+    }
+    var editingFormula by remember { mutableStateOf(false) }
     val saveOptions = when (selectedType) {
         ColumnType.RELATION -> relationDb?.let { encodeRelationConfig(RelationConfig(database = it)) } ?: "[]"
         ColumnType.ROLLUP -> rollupNow?.let(::encodeRollupConfig) ?: "[]"
         ColumnType.BUTTON -> ButtonConfig.encode(buttonConfig)
-        // Lasciando una Relation, un Rollup o un bottone, la loro configurazione non serve più.
-        else -> if (existing?.type == ColumnType.RELATION || existing?.type == ColumnType.ROLLUP || existing?.type == ColumnType.BUTTON) "[]" else optionsJson
+        ColumnType.FORMULA -> FormulaConfig.encode(FormulaConfig(formula))
+        // Lasciando una Relation, un Rollup, un bottone o una formula, la loro configurazione non serve più.
+        else -> if (existing?.type == ColumnType.RELATION || existing?.type == ColumnType.ROLLUP ||
+            existing?.type == ColumnType.BUTTON || existing?.type == ColumnType.FORMULA
+        ) {
+            "[]"
+        } else {
+            optionsJson
+        }
     }
     // Una Relation senza database non avrebbe righe da collegare.
     val canSave = selectedType != ColumnType.RELATION || relationDb != null
@@ -11259,6 +11342,10 @@ private fun PropertySheet(
                                     Icons.Filled.TouchApp,
                                     ButtonStrings.editActions + " · " + ButtonStrings.actionsCount(buttonConfig.steps.size)
                                 ) { editingActions = true }
+                                ColumnType.FORMULA -> SheetAction(
+                                    Icons.Filled.Functions,
+                                    FormulaStrings.editFormula + " · " + formula.trim().ifEmpty { FormulaStrings.noFormula }
+                                ) { editingFormula = true }
                                 else -> linkSettings()
                             }
                         }
@@ -11291,6 +11378,17 @@ private fun PropertySheet(
             thisPageDatabaseId = existing?.pageId ?: dataPage?.id,
             onDismiss = { editingActions = false },
             onSave = { buttonConfig = it }
+        )
+    }
+    if (editingFormula) {
+        FormulaEditorSheet(
+            columnName = effectiveName,
+            initial = formula,
+            columns = tableState.columns.filter { it.id != existing?.id },
+            nameTitle = dataPage?.nameColumnTitle,
+            preview = { viewModel.previewFormula(existing?.id, it, null) },
+            onDismiss = { editingFormula = false },
+            onSave = { formula = it }
         )
     }
 }
@@ -11416,6 +11514,8 @@ internal fun ColumnType.icon(): ImageVector = when (this) {
     ColumnType.LAST_EDITED_TIME -> Icons.Filled.Update
     // La mano che tocca, come l'icona del bottone di Notion.
     ColumnType.BUTTON -> Icons.Filled.TouchApp
+    // La sigma, come l'icona delle formule di Notion.
+    ColumnType.FORMULA -> Icons.Filled.Functions
 }
 
 /**
