@@ -14,6 +14,7 @@ import androidx.core.content.ContextCompat
 import com.gabriele.notionlocal.data.ink.InkPrefs
 import com.gabriele.notionlocal.data.security.AppLock
 import android.os.SystemClock
+import com.gabriele.notionlocal.data.backup.Backups
 import com.gabriele.notionlocal.data.notify.NoteAlarms
 import com.gabriele.notionlocal.data.notify.NotificationPermission
 import com.gabriele.notionlocal.data.notify.NotificationTarget
@@ -38,9 +39,15 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // **Un ripristino preparato** (dal 28/10/2026): i file del backup al
+        // loro posto prima di tutto, prima che le impostazioni o il database
+        // vengano letti. Vedi `Backups.applyPendingRestore`.
+        Backups.applyPendingRestore(applicationContext)
         // Le impostazioni prima di tutto: tema, lingua e formati le
         // leggono già i primi pixel disegnati.
         AppSettings.init(applicationContext)
+        // I backup: l'ultimo fatto, l'ultimo caricato, il promemoria.
+        Backups.init(applicationContext)
         // Dopo le impostazioni: il pomodoro, suonando, guarda se le
         // notifiche sono messe a tacere.
         WidgetStore.init(applicationContext)
@@ -103,6 +110,8 @@ class MainActivity : ComponentActivity() {
         // Uscendo dall'app, la sveglia giusta: quello che è cambiato mentre
         // era aperta deve suonare anche ad app chiusa.
         NoteAlarms.reschedule()
+        // E il backup di oggi, se manca (dal 28/10/2026).
+        Backups.onAppStopped()
     }
 
     override fun onDestroy() {

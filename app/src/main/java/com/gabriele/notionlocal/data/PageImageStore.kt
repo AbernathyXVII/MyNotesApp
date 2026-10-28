@@ -249,11 +249,12 @@ class PageImageStore(context: Context) {
 
     private fun newName(extension: String = IMAGE_EXTENSION) = "${UUID.randomUUID()}.$extension"
 
-    private companion object {
+    companion object {
+        /** La cartella delle immagini e dei file: va anche nei backup (vedi `Backups`). */
         const val DIRECTORY = "page-images"
-        const val IMAGE_EXTENSION = "img"
+        private const val IMAGE_EXTENSION = "img"
 
         /** Sei megapixel in memoria sono ventiquattro megabyte: è il tetto. */
-        const val MAX_PIXELS = 6_000_000L
+        private const val MAX_PIXELS = 6_000_000L
     }
 }

@@ -36,6 +36,7 @@ import com.gabriele.notionlocal.data.settings.AnimationLevel
 import com.gabriele.notionlocal.data.settings.AppSettings
 import com.gabriele.notionlocal.data.settings.StartupMode
 import com.gabriele.notionlocal.data.settings.TrashPolicy
+import com.gabriele.notionlocal.ui.screen.BackupScreen
 import com.gabriele.notionlocal.ui.screen.DatabaseViewScreen
 import com.gabriele.notionlocal.ui.screen.LockGate
 import com.gabriele.notionlocal.ui.screen.NotebookSectionScreen
@@ -204,6 +205,14 @@ fun AppNavHost(factory: ViewModelFactory) {
         openSidebar()
     }
 
+    // Toccato il promemoria dei backup (dal 28/10/2026): la pagina Backup.
+    val openBackup by NotificationTarget.openBackup
+    LaunchedEffect(openBackup) {
+        if (!openBackup) return@LaunchedEffect
+        NotificationTarget.openBackup.value = false
+        navController.navigate(Routes.BACKUP) { launchSingleTop = true }
+    }
+
     // L'ultima pagina aperta, per la finestra di avvio "Last visited page".
     LaunchedEffect(navController) {
         navController.currentBackStackEntryFlow.collect { entry ->
@@ -245,7 +254,8 @@ fun AppNavHost(factory: ViewModelFactory) {
         onStartup = { closeSidebar(); navController.navigate(Routes.STARTUP) { launchSingleTop = true } },
         onTemplates = { closeSidebar(); navController.navigate(Routes.TEMPLATES) { launchSingleTop = true } },
         onTrash = { closeSidebar(); navController.navigate(Routes.TRASH) { launchSingleTop = true } },
-        onSettings = { closeSidebar(); navController.navigate(Routes.SETTINGS) { launchSingleTop = true } }
+        onSettings = { closeSidebar(); navController.navigate(Routes.SETTINGS) { launchSingleTop = true } },
+        onBackup = { closeSidebar(); navController.navigate(Routes.BACKUP) { launchSingleTop = true } }
     )
 
     ModalNavigationDrawer(
@@ -516,6 +526,10 @@ private fun AppRoutes(
                 onBack = { navController.popBackStack() },
                 onOpenPatchNotes = { navController.navigate(Routes.PATCH_NOTES) { launchSingleTop = true } }
             )
+        }
+
+        composable(Routes.BACKUP) {
+            BackupScreen(onBack = { navController.popBackStack() })
         }
 
         composable(Routes.PATCH_NOTES) {

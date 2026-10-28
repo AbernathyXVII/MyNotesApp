@@ -45,11 +45,18 @@ object NotificationTarget {
      */
     val openWidgets = mutableStateOf(false)
 
+    /** **La pagina Backup da aprire** (dal 28/10/2026): il promemoria di caricare un backup. */
+    val openBackup = mutableStateOf(false)
+
     fun takeFrom(intent: Intent?) {
         intent ?: return
         if (intent.getBooleanExtra(Notifier.EXTRA_OPEN_WIDGETS, false)) {
             openWidgets.value = true
             intent.removeExtra(Notifier.EXTRA_OPEN_WIDGETS)
+        }
+        if (intent.getBooleanExtra(Notifier.EXTRA_OPEN_BACKUP, false)) {
+            openBackup.value = true
+            intent.removeExtra(Notifier.EXTRA_OPEN_BACKUP)
         }
         val pageId = intent.getStringExtra(Notifier.EXTRA_PAGE_ID)
         val rowId = intent.getStringExtra(Notifier.EXTRA_ROW_ID)

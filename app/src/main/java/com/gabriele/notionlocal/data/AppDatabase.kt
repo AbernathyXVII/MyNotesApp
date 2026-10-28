@@ -909,7 +909,14 @@ abstract class AppDatabase : RoomDatabase() {
          * migrazioni). Senza, il secondo test troverebbe il database del
          * primo, già chiuso.
          */
-        internal fun resetForTests() = synchronized(this) {
+        internal fun resetForTests() = closeInstance()
+
+        /**
+         * Chiude il database e lo dimentica: lo usa anche il ripristino di
+         * un backup (dal 28/10/2026), che sostituisce il file prima che
+         * l'app lo riapra (vedi `Backups.applyPendingRestore`).
+         */
+        fun closeInstance() = synchronized(this) {
             INSTANCE?.close()
             INSTANCE = null
         }

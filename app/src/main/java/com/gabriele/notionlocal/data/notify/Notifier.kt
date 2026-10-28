@@ -19,6 +19,7 @@ import com.gabriele.notionlocal.data.widgets.PomodoroPhase
 import com.gabriele.notionlocal.data.widgets.WidgetEvent
 import com.gabriele.notionlocal.data.widgets.WidgetStore
 import com.gabriele.notionlocal.data.widgets.durationLabel
+import com.gabriele.notionlocal.ui.i18n.BackupStrings
 import com.gabriele.notionlocal.ui.i18n.NotifyStrings
 import com.gabriele.notionlocal.ui.i18n.WidgetStrings
 
@@ -78,6 +79,9 @@ object Notifier {
     const val EXTRA_DATABASE_ID = "notify.databaseId"
     /** La notifica di un timer che corre: si apre la barra laterale, coi widget. */
     const val EXTRA_OPEN_WIDGETS = "notify.openWidgets"
+
+    /** La notifica del promemoria dei backup apre la pagina Backup (dal 28/10/2026). */
+    const val EXTRA_OPEN_BACKUP = "notify.openBackup"
 
     /**
      * I canali come li vogliono le scelte di adesso: quello dei promemoria
@@ -154,6 +158,23 @@ object Notifier {
     }
 
     private const val TEST_ID = 0x7E57
+
+    /**
+     * **Il promemoria dei backup** (dal 28/10/2026): è da tanto che non se ne
+     * carica uno su Proton Drive. Toccata, apre la pagina Backup. [days]: i
+     * giorni dall'ultimo caricamento, null se non se n'è mai fatto uno.
+     */
+    fun postBackupReminder(context: Context, days: Long?): Boolean {
+        if (muted) return false
+        ensureChannels(context)
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(EXTRA_OPEN_BACKUP, true)
+        }
+        return post(context, currentRemindersChannel, BACKUP_REMINDER_ID, BackupStrings.reminderTitle, BackupStrings.reminderText(days), intent)
+    }
+
+    private const val BACKUP_REMINDER_ID = 0x0BAC
 
     /**
      * **"Send notification" di un bottone** (dal 27/10/2026): una notifica

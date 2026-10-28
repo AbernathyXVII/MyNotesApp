@@ -73,7 +73,9 @@ internal class SidebarActions(
     /** "Templates", sotto "Startup window" (dal 26/09/2026). */
     val onTemplates: () -> Unit,
     val onTrash: () -> Unit,
-    val onSettings: () -> Unit
+    val onSettings: () -> Unit,
+    /** "Backup" (dal 28/10/2026). */
+    val onBackup: () -> Unit = {}
 )
 
 /**
@@ -179,7 +181,7 @@ internal fun SidebarContent(
         SidebarItem(Icons.Filled.Search, Strings.search, onClick = actions.onSearch)
         SidebarItem(Icons.Filled.RocketLaunch, Strings.startupWindow, onClick = actions.onStartup)
         SidebarItem(Icons.Outlined.Description, TemplateStrings.templates, onClick = actions.onTemplates)
-        SidebarItem(Icons.Filled.Backup, Strings.backup, enabled = false)
+        SidebarItem(Icons.Filled.Backup, Strings.backup, onClick = actions.onBackup)
         // "Notifications" non c'è più (dal 05/10/2026, chiesto dall'utente):
         // le sue scelte stanno in Settings, vedi `NotificationSettingsSection`.
         SidebarItem(Icons.Filled.Delete, Strings.trash, onClick = actions.onTrash)

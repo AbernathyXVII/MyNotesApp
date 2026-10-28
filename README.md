@@ -2104,6 +2104,60 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### 🆕 v0.140 — 28/10/2026 · 08:31 — Il backup ogni giorno, "Carica su Proton Drive" e il ripristino
+*(Claude Code sul PC; provata sul telefono: "Fai un backup adesso" fa in 6 secondi un backup di 27 MB in Download/notE backup, con dentro il database sano (versione 65), i 55 file delle pagine e le preferenze; "Carica su Proton Drive" lo ha copiato in Proton Drive/Documents/notE backup, identico byte per byte all'originale, e la volta dopo "Salva come" si apre già lì; il ripristino provato solo coi test; 939 test passati)*
+
+L'utente, parola per parola:
+> «Hai menzionato Google Drive. Puoi fare il backup automatico su Proton
+> Drive? Prima di iniziare dimmi se puoi farlo»
+
+Controllato sul telefono (Proton Drive 3.2.0): Proton Drive lascia alle
+altre app creare un file alla volta con "Salva come", ma non dà una cartella
+in cui scrivere da sole, quindi un backup tutto automatico lì non si può
+fare. L'utente ha scelto:
+> «Fai la prima: backup automatico ogni giorno sul telefono, più "Carica su
+> Proton Drive" con un tocco e un promemoria se non lo carico da troppo.»
+
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Backup" nella barra laterale**
+  (prima era grigio): in cima l'ultimo backup e l'ultimo caricamento su
+  Proton Drive, "Carica su Proton Drive" e "Fai un backup adesso"; sotto il
+  backup di ogni giorno, il promemoria, i backup sul telefono e "Ripristina
+  da un file…"
+- **[Nuova funzionalità]** **[📱 Mobile]** **Il backup ogni giorno**: una
+  volta al giorno, uscendo dall'app, se oggi non ce n'è ancora uno. È un file
+  zip con tutto notE: il database (copiato tutto in un istante, anche mentre
+  l'app scrive), le immagini e i file delle pagine, le impostazioni, i
+  widget, gli strumenti della penna e la password delle pagine bloccate. Sta
+  in **Download/notE backup**, dove resta anche se notE viene disinstallata;
+  se ne tengono gli ultimi 7. Si spegne dalla pagina Backup
+- **[Nuova funzionalità]** **[📱 Mobile]** **"Carica su Proton Drive"**: apre
+  "Salva come" col nome del backup già scritto; la prima volta si sceglie la
+  cartella di Proton Drive, dalla seconda la finestra si apre già lì e basta
+  toccare "Salva". Senza backup, prima se ne fa uno. Ogni backup
+  dell'elenco ha anche lui "Carica su Proton Drive"
+- **[Nuova funzionalità]** **[📱 Mobile]** **Il promemoria**: passati 7
+  giorni dall'ultimo caricamento (si sceglie 3, 7, 14, 30 o mai), uscendo
+  dall'app arriva una notifica, al massimo una al giorno, finché non se ne
+  carica uno. Toccata, apre la pagina Backup
+- **[Nuova funzionalità]** **[📱 Mobile]** **Il ripristino**, da un backup
+  dell'elenco o da un file (anche scaricato da Proton Drive): dopo la
+  domanda, prima si fa un backup di com'è adesso (per tornare indietro), poi
+  notE si riavvia e alla riapertura, prima di leggere qualsiasi cosa, mette
+  al loro posto database, file e impostazioni del backup. Un file che non è
+  un backup di notE, o uno di una notE più nuova, non tocca niente e lo dice
+- **[Progetto]** `data/backup/BackupArchive.kt` (com'è fatto lo zip, e
+  nessun file dello zip può uscire dalla sua cartella), `BackupStorage.kt`
+  (Download/notE backup con `MediaStore`, una cartella per i test e i
+  telefoni prima di Android 10), `Backups.kt` (il backup con `VACUUM INTO`,
+  i 7 tenuti, il caricamento, il promemoria, `prepareRestore` e
+  `applyPendingRestore` chiamato per primo in `MainActivity.onCreate`);
+  `ui/screen/BackupScreen.kt`; `BackupStrings` nelle otto lingue;
+  `Notifier.postBackupReminder`; `AppDatabase.closeInstance`. Test:
+  `BackupTest` (dentro c'è tutto, uno al giorno, i 7 tenuti, il ripristino
+  completo, i file sbagliati, il caricamento, il promemoria, con la SQLite
+  vera), `BackupScreenTest` (la pagina, "Salva come" col nome e poi dove si
+  è salvato, il ripristino dal menu)
+
 ### 🆕 v0.139 — 27/10/2026 · 23:31 — I bottoni, come su Notion: un tocco e partono le azioni scelte
 *(Claude Code sul PC; provata sul telefono in "Paragraph – prova": "/button" apre la finestra, "Show confirmation" e "Insert blocks" con una casella, "Cancel" non fa niente e "Continue" mette la casella sotto il bottone, "Edit button" ritrova le azioni; in un database di prova la proprietà Button con "Edit pages in" → "This page" → "Toggle" spunta e toglie la spunta alla sua riga; poi tutto tolto, il database di prova nel cestino; 924 test passati)*
 
