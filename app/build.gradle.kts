@@ -2,7 +2,6 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
-    id("com.google.devtools.ksp")
     id("org.jetbrains.kotlin.plugin.serialization")
 }
 
@@ -169,10 +168,11 @@ dependencies {
     // di vita della schermata (si ferma quando l'app va in background)
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.4")
 
-    // Room (database SQLite locale) - il cuore del "tutto salvato sul telefono"
+    // Room (database SQLite locale) - il cuore del "tutto salvato sul telefono".
+    // Dal 04/11/2026 il database e i DAO stanno nel modulo `shared`, che fa
+    // anche da sé il codice di Room: qui resta Room per `withTransaction`.
     implementation("androidx.room:room-runtime:2.8.5")
     implementation("androidx.room:room-ktx:2.8.5")
-    ksp("androidx.room:room-compiler:2.8.5")
 
     // Coroutines per operazioni asincrone sul database
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")

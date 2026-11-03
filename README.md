@@ -1151,6 +1151,32 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### ✏️ v0.153.1 — 04/11/2026 · 00:38 — Il database nel codice comune: lo stesso sul telefono e sul PC
+*(Claude Code sul PC; provata sul telefono; 1091 test passati)*
+
+- **[Progetto]** **Il database è in `shared`**: i DAO e `AppDatabase` (le
+  14 tabelle, versione 70), con Room che ne scrive il codice per telefono e
+  PC (`kspAndroid` e `kspDesktop` in `shared/build.gradle.kts`; l'app non
+  ha più KSP). `@ConstructedBy(AppDatabaseConstructor::class)`: un
+  `expect object` che Room completa da sé. Il file lo apre
+  `buildAppDatabase`, diverso per ognuno: sul telefono `notion_local.db`
+  come sempre, con le 65 migrazioni dalla 5 alla 70 (passate dal
+  `companion object` a `PhoneMigrations`, in `AppDatabase.android.kt`:
+  sono scritte con `SupportSQLiteDatabase`, che c'è solo su Android); sul
+  PC `notion_local.db` nella cartella dei dati, con l'SQLite dentro l'app
+  (`androidx.sqlite:sqlite-bundled` 2.6.2), dove nasce già alla versione
+  70. L'impronta dello schema che Room salva nel file è la stessa di prima
+  (`13d967df…`), sul telefono e sul PC: i dati del telefono si aprono come
+  sempre, e il file del telefono e quello del PC sono uguali. **Le
+  migrazioni da qui in avanti** vanno scritte col `SQLiteConnection` di
+  Room, che vale per tutti e due
+- **[Progetto]** Con i DAO sono passati in `shared` anche
+  `data/notify/Reminders.kt` e `NotificationCommand.kt` (le righe dei
+  promemoria che due DAO restituiscono). Le repository restano nell'app,
+  per ora: usano `withTransaction`, che c'è solo su Android (sul PC c'è
+  `useWriterConnection`). Test: `DesktopDatabaseTest` scrive una pagina sul
+  PC in una cartella temporanea, chiude il database, lo riapre e la ritrova
+
 ### 🆕 v0.153 — 04/11/2026 · 00:20 — PageFlow comincia sul PC: il codice comune a telefono e Windows
 *(Claude Code sul PC; provata sul telefono; 1090 test passati)*
 
@@ -11890,14 +11916,17 @@ I pacchetti sono gli stessi in tutti e tre: un file si sposta da `app` a
 
 ```
 shared/src/commonMain/kotlin/com/gabriele/notionlocal/
-                    # Il codice comune: entità, formule, testi, tema,
-                    # impostazioni, Patch Notes (e cresce)
+                    # Il codice comune: il database (entità, DAO,
+                    # AppDatabase), formule, testi, tema, impostazioni,
+                    # Patch Notes (e cresce)
 shared/src/androidMain/, shared/src/desktopMain/
                     # Quello che cambia fra telefono e PC (expect/actual):
-                    # PlatformContext, SettingsStore, le Patch Notes
+                    # PlatformContext, SettingsStore, le Patch Notes, come
+                    # si apre il database (sul telefono con le migrazioni)
 desktop/src/main/kotlin/com/gabriele/notionlocal/desktop/Main.kt
                     # La finestra del PC (gradle :desktop:run)
-desktop/src/test/   # DesktopScreensTest: le schermate del PC in immagini
+desktop/src/test/   # DesktopScreensTest: le schermate del PC in immagini;
+                    # DesktopDatabaseTest: il database sul PC
 
 app/src/main/java/com/gabriele/notionlocal/
 ├── data/           # Entità Room, DAO, Repository, AppDatabase

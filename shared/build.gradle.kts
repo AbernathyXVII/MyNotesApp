@@ -21,6 +21,8 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.compose")
     id("org.jetbrains.kotlin.plugin.serialization")
+    // Room scrive da sé il codice del database (DAO e tabelle), per ogni piattaforma.
+    id("com.google.devtools.ksp")
 }
 
 kotlin {
@@ -46,11 +48,20 @@ kotlin {
             api("org.jetbrains.compose.material:material-icons-extended:1.7.3")
             api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
             api("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")
-            // Room multipiattaforma: per ora solo le annotazioni delle entità;
-            // il database resta nel modulo `app`.
+            // Room multipiattaforma: le tabelle, i DAO e `AppDatabase` (dal
+            // 04/11/2026 qui e non più nel modulo `app`).
             api("androidx.room:room-runtime:2.8.5")
         }
+        getByName("desktopMain").dependencies {
+            // Sul PC l'SQLite viaggia dentro l'app (su Windows non ce n'è uno di sistema).
+            implementation("androidx.sqlite:sqlite-bundled:2.6.2")
+        }
     }
+}
+
+dependencies {
+    add("kspAndroid", "androidx.room:room-compiler:2.8.5")
+    add("kspDesktop", "androidx.room:room-compiler:2.8.5")
 }
 
 android {
