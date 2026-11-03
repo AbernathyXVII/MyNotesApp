@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="quick_note">빠른 메모</string>
+    <string name="quick_note_long">새 빠른 메모</string>
+</resources>

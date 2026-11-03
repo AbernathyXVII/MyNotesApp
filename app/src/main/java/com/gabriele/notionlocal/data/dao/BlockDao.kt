@@ -1,0 +1,295 @@
+package com.gabriele.notionlocal.data.dao
+
+import androidx.room.Dao
+import androidx.room.Delete
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
+import androidx.room.Update
+import androidx.room.Upsert
+import com.gabriele.notionlocal.data.entity.BlockEntity
+import com.gabriele.notionlocal.data.entity.BlockType
+import com.gabriele.notionlocal.data.notify.NotificationBlockRow
+import kotlinx.coroutines.flow.Flow
+
+@Dao
+interface BlockDao {
+
+    /**
+     * Salva un blocco: lo crea se non c'è, lo **aggiorna al suo posto**
+     * se c'è già.
+     *
+     * **Non `REPLACE`.** Era `@Insert(onConflict = REPLACE)`, e in SQLite
+     * `REPLACE` non aggiorna: **cancella la riga e ne inserisce una
+     * nuova**. La cancellazione fa scattare il vincolo verso i figli
+     * (`parentBlockId`, a cascata), quindi salvare un blocco che ne ha
+     * voleva dire **cancellare tutti i suoi figli**. Aprire o chiudere un
+     * toggle lo salva: ogni volta il contenuto spariva. Visto nel
+     * database il 22/09/2026 — cinque righe dentro un toggle, un tocco
+     * sulla freccia, zero righe. Lo stesso valeva per spostarlo su o giù
+     * e per cambiargli tipo.
+     *
+     * `@Upsert` prova a inserire e, se l'id esiste già, aggiorna: la riga
+     * non viene mai cancellata, i figli restano dove sono.
+     */
+    @Upsert
+    suspend fun insert(block: BlockEntity)
+
+    /** Come `insert`, per più blocchi insieme. */
+    @Upsert
+    suspend fun insertAll(blocks: List<BlockEntity>)
+
+    /** Lo crea **solo se non c'è**: se c'è già, lo lascia com'è. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertIfAbsent(block: BlockEntity)
+
+    @Update
+    suspend fun update(block: BlockEntity)
+
+    @Delete
+    suspend fun delete(block: BlockEntity)
+
+    @Query("SELECT * FROM blocks WHERE pageId = :pageId ORDER BY orderIndex ASC")
+    fun getBlocksForPage(pageId: String): Flow<List<BlockEntity>>
+
+    /**
+     * Cambia SOLO la numerazione, senza toccare il resto della riga.
+     * Salvare l'intera entità riscriverebbe anche `textJson` con la copia
+     * che il chiamante ha in mano, che può essere più vecchia di quello
+     * che l'utente ha appena scritto — ed è così che un tocco sul numero
+     * cancellava il testo della riga.
+     */
+    @Query("UPDATE blocks SET numberStartsAt = :startsAt, numberResetHere = 0 WHERE id = :blockId")
+    suspend fun setNumberStart(blockId: String, startsAt: Int?)
+
+    /**
+     * Tipo e pagina richiamata insieme, senza riscrivere il testo: serve a
+     * far diventare una riga il collegamento a una vista collegata. Salvare
+     * il blocco intero dalla copia della schermata riscriverebbe anche il
+     * comando "/..." appena tolto (vedi `turnIntoDividerWithLineBelow`).
+     */
+    @Query("UPDATE blocks SET type = :type, linkedPageId = :linkedPageId WHERE id = :blockId")
+    suspend fun setTypeAndLink(blockId: String, type: BlockType, linkedPageId: String)
+
+    /**
+     * Tipo e pagina richiamata insieme, **col testo svuotato**: la riga che
+     * diventa "Database - Full page" (dal 06/10/2026). Il comando "/…" che
+     * l'ha creata non deve restare nascosto nel collegamento.
+     */
+    @Query("UPDATE blocks SET type = :type, linkedPageId = :linkedPageId, textJson = '[]' WHERE id = :blockId")
+    suspend fun setTypeAndLinkClearingText(blockId: String, type: BlockType, linkedPageId: String)
+
+    /** Come setNumberStart: cambia il tipo senza riscrivere il testo della riga. */
+    @Query("UPDATE blocks SET type = :type WHERE id = :blockId")
+    suspend fun setType(blockId: String, type: BlockType)
+
+    /** Porta un blocco in un'altra pagina, al primo livello e al posto `orderIndex`. */
+    @Query("UPDATE blocks SET pageId = :pageId, parentBlockId = NULL, orderIndex = :orderIndex WHERE id = :blockId")
+    suspend fun moveToPage(blockId: String, pageId: String, orderIndex: Int)
+
+    /** Cambia solo le voci in più di un blocco (`BlockAttrs`): il file, l'icona, la lingua… */
+    /** Le voci dei riquadri con un'immagine per icona: vedi `PageRepository.iconImagesInUse`. */
+    @Query("SELECT attrsJson FROM blocks WHERE type = 'CALLOUT' AND attrsJson LIKE '%iconImage%'")
+    suspend fun calloutAttrs(): List<String>
+
+    @Query("UPDATE blocks SET attrsJson = :attrsJson WHERE id = :blockId")
+    suspend fun setAttrs(blockId: String, attrsJson: String)
+
+    /**
+     * Una riga diventa un blocco senza testo da scrivere — immagine, video,
+     * file, link a una pagina…: tipo e voci insieme, e il testo svuotato
+     * (il comando "/…" che l'ha creata non deve restare nascosto lì dentro).
+     */
+    @Query("UPDATE blocks SET type = :type, attrsJson = :attrsJson, textJson = '[]' WHERE id = :blockId")
+    suspend fun setTypeAndAttrs(blockId: String, type: BlockType, attrsJson: String)
+
+    /**
+     * Fa posto: sposta avanti di `by` la numerazione di tutti i blocchi
+     * fratelli da `fromIndex` in poi.
+     *
+     * **Una query sola, non una riga alla volta.** Salvare i blocchi uno
+     * per uno voleva dire una scrittura per ciascuno, e Room avvisa chi
+     * osserva la tabella dopo ognuna: su una pagina con trenta blocchi,
+     * un solo Invio scatenava trenta ridisegni completi della pagina di
+     * fila, il campo di testo veniva ricomposto in mezzo alla
+     * digitazione e il fuoco non riusciva più a spostarsi sul blocco
+     * nuovo. In più la numerazione veniva calcolata sulla lista che
+     * aveva in mano la UI, che nel frattempo poteva essere già vecchia:
+     * due Invii ravvicinati lasciavano due blocchi con lo stesso
+     * numero. Qui invece conta il database, non la copia in memoria.
+     *
+     * `IS` e non `=` sul genitore: i blocchi di primo livello ce
+     * l'hanno nullo, e in SQL `NULL = NULL` non è vero.
+     */
+    @Query(
+        "UPDATE blocks SET orderIndex = orderIndex + :by " +
+            "WHERE pageId = :pageId AND parentBlockId IS :parentBlockId AND orderIndex >= :fromIndex"
+    )
+    suspend fun shiftOrderIndexes(pageId: String, parentBlockId: String?, fromIndex: Int, by: Int)
+
+    /** Come setNumberStart: cambia il rientro senza riscrivere il testo della riga. */
+    @Query("UPDATE blocks SET indentLevel = :level WHERE id = :blockId")
+    suspend fun setIndentLevel(blockId: String, level: Int)
+
+    /** Come setNumberStart: sposta la riga senza riscriverne il testo (vedi `PageRepository.moveBlock`). */
+    @Query("UPDATE blocks SET orderIndex = :orderIndex WHERE id = :blockId")
+    suspend fun setOrderIndex(blockId: String, orderIndex: Int)
+
+    /** Un blocco in un altro posto della stessa pagina: dentro `parentBlockId` (null = primo livello), al posto `orderIndex`. */
+    @Query("UPDATE blocks SET parentBlockId = :parentBlockId, orderIndex = :orderIndex WHERE id = :blockId")
+    suspend fun setParentAndOrder(blockId: String, parentBlockId: String?, orderIndex: Int)
+
+    /**
+     * Cambia **solo** il testo di un blocco.
+     *
+     * Scrivere una lettera non deve poter spostare il blocco né
+     * cambiargli la spunta: salvando l'entità intera si rispediva anche
+     * il `orderIndex` che la schermata aveva in mano, che dopo un a-capo
+     * è quello di prima — e la riga appena creata se la ritrovava
+     * addosso.
+     */
+    @Query("UPDATE blocks SET textJson = :textJson WHERE id = :blockId")
+    suspend fun setText(blockId: String, textJson: String)
+
+    /** La riga diventa una notifica: tipo e ora insieme, senza riscrivere il testo. */
+    @Query("UPDATE blocks SET type = 'NOTIFICATION', notifyAt = :at WHERE id = :blockId")
+    suspend fun setNotification(blockId: String, at: Long)
+
+    /** Cambia solo l'ora di una riga "/notification". */
+    @Query("UPDATE blocks SET notifyAt = :at WHERE id = :blockId")
+    suspend fun setNotifyAt(blockId: String, at: Long)
+
+    /**
+     * Le righe "/notification" con la loro ora, col titolo della pagina in
+     * cui stanno: quelle delle pagine nel cestino non suonano. Vedi
+     * `data/notify/Reminders.kt`.
+     */
+    @Query(
+        """
+        SELECT b.id AS blockId, b.pageId AS pageId, b.textJson AS textJson,
+               b.notifyAt AS notifyAt, p.title AS pageTitle
+        FROM blocks b JOIN pages p ON p.id = b.pageId
+        WHERE b.type = 'NOTIFICATION' AND b.notifyAt IS NOT NULL AND p.trashedAt IS NULL
+        """
+    )
+    suspend fun getNotificationRows(): List<NotificationBlockRow>
+
+    /**
+     * Un blocco letto adesso dal database.
+     *
+     * Serve dentro le transazioni che spostano le righe: la copia che
+     * ha in mano la schermata può essere di un attimo fa, e a chi scrive
+     * in fretta "un attimo fa" vuol dire con l'indice sbagliato.
+     */
+    @Query("SELECT * FROM blocks WHERE id = :blockId")
+    suspend fun getById(blockId: String): BlockEntity?
+
+    /**
+     * Ricerca full-text nel contenuto testuale dei blocchi. textJson
+     * contiene il testo serializzato, quindi il LIKE funziona comunque
+     * (cerca la sottostringa anche dentro il JSON) — semplice e
+     * sufficientemente efficace per un uso locale/personale.
+     */
+    @Query("SELECT DISTINCT pageId FROM blocks WHERE textJson LIKE '%' || :query || '%'")
+    suspend fun searchPageIdsInBlocks(query: String): List<String>
+
+    /**
+     * I blocchi il cui testo contiene la parola cercata, per mostrarne un
+     * pezzo nei risultati. Il confronto è sul JSON, quindi può trovare
+     * anche i nomi dei campi ("bold", "text"): chi chiama ricontrolla sul
+     * testo vero.
+     */
+    @Query("SELECT * FROM blocks WHERE textJson LIKE '%' || :query || '%'")
+    suspend fun searchBlocks(query: String): List<BlockEntity>
+
+    /**
+     * Se una pagina contiene almeno un collegamento a un'altra: decide se
+     * nell'albero ha il triangolino. Le viste collegate non contano: non
+     * stanno nell'albero (vedi `PageRepository.treeChildren`), e una pagina
+     * che ha solo quelle avrebbe avuto un triangolino che apre il vuoto.
+     */
+    @Query(
+        "SELECT COUNT(*) FROM blocks WHERE pageId = :pageId AND linkedPageId IS NOT NULL " +
+            "AND linkedPageId NOT IN (SELECT id FROM pages WHERE sourceDatabaseId IS NOT NULL)"
+    )
+    suspend fun countLinksInPage(pageId: String): Int
+
+    @Query("DELETE FROM blocks WHERE pageId = :pageId")
+    suspend fun deleteAllForPage(pageId: String)
+
+    /** Quanti blocchi di un certo tipo rimandano a una pagina. */
+    @Query("SELECT COUNT(*) FROM blocks WHERE linkedPageId = :pageId AND type = :type")
+    suspend fun countLinks(pageId: String, type: BlockType): Int
+
+    /**
+     * Cambia il modo in cui una pagina viene mostrata dove è richiamata:
+     * tutti i blocchi di tipo `from` che la richiamano diventano `to`.
+     * È "Turn into page" / "Turn into database": il database resta
+     * esattamente lo stesso, cambia solo il blocco che lo mostra.
+     */
+    @Query("UPDATE blocks SET type = :to WHERE linkedPageId = :pageId AND type = :from")
+    suspend fun retypeLinks(pageId: String, from: BlockType, to: BlockType)
+
+    /** Apre o chiude un toggle senza riscrivere il resto della riga. */
+    @Query("UPDATE blocks SET isExpanded = :expanded WHERE id = :blockId")
+    suspend fun setExpanded(blockId: String, expanded: Boolean)
+
+    /** I figli diretti di un blocco (il contenuto di un toggle), in ordine. */
+    @Query("SELECT * FROM blocks WHERE parentBlockId = :blockId ORDER BY orderIndex ASC")
+    suspend fun getChildren(blockId: String): List<BlockEntity>
+
+    /** Le copie di un blocco sincronizzato (dal 03/11/2026): l'id del gruppo fra virgolette in [pattern]. */
+    @Query("SELECT * FROM blocks WHERE type = 'SYNCED' AND attrsJson LIKE :pattern")
+    suspend fun getSyncedBlocks(pattern: String): List<BlockEntity>
+
+    /** I blocchi che nominano [pattern] nelle voci in più: le foto di un file (dal 03/11/2026). */
+    @Query("SELECT * FROM blocks WHERE attrsJson LIKE :pattern")
+    suspend fun getBlocksWithAttrs(pattern: String): List<BlockEntity>
+
+    /** Le foto delle pagine, quelle con un file: il loro testo si legge (`ImageTexts`). */
+    @Query("SELECT * FROM blocks WHERE type = 'IMAGE' AND attrsJson LIKE '%\"file\"%'")
+    suspend fun getImageBlocks(): List<BlockEntity>
+
+    /** Quanti blocchi nominano [pattern] nelle voci in più: un file ancora usato da una copia sincronizzata. */
+    @Query("SELECT COUNT(*) FROM blocks WHERE attrsJson LIKE :pattern")
+    suspend fun countWithAttrs(pattern: String): Int
+
+    /** I blocchi di una pagina, una volta sola: serve per duplicarla. */
+    @Query("SELECT * FROM blocks WHERE pageId = :pageId ORDER BY orderIndex ASC")
+    suspend fun getBlocksForPageOnce(pageId: String): List<BlockEntity>
+
+    /**
+     * I blocchi che **rimandano** a una pagina, ovunque stiano.
+     *
+     * Qui l'albero di navigazione non è in un campo della pagina: una
+     * pagina sta "dentro" un'altra perché in quell'altra c'è un blocco
+     * che la richiama. Per spostarla o per toglierla di mezzo bisogna
+     * quindi partire da questi blocchi, non dalla pagina.
+     */
+    @Query("SELECT * FROM blocks WHERE linkedPageId = :pageId")
+    suspend fun getBlocksLinkingTo(pageId: String): List<BlockEntity>
+
+    /**
+     * **Chi menziona una pagina** (dal 03/11/2026, i backlink): le righe col
+     * suo collegamento `note://page/…` nel testo ([textPattern]) e i "Link to
+     * page" che portano a lei ([attrsPattern], l'id fra virgolette). Si
+     * guarda nel JSON salvato: è un giro su tutte le righe, quindi si chiede
+     * aprendo la pagina, non a ogni lettera.
+     */
+    @Query("SELECT * FROM blocks WHERE textJson LIKE :textPattern OR (type = 'PAGE_MENTION' AND attrsJson LIKE :attrsPattern)")
+    suspend fun getBlocksMentioning(textPattern: String, attrsPattern: String): List<BlockEntity>
+
+    /** Un blocco seguito nel tempo: il bottone vero di una copia collegata (dal 27/10/2026). */
+    @Query("SELECT * FROM blocks WHERE id = :blockId")
+    fun observeById(blockId: String): Flow<BlockEntity?>
+
+    /** Tutti i bottoni, dovunque stiano: "Link to button" (dal 27/10/2026). */
+    @Query("SELECT * FROM blocks WHERE type = 'BUTTON'")
+    suspend fun getButtonBlocks(): List<BlockEntity>
+
+    /** Il posto più in fondo fra i blocchi di primo livello di una pagina. */
+    @Query(
+        "SELECT MAX(orderIndex) FROM blocks WHERE pageId = :pageId AND parentBlockId IS NULL"
+    )
+    suspend fun lastOrderIndex(pageId: String): Int?
+}

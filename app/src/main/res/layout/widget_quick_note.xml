@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Il widget "Quick note" della schermata Home (dal 02/11/2026): vedi `QuickNoteWidget`. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/quick_note_widget"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_quick_note_background"
+    android:gravity="center"
+    android:orientation="horizontal"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp">
+
+    <ImageView
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:contentDescription="@null"
+        android:src="@drawable/ic_quick_note" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:text="@string/quick_note"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp" />
+</LinearLayout>

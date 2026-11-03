@@ -1,0 +1,506 @@
+package com.gabriele.notionlocal.data.entity
+
+import androidx.room.ColumnInfo
+import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.Index
+import androidx.room.PrimaryKey
+import java.util.UUID
+
+/**
+ * Come una pagina-database mostra le sue righe. Ricalca i "layout" di
+ * Notion. Qui ci sono solo quelli costruiti davvero: gli altri (oggi
+ * manca solo il grafico) si aggiungono uno alla volta, perché ognuno è
+ * una schermata a sé e offrirne una che non disegna niente sarebbe
+ * peggio che non offrirla.
+ *
+ * Si salva **per nome**, quindi l'ordine qui si può cambiare senza
+ * toccare i database già salvati. È anche l'ordine dei riquadri nel
+ * selettore della vista.
+ */
+enum class DatabaseLayout {
+    TABLE,
+    BOARD,
+    CALENDAR,
+    TIMELINE,
+    LIST,
+    GALLERY,
+    /** Il grafico (dal 28/09/2026): vedi `ChartSettings`. */
+    CHART
+}
+
+/**
+ * Cosa mostra la parte alta di una scheda della galleria: niente, la
+ * copertina della pagina, o l'inizio del suo testo. Sono le tre voci di
+ * "Card preview" su Notion che si possono fare qui — la quarta, una
+ * proprietà "Files & media", richiede un tipo di proprietà che l'app
+ * non ha.
+ */
+enum class GalleryCardPreview {
+    NONE,
+    PAGE_COVER,
+    PAGE_CONTENT
+}
+
+/** Quanto sono grandi le schede della galleria, come "Card size" su Notion. */
+enum class GalleryCardSize {
+    SMALL,
+    MEDIUM,
+    LARGE
+}
+
+/**
+ * Cosa mostra una galleria finché non si sceglie altro: **la
+ * copertina**. È la ragione per cui la galleria è arrivata dopo le
+ * copertine delle pagine — una griglia di schede che si riconoscono a
+ * colpo d'occhio dall'immagine è la cosa che la distingue dall'elenco.
+ * Chi ha pagine senza copertina passa a "Page content" dalle
+ * impostazioni della vista.
+ */
+val GALLERY_DEFAULT_PREVIEW = GalleryCardPreview.PAGE_COVER
+
+/** Schede medie finché non si sceglie altro: due per riga su un telefono. */
+val GALLERY_DEFAULT_SIZE = GalleryCardSize.MEDIUM
+
+/**
+ * Il font del testo di una pagina, fra quelli chiesti dall'utente. Si
+ * salva per nome, come le altre scelte. Nomi, sosia liberi e da dove
+ * arrivano stanno in `ui/theme/PageFonts.kt`; l'ordine qui è quello del
+ * menu: prima gli occidentali, poi i cinesi, poi i giapponesi.
+ */
+enum class PageFont {
+    HELVETICA,
+    GARAMOND,
+    ARIAL,
+    VERDANA,
+    GEORGIA,
+    CALIBRI,
+    FUTURA,
+    TIMES_NEW_ROMAN,
+    CAMBRIA,
+    CONSOLAS,
+    SONGTI,
+    KAITI,
+    // MS_YAHEI c'era fino al 25/09/2026: il suo sosia libero (Noto Sans SC)
+    // è lo stesso disegno che Android usa già per il cinese, e sul
+    // telefono non si distingueva dal font di sistema. Tolto su richiesta
+    // dell'utente, che ha chiesto SimSun al suo posto; la migrazione 29→30
+    // ha rimesso al font di sistema le pagine che lo usavano. **Non
+    // rimetterlo senza una migrazione**: un nome che l'enum non conosce fa
+    // chiudere l'app all'apertura della pagina.
+    SIMSUN,
+    MINCHO,
+    GOTHIC,
+    KAISEI
+}
+
+/**
+ * Quanto tempo mostra il calendario in una schermata: un anno, un mese,
+ * una settimana o un giorno. Sostituisce il vecchio `calendarWeekView`, che
+ * essendo un sì/no non poteva reggere una terza scelta.
+ *
+ * **DAY** (dal 30/09/2026): il giorno con la griglia delle ore, per il
+ * time-blocking come su Google Calendar. Si salva col nome, come le altre:
+ * aggiungerla non ha chiesto di cambiare lo schema.
+ */
+enum class CalendarMode {
+    YEAR,
+    MONTH,
+    WEEK,
+    DAY
+}
+
+/**
+ * Quanto tempo sta in una schermata della linea del tempo. Sono gli
+ * stessi ingrandimenti di Notion, meno "5 anni": a quella scala un
+ * mese è largo due millimetri e non si distingue più niente.
+ */
+/**
+ * Il valore di `sortColumnId` che vuol dire "ordina per nome della
+ * pagina". Il nome è una colonna della tabella ma non una proprietà
+ * del database, quindi non ha un id a cui riferirsi: gliene diamo uno
+ * che nessun id vero può avere.
+ */
+const val SORT_BY_NAME = "__name__"
+
+enum class TimelineZoom {
+    HOURS,
+    DAY,
+    WEEK,
+    BI_WEEK,
+    MONTH,
+    QUARTER,
+    YEAR
+}
+
+/**
+ * Una Pagina è il nodo base dell'albero di navigazione. Ogni pagina può
+ * contenere:
+ *  - contenuto rich text (salvato come blocchi, vedi BlockEntity)
+ *  - OPPURE essere di tipo "database" e contenere righe (vedi
+ *    DatabaseRowEntity), se isDatabase = true.
+ *
+ * parentId nullable = pagina di primo livello (radice dell'albero).
+ * parentId valorizzato = sottopagina di un'altra pagina. Questo campo è
+ * rimasto nello schema ma non è più popolato dalla UI: la gerarchia di
+ * navigazione oggi vive nei blocchi PAGE_LINK/DATABASE_LINK dentro il
+ * contenuto delle pagine, non più in un puntatore diretto pagina-pagina.
+ *
+ * isRowPage = true per le pagine create aprendo una riga di un database
+ * come pagina vera (vedi DatabaseRowEntity.linkedPageId) — queste
+ * pagine non devono comparire tra le pagine radice della Home.
+ *
+ * onDelete = CASCADE sul parent: cancellare una pagina cancella
+ * automaticamente tutte le sue sottopagine, esattamente come in Notion.
+ */
+@Entity(
+    tableName = "pages",
+    foreignKeys = [
+        ForeignKey(
+            entity = PageEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["parentId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [Index("parentId")]
+)
+data class PageEntity(
+    @PrimaryKey val id: String = UUID.randomUUID().toString(),
+    val parentId: String? = null,
+    var title: String = "Senza titolo",
+    var icon: String = "📄", // emoji come icona, semplice ed efficace
+    // Se valorizzati, al posto dell'emoji e sopra al titolo si vede
+    // un'immagine scelta dall'utente. È il **nome del file** dentro la
+    // cartella delle immagini dell'app, non un percorso intero: la
+    // cartella dell'app può cambiare posto fra un'installazione e
+    // l'altra, il nome no.
+    var iconImage: String? = null,
+    // **Un'icona di Material** (dal 08/10/2026, la scheda "Icons" del
+    // selettore): il suo nome e, se non è quella bianca di sempre, il
+    // colore — "Home" o "Home|#E03E3E" (vedi `IconSymbol`). Vale sopra
+    // all'emoji, sotto all'immagine.
+    var iconSymbol: String? = null,
+    var coverImage: String? = null,
+    // Come è inquadrata la copertina dentro la sua striscia: quanto è
+    // ingrandita (1 = riempie la striscia e basta) e di quanto è
+    // spostata rispetto al centro. Lo spostamento è in **frazioni di
+    // striscia**, non in pixel: così la stessa inquadratura vale su
+    // qualunque schermo. Il file dell'immagine non viene mai toccato —
+    // qui c'è solo come guardarla.
+    var coverScale: Float = 1f,
+    var coverOffsetX: Float = 0f,
+    var coverOffsetY: Float = 0f,
+    // L'inquadratura della copertina **nelle schede della galleria**
+    // (dal 25/09/2026): tenendo premuta la scheda → "Reposition cover". La
+    // scheda ha un'altra forma della striscia in cima alla pagina, e
+    // l'utente ha voluto un'inquadratura sua, indipendente da quella. Stesso
+    // significato dei tre campi sopra, ma in frazioni della scheda. Null =
+    // la stessa della pagina, com'era prima; una copertina nuova la azzera.
+    var cardCoverScale: Float? = null,
+    var cardCoverOffsetX: Float? = null,
+    var cardCoverOffsetY: Float? = null,
+    var isDatabase: Boolean = false,
+    // **Database semplice** (solo con isDatabase = true): un database vero
+    // — viste, filtri, ordinamento, raggruppamento, proprietà — in cui
+    // però **le righe sono solo testo e non diventano mai pagine**. È la
+    // cosa che l'utente ha sempre voluto e che Notion non ha: nessun OPEN,
+    // nessuna icona o copertina di riga, e toccando una riga si apre la
+    // sua scheda (nome e proprietà) invece di una pagina. Si sceglie
+    // quando lo si crea ("Simple database" nei menu "/" e "+").
+    var isSimpleDatabase: Boolean = false,
+    // **Vista collegata** ("Linked view of data source", dal 24/09/2026):
+    // l'id del database di cui questa pagina è una vista. Una vista
+    // collegata non ha righe, colonne né celle sue — mostra quelle del
+    // database di origine, e scriverci vuol dire scrivere lì — ma ha
+    // **le sue impostazioni di vista**: layout, filtro, ordinamento,
+    // raggruppamento, galleria, calendario, linea del tempo, e quali
+    // proprietà si vedono (`viewHiddenColumnIds`). Così la stessa lista
+    // di giochi si mostra intera in una pagina e solo coi giochi PS5 in
+    // un'altra. Null per tutte le altre pagine e per i database veri.
+    var sourceDatabaseId: String? = null,
+    // Solo per una vista collegata: le proprietà nascoste **in questa
+    // vista**, id separati da virgole. Nei database veri il "nascosto"
+    // sta sulla colonna (`DatabaseColumnEntity.hidden`), ma le colonne di
+    // una vista collegata sono quelle dell'origine: nasconderne una qui
+    // la nasconderebbe anche là.
+    var viewHiddenColumnIds: String? = null,
+    var isRowPage: Boolean = false,
+    // Solo per le pagine con isDatabase = true: come vengono mostrate le
+    // righe (tabella, elenco, bacheca...). Ammette null perché i
+    // database creati prima che questa scelta esistesse non ne hanno
+    // una, e null vale "tabella", che è quello che stavano già usando.
+    var databaseLayout: DatabaseLayout? = null,
+    // Quale proprietà fa da colonna nella vista a bacheca. null = non
+    // scelta: si usa la prima proprietà a selezione singola che c'è. Dal
+    // 14/10/2026 può essere quasi ogni proprietà, come per la tabella
+    // (vedi `ColumnType.canGroup`).
+    var boardGroupColumnId: String? = null,
+    // In base a quale proprietà la **tabella** raggruppa le righe.
+    // null = nessun raggruppamento, cioè l'elenco piatto di sempre. È
+    // un campo diverso da `boardGroupColumnId` di proposito: la
+    // bacheca è fatta di colonne e senza raggruppamento non esiste,
+    // la tabella invece funziona benissimo senza, e chi cambia vista
+    // non si ritrova l'altra rimescolata.
+    var tableGroupColumnId: String? = null,
+    // Se i gruppi senza nemmeno una pagina si nascondono. Acceso come
+    // su Notion: un elenco di intestazioni vuote è rumore.
+    var hideEmptyGroups: Boolean = true,
+    // **I sottogruppi** (dal 29/09/2026): dentro ogni gruppo della tabella,
+    // i gruppi di una seconda proprietà. null = niente sottogruppi; senza
+    // `tableGroupColumnId` non vale.
+    var tableSubGroupColumnId: String? = null,
+    // Se i sottogruppi senza nemmeno una pagina si nascondono: un
+    // interruttore a sé da "Hide empty groups" (dal 29/09/2026, chiesto
+    // dall'utente), per vedere per esempio tutte le piattaforme sotto ogni
+    // genere, anche quelle senza giochi, senza per questo mostrare i generi vuoti.
+    var hideEmptySubGroups: Boolean = true,
+    // **Le viste di un database** (dal 29/09/2026, come su Notion): una
+    // vista in più è una pagina come una vista collegata (i dati sono quelli
+    // di `sourceDatabaseId`, le impostazioni sue), che appartiene al
+    // database su cui la si è creata: `viewHostId`. Non sta nell'albero né
+    // in un blocco; si sceglie dalla vista col suo nome.
+    var viewHostId: String? = null,
+    // Il nome di una vista, anche di quella di partenza del database. null =
+    // il nome del suo layout ("Table", "Board"…).
+    var viewName: String? = null,
+    // Sul database: quale delle sue viste si vede adesso. null = la sua.
+    var activeViewId: String? = null,
+    // **Le larghezze delle colonne della tabella** (dal 29/09/2026), di
+    // questa vista: JSON {"idColonna": dp}, Name con "__name__". Vedi
+    // `ColumnWidths.kt`.
+    var columnWidths: String? = null,
+    // Le colonne che si allargano quanto il loro contenuto ("Fit to
+    // content"), separate da virgole.
+    var fitColumns: String? = null,
+    // **Dove sta la colonna Name** (dal 29/09/2026), sul database che ha i
+    // dati: subito prima della prima colonna con `orderIndex` uguale o più
+    // alto. -1 = la prima, com'è sempre stata. Vedi `NameColumn.kt`.
+    var nameColumnOrder: Int = -1,
+    // **Il nome della proprietà principale** (dal 18/10/2026, chiesto
+    // dall'utente): quello della colonna "Aa Name", per questo database.
+    // Null = "Name", tradotto nella lingua dell'app. Sta nel database, non
+    // nella vista: le viste collegate mostrano quello della loro origine.
+    var nameColumnTitle: String? = null,
+    // **"Hide icon" della proprietà principale** (dal 27/10/2026): il suo "Aa"
+    // non si vede. Sta nel database, come il suo nome.
+    var hideNameIcon: Boolean = false,
+    // **Il testo lungo nelle celle** (dal 30/09/2026), di questa vista: tre
+    // puntini, colonna allargata o a capo. Vedi `CellOverflow`. La colonna
+    // del database si chiama ancora `wrapCells`: nata sì/no, il suo 0 e il
+    // suo 1 sono i tre puntini e l'a capo.
+    @ColumnInfo(name = "wrapCells")
+    var cellOverflow: Int = 0,
+    // **Prima colonna e prima riga ferme** nella tabella (dal 08/10/2026,
+    // chiesto dall'utente), di questa vista: la prima colonna resta a
+    // sinistra scorrendo a destra, la riga dei titoli resta in cima
+    // scorrendo in giù. Vedi `FrozenTable.kt`.
+    var freezeFirstColumn: Boolean = false,
+    var freezeFirstRow: Boolean = false,
+    // **Il correttore di questa pagina** (dal 08/10/2026), dai tre puntini:
+    // `PROOFING_DEFAULT` segue Settings, `PROOFING_ON` e `PROOFING_OFF` no.
+    // La lingua è il codice di una `ProofingLanguage`, null = quella di
+    // Settings. Le parole ignorate solo qui ("Ignore"), una per riga.
+    var proofingMode: Int = PROOFING_DEFAULT,
+    var proofingLanguage: String? = null,
+    var proofingIgnored: String? = null,
+    // **Il "Paragraph" di questa pagina** (dal 21/10/2026, chiesto
+    // dall'utente), dai tre puntini: lo spazio fra i blocchi e dopo i
+    // marcatori degli elenchi. Null = come Settings. Vedi `PageParagraph`.
+    var paragraphJson: String? = null,
+    // **"Full or page line" di questa pagina** (dal 27/10/2026, chiesto
+    // dall'utente), dai tre puntini: `FULL_LINE_DEFAULT` segue Settings ("Full
+    // line view"), `FULL_LINE_ON` le righe lunghe scorrono di lato,
+    // `FULL_LINE_OFF` vanno a capo. Vedi `fullLinesOf`.
+    var fullLineMode: Int = FULL_LINE_DEFAULT,
+    // **"Color columns"** della bacheca (dal 30/09/2026), di questa vista:
+    // ogni colonna, con le sue schede, del colore del suo tag.
+    var colorBoardCards: Boolean = false,
+    // **I sottogruppi della bacheca** (dal 14/10/2026, chiesto dall'utente,
+    // come su Notion): fasce orizzontali, una per valore di questa seconda
+    // proprietà, ognuna con tutte le colonne della bacheca. null = niente
+    // fasce. Un campo a sé da `tableSubGroupColumnId` per lo stesso motivo
+    // di `boardGroupColumnId`: cambiando vista non si rimescola l'altra.
+    var boardSubGroupColumnId: String? = null,
+    // Se le fasce senza nemmeno una pagina si nascondono, come
+    // `hideEmptySubGroups` per la tabella.
+    var boardHideEmptySubGroups: Boolean = true,
+    // **"Hide empty groups" della bacheca** (dal 21/10/2026, chiesto
+    // dall'utente): le colonne senza nemmeno una scheda, anche quella senza
+    // valore ("No Music show"), non si vedono. Di suo spento: la bacheca le
+    // mostra tutte, com'era.
+    var boardHideEmptyGroups: Boolean = false,
+    // **"Hide New" della bacheca** (dal 26/10/2026, chiesto dall'utente: "tutte
+    // quelle finestre New mi danno parecchio fastidio"): sotto le schede di
+    // ogni colonna, e di ogni colonna nelle fasce, niente "+ New". Di suo
+    // spento, come prima.
+    var boardHideNew: Boolean = false,
+    // **"Date by"** (dal 21/10/2026): raggruppando per una data, gruppi per
+    // giorno, settimana, mese o anno, dal più vecchio o dal più recente, per
+    // ognuno dei quattro raggruppamenti della vista. Null = per giorno, dal
+    // più vecchio, com'era. Vedi `DateGrouping.kt`.
+    var dateGroupingJson: String? = null,
+    // Quale proprietà data colloca le righe nel calendario. null = non
+    // scelta: si usa la prima proprietà di tipo data che c'è.
+    var calendarDateColumnId: String? = null,
+    // Da non usare: sostituito da calendarMode. Resta nell'entità solo
+    // perché la colonna esiste ancora nel database — toglierla vorrebbe
+    // dire ricreare la tabella, e SQLite sa cancellare una colonna solo
+    // dalla 3.35, cioè su telefoni più nuovi del minimo che l'app
+    // sostiene. Il suo valore è già stato travasato in calendarMode
+    // dalla migrazione 11→12.
+    var calendarWeekView: Boolean? = null,
+    // Se il calendario mostra un anno, un mese o una settimana. null
+    // vale "mese", che è come si apriva prima.
+    var calendarMode: CalendarMode? = null,
+    // Quanto tempo sta in una schermata della linea del tempo. null
+    // vale "giorno", che è come si apriva prima.
+    var timelineZoom: TimelineZoom? = null,
+    // Cosa mostra la parte alta delle schede della galleria, e quanto
+    // sono grandi. null vale "copertina" e "media": vedi
+    // `GALLERY_DEFAULT_PREVIEW` e `GALLERY_DEFAULT_SIZE` qui sopra, dove
+    // è spiegato il perché della scelta.
+    var galleryCardPreview: GalleryCardPreview? = null,
+    var galleryCardSize: GalleryCardSize? = null,
+    // Il font e il corpo del testo **di tutta la pagina**, come si
+    // sceglievano dalla barra Aa fino al 25/09/2026. **Non si usano più**:
+    // ora font e corpo stanno sul testo selezionato (`RichTextSpan.font`,
+    // `size`), e la migrazione 30→31 ha spostato lì quelli delle pagine che
+    // li avevano, lasciando queste due colonne vuote. Restano solo per non
+    // rifare la tabella delle pagine.
+    var pageFont: PageFont? = null,
+    var pageFontSize: Int? = null,
+    // La prima e la seconda regola di ordinamento, fino al 17/10/2026: la
+    // migrazione 56→57 le ha spostate in `sortRulesJson` e le ha svuotate.
+    // Restano solo per non rifare la tabella delle pagine; non le legge
+    // più nessuno.
+    var sortColumnId: String? = null,
+    var sortDescending: Boolean = false,
+    var thenSortColumnId: String? = null,
+    var thenSortDescending: Boolean = false,
+    // **Le regole di ordinamento, quante se ne vogliono** (dal 17/10/2026,
+    // chiesto dall'utente: "tante regole del sorting quante voglio"): un
+    // elenco JSON di `SortRuleSpec`, nell'ordine in cui contano. null =
+    // nessuna, cioè le righe nell'ordine in cui sono state create. Il valore
+    // speciale SORT_BY_NAME ordina per nome della pagina, che è una colonna
+    // della tabella ma non una proprietà nel database. Si legge e si scrive
+    // con `sortRules()` e `withSortRules()`: vedi `SortRules.kt`.
+    var sortRulesJson: String? = null,
+    // **I raggruppamenti, quanti se ne vogliono** (dal 28/10/2026, chiesto
+    // dall'utente: "la stessa cosa con il Group"): un elenco JSON di
+    // `GroupRuleSpec`, nell'ordine in cui contano, della tabella e della
+    // bacheca. null = nessuno (la bacheca prende allora la prima proprietà a
+    // selezione singola). Prendono il posto di gruppo e sottogruppo
+    // (`tableGroupColumnId`, `tableSubGroupColumnId`, `boardGroupColumnId`,
+    // `boardSubGroupColumnId`, i loro "Hide empty" e `dateGroupingJson`), che
+    // la migrazione 65→66 ha spostato qui e svuotato. Vedi `GroupRules.kt`.
+    var tableGroupRulesJson: String? = null,
+    var boardGroupRulesJson: String? = null,
+    // In base a quale proprietà sono filtrate le righe, e su quale
+    // valore. null = nessun filtro, cioè tutte le pagine — che è come
+    // stavano prima che il filtro esistesse.
+    //
+    // Come si legge `filterValue` dipende dal tipo della proprietà: per
+    // i tag sono le etichette scelte separate da MULTI_VALUE_SEPARATOR,
+    // per le date è lo stesso formato di una cella data (inizio, e la
+    // fine se il filtro copre più giorni). Riusare quel formato invece
+    // di inventarne un altro vuol dire che a leggerlo è la stessa
+    // funzione che legge le celle, quindi le due cose non possono
+    // separarsi.
+    var filterColumnId: String? = null,
+    var filterValue: String? = null,
+    // Se il titolo del database si vede quando è dentro una pagina.
+    // Vale solo lì: aperto a schermo intero il titolo c'è sempre,
+    // perché è l'unica cosa che dice dove si è finiti.
+    var showEmbeddedTitle: Boolean = true,
+    // Se la pagina sta fra i preferiti.
+    //
+    // **Una colonna sola per pagine e database**: qui un database è una
+    // pagina con `isDatabase = true`, quindi mettere fra i preferiti
+    // l'uno o l'altro è esattamente la stessa operazione. Un secondo
+    // elenco per i database avrebbe voluto dire due posti da tenere in
+    // fila e due modi di sbagliare.
+    //
+    // La pagina radice non si può mettere fra i preferiti: è quella da
+    // cui si parte sempre, un collegamento a lei non porterebbe da
+    // nessuna parte. Il divieto lo applica la UI, che nasconde
+    // l'interruttore, e lo ribadisce `PageRepository.setFavorite`.
+    var isFavorite: Boolean = false,
+    // Quando è stata messa fra i preferiti: l'elenco dei preferiti la
+    // mostra e ci si ordina sopra. Null per le pagine che lo erano già
+    // prima che la data si salvasse — per quelle la data vera non c'è, e
+    // inventarne una sarebbe peggio che dire che non si sa.
+    var favoritedAt: Long? = null,
+    // Pagina bloccata: il contenuto si legge ma non si modifica. È il
+    // "Lock page" di Notion, e vale per qualsiasi pagina.
+    var isLocked: Boolean = false,
+    // Vista bloccata: le righe di un database si modificano ancora, ma
+    // **come** sono mostrate no — niente cambio di vista, ordinamento,
+    // filtro, raggruppamento o colonne. È il "Lock view", una cosa
+    // diversa dal blocco del contenuto: si blocca l'impaginazione
+    // proprio per poter continuare a lavorare sui dati senza
+    // scombinarla per sbaglio.
+    var isViewLocked: Boolean = false,
+    // **Bloccata con la password** (dal 26/09/2026): per aprirla servono la
+    // password dell'app o l'impronta (vedi `AppLock`). Vale anche per quello
+    // che contiene: le sue sottopagine, le righe se è un database. Diverso
+    // da `isLocked`, che lascia leggere e impedisce solo di scrivere.
+    var isProtected: Boolean = false,
+    // **La sezione di un quaderno** in cui sta la pagina (dal 26/09/2026,
+    // vedi `NotebookEntity`), o null per le pagine del menu principale. Le
+    // pagine dei quaderni non si vedono mai dal menu principale: né
+    // nell'albero, né nella ricerca, né fra le pagine da cui partire. Il loro
+    // ordine nella sezione è `orderIndex`.
+    var notebookSectionId: String? = null,
+    // **I calcoli sotto la tabella di questa vista** (dal 26/09/2026,
+    // "Calculate"): "colonna=CALCOLO;…", con `NAME_CALCULATION_KEY` per la
+    // colonna del nome. Per vista, come su Notion: una vista collegata ha i
+    // suoi. Vedi `parseViewCalculations`.
+    var viewCalculations: String? = null,
+    // **Le impostazioni del grafico di questa vista** (dal 28/09/2026, la
+    // vista Chart): tipo, cosa mostrare sui due assi, ordine, stile. JSON di
+    // `ChartSettings`; null = quelle di base (barre verticali, una per riga,
+    // quante righe). Per vista, come il resto: una vista collegata ha le sue.
+    var chartSettings: String? = null,
+    // **Un template** (dal 26/09/2026, come su Notion): una pagina da cui
+    // copiare il contenuto nelle pagine nuove dei database, per non
+    // riscrivere ogni volta la stessa base (le stesse caselle da spuntare,
+    // per esempio). Si scrive come una pagina qualsiasi, ma non sta da
+    // nessuna parte nell'albero: sta nella voce "Templates" della barra
+    // laterale, e non compare né nella ricerca né fra le pagine da cui
+    // partire. I template sono uno solo per tutti i database.
+    var isTemplate: Boolean = false,
+    // Quando è stata buttata nel cestino, o null se non ci sta. La
+    // pagina **resta nel database** con tutto il suo contenuto: qui si
+    // cancella per davvero solo il collegamento che la mostrava, così
+    // sparisce da dov'era senza che niente vada perso.
+    var trashedAt: Long? = null,
+    var orderIndex: Int = 0, // per riordinare manualmente le pagine nella sidebar
+    var createdAt: Long = System.currentTimeMillis(),
+    var updatedAt: Long = System.currentTimeMillis()
+) {
+    companion object {
+        // ID fisso invece di un UUID casuale: è l'unica vera pagina
+        // radice dell'app (quella che prima era la schermata Home
+        // separata), creata al volo al primo avvio se non esiste
+        // ancora. Un ID fisso e conosciuto evita di dover cercare "qual
+        // è la pagina radice" con una query o un flag dedicato.
+        const val ROOT_PAGE_ID = "root"
+    }
+}
+
+/** Il correttore della pagina come dicono le impostazioni: vedi `PageEntity.proofingMode`. */
+const val PROOFING_DEFAULT = 0
+const val PROOFING_ON = 1
+const val PROOFING_OFF = 2
+
+/** Le righe lunghe della pagina come dice Settings: vedi `PageEntity.fullLineMode`. */
+const val FULL_LINE_DEFAULT = 0
+/** "Full line": le righe lunghe non vanno a capo e scorrono di lato. */
+const val FULL_LINE_ON = 1
+/** "Page line": le righe lunghe vanno a capo dentro lo schermo. */
+const val FULL_LINE_OFF = 2
+
+/** Le parole ignorate in una pagina, come insieme. */
+val PageEntity.ignoredWords: Set<String>
+    get() = proofingIgnored?.split('\n')?.filter { it.isNotEmpty() }?.toSet().orEmpty()

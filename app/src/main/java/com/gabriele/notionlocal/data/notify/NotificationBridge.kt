@@ -1,0 +1,71 @@
+package com.gabriele.notionlocal.data.notify
+
+import android.content.Intent
+import androidx.compose.runtime.mutableStateOf
+
+/**
+ * **Il permesso di mostrare notifiche** (Android 13 e dopo lo chiede
+ * all'utente). Lo chiede `MainActivity`, che è l'unica a poterlo fare; qui
+ * c'è solo il filo per chiederglielo da dove serve: creando una notifica
+ * con "/notification", accendendo "Include notification" in una data,
+ * facendo partire un timer o un pomodoro. Chiesto quando serve, e non
+ * all'avvio: così si capisce a cosa serve.
+ */
+object NotificationPermission {
+    /** Lo imposta `MainActivity` finché è viva. */
+    var requester: (() -> Unit)? = null
+
+    fun request() {
+        requester?.invoke()
+    }
+}
+
+/** Cosa aprire dopo aver toccato una notifica. */
+data class OpenRequest(val pageId: String?, val rowId: String?, val databaseId: String?)
+
+/**
+ * **La pagina da aprire toccando una notifica.** `MainActivity` la legge
+ * dall'intent (all'avvio o ad app già aperta), la navigazione
+ * (`AppNavHost`) la apre e la consuma.
+ */
+object NotificationTarget {
+    val pending = mutableStateOf<OpenRequest?>(null)
+
+    /**
+     * **La riga da mostrare** (dal 30/09/2026): una riga di un database
+     * semplice non ha una pagina, quindi la notifica apre il database e il
+     * database, trovata la riga, apre la sua scheda e consuma questo valore.
+     */
+    val rowToShow = mutableStateOf<String?>(null)
+
+    /**
+     * **La barra laterale da aprire** (dal 30/09/2026): toccata la notifica
+     * di un timer che corre, si va dove sta il suo widget. La apre e la
+     * consuma la navigazione (`AppNavHost`).
+     */
+    val openWidgets = mutableStateOf(false)
+
+    /** **La pagina Backup da aprire** (dal 28/10/2026): il promemoria di caricare un backup. */
+    val openBackup = mutableStateOf(false)
+
+    fun takeFrom(intent: Intent?) {
+        intent ?: return
+        if (intent.getBooleanExtra(Notifier.EXTRA_OPEN_WIDGETS, false)) {
+            openWidgets.value = true
+            intent.removeExtra(Notifier.EXTRA_OPEN_WIDGETS)
+        }
+        if (intent.getBooleanExtra(Notifier.EXTRA_OPEN_BACKUP, false)) {
+            openBackup.value = true
+            intent.removeExtra(Notifier.EXTRA_OPEN_BACKUP)
+        }
+        val pageId = intent.getStringExtra(Notifier.EXTRA_PAGE_ID)
+        val rowId = intent.getStringExtra(Notifier.EXTRA_ROW_ID)
+        val databaseId = intent.getStringExtra(Notifier.EXTRA_DATABASE_ID)
+        if (pageId == null && rowId == null && databaseId == null) return
+        pending.value = OpenRequest(pageId, rowId, databaseId)
+        // Letta una volta: ruotando lo schermo non si riapre.
+        intent.removeExtra(Notifier.EXTRA_PAGE_ID)
+        intent.removeExtra(Notifier.EXTRA_ROW_ID)
+        intent.removeExtra(Notifier.EXTRA_DATABASE_ID)
+    }
+}

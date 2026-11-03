@@ -1,0 +1,16 @@
+<resources>
+    <!--
+      Da Android 12 (API 31) la schermata di avvio con l'icona la
+      disegna il sistema e non si può disattivare. Sostituendo la sua
+      icona con un'immagine trasparente resta solo lo sfondo, che è già
+      del colore dell'app: il risultato è che si vede subito il
+      contenuto.
+
+      Lo sfondo non serve dichiararlo: quando non è indicato, il sistema
+      usa quello della finestra, che il tema di base definisce già
+      giusto per chiaro e scuro.
+    -->
+    <style name="Theme.NotionLocal" parent="NotionLocalBaseTheme">
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_no_icon</item>
+    </style>
+</resources>

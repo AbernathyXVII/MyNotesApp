@@ -1,0 +1,109 @@
+package com.gabriele.notionlocal.data.entity
+
+import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.Index
+import androidx.room.PrimaryKey
+import java.util.UUID
+
+/**
+ * Una riga di un database. Ogni riga ha un titolo (come il "Name" di
+ * Notion, sempre presente) più valori per le colonne custom, salvati
+ * in DatabaseCellEntity (una cella per colonna per riga).
+ *
+ * linkedPageId valorizzato quando la riga è stata aperta come pagina
+ * vera e propria (vedi DatabaseViewModel.openRow) — la pagina viene
+ * creata al volo la prima volta e poi riusata. onDelete = SET_NULL: se
+ * la pagina collegata viene cancellata, la riga resta ma perde il
+ * collegamento invece di sparire.
+ */
+@Entity(
+    tableName = "database_rows",
+    foreignKeys = [
+        ForeignKey(
+            entity = PageEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["pageId"],
+            onDelete = ForeignKey.CASCADE
+        ),
+        ForeignKey(
+            entity = PageEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["linkedPageId"],
+            onDelete = ForeignKey.SET_NULL
+        )
+    ],
+    indices = [Index("pageId"), Index("linkedPageId")]
+)
+data class DatabaseRowEntity(
+    @PrimaryKey val id: String = UUID.randomUUID().toString(),
+    val pageId: String,
+    var title: String = "",
+    var linkedPageId: String? = null,
+    var orderIndex: Int = 0,
+    var createdAt: Long = System.currentTimeMillis(),
+    // Momento dell'ultima modifica al titolo o a una qualsiasi cella
+    // della riga. Ammette null perché le righe già esistenti quando la
+    // colonna è stata introdotta (migrazione 6→7) non hanno una storia
+    // da cui ricavarlo: per quelle si mostra la data di creazione.
+    var updatedAt: Long? = null,
+    // **Sotto-riga** (dal 29/09/2026, "Create sub row"): la riga da cui è
+    // nata, o null per una riga principale. Vedi `SubRows.kt`.
+    var parentRowId: String? = null,
+    // Le sue sotto-righe sono chiuse: la freccia sul nome le riapre.
+    var subRowsCollapsed: Boolean = false,
+    // **Il colore dell'evento** (dal 30/09/2026, il time-blocking come
+    // Google Calendar): "#RRGGBB" di `EVENT_COLORS`, o null per il colore di
+    // sempre. Colora la riga nel calendario. Vedi `CalendarEvent.kt`.
+    var eventColor: String? = null
+)
+
+/**
+ * Il valore di una singola cella (riga x colonna). value è sempre una
+ * stringa: per NUMBER/CHECKBOX/DATE la convertiamo a/da tipo nella UI,
+ * così lo schema resta semplice e non serve una tabella per tipo.
+ */
+@Entity(
+    tableName = "database_cells",
+    foreignKeys = [
+        ForeignKey(
+            entity = DatabaseRowEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["rowId"],
+            onDelete = ForeignKey.CASCADE
+        ),
+        ForeignKey(
+            entity = DatabaseColumnEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["columnId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    // **Una cella sola per riga e proprietà** (dal 28/10/2026): scrivendo molto
+    // in fretta in una cella vuota, due salvataggi la trovavano vuota tutti e
+    // due e ne creavano una ciascuno; poi si vedeva quella rimasta indietro
+    // ("Ci" invece di "Cibo"). Con questo indice una seconda cella prende il
+    // posto della prima (`insertCell` è REPLACE), e non ne nasce mai un'altra.
+    indices = [Index("rowId"), Index("columnId"), Index(value = ["rowId", "columnId"], unique = true)]
+)
+data class DatabaseCellEntity(
+    @PrimaryKey val id: String = UUID.randomUUID().toString(),
+    val rowId: String,
+    val columnId: String,
+    var value: String = "",
+    /**
+     * **Cosa mostra una cella URL al posto del link** (dal 27/10/2026,
+     * chiesto dall'utente, "Show as…" nel menu della cella): il titolo della
+     * pagina web o una scritta dell'utente. Null = il link per intero, come
+     * prima. Il link resta `value`: è lui che si apre, si copia, si cerca e
+     * si ordina.
+     */
+    var linkLabel: String? = null,
+    /** [linkLabel] è il titolo della pagina, letto dal sito: cambiando il link si rilegge. */
+    var linkLabelIsTitle: Boolean = false
+) {
+    val label: LinkLabel? get() = linkLabel?.let { LinkLabel(it, linkLabelIsTitle) }
+}
+
+/** La scritta di una cella URL: vedi `DatabaseCellEntity.linkLabel`. */
+data class LinkLabel(val text: String, val isTitle: Boolean)

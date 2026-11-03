@@ -1,0 +1,34 @@
+<resources>
+    <!--
+      Lo sfondo della finestra è anche lo sfondo della schermata di
+      avvio che Android disegna da sé prima che l'app sia pronta: gli
+      diamo lo stesso grigio delle pagine, così quel momento non si
+      distingue dall'app.
+
+      Una variante sola, scura: l'app non segue più il tema di sistema
+      (vedi Theme.kt), quindi non avrebbe senso una finestra chiara
+      sotto un contenuto sempre scuro.
+
+      Il tema è diviso in due perché da Android 12 va aggiunta la
+      voce per l'icona della schermata di avvio (vedi
+      values-v31/themes.xml): tenendo i colori nel tema di base, quel
+      file aggiunge solo ciò che gli serve invece di ricopiarli.
+    -->
+    <style name="NotionLocalBaseTheme" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/page_background</item>
+    </style>
+
+    <style name="Theme.NotionLocal" parent="NotionLocalBaseTheme" />
+
+    <!--
+      "Condividi con notE" (dal 02/11/2026, vedi `ShareActivity`): una
+      finestra trasparente, così dietro la finestra che sale resta l'app da
+      cui si condivide.
+    -->
+    <style name="Theme.NotionLocal.Share" parent="NotionLocalBaseTheme">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowAnimationStyle">@null</item>
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
+</resources>

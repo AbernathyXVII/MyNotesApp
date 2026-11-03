@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+      **La rete, di nuovo** (dal 06/10/2026, chiesto dall'utente). Fino al
+      25/09/2026 c'era per una cosa sola, scaricare l'immagine di un link, ed
+      era stata tolta con lui. Ora serve ai blocchi nuovi: i video presi da un
+      link (YouTube nel suo lettore, gli altri nel lettore dell'app) e le
+      anteprime dei segnalibri. Le note restano sul telefono: in rete va solo
+      quello che l'utente incolla in quei blocchi. I font cinesi e giapponesi
+      li scarica Google Play Services per conto suo, col permesso suo.
+
+      **Notifiche e sveglie** (dal 25/09/2026): i promemoria di
+      "/notification" e delle date dei database, e la fine di timer e
+      pomodori. Il permesso di mostrarle (Android 13 e dopo) lo si chiede
+      quando serve, non all'avvio (vedi `NotificationPermission`). La
+      sveglia esatta serve perché un promemoria delle 17:41 arrivi alle
+      17:41 e non "verso le 17:50": su Android 13 e dopo basta
+      `USE_EXACT_ALARM`, su Android 12 c'è `SCHEDULE_EXACT_ALARM`. Dopo un
+      riavvio le sveglie di Android sono sparite: `RECEIVE_BOOT_COMPLETED`
+      serve a rimetterle.
+    -->
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission
+        android:name="android.permission.SCHEDULE_EXACT_ALARM"
+        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Android 16: i timer che corrono come "live update", col tempo nella barra di stato. Vedi `TimerNotifications`. -->
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
+    <!-- L'impronta per aprire le pagine bloccate con la password (vedi `Biometrics`). -->
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
+    <!--
+      Registrare l'audio da un blocco (dal 03/11/2026): il microfono, e il
+      servizio in primo piano che lo tiene acceso anche a schermo spento o
+      con l'app chiusa. Vedi `AudioRecorder`.
+    -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.NotionLocal"
+        tools:targetApi="31">
+
+        <!--
+          **Come si comporta la finestra quando si apre la tastiera.**
+
+          Senza questa riga Android sceglie da sé, e sceglieva di far
+          **scorrere su tutta la finestra** per tenere in vista il punto
+          in cui si scrive: il titolo della pagina usciva dallo schermo
+          in alto. Il guaio è che il codice aggiunge *già* lo spazio per
+          la tastiera (`imePadding`), quindi i due effetti si sommavano
+          e la barra della formattazione finiva a mezz'aria, staccata
+          dalla tastiera. È il difetto che tornava da giorni.
+
+          Con `adjustResize` la finestra resta ferma e a fare spazio
+          pensa solo `imePadding`, che sa dov'è davvero la tastiera.
+        -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@style/Theme.NotionLocal">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- Tenendo premuta l'icona: "Quick note" (vedi `QuickNotes`). -->
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
+        </activity>
+
+        <!--
+          **"Condividi con notE"** (dal 02/11/2026): la voce "notE" nel menu
+          Condividi delle altre app (Chrome, la Galleria, WhatsApp…). Testo e
+          link, foto, video, audio e file, uno o tanti. Vedi `ShareActivity`.
+        -->
+        <activity
+            android:name=".ShareActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:label="@string/app_name"
+            android:taskAffinity=""
+            android:theme="@style/Theme.NotionLocal.Share"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/*" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="video/*" />
+                <data android:mimeType="audio/*" />
+                <data android:mimeType="application/*" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+        </activity>
+
+        <!-- La nota al volo nelle impostazioni rapide: vedi `QuickNoteTile`. -->
+        <service
+            android:name=".data.share.QuickNoteTile"
+            android:exported="true"
+            android:icon="@drawable/ic_quick_note"
+            android:label="@string/quick_note"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
+        <!-- Il widget "Quick note" della schermata Home: vedi `QuickNoteWidget`. -->
+        <receiver
+            android:name=".data.share.QuickNoteWidget"
+            android:exported="false"
+            android:label="@string/quick_note">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/quick_note_widget_info" />
+        </receiver>
+
+        <!--
+          I file dei blocchi aperti con un'altra app (un video col suo
+          lettore, un PDF col suo visore): vedi `BlockFiles` e
+          `res/xml/shared_files.xml`.
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/shared_files" />
+        </provider>
+
+        <!-- La registrazione in corso, con la sua notifica: vedi `AudioRecorder`. -->
+        <service
+            android:name=".data.record.RecordingService"
+            android:exported="false"
+            android:foregroundServiceType="microphone" />
+
+        <!--
+          I modelli per leggere il testo delle foto, scaricati da Google Play
+          Services insieme all'app invece che alla prima foto: vedi `ImageTexts`.
+        -->
+        <meta-data
+            android:name="com.google.mlkit.vision.DEPENDENCIES"
+            android:value="ocr,ocr_chinese,ocr_japanese,ocr_korean" />
+
+        <!-- La sveglia delle notifiche: vedi `NoteAlarms`. -->
+        <receiver
+            android:name=".data.notify.AlarmReceiver"
+            android:exported="false" />
+
+        <!-- I pulsanti della notifica di un timer che corre: vedi `TimerNotifications`. -->
+        <receiver
+            android:name=".data.notify.TimerActionReceiver"
+            android:exported="false" />
+
+        <!-- Rimette la sveglia dopo un riavvio, un aggiornamento, un cambio d'ora o di fuso. -->
+        <receiver
+            android:name=".data.notify.RescheduleReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+        </receiver>
+    </application>
+
+</manifest>

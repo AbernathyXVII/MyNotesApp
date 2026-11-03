@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Tenendo premuta l'icona di PageFlow: "Quick note" (dal 02/11/2026, vedi `QuickNotes`). -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:enabled="true"
+        android:icon="@drawable/ic_quick_note"
+        android:shortcutId="quick_note"
+        android:shortcutLongLabel="@string/quick_note_long"
+        android:shortcutShortLabel="@string/quick_note">
+        <intent
+            android:action="com.gabriele.notionlocal.action.QUICK_NOTE"
+            android:targetClass="com.gabriele.notionlocal.MainActivity"
+            android:targetPackage="com.gabriele.notionlocal" />
+    </shortcut>
+</shortcuts>

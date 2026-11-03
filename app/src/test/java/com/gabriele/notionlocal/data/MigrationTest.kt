@@ -1,0 +1,689 @@
+package com.gabriele.notionlocal.data
+
+import kotlinx.coroutines.flow.first
+import com.gabriele.notionlocal.data.entity.DatabaseCellEntity
+import com.gabriele.notionlocal.data.entity.AutomationEntity
+import com.gabriele.notionlocal.data.entity.BlockEntity
+import com.gabriele.notionlocal.data.entity.PageEntity
+import com.gabriele.notionlocal.data.entity.VersionReason
+import com.gabriele.notionlocal.data.repository.PageRepository
+import com.gabriele.notionlocal.data.entity.legacyGroupRules
+import com.gabriele.notionlocal.data.entity.withGroupRules
+import com.gabriele.notionlocal.data.entity.boardGroupRules
+import com.gabriele.notionlocal.data.entity.tableGroupRules
+import com.gabriele.notionlocal.data.entity.DateUnit
+import com.gabriele.notionlocal.data.entity.DateGroupBy
+import com.gabriele.notionlocal.data.entity.GroupRuleSpec
+import com.gabriele.notionlocal.data.entity.PersonalWordEntity
+import com.gabriele.notionlocal.data.entity.PROOFING_DEFAULT
+import com.gabriele.notionlocal.data.entity.DatabaseLayout
+import com.gabriele.notionlocal.data.entity.CellAlignment
+import com.gabriele.notionlocal.data.entity.cellAlignment
+import android.app.Application
+import android.content.Context
+import android.database.sqlite.SQLiteDatabase
+import androidx.test.core.app.ApplicationProvider
+import com.gabriele.notionlocal.data.entity.InkStrokeEntity
+import com.gabriele.notionlocal.data.entity.InkTool
+import com.gabriele.notionlocal.data.entity.LinkLabel
+import com.gabriele.notionlocal.data.entity.FULL_LINE_DEFAULT
+import com.gabriele.notionlocal.data.entity.FULL_LINE_OFF
+import com.gabriele.notionlocal.data.entity.RichTextSpan
+import com.gabriele.notionlocal.data.entity.BlockAttrs
+import com.gabriele.notionlocal.data.entity.BlockType
+import com.gabriele.notionlocal.data.entity.attrs
+import com.gabriele.notionlocal.data.entity.SORT_BY_NAME
+import com.gabriele.notionlocal.data.entity.SortRuleSpec
+import com.gabriele.notionlocal.data.entity.sortRules
+import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+
+/**
+ * **Le migrazioni su un database vero**, aperto dall'app com'è.
+ *
+ * Si costruisce un file a una versione vecchia con lo schema che Room
+ * generava allora (`schema/vNN.sql`, preso dal codice generato a quel
+ * commit), con dentro qualche pagina; poi lo si apre con
+ * `AppDatabase.getInstance`, che è quello che fa il telefono
+ * all'aggiornamento. Room esegue le migrazioni e **controlla lo schema
+ * che ne esce contro quello che si aspetta**: se una colonna mancasse o
+ * fosse di un tipo diverso, l'apertura fallirebbe qui invece che sul
+ * telefono dell'utente.
+ */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34], application = Application::class)
+class MigrationTest {
+
+    @After
+    fun tearDown() {
+        AppDatabase.resetForTests()
+    }
+
+    /** Un file alla versione `version`, fatto con le istruzioni di `schema/v<version>.sql`. */
+    private fun databaseAtVersion(version: Int): Context {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val file = context.getDatabasePath("notion_local.db")
+        file.parentFile?.mkdirs()
+        file.delete()
+
+        val old = SQLiteDatabase.openOrCreateDatabase(file, null)
+        javaClass.classLoader!!.getResourceAsStream("schema/v$version.sql")!!.bufferedReader().readLines()
+            .filter { it.isNotBlank() && !it.startsWith("--") }
+            .forEach { old.execSQL(it) }
+        old.version = version
+        old.close()
+        return context
+    }
+
+    @Test
+    fun from28TheAppOpensAndThePagesAreStillThere() = runBlocking<Unit> {
+        val db = AppDatabase.getInstance(databaseAtVersion(28))
+        val page = db.pageDao().getById("p1")!!
+        assertEquals("Vecchia pagina", page.title)
+        assertTrue(page.isDatabase)
+        // Le colonne nuove ci sono, vuote: nessuna pagina di prima era una
+        // vista, e nessuna scheda aveva un'inquadratura sua.
+        assertNull(page.sourceDatabaseId)
+        assertNull(page.viewHiddenColumnIds)
+        assertNull(page.cardCoverScale)
+        assertEquals(70, db.openHelper.readableDatabase.version)
+    }
+
+    @Test
+    fun from29MsYaHeiGoesBackToTheSystemFontAndTheOtherFontsStay() = runBlocking<Unit> {
+        val db = AppDatabase.getInstance(databaseAtVersion(29))
+        // Letta senza chiudere l'app: "MS_YAHEI" non esiste più nell'enum.
+        val yahei = db.pageDao().getById("p1")!!
+        assertEquals("Pagina in MS YaHei", yahei.title)
+        assertNull(yahei.pageFont)
+        // Il Songti resta fino alla 30; dalla 31 il font non è più della
+        // pagina ma del testo, e questa pagina di testo non ne ha.
+        assertNull(db.pageDao().getById("p2")!!.pageFont)
+        assertNull(yahei.cardCoverScale)
+        assertNull(yahei.cardCoverOffsetX)
+        assertNull(yahei.cardCoverOffsetY)
+        assertEquals(70, db.openHelper.readableDatabase.version)
+    }
+
+    @Test
+    fun from30ThePageFontMovesIntoItsText() = runBlocking<Unit> {
+        val db = AppDatabase.getInstance(databaseAtVersion(30))
+        val json = Json { ignoreUnknownKeys = true }
+        fun spans(blockId: String) = runBlocking {
+            json.decodeFromString<List<RichTextSpan>>(db.blockDao().getById(blockId)!!.textJson)
+        }
+
+        // La pagina non ha più font né corpo suoi...
+        val page = db.pageDao().getById("p1")!!
+        assertNull(page.pageFont)
+        assertNull(page.pageFontSize)
+        // ...li ha il suo testo, e si vede come prima. Il pezzo che aveva
+        // già un font suo lo tiene, e prende solo il corpo.
+        assertEquals(
+            listOf(
+                RichTextSpan(text = "Ciao ", font = "GARAMOND", size = 20),
+                RichTextSpan(text = "mondo", bold = true, font = "CONSOLAS", size = 20)
+            ),
+            spans("b1")
+        )
+        // Lo span vuoto del collegamento tiene solo il colore.
+        assertEquals(listOf(RichTextSpan(text = "", color = "#E03E3E")), spans("b2"))
+        // Una pagina senza font resta com'era.
+        assertEquals(listOf(RichTextSpan(text = "Normale")), spans("b3"))
+        assertEquals(70, db.openHelper.readableDatabase.version)
+    }
+
+    @Test
+    fun from31TheBlocksGetAnEmptyNotificationTime() = runBlocking<Unit> {
+        val db = AppDatabase.getInstance(databaseAtVersion(31))
+        assertEquals("Pagina alla 31", db.pageDao().getById("p1")!!.title)
+        // La colonna nuova c'è, vuota: nessuna riga di prima era una notifica.
+        val block = db.blockDao().getById("b1")!!
+        assertNull(block.notifyAt)
+        assertTrue(db.blockDao().getNotificationRows().isEmpty())
+        assertTrue(db.databaseDao().getNotifyingDateCells().isEmpty())
+        assertEquals(70, db.openHelper.readableDatabase.version)
+    }
+
+    @Test
+    fun from32ThePagesGetATableForTheirDrawings() = runBlocking<Unit> {
+        val db = AppDatabase.getInstance(databaseAtVersion(32))
+        assertEquals("Pagina alla 32", db.pageDao().getById("p1")!!.title)
+        // La riga-notifica della 32 resta com'era.
+        assertEquals(1790000000000L, db.blockDao().getById("b1")!!.notifyAt)
+        // La tabella nuova c'è, vuota, e ci si scrive.
+        assertTrue(db.inkDao().getForPageOnce("p1").isEmpty())
+        db.inkDao().insertAll(
+            listOf(
+                InkStrokeEntity(
+                    pageId = "p1", anchor = "b1", tool = InkTool.PEN,
+                    color = InkStrokeEntity.AUTO_COLOR, width = 2f, points = "1,2,50;3,4,50"
+                )
+            )
+        )
+        assertEquals("b1", db.inkDao().getForPageOnce("p1").single().anchor)
+        assertEquals(70, db.openHelper.readableDatabase.version)
+    }
+
+    @Test
+    fun from33NoPageIsLockedWithAPassword() = runBlocking<Unit> {
+        val db = AppDatabase.getInstance(databaseAtVersion(33))
+        val page = db.pageDao().getById("p1")!!
+        assertEquals("Pagina alla 33", page.title)
+        assertFalse(page.isProtected)
+        assertEquals(0, db.pageDao().countProtected())
+        assertEquals(70, db.openHelper.readableDatabase.version)
+    }
+
+    @Test
+    fun from34ThePagesStayInTheMainMenuAndTheNotebooksAreEmpty() = runBlocking<Unit> {
+        val db = AppDatabase.getInstance(databaseAtVersion(34))
+        val page = db.pageDao().getById("p1")!!
+        assertEquals("Pagina alla 34", page.title)
+        assertNull(page.notebookSectionId)
+        assertTrue(db.notebookDao().getNotebooksOnce().isEmpty())
+        assertEquals(0, db.notebookDao().countProtectedSections())
+        assertEquals(70, db.openHelper.readableDatabase.version)
+    }
+
+    @Test
+    fun from35TheNumbersLookAsBeforeAndNoViewHasCalculations() = runBlocking<Unit> {
+        val db = AppDatabase.getInstance(databaseAtVersion(35))
+        val column = db.databaseDao().getColumnsForPageOnce("db1").single()
+        assertEquals("Number", column.name)
+        assertNull(column.numberFormat)
+        assertNull(column.decimalPlaces)
+        assertNull(column.numberDisplay)
+        assertTrue(column.showNumber)
+        assertFalse(column.ringCentered)
+        assertNull(db.pageDao().getById("db1")!!.viewCalculations)
+        assertEquals(70, db.openHelper.readableDatabase.version)
+    }
+
+    @Test
+    fun from36TheCheckboxCenteredBeforeStaysCentered() = runBlocking<Unit> {
+        val db = AppDatabase.getInstance(databaseAtVersion(36))
+        val columns = db.databaseDao().getColumnsForPageOnce("db1").associateBy { it.id }
+        assertNull(columns.getValue("c1").contentAlignment)
+        assertEquals(CellAlignment.LEFT, columns.getValue("c1").cellAlignment)
+        assertEquals(CellAlignment.CENTER, columns.getValue("c2").cellAlignment)
+        assertEquals(70, db.openHelper.readableDatabase.version)
+    }
+
+    @Test
+    fun from37TheDatesKeepTheOldFormatAndTheTimeAt24Hours() = runBlocking<Unit> {
+        val db = AppDatabase.getInstance(databaseAtVersion(37))
+        val date = db.databaseDao().getColumnsForPageOnce("db1").single { it.id == "c3" }
+        assertNull(date.dateFormat)
+        assertNull(date.timeFormat)
+        assertEquals(70, db.openHelper.readableDatabase.version)
+    }
+
+    @Test
+    fun from38NoPageIsATemplateAndTheRowPageStillHasItsRow() = runBlocking<Unit> {
+        val db = AppDatabase.getInstance(databaseAtVersion(38))
+        val pages = db.pageDao()
+        listOf("p1", "db1", "rp1").forEach { id -> assertFalse(pages.getById(id)!!.isTemplate) }
+        assertEquals("r1", db.databaseDao().getRowsLinkingTo("rp1").single().id)
+        assertEquals(70, db.openHelper.readableDatabase.version)
+    }
+
+    @Test
+    fun from39NoViewIsAChartYetAndItsSettingsAreEmpty() = runBlocking<Unit> {
+        val db = AppDatabase.getInstance(databaseAtVersion(39))
+        val pages = db.pageDao()
+        listOf("p1", "db1", "rp1").forEach { id -> assertNull(pages.getById(id)!!.chartSettings) }
+        assertEquals("Database alla 39", pages.getById("db1")!!.title)
+        assertEquals(70, db.openHelper.readableDatabase.version)
+    }
+
+    @Test
+    fun from40NoTableHasSubGroupsYet() = runBlocking<Unit> {
+        val db = AppDatabase.getInstance(databaseAtVersion(40))
+        val pages = db.pageDao()
+        listOf("p1", "db1", "rp1").forEach { id -> assertNull(pages.getById(id)!!.tableSubGroupColumnId) }
+        assertEquals("Database alla 40", pages.getById("db1")!!.title)
+        assertEquals(70, db.openHelper.readableDatabase.version)
+    }
+
+    @Test
+    fun from41TheSubGroupsSwitchStartsLikeTheGroupsOne() = runBlocking<Unit> {
+        val db = AppDatabase.getInstance(databaseAtVersion(41))
+        val pages = db.pageDao()
+        // Acceso sulla pagina che nascondeva i gruppi vuoti, spento sulle altre.
+        assertEquals(true, pages.getById("p1")!!.hideEmptySubGroups)
+        assertEquals(false, pages.getById("db1")!!.hideEmptySubGroups)
+        assertEquals(false, pages.getById("db1")!!.hideEmptyGroups)
+        assertEquals(70, db.openHelper.readableDatabase.version)
+    }
+
+    @Test
+    fun from42EveryDatabaseHasOnlyItsOwnView() = runBlocking<Unit> {
+        val db = AppDatabase.getInstance(databaseAtVersion(42))
+        val pages = db.pageDao()
+        listOf("p1", "db1", "rp1").forEach { id ->
+            val page = pages.getById(id)!!
+            assertNull(page.viewHostId)
+            assertNull(page.viewName)
+            assertNull(page.activeViewId)
+        }
+        assertEquals(emptyList<Any>(), pages.getViewsOnce("db1"))
+        assertEquals("Database alla 42", pages.getById("db1")!!.title)
+        assertEquals(70, db.openHelper.readableDatabase.version)
+    }
+
+    @Test
+    fun from43EveryColumnKeepsItsWidth() = runBlocking<Unit> {
+        val db = AppDatabase.getInstance(databaseAtVersion(43))
+        val pages = db.pageDao()
+        listOf("p1", "db1", "rp1").forEach { id ->
+            assertNull(pages.getById(id)!!.columnWidths)
+            assertNull(pages.getById(id)!!.fitColumns)
+        }
+        assertEquals("Database alla 43", pages.getById("db1")!!.title)
+        assertEquals(70, db.openHelper.readableDatabase.version)
+    }
+
+    @Test
+    fun from44EveryRowIsAMainRow() = runBlocking<Unit> {
+        val db = AppDatabase.getInstance(databaseAtVersion(44))
+        val row = db.databaseDao().getRowsForPageOnce("db1").single()
+        assertEquals("Riga alla 44", row.title)
+        assertNull(row.parentRowId)
+        assertEquals(false, row.subRowsCollapsed)
+        assertEquals(70, db.openHelper.readableDatabase.version)
+    }
+
+    @Test
+    fun from45NameStaysFirst() = runBlocking<Unit> {
+        val db = AppDatabase.getInstance(databaseAtVersion(45))
+        val pages = db.pageDao()
+        listOf("p1", "db1", "rp1").forEach { id -> assertEquals(-1, pages.getById(id)!!.nameColumnOrder) }
+        assertEquals("Database alla 45", pages.getById("db1")!!.title)
+        assertEquals("Date", db.databaseDao().getColumnsForPageOnce("db1").single().name)
+        assertEquals(70, db.openHelper.readableDatabase.version)
+    }
+
+    @Test
+    fun from46EveryColumnKeepsItsType() = runBlocking<Unit> {
+        val db = AppDatabase.getInstance(databaseAtVersion(46))
+        val column = db.databaseDao().getColumnsForPageOnce("db1").single()
+        assertEquals(com.gabriele.notionlocal.data.entity.ColumnType.DATE, column.type)
+        assertNull(column.durationFormat)
+        assertEquals(-1, db.pageDao().getById("db1")!!.nameColumnOrder)
+        assertEquals("Database alla 46", db.pageDao().getById("db1")!!.title)
+        assertEquals(70, db.openHelper.readableDatabase.version)
+    }
+
+    @Test
+    fun from47EveryTableKeepsItsCellsOnOneLine() = runBlocking<Unit> {
+        val db = AppDatabase.getInstance(databaseAtVersion(47))
+        val pages = db.pageDao()
+        listOf("p1", "db1", "rp1").forEach { id -> assertEquals(0, pages.getById(id)!!.cellOverflow) }
+        assertEquals("Database alla 47", pages.getById("db1")!!.title)
+        assertEquals(70, db.openHelper.readableDatabase.version)
+    }
+
+    @Test
+    fun from48EveryBoardKeepsItsCardsPlain() = runBlocking<Unit> {
+        val db = AppDatabase.getInstance(databaseAtVersion(48))
+        val pages = db.pageDao()
+        listOf("p1", "db1", "rp1").forEach { id -> assertEquals(false, pages.getById(id)!!.colorBoardCards) }
+        assertEquals("Database alla 48", pages.getById("db1")!!.title)
+        assertEquals(70, db.openHelper.readableDatabase.version)
+    }
+
+    @Test
+    fun from49NoRowHasAnEventColor() = runBlocking<Unit> {
+        // Il colore degli eventi del calendario (30/09/2026): nessuna riga di
+        // prima ne ha uno, restano del colore di sempre.
+        val db = AppDatabase.getInstance(databaseAtVersion(49))
+        val row = db.databaseDao().getRowById("r1")!!
+        assertEquals("Riga alla 49", row.title)
+        assertNull(row.eventColor)
+        assertEquals("Database alla 49", db.pageDao().getById("db1")!!.title)
+        assertEquals(70, db.openHelper.readableDatabase.version)
+    }
+
+    @Test
+    fun from50TheSortStaysAndThereIsNoSecondRule() = runBlocking<Unit> {
+        // La seconda regola di ordinamento (05/10/2026): il database
+        // ordinato per la sua colonna, all'indietro, resta così, e nessuno
+        // ha una seconda regola.
+        val db = AppDatabase.getInstance(databaseAtVersion(50))
+        val database = db.pageDao().getById("db1")!!
+        assertEquals("Database alla 50", database.title)
+        // Dalla 57 (17/10/2026) le regole stanno tutte in un elenco.
+        assertEquals(listOf(SortRuleSpec("c1", descending = true)), database.sortRules())
+        listOf("p1", "db1", "rp1").forEach { id ->
+            val page = db.pageDao().getById(id)!!
+            assertNull(page.thenSortColumnId)
+            assertEquals(false, page.thenSortDescending)
+        }
+        assertEquals(70, db.openHelper.readableDatabase.version)
+    }
+
+    @Test
+    fun from51TheBlocksHaveNoExtrasAndKeepTheirText() = runBlocking<Unit> {
+        // I blocchi nuovi del 06/10/2026: la riga che c'era resta com'era,
+        // con le voci in più vuote.
+        val db = AppDatabase.getInstance(databaseAtVersion(51))
+        assertEquals("Pagina alla 51", db.pageDao().getById("p1")!!.title)
+        val block = db.blockDao().getById("b1")!!
+        assertEquals(BlockType.PARAGRAPH, block.type)
+        assertEquals("[{\"text\":\"Riga alla 51\"}]", block.textJson)
+        assertEquals("{}", block.attrsJson)
+        assertEquals(BlockAttrs(), block.attrs)
+        assertEquals(70, db.openHelper.readableDatabase.version)
+    }
+
+    @Test
+    fun from52NoPageHasAMaterialIconAndTheEmojisStay() = runBlocking<Unit> {
+        // Le icone di Material (08/10/2026): nessuna pagina ne ha una, e
+        // l'emoji scelta e l'icona del riquadro restano com'erano.
+        val db = AppDatabase.getInstance(databaseAtVersion(52))
+        val page = db.pageDao().getById("p1")!!
+        assertEquals("Pagina alla 52", page.title)
+        assertNull(page.iconSymbol)
+        val cat = db.pageDao().getById("p2")!!
+        assertEquals("🐈", cat.icon)
+        assertNull(cat.iconSymbol)
+        val callout = db.blockDao().getById("b1")!!
+        assertEquals(BlockType.CALLOUT, callout.type)
+        assertEquals(BlockAttrs(icon = "🔥"), callout.attrs)
+        assertEquals(70, db.openHelper.readableDatabase.version)
+    }
+
+    @Test
+    fun from53NoTableHasAFrozenColumnOrRow() = runBlocking<Unit> {
+        // Prima colonna e prima riga ferme (08/10/2026): spente, e il resto com'era.
+        val db = AppDatabase.getInstance(databaseAtVersion(53))
+        val database = db.pageDao().getById("db1")!!
+        assertEquals("Database alla 53", database.title)
+        assertEquals("Home|#E03E3E", database.iconSymbol)
+        assertFalse(database.freezeFirstColumn)
+        assertFalse(database.freezeFirstRow)
+        assertEquals(70, db.openHelper.readableDatabase.version)
+    }
+
+    @Test
+    fun from54EveryPageFollowsSettingsAndTheDictionaryIsEmpty() = runBlocking<Unit> {
+        // Il correttore (08/10/2026): ogni pagina come dicono le impostazioni,
+        // nessuna parola ignorata, il dizionario dell'utente vuoto e pronto.
+        val db = AppDatabase.getInstance(databaseAtVersion(54))
+        val database = db.pageDao().getById("db1")!!
+        assertEquals("Database alla 54", database.title)
+        assertTrue(database.freezeFirstColumn)
+        assertEquals(PROOFING_DEFAULT, database.proofingMode)
+        assertNull(database.proofingLanguage)
+        assertNull(database.proofingIgnored)
+        assertEquals(emptyList<PersonalWordEntity>(), db.personalWordDao().observeAll().first())
+        db.personalWordDao().insert(PersonalWordEntity("notE"))
+        assertEquals(listOf("notE"), db.personalWordDao().observeAll().first().map { it.word })
+        assertEquals(70, db.openHelper.readableDatabase.version)
+    }
+
+    @Test
+    fun from55NoBoardHasSubGroupsAndTheRestIsUntouched() = runBlocking<Unit> {
+        // I sottogruppi della bacheca (14/10/2026): nessuno, le fasce vuote
+        // nascoste come nella tabella, e la bacheca raggruppata com'era.
+        val db = AppDatabase.getInstance(databaseAtVersion(55))
+        val database = db.pageDao().getById("db1")!!
+        assertEquals("Database alla 55", database.title)
+        assertEquals(DatabaseLayout.BOARD, database.databaseLayout)
+        // Dalla 66 le colonne della bacheca sono la sua prima regola (e niente fasce).
+        assertEquals(listOf("c1"), database.boardGroupRules().map { it.column })
+        assertNull(database.boardGroupColumnId)
+        assertNull(database.boardSubGroupColumnId)
+        assertEquals(1, database.proofingMode)
+        assertEquals("it", database.proofingLanguage)
+        assertEquals(70, db.openHelper.readableDatabase.version)
+    }
+
+    @Test
+    fun from56TheTwoSortRulesMoveIntoTheList() = runBlocking<Unit> {
+        // Le regole di ordinamento senza limite (17/10/2026): la prima e la
+        // seconda passano nell'elenco, nello stesso ordine e verso, e i loro
+        // campi di prima si svuotano. Le altre pagine non ne hanno.
+        val db = AppDatabase.getInstance(databaseAtVersion(56))
+        val database = db.pageDao().getById("db1")!!
+        assertEquals("Database alla 56", database.title)
+        assertEquals(
+            listOf(SortRuleSpec("c1", descending = true), SortRuleSpec(SORT_BY_NAME)),
+            database.sortRules()
+        )
+        assertNull(database.sortColumnId)
+        assertNull(database.thenSortColumnId)
+        assertTrue(database.boardHideEmptySubGroups)
+        assertEquals(70, db.openHelper.readableDatabase.version)
+    }
+
+    @Test
+    fun from57TheMainPropertyIsStillName() = runBlocking<Unit> {
+        // Il nome della proprietà principale (18/10/2026): nessun database
+        // ne ha uno, quindi resta "Name"; il resto non cambia.
+        val db = AppDatabase.getInstance(databaseAtVersion(57))
+        val database = db.pageDao().getById("db1")!!
+        assertEquals("Database alla 57", database.title)
+        assertNull(database.nameColumnTitle)
+        assertEquals(2, database.nameColumnOrder)
+        assertEquals(70, db.openHelper.readableDatabase.version)
+        // E il nome nuovo si salva.
+        db.pageDao().setNameColumnTitle("db1", "Titolo")
+        assertEquals("Titolo", db.pageDao().getById("db1")!!.nameColumnTitle)
+    }
+
+    @Test
+    fun from58EveryPageFollowsTheParagraphOfSettings() = runBlocking<Unit> {
+        // Il "Paragraph" delle pagine (21/10/2026): nessuna ne ha uno suo,
+        // tutte seguono Settings; il resto non cambia.
+        val db = AppDatabase.getInstance(databaseAtVersion(58))
+        val database = db.pageDao().getById("db1")!!
+        assertEquals("Database alla 58", database.title)
+        assertEquals("Titolo", database.nameColumnTitle)
+        assertNull(database.paragraphJson)
+        assertEquals(70, db.openHelper.readableDatabase.version)
+        // E quello nuovo si salva.
+        db.pageDao().setParagraph("db1", """{"blockSpacing":8}""")
+        assertEquals("""{"blockSpacing":8}""", db.pageDao().getById("db1")!!.paragraphJson)
+    }
+
+    @Test
+    fun from59EveryDateGroupIsStillADay() = runBlocking<Unit> {
+        // "Date by" dei raggruppamenti (21/10/2026): nessuna vista ne ha uno,
+        // tutte raggruppano per giorno come prima; il resto non cambia.
+        val db = AppDatabase.getInstance(databaseAtVersion(59))
+        val database = db.pageDao().getById("db1")!!
+        assertEquals("Database alla 59", database.title)
+        assertEquals("""{"blockSpacing":8}""", database.paragraphJson)
+        assertNull(database.dateGroupingJson)
+        assertEquals(70, db.openHelper.readableDatabase.version)
+        // E quello nuovo si salva.
+        db.pageDao().update(database.copy(dateGroupingJson = """{"board":{"unit":"WEEK"}}"""))
+        assertEquals("""{"board":{"unit":"WEEK"}}""", db.pageDao().getById("db1")!!.dateGroupingJson)
+    }
+
+    @Test
+    fun from60EveryBoardStillShowsItsEmptyColumns() = runBlocking<Unit> {
+        // "Hide empty groups" della bacheca (21/10/2026): spento per tutte,
+        // le colonne vuote si vedono come prima; il resto non cambia.
+        val db = AppDatabase.getInstance(databaseAtVersion(60))
+        val database = db.pageDao().getById("db1")!!
+        assertEquals("Database alla 60", database.title)
+        // Le settimane delle fasce senza fasce non dicono niente: dalla 66 i
+        // "Date by" stanno nelle regole dei gruppi, e qui gruppi non ce n'erano.
+        assertNull(database.dateGroupingJson)
+        assertTrue(database.boardGroupRules().isEmpty())
+        assertFalse(database.boardHideEmptyGroups)
+        assertEquals(70, db.openHelper.readableDatabase.version)
+        db.pageDao().update(database.copy(boardHideEmptyGroups = true))
+        assertTrue(db.pageDao().getById("db1")!!.boardHideEmptyGroups)
+    }
+
+    @Test
+    fun from61EveryBoardStillShowsNew() = runBlocking<Unit> {
+        // "Hide New" della bacheca (26/10/2026): spento per tutte, i "+ New" si
+        // vedono come prima; il resto non cambia.
+        val db = AppDatabase.getInstance(databaseAtVersion(61))
+        val database = db.pageDao().getById("db1")!!
+        assertEquals("Database alla 61", database.title)
+        assertTrue(database.boardHideEmptyGroups)
+        assertFalse(database.boardHideNew)
+        assertEquals(70, db.openHelper.readableDatabase.version)
+        db.pageDao().update(database.copy(boardHideNew = true))
+        assertTrue(db.pageDao().getById("db1")!!.boardHideNew)
+    }
+
+    @Test
+    fun from62EveryUrlCellStillShowsItsLink() = runBlocking<Unit> {
+        // La scritta delle celle URL (27/10/2026): nessuna, la cella mostra il
+        // link per intero come prima; il link resta quello.
+        val db = AppDatabase.getInstance(databaseAtVersion(62))
+        assertTrue(db.pageDao().getById("db1")!!.boardHideNew)
+        val cell = db.databaseDao().getCell("r1", "url")!!
+        assertEquals("https://bulbapedia.bulbagarden.net/wiki/Bulbasaur", cell.value)
+        assertNull(cell.linkLabel)
+        assertFalse(cell.linkLabelIsTitle)
+        assertEquals(70, db.openHelper.readableDatabase.version)
+        db.databaseDao().updateCell(cell.copy(linkLabel = "Bulbasaur (Pokémon)", linkLabelIsTitle = true))
+        assertEquals(LinkLabel("Bulbasaur (Pokémon)", isTitle = true), db.databaseDao().getCell("r1", "url")!!.label)
+    }
+
+    @Test
+    fun from63EveryPageFollowsSettingsForLongLines() = runBlocking<Unit> {
+        // "Full or page line" delle pagine (27/10/2026): tutte su "Default", cioè
+        // come "Full line view" in Settings; la scritta della cella URL resta.
+        val db = AppDatabase.getInstance(databaseAtVersion(63))
+        val database = db.pageDao().getById("db1")!!
+        assertEquals("Database alla 63", database.title)
+        assertEquals(FULL_LINE_DEFAULT, database.fullLineMode)
+        assertEquals(LinkLabel("Bulbasaur (Pokémon)", isTitle = true), db.databaseDao().getCell("r1", "url")!!.label)
+        assertEquals(70, db.openHelper.readableDatabase.version)
+        db.pageDao().setFullLineMode("db1", FULL_LINE_OFF)
+        assertEquals(FULL_LINE_OFF, db.pageDao().getById("db1")!!.fullLineMode)
+    }
+
+    @Test
+    fun from64EveryPropertyStillShowsItsIcon() = runBlocking<Unit> {
+        // "Hide icon" delle proprietà (27/10/2026): tutte le icone si vedono,
+        // anche il "Aa" della proprietà principale; il resto non cambia.
+        val db = AppDatabase.getInstance(databaseAtVersion(64))
+        val database = db.pageDao().getById("db1")!!
+        assertEquals("Database alla 64", database.title)
+        assertEquals(FULL_LINE_OFF, database.fullLineMode)
+        assertFalse(database.hideNameIcon)
+        val url = db.databaseDao().getColumnsForPageOnce("db1").single()
+        assertFalse(url.hideIcon)
+        assertEquals(70, db.openHelper.readableDatabase.version)
+        db.databaseDao().updateColumn(url.copy(hideIcon = true))
+        db.pageDao().setHideNameIcon("db1", true)
+        assertTrue(db.databaseDao().getColumnsForPageOnce("db1").single().hideIcon)
+        assertTrue(db.pageDao().getById("db1")!!.hideNameIcon)
+    }
+
+    @Test
+    fun from65GroupAndSubGroupBecomeTheFirstTwoGroupRules() = runBlocking<Unit> {
+        // I raggruppamenti quanti se ne vogliono (28/10/2026): il gruppo e il
+        // sottogruppo della tabella diventano le prime due regole, coi loro
+        // "Hide empty groups"; le fasce della bacheca senza una proprietà per
+        // le colonne prendono la prima a selezione singola, come si vedevano;
+        // le settimane vanno nella regola delle fasce. I campi di prima si svuotano.
+        val db = AppDatabase.getInstance(databaseAtVersion(65))
+        val database = db.pageDao().getById("db1")!!
+        assertEquals("Database alla 65", database.title)
+        assertEquals(listOf(GroupRuleSpec("stato", hideEmpty = true), GroupRuleSpec("genere", hideEmpty = false)), database.tableGroupRules())
+        assertEquals(
+            listOf(
+                GroupRuleSpec("stato", hideEmpty = false),
+                GroupRuleSpec("giorno", hideEmpty = true, dateBy = DateGroupBy(DateUnit.WEEK, newestFirst = true))
+            ),
+            database.boardGroupRules()
+        )
+        assertNull(database.tableGroupColumnId)
+        assertNull(database.tableSubGroupColumnId)
+        assertNull(database.boardGroupColumnId)
+        assertNull(database.boardSubGroupColumnId)
+        assertNull(database.dateGroupingJson)
+        assertEquals(70, db.openHelper.readableDatabase.version)
+        // E le regole nuove si salvano.
+        db.pageDao().update(database.withGroupRules(board = false, listOf(GroupRuleSpec("giorno"))))
+        assertEquals(listOf(GroupRuleSpec("giorno")), db.pageDao().getById("db1")!!.tableGroupRules())
+    }
+
+    @Test
+    fun theOldGroupFieldsBecomeRules() {
+        assertEquals(emptyList<GroupRuleSpec>(), legacyGroupRules(null, "b", true, true, DateGroupBy(), DateGroupBy()))
+        // Un sottogruppo sulla proprietà del gruppo non divideva niente.
+        assertEquals(listOf(GroupRuleSpec("a")), legacyGroupRules("a", "a", true, false, DateGroupBy(), DateGroupBy()))
+        assertEquals(
+            listOf(GroupRuleSpec("a", hideEmpty = false, dateBy = DateGroupBy(DateUnit.MONTH)), GroupRuleSpec("b")),
+            legacyGroupRules("a", "b", false, true, DateGroupBy(DateUnit.MONTH), DateGroupBy())
+        )
+    }
+
+    @Test
+    fun from66TheDoubleCellsGoAndTheFirstStays() = runBlocking<Unit> {
+        // Una cella sola per riga e proprietà (28/10/2026): la doppia nata
+        // scrivendo in fretta (solo le prime lettere) se ne va, resta la prima
+        // col link intero e la sua scritta; e dopo una seconda non nasce più.
+        val db = AppDatabase.getInstance(databaseAtVersion(66))
+        assertEquals("Database alla 66", db.pageDao().getById("db1")!!.title)
+        val cells = db.databaseDao().getCellsForRowOnce("r1").filter { it.columnId == "url" }
+        assertEquals(listOf("c1"), cells.map { it.id })
+        assertEquals("https://bulbapedia.bulbagarden.net/wiki/Bulbasaur", cells.single().value)
+        assertEquals(LinkLabel("Bulbasaur (Pokémon)", isTitle = true), cells.single().label)
+        assertEquals(70, db.openHelper.readableDatabase.version)
+        // Un'altra cella per la stessa riga e proprietà prende il posto della prima.
+        db.databaseDao().insertCell(DatabaseCellEntity(id = "c3", rowId = "r1", columnId = "url", value = "https://example.com"))
+        assertEquals(listOf("c3"), db.databaseDao().getCellsForRowOnce("r1").filter { it.columnId == "url" }.map { it.id })
+    }
+
+    @Test
+    fun from67TheVersionsTableIsThereAndEmpty() = runBlocking<Unit> {
+        // "Page history" (02/11/2026): la tabella nuova c'è, vuota; le pagine di
+        // prima avranno la loro prima versione aprendole.
+        val db = AppDatabase.getInstance(databaseAtVersion(67))
+        assertEquals("Database alla 67", db.pageDao().getById("db1")!!.title)
+        assertEquals(70, db.openHelper.readableDatabase.version)
+        assertEquals(emptyList<Any>(), db.pageVersionDao().observeForPage("db1").first())
+        db.pageDao().insert(PageEntity(id = "diario", title = "Diario"))
+        db.blockDao().insertAll(listOf(BlockEntity(id = "b1", pageId = "diario", textJson = """[{"text":"Ciao"}]""")))
+        assertTrue(PageRepository(db).saveVersion("diario", VersionReason.OPENED))
+        assertEquals(listOf("Diario"), db.pageVersionDao().observeForPage("diario").first().map { it.title })
+    }
+
+    @Test
+    fun from68TheAutomationsTableIsThereAndEmpty() = runBlocking<Unit> {
+        // Le automazioni dei database (03/11/2026): la tabella nuova c'è, vuota,
+        // e se ne va col suo database.
+        val db = AppDatabase.getInstance(databaseAtVersion(68))
+        assertEquals("Database alla 68", db.pageDao().getById("db1")!!.title)
+        assertEquals(70, db.openHelper.readableDatabase.version)
+        assertEquals(emptyList<Any>(), db.automationDao().observeForDatabase("db1").first())
+        db.automationDao().upsert(AutomationEntity(id = "a1", databaseId = "db1", name = "Fatto"))
+        assertEquals(listOf("Fatto"), db.automationDao().enabledFor("db1").map { it.name })
+        db.pageDao().delete(db.pageDao().getById("db1")!!)
+        assertEquals(null, db.automationDao().getById("a1"))
+    }
+
+    @Test
+    fun from69ThePhotoTextTableIsThereAndEmpty() = runBlocking<Unit> {
+        // Il testo delle foto (03/11/2026): la tabella nuova c'è, vuota, e si scrive e si cerca.
+        val db = AppDatabase.getInstance(databaseAtVersion(69))
+        assertEquals("Database alla 69", db.pageDao().getById("db1")!!.title)
+        assertEquals(70, db.openHelper.readableDatabase.version)
+        assertEquals(emptyList<String>(), db.imageTextDao().readFiles())
+        db.imageTextDao().upsert(com.gabriele.notionlocal.data.entity.ImageTextEntity(file = "a.img", text = "Scontrino del bar"))
+        assertEquals(listOf("a.img"), db.imageTextDao().search("scontrino").map { it.file })
+    }
+}
