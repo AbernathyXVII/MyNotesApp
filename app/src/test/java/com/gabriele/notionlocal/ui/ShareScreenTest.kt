@@ -200,6 +200,8 @@ class QuickNoteScreenTest {
         QuickNotes.requested.value = true
         val factory = ViewModelFactory(context)
         compose.setContent { NotionLocalTheme { AppNavHost(factory = factory) } }
+        // Il primo "indietro" toglie il cursore, e Android non lo ridà (vedi `enterTouchMode`).
+        compose.runOnUiThread { compose.activity.enterTouchMode() }
         waitFor { notesInInbox().size == 1 }
         val note = notesInInbox().single()
         waitFor { runBlocking { db.pageDao().getById(note) } != null }

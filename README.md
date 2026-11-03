@@ -512,16 +512,18 @@ vedi "Vecchia numerazione", dopo la Cronologia.
    unita in `main`. Se non lo è, dopo aver clonato si passa a quel ramo
    (`git checkout claude/funny-ramanujan-uuwahs`, o in basso a destra in
    Android Studio) — su `main` ci sarebbe il codice di prima del cloud
-3. Se richiesto, seleziona una JDK 21 per Gradle (non la più recente
-   disponibile — Gradle 8.7 supporta fino alla 21). Va rifatto ad ogni
-   estrazione fresca del progetto: l'impostazione vive in `.idea/`
+3. Se richiesto, seleziona una JDK 21 per Gradle (Gradle 8.14, dal
+   03/11/2026). Va rifatto ad ogni estrazione fresca del progetto:
+   l'impostazione vive in `.idea/`
 4. Aspetta la sincronizzazione Gradle (la prima volta scarica le
    dipendenze — serve connessione internet)
 5. Collega il telefono con debug USB attivo, premi ▶ Run
 
-**Vincolo di versione da non toccare**: `kotlinx-serialization-json` è
-fissata a **1.6.3**. Dalla 1.7.0 richiede Kotlin 2.0+, mentre il
-progetto è su Kotlin 1.9.24 in tutta la configurazione.
+**Le versioni** (dal 03/11/2026, v0.152.3.1): Kotlin 2.4.21, Compose
+1.11 (BOM 2026.06.01), plugin Android 8.13.2, Gradle 8.14.3. **Compose
+resta alla 1.11** finché non si passa al plugin Android 9.1 e a
+compileSdk 37, che la 1.12 richiede, e deve andare d'accordo con Compose
+Multiplatform (la 1.11.x), con cui si farà l'app per Windows e Mac.
 
 ## Cosa fa l'app oggi
 
@@ -1143,6 +1145,37 @@ Le voci nate nelle sessioni cloud (quelle del 24/09/2026, da "Database —
 vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
+
+### 🔧 v0.152.3.1 — 04/11/2026 · 00:01 — Kotlin 2 e Compose 1.11: il primo passo verso Windows e Mac
+*(Claude Code sul PC; provata sul telefono; 1088 test passati)*
+
+- **[Bug fix]** **[📱 Mobile]** **Il cursore non si spegne più da solo
+  quando la tastiera sullo schermo non si apre**, per esempio con una
+  tastiera vera collegata al telefono: dopo mezzo secondo l'app credeva
+  che la tastiera fosse stata chiusa, e toglieva il cursore. Adesso lo
+  toglie solo quando si chiude una tastiera che si era aperta. Servirà
+  anche su Windows e Mac, dove la tastiera sullo schermo non c'è
+- **[Progetto]** **Gli strumenti aggiornati, primo passo verso Windows e
+  Mac**: l'app per il PC si farà con Compose Multiplatform, che vuole
+  Kotlin 2 e un Compose recente. Kotlin 1.9.24 → 2.4.21 (il compilatore
+  di Compose è il plugin `org.jetbrains.kotlin.plugin.compose`, non più
+  `kotlinCompilerExtensionVersion`), KSP 2.3.13, Compose 1.6.8 → 1.11.4
+  (BOM 2026.06.01; material3 1.2.1 → 1.4.0), Room 2.6.1 → 2.8.5,
+  kotlinx.serialization 1.6.3 → 1.9.0, plugin Android 8.5.2 → 8.13.2 con
+  Gradle 8.14.3 (la 8.7 non basta più), Robolectric 4.13 → 4.17. Compose
+  1.12 chiede il plugin Android 9.1 e compileSdk 37: si passerà dopo
+- **[Progetto]** Cosa è cambiato nel codice con Compose 1.11:
+  `beyondBoundsPageCount` si chiama `beyondViewportPageCount`;
+  `CaretInView.kt` dice dov'è il cursore con `focusProperties { focusRect }`
+  (l'aggancio interno di Compose 1.6 che usava non c'è più); i campi
+  copiano e incollano dai nuovi appunti (`LocalClipboard`), che
+  `LinkClipboard` ora implementa: l'incolla arriva come testo semplice e
+  `formatPaste` ci rimette link, stili e tipo delle righe;
+  `ClearFocusWhenKeyboardCloses` spegne il cursore solo se la tastiera si
+  era vista (il bug fix qui sopra). Nei test: `enterTouchMode` (`TouchMode.kt`)
+  mette Robolectric in modalità tocco come il telefono (senza, tolto il
+  cursore, Android lo ridava al primo campo), e la finestra dal basso di
+  material3 1.4 è un dialog, non più un popup
 
 ### ✏️ v0.152.3 — 03/11/2026 · 20:51 — "Sort groups" anche nella pagina "Group"
 *(Claude Code sul PC; provata sul telefono; 1088 test passati)*

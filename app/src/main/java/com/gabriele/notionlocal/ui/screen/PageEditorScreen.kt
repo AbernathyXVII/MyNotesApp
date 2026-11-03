@@ -321,6 +321,7 @@ import kotlinx.coroutines.withContext
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.ui.platform.LocalClipboard
 
 /**
  * I tipi che il "+" dà a tutte le righe selezionate insieme (vedi
@@ -1409,6 +1410,12 @@ fun PageEditorScreen(
         onInsert = viewModel::insertButtonBlocks
     )
     val buttonEnv = remember(factory) { ButtonEditorEnv(factory.pageRepository, factory, factory.imageStore) }
+    // Il testo incollato da un'altra app porta i suoi link: vedi `PasteLinks.kt`.
+    // Gli stessi appunti per i campi di prima e per quelli di Compose 1.8 e dopo.
+    val linkClipboard = rememberLinkClipboard(
+        richSelection = viewModel::selectedRichText,
+        selectedLines = viewModel::selectedLines
+    )
     CompositionLocalProvider(
         LocalInNotebook provides (page?.notebookSectionId != null),
         LocalKeyboardCloseWatch provides keyboardWatch,
@@ -1416,11 +1423,8 @@ fun PageEditorScreen(
         LocalButtonEditorEnv provides buttonEnv,
         // Il correttore della pagina, se è acceso: vedi `ProofingUi.kt`.
         LocalProofing provides rememberPageProofing(page, viewModel),
-        // Il testo incollato da un'altra app porta i suoi link: vedi `PasteLinks.kt`.
-        LocalClipboardManager provides rememberLinkClipboard(
-            richSelection = viewModel::selectedRichText,
-            selectedLines = viewModel::selectedLines
-        )
+        LocalClipboardManager provides linkClipboard,
+        LocalClipboard provides linkClipboard
     ) {
         PageEditorContent(
             pageId = pageId,
@@ -6161,7 +6165,8 @@ private fun MergedTextRunField(
             // Dopo i margini: le coordinate sono quelle del campo.
             .followCaretOnly(caretInView)
     ) {
-    CaretAnchor(caretInView)
+    // Il campo incolla il testo e basta: `formatPaste` ci rimette link e stili (vedi `PasteLinks.kt`).
+    val linkClipboard = LocalClipboard.current as? LinkClipboard
     AutoCaps {
         BasicTextField(
             value = fieldValue,
@@ -6169,7 +6174,8 @@ private fun MergedTextRunField(
                 textLayout = it
                 edges.measure(it, lineHeightPx)
             },
-            onValueChange = { pastedValue ->
+            onValueChange = { typedValue ->
+                val pastedValue = linkClipboard?.formatPaste(fieldValue, typedValue) ?: typedValue
                 // I link di un incolla (vedi `PasteLinks.kt`): si tengono da
                 // parte, e il campo resta col testo e basta.
                 val pasted = pastedValue.pastedFormat(RUN_LEAD.length)
@@ -7432,10 +7438,12 @@ private fun BlockRow(
             else -> { /* PARAGRAPH has no prefix */ }
         }
 
+        val linkClipboard = LocalClipboard.current as? LinkClipboard
         AutoCaps {
             BasicTextField(
                 value = editState.fieldValue,
-                onValueChange = { pastedFieldValue ->
+                onValueChange = { typedFieldValue ->
+                    val pastedFieldValue = linkClipboard?.formatPaste(editState.fieldValue, typedFieldValue) ?: typedFieldValue
                     // I link di un incolla, come nel campo unito.
                     val pasted = pastedFieldValue.pastedFormat(RUN_LEAD.length)
                     val newFieldValue = pastedFieldValue.withoutPastedLinks().leadOutOfSelection()

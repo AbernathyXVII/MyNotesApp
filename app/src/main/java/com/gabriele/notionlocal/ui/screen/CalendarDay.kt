@@ -300,7 +300,7 @@ internal fun CalendarDayView(
                     state = pagerState,
                     modifier = Modifier.weight(1f).height(DAY_HOUR_HEIGHT * 24),
                     verticalAlignment = Alignment.Top,
-                    beyondBoundsPageCount = 1
+                    beyondViewportPageCount = 1
                 ) { page ->
                     val shown = dayOf(page)
                     val blocks = remember(shown, dated) { dayBlocks(shown, dated, zone) }

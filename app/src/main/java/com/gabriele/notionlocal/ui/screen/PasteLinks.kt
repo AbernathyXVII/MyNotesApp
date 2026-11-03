@@ -27,6 +27,11 @@ import com.gabriele.notionlocal.data.entity.PastedLine
 import com.gabriele.notionlocal.data.entity.RichTextSpan
 import com.gabriele.notionlocal.data.entity.StyleRange
 import com.gabriele.notionlocal.data.entity.plainText
+import androidx.compose.ui.platform.Clipboard
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.NativeClipboard
+import androidx.compose.ui.platform.toClipEntry
+import androidx.compose.ui.text.TextRange
 
 // ---------------------------------------------------------------------------
 // **Incollare coi link** (dal 17/10/2026, chiesto dall'utente): il testo
@@ -89,10 +94,64 @@ internal class LinkClipboard(
     private val richSelection: () -> List<RichTextSpan>? = { null },
     /** Le righe della selezione di adesso col loro tipo, una per riga (vedi [CopiedLine]). */
     private val selectedLines: () -> List<CopiedLine?>? = { null }
-) : ClipboardManager by base {
+) : ClipboardManager by base, Clipboard {
 
     /** Il modo del prossimo incolla; poi si torna a quello di sempre. */
     var nextPasteMode: PasteMode = PasteMode.LINKS_ONLY
+
+    override val nativeClipboard: NativeClipboard get() = base.nativeClipboard
+
+    /** Il primo elemento degli appunti di Android, se c'è. */
+    private fun clipItem(): ClipData.Item? = runCatching {
+        context.getSystemService(android.content.ClipboardManager::class.java)?.primaryClip
+            ?.takeIf { it.itemCount > 0 }?.getItemAt(0)
+    }.getOrNull()
+
+    /** Il testo che il campo incolla: quello degli appunti o, se c'è solo l'HTML, il suo testo. */
+    private fun clipText(item: ClipData.Item): String? =
+        item.text?.toString() ?: item.htmlText?.let { htmlToSpanned(it).toString().trimEnd() }
+
+    // **Gli appunti dei campi di Compose 1.8 e dopo** (dal 03/11/2026): i
+    // campi copiano e incollano da qui, non più da [getText] e [setText].
+    // Copiando si passa da [setText], che ci mette l'HTML; incollando il
+    // campo riceve il testo e basta, e [formatPaste] lo cambia con quello di
+    // [getText], coi link, gli stili e il tipo delle righe.
+
+    override suspend fun getClipEntry(): ClipEntry? {
+        val text = clipItem()?.let(::clipText) ?: return null
+        return ClipData.newPlainText("PageFlow", text).toClipEntry()
+    }
+
+    override suspend fun setClipEntry(clipEntry: ClipEntry?) {
+        val text = clipEntry?.clipData?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.text?.toString()
+        if (text != null) {
+            setText(AnnotatedString(text))
+            return
+        }
+        val system = context.getSystemService(android.content.ClipboardManager::class.java) ?: return
+        if (clipEntry == null) system.clearPrimaryClip() else system.setPrimaryClip(clipEntry.clipData)
+    }
+
+    /**
+     * **L'incolla dei campi di Compose 1.8 e dopo** (dal 03/11/2026): se
+     * [after] è [before] col testo degli appunti al posto della selezione,
+     * quel testo diventa quello di [getText] — coi link, gli stili e il tipo
+     * delle righe, nelle annotazioni che legge [pastedFormat] — e il cursore
+     * va dopo di lui. Altrimenti [after] resta com'è.
+     */
+    fun formatPaste(before: TextFieldValue, after: TextFieldValue): TextFieldValue {
+        val clip = clipItem()?.let(::clipText)?.takeIf { it.isNotEmpty() } ?: return after
+        val start = before.selection.min.coerceIn(0, before.text.length)
+        val end = before.selection.max.coerceIn(start, before.text.length)
+        if (after.text != before.text.substring(0, start) + clip + before.text.substring(end)) return after
+        val pasted = getText() ?: return after
+        val text = AnnotatedString.Builder().apply {
+            append(before.annotatedString.subSequence(0, start))
+            append(pasted)
+            append(before.annotatedString.subSequence(end, before.text.length))
+        }.toAnnotatedString()
+        return TextFieldValue(text, TextRange(start + pasted.length))
+    }
 
     override fun getText(): AnnotatedString? {
         val mode = nextPasteMode
@@ -460,7 +519,7 @@ private class ShortcutKey(time: Long, action: Int, code: Int) :
 internal fun rememberLinkClipboard(
     richSelection: () -> List<RichTextSpan>? = { null },
     selectedLines: () -> List<CopiedLine?>? = { null }
-): ClipboardManager {
+): LinkClipboard {
     val context = LocalContext.current
     val base = LocalClipboardManager.current
     return remember(context, base) { if (base is LinkClipboard) base else LinkClipboard(context, base, richSelection, selectedLines) }

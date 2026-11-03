@@ -30,7 +30,6 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.gabriele.notionlocal.ui.screen.CaretAnchor
 import com.gabriele.notionlocal.ui.screen.CaretInView
 import com.gabriele.notionlocal.ui.screen.followCaretOnly
 import org.junit.Assert.assertEquals
@@ -74,7 +73,6 @@ class CaretInViewTest {
                     item { Spacer(modifier = Modifier.height(300.dp)) }
                     item {
                         Box(modifier = if (fixed) Modifier.followCaretOnly(caret) else Modifier) {
-                            if (fixed) CaretAnchor(caret)
                             BasicTextField(
                                 value = value,
                                 onValueChange = { value = it },

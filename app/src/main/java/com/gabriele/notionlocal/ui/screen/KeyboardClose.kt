@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.imeAnimationTarget
 import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
@@ -76,9 +77,18 @@ internal fun ClearFocusWhenKeyboardCloses(
     val focusManager = LocalFocusManager.current
     val imeVisible = WindowInsets.isImeVisible
     val imeComing = WindowInsets.imeAnimationTarget.getBottom(LocalDensity.current) > 0
+    // **Si chiude solo una tastiera che si è aperta** (dal 03/11/2026). Senza
+    // tastiera sullo schermo — una tastiera vera attaccata al telefono, il PC,
+    // i test — "la tastiera è giù" era vero da subito, e il cursore si
+    // spegneva dopo `settleDelayMs` mentre si scriveva. Fino a Compose 1.6 nei
+    // test la tastiera risultava aperta finché qualcuno non diceva il
+    // contrario; dalla 1.11 risulta chiusa. Si ricorda se la tastiera si è
+    // vista da quando il cursore è acceso, e solo allora il suo chiudersi conta.
+    val imeShown = remember { booleanArrayOf(false) }
+    if (!anythingFocused) imeShown[0] = false else if (imeVisible || imeComing) imeShown[0] = true
     LaunchedEffect(anythingFocused) { if (anythingFocused) watch.markFocusChange() }
     LaunchedEffect(imeVisible, imeComing, anythingFocused, focusInFlight) {
-        if (focusInFlight || !anythingFocused) return@LaunchedEffect
+        if (focusInFlight || !anythingFocused || !imeShown[0]) return@LaunchedEffect
         if (imeVisible && !imeComing && watch.focusSettled) {
             focusManager.clearFocus()
         } else if (!imeVisible) {

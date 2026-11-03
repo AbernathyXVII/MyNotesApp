@@ -15,6 +15,7 @@ import androidx.compose.ui.test.click
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasScrollToIndexAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.isPopup
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -292,7 +293,8 @@ class SportsWidgetTest {
         assertEquals(1, count("Europa League"))
         assertEquals(1, count("Conference League Qualification"))
         // La classifica è l'unica lista della finestra: in fondo, la retrocessione.
-        compose.onNode(hasScrollToIndexAction() and hasAnyAncestor(isPopup())).performScrollToNode(hasText("Relegation"))
+        // La finestra dal basso è un popup fino a material3 1.3, un dialog dalla 1.4.
+        compose.onNode(hasScrollToIndexAction() and hasAnyAncestor(isPopup() or isDialog())).performScrollToNode(hasText("Relegation"))
         compose.waitForIdle()
         assertEquals(1, count("Relegation"))
         assertEquals(0, count("Relegated"))

@@ -1,29 +1,10 @@
-// `ModifierLocalFocusedBoundsObserver` è interno a Compose (vedi `CaretBoundsNode`):
-// lo si usa lo stesso, sapendo che un aggiornamento di Compose può romperlo
-// (lo direbbe la compilazione).
-@file:Suppress("INVISIBLE_MEMBER", "INVISIBLE_REFERENCE")
-@file:OptIn(ExperimentalFoundationApi::class)
-
 package com.gabriele.notionlocal.ui.screen
 
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.ModifierLocalFocusedBoundsObserver
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.relocation.BringIntoViewResponder
 import androidx.compose.foundation.relocation.bringIntoViewResponder
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.layout.LayoutCoordinates
-import androidx.compose.ui.layout.layout
-import androidx.compose.ui.layout.onPlaced
-import androidx.compose.ui.modifier.ModifierLocalMap
-import androidx.compose.ui.modifier.ModifierLocalModifierNode
-import androidx.compose.ui.modifier.modifierLocalMapOf
-import androidx.compose.ui.node.ModifierNodeElement
-import androidx.compose.ui.platform.InspectorInfo
-import androidx.compose.ui.unit.Constraints
-import kotlin.math.roundToInt
 
 /**
  * **La pagina segue il cursore, non il pezzo di testo** (dal 19/10/2026,
@@ -46,20 +27,24 @@ import kotlin.math.roundToInt
  */
 internal class CaretInView {
     /**
-     * Il cursore, coi margini sopra e sotto, nelle coordinate del contenuto del
-     * riquadro che porta [followCaretOnly]; null se non si sa ancora (il campo
-     * non è stato misurato).
+     * Il cursore, coi margini sopra e sotto, nelle coordinate del campo (il
+     * riquadro che porta [followCaretOnly], dopo i suoi margini); null se non
+     * si sa ancora (il campo non è stato misurato).
      */
     var caretRect: () -> Rect? = { null }
-
-    /** Dove sta adesso il segnaposto del cursore ([CaretAnchor]). */
-    internal var anchor: LayoutCoordinates? = null
 }
 
 /**
  * Sul riquadro che contiene il campo, **dopo** i suoi margini: le richieste dei
- * figli diventano il cursore, e il fuoco del campo si misura sul cursore.
- * Dentro, accanto al campo, va il [CaretAnchor].
+ * figli diventano il cursore, e quello che la pagina tiene in vista del campo
+ * col fuoco è il cursore.
+ *
+ * Il secondo pezzo, fino a Compose 1.6, passava da un aggancio interno di
+ * Compose (`ModifierLocalFocusedBoundsObserver`), che dalla 1.7 non c'è più: la
+ * pagina chiede al fuoco "dov'è il campo che ha il fuoco". Dal 03/11/2026
+ * (Compose 1.11) glielo dice `focusRect`, la parte del campo che conta per il
+ * fuoco: il cursore. Vale per il campo qui dentro, che è il primo a poter
+ * prendere il fuoco sotto questo riquadro.
  */
 internal fun Modifier.followCaretOnly(caret: CaretInView): Modifier =
     this
@@ -70,66 +55,6 @@ internal fun Modifier.followCaretOnly(caret: CaretInView): Modifier =
             // Il campo non scorre per conto suo: c'è solo da passare la richiesta in su.
             override suspend fun bringChildIntoView(localRect: () -> Rect?) = Unit
         })
-        .then(CaretBoundsElement(caret))
-
-/**
- * Un riquadro invisibile, grande quanto [CaretInView.caretRect] e messo lì: la
- * pagina, quando la tastiera sale, tiene in vista lui invece di tutto il campo.
- * Non occupa spazio e non prende tocchi.
- */
-@Composable
-internal fun CaretAnchor(caret: CaretInView) {
-    Box(
-        modifier = Modifier
-            .layout { measurable, _ ->
-                val rect = caret.caretRect()
-                val placeable = measurable.measure(
-                    Constraints.fixed(
-                        (rect?.width ?: 1f).roundToInt().coerceAtLeast(1),
-                        (rect?.height ?: 1f).roundToInt().coerceAtLeast(1)
-                    )
-                )
-                layout(0, 0) {
-                    if (rect != null) placeable.place(rect.left.roundToInt(), rect.top.roundToInt())
-                }
-            }
-            .onPlaced { caret.anchor = it }
-    )
-}
-
-private class CaretBoundsElement(private val caret: CaretInView) : ModifierNodeElement<CaretBoundsNode>() {
-    override fun create() = CaretBoundsNode(caret)
-
-    override fun update(node: CaretBoundsNode) {
-        node.caret = caret
-    }
-
-    override fun hashCode(): Int = caret.hashCode()
-
-    override fun equals(other: Any?): Boolean = other is CaretBoundsElement && other.caret === caret
-
-    override fun InspectorInfo.inspectableProperties() {
-        name = "followCaretOnly"
-    }
-}
-
-/**
- * Fra il campo e la pagina che scorre: quando il campo dice "ho il fuoco, sono
- * qui", la pagina sente invece dove sta il segnaposto del cursore. È lo stesso
- * giro di `onFocusedBoundsChanged` di Compose, che però passa il campo così
- * com'è.
- */
-private class CaretBoundsNode(var caret: CaretInView) : Modifier.Node(), ModifierLocalModifierNode {
-    private val parentObserver: ((LayoutCoordinates?) -> Unit)?
-        get() = if (isAttached) ModifierLocalFocusedBoundsObserver.current else null
-
-    private val observer: (LayoutCoordinates?) -> Unit = { focused ->
-        if (isAttached) {
-            val shown = if (focused == null) null else caret.anchor?.takeIf { it.isAttached } ?: focused
-            parentObserver?.invoke(shown)
+        .focusProperties {
+            caret.caretRect()?.let { focusRect = it }
         }
-    }
-
-    override val providedValues: ModifierLocalMap =
-        modifierLocalMapOf(entry = ModifierLocalFocusedBoundsObserver to observer)
-}

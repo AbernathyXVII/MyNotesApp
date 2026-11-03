@@ -48,6 +48,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import androidx.compose.ui.platform.LocalClipboard
 
 /**
  * **Copia, incolla, taglia e seleziona tutto dalla barra** (18/10/2026,
@@ -86,8 +87,9 @@ class ClipboardBarTest {
         clipboard = LinkClipboard(context, emptyBase, richSelection = { rich }, selectedLines = { lines })
         compose.setContent {
             val focus = remember { FocusRequester() }
-            CompositionLocalProvider(LocalClipboardManager provides clipboard) {
-                BasicTextField(value = value, onValueChange = { value = adjust(it) }, modifier = Modifier.focusRequester(focus))
+            CompositionLocalProvider(LocalClipboardManager provides clipboard, LocalClipboard provides clipboard) {
+                // Come l'editor: l'incolla passa da `formatPaste`.
+                BasicTextField(value = value, onValueChange = { value = adjust(clipboard.formatPaste(value, it)) }, modifier = Modifier.focusRequester(focus))
             }
             LaunchedEffect(Unit) { focus.requestFocus() }
         }

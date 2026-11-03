@@ -94,6 +94,8 @@ class TableBarTest {
             }
         }
         compose.waitUntil(5_000) { compose.onAllNodes(hasText("Previous")).fetchSemanticsNodes().isNotEmpty() }
+        // Tolto il cursore, Android non lo ridà alla prima casella (vedi `enterTouchMode`).
+        compose.runOnUiThread { compose.activity.enterTouchMode() }
         // Da leggere: niente barra.
         compose.onNodeWithText("+ Row").assertDoesNotExist()
         compose.onNodeWithText("+ Column").assertDoesNotExist()

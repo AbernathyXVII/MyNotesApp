@@ -136,7 +136,7 @@ class NewLineSizeUiTest {
         val shown = fields()
         assertEquals(listOf("Titolo", "Altro\nFine"), shown.map { it.second })
         val altro = shown.single { it.second.startsWith("Altro") }.first
-        assertTrue("il cursore non è più nel campo", altro.config.getOrNull(SemanticsProperties.Focused) == true)
+        assertTrue("il cursore non è più nel campo: " + shown.map { it.second to it.first.config.getOrNull(SemanticsProperties.Focused) }, altro.config.getOrNull(SemanticsProperties.Focused) == true)
         // In fondo ad "Altro": il testo del campo comincia con l'a-capo nascosto.
         assertEquals(TextRange(1 + "Altro".length), altro.config.getOrNull(SemanticsProperties.TextSelectionRange))
         assertNull(shown.single { it.second == "Titolo" }.first.config.getOrNull(SemanticsProperties.Focused)?.takeIf { it })

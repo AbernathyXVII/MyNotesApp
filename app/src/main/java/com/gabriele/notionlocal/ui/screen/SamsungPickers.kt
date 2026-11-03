@@ -356,7 +356,7 @@ internal fun SamsungCalendar(
         } else {
             Spacer(modifier = Modifier.height(8.dp))
             WeekdayHeader()
-            HorizontalPager(state = pagerState, beyondBoundsPageCount = 1) { page ->
+            HorizontalPager(state = pagerState, beyondViewportPageCount = 1) { page ->
                 MonthGrid(
                     month = monthAt(page),
                     today = today,

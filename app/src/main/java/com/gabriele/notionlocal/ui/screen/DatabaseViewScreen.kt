@@ -4472,7 +4472,7 @@ private fun CalendarWeekSwiper(
         // ventina di testi da impaginare proprio nel fotogramma in cui
         // serve tutto il tempo per scorrere, ed è lì che si vedeva lo
         // scatto.
-        beyondBoundsPageCount = 1
+        beyondViewportPageCount = 1
     ) { page ->
         val start = weekOf(page)
         // Ricalcolare i pezzi ad ogni fotogramma di scorrimento è la
