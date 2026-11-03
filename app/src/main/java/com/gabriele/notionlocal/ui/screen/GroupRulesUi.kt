@@ -109,7 +109,11 @@ internal fun GroupRulesPage(
     enabled: Boolean,
     actions: GroupRuleActions?,
     onAdd: () -> Unit,
-    onOpen: (String) -> Unit
+    onOpen: (String) -> Unit,
+    /** I gruppi di una regola nel suo ordine a mano, per "Sort groups" qui sotto. */
+    groupsOf: (GroupRuleSpec) -> List<RowGroup> = { emptyList() },
+    scrollState: ScrollState = rememberScrollState(),
+    viewport: () -> Rect? = { null }
 ) {
     val canGroupBy = groupable(columns)
     val used = rules.mapTo(HashSet()) { it.column }
@@ -134,6 +138,21 @@ internal fun GroupRulesPage(
                     key(rule.column) {
                         GroupRuleRow(board, index, rule, rules.size, columns, enabled, actions, onOpen)
                     }
+                }
+            }
+            // **"Sort groups" anche qui** (dal 03/11/2026): una per regola, col
+            // nome della proprietà se le regole sono più d'una. Le date l'hanno
+            // nella loro pagina, in "Date by" ("Newest first").
+            rules.forEach { rule ->
+                val column = columns.find { it.id == rule.column } ?: return@forEach
+                if (column.type == ColumnType.DATE) return@forEach
+                key(rule.column) {
+                    val title = if (rules.size == 1) {
+                        DbStrings.sortGroups
+                    } else {
+                        DbStrings.sortGroups + " · " + DbStrings.columnName(column.name)
+                    }
+                    GroupSortSection(board, rule, title, groupsOf(rule), scrollState, viewport, enabled, actions)
                 }
             }
             // Nella bacheca senza regole le colonne restano (la prima proprietà a
@@ -322,49 +341,8 @@ internal fun GroupRulePage(
         Spacer(modifier = Modifier.size(12.dp))
         DateGroupBySection(rule.dateBy, enabled = enabled) { actions?.setDateBy?.invoke(board, rule.column, it) }
     } else if (column != null) {
-        // **"Sort groups"** (dal 28/10/2026): a mano, trascinando i gruppi, o
-        // per nome. Le date hanno già "Newest first" qui sopra.
-        Spacer(modifier = Modifier.size(16.dp))
-        Text(
-            DbStrings.sortGroups,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
-        )
-        SheetGroup {
-            listOf(
-                Triple(GroupOrder.MANUAL, DbStrings.manualOrder, Icons.Filled.Menu),
-                Triple(GroupOrder.ASCENDING, Strings.ascending, Icons.Filled.ArrowUpward),
-                Triple(GroupOrder.DESCENDING, Strings.descending, Icons.Filled.ArrowDownward)
-            ).forEachIndexed { i, (order, label, icon) ->
-                if (i > 0) HorizontalDivider()
-                SettingsRow(
-                    icon = icon,
-                    label = label,
-                    value = if (rule.order == order) "✓" else "",
-                    onClick = { actions?.setOrder?.invoke(board, rule.column, order) },
-                    enabled = enabled
-                )
-            }
-        }
-        if (rule.order == GroupOrder.MANUAL && groups.size >= 2) {
-            GroupNote(DbStrings.dragGroupsNote)
-            ReorderList(
-                keys = groups.map { it.key },
-                onMove = { keys -> actions?.setManual?.invoke(board, rule.column, keys) },
-                scrollState = scrollState,
-                viewport = viewport
-            ) { key ->
-                val group = groups.find { it.key == key }
-                if (group != null) {
-                    if (group.color != null) {
-                        TagChip(label = group.label, color = group.color, secondColor = group.secondColor, colorLine = group.colorLine)
-                    } else {
-                        Text(group.label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(vertical = 6.dp))
-                    }
-                }
-            }
-        }
+        // Le date hanno già "Newest first" qui sopra.
+        GroupSortSection(board, rule, DbStrings.sortGroups, groups, scrollState, viewport, enabled, actions)
     }
     Spacer(modifier = Modifier.size(16.dp))
     SheetGroup {
@@ -379,5 +357,65 @@ internal fun GroupRulePage(
             danger = true,
             enabled = enabled
         )
+    }
+}
+
+/**
+ * **"Sort groups"** di una regola (dal 28/10/2026): a mano, trascinando i
+ * gruppi, o per nome. Sta nella pagina della regola e, dal 03/11/2026, anche
+ * nella pagina "Group", sotto l'elenco (chiesto dall'utente: per arrivarci
+ * bisognava toccare il nome della proprietà, e non si capiva).
+ */
+@Composable
+private fun GroupSortSection(
+    board: Boolean,
+    rule: GroupRuleSpec,
+    title: String,
+    groups: List<RowGroup>,
+    scrollState: ScrollState,
+    viewport: () -> Rect?,
+    enabled: Boolean,
+    actions: GroupRuleActions?
+) {
+    Spacer(modifier = Modifier.size(16.dp))
+    Text(
+        title,
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(start = 4.dp, bottom = 8.dp)
+    )
+    SheetGroup {
+        listOf(
+            Triple(GroupOrder.MANUAL, DbStrings.manualOrder, Icons.Filled.Menu),
+            Triple(GroupOrder.ASCENDING, Strings.ascending, Icons.Filled.ArrowUpward),
+            Triple(GroupOrder.DESCENDING, Strings.descending, Icons.Filled.ArrowDownward)
+        ).forEachIndexed { i, (order, label, icon) ->
+            if (i > 0) HorizontalDivider()
+            SettingsRow(
+                icon = icon,
+                label = label,
+                value = if (rule.order == order) "✓" else "",
+                onClick = { actions?.setOrder?.invoke(board, rule.column, order) },
+                enabled = enabled
+            )
+        }
+    }
+    if (rule.order == GroupOrder.MANUAL && groups.size >= 2) {
+        GroupNote(DbStrings.dragGroupsNote)
+        ReorderList(
+            keys = groups.map { it.key },
+            onMove = { keys -> actions?.setManual?.invoke(board, rule.column, keys) },
+            scrollState = scrollState,
+            viewport = viewport
+        ) { key ->
+            val group = groups.find { it.key == key }
+            if (group != null) {
+                if (group.color != null) {
+                    TagChip(label = group.label, color = group.color, secondColor = group.secondColor, colorLine = group.colorLine)
+                } else {
+                    Text(group.label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(vertical = 6.dp))
+                }
+            }
+        }
     }
 }

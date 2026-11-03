@@ -251,4 +251,31 @@ class GroupRulesScreenTest {
         // Dietro la finestra la tabella è già cambiata.
         waitFor("Unchecked sopra") { top("Unchecked") < top("Checked") }
     }
+
+    @Test
+    fun sortGroupsIsAlsoInTheGroupPage() {
+        // Dal 03/11/2026: "Sort groups" si vede già nella pagina "Group", senza
+        // dover toccare il nome della proprietà.
+        withDatabase(table = listOf(GroupRuleSpec("bought")))
+        open()
+        waitFor("i gruppi") { shown("Checked") && shown("Unchecked") }
+        openSettings()
+        tapInSheet("Group")
+        assertTrue(shown("Sort groups"))
+        assertTrue(shown("Manual"))
+        assertEquals(2, compose.onAllNodesWithContentDescription("Drag to reorder").fetchSemanticsNodes().size)
+        tapInSheet("Descending")
+        waitFor("salvato") { saved().tableGroupRules().single().order == GroupOrder.DESCENDING }
+    }
+
+    @Test
+    fun withTwoRulesEachSortSaysItsProperty() {
+        withDatabase(table = listOf(GroupRuleSpec("kind"), GroupRuleSpec("bought")))
+        open()
+        openSettings()
+        tapInSheet("Group")
+        assertTrue(shown("Sort groups · Tipo"))
+        assertTrue(shown("Sort groups · Preso"))
+        assertFalse(shown("Sort groups"))
+    }
 }

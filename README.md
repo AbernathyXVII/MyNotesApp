@@ -1144,6 +1144,21 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### ✏️ v0.152.3 — 03/11/2026 · 20:51 — "Sort groups" anche nella pagina "Group"
+*(Claude Code sul PC; provata sul telefono; 1088 test passati)*
+
+- **[Modifica]** **[📱 Mobile]** **"Sort groups" anche nella pagina
+  "Group"** di un database, sotto l'elenco dei raggruppamenti: Manual,
+  Ascending, Descending e i gruppi da trascinare con ≡, senza dover prima
+  toccare il nome della proprietà. Con più raggruppamenti ce n'è uno per
+  ognuno, col nome della sua proprietà ("Sort groups · Done"). Le date
+  hanno il loro ordine in "Date by" ("Newest first"), nella loro pagina
+- **[Progetto]** `GroupSortSection` in `GroupRulesUi.kt`, usata dalla
+  pagina della regola e da `GroupRulesPage` (che riceve i gruppi di ogni
+  regola da `DatabaseViewScreen`). Test: `GroupRulesScreenTest` (la pagina
+  "Group" ha "Sort groups" e Descending si salva; con due regole, il nome
+  della proprietà)
+
 ### ✏️ v0.152.2 — 03/11/2026 · 20:04 — Le richieste dell'utente restano sul suo telefono
 *(Claude Code sul PC; provata sul telefono; 1086 test passati)*
 

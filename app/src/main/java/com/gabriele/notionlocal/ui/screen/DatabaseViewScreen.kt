@@ -10646,7 +10646,10 @@ private fun SettingsSheet(
                     onOpen = { columnId ->
                         groupRuleColumn = columnId
                         page = SettingsPage.GROUP_RULE
-                    }
+                    },
+                    groupsOf = { rule -> columns.find { it.id == rule.column }?.let { groupsOf(it, rule) }.orEmpty() },
+                    scrollState = sheetScroll,
+                    viewport = { sheetViewport }
                 )
 
                 SettingsPage.GROUP_ADD -> GroupAddPage(
