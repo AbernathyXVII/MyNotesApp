@@ -40,7 +40,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -63,6 +62,7 @@ import com.gabriele.notionlocal.ui.theme.DarkSurfaceVariant
 import com.gabriele.notionlocal.ui.theme.NotionGray400
 import com.gabriele.notionlocal.ui.theme.NotionGray900
 import com.gabriele.notionlocal.ui.theme.NotionWhite
+import com.gabriele.notionlocal.platform.LocalPlatformContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -170,7 +170,7 @@ fun PatchNoteScreen(version: String, onBack: () -> Unit) {
 /** Le Patch Notes, lette una volta sola (vedi `PatchNotesAsset.load`); null finché non ci sono. */
 @Composable
 private fun rememberPatchNotes(): PatchNotes? {
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val notes by produceState(PatchNotesAsset.loaded, context) {
         value = withContext(Dispatchers.IO) { PatchNotesAsset.load(context) }
     }
@@ -332,7 +332,7 @@ private fun NoteBlockView(block: NoteBlock) {
  * una riga, come li mostra GitHub. Un `*` fra due spazi resta un asterisco.
  * L'etichetta [REVIEW_TAG] è rossa (vedi lì).
  */
-internal fun inlineMarkdown(text: String, codeBackground: Color = CODE_BACKGROUND): AnnotatedString = buildAnnotatedString {
+fun inlineMarkdown(text: String, codeBackground: Color = CODE_BACKGROUND): AnnotatedString = buildAnnotatedString {
     var bold = false
     var italic = false
     var strike = false
@@ -408,5 +408,5 @@ private val CODE_BACKGROUND = Color(0x33878787)
  * ritrovare per decidere se tenerla o passare all'altra, scritta accanto. Nel
  * README ha davanti 🔴, perché su GitHub il testo non si colora.
  */
-internal const val REVIEW_TAG = "[Da rivedere]"
+const val REVIEW_TAG = "[Da rivedere]"
 private val ReviewRed = Color(0xFFE5484D)

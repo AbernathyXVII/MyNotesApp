@@ -1,6 +1,6 @@
 package com.gabriele.notionlocal.data.patchnotes
 
-import android.content.Context
+import com.gabriele.notionlocal.platform.PlatformContext
 
 /**
  * **Le Patch Notes** (dal 30/09/2026, chiesto dall'utente): la Cronologia
@@ -31,11 +31,9 @@ object PatchNotesAsset {
         private set
 
     /** Le Patch Notes dell'app; vuote se il file non c'è. Legge un file: non dal thread principale. */
-    fun load(context: Context): PatchNotes {
+    fun load(context: PlatformContext): PatchNotes {
         loaded?.let { return it }
-        val text = runCatching {
-            context.assets.open(FILE_NAME).bufferedReader(Charsets.UTF_8).use { it.readText() }
-        }.getOrNull() ?: return PatchNotes(title = "", intro = emptyList(), versions = emptyList())
+        val text = runCatching { readPatchNotesFile(context, FILE_NAME) }.getOrNull() ?: return PatchNotes(title = "", intro = emptyList(), versions = emptyList())
         return parsePatchNotes(text).also { loaded = it }
     }
 }

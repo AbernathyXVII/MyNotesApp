@@ -60,26 +60,6 @@ import com.gabriele.notionlocal.ui.theme.NotionWhite
  * cinque barre in alto scritte a mano diventano cinque barre diverse.
  */
 
-/** La barra in alto: indietro, titolo, eventuali azioni a destra. */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-internal fun WorkspaceTopBar(
-    title: String,
-    onBack: () -> Unit,
-    actions: @Composable RowScope.() -> Unit = {}
-) {
-    TopAppBar(
-        title = { Text(title, color = NotionWhite, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-        navigationIcon = {
-            IconButton(onClick = onBack) {
-                Icon(Icons.Filled.ArrowBack, contentDescription = Strings.back, tint = NotionWhite)
-            }
-        },
-        actions = actions,
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = DarkBackground)
-    )
-}
-
 /**
  * **Un'icona di Material scelta come icona** (dal 08/10/2026, la scheda
  * "Icons" del selettore): il disegno pieno, nel suo colore o in quello del

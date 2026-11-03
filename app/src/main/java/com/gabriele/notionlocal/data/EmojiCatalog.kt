@@ -10,22 +10,6 @@ import kotlinx.coroutines.withContext
 import java.security.MessageDigest
 import java.text.Normalizer
 
-/**
- * Le categorie delle emoji, nell'ordine e coi nomi del selettore di Notion
- * (foto dell'utente del 07/10/2026). `key` è il nome nel file
- * `assets/emoji/emoji.txt`.
- */
-enum class EmojiCategory(val key: String) {
-    PEOPLE("people"),
-    NATURE("nature"),
-    FOOD("food"),
-    ACTIVITY("activity"),
-    TRAVEL("travel"),
-    OBJECTS("objects"),
-    SYMBOLS("symbols"),
-    FLAGS("flags")
-}
-
 /** Un'emoji del selettore; `acceptsTone` se ha le versioni coi colori della pelle. */
 data class EmojiEntry(val emoji: String, val acceptsTone: Boolean)
 
@@ -141,7 +125,6 @@ fun normalizeForSearch(text: String): String =
  * Fitzpatrick di Unicode). 0 è il giallo di base.
  */
 private val SKIN_TONES = intArrayOf(0x1F3FB, 0x1F3FC, 0x1F3FD, 0x1F3FE, 0x1F3FF)
-const val SKIN_TONE_COUNT = 5
 
 /**
  * **L'emoji col colore della pelle** `tone` (1..5; 0 la lascia gialla): il

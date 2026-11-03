@@ -119,6 +119,10 @@ androidComponents {
 }
 
 dependencies {
+    // Il codice comune col PC (dal 04/11/2026): stessi pacchetti di prima,
+    // quindi chi lo usa non se ne accorge. Vedi `shared/build.gradle.kts`.
+    implementation(project(":shared"))
+
     // Core Android + Compose
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")

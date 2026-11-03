@@ -183,8 +183,14 @@ class DateGroupingTest {
             val page = runBlocking { db.pageDao().getById(wins.id)!! }
             page.boardGroupRules().lastOrNull()?.dateBy?.unit == DateUnit.WEEK && page.tableGroupRules().singleOrNull()?.dateBy?.unit == DateUnit.MONTH
         }
-        // La pagina del ViewModel arriva anche lei dal database: si aspetta l'ultima.
-        waitFor("i livelli") { viewModel.boardGroupLevels().size == 2 && viewModel.tableGroupLevels().size == 1 }
+        // La pagina del ViewModel arriva anche lei dal database: si aspetta l'ultima,
+        // quella con "Date by" (con la suite intera, a volte arrivava prima quella
+        // con le regole ma senza il mese).
+        waitFor("i livelli") {
+            viewModel.boardGroupLevels().size == 2 && viewModel.tableGroupLevels().size == 1 &&
+                viewModel.boardGroupLevels()[1].dateBy.unit == DateUnit.WEEK &&
+                viewModel.tableGroupLevels()[0].dateBy.unit == DateUnit.MONTH
+        }
         assertEquals(DateGroupBy(DateUnit.WEEK, newestFirst = true), viewModel.boardGroupLevels()[1].dateBy)
         assertEquals(DateGroupBy(), viewModel.boardGroupLevels()[0].dateBy)
         assertEquals(DateGroupBy(DateUnit.MONTH), viewModel.tableGroupLevels()[0].dateBy)

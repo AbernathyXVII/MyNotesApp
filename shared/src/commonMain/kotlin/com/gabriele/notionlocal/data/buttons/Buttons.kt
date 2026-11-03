@@ -75,7 +75,7 @@ data class ButtonConfig(
     }
 }
 
-internal fun newButtonId(): String = UUID.randomUUID().toString()
+fun newButtonId(): String = UUID.randomUUID().toString()
 
 /** Le azioni di un bottone, come i passi di Notion ("New action"). */
 @Serializable
@@ -300,7 +300,7 @@ fun PropertyEdit.applyTo(column: DatabaseColumnEntity, current: String, now: Lon
 }
 
 /** I tag di una cella, nell'ordine in cui ci sono. */
-internal fun splitTags(value: String): List<String> =
+fun splitTags(value: String): List<String> =
     value.split(MULTI_VALUE_SEPARATOR).map { it.trim() }.filter { it.isNotEmpty() }.distinct()
 
 private val tagsJson = Json { ignoreUnknownKeys = true }
@@ -312,7 +312,7 @@ fun DatabaseColumnEntity.selectOptions(): List<SelectOption> =
 private fun optionLabels(column: DatabaseColumnEntity): Set<String> = column.selectOptions().mapTo(HashSet()) { it.label }
 
 /** Un numero com'è scritto in una cella: col punto, o con la virgola dei decimali. */
-internal fun parseNumber(text: String): BigDecimal? =
+fun parseNumber(text: String): BigDecimal? =
     text.trim().replace(',', '.').takeIf { it.isNotEmpty() }?.let { runCatching { BigDecimal(it) }.getOrNull() }
 
 /** Senza zeri in fondo e senza notazione scientifica: "5", "2.5", "-0.1". */

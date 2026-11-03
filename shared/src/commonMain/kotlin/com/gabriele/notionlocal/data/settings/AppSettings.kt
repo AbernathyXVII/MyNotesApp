@@ -5,8 +5,7 @@ import com.gabriele.notionlocal.data.SKIN_TONE_COUNT
 import com.gabriele.notionlocal.data.entity.TimeFormatKind
 import com.gabriele.notionlocal.data.entity.BLOCK_SPACING_STEPS
 import com.gabriele.notionlocal.data.entity.ListGaps
-import android.content.Context
-import android.content.SharedPreferences
+import com.gabriele.notionlocal.platform.PlatformContext
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -108,7 +107,7 @@ enum class FavoritesSort { DATE_ADDED, ALPHABETICAL }
  */
 object AppSettings {
 
-    private lateinit var prefs: SharedPreferences
+    private lateinit var prefs: SettingsStore
 
     /** Berlino, che segue da sé l'ora legale: il fuso di partenza chiesto dall'utente. */
     const val DEFAULT_TIME_ZONE = "Europe/Berlin"
@@ -116,9 +115,9 @@ object AppSettings {
     /** Quanti giorni resta una pagina nel cestino, con `TrashPolicy.KEEP_30_DAYS`. */
     const val TRASH_RETENTION_DAYS = 30
 
-    fun init(context: Context) {
+    fun init(context: PlatformContext) {
         if (::prefs.isInitialized) return
-        prefs = context.applicationContext.getSharedPreferences("settings", Context.MODE_PRIVATE)
+        prefs = openSettingsStore(context, "settings")
         themeModeState.value = enumOr(KEY_THEME, ThemeMode.DARK)
         animationsState.value = enumOr(KEY_ANIMATIONS, AnimationLevel.FULL)
         titlePositionState.value = enumOr(KEY_TITLE_POSITION, TitlePosition.BELOW_ICON)

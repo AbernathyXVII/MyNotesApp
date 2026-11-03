@@ -399,7 +399,7 @@ internal fun stepProblem(step: ButtonStep, thisPageDatabaseId: String?): String?
         step.databaseId == null && thisPageDatabaseId == null -> ButtonStrings.missingDatabase
         step.edits.isEmpty() -> ButtonStrings.missingEdits
         step.edits.any { !it.isComplete() } -> ButtonStrings.missingProperty
-        step.filter != null && step.filter.values.none { it.isNotBlank() } -> ButtonStrings.missingFilter
+        step.filter?.values?.none { it.isNotBlank() } == true -> ButtonStrings.missingFilter
         else -> null
     }
     is ButtonStep.Open -> if (step.pageId == null && step.url.isBlank()) ButtonStrings.missingPageOrLink else null

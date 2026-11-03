@@ -455,8 +455,9 @@ class DatabaseRepository(private val db: AppDatabase) {
         }
         val before = dao.getColumnById(column.id)?.relationConfig()
         val reverse = before?.reverse?.takeIf { before.database == config.database }
-        if (before?.reverse != null && reverse == null) {
-            dao.getColumnById(before.reverse)?.takeIf { it.relationConfig()?.reverse == column.id }?.let { dao.deleteColumn(it) }
+        val reverseBefore = before?.reverse
+        if (reverseBefore != null && reverse == null) {
+            dao.getColumnById(reverseBefore)?.takeIf { it.relationConfig()?.reverse == column.id }?.let { dao.deleteColumn(it) }
         }
         val updated = column.copy(optionsJson = encodeRelationConfig(config.copy(reverse = reverse)))
         dao.updateColumn(updated)

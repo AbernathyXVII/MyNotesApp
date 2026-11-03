@@ -319,7 +319,7 @@ fun compactNumber(value: Double): String {
 }
 
 /** Il confronto "naturale": i numeri dentro i testi contano come numeri ("Pagina 2" prima di "Pagina 10"). */
-internal fun naturalCompare(a: String, b: String): Int {
+fun naturalCompare(a: String, b: String): Int {
     var i = 0
     var j = 0
     while (i < a.length && j < b.length) {

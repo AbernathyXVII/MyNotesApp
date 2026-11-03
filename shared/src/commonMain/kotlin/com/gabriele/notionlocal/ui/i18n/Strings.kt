@@ -22,7 +22,7 @@ import com.gabriele.notionlocal.ui.format.Formats
  */
 object Strings {
 
-    internal fun t(
+    fun t(
         en: String,
         it: String,
         de: String,

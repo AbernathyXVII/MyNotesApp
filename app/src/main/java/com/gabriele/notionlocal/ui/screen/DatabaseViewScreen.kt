@@ -8334,9 +8334,10 @@ private fun ColorCell(
     val fill = hexToColor(cell.color)
     val locked = LocalDatabaseLocked.current
     var editing by remember { mutableStateOf(false) }
+    val cellColor = cell.color
     val textColor = when {
-        cell.color == null -> MaterialTheme.colorScheme.onBackground
-        darkTextOn(cell.color) -> Color.Black
+        cellColor == null -> MaterialTheme.colorScheme.onBackground
+        darkTextOn(cellColor) -> Color.Black
         else -> Color.White
     }
     Box(
@@ -11947,9 +11948,10 @@ private fun timelineBar(row: DatabaseRowEntity, range: DateRange): TimelineBarDa
     } else {
         range.start.toLocalDate().atStartOfDay()
     }
+    val rangeEnd = range.end
     val endAt = when {
-        range.end != null && range.hasTime -> range.end.toLocalDateTime()
-        range.end != null -> range.end.toLocalDate().plusDays(1).atStartOfDay()
+        rangeEnd != null && range.hasTime -> rangeEnd.toLocalDateTime()
+        rangeEnd != null -> rangeEnd.toLocalDate().plusDays(1).atStartOfDay()
         range.hasTime -> startAt
         else -> range.start.toLocalDate().plusDays(1).atStartOfDay()
     }

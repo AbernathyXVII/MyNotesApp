@@ -489,7 +489,8 @@ ha la sua etichetta (`[Nuova funzionalità]`, `[Modifica]`, `[Rimosso]`,
 `[Bug fix]`; `[Progetto]` per come è fatta) e, **dal 21/10/2026, la
 piattaforma** a cui si riferisce: `[📱 Mobile]` l'app per il telefono,
 `[💻 PC]`, `[🍎 Mac]`, `[🌐 Web App]`, più d'una insieme o `[🌍 Tutte]`.
-Per ora c'è solo l'app per il telefono. Il giorno e l'ora sono quelli
+Per ora c'è l'app per il telefono; quella per il PC (Windows e Mac) è in
+costruzione dal 04/11/2026 (v0.153). Il giorno e l'ora sono quelli
 (italiani) del commit che chiude la voce; la voce nuova va in cima. La
 Cronologia è anche **Settings → Patch Notes** nell'app, che la copia a
 ogni compilazione, e `PatchNotesTest` controlla che numeri, date e
@@ -518,6 +519,9 @@ vedi "Vecchia numerazione", dopo la Cronologia.
 4. Aspetta la sincronizzazione Gradle (la prima volta scarica le
    dipendenze — serve connessione internet)
 5. Collega il telefono con debug USB attivo, premi ▶ Run
+6. **L'app per il PC** (dal 04/11/2026, in costruzione) si prova con
+   `gradle :desktop:run`, o in Android Studio dal pannello Gradle:
+   `desktop → Tasks → compose desktop → run`
 
 **Le versioni** (dal 03/11/2026, v0.152.3.1): Kotlin 2.4.21, Compose
 1.11 (BOM 2026.06.01), plugin Android 8.13.2, Gradle 8.14.3. **Compose
@@ -1127,7 +1131,8 @@ ognuna con la sua etichetta (`[Nuova funzionalità]`, `[Modifica]`,
 `[Rimosso]`, `[Bug fix]`; `[Progetto]` per come è fatta) e con **la
 piattaforma** a cui si riferisce: **[📱 Mobile]** l'app per il telefono,
 **[💻 PC]**, **[🍎 Mac]**, **[🌐 Web App]**, più d'una insieme o
-**[🌍 Tutte]**. Per ora c'è solo l'app per il telefono.
+**[🌍 Tutte]**. Per ora c'è l'app per il telefono; quella per il PC è in
+costruzione dal 04/11/2026 (v0.153) e non si scarica ancora.
 
 Accanto al numero, il giorno e l'ora (italiana) in cui la versione è
 stata chiusa: quella del commit, o, per il lavoro che commit non ne ha
@@ -1145,6 +1150,43 @@ Le voci nate nelle sessioni cloud (quelle del 24/09/2026, da "Database —
 vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
+
+### 🆕 v0.153 — 04/11/2026 · 00:20 — PageFlow comincia sul PC: il codice comune a telefono e Windows
+*(Claude Code sul PC; provata sul telefono; 1090 test passati)*
+
+- **[Nuova funzionalità]** **[💻 PC]** **La prima finestra di PageFlow sul
+  PC**: per ora mostra le Patch Notes, l'elenco delle versioni e la pagina
+  di ognuna, con lo stesso codice e gli stessi colori del telefono. Non si
+  scarica ancora: si prova dal progetto con `gradle :desktop:run`. Le
+  impostazioni del PC stanno in `%APPDATA%\PageFlow` (sul Mac in
+  `~/Library/Application Support/PageFlow`)
+- **[Progetto]** **Tre moduli**: `shared` (Kotlin Multiplatform, il codice
+  comune a telefono e PC), `app` (l'app Android) e `desktop` (Compose
+  Multiplatform 1.11.1, per Windows e Mac). In `shared`, con gli stessi
+  pacchetti di prima: le entità del database (`data/entity`), le formule,
+  i testi in 8 lingue (tranne quelli dei widget), il tema, i formati,
+  `AppSettings`, i bottoni, le Patch Notes con la loro schermata e la
+  barra in alto delle schermate (`WorkspaceTopBar`). Il database (DAO e
+  `AppDatabase`) resta in `app`, e Room legge le entità dall'altro modulo.
+  Visto che telefono e PC sono tutti e due JVM, il codice comune usa
+  `java.time` e il resto di Java come prima
+- **[Progetto]** Quello che cambia fra telefono e PC sta in `androidMain` e
+  `desktopMain` (`expect`/`actual`): `PlatformContext` (sul telefono è
+  proprio il `Context` di Android, quindi chi lo passava non è cambiato),
+  `LocalPlatformContext`, dove si salvano le impostazioni (`SettingsStore`:
+  sul telefono le `SharedPreferences` di sempre, sul PC un file
+  `.properties`) e da dove si leggono le Patch Notes (gli asset del
+  telefono, le risorse del PC: il task `patchNotes` di
+  `desktop/build.gradle.kts` le copia dal README come quello dell'app).
+  Divisi in due: da `EmojiCatalog.kt` le categorie, da `ButtonRunner.kt`
+  `ButtonProblem`, da `ProofingLanguage.kt` i dizionari
+  (`SpellDictionaries.kt`), da `ScreenParts.kt` la barra in alto. Le
+  dichiarazioni `internal` dei file spostati sono diventate pubbliche
+  (l'app è un altro modulo), e in cinque punti un valore va messo in una
+  variabile prima di usarlo: Kotlin non si fida del controllo fatto su una
+  proprietà che viene da un altro modulo. Test: `DesktopScreensTest`
+  disegna le schermate del PC in `desktop/build/desktop-screenshots`, senza
+  aprire finestre e senza toccare la cartella vera delle impostazioni
 
 ### 🔧 v0.152.3.1 — 04/11/2026 · 00:01 — Kotlin 2 e Compose 1.11: il primo passo verso Windows e Mac
 *(Claude Code sul PC; provata sul telefono; 1088 test passati)*
@@ -11841,7 +11883,22 @@ v0.1 → v0.1 · v0.2 → v0.1.1 · v0.3 → v0.1.2 · v0.4 → v0.2 · v0.5 →
 
 ## Struttura del progetto
 
+**Dal 04/11/2026 i moduli sono tre** (v0.153): `shared` è il codice comune
+a telefono e PC, `app` l'app Android, `desktop` quella per Windows e Mac.
+I pacchetti sono gli stessi in tutti e tre: un file si sposta da `app` a
+`shared` senza cambiare chi lo usa.
+
 ```
+shared/src/commonMain/kotlin/com/gabriele/notionlocal/
+                    # Il codice comune: entità, formule, testi, tema,
+                    # impostazioni, Patch Notes (e cresce)
+shared/src/androidMain/, shared/src/desktopMain/
+                    # Quello che cambia fra telefono e PC (expect/actual):
+                    # PlatformContext, SettingsStore, le Patch Notes
+desktop/src/main/kotlin/com/gabriele/notionlocal/desktop/Main.kt
+                    # La finestra del PC (gradle :desktop:run)
+desktop/src/test/   # DesktopScreensTest: le schermate del PC in immagini
+
 app/src/main/java/com/gabriele/notionlocal/
 ├── data/           # Entità Room, DAO, Repository, AppDatabase
 ├── ui/
@@ -11898,7 +11955,8 @@ fatto ognuno e i calcoli (barre, ordine dei fusi, pomodoro), senza
 Android; `WidgetStore.kt` dove si salvano e l'attesa che fa suonare il
 pomodoro. `ui/screen/SidebarWidgets.kt` è come si vedono.
 
-`data/patchnotes/PatchNotes.kt` e `ui/screen/PatchNotesScreen.kt` sono
+`data/patchnotes/PatchNotes.kt` e `ui/screen/PatchNotesScreen.kt` (in
+`shared`, dal 04/11/2026) sono
 **Settings → Patch Notes**: la Cronologia di questo README divisa in
 versioni e disegnata come su GitHub — l'elenco dei titoli
 (`PatchNotesScreen`) e la pagina di ogni versione (`PatchNoteScreen`). Il testo lo copia il task
