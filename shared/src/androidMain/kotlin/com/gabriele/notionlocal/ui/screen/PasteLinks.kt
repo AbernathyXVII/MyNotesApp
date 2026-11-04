@@ -1,0 +1,575 @@
+package com.gabriele.notionlocal.ui.screen
+
+import android.content.ClipData
+import android.content.Context
+import android.graphics.Typeface
+import android.text.Html
+import android.text.Spanned
+import android.text.style.StrikethroughSpan
+import android.text.style.StyleSpan
+import android.text.style.URLSpan
+import android.text.style.UnderlineSpan
+import android.os.SystemClock
+import android.view.KeyEvent
+import android.view.View
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.ClipboardManager
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.input.TextFieldValue
+import com.gabriele.notionlocal.data.entity.BlockType
+import com.gabriele.notionlocal.data.entity.CopiedLine
+import com.gabriele.notionlocal.data.entity.LinkRange
+import com.gabriele.notionlocal.data.entity.PasteFormat
+import com.gabriele.notionlocal.data.entity.PastedLine
+import com.gabriele.notionlocal.data.entity.RichTextSpan
+import com.gabriele.notionlocal.data.entity.StyleRange
+import com.gabriele.notionlocal.data.entity.plainText
+import androidx.compose.ui.platform.Clipboard
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.NativeClipboard
+import androidx.compose.ui.platform.toClipEntry
+import androidx.compose.ui.text.TextRange
+
+// ---------------------------------------------------------------------------
+// **Incollare coi link** (dal 17/10/2026, chiesto dall'utente): il testo
+// copiato da un'altra app — OneNote, un browser — arriva coi suoi
+// collegamenti, sulle stesse parole.
+//
+// Le altre app mettono negli appunti il testo semplice e, accanto, lo stesso
+// testo in HTML (o un testo coi link dentro). L'incolla di Compose prende
+// solo il testo semplice: `LinkClipboard` gli dà lo stesso testo con i link
+// segnati sopra (`PASTED_LINK_TAG`), che arrivano nel valore del campo
+// (`pastedFormat`) e diventano link veri nel testo ricco (`applyPaste`).
+//
+// **I tre modi di incollare** (dal 18/10/2026, chiesti dall'utente, come in
+// Word), dal pulsante "incolla" della barra sopra la tastiera:
+//  - Keep Source Formatting: il testo incollato perde la formattazione di
+//    dove arriva e prende quella di chi l'ha copiato — grassetto, corsivo,
+//    sottolineato, barrato, link;
+//  - Match Destination Formatting: testo semplice, che prende la
+//    formattazione del punto in cui arriva;
+//  - Keep Text Only: testo e basta, senza nessuna formattazione.
+// Il "Paste" del menu che si apre tenendo premuto resta come prima: i link
+// sì, il resto prende la formattazione del punto in cui arriva.
+//
+// **Copiando** da notE (sia con la barra sia col menu) negli appunti va anche
+// l'HTML del testo con la sua formattazione, così si incolla altrove — o qui,
+// con "Keep Source Formatting" — com'era.
+//
+// **E il tipo delle righe** (dal 19/10/2026, chiesto dall'utente): copiate
+// intere, le caselle da spuntare (spuntate o no), gli elenchi puntati e
+// numerati e il rientro vanno negli appunti in un commento dell'HTML
+// (`<!--notE-lines:…-->`), che le altre app non vedono. Incollando in notE
+// tornano sulle righe (`PastedLine`), tranne con "Keep Text Only".
+// ---------------------------------------------------------------------------
+
+private const val PASTED_LINK_TAG = "pasted-link"
+private const val PASTED_STYLE_TAG = "pasted-style"
+private const val PASTED_PLAIN_TAG = "pasted-plain"
+private const val PASTED_LINES_TAG = "pasted-lines"
+private const val PASTED_TABLE_TAG = "pasted-table"
+
+/** Fra le righe e fra le celle di una tabella incollata, nell'etichetta: caratteri che nel testo non ci sono. */
+private const val TABLE_ROW_SEPARATOR = '\u001E'
+private const val TABLE_CELL_SEPARATOR = '\u001F'
+
+/** Il commento con il tipo delle righe copiate, nell'HTML degli appunti. */
+private const val LINES_MARKER = "PageFlow-lines:"
+
+/** Il segno di quando l'app si chiamava notE (fino al 03/11/2026): una copia di allora si incolla uguale. */
+private const val OLD_LINES_MARKER = "notE-lines:"
+
+
+/** Come si incolla (vedi sopra). */
+enum class PasteMode { LINKS_ONLY, KEEP_SOURCE, MATCH_DESTINATION, TEXT_ONLY }
+
+/** Gli appunti dell'editor: come quelli di sempre, ma il testo incollato porta i suoi link e, a richiesta, il suo stile. */
+class LinkClipboard(
+    private val context: Context,
+    private val base: ClipboardManager,
+    /** La selezione di adesso col suo stile, per copiare con la formattazione; null se non c'è. */
+    private val richSelection: () -> List<RichTextSpan>? = { null },
+    /** Le righe della selezione di adesso col loro tipo, una per riga (vedi [CopiedLine]). */
+    private val selectedLines: () -> List<CopiedLine?>? = { null }
+) : ClipboardManager by base, Clipboard {
+
+    /** Il modo del prossimo incolla; poi si torna a quello di sempre. */
+    var nextPasteMode: PasteMode = PasteMode.LINKS_ONLY
+
+    override val nativeClipboard: NativeClipboard get() = base.nativeClipboard
+
+    /** Il primo elemento degli appunti di Android, se c'è. */
+    private fun clipItem(): ClipData.Item? = runCatching {
+        context.getSystemService(android.content.ClipboardManager::class.java)?.primaryClip
+            ?.takeIf { it.itemCount > 0 }?.getItemAt(0)
+    }.getOrNull()
+
+    /** Il testo che il campo incolla: quello degli appunti o, se c'è solo l'HTML, il suo testo. */
+    private fun clipText(item: ClipData.Item): String? =
+        item.text?.toString() ?: item.htmlText?.let { htmlToSpanned(it).toString().trimEnd() }
+
+    // **Gli appunti dei campi di Compose 1.8 e dopo** (dal 03/11/2026): i
+    // campi copiano e incollano da qui, non più da [getText] e [setText].
+    // Copiando si passa da [setText], che ci mette l'HTML; incollando il
+    // campo riceve il testo e basta, e [formatPaste] lo cambia con quello di
+    // [getText], coi link, gli stili e il tipo delle righe.
+
+    override suspend fun getClipEntry(): ClipEntry? {
+        val text = clipItem()?.let(::clipText) ?: return null
+        return ClipData.newPlainText("PageFlow", text).toClipEntry()
+    }
+
+    override suspend fun setClipEntry(clipEntry: ClipEntry?) {
+        val text = clipEntry?.clipData?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.text?.toString()
+        if (text != null) {
+            setText(AnnotatedString(text))
+            return
+        }
+        val system = context.getSystemService(android.content.ClipboardManager::class.java) ?: return
+        if (clipEntry == null) system.clearPrimaryClip() else system.setPrimaryClip(clipEntry.clipData)
+    }
+
+    /**
+     * **L'incolla dei campi di Compose 1.8 e dopo** (dal 03/11/2026): se
+     * [after] è [before] col testo degli appunti al posto della selezione,
+     * quel testo diventa quello di [getText] — coi link, gli stili e il tipo
+     * delle righe, nelle annotazioni che legge [pastedFormat] — e il cursore
+     * va dopo di lui. Altrimenti [after] resta com'è.
+     */
+    fun formatPaste(before: TextFieldValue, after: TextFieldValue): TextFieldValue {
+        val clip = clipItem()?.let(::clipText)?.takeIf { it.isNotEmpty() } ?: return after
+        val start = before.selection.min.coerceIn(0, before.text.length)
+        val end = before.selection.max.coerceIn(start, before.text.length)
+        if (after.text != before.text.substring(0, start) + clip + before.text.substring(end)) return after
+        val pasted = getText() ?: return after
+        val text = AnnotatedString.Builder().apply {
+            append(before.annotatedString.subSequence(0, start))
+            append(pasted)
+            append(before.annotatedString.subSequence(end, before.text.length))
+        }.toAnnotatedString()
+        return TextFieldValue(text, TextRange(start + pasted.length))
+    }
+
+    override fun getText(): AnnotatedString? {
+        val mode = nextPasteMode
+        nextPasteMode = PasteMode.LINKS_ONLY
+        val item = runCatching {
+            context.getSystemService(android.content.ClipboardManager::class.java)?.primaryClip
+                ?.takeIf { it.itemCount > 0 }?.getItemAt(0)
+        }.getOrNull() ?: return base.getText()
+        // **Com'era fatto nella fonte** (dal 20/10/2026): da un'altra app con
+        // l'HTML, righe, elenchi, tabelle e grandezze (vedi `ClipHtml.kt`).
+        // Da notE stesso il tipo delle righe c'è già, nel commento.
+        val html = item.htmlText
+        if (mode == PasteMode.KEEP_SOURCE && html != null && linesMarkerOf(html) == null) {
+            val lines = runCatching { parseClipHtml(html) }.getOrNull()
+            if (!lines.isNullOrEmpty()) return sourceFormatted(lines)
+        }
+        val raw: CharSequence = item.text ?: item.htmlText?.let { htmlToSpanned(it).toString().trimEnd() } ?: return base.getText()
+        val plain = raw.toString()
+        val builder = AnnotatedString.Builder(plain)
+        if (mode == PasteMode.KEEP_SOURCE || mode == PasteMode.TEXT_ONLY) {
+            builder.addStringAnnotation(PASTED_PLAIN_TAG, "", 0, plain.length)
+        }
+        if (mode == PasteMode.KEEP_SOURCE || mode == PasteMode.LINKS_ONLY) {
+            runCatching { clipLinks(item, plain) }.getOrDefault(emptyList())
+                .forEach { builder.addStringAnnotation(PASTED_LINK_TAG, it.url, it.start, it.end) }
+        }
+        if (mode == PasteMode.KEEP_SOURCE) {
+            runCatching { clipStyles(item, plain) }.getOrDefault(emptyList()).forEach {
+                builder.addStringAnnotation(PASTED_STYLE_TAG, styleCode(it), it.start, it.end)
+            }
+        }
+        // Il tipo delle righe copiate da notE: su tutto il testo, una voce per riga.
+        if (mode != PasteMode.TEXT_ONLY) {
+            linesMarkerOf(item.htmlText)?.takeIf { it.split(';').size == plain.split('\n').size }?.let {
+                builder.addStringAnnotation(PASTED_LINES_TAG, it, 0, plain.length)
+            }
+        }
+        return builder.toAnnotatedString()
+    }
+
+    /**
+     * Copiando: col testo semplice anche l'HTML con la formattazione, se la
+     * selezione ne ha, e il tipo delle righe, se ce n'è una che non è testo
+     * normale (vedi [CopiedLine]).
+     */
+    override fun setText(annotatedString: AnnotatedString) {
+        val text = annotatedString.text
+        val selection = runCatching { richSelection() }.getOrNull()?.takeIf { it.plainText() == text }
+        val rich = selection?.takeIf { spans -> spans.any { it.hasStyle() } }
+        val lines = selection?.let { runCatching { selectedLines() }.getOrNull() }
+            ?.takeIf { lines -> lines.size == text.split('\n').size && lines.any { it != null && (it.type != BlockType.PARAGRAPH || it.indent > 0) } }
+        if (rich == null && lines == null) {
+            base.setText(annotatedString)
+            return
+        }
+        val clipboard = context.getSystemService(android.content.ClipboardManager::class.java)
+        if (clipboard == null) {
+            base.setText(annotatedString)
+            return
+        }
+        val html = spansToHtml(rich ?: listOf(RichTextSpan(text = text))) + (lines?.let { linesMarker(it) } ?: "")
+        clipboard.setPrimaryClip(ClipData.newHtmlText("PageFlow", text, html))
+    }
+
+    /**
+     * Il testo copiato com'era nella fonte: le righe una sotto l'altra, e
+     * sopra gli stili (con la grandezza in punti di notE, vedi `noteSizes`), i
+     * collegamenti, il tipo delle righe (solo se c'è un elenco o una tabella:
+     * altrimenti le righe nuove fanno come sempre) e le celle delle tabelle.
+     */
+    private fun sourceFormatted(lines: List<ClipLine>): AnnotatedString {
+        val sizeOf = noteSizes(lines)
+        val plain = lines.joinToString("\n") { it.text }
+        val builder = AnnotatedString.Builder(plain)
+        if (plain.isNotEmpty()) builder.addStringAnnotation(PASTED_PLAIN_TAG, "", 0, plain.length)
+        var lineStart = 0
+        for (line in lines) {
+            var at = lineStart
+            for (run in line.runs) {
+                val end = at + run.text.length
+                if (end > at && line.table == null) {
+                    val style = StyleRange(at, end, run.bold, run.italic, run.underline, run.strikethrough, sizeOf(run.sizePt))
+                    if (style.bold || style.italic || style.underline || style.strikethrough || style.size != null) {
+                        builder.addStringAnnotation(PASTED_STYLE_TAG, styleCode(style), at, end)
+                    }
+                    run.link?.let { builder.addStringAnnotation(PASTED_LINK_TAG, it.trim(), at, end) }
+                }
+                at = end
+            }
+            val length = line.text.length
+            if (line.table != null && length > 0) {
+                builder.addStringAnnotation(PASTED_TABLE_TAG, encodeTable(line.table), lineStart, lineStart + length)
+            }
+            lineStart += length + 1
+        }
+        if (plain.isNotEmpty() && lines.any { it.type != BlockType.PARAGRAPH }) {
+            builder.addStringAnnotation(PASTED_LINES_TAG, lines.joinToString(";") { "${it.type.name},0,${it.indent}" }, 0, plain.length)
+        }
+        return builder.toAnnotatedString()
+    }
+
+    /** I link di un elemento degli appunti, nelle posizioni di [plain]. */
+    private fun clipLinks(item: ClipData.Item, plain: String): List<LinkRange> {
+        // Un testo coi link dentro: le posizioni sono già quelle giuste.
+        (item.text as? Spanned)?.let { spanned ->
+            val found = spanned.getSpans(0, spanned.length, URLSpan::class.java)
+                .sortedBy { spanned.getSpanStart(it) }
+                .map { LinkRange(spanned.getSpanStart(it), spanned.getSpanEnd(it), it.url.orEmpty()) }
+                .filter { it.end <= plain.length && usableLink(it.url) }
+            if (found.isNotEmpty()) return found
+        }
+        // L'HTML accanto al testo semplice: le parole dei link si ritrovano
+        // nel testo, in ordine.
+        val html = item.htmlText ?: return emptyList()
+        val spanned = htmlToSpanned(html)
+        val anchors = spanned.getSpans(0, spanned.length, URLSpan::class.java)
+            .sortedBy { spanned.getSpanStart(it) }
+            .map { spanned.subSequence(spanned.getSpanStart(it), spanned.getSpanEnd(it)).toString() to it.url.orEmpty() }
+            .filter { usableLink(it.second) }
+        return matchAnchors(anchors, plain)
+    }
+
+    /** Gli stili di un elemento degli appunti, nelle posizioni di [plain]. */
+    private fun clipStyles(item: ClipData.Item, plain: String): List<StyleRange> {
+        (item.text as? Spanned)?.let { spanned ->
+            val found = stylesOfSpanned(spanned).filter { it.end <= plain.length }
+            if (found.isNotEmpty()) return found
+        }
+        val html = item.htmlText ?: return emptyList()
+        return matchStyles(htmlStyleRuns(html), plain)
+    }
+}
+
+private fun htmlToSpanned(html: String): Spanned = Html.fromHtml(html, Html.FROM_HTML_MODE_COMPACT)
+
+/**
+ * Il commento col tipo delle righe: `TIPO,spuntata,rientro` per riga, `x` per
+ * una riga presa in parte (non `-`: accanto alla chiusura `-->` del commento
+ * la chiuderebbe un carattere prima).
+ */
+fun linesMarker(lines: List<CopiedLine?>): String =
+    "<!--" + LINES_MARKER + lines.joinToString(";") { line ->
+        if (line == null) "x" else "${line.type.name},${if (line.checked) 1 else 0},${line.indent}"
+    } + "-->"
+
+/** Le voci del commento col tipo delle righe, se l'HTML ce l'ha. */
+private fun linesMarkerOf(html: String?): String? {
+    if (html == null) return null
+    val marker = listOf(LINES_MARKER, OLD_LINES_MARKER).firstOrNull { html.contains("<!--$it") } ?: return null
+    val start = html.indexOf("<!--$marker")
+    val from = start + 4 + marker.length
+    val end = html.indexOf("-->", from)
+    return if (end < 0) null else html.substring(from, end)
+}
+
+/** Una voce del commento: la riga col suo tipo, o null. */
+private fun copiedLineOf(entry: String): CopiedLine? {
+    val parts = entry.split(',')
+    if (parts.size != 3) return null
+    val type = BlockType.entries.find { it.name == parts[0] } ?: return null
+    return CopiedLine(type, parts[1] == "1", parts[2].toIntOrNull()?.coerceIn(0, 10) ?: 0)
+}
+
+/** Niente link che eseguono codice, né vuoti. */
+fun usableLink(url: String): Boolean = url.isNotBlank() && !url.trim().startsWith("javascript:", ignoreCase = true)
+
+private fun RichTextSpan.hasStyle(): Boolean = bold || italic || underline || strikethrough || link != null
+
+private fun styleCode(style: StyleRange): String = buildString {
+    if (style.bold) append('b')
+    if (style.italic) append('i')
+    if (style.underline) append('u')
+    if (style.strikethrough) append('s')
+    style.size?.let { append('z').append(it) }
+}
+
+/** La grandezza nel codice di uno stile ("bz24"), o null. */
+private fun sizeOfCode(code: String): Int? = Regex("z(\\d+)").find(code)?.groupValues?.get(1)?.toIntOrNull()
+
+/** Le celle di una tabella nell'etichetta dell'incolla, e ritorno. */
+private fun encodeTable(cells: List<List<String>>): String =
+    cells.joinToString(TABLE_ROW_SEPARATOR.toString()) { row ->
+        row.joinToString(TABLE_CELL_SEPARATOR.toString()) { it.filterNot { c -> c == TABLE_ROW_SEPARATOR || c == TABLE_CELL_SEPARATOR } }
+    }
+
+private fun decodeTable(code: String): List<List<String>> =
+    code.split(TABLE_ROW_SEPARATOR).map { it.split(TABLE_CELL_SEPARATOR) }
+
+/** Gli stili di un testo con gli stili dentro (un'app che copia un testo formattato). */
+private fun stylesOfSpanned(spanned: Spanned): List<StyleRange> {
+    val result = mutableListOf<StyleRange>()
+    spanned.getSpans(0, spanned.length, Any::class.java).forEach { span ->
+        val start = spanned.getSpanStart(span)
+        val end = spanned.getSpanEnd(span)
+        if (start >= end) return@forEach
+        when (span) {
+            is StyleSpan -> result += StyleRange(
+                start, end,
+                bold = span.style == Typeface.BOLD || span.style == Typeface.BOLD_ITALIC,
+                italic = span.style == Typeface.ITALIC || span.style == Typeface.BOLD_ITALIC
+            )
+            is UnderlineSpan -> result += StyleRange(start, end, underline = true)
+            is StrikethroughSpan -> result += StyleRange(start, end, strikethrough = true)
+        }
+    }
+    return result.filter { it.bold || it.italic || it.underline || it.strikethrough }
+}
+
+/**
+ * **Le parole dei link ritrovate nel testo semplice**, una dopo l'altra:
+ * ognuna si cerca da dove finisce la precedente, così due link con la stessa
+ * parola vanno ognuno al suo posto. Gli spazi speciali dell'HTML (quello che
+ * non va a capo) valgono come spazi normali.
+ */
+fun matchAnchors(anchors: List<Pair<String, String>>, plain: String): List<LinkRange> {
+    val haystack = plain.replace('\u00A0', ' ')
+    var from = 0
+    return anchors.mapNotNull { (anchor, url) ->
+        val needle = anchor.replace('\u00A0', ' ').trim()
+        if (needle.isEmpty()) return@mapNotNull null
+        val at = haystack.indexOf(needle, from)
+        if (at < 0) return@mapNotNull null
+        from = at + needle.length
+        LinkRange(at, at + needle.length, url.trim())
+    }
+}
+
+/** Un pezzo di testo dell'HTML con uno stile. */
+data class StyledRun(val text: String, val bold: Boolean, val italic: Boolean, val underline: Boolean, val strikethrough: Boolean)
+
+/** Gli stessi pezzi ritrovati nel testo semplice, in ordine (come `matchAnchors`). */
+fun matchStyles(runs: List<StyledRun>, plain: String): List<StyleRange> {
+    val haystack = plain.replace('\u00A0', ' ')
+    var from = 0
+    return runs.mapNotNull { run ->
+        val needle = run.text.replace('\u00A0', ' ')
+        if (needle.isBlank()) return@mapNotNull null
+        val at = haystack.indexOf(needle, from)
+        if (at < 0) return@mapNotNull null
+        from = at + needle.length
+        StyleRange(at, at + needle.length, run.bold, run.italic, run.underline, run.strikethrough)
+    }
+}
+
+/**
+ * **Gli stili dell'HTML degli appunti**, pezzo per pezzo: `<b>`, `<strong>`,
+ * `<i>`, `<em>`, `<u>`, `<s>`, `<strike>`, `<del>`, e gli stessi scritti come
+ * stile di uno `<span>` — è così che copiano OneNote, Word e Google Docs
+ * ("font-weight:bold", "font-style:italic", "text-decoration:underline").
+ * Il resto dell'HTML conta solo per il testo.
+ */
+fun htmlStyleRuns(html: String): List<StyledRun> {
+    // Il grassetto lo decide il più interno che ne dice qualcosa (null: non ne parla).
+    data class Open(val tag: String, val bold: Boolean?, val italic: Boolean, val underline: Boolean, val strike: Boolean)
+    val stack = mutableListOf<Open>()
+    val runs = mutableListOf<StyledRun>()
+    // Il frammento copiato, se c'è: il resto (la testa del documento) non è testo.
+    val body = Regex("<!--StartFragment-->(.*?)<!--EndFragment-->", RegexOption.DOT_MATCHES_ALL).find(html)?.groupValues?.get(1)
+        ?: Regex("<body[^>]*>(.*)</body>", setOf(RegexOption.DOT_MATCHES_ALL, RegexOption.IGNORE_CASE)).find(html)?.groupValues?.get(1)
+        ?: html
+    val cleaned = body
+        .replace(Regex("<!--.*?-->", RegexOption.DOT_MATCHES_ALL), "")
+        .replace(Regex("<(style|script)[^>]*>.*?</\\1>", setOf(RegexOption.DOT_MATCHES_ALL, RegexOption.IGNORE_CASE)), "")
+    val token = Regex("<(/?)([a-zA-Z0-9]+)([^>]*)>|([^<]+)")
+    for (match in token.findAll(cleaned)) {
+        val text = match.groupValues[4]
+        if (text.isNotEmpty()) {
+            val decoded = decodeEntities(text).replace(Regex("\\s+"), " ")
+            val bold = stack.lastOrNull { it.bold != null }?.bold == true
+            val italic = stack.any { it.italic }
+            val underline = stack.any { it.underline }
+            val strike = stack.any { it.strike }
+            if ((bold || italic || underline || strike) && decoded.isNotBlank()) {
+                runs += StyledRun(decoded.trim(), bold, italic, underline, strike)
+            }
+            continue
+        }
+        val closing = match.groupValues[1] == "/"
+        val tag = match.groupValues[2].lowercase()
+        val attrs = match.groupValues[3]
+        if (tag in setOf("br", "img", "hr", "meta", "link") || attrs.trimEnd().endsWith("/")) continue
+        if (closing) {
+            val at = stack.indexOfLast { it.tag == tag }
+            if (at >= 0) while (stack.size > at) stack.removeAt(stack.lastIndex)
+            continue
+        }
+        val style = Regex("style\\s*=\\s*(\"[^\"]*\"|'[^']*')", RegexOption.IGNORE_CASE).find(attrs)?.groupValues?.get(1)?.lowercase().orEmpty()
+        val weight = Regex("font-weight\\s*:\\s*([a-z0-9]+)").find(style)?.groupValues?.get(1)
+        val boldStyle = weight == "bold" || weight == "bolder" || (weight?.toIntOrNull() ?: 0) >= 600
+        val italicStyle = Regex("font-style\\s*:\\s*italic").containsMatchIn(style)
+        val decoration = Regex("text-decoration(-line)?\\s*:\\s*([^;\"']*)").find(style)?.groupValues?.get(2).orEmpty()
+        // "font-weight:normal" spegne il grassetto di chi lo contiene: è il
+        // caso di Google Docs, che avvolge tutto in un <b> "normale".
+        val normal = weight == "normal" || weight == "400" || weight == "lighter"
+        stack += Open(
+            tag = tag,
+            bold = when {
+                normal -> false
+                tag == "b" || tag == "strong" || boldStyle -> true
+                else -> null
+            },
+            italic = tag == "i" || tag == "em" || italicStyle,
+            underline = tag == "u" || "underline" in decoration,
+            strike = tag == "s" || tag == "strike" || tag == "del" || "line-through" in decoration
+        )
+    }
+    return runs
+}
+
+fun decodeEntities(text: String): String =
+    Regex("&(#x?[0-9a-fA-F]+|[a-zA-Z]+);").replace(text) { m ->
+        val code = m.groupValues[1]
+        when {
+            code.startsWith("#x") || code.startsWith("#X") -> code.drop(2).toIntOrNull(16)?.let { String(Character.toChars(it)) }
+            code.startsWith("#") -> code.drop(1).toIntOrNull()?.let { String(Character.toChars(it)) }
+            else -> when (code) {
+                "amp" -> "&"; "lt" -> "<"; "gt" -> ">"; "quot" -> "\""; "apos" -> "'"; "nbsp" -> "\u00A0"
+                else -> null
+            }
+        } ?: m.value
+    }
+
+/** Il testo con la sua formattazione in HTML, per gli appunti: grassetto, corsivo, sottolineato, barrato, link. */
+fun spansToHtml(spans: List<RichTextSpan>): String = buildString {
+    spans.forEach { span ->
+        var piece = span.text
+            .replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;")
+            .replace("\n", "<br>")
+        if (span.bold) piece = "<b>$piece</b>"
+        if (span.italic) piece = "<i>$piece</i>"
+        if (span.underline) piece = "<u>$piece</u>"
+        if (span.strikethrough) piece = "<s>$piece</s>"
+        span.link?.let { piece = "<a href=\"${it.replace("\"", "&quot;")}\">$piece</a>" }
+        append(piece)
+    }
+}
+
+/**
+ * **Ctrl + un tasto**, mandato al campo che ha il fuoco come da una tastiera
+ * vera: C copia, V incolla, X taglia, A seleziona tutto. È così che i
+ * pulsanti della barra sopra la tastiera fanno il loro lavoro.
+ */
+fun View.sendCtrlShortcut(keyCode: Int) {
+    val now = SystemClock.uptimeMillis()
+    dispatchKeyEvent(ShortcutKey(now, KeyEvent.ACTION_DOWN, keyCode))
+    dispatchKeyEvent(ShortcutKey(now, KeyEvent.ACTION_UP, keyCode))
+}
+
+/**
+ * Ctrl + un tasto **senza un carattere**: il campo di testo prende un tasto
+ * col suo carattere per una lettera da scrivere (Ctrl+A scriveva "a" in certi
+ * telefoni e nei test), uno senza per una scorciatoia.
+ */
+private class ShortcutKey(time: Long, action: Int, code: Int) :
+    KeyEvent(time, time, action, code, 0, META_CTRL_ON or META_CTRL_LEFT_ON) {
+    override fun getUnicodeChar(): Int = 0
+    override fun getUnicodeChar(metaState: Int): Int = 0
+}
+
+/**
+ * Gli appunti coi link per i campi dell'editor; [richSelection] dà lo stile
+ * della selezione e [selectedLines] il tipo delle sue righe, per copiare.
+ */
+@Composable
+fun rememberLinkClipboard(
+    richSelection: () -> List<RichTextSpan>? = { null },
+    selectedLines: () -> List<CopiedLine?>? = { null }
+): LinkClipboard {
+    val context = LocalContext.current
+    val base = LocalClipboardManager.current
+    return remember(context, base) { if (base is LinkClipboard) base else LinkClipboard(context, base, richSelection, selectedLines) }
+}
+
+/**
+ * Quello che un incolla ha portato nel valore del campo — link, stili, pezzi
+ * da ripulire — nelle posizioni del testo vero: senza i primi [lead]
+ * caratteri (l'a-capo nascosto in testa).
+ */
+fun TextFieldValue.pastedFormat(lead: Int): PasteFormat {
+    val all = annotatedString
+    val links = all.getStringAnnotations(PASTED_LINK_TAG, 0, text.length)
+        .map { LinkRange(it.start - lead, it.end - lead, it.item) }
+        .filter { it.start >= 0 && it.end > it.start }
+    val styles = all.getStringAnnotations(PASTED_STYLE_TAG, 0, text.length)
+        .map { StyleRange(it.start - lead, it.end - lead, 'b' in it.item, 'i' in it.item, 'u' in it.item, 's' in it.item, sizeOfCode(it.item)) }
+        .filter { it.start >= 0 && it.end > it.start }
+    // Le celle delle tabelle incollate, per dove comincia la loro riga.
+    val tables = all.getStringAnnotations(PASTED_TABLE_TAG, 0, text.length).associate { (it.start - lead) to decodeTable(it.item) }
+    val plain = all.getStringAnnotations(PASTED_PLAIN_TAG, 0, text.length)
+        .map { (it.start - lead) until (it.end - lead) }
+        .filter { it.first >= 0 && !it.isEmpty() }
+    // Le righe col loro tipo: si ritrovano dividendo il testo incollato agli a-capo.
+    val lines = all.getStringAnnotations(PASTED_LINES_TAG, 0, text.length).flatMap { mark ->
+        val entries = mark.item.split(';')
+        val pieces = text.substring(mark.start, mark.end).split('\n')
+        if (entries.size != pieces.size) return@flatMap emptyList()
+        var at = mark.start - lead
+        pieces.indices.mapNotNull { i ->
+            val start = at
+            at += pieces[i].length + 1
+            copiedLineOf(entries[i])?.takeIf { start >= 0 }?.let {
+                PastedLine(start, start + pieces[i].length, it.type, it.checked, it.indent, tables[start])
+            }
+        }
+    }.filter { it.type != BlockType.TABLE || it.table != null }
+    return PasteFormat(links, styles, plain, lines)
+}
+
+/** Solo i link incollati (vedi `pastedFormat`). */
+fun TextFieldValue.pastedLinks(lead: Int): List<LinkRange> = pastedFormat(lead).links
+
+/**
+ * Lo stesso valore senza i segni dell'incolla: rimasti nel campo,
+ * tornerebbero con ogni incolla successivo. Senza segni resta com'è (per
+ * non disturbare la tastiera mentre si scrive).
+ */
+fun TextFieldValue.withoutPastedLinks(): TextFieldValue {
+    val tags = setOf(PASTED_LINK_TAG, PASTED_STYLE_TAG, PASTED_PLAIN_TAG, PASTED_LINES_TAG, PASTED_TABLE_TAG)
+    val marked = annotatedString.getStringAnnotations(0, text.length).any { it.tag in tags }
+    return if (marked) copy(annotatedString = AnnotatedString(text)) else this
+}

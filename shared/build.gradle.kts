@@ -54,10 +54,32 @@ kotlin {
             // I ViewModel (dal 04/11/2026): sul telefono è lifecycle 2.9.4 di
             // Google, la stessa che l'app usava già.
             api("org.jetbrains.androidx.lifecycle:lifecycle-viewmodel:2.9.5")
+            // Le schermate: `collectAsStateWithLifecycle` e `viewModel(...)`.
+            api("org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose:2.9.5")
+            api("org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose:2.9.5")
         }
         androidMain.dependencies {
             // L'orientamento scritto dentro le foto (EXIF): vedi `PageImageStore.android.kt`.
             implementation("androidx.exifinterface:exifinterface:1.3.7")
+            // **Dal 04/11/2026 qui c'è tutta l'app del telefono** (schermate,
+            // notifiche, backup…), tranne le attività: le stesse librerie che
+            // aveva il modulo `app`, alle stesse versioni.
+            implementation(project.dependencies.platform("androidx.compose:compose-bom:2026.06.01"))
+            implementation("androidx.compose.ui:ui-text-google-fonts")
+            implementation("androidx.compose.ui:ui-tooling-preview")
+            implementation("androidx.core:core-ktx:1.13.1")
+            implementation("androidx.activity:activity-compose:1.9.2")
+            implementation("androidx.navigation:navigation-compose:2.7.7")
+            implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
+            implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
+            implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.4")
+            implementation("androidx.room:room-ktx:2.8.5")
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+            implementation("com.google.android.gms:play-services-mlkit-document-scanner:16.0.0")
+            implementation("com.google.android.gms:play-services-mlkit-text-recognition:19.0.1")
+            implementation("com.google.android.gms:play-services-mlkit-text-recognition-chinese:16.0.1")
+            implementation("com.google.android.gms:play-services-mlkit-text-recognition-japanese:16.0.1")
+            implementation("com.google.android.gms:play-services-mlkit-text-recognition-korean:16.0.1")
         }
         getByName("desktopMain").dependencies {
             // Il "filo principale" dei ViewModel sul PC è quello di Swing, la

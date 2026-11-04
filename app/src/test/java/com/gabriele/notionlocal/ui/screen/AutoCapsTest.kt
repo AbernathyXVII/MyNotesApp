@@ -139,7 +139,9 @@ class AutoCapsTest {
      */
     @Test
     fun everyTextFieldInTheAppIsWrapped() {
-        val sources = File("src/main/java").walkTopDown().filter { it.extension == "kt" && it.name != "AutoCaps.kt" }.toList()
+        // Dal 04/11/2026 quasi tutto il codice sta nel modulo `shared`.
+        val sources = listOf(File("src/main/java"), File("../shared/src"))
+            .flatMap { root -> root.walkTopDown().filter { it.extension == "kt" && !it.name.startsWith("AutoCaps.") }.toList() }
         assertTrue("sorgenti non trovati", sources.isNotEmpty())
         val call = Regex("""(?<![A-Za-z0-9_.])(BasicTextField|OutlinedTextField|TextField)\(""")
         val missing = mutableListOf<String>()

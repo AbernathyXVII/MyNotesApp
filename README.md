@@ -1151,6 +1151,31 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### ✏️ v0.153.6 — 04/11/2026 · 09:44 — Tutta l'app del telefono nel modulo comune, accanto al codice del PC
+*(Claude Code sul PC; provata sul telefono; 1099 test passati)*
+
+- **[Progetto]** **Il modulo `app` ora ha solo `MainActivity`,
+  `ShareActivity` e il widget della nota al volo** (che usa il layout e i
+  testi dell'app). Tutto il resto, 115 file (l'editor, i database, le altre
+  schermate, le notifiche, i backup, il Web Clipper, la registrazione…), è
+  in `shared/src/androidMain`, con le stesse librerie di prima: sul
+  telefono il codice è lo stesso. I font delle pagine e l'icona delle
+  notifiche sono risorse di `shared` (`com.gabriele.notionlocal.shared.R`);
+  le notifiche aprono `MainActivity` per nome (`mainActivityIntent`), perché
+  da `shared` la classe non si vede
+- **[Progetto]** **Perché**: le schermate si usano una con l'altra, e da
+  sole non passavano al codice comune. Ora stanno nello stesso modulo e ci
+  possono passare un pezzo per volta, con lo stesso giro di prima (si
+  spostano tutte, quelle che non compilano per il PC tornano indietro):
+  `UpdatesScreen` è la prima. Un conteggio dice dove sono i nodi: i pezzi
+  che usano tutte le schermate e che stanno dentro `DatabaseViewScreen`
+  (`SheetGroup`, `SettingsRow`, `SheetTextField`, `TagChip`…), i widget
+  (`WidgetStore`), gli strumenti dell'inchiostro (`InkTools`) e alcune
+  funzioni senza Android chiuse in file Android. Nel codice comune ci sono
+  anche le librerie multipiattaforma di `collectAsStateWithLifecycle` e di
+  `viewModel(...)` (sul telefono la 2.9.4 di sempre); `AutoCapsTest` cerca i
+  campi di testo anche nei sorgenti di `shared`
+
 ### ✏️ v0.153.5 — 04/11/2026 · 09:23 — Le prime schermate nel codice comune, e le azioni di ogni sistema
 *(Claude Code sul PC; provata sul telefono; 1099 test passati)*
 
@@ -12026,10 +12051,14 @@ shared/src/commonMain/kotlin/com/gabriele/notionlocal/
                     # AppDatabase), le repository, le immagini delle
                     # pagine, i ViewModel, formule, testi, tema,
                     # impostazioni, Patch Notes (e cresce)
-shared/src/androidMain/, shared/src/desktopMain/
-                    # Quello che cambia fra telefono e PC (expect/actual):
-                    # PlatformContext, SettingsStore, le Patch Notes, come
-                    # si apre il database (sul telefono con le migrazioni)
+shared/src/androidMain/
+                    # Dal 04/11/2026 (v0.153.6) tutta l'app del telefono
+                    # (schermate, notifiche, backup…) e quello che cambia
+                    # fra telefono e PC (expect/actual)
+shared/src/desktopMain/
+                    # La parte del PC di expect/actual
+app/src/main/java/com/gabriele/notionlocal/
+                    # Solo MainActivity, ShareActivity e il widget
 desktop/src/main/kotlin/com/gabriele/notionlocal/desktop/Main.kt
                     # La finestra del PC (gradle :desktop:run)
 desktop/src/test/   # DesktopScreensTest: le schermate del PC in immagini;
