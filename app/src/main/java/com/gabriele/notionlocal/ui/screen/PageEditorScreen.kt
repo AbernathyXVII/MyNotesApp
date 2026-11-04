@@ -322,6 +322,7 @@ import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.ui.platform.LocalClipboard
+import com.gabriele.notionlocal.data.saveFromGallery
 
 /**
  * I tipi che il "+" dà a tutte le righe selezionate insieme (vedi

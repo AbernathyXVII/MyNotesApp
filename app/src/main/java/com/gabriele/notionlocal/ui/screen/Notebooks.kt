@@ -116,6 +116,7 @@ import com.gabriele.notionlocal.viewmodel.NotebookSectionViewModel
 import com.gabriele.notionlocal.viewmodel.NotebooksViewModel
 import com.gabriele.notionlocal.viewmodel.ViewModelFactory
 import kotlinx.coroutines.launch
+import com.gabriele.notionlocal.data.saveFromGallery
 
 // ---------------------------------------------------------------------------
 // **I quaderni** (dal 26/09/2026), come quelli di OneNote: quaderni, gruppi

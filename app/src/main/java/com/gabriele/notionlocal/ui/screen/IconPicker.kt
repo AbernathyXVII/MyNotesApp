@@ -103,6 +103,7 @@ import com.gabriele.notionlocal.ui.theme.NotionGray400
 import com.gabriele.notionlocal.ui.theme.NotionWhite
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
+import com.gabriele.notionlocal.data.saveFromGallery
 
 /**
  * **Il selettore delle icone** (dal 07/10/2026, chiesto dall'utente con la

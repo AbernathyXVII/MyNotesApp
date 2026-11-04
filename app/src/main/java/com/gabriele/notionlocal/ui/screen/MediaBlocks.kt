@@ -69,6 +69,7 @@ import com.gabriele.notionlocal.viewmodel.MediaRequestKind
 import com.gabriele.notionlocal.viewmodel.PageEditorViewModel
 import kotlinx.coroutines.launch
 import com.gabriele.notionlocal.data.ocr.ImageTexts
+import com.gabriele.notionlocal.data.saveFromGallery
 
 /** Quanto può stringersi un'immagine: un quarto della pagina. */
 private const val MIN_IMAGE_WIDTH = 0.25f

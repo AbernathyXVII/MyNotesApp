@@ -70,6 +70,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.material3.OutlinedButton
 import com.gabriele.notionlocal.data.record.AudioRecorder
 import com.gabriele.notionlocal.ui.i18n.CaptureStrings
+import com.gabriele.notionlocal.data.saveFile
 
 /**
  * **"Upload" o "Link"** (dal 06/10/2026), la finestrella delle foto di

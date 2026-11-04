@@ -52,6 +52,10 @@ kotlin {
             // 04/11/2026 qui e non più nel modulo `app`).
             api("androidx.room:room-runtime:2.8.5")
         }
+        androidMain.dependencies {
+            // L'orientamento scritto dentro le foto (EXIF): vedi `PageImageStore.android.kt`.
+            implementation("androidx.exifinterface:exifinterface:1.3.7")
+        }
         getByName("desktopMain").dependencies {
             // Sul PC l'SQLite viaggia dentro l'app (su Windows non ce n'è uno di sistema).
             implementation("androidx.sqlite:sqlite-bundled:2.6.2")

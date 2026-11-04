@@ -108,6 +108,7 @@ import com.gabriele.notionlocal.data.export.ExportOptions
 import com.gabriele.notionlocal.data.sync.SyncedWatcher
 import com.gabriele.notionlocal.data.ocr.ImageTexts
 import com.gabriele.notionlocal.ui.i18n.CaptureStrings
+import com.gabriele.notionlocal.data.saveFromGallery
 
 /** I tipi di formattazione inline selezionabili dalla barra "Aa". */
 enum class FormatType { BOLD, ITALIC, UNDERLINE, STRIKETHROUGH, SPOILER, SUBSCRIPT, SUPERSCRIPT }

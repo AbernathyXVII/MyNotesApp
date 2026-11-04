@@ -1151,6 +1151,31 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### ✏️ v0.153.3 — 04/11/2026 · 08:54 — Le immagini delle pagine nel codice comune, lette anche sul PC
+*(Claude Code sul PC; provata sul telefono; 1097 test passati)*
+
+- **[Progetto]** **`PageImageStore` è in `shared`**: icone, copertine e
+  file dei blocchi, con le regole di sempre (nel database il nome del file,
+  una copia per ogni pagina duplicata, quello che non è un'immagine non
+  resta, al più sei megapixel in memoria). Quello che cambia fra telefono e
+  PC è in fondo al file: `PlatformBitmap` (la `Bitmap` di Android, quella di
+  Skia sul PC), la cartella, le misure, l'orientamento della foto (EXIF) e
+  la lettura rimpicciolita. Sul telefono è il codice di prima, in
+  `PageImageStore.android.kt`; prendere un file dalla galleria
+  (`saveFromGallery`, `saveFile`, con l'`Uri` di Android) è un'estensione
+  lì, sopra il comune `saveFromStream`. Sul PC le immagini stanno in
+  `page-images` nella cartella dei dati, e Skia le legge, le gira come va
+  guardata una foto in verticale (`encodedOrigin`) e le rimpicciolisce in
+  un solo disegno. `toMatrix` di Skia vuole le misure della foto già
+  girata: con quelle del file la foto finiva fuori dal quadro, e il test
+  l'ha trovato
+- **[Progetto]** `BlockFiles` resta nell'app: è tutto Android (aprire un
+  file con un'altra app, salvarlo nella galleria, il nome che gli dà il
+  telefono); quello del PC arriverà con le sue schermate. Test:
+  `DesktopImageStoreTest` fa una foto rossa e blu con l'etichetta EXIF "girala
+  di 90 gradi" e controlla che sul PC si misuri e si veda dritta, che quello
+  che non è un'immagine non resti, e che una copia abbia il suo file
+
 ### ✏️ v0.153.2 — 04/11/2026 · 08:29 — Le repository nel codice comune: pagine e database si leggono e si scrivono allo stesso modo sul PC
 *(Claude Code sul PC; provata sul telefono; 1094 test passati)*
 
@@ -11940,8 +11965,9 @@ I pacchetti sono gli stessi in tutti e tre: un file si sposta da `app` a
 ```
 shared/src/commonMain/kotlin/com/gabriele/notionlocal/
                     # Il codice comune: il database (entità, DAO,
-                    # AppDatabase), le repository, formule, testi, tema,
-                    # impostazioni, Patch Notes (e cresce)
+                    # AppDatabase), le repository, le immagini delle
+                    # pagine, formule, testi, tema, impostazioni, Patch
+                    # Notes (e cresce)
 shared/src/androidMain/, shared/src/desktopMain/
                     # Quello che cambia fra telefono e PC (expect/actual):
                     # PlatformContext, SettingsStore, le Patch Notes, come
@@ -11950,7 +11976,8 @@ desktop/src/main/kotlin/com/gabriele/notionlocal/desktop/Main.kt
                     # La finestra del PC (gradle :desktop:run)
 desktop/src/test/   # DesktopScreensTest: le schermate del PC in immagini;
                     # DesktopDatabaseTest: il database sul PC;
-                    # DesktopRepositoryTest: le repository sul PC
+                    # DesktopRepositoryTest: le repository sul PC;
+                    # DesktopImageStoreTest: le immagini sul PC
 
 app/src/main/java/com/gabriele/notionlocal/
 ├── data/           # Entità Room, DAO, Repository, AppDatabase

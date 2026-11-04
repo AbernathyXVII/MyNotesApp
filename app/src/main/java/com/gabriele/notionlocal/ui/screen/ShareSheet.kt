@@ -67,6 +67,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.material.icons.filled.MoveToInbox
 import com.gabriele.notionlocal.data.ocr.ImageTexts
+import com.gabriele.notionlocal.data.saveFromGallery
 
 // ---------------------------------------------------------------------------
 // **"Condividi con notE"** (dal 02/11/2026, chiesto dall'utente): la finestra
