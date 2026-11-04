@@ -98,8 +98,6 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.ContentCut
 import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.SelectAll
-import androidx.compose.ui.platform.LocalView
-import android.view.KeyEvent
 import kotlinx.coroutines.flow.flowOf
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -530,15 +528,14 @@ private fun ClipboardBarButtons(
     /** "Seleziona tutto": tutta la pagina, non solo il pezzo di testo (dal 20/10/2026, vedi `PageSelection.kt`). */
     onSelectAll: () -> Unit
 ) {
-    val view = LocalView.current
+    val shortcut = rememberEditShortcuts()
     val clipboard = LocalClipboardManager.current as? LinkClipboard
     var pasteMenu by remember { mutableStateOf(false) }
-    fun shortcut(keyCode: Int) = view.sendCtrlShortcut(keyCode)
     fun paste(mode: PasteMode) {
         clipboard?.nextPasteMode = mode
-        shortcut(KeyEvent.KEYCODE_V)
+        shortcut(EditShortcut.PASTE)
     }
-    BarButton(onClick = { shortcut(KeyEvent.KEYCODE_C) }) {
+    BarButton(onClick = { shortcut(EditShortcut.COPY) }) {
         Icon(Icons.Filled.ContentCopy, contentDescription = EditorStrings.copy, tint = NotionWhite, modifier = Modifier.size(BAR_ICON_SIZE))
     }
     Box {
@@ -576,7 +573,7 @@ private fun ClipboardBarButtons(
             }
         }
     }
-    BarButton(onClick = { shortcut(KeyEvent.KEYCODE_X) }) {
+    BarButton(onClick = { shortcut(EditShortcut.CUT) }) {
         Icon(Icons.Filled.ContentCut, contentDescription = EditorStrings.cut, tint = NotionWhite, modifier = Modifier.size(BAR_ICON_SIZE))
     }
     BarButton(onClick = onSelectAll) {

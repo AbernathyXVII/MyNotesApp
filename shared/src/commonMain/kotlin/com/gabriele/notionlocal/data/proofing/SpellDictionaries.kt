@@ -1,12 +1,14 @@
 package com.gabriele.notionlocal.data.proofing
 
-import android.content.Context
 import com.gabriele.notionlocal.data.settings.AppLanguage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.util.Locale
+import com.gabriele.notionlocal.platform.PlatformContext
+import com.gabriele.notionlocal.platform.openAppAsset
+import java.io.FileNotFoundException
 
 /**
  * I dizionari letti. Leggerne uno prende qualche decimo di secondo e una
@@ -21,14 +23,14 @@ object SpellDictionaries {
     private val mutex = Mutex()
     private val loaded = LinkedHashMap<ProofingLanguage, SpellDictionary>()
 
-    suspend fun get(context: Context, language: ProofingLanguage): SpellDictionary? {
+    suspend fun get(context: PlatformContext, language: ProofingLanguage): SpellDictionary? {
         val dir = language.assetDir ?: return null
         return mutex.withLock {
             loaded[language]?.let { return@withLock it }
-            val assets = context.applicationContext.assets
+            fun open(name: String) = openAppAsset(context, "proofing/$dir/$name") ?: throw FileNotFoundException("proofing/$dir/$name")
             val dictionary = withContext(Dispatchers.Default) {
-                assets.open("proofing/$dir/index.aff").bufferedReader(Charsets.UTF_8).use { aff ->
-                    assets.open("proofing/$dir/index.dic").bufferedReader(Charsets.UTF_8).use { dic ->
+                open("index.aff").bufferedReader(Charsets.UTF_8).use { aff ->
+                    open("index.dic").bufferedReader(Charsets.UTF_8).use { dic ->
                         SpellDictionary.read(aff, dic, language.locale)
                     }
                 }

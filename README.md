@@ -1151,6 +1151,31 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### ✏️ v0.153.10 — 04/11/2026 · 14:30 — Appunti, caratteri, correttore e Web Clipper verso il codice comune
+*(Claude Code sul PC; provata sul telefono; 1107 test passati)*
+
+- **[Progetto]** **Gli appunti dell'editor nel codice comune**: i modi di
+  incollare, i segni dei link e degli stili incollati, il tipo delle righe
+  copiate e l'HTML della formattazione (`PasteLinks.kt`). `LinkClipboard` è
+  una classe per sistema: sul telefono quella di sempre, che legge gli
+  appunti di Android col loro HTML; sul PC, per ora, gli appunti normali.
+  Anche i pulsanti copia, incolla e taglia della barra sopra la tastiera
+  passano da un'azione comune (`rememberEditShortcuts`), e "Copy" della
+  pagina selezionata da `copyRichText` (sul PC il testo e l'HTML negli
+  appunti di Windows o del Mac)
+- **[Progetto]** **I caratteri delle pagine**: nomi, sosia e gruppi nel
+  codice comune (`PageFontNames.kt`); la famiglia da disegnare è per
+  sistema: sul telefono i font inclusi e quelli di Google come prima, sul PC
+  per ora il carattere di sistema più simile
+- **[Progetto]** Il correttore legge i dizionari con `openAppAsset` (sul PC
+  dalle risorse del programma), e il contenuto delle pagine salvate col Web
+  Clipper ("Text and Images") si legge con la libreria JSON di Kotlin invece
+  di quella di Android. Sei file in più nel codice comune: adesso sono 254
+  (66.000 righe) e 67 quelli solo del telefono (35.000)
+- **[Progetto]** `DesktopTextTest`: sul PC il dizionario italiano si legge
+  dalle risorse e riconosce le parole, il JSON del Web Clipper si legge, e
+  ogni carattere ha nome e famiglia
+
 ### ✏️ v0.153.9 — 04/11/2026 · 14:11 — La barra laterale coi widget, i quaderni, le icone e il blocco con password nel codice comune
 *(Claude Code sul PC; provata sul telefono; 1104 test passati)*
 

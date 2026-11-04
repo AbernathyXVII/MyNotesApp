@@ -1,8 +1,5 @@
 package com.gabriele.notionlocal.ui.screen
 
-import android.content.ClipData
-import android.content.Context
-import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -45,6 +42,9 @@ import com.gabriele.notionlocal.ui.theme.DarkSheet
 import com.gabriele.notionlocal.ui.theme.NotionWhite
 import com.gabriele.notionlocal.viewmodel.PageEditorViewModel
 import com.gabriele.notionlocal.platform.showMessage
+import com.gabriele.notionlocal.platform.PlatformContext
+import com.gabriele.notionlocal.platform.copyRichText
+import com.gabriele.notionlocal.platform.systemAnnouncesCopies
 
 // ---------------------------------------------------------------------------
 // **Tutta la pagina selezionata, come su Notion** (dal 20/10/2026, chiesto
@@ -111,14 +111,13 @@ fun PlainTextToolbar(content: @Composable () -> Unit) {
  * formattazione e il tipo delle righe (`linesMarker`), così incollata in notE
  * torna com'era e altrove arriva formattata.
  */
-fun copyPageToClipboard(context: Context, lines: List<PageEditorViewModel.PageCopyLine>) {
+fun copyPageToClipboard(context: PlatformContext, lines: List<PageEditorViewModel.PageCopyLine>) {
     val plain = lines.joinToString("\n") { it.spans.plainText() }
     val joined = lines.flatMapIndexed { i, line -> (if (i > 0) listOf(RichTextSpan(text = "\n")) else emptyList()) + line.spans }
     val html = spansToHtml(joined) + linesMarker(lines.map { it.kind })
-    val clipboard = context.getSystemService(android.content.ClipboardManager::class.java) ?: return
-    clipboard.setPrimaryClip(ClipData.newHtmlText("PageFlow", plain, html))
+    if (!copyRichText(context, plain, html)) return
     // Da Android 13 il "copiato" lo dice il telefono.
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+    if (!systemAnnouncesCopies) {
         showMessage(context, EditorStrings.pageCopied)
     }
 }

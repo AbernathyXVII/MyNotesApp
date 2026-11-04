@@ -4,8 +4,15 @@ import com.gabriele.notionlocal.data.entity.BlockAttrs
 import com.gabriele.notionlocal.data.entity.BlockType
 import com.gabriele.notionlocal.data.entity.NewBlock
 import com.gabriele.notionlocal.data.entity.RichTextSpan
-import org.json.JSONArray
-import org.json.JSONObject
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonObject
 
 /**
  * **"Text and Images"** (dal 20/10/2026, chiesto dall'utente: "prendere tutto
@@ -31,13 +38,32 @@ sealed class ClipPiece {
 
 /** Il JSON di `noteReader.serialize()` letto; null se non è quello. */
 fun parseClipContent(json: String): ClipContent? = runCatching {
-    val root = JSONObject(json)
-    val blocks = root.optJSONArray("blocks") ?: JSONArray()
-    val pieces = (0 until blocks.length()).mapNotNull { i -> blocks.optJSONObject(i)?.let(::pieceOf) }
+    val root = Json.parseToJsonElement(json).jsonObject
+    val blocks = root.optJSONArray("blocks") ?: JsonArray(emptyList())
+    val pieces = blocks.mapNotNull { (it as? JsonObject)?.let(::pieceOf) }
     ClipContent(root.optString("title").trim(), root.optString("site").trim(), pieces)
 }.getOrNull()
 
-private fun pieceOf(block: JSONObject): ClipPiece? = when (block.optString("k")) {
+// Le letture "con ripiego" di org.json, che si usava fino al 04/11/2026 (sul
+// PC non c'è): una chiave che manca, o di un altro tipo, dà il ripiego.
+private fun JsonObject.optString(key: String): String =
+    (this[key] as? JsonPrimitive)?.takeIf { it !is JsonNull }?.content.orEmpty()
+
+private fun JsonObject.optInt(key: String, fallback: Int): Int =
+    (this[key] as? JsonPrimitive)?.takeIf { it !is JsonNull }?.let { it.intOrNull ?: it.doubleOrNull?.toInt() } ?: fallback
+
+private fun JsonObject.optDouble(key: String, fallback: Double): Double =
+    (this[key] as? JsonPrimitive)?.takeIf { it !is JsonNull }?.doubleOrNull ?: fallback
+
+private fun JsonObject.optBoolean(key: String): Boolean =
+    (this[key] as? JsonPrimitive)?.takeIf { it !is JsonNull }?.booleanOrNull ?: false
+
+private fun JsonObject.optJSONArray(key: String): JsonArray? = this[key] as? JsonArray
+
+private fun JsonArray.optString(index: Int): String =
+    (getOrNull(index) as? JsonPrimitive)?.takeIf { it !is JsonNull }?.content.orEmpty()
+
+private fun pieceOf(block: JsonObject): ClipPiece? = when (block.optString("k")) {
     "p" -> spansOf(block).takeIf { it.isNotEmpty() }?.let { ClipPiece.Paragraph(it) }
     "cap" -> spansOf(block).takeIf { it.isNotEmpty() }?.let { ClipPiece.Paragraph(it, caption = true) }
     "h" -> spansOf(block).takeIf { it.isNotEmpty() }?.let { ClipPiece.Heading(block.optInt("l", 2).coerceIn(1, 6), it) }
@@ -47,8 +73,8 @@ private fun pieceOf(block: JSONObject): ClipPiece? = when (block.optString("k"))
     "quote" -> block.optString("text").trim().takeIf { it.isNotEmpty() }?.let { ClipPiece.Quote(it) }
     "code" -> block.optString("text").trimEnd().takeIf { it.isNotBlank() }?.let { ClipPiece.Code(it) }
     "table" -> block.optJSONArray("rows")?.let { rows ->
-        (0 until rows.length()).mapNotNull { r ->
-            rows.optJSONArray(r)?.let { row -> (0 until row.length()).map { c -> row.optString(c).trim() } }
+        rows.mapNotNull { r ->
+            (r as? JsonArray)?.let { row -> row.indices.map { c -> row.optString(c).trim() } }
         }.takeIf { it.isNotEmpty() }?.let { ClipPiece.Table(it) }
     }
     "hr" -> ClipPiece.Divider
@@ -58,10 +84,10 @@ private fun pieceOf(block: JSONObject): ClipPiece? = when (block.optString("k"))
     else -> null
 }
 
-private fun spansOf(block: JSONObject): List<RichTextSpan> {
+private fun spansOf(block: JsonObject): List<RichTextSpan> {
     val runs = block.optJSONArray("runs") ?: return emptyList()
-    return (0 until runs.length()).mapNotNull { i ->
-        val run = runs.optJSONObject(i) ?: return@mapNotNull null
+    return runs.indices.mapNotNull { i ->
+        val run = runs[i] as? JsonObject ?: return@mapNotNull null
         val text = run.optString("t").replace('\n', ' ')
         if (text.isEmpty()) return@mapNotNull null
         RichTextSpan(
