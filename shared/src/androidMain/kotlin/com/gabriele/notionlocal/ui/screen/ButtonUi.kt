@@ -1,7 +1,6 @@
 package com.gabriele.notionlocal.ui.screen
 
 import android.content.Context
-import android.widget.Toast
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -79,6 +78,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import com.gabriele.notionlocal.data.PageImageStore
+import com.gabriele.notionlocal.platform.showMessage
 
 const val BUTTON_PILL_TAG = "buttonPill"
 
@@ -148,7 +148,7 @@ class ButtonRunController(
                 outcome.createdRows.takeIf { it > 0 }?.let { ButtonStrings.pagesAdded(it) },
                 outcome.changedRows.takeIf { it > 0 }?.let { ButtonStrings.pagesEdited(it) }
             )
-        if (lines.isNotEmpty()) Toast.makeText(appContext, lines.joinToString("\n"), Toast.LENGTH_LONG).show()
+        if (lines.isNotEmpty()) showMessage(appContext, lines.joinToString("\n"), long = true)
     }
 }
 
@@ -284,7 +284,7 @@ fun ButtonBlockContent(
             onClick = {
                 focus.clearFocus()
                 when {
-                    config == null -> Toast.makeText(context, ButtonStrings.originalDeletedNote, Toast.LENGTH_SHORT).show()
+                    config == null -> showMessage(context, ButtonStrings.originalDeletedNote)
                     !config.isSet -> if (!locked) viewModel.requestButtonEdit(block.id)
                     else -> controller?.run(block.id, config, ButtonPlace(pageId = block.pageId, blockId = block.id, rowId = row?.id))
                 }

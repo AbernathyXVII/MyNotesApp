@@ -10,7 +10,6 @@ import com.gabriele.notionlocal.ui.i18n.HistoryStrings
 import com.gabriele.notionlocal.ui.i18n.EditorStrings
 import com.gabriele.notionlocal.ui.i18n.ParagraphStrings
 import androidx.compose.material.icons.filled.FormatLineSpacing
-import android.widget.Toast
 import com.gabriele.notionlocal.data.entity.BlockAttrs
 import com.gabriele.notionlocal.data.entity.ParagraphLook
 import com.gabriele.notionlocal.data.entity.paragraph
@@ -41,6 +40,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import com.gabriele.notionlocal.data.PageImageStore
+import com.gabriele.notionlocal.data.toImageBitmap
 import com.gabriele.notionlocal.data.repository.PageRepository
 import com.gabriele.notionlocal.data.TextStats
 import androidx.compose.material3.OutlinedTextField
@@ -324,6 +324,7 @@ import androidx.compose.material.icons.filled.Mic
 import androidx.compose.ui.platform.LocalClipboard
 import com.gabriele.notionlocal.data.saveFromGallery
 import com.gabriele.notionlocal.viewmodel.export
+import com.gabriele.notionlocal.platform.showMessage
 
 /**
  * I tipi che il "+" dà a tutte le righe selezionate insieme (vedi
@@ -1769,7 +1770,7 @@ private fun PageEditorContent(
                     onBack = onBack,
                     onRestore = {
                         viewModel.restoreFromTrash()
-                        Toast.makeText(context, Strings.restoredToMainMenu, Toast.LENGTH_SHORT).show()
+                        showMessage(context, Strings.restoredToMainMenu)
                     },
                     onDeleteForever = { confirmDeleteForever = true }
                 )
@@ -1883,7 +1884,7 @@ private fun PageEditorContent(
                         val target = withContext(Dispatchers.IO) { factory.pageRepository.getPage(id) }
                         when {
                             target == null || target.trashedAt != null ->
-                                Toast.makeText(context, MentionStrings.pageGone, Toast.LENGTH_SHORT).show()
+                                showMessage(context, MentionStrings.pageGone)
                             target.isDatabase -> onNavigateToDatabase(id)
                             else -> onNavigateToPage(id)
                         }
@@ -1912,7 +1913,7 @@ private fun PageEditorContent(
                         val items = latestRenderItems.value
                         val found = anchor?.let { a -> items.indexOfFirst { a.id in renderItemBlockIds(it) } } ?: -1
                         if (anchor == null || found < 0) {
-                            Toast.makeText(context, EditorStrings.linkTargetMissing, Toast.LENGTH_SHORT).show()
+                            showMessage(context, EditorStrings.linkTargetMissing)
                             return@launch
                         }
                         focusManager.clearFocus()
@@ -2864,7 +2865,7 @@ private fun PageEditorContent(
                                 onOpen = { viewModel.captureSelection() },
                                 onPick = { font ->
                                     if (!viewModel.applyFontToCapturedSelection(font)) {
-                                        Toast.makeText(context, EditorStrings.selectTextFirst, Toast.LENGTH_SHORT).show()
+                                        showMessage(context, EditorStrings.selectTextFirst)
                                     }
                                 }
                             )
@@ -2875,7 +2876,7 @@ private fun PageEditorContent(
                                     if (viewModel.hasCapturedSelection()) {
                                         showFontSizeDialog = true
                                     } else {
-                                        Toast.makeText(context, EditorStrings.selectTextFirst, Toast.LENGTH_SHORT).show()
+                                        showMessage(context, EditorStrings.selectTextFirst)
                                     }
                                 }
                             )
@@ -3181,7 +3182,7 @@ private fun PageEditorContent(
                 // la pagina è protetta; toccato, lo dice anche a parole.
                 if (page?.isProtected == true) {
                     FloatingPageButton(onClick = {
-                        Toast.makeText(context, LockStrings.protectedByPassword, Toast.LENGTH_SHORT).show()
+                        showMessage(context, LockStrings.protectedByPassword)
                     }) {
                         Icon(
                             Icons.Filled.Lock,
@@ -3289,7 +3290,7 @@ private fun PageEditorContent(
             onSave = { url, text ->
                 linkDialogFor = null
                 if (!viewModel.applyLinkToCapturedSelection(url, text)) {
-                    Toast.makeText(context, EditorStrings.selectTextFirst, Toast.LENGTH_SHORT).show()
+                    showMessage(context, EditorStrings.selectTextFirst)
                 }
             },
             onRemove = {
@@ -3589,7 +3590,7 @@ private fun PageEditorContent(
                     ),
                     webClipCaptions(title, request.note, request.url, WebClipStrings.clippedFrom)
                 )
-                Toast.makeText(context, WebClipStrings.clipped, Toast.LENGTH_SHORT).show()
+                showMessage(context, WebClipStrings.clipped)
             }
             val failed = {
                 webClipRequest = null
@@ -3603,7 +3604,7 @@ private fun PageEditorContent(
                 val header = webClipCaptions(title, request.note, request.url, WebClipStrings.clippedFrom, titleSize = headingSize(1))
                     .map { NewBlock(spans = it) }
                 viewModel.insertWebClipBlocks(header + result.content.toNewBlocks(result.images))
-                Toast.makeText(context, WebClipStrings.clipped, Toast.LENGTH_SHORT).show()
+                showMessage(context, WebClipStrings.clipped)
             }
             if (request.mode == WebClipMode.REGION) {
                 WebClipRegionDialog(request, imageStore, onDone = placeClip, onFailed = failed, onCancel = { webClipRequest = null })
@@ -3666,7 +3667,7 @@ private fun PageEditorContent(
                     moveExclusions = null
                     // Come "Move to": si torna indietro, e l'avviso dice dove.
                     viewModel.movePageToDatabase(destination, rowTitle) {
-                        Toast.makeText(context, Strings.movedInto(destination.placeName()), Toast.LENGTH_SHORT).show()
+                        showMessage(context, Strings.movedInto(destination.placeName()))
                         onBack()
                     }
                 }
@@ -3686,7 +3687,7 @@ private fun PageEditorContent(
                     // posto in cui la pagina non c'è più. L'avviso dice
                     // dov'è finita.
                     viewModel.movePageTo(destination) {
-                        Toast.makeText(context, Strings.movedInto(destination.placeName()), Toast.LENGTH_SHORT).show()
+                        showMessage(context, Strings.movedInto(destination.placeName()))
                         onBack()
                     }
                 }
@@ -3706,7 +3707,7 @@ private fun PageEditorContent(
                     // vede dove sta.
                     viewModel.duplicatePage(target, Strings.copySuffix, imageStore) { copyId ->
                         placeName?.let {
-                            Toast.makeText(context, Strings.duplicatedInto(it), Toast.LENGTH_SHORT).show()
+                            showMessage(context, Strings.duplicatedInto(it))
                         }
                         if (current.isDatabase) onNavigateToDatabase(copyId) else onNavigateToPage(copyId)
                     }
@@ -3727,7 +3728,7 @@ private fun PageEditorContent(
                             // I disegni si leggono una volta sola: vanno riletti.
                             inkViewModel.reload()
                             showHistory = false
-                            Toast.makeText(context, HistoryStrings.restored, Toast.LENGTH_SHORT).show()
+                            showMessage(context, HistoryStrings.restored)
                         }
                     }
                 },
@@ -4086,49 +4087,6 @@ fun coverPanLimit(
 }
 
 /**
- * Un'immagine di pagina già rimpicciolita a quanto serve davvero.
- *
- * La misura da raggiungere la dà il riquadro stesso: caricare una foto
- * da dodici megapixel per mostrarla larga un centimetro sono
- * quarantotto megabyte di memoria per niente, e l'app si chiude.
- */
-@Composable
-fun PageImage(
-    fileName: String,
-    store: PageImageStore,
-    contentDescription: String?,
-    modifier: Modifier = Modifier,
-    /** Crop per icone e copertine; Fit per la proprietà "Image", che si vede intera. */
-    contentScale: ContentScale = ContentScale.Crop,
-    /** Il riquadro scuro finché l'immagine si carica. */
-    placeholder: Boolean = true
-) {
-    var widthPx by remember(fileName) { mutableStateOf(0) }
-    var bitmap by remember(fileName) { mutableStateOf<ImageBitmap?>(null) }
-
-    LaunchedEffect(fileName, widthPx) {
-        if (widthPx <= 0) return@LaunchedEffect
-        bitmap = store.load(fileName, widthPx)?.asImageBitmap()
-    }
-
-    Box(modifier = modifier.onSizeChanged { widthPx = it.width }) {
-        val image = bitmap
-        if (image != null) {
-            Image(
-                bitmap = image,
-                contentDescription = contentDescription,
-                contentScale = contentScale,
-                modifier = Modifier.matchParentSize()
-            )
-        } else if (placeholder) {
-            // Finché l'immagine si carica, il posto resta suo: senza,
-            // il titolo salterebbe su e giù ad ogni apertura.
-            Box(modifier = Modifier.matchParentSize().background(DarkSurface))
-        }
-    }
-}
-
-/**
  * Il menu "+" della barra: **lo stesso catalogo del menu "/"**
  * (`SLASH_ENTRIES`), con le stesse voci, le stesse icone e **lo stesso
  * ordine**, su due colonne riempite riga per riga — la prima voce del
@@ -4460,7 +4418,7 @@ private fun NotificationTimeChip(block: BlockEntity, viewModel: PageEditorViewMo
                 val chosen = LocalDateTime.of(day, time).atZone(zone).toInstant().toEpochMilli()
                 viewModel.setNotificationTime(block, chosen)
                 if (chosen <= System.currentTimeMillis()) {
-                    Toast.makeText(context, NotifyStrings.alreadyPassed, Toast.LENGTH_LONG).show()
+                    showMessage(context, NotifyStrings.alreadyPassed, long = true)
                 }
             },
             onDismiss = { pickedDate = null }
@@ -4839,32 +4797,6 @@ private fun cardinalWord(n: Int): String = CARDINAL_WORDS.getOrNull(n - 1) ?: n.
 
 /** `1` → `First`, con lo stesso limite di `cardinalWord`. */
 private fun ordinalWord(n: Int): String = ORDINAL_WORDS.getOrNull(n - 1) ?: n.toString()
-
-/**
- * Cosa viene disegnato davanti a una riga del testo unito: gli spazi del
- * rientro e poi il marcatore (• per gli elenchi puntati, il numero per
- * quelli numerati, niente per tutto il resto). I due pezzi restano
- * distinti perché la zona toccabile deve coprire il solo marcatore, non
- * anche il rientro.
- */
-data class LinePrefix(
-    val indent: String,
-    val marker: String,
-    /**
-     * Il marcatore c'è ma non si vede: la riga tiene il posto di un elenco
-     * (vedi `BlockAttrs.listIndent`), e scritto trasparente occupa proprio
-     * lo spazio del numero o del pallino, così il testo resta allineato.
-     */
-    val hidden: Boolean = false,
-    /**
-     * L'elenco di cui è il marcatore (anche quello invisibile del posto di
-     * un elenco), per lo spazio dopo di lui (vedi `ParagraphLook.gapOf`);
-     * null per le righe senza marcatore.
-     */
-    val listType: BlockType? = null
-) {
-    val text: String get() = indent + marker
-}
 
 /** Il tipo che erediterebbe una riga nuova creata sotto una di questo tipo: gli elenchi si propagano, i titoli no. */
 private fun inheritedListType(previous: BlockType?): BlockType = when (previous) {

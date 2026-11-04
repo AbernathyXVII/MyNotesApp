@@ -4,12 +4,16 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.net.Uri
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.exifinterface.media.ExifInterface
 import com.gabriele.notionlocal.platform.PlatformContext
 import java.io.File
 
 /** Sul telefono: la `Bitmap` di Android. */
 actual typealias PlatformBitmap = Bitmap
+
+actual fun PlatformBitmap.toImageBitmap(): ImageBitmap = asImageBitmap()
 
 actual fun applicationContextOf(context: PlatformContext): PlatformContext = context.applicationContext
 

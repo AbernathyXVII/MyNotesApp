@@ -3,7 +3,6 @@ package com.gabriele.notionlocal.ui.screen
 import android.graphics.RectF
 import android.os.Handler
 import android.os.Looper
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -107,6 +106,7 @@ import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
+import com.gabriele.notionlocal.platform.showMessage
 
 /** Una foto finita: il nome del file nell'app, le misure, e il titolo che la pagina ha detto di sé. */
 class WebClipResult(val fileName: String, val image: WebClipImage, val pageTitle: String?)
@@ -389,7 +389,7 @@ fun WebClipCaptureDialog(
                 status = WebClipStrings.stepReading
                 val content = engine.readContent()?.takeIf { it.blocks.isNotEmpty() }
                 if (content == null) {
-                    Toast.makeText(context, WebClipStrings.noArticle, Toast.LENGTH_SHORT).show()
+                    showMessage(context, WebClipStrings.noArticle)
                     latestCancel()
                     return@LaunchedEffect
                 }
@@ -635,5 +635,5 @@ private fun SelectionLayer(area: Rect?, onArea: (Rect?) -> Unit) {
 
 /** L'avviso se la foto non è riuscita. */
 fun showClipFailed(context: android.content.Context) {
-    Toast.makeText(context, WebClipStrings.clipFailed, Toast.LENGTH_SHORT).show()
+    showMessage(context, WebClipStrings.clipFailed)
 }

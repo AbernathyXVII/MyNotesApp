@@ -5,7 +5,6 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.pm.PackageManager
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -61,6 +60,7 @@ import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult
 import kotlinx.coroutines.delay
 import kotlin.math.sqrt
 import com.gabriele.notionlocal.data.saveFromGallery
+import com.gabriele.notionlocal.platform.showMessage
 
 private val RecordRed = Color(0xFFE5484D)
 
@@ -212,7 +212,7 @@ private fun scannerOptions(): GmsDocumentScannerOptions = GmsDocumentScannerOpti
     .setScannerMode(GmsDocumentScannerOptions.SCANNER_MODE_FULL)
     .build()
 
-private fun toast(context: Context, text: String) = Toast.makeText(context, text, Toast.LENGTH_LONG).show()
+private fun toast(context: Context, text: String) = showMessage(context, text, long = true)
 
 private tailrec fun Context.findActivity(): Activity? = when (this) {
     is Activity -> this

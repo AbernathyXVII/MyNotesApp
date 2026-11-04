@@ -1,7 +1,8 @@
 package com.gabriele.notionlocal.data.ink
 
-import android.content.Context
-import android.content.SharedPreferences
+import com.gabriele.notionlocal.platform.PlatformContext
+import com.gabriele.notionlocal.data.settings.SettingsStore
+import com.gabriele.notionlocal.data.settings.openSettingsStore
 import androidx.compose.runtime.mutableStateOf
 import com.gabriele.notionlocal.data.entity.InkStrokeEntity
 import com.gabriele.notionlocal.data.entity.InkTool
@@ -82,13 +83,13 @@ fun nearestPreset(presets: List<Float>, width: Float): Int =
  */
 object InkPrefs {
 
-    private lateinit var prefs: SharedPreferences
+    private lateinit var prefs: SettingsStore
     private val json = Json { ignoreUnknownKeys = true }
     private val state = mutableStateOf(InkSettings())
 
-    fun init(context: Context) {
+    fun init(context: PlatformContext) {
         if (::prefs.isInitialized) return
-        prefs = context.applicationContext.getSharedPreferences("ink", Context.MODE_PRIVATE)
+        prefs = openSettingsStore(context, "ink")
         state.value = prefs.getString(KEY, null)
             ?.let { runCatching { json.decodeFromString<InkSettings>(it) }.getOrNull() }
             ?.takeIf { it.pens.isNotEmpty() }

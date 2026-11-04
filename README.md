@@ -1151,6 +1151,40 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### ✏️ v0.153.7 — 04/11/2026 · 10:10 — I primi nodi sciolti: ricerca, preferiti, cestino e modelli nel codice comune
+*(Claude Code sul PC; provata sul telefono; 1101 test passati)*
+
+- **[Progetto]** **30 file in più nel codice comune** (ora 184, 43.500 righe;
+  dal lato del telefono ne restano 105, 57.000 righe, quasi tutte l'editor e
+  il database): le schermate della ricerca, dei preferiti, del cestino, dei
+  modelli e dell'avvio, i pezzi delle viste dei database (`DatabaseViews`,
+  "Group", "Date by", le relazioni, l'ordine dei tag, le frecce fra le
+  righe), le menzioni, l'inchiostro (`InkLayer`, `InkTools`), i segnalibri
+  della pagina, il "torna su", le parti comuni delle schermate
+  (`ScreenParts`) e l'immagine di una pagina (`PageImageView`)
+- **[Progetto]** **I nodi sciolti**: i pezzi che tutte le schermate usano e
+  che stavano dentro `DatabaseViewScreen` (`SheetGroup`, `SettingsRow`,
+  `SheetTextField`, `TagChip`, i gruppi delle righe, i nomi delle date…)
+  ora sono in `DatabaseParts.kt`; dall'editor sono usciti `PageImage` e
+  `LinePrefix`, da altri file la scelta di come si vede un link, il nome
+  della colonna "Name", i suoni del contatore, i modi del Web Clipper, le
+  richieste di permesso delle notifiche. I 50 `Toast` passano da
+  `showMessage` (sul telefono sono sempre `Toast`, anche quelli lunghi), le
+  misure dello schermo da `screenWidthDp`/`screenHeightDp` (sul telefono
+  quelle di prima), il colore dei tag da `parseColorString` (gli stessi
+  colori di `Color.parseColor` di Android, controllato da `ColorParseTest`
+  sui colori dei tag), l'immagine da disegnare da
+  `toImageBitmap`. La chiusura del cursore quando scende la tastiera è del
+  telefono (sul PC non c'è tastiera sullo schermo), e gli strumenti
+  dell'inchiostro si ricordano con le impostazioni comuni (sul telefono nel
+  file `ink` di sempre)
+- **[Progetto]** Come si fa: uno strumento toglie da un file le
+  dichiarazioni che servono altrove (con quelle che usano), un altro ripulisce
+  gli import, e il solito giro sposta nel codice comune tutto quello che
+  compila sia per il telefono che per il PC. Una classe "sigillata" del codice
+  comune non può avere eredi nel codice del telefono: per questo `Widgets.kt`
+  resta con i widget, finché non passano tutti insieme
+
 ### ✏️ v0.153.6 — 04/11/2026 · 09:44 — Tutta l'app del telefono nel modulo comune, accanto al codice del PC
 *(Claude Code sul PC; provata sul telefono; 1099 test passati)*
 

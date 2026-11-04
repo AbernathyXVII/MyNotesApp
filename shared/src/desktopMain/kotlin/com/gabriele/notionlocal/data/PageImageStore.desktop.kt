@@ -1,5 +1,7 @@
 package com.gabriele.notionlocal.data
 
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asComposeImageBitmap
 import com.gabriele.notionlocal.platform.DesktopContext
 import com.gabriele.notionlocal.platform.PlatformContext
 import org.jetbrains.skia.Bitmap
@@ -18,6 +20,8 @@ import kotlin.math.sqrt
 
 /** Sul PC: la `Bitmap` di Skia (per mostrarla, `asComposeImageBitmap()`). */
 actual typealias PlatformBitmap = Bitmap
+
+actual fun PlatformBitmap.toImageBitmap(): ImageBitmap = asComposeImageBitmap()
 
 actual fun applicationContextOf(context: PlatformContext): PlatformContext = context
 

@@ -1,6 +1,5 @@
 package com.gabriele.notionlocal.ui.screen
 
-import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -78,6 +77,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import com.gabriele.notionlocal.data.entity.dateLinkTarget
 import com.gabriele.notionlocal.data.entity.isInternalLink
 import com.gabriele.notionlocal.data.entity.pageLinkTarget
+import com.gabriele.notionlocal.platform.showMessage
 
 // ---------------------------------------------------------------------------
 // **I collegamenti sul testo** (dal 17/10/2026, chiesto dall'utente): si
@@ -86,9 +86,6 @@ import com.gabriele.notionlocal.data.entity.pageLinkTarget
 // e toccandolo si apre il link. L'indirizzo sta nel pezzo di testo
 // (`RichTextSpan.link`).
 // ---------------------------------------------------------------------------
-
-/** L'etichetta con cui il testo mostrato porta l'indirizzo, per sapere cosa si è toccato. */
-const val LINK_TAG = "text-link"
 
 /** Il colore del testo con un collegamento; va messo **prima** del colore scelto col pennello, che vince. */
 fun linkStyleOf(span: RichTextSpan): SpanStyle? =
@@ -167,7 +164,7 @@ fun rememberLinkOpener(): (String) -> Unit {
             } else if (isInternalLink(url)) {
                 // Una menzione dove non si apre niente (fuori dall'editor): resta testo.
             } else if (!BlockFiles.openUrl(context, url)) {
-                Toast.makeText(context, EditorStrings.cantOpenLink, Toast.LENGTH_SHORT).show()
+                showMessage(context, EditorStrings.cantOpenLink)
             }
         }
     }
@@ -318,172 +315,6 @@ fun LinkDialog(
 // cella URL la scritta mostrata al posto dell'indirizzo (`LinkShowDialog`,
 // `DatabaseCellEntity.linkLabel`).
 // ---------------------------------------------------------------------------
-
-enum class LinkShow { LINK, TITLE, TEXT }
-
-/** Il link per intero come si legge nel testo: un'email o un numero senza "mailto:" e "tel:" davanti. */
-fun linkShownText(url: String): String {
-    val lower = url.lowercase()
-    return if (lower.startsWith("mailto:") || lower.startsWith("tel:")) url.substringAfter(':') else url
-}
-
-/** Solo una pagina web ha un titolo da leggere. */
-fun hasWebTitle(url: String): Boolean =
-    url.startsWith("http://", ignoreCase = true) || url.startsWith("https://", ignoreCase = true)
-
-/** Quanto si aspetta prima di leggere il titolo: l'indirizzo si sta forse ancora scrivendo. */
-private const val TITLE_READ_PAUSE_MS = 400L
-
-/** La scelta fatta nelle finestrelle, col titolo letto ([title]: l'indirizzo e il suo titolo). */
-@Stable
-class LinkShowState(show: LinkShow, text: String, title: Pair<String, String>? = null) {
-    var show by mutableStateOf(show)
-    /** La scritta dell'utente. */
-    var text by mutableStateOf(text)
-    var title by mutableStateOf(title)
-    var reading by mutableStateOf(false)
-    /** L'indirizzo di cui il titolo non si è potuto leggere. */
-    var missing by mutableStateOf<String?>(null)
-    /** Scelta adesso "Your text": il suo campo prende il fuoco. */
-    var focusText by mutableStateOf(false)
-
-    /** Il testo da mostrare per [url]; null se non è pronto (il titolo da leggere, la scritta vuota). */
-    fun shownFor(url: String): String? = when (show) {
-        LinkShow.LINK -> linkShownText(url)
-        LinkShow.TITLE -> title?.takeIf { it.first == url }?.second
-        LinkShow.TEXT -> text.trim().takeIf { it.isNotEmpty() }
-    }
-}
-
-/**
- * Le tre scelte: "Full link" ([whole], com'è scritto), "Page title" (letto
- * dal sito quando lo si sceglie, e di nuovo se [url] cambia: vedi
- * `LinkTitles`) e "Your text", col suo campo. Senza rete il titolo non
- * arriva, e lo si dice.
- */
-@Composable
-fun LinkShowChoices(url: String?, whole: String?, state: LinkShowState) {
-    LaunchedEffect(state.show, url) {
-        if (state.show != LinkShow.TITLE || url == null || !hasWebTitle(url) || state.title?.first == url) return@LaunchedEffect
-        state.reading = true
-        state.missing = null
-        try {
-            delay(TITLE_READ_PAUSE_MS)
-            val found = LinkTitles.read(url)
-            if (found != null) state.title = url to found else state.missing = url
-        } finally {
-            state.reading = false
-        }
-    }
-    val titleDetail = when {
-        url == null -> null
-        !hasWebTitle(url) -> EditorStrings.linkNoTitle
-        state.title?.first == url -> state.title?.second
-        state.show != LinkShow.TITLE -> null
-        state.missing == url -> EditorStrings.linkNoTitle
-        else -> EditorStrings.linkReadingTitle
-    }
-    val textFocus = remember { FocusRequester() }
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(EditorStrings.linkShow, style = MaterialTheme.typography.labelLarge, color = NotionGray400)
-        LinkShowChoice(state, LinkShow.LINK, EditorStrings.linkShowLink, whole)
-        LinkShowChoice(state, LinkShow.TITLE, EditorStrings.linkShowTitle, titleDetail, enabled = url == null || hasWebTitle(url))
-        LinkShowChoice(state, LinkShow.TEXT, EditorStrings.linkShowText, null)
-        if (state.show == LinkShow.TEXT) {
-            AutoCaps {
-                OutlinedTextField(
-                    value = state.text,
-                    onValueChange = { state.text = it.replace('\n', ' ') },
-                    singleLine = true,
-                    placeholder = { Text(EditorStrings.linkTextHint) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 12.dp)
-                        .focusRequester(textFocus)
-                )
-            }
-            LaunchedEffect(state.focusText) {
-                if (state.focusText) {
-                    textFocus.requestFocus()
-                    state.focusText = false
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun LinkShowChoice(state: LinkShowState, choice: LinkShow, label: String, detail: String?, enabled: Boolean = true) {
-    val pick = {
-        state.show = choice
-        if (choice == LinkShow.TEXT) state.focusText = true
-    }
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(6.dp))
-            .clickable(enabled = enabled, onClick = pick),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        RadioButton(selected = state.show == choice, onClick = pick, enabled = enabled)
-        Column(modifier = Modifier.weight(1f).padding(vertical = 6.dp)) {
-            Text(label, color = if (enabled) NotionWhite else NotionGray400)
-            if (detail != null) {
-                Text(
-                    detail,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = NotionGray400,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
-    }
-}
-
-/**
- * **"Show as…" di una cella URL** (dal 27/10/2026): le stesse scelte per la
- * scritta che la cella mostra al posto dell'indirizzo [value]. [onSave]
- * riceve la scritta, o null per il link per intero.
- */
-@Composable
-fun LinkShowDialog(value: String, current: LinkLabel?, onDismiss: () -> Unit, onSave: (LinkLabel?) -> Unit) {
-    val url = linkUri(value)
-    val state = remember {
-        when {
-            current == null -> LinkShowState(LinkShow.LINK, "")
-            current.isTitle -> LinkShowState(LinkShow.TITLE, "", url to current.text)
-            else -> LinkShowState(LinkShow.TEXT, current.text)
-        }
-    }
-    val shown = state.shownFor(url)
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = DarkSheet,
-        title = { Text(DbStrings.showLinkAs, color = NotionWhite) },
-        text = {
-            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                LinkShowChoices(url = url, whole = value.trim(), state = state)
-            }
-        },
-        confirmButton = {
-            TextButton(
-                enabled = shown != null,
-                onClick = {
-                    val text = shown ?: return@TextButton
-                    onSave(
-                        when (state.show) {
-                            LinkShow.LINK -> null
-                            LinkShow.TITLE -> LinkLabel(text, isTitle = true)
-                            LinkShow.TEXT -> LinkLabel(text, isTitle = false)
-                        }
-                    )
-                }
-            ) { Text(Strings.done) }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(Strings.cancel) } }
-    )
-}
 
 /**
  * Le righe a cui collegarsi, come le voci di un indice: rientrate come nella

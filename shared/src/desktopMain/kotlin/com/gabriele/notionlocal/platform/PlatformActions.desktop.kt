@@ -1,6 +1,9 @@
 package com.gabriele.notionlocal.platform
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.unit.Dp
 import com.gabriele.notionlocal.ui.i18n.EditorStrings
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -27,7 +30,13 @@ object DesktopMessages {
     }
 }
 
-actual fun showMessage(context: PlatformContext, text: String) = DesktopMessages.show(text)
+actual fun showMessage(context: PlatformContext, text: String, long: Boolean) = DesktopMessages.show(text)
+
+@Composable
+actual fun screenWidthDp(): Dp = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() }
+
+@Composable
+actual fun screenHeightDp(): Dp = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.height.toDp() }
 
 /** Sul PC: il browser o il programma di posta predefinito. */
 actual fun openUrl(context: PlatformContext, url: String): Boolean = runCatching {

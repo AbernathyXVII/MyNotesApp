@@ -2,7 +2,6 @@ package com.gabriele.notionlocal.ui.screen
 
 import com.gabriele.notionlocal.data.replacedImage
 import com.gabriele.notionlocal.data.hasChosenIcon
-import android.widget.Toast
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -108,6 +107,7 @@ import kotlinx.coroutines.flow.map
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.LinkOff
 import com.gabriele.notionlocal.ui.i18n.SyncStrings
+import com.gabriele.notionlocal.platform.showMessage
 
 /**
  * **Il menu di un blocco**, come quello che su Notion si apre dai sei
@@ -605,7 +605,7 @@ fun BlockActionsHost(
                         val pageId = node.pageId ?: node.rowId?.let { factory.pageRepository.ensureRowPage(it) }
                         if (pageId != null) {
                             viewModel.moveBlockToPage(block, pageId) {
-                                Toast.makeText(appContext, Strings.movedInto(node.placeName()), Toast.LENGTH_SHORT).show()
+                                showMessage(appContext, Strings.movedInto(node.placeName()))
                             }
                         }
                     }
@@ -628,7 +628,7 @@ fun BlockActionsHost(
                         val pageId = node.pageId ?: node.rowId?.let { factory.pageRepository.ensureRowPage(it) }
                         if (pageId != null) {
                             viewModel.linkButtonIn(block, pageId) {
-                                Toast.makeText(appContext, ButtonStrings.linkedTo, Toast.LENGTH_SHORT).show()
+                                showMessage(appContext, ButtonStrings.linkedTo)
                             }
                         }
                     }
@@ -651,7 +651,7 @@ fun BlockActionsHost(
                         val pageId = node.pageId ?: node.rowId?.let { factory.pageRepository.ensureRowPage(it) }
                         if (pageId != null) {
                             viewModel.syncToPage(block, pageId) {
-                                Toast.makeText(appContext, SyncStrings.synced, Toast.LENGTH_SHORT).show()
+                                showMessage(appContext, SyncStrings.synced)
                             }
                         }
                     }
@@ -738,7 +738,7 @@ fun BlockActionsHost(
                         imageStore = imageStore
                     ) {
                         placeName?.let {
-                            Toast.makeText(context, Strings.duplicatedInto(it), Toast.LENGTH_SHORT).show()
+                            showMessage(context, Strings.duplicatedInto(it))
                         }
                     }
                 }
@@ -759,7 +759,7 @@ fun BlockActionsHost(
                     onPick = { destination, inline ->
                         onDismiss()
                         viewModel.moveLinkedPageTo(page.id, destination, inline)
-                        Toast.makeText(context, Strings.movedInto(destination.placeName()), Toast.LENGTH_SHORT).show()
+                        showMessage(context, Strings.movedInto(destination.placeName()))
                     }
                 )
             }
@@ -778,7 +778,7 @@ fun BlockActionsHost(
                     onPick = { destination, rowTitle ->
                         onDismiss()
                         viewModel.moveLinkedPageToDatabase(page.id, destination, rowTitle)
-                        Toast.makeText(context, Strings.movedInto(destination.placeName()), Toast.LENGTH_SHORT).show()
+                        showMessage(context, Strings.movedInto(destination.placeName()))
                     }
                 )
             }

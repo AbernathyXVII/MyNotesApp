@@ -71,7 +71,6 @@ import com.gabriele.notionlocal.data.entity.ChartSettings
 import com.gabriele.notionlocal.data.entity.parseChartSettings
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.foundation.layout.statusBarsPadding
-import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.lazy.LazyColumn
@@ -362,6 +361,7 @@ import java.time.temporal.WeekFields
 import java.util.Locale
 import com.gabriele.notionlocal.data.export.DatabaseReader
 import com.gabriele.notionlocal.data.export.PageExporter
+import com.gabriele.notionlocal.platform.showMessage
 
 private val COLUMN_WIDTH = DEFAULT_COLUMN_WIDTH_DP.dp
 private val NAME_COLUMN_WIDTH = DEFAULT_NAME_COLUMN_WIDTH_DP.dp
@@ -381,15 +381,6 @@ private class TableWidths(val name: Dp, private val byKey: Map<String, Dp>) {
 private val LocalTableWidths = compositionLocalOf { TableWidths(NAME_COLUMN_WIDTH, emptyMap()) }
 
 /**
- * **Il nome della proprietà principale** del database aperto (dal
- * 18/10/2026): "Name", o quello che l'utente le ha dato (vedi
- * `PageEntity.nameColumnTitle`). Passa da qui per la stessa ragione di
- * `LocalDatabaseLocked`: lo usano l'intestazione, la finestra della riga,
- * l'ordinamento, i calcoli e il grafico, in fondo a catene lunghe.
- */
-val LocalNameColumnTitle = compositionLocalOf<String?> { null }
-
-/**
  * **"Hide icon"** delle proprietà (dal 27/10/2026, chiesto dall'utente): se il
  * "Aa" della proprietà principale è nascosto, e come nascondere o rimostrare
  * un'icona (`columnId` null = la proprietà principale). Passa da qui come
@@ -399,10 +390,6 @@ val LocalNameColumnTitle = compositionLocalOf<String?> { null }
 class PropertyIcons(val nameHidden: Boolean, val setHidden: (columnId: String?, hidden: Boolean) -> Unit)
 
 val LocalPropertyIcons = compositionLocalOf<PropertyIcons?> { null }
-
-/** "Name", o il nome dato alla proprietà principale del database aperto. */
-@Composable
-fun nameColumnLabel(): String = DbStrings.nameColumn(LocalNameColumnTitle.current)
 
 /**
  * **Il segnalino per allargare una colonna** ("Resize column" tenendo
@@ -532,16 +519,10 @@ private val BAR_ICON_SIZE = 12.dp
 // quello di data e ora) è quello scelto in Settings → Date format; mesi e
 // giorni si scrivono nella lingua dell'app. Sono letti a ogni uso e non
 // fissati una volta: cambiando impostazione, la tabella si riscrive.
-private val DATE_FORMAT: DateTimeFormatter get() = Formats.dateFormatter()
 private val DATE_TIME_FORMAT: DateTimeFormatter get() = Formats.dateTimeFormatter()
-private val MONTH_FORMAT: DateTimeFormatter
-    get() = DateTimeFormatter.ofPattern("MMMM yyyy", AppSettings.language.locale)
 private val DAY_MONTH_FORMAT: DateTimeFormatter
     get() = DateTimeFormatter.ofPattern("d MMM", AppSettings.language.locale)
 private val TIME_FORMAT: DateTimeFormatter get() = Formats.timeFormatter()
-
-/** La lingua in cui scrivere nomi di giorni e mesi: quella dell'app, non quella del telefono. */
-private val displayLocale: Locale get() = AppSettings.language.locale
 
 /**
  * Cosa sta modificando la finestra delle proprietà: una colonna nuova,
@@ -645,7 +626,7 @@ fun DatabaseViewScreen(
                         onBack = onBack,
                         onRestore = {
                             menuViewModel.restoreFromTrash()
-                            Toast.makeText(trashContext, Strings.restoredToMainMenu, Toast.LENGTH_SHORT).show()
+                            showMessage(trashContext, Strings.restoredToMainMenu)
                         },
                         onDeleteForever = { confirmDeleteForever = true }
                     )
@@ -674,7 +655,7 @@ fun DatabaseViewScreen(
                         // pagine.
                         if (menuPage?.isProtected == true) {
                             IconButton(onClick = {
-                                Toast.makeText(trashContext, LockStrings.protectedByPassword, Toast.LENGTH_SHORT).show()
+                                showMessage(trashContext, LockStrings.protectedByPassword)
                             }) {
                                 Icon(Icons.Filled.Lock, contentDescription = LockStrings.protectedByPassword)
                             }
@@ -834,7 +815,7 @@ fun DatabaseViewScreen(
                     // Finisce in una pagina nuova del database scelto, aperto
                     // dentro di lei: l'avviso dice in quale database.
                     menuViewModel.movePageToDatabase(destination, rowTitle) {
-                        Toast.makeText(trashContext, Strings.movedInto(destination.placeName()), Toast.LENGTH_SHORT).show()
+                        showMessage(trashContext, Strings.movedInto(destination.placeName()))
                         onBack()
                     }
                 }
@@ -852,7 +833,7 @@ fun DatabaseViewScreen(
                     // con "Move as inline" (vedi `PageRepository.movePageTo`):
                     // l'avviso dice dove.
                     menuViewModel.movePageTo(destination, inline) {
-                        Toast.makeText(trashContext, Strings.movedInto(destination.placeName()), Toast.LENGTH_SHORT).show()
+                        showMessage(trashContext, Strings.movedInto(destination.placeName()))
                         onBack()
                     }
                 }
@@ -870,7 +851,7 @@ fun DatabaseViewScreen(
                     // dov'è finita se non è accanto all'originale.
                     menuViewModel.duplicatePage(target, Strings.copySuffix, PageImageStore(trashContext)) { copyId ->
                         placeName?.let {
-                            Toast.makeText(trashContext, Strings.duplicatedInto(it), Toast.LENGTH_SHORT).show()
+                            showMessage(trashContext, Strings.duplicatedInto(it))
                         }
                         onOpenDatabase(copyId)
                     }
@@ -3388,202 +3369,6 @@ private fun GroupHeaderRow(
 }
 
 /**
- * Un gruppo di righe della tabella, o una colonna (o una fascia) della
- * bacheca: il valore che lo definisce, come si legge, il colore se è un
- * tag, e le righe che ci stanno dentro.
- */
-data class RowGroup(
-    val key: String,
-    val label: String,
-    val color: String?,
-    val rows: List<DatabaseRowEntity>,
-    /** Il secondo colore del tag e la linea in mezzo: vedi `SelectOption.secondColor`. */
-    val secondColor: String? = null,
-    val colorLine: Boolean = false
-)
-
-/**
- * Divide le righe in gruppi secondo la proprietà scelta.
- *
- * L'ordine dei gruppi non è casuale: per i tag è quello in cui sono
- * stati creati, lo stesso che si vede modificando la proprietà, così
- * spostandosi fra tabella e bacheca non cambia niente. Per tutto il
- * resto è l'ordine naturale del valore. **Il gruppo "senza valore" sta
- * sempre in fondo**: davanti ruberebbe il primo sguardo alle righe già
- * smistate, che sono il contenuto vero.
- *
- * Con la selezione multipla una riga compare in **tutti** i gruppi dei
- * suoi tag: è quello che ci si aspetta da un raggruppamento. Dal 14/10/2026
- * anche le colonne della bacheca vengono da qui, e una scheda sta nella
- * colonna di ognuno dei suoi tag.
- */
-fun buildRowGroups(
-    state: DatabaseTableState,
-    column: DatabaseColumnEntity,
-    hideEmpty: Boolean,
-    /** Le righe da dividere: tutte, o quelle di un gruppo per farne i sottogruppi. */
-    rows: List<DatabaseRowEntity> = state.rows,
-    /**
-     * Tiene il gruppo "senza valore" anche vuoto: nella bacheca è la colonna
-     * dove nasce una pagina creata dal pulsante in fondo.
-     */
-    keepEmptyNone: Boolean = false,
-    /** Per una data: gruppi per giorno, settimana, mese o anno ("Date by", dal 21/10/2026). */
-    dateBy: DateGroupBy = DateGroupBy(),
-    /** "Sort groups" (dal 28/10/2026): a mano ([manual], le chiavi), crescente o decrescente. */
-    order: GroupOrder = GroupOrder.MANUAL,
-    manual: List<String> = emptyList()
-): List<RowGroup> {
-    fun valueOf(row: DatabaseRowEntity) = state.cellValues[row.id to column.id].orEmpty()
-
-    val options = parseSelectOptionsFull(column.optionsJson)
-    val groups = mutableListOf<RowGroup>()
-    val emptyLabel = DbStrings.noValue(DbStrings.columnName(column.name))
-
-    when (column.type) {
-        ColumnType.SELECT, ColumnType.MULTI_SELECT -> {
-            val multi = column.type == ColumnType.MULTI_SELECT
-            fun tagsOf(row: DatabaseRowEntity): List<String> = if (multi) {
-                valueOf(row).split(MULTI_VALUE_SEPARATOR).filter { it.isNotEmpty() }
-            } else {
-                listOfNotNull(valueOf(row).takeIf { it.isNotEmpty() })
-            }
-
-            val declared = options.map { it.label }
-            // Un valore rimasto nelle celle dopo che l'opzione è stata
-            // cancellata non deve far sparire le sue righe: gli si dà
-            // comunque un gruppo, in fondo a quelli dichiarati.
-            val orphans = rows.flatMap { tagsOf(it) }.distinct().filter { it !in declared }
-            (declared + orphans).forEach { label ->
-                val option = options.find { it.label == label }
-                groups += RowGroup(
-                    key = label,
-                    label = label,
-                    color = option?.color,
-                    rows = rows.filter { label in tagsOf(it) },
-                    secondColor = option?.secondColor,
-                    colorLine = option?.colorLine == true
-                )
-            }
-            groups += RowGroup("", emptyLabel, null, rows.filter { tagsOf(it).isEmpty() })
-        }
-
-        ColumnType.CHECKBOX -> {
-            // Niente gruppo "senza valore": una casella o è spuntata o
-            // non lo è, e "vuota" vuol dire già "non spuntata".
-            groups += RowGroup(
-                "true",
-                DbStrings.checked,
-                null,
-                rows.filter { valueOf(it) == "true" }
-            )
-            groups += RowGroup(
-                "false",
-                DbStrings.unchecked,
-                null,
-                rows.filter { valueOf(it) != "true" }
-            )
-        }
-
-        ColumnType.DATE -> {
-            // Un gruppo per giorno: raggruppare per istante esatto
-            // darebbe un gruppo per riga. O, con "Date by", per settimana,
-            // mese o anno: la chiave è il primo giorno del gruppo, che è
-            // anche la data di una riga nata lì dentro.
-            val unit = dateBy.unit
-            // La settimana va dal lunedì alla domenica, come su Soridata e
-            // nelle classifiche K-pop (dal 21/10/2026): col telefono in
-            // inglese americano cominciava di domenica, e l'Inkigayo della
-            // domenica finiva nella settimana dopo.
-            val byStart = rows.groupBy { row ->
-                parseDateRange(valueOf(row))?.start?.toLocalDate()?.let { unit.startOf(it, DayOfWeek.MONDAY) }
-            }
-            val starts = byStart.keys.filterNotNull().sorted()
-            (if (dateBy.newestFirst) starts.reversed() else starts).forEach { start ->
-                groups += RowGroup(
-                    key = start.toEpochDay().toString(),
-                    label = dateGroupLabel(unit, start),
-                    color = null,
-                    rows = byStart[start].orEmpty()
-                )
-            }
-            groups += RowGroup("", emptyLabel, null, byStart[null].orEmpty())
-        }
-
-        else -> {
-            val byValue = rows.groupBy { valueOf(it) }
-            val comparator = if (column.type == ColumnType.NUMBER) {
-                compareBy<String> { it.toDoubleOrNull() ?: Double.MAX_VALUE }
-            } else {
-                // I gruppi come le righe: "2" prima di "10" (vedi `NaturalOrder`).
-                NaturalOrder
-            }
-            byValue.keys.filter { it.isNotEmpty() }.sortedWith(comparator).forEach { value ->
-                groups += RowGroup(value, value, null, byValue[value].orEmpty())
-            }
-            groups += RowGroup("", emptyLabel, null, byValue[""].orEmpty())
-        }
-    }
-
-    // Le date hanno il loro ordine ("Newest first" in "Date by").
-    val ordered = if (column.type == ColumnType.DATE) groups else orderGroups(groups, order, manual, numeric = column.type == ColumnType.NUMBER)
-    // Un gruppo "senza valore" vuoto non si mostra: non è una scelta
-    // dell'utente, è semplicemente che non c'è niente da dire. Tranne la
-    // colonna della bacheca, che è il posto delle pagine nuove.
-    return ordered.filter {
-        it.rows.isNotEmpty() || (!hideEmpty && it.key.isNotEmpty()) || (keepEmptyNone && it.key.isEmpty())
-    }
-}
-
-/**
- * **I gruppi nell'ordine scelto** ("Sort groups", dal 28/10/2026). A mano:
- * quelli in [manual] nel suo ordine, poi gli altri (i nuovi) nell'ordine di
- * sempre; crescente e decrescente per nome, i numeri come numeri. Il gruppo
- * senza valore resta in fondo.
- */
-fun orderGroups(groups: List<RowGroup>, order: GroupOrder, manual: List<String>, numeric: Boolean = false): List<RowGroup> {
-    val (none, valued) = groups.partition { it.key.isEmpty() }
-    val byName: Comparator<RowGroup> = if (numeric) {
-        compareBy { it.key.toDoubleOrNull() ?: Double.MAX_VALUE }
-    } else {
-        Comparator { a, b -> NaturalOrder.compare(a.label, b.label) }
-    }
-    val sorted = when (order) {
-        GroupOrder.MANUAL -> if (manual.isEmpty()) {
-            valued
-        } else {
-            val place = manual.withIndex().associate { it.value to it.index }
-            // `sortedBy` non rimescola i pari: i gruppi nuovi restano nell'ordine di sempre.
-            valued.sortedBy { place[it.key] ?: Int.MAX_VALUE }
-        }
-        GroupOrder.ASCENDING -> valued.sortedWith(byName)
-        GroupOrder.DESCENDING -> valued.sortedWith(byName.reversed())
-    }
-    return sorted + none
-}
-
-/** I gruppi di un livello, col suo "Hide empty groups", "Date by" e "Sort groups". */
-fun buildLevelGroups(
-    state: DatabaseTableState,
-    level: GroupLevel,
-    rows: List<DatabaseRowEntity> = state.rows,
-    hideEmpty: Boolean = level.hideEmpty,
-    keepEmptyNone: Boolean = false
-): List<RowGroup> = buildRowGroups(state, level.column, hideEmpty, rows, keepEmptyNone, level.dateBy, level.order, level.manual)
-
-/**
- * Il nome di un gruppo di date: il giorno; per una settimana il primo e
- * l'ultimo giorno ("13/10/2026 – 19/10/2026"); il mese col suo nome; l'anno.
- */
-fun dateGroupLabel(unit: DateUnit, start: LocalDate): String = when (unit) {
-    DateUnit.DAY -> start.format(DATE_FORMAT)
-    DateUnit.WEEK -> start.format(DATE_FORMAT) + " – " + unit.endOf(start).format(DATE_FORMAT)
-    DateUnit.MONTH -> start.format(MONTH_FORMAT).replaceFirstChar { it.titlecase(displayLocale) }
-    DateUnit.YEAR -> start.year.toString()
-}
-
-
-/**
  * La visualizzazione a bacheca: una colonna per ogni valore della
  * proprietà scelta, con le righe come schede dentro la colonna del loro
  * valore.
@@ -4387,8 +4172,6 @@ private fun startOfWeek(date: LocalDate, firstDayOfWeek: DayOfWeek): LocalDate {
     val shift = ((date.dayOfWeek.value - firstDayOfWeek.value) + 7) % 7
     return date.minusDays(shift.toLong())
 }
-
-private fun CalendarMode.displayName(): String = DbStrings.calendarModeName(this)
 
 /** Quanto è alta una settimana quando è l'unica cosa sullo schermo. */
 private fun weekViewHeight(barCount: Int): Dp =
@@ -5491,29 +5274,8 @@ private fun GalleryContentPreview(
 // `data/entity/DateValue.kt`: il formato del valore serve anche ai
 // filtri, che girano nel ViewModel.
 
-private fun Long.toLocalDate(): LocalDate =
-    Instant.ofEpochMilli(this).atZone(AppSettings.zoneId).toLocalDate()
-
-private fun Long.toLocalDateTime(): LocalDateTime =
-    Instant.ofEpochMilli(this).atZone(AppSettings.zoneId).toLocalDateTime()
-
 private fun LocalDateTime.toEpochMillis(): Long =
     atZone(AppSettings.zoneId).toInstant().toEpochMilli()
-
-/**
- * "12 Jan 2026", "12 Jan 2026, 09:30" oppure con la freccia e la fine: la
- * data e l'ora come dicono "Date format" e "Time format" in Settings (l'ora a
- * 12, a 24 ore o nascosta).
- */
-private fun DateRange.label(): String {
-    val format = if (hasTime) Formats.databaseDateTimeFormatter() else Formats.dateFormatter()
-    val startText = Instant.ofEpochMilli(start)
-        .atZone(AppSettings.zoneId).format(format)
-    val endText = end?.let {
-        Instant.ofEpochMilli(it).atZone(AppSettings.zoneId).format(format)
-    }
-    return if (endText == null) startText else "$startText → $endText"
-}
 
 /** La mezzanotte di oggi, come la salvano le celle di tipo data. */
 private fun todayAtStartOfDay(): Long =
@@ -5945,39 +5707,6 @@ private fun ViewToolbar(
                 onClick = onOpenSettings
             )
         }
-    }
-}
-
-/** Una riga delle impostazioni che accende e spegne invece di aprire qualcosa. */
-@Composable
-fun SettingsToggleRow(
-    icon: ImageVector,
-    label: String,
-    checked: Boolean,
-    /** Spento con "Lock view", per le impostazioni della vista. */
-    enabled: Boolean = true,
-    onCheckedChange: (Boolean) -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(enabled = enabled) { onCheckedChange(!checked) }
-            .padding(vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            icon,
-            contentDescription = null,
-            modifier = Modifier.size(20.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.size(14.dp))
-        Text(
-            label,
-            modifier = Modifier.weight(1f),
-            color = if (enabled) Color.Unspecified else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-        )
-        Switch(checked = checked, onCheckedChange = onCheckedChange, enabled = enabled)
     }
 }
 
@@ -7988,58 +7717,6 @@ private fun TagColorRow(hex: String, label: String, onClick: () -> Unit) {
 }
 
 /**
- * La pastiglia colorata di un tag. La scritta è bianca, o nera su un colore
- * chiaro (dal 05/10/2026: dallo spettro si sceglie anche il giallo acceso,
- * su cui il bianco non si legge), con la regola delle celle colorate.
- */
-@Composable
-fun TagChip(label: String, option: SelectOption?) =
-    TagChip(label = label, color = option?.color, secondColor = option?.secondColor, colorLine = option?.colorLine == true)
-
-/**
- * Con **due colori** (dal 20/10/2026): `color` nella metà di sinistra,
- * `secondColor` in quella di destra, attaccati o con una linea in mezzo del
- * colore della pagina, che sembra un taglio fra le due metà.
- */
-@Composable
-fun TagChip(label: String, color: String?, secondColor: String? = null, colorLine: Boolean = false) {
-    val shape = RoundedCornerShape(4.dp)
-    val dark = when {
-        color == null -> false
-        secondColor != null -> darkTextOn(color, secondColor)
-        else -> darkTextOn(color)
-    }
-    val left = tagColor(color)
-    val right = secondColor?.let { tagColor(it) }
-    val lineColor = MaterialTheme.colorScheme.background
-    Text(
-        text = label,
-        style = MaterialTheme.typography.labelMedium,
-        color = if (dark) Color.Black else NotionWhite,
-        maxLines = 1,
-        modifier = Modifier
-            .then(
-                if (right == null) {
-                    Modifier.background(left, shape)
-                } else {
-                    Modifier
-                        .clip(shape)
-                        .drawBehind {
-                            val half = size.width / 2
-                            drawRect(left, size = Size(half, size.height))
-                            drawRect(right, topLeft = Offset(half, 0f), size = Size(size.width - half, size.height))
-                            if (colorLine) {
-                                val width = 2.dp.toPx()
-                                drawRect(lineColor, topLeft = Offset(half - width / 2, 0f), size = Size(width, size.height))
-                            }
-                        }
-                }
-            )
-            .padding(horizontal = 8.dp, vertical = 3.dp)
-    )
-}
-
-/**
  * La finestra per scegliere un tag: in cima il campo per crearne uno
  * nuovo, sotto quelli che esistono già.
  *
@@ -9182,7 +8859,6 @@ fun CustomRecurrenceDialog(
     var showEndDatePicker by remember { mutableStateOf(false) }
     var freqMenuOpen by remember { mutableStateOf(false) }
 
-
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(DbStrings.customRecurrence) },
@@ -9563,17 +9239,6 @@ private fun DateEditorTimeRow(label: String, time: LocalTime, onClick: () -> Uni
         )
     }
 }
-
-/**
- * Se il database aperto è bloccato nel contenuto (la voce "Lock page"):
- * righe e celle si leggono ma non si scrivono.
- *
- * Passa da qui e non da un parametro perché i campi di scrittura di una
- * tabella stanno in fondo a una catena lunga di composable — riga,
- * cella, editor — e infilare lo stesso `Boolean` in tutte le firme è un
- * modo sicuro di dimenticarselo in una.
- */
-val LocalDatabaseLocked = staticCompositionLocalOf { false }
 
 /**
  * Se il database aperto è **semplice** (`PageEntity.isSimpleDatabase`):
@@ -10824,42 +10489,6 @@ private fun SettingsSheet(
     }
 }
 
-/** Un riquadro del selettore di visualizzazione, come su Notion. */
-@Composable
-fun LayoutChoice(
-    layout: DatabaseLayout,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val accent = if (isSelected) {
-        MaterialTheme.colorScheme.primary
-    } else {
-        MaterialTheme.colorScheme.outline
-    }
-    Column(
-        modifier = modifier
-            .padding(4.dp)
-            .border(1.dp, accent, RoundedCornerShape(8.dp))
-            .clickable { onClick() }
-            .padding(vertical = 14.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Icon(
-            layout.icon(),
-            contentDescription = null,
-            modifier = Modifier.size(22.dp),
-            tint = accent
-        )
-        Spacer(modifier = Modifier.size(6.dp))
-        Text(
-            layout.displayName(),
-            style = MaterialTheme.typography.labelMedium,
-            color = if (isSelected) accent else MaterialTheme.colorScheme.onSurface
-        )
-    }
-}
-
 /**
  * Il titolo di una delle due liste di "Property visibility", con la
  * scorciatoia per spostarle tutte di là in un colpo solo.
@@ -10940,83 +10569,6 @@ private fun PropertyVisibilityRow(
             },
             modifier = Modifier.size(20.dp),
             tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
-
-/**
- * Il riquadro arrotondato che raggruppa più voci dentro una finestra,
- * come su Notion: le voci affini stanno insieme su uno sfondo un po'
- * più chiaro di quello della finestra, separate da linee sottili.
- */
-@Composable
-fun SheetGroup(content: @Composable () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(DarkSurface, RoundedCornerShape(10.dp))
-            .padding(horizontal = 14.dp)
-    ) {
-        content()
-    }
-}
-
-@Composable
-fun SettingsRow(
-    icon: ImageVector,
-    label: String,
-    value: String?,
-    onClick: () -> Unit,
-    /** Rosso, per le voci che tolgono qualcosa e non si possono annullare. */
-    danger: Boolean = false,
-    /**
-     * Spenta: si vede ma non risponde. La usa "Lock view" per le voci
-     * che cambiano l'impaginazione — restano in elenco, così si capisce
-     * che ci sono e che è la chiave a tenerle ferme.
-     */
-    enabled: Boolean = true
-) {
-    val tint = when {
-        !enabled -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)
-        danger -> MaterialTheme.colorScheme.error
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .let { if (enabled) it.clickable { onClick() } else it }
-            .padding(vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            icon,
-            contentDescription = null,
-            modifier = Modifier.size(20.dp),
-            tint = tint
-        )
-        Spacer(modifier = Modifier.size(14.dp))
-        Text(
-            text = label,
-            color = when {
-                !enabled -> tint
-                danger -> MaterialTheme.colorScheme.error
-                else -> Color.Unspecified
-            },
-            modifier = Modifier.weight(1f)
-        )
-        if (!value.isNullOrEmpty()) {
-            Text(
-                value,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.size(4.dp))
-        }
-        Icon(
-            Icons.Filled.KeyboardArrowRight,
-            contentDescription = null,
-            modifier = Modifier.size(20.dp),
-            tint = tint
         )
     }
 }
@@ -11199,7 +10751,6 @@ private fun PropertySheet(
             )
             }
 
-
             // Qui non si scrivono le opzioni di un tag. Prima c'era un
             // campo per elencarle separate da virgola, ed era una
             // trappola: salvando, le opzioni venivano ricostruite da
@@ -11324,51 +10875,6 @@ private fun PropertySheet(
 }
 
 @Composable
-fun SheetTextField(
-    value: String,
-    onValueChange: (String) -> Unit,
-    placeholder: String,
-    leading: ImageVector
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
-            .padding(horizontal = 12.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            leading,
-            contentDescription = null,
-            modifier = Modifier.size(18.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Spacer(modifier = Modifier.size(12.dp))
-        Box(modifier = Modifier.weight(1f)) {
-            if (value.isEmpty()) {
-                Text(
-                    placeholder,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            AutoCaps {
-                BasicTextField(
-                    value = value,
-                    onValueChange = onValueChange,
-                    singleLine = true,
-                    textStyle = MaterialTheme.typography.bodyLarge.copy(
-                        color = MaterialTheme.colorScheme.onSurface
-                    ),
-                    cursorBrush = SolidColor(MaterialTheme.colorScheme.onSurface),
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-        }
-    }
-}
-
-@Composable
 private fun SheetAction(
     icon: ImageVector,
     label: String,
@@ -11395,59 +10901,6 @@ private fun SheetAction(
     }
 }
 
-fun DatabaseLayout.displayName(): String = DbStrings.layoutName(this)
-
-fun DatabaseLayout.icon(): ImageVector = when (this) {
-    DatabaseLayout.TABLE -> Icons.Filled.TableChart
-    DatabaseLayout.BOARD -> Icons.Filled.ViewColumn
-    DatabaseLayout.CALENDAR -> Icons.Filled.CalendarToday
-    DatabaseLayout.TIMELINE -> Icons.Filled.ViewTimeline
-    DatabaseLayout.LIST -> Icons.Filled.FormatListBulleted
-    // La stessa icona della voce "Gallery view" nel menu "/".
-    DatabaseLayout.GALLERY -> Icons.Filled.GridView
-    DatabaseLayout.CHART -> Icons.Filled.PieChart
-}
-
-private fun GalleryCardPreview.icon(): ImageVector = when (this) {
-    GalleryCardPreview.NONE -> Icons.Filled.Block
-    GalleryCardPreview.PAGE_COVER -> Icons.Filled.Image
-    GalleryCardPreview.PAGE_CONTENT -> Icons.Filled.Notes
-}
-
-private fun GalleryCardSize.icon(): ImageVector = when (this) {
-    GalleryCardSize.SMALL -> Icons.Filled.ViewComfy
-    GalleryCardSize.MEDIUM -> Icons.Filled.GridView
-    GalleryCardSize.LARGE -> Icons.Filled.ViewAgenda
-}
-
-/** Il nome del tipo nella lingua dell'app. Per il nome che si salva vedi `DbStrings.englishTypeName`. */
-private fun ColumnType.displayName(): String = DbStrings.typeName(this)
-
-fun ColumnType.icon(): ImageVector = when (this) {
-    ColumnType.TEXT -> Icons.Filled.Notes
-    ColumnType.NUMBER -> Icons.Filled.Tag
-    ColumnType.SELECT -> Icons.Filled.ArrowDropDownCircle
-    ColumnType.MULTI_SELECT -> Icons.Filled.Checklist
-    ColumnType.DATE -> Icons.Filled.CalendarToday
-    ColumnType.DURATION -> Icons.Filled.Timelapse
-    ColumnType.CHECKBOX -> Icons.Filled.CheckBox
-    ColumnType.COLOR -> Icons.Filled.FormatColorFill
-    ColumnType.URL -> Icons.Filled.Link
-    ColumnType.EMAIL -> Icons.Filled.AlternateEmail
-    ColumnType.PHONE -> Icons.Filled.Call
-    ColumnType.PAGE_LINK -> Icons.Filled.NorthEast
-    // Le icone di Notion: le due frecce che si incrociano, e la lente sul foglio.
-    ColumnType.RELATION -> Icons.Filled.CallMade
-    ColumnType.ROLLUP -> Icons.Filled.Search
-    ColumnType.IMAGE -> Icons.Filled.Image
-    ColumnType.CREATED_TIME -> Icons.Filled.Schedule
-    ColumnType.LAST_EDITED_TIME -> Icons.Filled.Update
-    // La mano che tocca, come l'icona del bottone di Notion.
-    ColumnType.BUTTON -> Icons.Filled.TouchApp
-    // La sigma, come l'icona delle formule di Notion.
-    ColumnType.FORMULA -> Icons.Filled.Functions
-}
-
 /**
  * La maiuscola automatica vale per il testo libero, non per indirizzi e
  * numeri: in un'email o in un URL una maiuscola iniziale messa dalla
@@ -11466,28 +10919,9 @@ private fun ColumnType.keyboardType(): KeyboardType = when (this) {
     else -> KeyboardType.Text
 }
 
-/** Le opzioni di una colonna a selezione, lette dal JSON salvato. */
-private fun parseSelectOptionsFull(optionsJson: String): List<SelectOption> {
-    return try {
-        Json.decodeFromString<List<SelectOption>>(optionsJson)
-    } catch (e: Exception) {
-        emptyList()
-    }
-}
-
 /** Solo le etichette, per chi non ha bisogno dei colori. */
 private fun parseSelectOptions(optionsJson: String): List<String> =
     parseSelectOptionsFull(optionsJson).map { it.label }
-
-/** Il colore di un tag; se manca o è scritto male, il grigio di base. */
-private fun tagColor(hex: String?): Color {
-    if (hex == null) return DarkSurfaceVariant
-    return try {
-        Color(android.graphics.Color.parseColor(hex))
-    } catch (e: IllegalArgumentException) {
-        DarkSurfaceVariant
-    }
-}
 
 /**
  * Quanto tempo sta in una schermata della linea del tempo, e con che
@@ -11523,8 +10957,6 @@ private fun TimelineZoom.scale(): TimelineScale = when (this) {
     TimelineZoom.QUARTER -> TimelineScale(3.2.dp, TimelineTick.WEEK, 90)
     TimelineZoom.YEAR -> TimelineScale(0.9.dp, TimelineTick.MONTH, 365)
 }
-
-private fun TimelineZoom.displayName(): String = DbStrings.zoomName(this)
 
 /** Una casella dell'asse: quanto è larga e cosa c'è scritto sopra. */
 @Immutable

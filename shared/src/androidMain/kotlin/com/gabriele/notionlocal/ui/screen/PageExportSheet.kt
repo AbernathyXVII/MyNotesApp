@@ -1,6 +1,5 @@
 package com.gabriele.notionlocal.ui.screen
 
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -44,6 +43,7 @@ import com.gabriele.notionlocal.ui.theme.NotionGray400
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import com.gabriele.notionlocal.data.export.ExportOptions
+import com.gabriele.notionlocal.platform.showMessage
 
 const val PAGE_EXPORT_TAG = "page_export"
 
@@ -84,7 +84,7 @@ fun PageExportSheet(
         if (uri == null || file == null) return@rememberLauncherForActivityResult
         scope.launch(Dispatchers.Main.immediate) {
             val saved = PageExporter.copyTo(context, file, uri)
-            Toast.makeText(context, if (saved) ExportStrings.saved else ExportStrings.couldNotExport, Toast.LENGTH_SHORT).show()
+            showMessage(context, if (saved) ExportStrings.saved else ExportStrings.couldNotExport)
             if (saved) onDismiss()
         }
     }
@@ -103,10 +103,10 @@ fun PageExportSheet(
             val file = runCatching { export(options) }.getOrNull()
             working = false
             if (file == null) {
-                Toast.makeText(context, ExportStrings.couldNotExport, Toast.LENGTH_SHORT).show()
+                showMessage(context, ExportStrings.couldNotExport)
             } else {
                 runCatching { then(file) }.onFailure {
-                    Toast.makeText(context, ExportStrings.couldNotExport, Toast.LENGTH_SHORT).show()
+                    showMessage(context, ExportStrings.couldNotExport)
                 }
             }
         }

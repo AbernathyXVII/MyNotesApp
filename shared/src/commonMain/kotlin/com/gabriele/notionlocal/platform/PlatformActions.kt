@@ -1,6 +1,7 @@
 package com.gabriele.notionlocal.platform
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.Dp
 
 /**
  * **Le piccole cose che ogni sistema fa a modo suo** (dal 04/11/2026, per le
@@ -9,8 +10,8 @@ import androidx.compose.runtime.Composable
  * sempre (`PlatformActions.android.kt`), sul PC quelle di Windows e Mac.
  */
 
-/** Un avviso breve in basso: il `Toast` del telefono. */
-expect fun showMessage(context: PlatformContext, text: String)
+/** Un avviso breve in basso: il `Toast` del telefono ([long]: quello che resta di più). */
+expect fun showMessage(context: PlatformContext, text: String, long: Boolean = false)
 
 /**
  * Apre un indirizzo (una pagina web, una mail, un numero) con l'app o il
@@ -39,3 +40,13 @@ enum class EditCommand { CUT, COPY, PASTE, SELECT_ALL }
  */
 @Composable
 expect fun editCommandLabel(command: EditCommand): String
+
+/**
+ * La larghezza e l'altezza dello schermo (sul PC, della finestra): sul telefono
+ * quelle di `LocalConfiguration`, come prima.
+ */
+@Composable
+expect fun screenWidthDp(): Dp
+
+@Composable
+expect fun screenHeightDp(): Dp

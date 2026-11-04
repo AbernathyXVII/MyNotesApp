@@ -1,6 +1,5 @@
 package com.gabriele.notionlocal.ui.screen
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -97,6 +96,7 @@ import com.gabriele.notionlocal.ui.theme.NotionWhite
 import com.gabriele.notionlocal.viewmodel.ViewModelFactory
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.collectAsState
+import com.gabriele.notionlocal.platform.showMessage
 
 // ---------------------------------------------------------------------------
 // **La finestra delle azioni di un bottone** (dal 27/10/2026, chiesto
@@ -239,7 +239,7 @@ fun ButtonEditorContent(
                         onDone()
                     } else {
                         showErrors = true
-                        Toast.makeText(context, ButtonStrings.fixActions, Toast.LENGTH_SHORT).show()
+                        showMessage(context, ButtonStrings.fixActions)
                     }
                 }
             ) { Text(Strings.done) }

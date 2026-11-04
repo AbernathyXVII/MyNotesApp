@@ -2,7 +2,6 @@ package com.gabriele.notionlocal.ui.screen
 
 import android.content.Context
 import android.net.Uri
-import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -68,6 +67,7 @@ import kotlinx.coroutines.withContext
 import androidx.compose.material.icons.filled.MoveToInbox
 import com.gabriele.notionlocal.data.ocr.ImageTexts
 import com.gabriele.notionlocal.data.saveFromGallery
+import com.gabriele.notionlocal.platform.showMessage
 
 // ---------------------------------------------------------------------------
 // **"Condividi con notE"** (dal 02/11/2026, chiesto dall'utente): la finestra
@@ -152,12 +152,12 @@ fun ShareSheet(
             }
             saving = false
             if (saved == null) {
-                Toast.makeText(context, ShareStrings.saveFailed, Toast.LENGTH_SHORT).show()
+                showMessage(context, ShareStrings.saveFailed)
             } else {
                 AppSettings.sharePageId = saved.first
                 // Il testo delle foto arrivate, per la ricerca (dal 03/11/2026).
                 ImageTexts.request(delayMs = 1_000)
-                Toast.makeText(context, ShareStrings.savedIn(saved.third), Toast.LENGTH_SHORT).show()
+                showMessage(context, ShareStrings.savedIn(saved.third))
                 closeThen { if (open) onOpen(saved.second) else onClose() }
             }
         }

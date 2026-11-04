@@ -50,7 +50,7 @@ import com.gabriele.notionlocal.data.entity.ColumnType
 import com.gabriele.notionlocal.data.entity.DatabaseColumnEntity
 import com.gabriele.notionlocal.data.entity.Repeat
 import com.gabriele.notionlocal.data.entity.SelectOption
-import com.gabriele.notionlocal.data.notify.NoteAlarms
+import com.gabriele.notionlocal.data.notify.ReminderAlarms
 import com.gabriele.notionlocal.ui.format.Formats
 import com.gabriele.notionlocal.ui.i18n.AutomationStrings
 import com.gabriele.notionlocal.ui.i18n.ButtonStrings
@@ -152,7 +152,7 @@ fun AutomationsSheet(
                     onToggle = { automation, on ->
                         scope.launch(Dispatchers.IO) {
                             db.automationDao().setEnabled(automation.id, on)
-                            NoteAlarms.reschedule()
+                            ReminderAlarms.reschedule()
                         }
                     }
                 )
@@ -167,14 +167,14 @@ fun AutomationsSheet(
                         editing = null
                         scope.launch(Dispatchers.IO) {
                             db.automationDao().upsert(saved)
-                            NoteAlarms.reschedule()
+                            ReminderAlarms.reschedule()
                         }
                     },
                     onDelete = {
                         editing = null
                         scope.launch(Dispatchers.IO) {
                             db.automationDao().delete(current)
-                            NoteAlarms.reschedule()
+                            ReminderAlarms.reschedule()
                         }
                     }
                 )

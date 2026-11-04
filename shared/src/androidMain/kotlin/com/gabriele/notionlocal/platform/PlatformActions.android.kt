@@ -10,11 +10,20 @@ import android.net.Uri
 import android.os.Build
 import android.widget.Toast
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 
-actual fun showMessage(context: PlatformContext, text: String) {
-    Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
+actual fun showMessage(context: PlatformContext, text: String, long: Boolean) {
+    Toast.makeText(context, text, if (long) Toast.LENGTH_LONG else Toast.LENGTH_SHORT).show()
 }
+
+@Composable
+actual fun screenWidthDp(): Dp = LocalConfiguration.current.screenWidthDp.dp
+
+@Composable
+actual fun screenHeightDp(): Dp = LocalConfiguration.current.screenHeightDp.dp
 
 /**
  * Sul telefono: l'app che sa aprire l'indirizzo; una pagina web nel browser

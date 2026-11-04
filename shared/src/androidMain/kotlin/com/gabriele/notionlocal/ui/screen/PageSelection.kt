@@ -3,7 +3,6 @@ package com.gabriele.notionlocal.ui.screen
 import android.content.ClipData
 import android.content.Context
 import android.os.Build
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -45,6 +44,7 @@ import com.gabriele.notionlocal.ui.i18n.Strings
 import com.gabriele.notionlocal.ui.theme.DarkSheet
 import com.gabriele.notionlocal.ui.theme.NotionWhite
 import com.gabriele.notionlocal.viewmodel.PageEditorViewModel
+import com.gabriele.notionlocal.platform.showMessage
 
 // ---------------------------------------------------------------------------
 // **Tutta la pagina selezionata, come su Notion** (dal 20/10/2026, chiesto
@@ -119,7 +119,7 @@ fun copyPageToClipboard(context: Context, lines: List<PageEditorViewModel.PageCo
     clipboard.setPrimaryClip(ClipData.newHtmlText("PageFlow", plain, html))
     // Da Android 13 il "copiato" lo dice il telefono.
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-        Toast.makeText(context, EditorStrings.pageCopied, Toast.LENGTH_SHORT).show()
+        showMessage(context, EditorStrings.pageCopied)
     }
 }
 

@@ -5,7 +5,6 @@ import android.media.RingtoneManager
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.provider.Settings
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
@@ -45,6 +44,7 @@ import com.gabriele.notionlocal.ui.i18n.Strings
 import com.gabriele.notionlocal.ui.theme.DarkSheet
 import com.gabriele.notionlocal.ui.theme.NotionGray400
 import com.gabriele.notionlocal.ui.theme.NotionWhite
+import com.gabriele.notionlocal.platform.showMessage
 
 /** Quale finestra è aperta sopra le scelte delle notifiche. */
 private enum class NotificationsDialog { SOUND, PRIORITY, MUTE_FOR }
@@ -139,7 +139,7 @@ fun NotificationSettingsSection() {
         onClick = {
             NotificationPermission.request()
             if (!Notifier.postTest(context)) {
-                Toast.makeText(context, NotifyStrings.blockedByPhone, Toast.LENGTH_SHORT).show()
+                showMessage(context, NotifyStrings.blockedByPhone)
             }
         }
     )

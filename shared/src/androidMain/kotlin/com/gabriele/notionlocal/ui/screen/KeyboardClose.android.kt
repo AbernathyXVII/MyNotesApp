@@ -1,6 +1,5 @@
 package com.gabriele.notionlocal.ui.screen
 
-import android.os.SystemClock
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.imeAnimationTarget
@@ -8,46 +7,9 @@ import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import kotlinx.coroutines.delay
-
-/**
- * Da quanto il cursore deve stare fermo nello stesso campo perché una
- * tastiera che scende voglia dire "l'ha chiusa l'utente". La tastiera
- * Samsung sparisce e riappare **durante i cambi di campo**: più corti di
- * così (l'attesa più lunga dell'editor è di 450 ms).
- */
-private const val FOCUS_SETTLED_MS = 600L
-
-/**
- * **Quando il cursore ha cambiato campo l'ultima volta.** Ogni campo di
- * scrittura lo segna prendendo il fuoco (`markFocusChanges`), e l'editor
- * anche quando il cursore passa da una riga all'altra.
- */
-class KeyboardCloseWatch {
-    private var lastFocusChangeAt = 0L
-
-    fun markFocusChange() {
-        lastFocusChangeAt = SystemClock.uptimeMillis()
-    }
-
-    val focusSettled: Boolean
-        get() = SystemClock.uptimeMillis() - lastFocusChangeAt >= FOCUS_SETTLED_MS
-}
-
-/** Quello della schermata: la pagina, o il database a tutta pagina. */
-val LocalKeyboardCloseWatch = staticCompositionLocalOf<KeyboardCloseWatch?> { null }
-
-/** Un campo di scrittura dice quando prende il cursore: vedi `KeyboardCloseWatch`. */
-fun Modifier.markFocusChanges(): Modifier = composed {
-    val watch = LocalKeyboardCloseWatch.current
-    onFocusChanged { if (it.isFocused) watch?.markFocusChange() }
-}
 
 /**
  * **Chiusa la tastiera, il cursore si spegne.**
@@ -68,7 +30,7 @@ fun Modifier.markFocusChanges(): Modifier = composed {
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ClearFocusWhenKeyboardCloses(
+actual fun ClearFocusWhenKeyboardCloses(
     watch: KeyboardCloseWatch,
     anythingFocused: Boolean,
     focusInFlight: Boolean,

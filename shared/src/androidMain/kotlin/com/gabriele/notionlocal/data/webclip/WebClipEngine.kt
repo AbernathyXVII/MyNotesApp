@@ -21,13 +21,6 @@ import java.io.File
 import kotlin.coroutines.resume
 import kotlin.math.roundToInt
 
-/**
- * "What do you want to capture?", come in OneNote Web Clipper (dal 20/10/2026).
- * `TEXT_AND_IMAGES` (chiesto dopo) non è una foto: il testo e le immagini
- * dell'articolo diventano righe di notE.
- */
-enum class WebClipMode { FULL_PAGE, REGION, BOOKMARK, ARTICLE, TEXT_AND_IMAGES }
-
 /** Una foto fatta: il file e le sue misure in pixel. */
 data class WebClipImage(val file: File, val width: Int, val height: Int)
 

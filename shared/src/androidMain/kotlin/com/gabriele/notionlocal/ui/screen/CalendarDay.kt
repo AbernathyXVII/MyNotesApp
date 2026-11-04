@@ -70,7 +70,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
@@ -108,6 +107,7 @@ import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
+import com.gabriele.notionlocal.platform.screenHeightDp
 
 /**
  * Quanto è alta un'ora nella griglia del giorno: mezz'ora è un quadratino
@@ -255,7 +255,7 @@ fun CalendarDayView(
     // la pagina si può scorrere senza che la griglia cambi altezza.
     // Più in basso di così (la vista in fondo a una pagina lunga) resta
     // alta almeno `DAY_MIN_VIEWPORT`.
-    val screenHeight = LocalConfiguration.current.screenHeightDp.dp
+    val screenHeight = screenHeightDp()
     var fitted by remember { mutableStateOf<Dp?>(null) }
     val viewport = fitted ?: (screenHeight - DAY_CHROME_HEIGHT).coerceIn(DAY_MIN_VIEWPORT, DAY_HOUR_HEIGHT * 24)
     val rootView = LocalView.current

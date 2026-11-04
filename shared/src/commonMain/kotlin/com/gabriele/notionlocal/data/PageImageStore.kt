@@ -1,5 +1,6 @@
 package com.gabriele.notionlocal.data
 
+import androidx.compose.ui.graphics.ImageBitmap
 import com.gabriele.notionlocal.platform.PlatformContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -179,6 +180,9 @@ class PageImageStore(context: PlatformContext) {
 
 /** Un'immagine in memoria: la `Bitmap` di Android sul telefono, quella di Skia sul PC. */
 expect class PlatformBitmap
+
+/** La stessa immagine, da disegnare con Compose. */
+expect fun PlatformBitmap.toImageBitmap(): ImageBitmap
 
 /** Il contesto dell'applicazione (sul PC è lo stesso). */
 expect fun applicationContextOf(context: PlatformContext): PlatformContext

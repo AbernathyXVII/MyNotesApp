@@ -1,6 +1,5 @@
 package com.gabriele.notionlocal.ui.screen
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -69,6 +68,7 @@ import com.gabriele.notionlocal.ui.theme.DarkSheet
 import com.gabriele.notionlocal.ui.theme.NotionGray400
 import com.gabriele.notionlocal.ui.theme.NotionWhite
 import com.gabriele.notionlocal.viewmodel.PageEditorViewModel
+import com.gabriele.notionlocal.platform.showMessage
 
 /**
  * L'a-capo nascosto in testa al campo, come nelle altre righe (vedi
@@ -175,7 +175,7 @@ fun CodeBlockContent(
             IconButton(
                 onClick = {
                     clipboard.setText(AnnotatedString(value.text.removePrefix(CODE_LEAD)))
-                    Toast.makeText(context, BlockStrings.codeCopied, Toast.LENGTH_SHORT).show()
+                    showMessage(context, BlockStrings.codeCopied)
                 },
                 modifier = Modifier.size(36.dp)
             ) {

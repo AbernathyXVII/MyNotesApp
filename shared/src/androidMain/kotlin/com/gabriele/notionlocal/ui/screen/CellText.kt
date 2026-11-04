@@ -39,7 +39,6 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.TextLayoutResult
@@ -65,6 +64,7 @@ import com.gabriele.notionlocal.platform.clipboardText
 import com.gabriele.notionlocal.platform.copyPlainText
 import com.gabriele.notionlocal.platform.openUrl
 import com.gabriele.notionlocal.platform.showMessage
+import com.gabriele.notionlocal.platform.screenWidthDp
 
 /**
  * **"Wrap cells"** (dal 30/09/2026, nelle impostazioni di ogni tabella):
@@ -152,7 +152,7 @@ fun FullTextPopup(
     onDismiss: () -> Unit
 ) {
     val locked = LocalDatabaseLocked.current
-    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+    val screenWidth = screenWidthDp()
     val width = maxOf(cellWidth, FULL_TEXT_MIN_WIDTH).coerceAtMost(screenWidth - 16.dp)
     Popup(
         alignment = Alignment.Center,

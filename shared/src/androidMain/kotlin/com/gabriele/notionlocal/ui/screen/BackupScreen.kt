@@ -6,7 +6,6 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.DocumentsContract
 import android.text.format.Formatter
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
@@ -84,6 +83,7 @@ import kotlinx.coroutines.withContext
 import java.io.InputStream
 import java.time.Instant
 import java.time.LocalDate
+import com.gabriele.notionlocal.platform.showMessage
 
 const val BACKUP_SCREEN_TAG = "backupScreen"
 
@@ -112,7 +112,7 @@ fun BackupScreen(onBack: () -> Unit, onRestart: (Context) -> Unit = ::restartApp
 
     // Sempre dal filo principale: dopo un lavoro in sottofondo si torna anche altrove.
     fun toast(text: String) = ContextCompat.getMainExecutor(context).execute {
-        Toast.makeText(context, text, Toast.LENGTH_LONG).show()
+        showMessage(context, text, long = true)
     }
 
     val uploadLauncher = rememberLauncherForActivityResult(CreateZipDocument()) { uri ->

@@ -2,7 +2,6 @@ package com.gabriele.notionlocal.ui.screen
 
 import android.content.Context
 import android.net.Uri
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -71,6 +70,7 @@ import androidx.compose.material3.OutlinedButton
 import com.gabriele.notionlocal.data.record.AudioRecorder
 import com.gabriele.notionlocal.ui.i18n.CaptureStrings
 import com.gabriele.notionlocal.data.saveFile
+import com.gabriele.notionlocal.platform.showMessage
 
 /**
  * **"Upload" o "Link"** (dal 06/10/2026), la finestrella delle foto di
@@ -201,7 +201,7 @@ fun rememberFileActions(attrs: BlockAttrs, store: PageImageStore): FileActions {
         if (target == null || file == null) return@rememberLauncherForActivityResult
         scope.launch {
             val saved = BlockFiles.copyTo(context, store, file, target)
-            Toast.makeText(context, if (saved) BlockStrings.fileSaved else BlockStrings.saveFailed, Toast.LENGTH_SHORT).show()
+            showMessage(context, if (saved) BlockStrings.fileSaved else BlockStrings.saveFailed)
         }
     }
     return FileActions(
@@ -219,7 +219,7 @@ fun rememberFileActions(attrs: BlockAttrs, store: PageImageStore): FileActions {
                 url != null -> BlockFiles.openUrl(context, url)
                 else -> true
             }
-            if (!opened) Toast.makeText(context, BlockStrings.noAppToOpen, Toast.LENGTH_SHORT).show()
+            if (!opened) showMessage(context, BlockStrings.noAppToOpen)
         }
     )
 }
@@ -295,7 +295,7 @@ fun rememberImport(
                 if (imported != null) {
                     viewModel.updateBlockAttrs(block.id) { imported }
                 } else {
-                    Toast.makeText(context, BlockStrings.fileReadFailed, Toast.LENGTH_SHORT).show()
+                    showMessage(context, BlockStrings.fileReadFailed)
                 }
                 onBusy(false)
             }

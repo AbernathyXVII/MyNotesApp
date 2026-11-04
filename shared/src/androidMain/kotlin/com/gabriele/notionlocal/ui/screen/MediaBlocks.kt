@@ -1,6 +1,5 @@
 package com.gabriele.notionlocal.ui.screen
 
-import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
@@ -70,6 +69,7 @@ import com.gabriele.notionlocal.viewmodel.PageEditorViewModel
 import kotlinx.coroutines.launch
 import com.gabriele.notionlocal.data.ocr.ImageTexts
 import com.gabriele.notionlocal.data.saveFromGallery
+import com.gabriele.notionlocal.platform.showMessage
 
 /** Quanto può stringersi un'immagine: un quarto della pagina. */
 private const val MIN_IMAGE_WIDTH = 0.25f
@@ -194,7 +194,7 @@ fun ImageBlockContent(
                     // Il suo testo, per la ricerca (dal 03/11/2026).
                     ImageTexts.request(delayMs = 1_000)
                 },
-                onFailure = { Toast.makeText(context, EditorStrings.imageReadFailed, Toast.LENGTH_SHORT).show() }
+                onFailure = { showMessage(context, EditorStrings.imageReadFailed) }
             )
             busy = false
         }
@@ -204,7 +204,7 @@ fun ImageBlockContent(
         attrs.file?.let { file ->
             scope.launch {
                 val saved = BlockFiles.saveImageToGallery(context, store, file, attrs.name)
-                Toast.makeText(context, if (saved) BlockStrings.imageSaved else BlockStrings.saveFailed, Toast.LENGTH_SHORT).show()
+                showMessage(context, if (saved) BlockStrings.imageSaved else BlockStrings.saveFailed)
             }
         }
     }

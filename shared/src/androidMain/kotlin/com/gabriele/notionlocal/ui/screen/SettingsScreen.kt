@@ -17,7 +17,6 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.text.format.Formatter
-import android.widget.Toast
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.filled.CleaningServices
 import androidx.compose.material.icons.filled.DeleteForever
@@ -103,6 +102,7 @@ import com.gabriele.notionlocal.viewmodel.ViewModelFactory
 import androidx.compose.material.icons.filled.MoveToInbox
 import androidx.compose.material.icons.filled.RocketLaunch
 import com.gabriele.notionlocal.data.settings.StartupMode
+import com.gabriele.notionlocal.platform.showMessage
 
 /** Quale finestra di scelta è aperta. */
 private enum class SettingsDialog { THEME, TITLE_POSITION, ANIMATIONS, NUMBER, DATE, TIME, LANGUAGE, PROOFING, PARAGRAPH, TIME_ZONE, LOCK_PASSWORD, CLEAR_CACHE, DELETE_ALL }
@@ -433,7 +433,7 @@ fun SettingsScreen(
                     scope.launch {
                         AppCleanup.clearCache(context)
                         cacheBytes = AppCleanup.cacheBytes(context)
-                        Toast.makeText(context, Strings.cacheCleared, Toast.LENGTH_SHORT).show()
+                        showMessage(context, Strings.cacheCleared)
                     }
                 }) { Text(Strings.clear) }
             },
@@ -548,7 +548,7 @@ private fun LockPasswordSettings(onDismiss: () -> Unit) {
                                 }
                             }
                             if (locked > 0) {
-                                Toast.makeText(context, LockStrings.removePasswordBlocked, Toast.LENGTH_LONG).show()
+                                showMessage(context, LockStrings.removePasswordBlocked, long = true)
                             } else {
                                 step = 3
                             }
@@ -561,7 +561,7 @@ private fun LockPasswordSettings(onDismiss: () -> Unit) {
         1 -> UnlockPrompt(onUnlocked = { step = 2 }, onDismiss = onDismiss)
         2 -> SetPasswordDialog(
             onSaved = {
-                Toast.makeText(context, LockStrings.passwordChanged, Toast.LENGTH_SHORT).show()
+                showMessage(context, LockStrings.passwordChanged)
                 onDismiss()
             },
             onDismiss = onDismiss
@@ -569,7 +569,7 @@ private fun LockPasswordSettings(onDismiss: () -> Unit) {
         3 -> UnlockPrompt(
             onUnlocked = {
                 AppLock.removePassword()
-                Toast.makeText(context, LockStrings.passwordRemoved, Toast.LENGTH_SHORT).show()
+                showMessage(context, LockStrings.passwordRemoved)
                 onDismiss()
             },
             onDismiss = onDismiss

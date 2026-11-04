@@ -82,7 +82,6 @@ private const val LINES_MARKER = "PageFlow-lines:"
 /** Il segno di quando l'app si chiamava notE (fino al 03/11/2026): una copia di allora si incolla uguale. */
 private const val OLD_LINES_MARKER = "notE-lines:"
 
-
 /** Come si incolla (vedi sopra). */
 enum class PasteMode { LINKS_ONLY, KEEP_SOURCE, MATCH_DESTINATION, TEXT_ONLY }
 
@@ -315,9 +314,6 @@ private fun copiedLineOf(entry: String): CopiedLine? {
     return CopiedLine(type, parts[1] == "1", parts[2].toIntOrNull()?.coerceIn(0, 10) ?: 0)
 }
 
-/** Niente link che eseguono codice, né vuoti. */
-fun usableLink(url: String): Boolean = url.isNotBlank() && !url.trim().startsWith("javascript:", ignoreCase = true)
-
 private fun RichTextSpan.hasStyle(): Boolean = bold || italic || underline || strikethrough || link != null
 
 private fun styleCode(style: StyleRange): String = buildString {
@@ -460,19 +456,6 @@ fun htmlStyleRuns(html: String): List<StyledRun> {
     }
     return runs
 }
-
-fun decodeEntities(text: String): String =
-    Regex("&(#x?[0-9a-fA-F]+|[a-zA-Z]+);").replace(text) { m ->
-        val code = m.groupValues[1]
-        when {
-            code.startsWith("#x") || code.startsWith("#X") -> code.drop(2).toIntOrNull(16)?.let { String(Character.toChars(it)) }
-            code.startsWith("#") -> code.drop(1).toIntOrNull()?.let { String(Character.toChars(it)) }
-            else -> when (code) {
-                "amp" -> "&"; "lt" -> "<"; "gt" -> ">"; "quot" -> "\""; "apos" -> "'"; "nbsp" -> "\u00A0"
-                else -> null
-            }
-        } ?: m.value
-    }
 
 /** Il testo con la sua formattazione in HTML, per gli appunti: grassetto, corsivo, sottolineato, barrato, link. */
 fun spansToHtml(spans: List<RichTextSpan>): String = buildString {
