@@ -1,7 +1,7 @@
 package com.gabriele.notionlocal.data.repository
 
 import com.gabriele.notionlocal.data.symbolField
-import androidx.room.withTransaction
+import com.gabriele.notionlocal.data.withTransaction
 import com.gabriele.notionlocal.data.AppDatabase
 import com.gabriele.notionlocal.data.buttons.ButtonConfig
 import com.gabriele.notionlocal.data.buttons.InsertPlace
@@ -61,7 +61,7 @@ import com.gabriele.notionlocal.data.history.VersionCodec
 import com.gabriele.notionlocal.data.history.VersionContent
 import com.gabriele.notionlocal.data.history.VersionRetention
 import com.gabriele.notionlocal.data.history.toEntity
-import com.gabriele.notionlocal.data.notify.NoteAlarms
+import com.gabriele.notionlocal.data.notify.ReminderAlarms
 import com.gabriele.notionlocal.data.settings.AppSettings
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -3361,7 +3361,7 @@ class PageRepository(private val db: AppDatabase) {
             }
         }
         // I promemoria dei blocchi rimessi tornano, quelli dei blocchi tolti se ne vanno.
-        if (restored) NoteAlarms.reschedule()
+        if (restored) ReminderAlarms.reschedule()
         return restored
     }
 

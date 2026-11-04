@@ -21,6 +21,7 @@ interface SettingsStore {
         fun putBoolean(key: String, value: Boolean): Editor
         fun putInt(key: String, value: Int): Editor
         fun putLong(key: String, value: Long): Editor
+        fun remove(key: String): Editor
         fun apply()
     }
 }

@@ -1151,6 +1151,29 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### ✏️ v0.153.2 — 04/11/2026 · 08:29 — Le repository nel codice comune: pagine e database si leggono e si scrivono allo stesso modo sul PC
+*(Claude Code sul PC; provata sul telefono; 1094 test passati)*
+
+- **[Progetto]** **`PageRepository`, `DatabaseRepository` e
+  `NotebookRepository` sono in `shared`**, con quello che usano e che non
+  ha bisogno di Android: `TextStats`, `DatabaseChanges` (le automazioni),
+  `PageExport`, la cronologia delle pagine (`data/history`),
+  `InkGeometry`, `SyncedBlocks` e `AppLock`, che ora salva la password da
+  `SettingsStore` come `AppSettings` (sul telefono nello stesso file
+  `app_lock` di sempre; `SettingsStore` sa anche togliere una chiave)
+- **[Progetto]** **Le transazioni**: le repository usano `withTransaction`
+  di `com.gabriele.notionlocal.data` (`Transactions.kt`). Sul telefono è
+  proprio quello di Room per Android, come prima; sul PC, dove non c'è, la
+  connessione di scrittura di Room (`useWriterConnection`) con una
+  transazione `IMMEDIATE`. **Le sveglie dei promemoria**: dopo una
+  scrittura le repository chiamano `ReminderAlarms.reschedule()`, e sul
+  telefono a rispondere è `NoteAlarms`, che si registra all'avvio (prima,
+  come prima, non succede niente); sul PC per ora nessuno. Ancora un punto
+  dove Kotlin non si fida del controllo su una proprietà che viene da un
+  altro modulo (`DuplicateSheet`). Test: `DesktopRepositoryTest` duplica
+  una pagina con Annulla e Ripristina, la butta nel cestino e la
+  ripristina, e cerca nel testo, sul database del PC
+
 ### ✏️ v0.153.1 — 04/11/2026 · 00:38 — Il database nel codice comune: lo stesso sul telefono e sul PC
 *(Claude Code sul PC; provata sul telefono; 1091 test passati)*
 
@@ -11917,8 +11940,8 @@ I pacchetti sono gli stessi in tutti e tre: un file si sposta da `app` a
 ```
 shared/src/commonMain/kotlin/com/gabriele/notionlocal/
                     # Il codice comune: il database (entità, DAO,
-                    # AppDatabase), formule, testi, tema, impostazioni,
-                    # Patch Notes (e cresce)
+                    # AppDatabase), le repository, formule, testi, tema,
+                    # impostazioni, Patch Notes (e cresce)
 shared/src/androidMain/, shared/src/desktopMain/
                     # Quello che cambia fra telefono e PC (expect/actual):
                     # PlatformContext, SettingsStore, le Patch Notes, come
@@ -11926,7 +11949,8 @@ shared/src/androidMain/, shared/src/desktopMain/
 desktop/src/main/kotlin/com/gabriele/notionlocal/desktop/Main.kt
                     # La finestra del PC (gradle :desktop:run)
 desktop/src/test/   # DesktopScreensTest: le schermate del PC in immagini;
-                    # DesktopDatabaseTest: il database sul PC
+                    # DesktopDatabaseTest: il database sul PC;
+                    # DesktopRepositoryTest: le repository sul PC
 
 app/src/main/java/com/gabriele/notionlocal/
 ├── data/           # Entità Room, DAO, Repository, AppDatabase

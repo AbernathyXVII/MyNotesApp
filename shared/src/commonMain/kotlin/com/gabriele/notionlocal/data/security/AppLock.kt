@@ -1,7 +1,8 @@
 package com.gabriele.notionlocal.data.security
 
-import android.content.Context
-import android.content.SharedPreferences
+import com.gabriele.notionlocal.data.settings.SettingsStore
+import com.gabriele.notionlocal.data.settings.openSettingsStore
+import com.gabriele.notionlocal.platform.PlatformContext
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -30,7 +31,7 @@ import javax.crypto.spec.PBEKeySpec
  */
 object AppLock {
 
-    private lateinit var prefs: SharedPreferences
+    private lateinit var prefs: SettingsStore
 
     private var hashState by mutableStateOf<String?>(null)
     private var biometricState by mutableStateOf(true)
@@ -42,9 +43,9 @@ object AppLock {
 
     private var stoppedAt = 0L
 
-    fun init(context: Context) {
+    fun init(context: PlatformContext) {
         if (::prefs.isInitialized) return
-        prefs = context.applicationContext.getSharedPreferences("app_lock", Context.MODE_PRIVATE)
+        prefs = openSettingsStore(context, "app_lock")
         hashState = prefs.getString(KEY_HASH, null)
         biometricState = prefs.getBoolean(KEY_BIOMETRIC, true)
     }

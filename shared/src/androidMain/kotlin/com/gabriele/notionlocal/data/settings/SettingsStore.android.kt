@@ -20,6 +20,7 @@ private class SharedPreferencesStore(private val prefs: SharedPreferences) : Set
         override fun putBoolean(key: String, value: Boolean) = apply { editor.putBoolean(key, value) }
         override fun putInt(key: String, value: Int) = apply { editor.putInt(key, value) }
         override fun putLong(key: String, value: Long) = apply { editor.putLong(key, value) }
+        override fun remove(key: String) = apply { editor.remove(key) }
         override fun apply() = editor.apply()
     }
 }

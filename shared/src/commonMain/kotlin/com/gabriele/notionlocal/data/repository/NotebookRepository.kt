@@ -1,6 +1,6 @@
 package com.gabriele.notionlocal.data.repository
 
-import androidx.room.withTransaction
+import com.gabriele.notionlocal.data.withTransaction
 import com.gabriele.notionlocal.data.AppDatabase
 import com.gabriele.notionlocal.data.entity.NotebookColors
 import com.gabriele.notionlocal.data.entity.NotebookEntity

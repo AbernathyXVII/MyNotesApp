@@ -25,6 +25,7 @@ private class PropertiesStore(private val file: File) : SettingsStore {
         override fun putBoolean(key: String, value: Boolean) = apply { changes[key] = value.toString() }
         override fun putInt(key: String, value: Int) = apply { changes[key] = value.toString() }
         override fun putLong(key: String, value: Long) = apply { changes[key] = value.toString() }
+        override fun remove(key: String) = apply { changes[key] = null }
         override fun apply() {
             synchronized(values) {
                 for ((key, value) in changes) if (value == null) values.remove(key) else values.setProperty(key, value)

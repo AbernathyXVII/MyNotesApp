@@ -90,9 +90,11 @@ internal fun DuplicateFlow(
             onDismiss = onDismiss,
             onPick = { node ->
                 val name = node.title.ifBlank { Strings.untitled }
+                val pageId = node.pageId
+                val rowId = node.rowId
                 when {
-                    node.pageId != null -> onChosen(DuplicateTarget.IntoPage(node.pageId), name)
-                    node.rowId != null -> onChosen(DuplicateTarget.IntoRow(node.rowId), name)
+                    pageId != null -> onChosen(DuplicateTarget.IntoPage(pageId), name)
+                    rowId != null -> onChosen(DuplicateTarget.IntoRow(rowId), name)
                 }
             }
         )

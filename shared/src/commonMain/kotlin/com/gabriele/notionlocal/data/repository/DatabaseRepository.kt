@@ -1,6 +1,6 @@
 package com.gabriele.notionlocal.data.repository
 
-import androidx.room.withTransaction
+import com.gabriele.notionlocal.data.withTransaction
 import com.gabriele.notionlocal.data.AppDatabase
 import com.gabriele.notionlocal.data.RowIconRef
 import com.gabriele.notionlocal.data.chosenEmoji
@@ -20,7 +20,7 @@ import com.gabriele.notionlocal.data.entity.encodeRelationIds
 import com.gabriele.notionlocal.data.entity.relationConfig
 import com.gabriele.notionlocal.data.entity.relationIds
 import com.gabriele.notionlocal.data.entity.reverseChanges
-import com.gabriele.notionlocal.data.notify.NoteAlarms
+import com.gabriele.notionlocal.data.notify.ReminderAlarms
 import java.util.UUID
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -321,7 +321,7 @@ class DatabaseRepository(private val db: AppDatabase) {
         // Una data con "Include notification", accesa, spenta o spostata:
         // la sveglia va rimessa (vedi `NoteAlarms`).
         if (value.endsWith(NOTIFY_SUFFIX) || existing?.value?.endsWith(NOTIFY_SUFFIX) == true) {
-            NoteAlarms.reschedule()
+            ReminderAlarms.reschedule()
         }
         // Le automazioni "Property edited" (vedi `Automations`).
         DatabaseChanges.cellChanged(rowId, columnId, existing?.value, value)

@@ -57,6 +57,8 @@ object NoteAlarms {
     fun init(context: Context) {
         appContext = context.applicationContext
         Notifier.ensureChannels(appContext)
+        // Le repository (codice comune) chiedono di rimettere la sveglia da lì.
+        ReminderAlarms.register(::reschedule)
         reschedule()
     }
 
