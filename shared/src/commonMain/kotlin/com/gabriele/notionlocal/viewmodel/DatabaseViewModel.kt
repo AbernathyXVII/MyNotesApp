@@ -162,7 +162,7 @@ data class RowSearch(val query: String, val foundInside: Set<String>)
  * `DatabaseViewModel.checkboxHold`. Era un secondo, "estremamente troppo"
  * per l'utente (09/10/2026).
  */
-internal const val CHECKBOX_SETTLE_MS = 200L
+const val CHECKBOX_SETTLE_MS = 200L
 
 /** Quanto si aspetta a rileggere il titolo di una cella URL il cui link è cambiato: lo si sta forse ancora scrivendo. */
 private const val LINK_TITLE_PAUSE_MS = 1_500L
@@ -249,7 +249,7 @@ private val SEARCHABLE_COLUMN_TYPES = setOf(
  * salvato ("2026-09-24", "true") non è quello che si legge sullo
  * schermo, e "true" troverebbe ogni casella spuntata.
  */
-internal fun searchRows(
+fun searchRows(
     rows: List<DatabaseRowEntity>,
     columns: List<DatabaseColumnEntity>,
     cellValues: Map<Pair<String, String>, String>,
@@ -291,7 +291,7 @@ internal fun searchRows(
 }
 
 /** Le proprietà nascoste di una vista collegata (vedi `PageEntity.viewHiddenColumnIds`). */
-internal fun PageEntity.viewHiddenColumns(): Set<String> =
+fun PageEntity.viewHiddenColumns(): Set<String> =
     viewHiddenColumnIds.orEmpty().split(",").filter { it.isNotBlank() }.toSet()
 
 class DatabaseViewModel(

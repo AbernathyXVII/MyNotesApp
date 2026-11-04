@@ -60,6 +60,7 @@ import com.google.mlkit.vision.documentscanner.GmsDocumentScanning
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult
 import kotlinx.coroutines.delay
 import kotlin.math.sqrt
+import com.gabriele.notionlocal.data.saveFromGallery
 
 private val RecordRed = Color(0xFFE5484D)
 
@@ -184,7 +185,9 @@ internal fun rememberDocumentScanner(viewModel: PageEditorViewModel): (String) -
         if (result.resultCode != Activity.RESULT_OK || blockId == null) return@rememberLauncherForActivityResult
         val pages = GmsDocumentScanningResult.fromActivityResultIntent(result.data)?.pages.orEmpty().map { it.imageUri }
         if (pages.isEmpty()) return@rememberLauncherForActivityResult
-        viewModel.insertScannedPages(blockId, pages, store) { toast(context, CaptureStrings.scanFailed) }
+        viewModel.insertScannedPages(blockId, pages, store, save = { store.saveFromGallery(it).getOrNull() }) {
+            toast(context, CaptureStrings.scanFailed)
+        }
     }
     return { blockId ->
         val activity = context.findActivity()

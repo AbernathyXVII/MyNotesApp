@@ -37,10 +37,7 @@ import androidx.compose.ui.text.googlefonts.Font as DownloadableFont
  * esiste: su sua scelta è stato tolto.
  */
 
-/** Il corpo del testo quando non se ne è scelto uno: quello di sempre. */
-const val DEFAULT_PAGE_FONT_SIZE = 16
-const val MIN_PAGE_FONT_SIZE = 5
-const val MAX_PAGE_FONT_SIZE = 72
+// Il corpo del testo (predefinito, minimo, massimo): `PageFontSizes.kt`, nel codice comune.
 
 /** Il nome che l'utente ha chiesto, quello che si vede nella barra Aa. */
 val PageFont.label: String

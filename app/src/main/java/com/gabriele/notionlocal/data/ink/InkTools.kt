@@ -10,15 +10,6 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
-/** Come cancella la gomma, come su OneNote. */
-enum class EraserMode {
-    /** Tutto il tratto toccato. */
-    STROKE,
-
-    /** Solo quello che sta sotto la gomma: il tratto si spezza. */
-    POINT
-}
-
 /** Una delle penne della barra: cosa è, di che colore, quanto larga (dp). */
 @Serializable
 data class InkPen(val tool: InkTool, val color: Long, val width: Float)

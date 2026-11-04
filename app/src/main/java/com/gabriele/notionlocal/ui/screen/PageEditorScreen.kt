@@ -323,6 +323,7 @@ import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.ui.platform.LocalClipboard
 import com.gabriele.notionlocal.data.saveFromGallery
+import com.gabriele.notionlocal.viewmodel.export
 
 /**
  * I tipi che il "+" dà a tutte le righe selezionate insieme (vedi
@@ -978,7 +979,6 @@ private val PAGE_ICON_SIZE = 56.dp
 private val CHECKBOX_SIZE = 16.dp
 private val CHECKBOX_TOUCH_SIZE = 24.dp
 
-
 // Entro quanto una divisione va considerata un'eco della tastiera e
 // non un secondo Invio: più larga quando torna indietro lo stesso
 // pezzo di testo (segno inequivocabile), stretta quando a ripetersi è
@@ -1326,14 +1326,6 @@ private fun renderItemBlockIds(item: RenderItem): List<String> = when (item) {
  * possono avere la stessa isola sopra, né stare tutti e due in cima:
  * fra due gruppi c'è sempre un'isola, altrimenti sarebbero uno solo.
  */
-/**
- * La chiave del primo campo di un gruppo di righe: l'isola che gli sta sopra,
- * o l'inizio della pagina (vedi `groupIntoRenderItems`). Anche il ViewModel la
- * scrive per esteso, quando il campo col cursore deve tenerla anche se sopra
- * di lui nasce un altro campo (`PageEditorViewModel.keepVisibleTogether`).
- */
-internal fun runGroupKey(islandAbove: BlockEntity?, firstLine: BlockEntity): String =
-    "run:" + (islandAbove?.id ?: ("top:" + firstLine.pageId))
 
 internal fun groupIntoRenderItems(
     blocks: List<BlockEntity>,
@@ -4746,53 +4738,6 @@ private class MergedRunOffsetMapping(
 private const val INDENT_SPACES = "    "
 
 /**
- * I marcatori degli elenchi puntati, uno per livello di rientro, come
- * su OneNote: pallino pieno, pallino vuoto, quadratino pieno,
- * quadratino vuoto, rombo pieno, rombo vuoto, triangolino pieno,
- * triangolino vuoto — e poi si ricomincia.
- *
- * **Dipende solo dal livello di rientro**, non da cosa c'era prima:
- * così una riga riportata indietro ritrova il segno della colonna in
- * cui arriva, qualunque strada abbia fatto. Con un contatore
- * "prosegui da dove eri" due righe alla stessa altezza potrebbero
- * avere segni diversi, che è esattamente quello che non si vuole.
- *
- * Sono tutti caratteri delle varianti "piccole" dove esistono (▪ ▫ ▸
- * ▹): il quadratino vuoto deve restare distinguibile a colpo d'occhio
- * da una vera casella da spuntare, che è un riquadro disegnato e molto
- * più grande.
- */
-private val BULLET_MARKERS = listOf("•", "◦", "▪", "▫", "◆", "◇", "▸", "▹")
-
-/**
- * Quanto va scritto ogni segno perché si **vedano tutti della stessa
- * misura**.
- *
- * Questi caratteri sono disegnati molto diversi fra loro: un pallino
- * occupa meno di un terzo del suo spazio, un rombo quasi due terzi. Con
- * un'unica dimensione per tutti — com'era prima — i pallini venivano
- * minuscoli e i rombi delle macchie. Qui ognuno ha il corpo che lo
- * porta a occupare all'incirca la stessa altezza sullo schermo.
- *
- * **Nessuno supera i 20**, ed è una regola, non un caso. Il limite non
- * è la misura del testo (16) ma **l'altezza della riga**: il testo
- * scorrevole sta su righe da 24, e un carattere da 16 ne occupa in
- * altezza meno di 19, quindi c'è margine. Finché il marcatore resta
- * dentro quei 24 la riga non si allarga; oltre, si allargherebbero
- * solo le righe con il segno più grande e l'elenco verrebbe a scalini.
- */
-private val BULLET_MARKER_SIZES = listOf(
-    20.sp, // •  pallino pieno: il glifo è piccolo di suo, va scritto grande
-    20.sp, // ◦  pallino vuoto
-    18.sp, // ▪  quadratino pieno
-    18.sp, // ▫  quadratino vuoto
-    13.sp, // ◆  rombo pieno: il glifo è grande, va scritto piccolo
-    13.sp, // ◇  rombo vuoto
-    17.sp, // ▸  triangolino pieno
-    17.sp  // ▹  triangolino vuoto
-)
-
-/**
  * Di quanto il segno scende rispetto alla riga di base del testo.
  *
  * È una frazione del corpo del segno, non una misura fissa: così i
@@ -4894,21 +4839,6 @@ private fun cardinalWord(n: Int): String = CARDINAL_WORDS.getOrNull(n - 1) ?: n.
 
 /** `1` → `First`, con lo stesso limite di `cardinalWord`. */
 private fun ordinalWord(n: Int): String = ORDINAL_WORDS.getOrNull(n - 1) ?: n.toString()
-
-private fun bulletIndexFor(indent: Int): Int =
-    ((indent % BULLET_MARKERS.size) + BULLET_MARKERS.size) % BULLET_MARKERS.size
-
-/**
- * Il segno da mettere davanti a un elenco puntato rientrato di `indent`
- * livelli. `internal` per la stessa ragione di `numberedMarkerFor`.
- */
-internal fun bulletMarkerFor(indent: Int): String = BULLET_MARKERS[bulletIndexFor(indent)]
-
-/**
- * Con che corpo va scritto quel segno. `internal` per i pezzi delle pagine
- * lunghe: vedi `PageEditorViewModel.markerSizeOf`.
- */
-internal fun bulletMarkerSizeFor(indent: Int): TextUnit = BULLET_MARKER_SIZES[bulletIndexFor(indent)]
 
 /**
  * Cosa viene disegnato davanti a una riga del testo unito: gli spazi del

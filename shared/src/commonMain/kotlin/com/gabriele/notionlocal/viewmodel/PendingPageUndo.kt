@@ -18,7 +18,7 @@ import com.gabriele.notionlocal.data.repository.PageRepository.PageChange
  * suo posto, e la prima pagina che compare lo porta via, che lo usi o no.
  * Vive quanto l'app: è memoria di lavoro, non un dato da salvare.
  */
-internal object PendingPageUndo {
+object PendingPageUndo {
     private var pending: PageChange? = null
 
     fun offer(change: PageChange) {

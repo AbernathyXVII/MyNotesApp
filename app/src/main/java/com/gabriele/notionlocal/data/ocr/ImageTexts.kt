@@ -65,6 +65,8 @@ object ImageTexts {
         val app = context.applicationContext
         appContext = app
         reader = MlKitTextReader()
+        // Il codice comune (l'editor) chiede di leggere le foto nuove da lì.
+        PhotoTextRequests.register { request() }
         // **Una volta sola** (03/11/2026): la prima prova sul telefono ha letto
         // delle foto prima che arrivassero i modelli di cinese, giapponese e
         // coreano, e le ha segnate come lette per intero. Si rileggono tutte.

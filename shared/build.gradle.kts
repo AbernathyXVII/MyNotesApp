@@ -51,12 +51,18 @@ kotlin {
             // Room multipiattaforma: le tabelle, i DAO e `AppDatabase` (dal
             // 04/11/2026 qui e non più nel modulo `app`).
             api("androidx.room:room-runtime:2.8.5")
+            // I ViewModel (dal 04/11/2026): sul telefono è lifecycle 2.9.4 di
+            // Google, la stessa che l'app usava già.
+            api("org.jetbrains.androidx.lifecycle:lifecycle-viewmodel:2.9.5")
         }
         androidMain.dependencies {
             // L'orientamento scritto dentro le foto (EXIF): vedi `PageImageStore.android.kt`.
             implementation("androidx.exifinterface:exifinterface:1.3.7")
         }
         getByName("desktopMain").dependencies {
+            // Il "filo principale" dei ViewModel sul PC è quello di Swing, la
+            // finestra: senza, `viewModelScope` non sa dove lavorare.
+            implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.10.2")
             // Sul PC l'SQLite viaggia dentro l'app (su Windows non ce n'è uno di sistema).
             implementation("androidx.sqlite:sqlite-bundled:2.6.2")
         }

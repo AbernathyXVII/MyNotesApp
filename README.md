@@ -1151,6 +1151,31 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### ✏️ v0.153.4 — 04/11/2026 · 09:06 — I ViewModel nel codice comune: le schermate si muovono allo stesso modo sul PC
+*(Claude Code sul PC; provata sul telefono; 1099 test passati)*
+
+- **[Progetto]** **I ViewModel sono in `shared`**: quello dell'editor,
+  dei database, della ricerca, della barra laterale, dei quaderni,
+  dell'inchiostro e delle altre schermate (la libreria dei ViewModel
+  multipiattaforma 2.9.5, che sul telefono è la 2.9.4 di Google, la stessa
+  di prima). `ViewModelFactory` resta nell'app: il PC avrà il suo. Con loro
+  sono passati `LinkPreviews` e `NaturalOrder`, e alcuni pezzi tolti da
+  file Android: `EraserMode` (da `InkTools`), `linkUri` (da `CellText`),
+  `runGroupKey` e i segni degli elenchi puntati (da `PageEditorScreen`,
+  ora `RunGroups.kt` e `BulletMarkers.kt`), il corpo del testo predefinito,
+  minimo e massimo (da `PageFonts`, ora `PageFontSizes.kt`) e `QuickNotes`
+  (leggere la richiesta dall'`Intent`, `takeFrom`, resta in `Incoming.kt`)
+- **[Progetto]** Quello che nell'editor era di Android: l'esportazione in
+  un file è un'estensione nell'app (`PageEditorExport.kt`, chiamata come
+  prima); il testo delle foto si chiede a `PhotoTextRequests`, dove sul
+  telefono si registra `ImageTexts`; le pagine di un documento scansionato
+  arrivano con la funzione che le salva (sul telefono, dall'`Uri` dello
+  scanner); l'ora del blocco spostato è quella di Java (serviva solo a
+  distinguere uno spostamento dal successivo). Sul PC il "filo principale"
+  dei ViewModel è quello della finestra (`kotlinx-coroutines-swing`): senza,
+  il primo test sul PC si fermava subito. Test: `DesktopViewModelTest`
+  (l'editor apre una pagina e la ricerca la trova, sul database del PC)
+
 ### ✏️ v0.153.3 — 04/11/2026 · 08:54 — Le immagini delle pagine nel codice comune, lette anche sul PC
 *(Claude Code sul PC; provata sul telefono; 1097 test passati)*
 
@@ -11966,8 +11991,8 @@ I pacchetti sono gli stessi in tutti e tre: un file si sposta da `app` a
 shared/src/commonMain/kotlin/com/gabriele/notionlocal/
                     # Il codice comune: il database (entità, DAO,
                     # AppDatabase), le repository, le immagini delle
-                    # pagine, formule, testi, tema, impostazioni, Patch
-                    # Notes (e cresce)
+                    # pagine, i ViewModel, formule, testi, tema,
+                    # impostazioni, Patch Notes (e cresce)
 shared/src/androidMain/, shared/src/desktopMain/
                     # Quello che cambia fra telefono e PC (expect/actual):
                     # PlatformContext, SettingsStore, le Patch Notes, come
@@ -11977,7 +12002,8 @@ desktop/src/main/kotlin/com/gabriele/notionlocal/desktop/Main.kt
 desktop/src/test/   # DesktopScreensTest: le schermate del PC in immagini;
                     # DesktopDatabaseTest: il database sul PC;
                     # DesktopRepositoryTest: le repository sul PC;
-                    # DesktopImageStoreTest: le immagini sul PC
+                    # DesktopImageStoreTest: le immagini sul PC;
+                    # DesktopViewModelTest: i ViewModel sul PC
 
 app/src/main/java/com/gabriele/notionlocal/
 ├── data/           # Entità Room, DAO, Repository, AppDatabase

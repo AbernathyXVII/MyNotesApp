@@ -430,17 +430,6 @@ internal fun TextLikeCell(
 }
 
 /**
- * L'indirizzo da aprire: com'è scritto se ha già il suo inizio
- * ("https://…", "mailto:…", "tel:…"), altrimenti con "https://" davanti —
- * "bulbapedia.bulbagarden.net/wiki/…" scritto a mano si apre lo stesso.
- */
-internal fun linkUri(raw: String): String {
-    val link = raw.trim()
-    val hasScheme = link.contains("://") || listOf("mailto:", "tel:", "geo:").any { link.startsWith(it, ignoreCase = true) }
-    return if (hasScheme) link else "https://$link"
-}
-
-/**
  * Apre il link col browser (o l'app che lo sa aprire); se nessuna può, lo
  * dice. Una pagina web si apre nel browser predefinito: vedi
  * `BlockFiles.openUrl`.

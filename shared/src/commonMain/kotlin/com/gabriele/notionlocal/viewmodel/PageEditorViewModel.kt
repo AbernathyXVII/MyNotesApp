@@ -66,7 +66,7 @@ import com.gabriele.notionlocal.data.entity.toggleFormatInRange
 import com.gabriele.notionlocal.data.entity.withSubscript
 import com.gabriele.notionlocal.data.entity.withSuperscript
 import com.gabriele.notionlocal.data.TextStats
-import com.gabriele.notionlocal.data.notify.NoteAlarms
+import com.gabriele.notionlocal.data.notify.ReminderAlarms
 import com.gabriele.notionlocal.data.notify.NotificationCommand
 import com.gabriele.notionlocal.data.notify.NotificationCommands
 import com.gabriele.notionlocal.data.settings.AppSettings
@@ -96,19 +96,13 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.time.LocalDateTime
 import com.gabriele.notionlocal.data.export.ExportFormat
-import com.gabriele.notionlocal.data.export.ExportedFile
-import com.gabriele.notionlocal.data.export.PageExporter
-import android.content.Context
 import com.gabriele.notionlocal.ui.i18n.Strings
 import com.gabriele.notionlocal.data.entity.movedDateLink
 import com.gabriele.notionlocal.data.entity.replaceLinkedText
 import java.time.LocalDate
-import com.gabriele.notionlocal.data.export.DatabaseReader
-import com.gabriele.notionlocal.data.export.ExportOptions
 import com.gabriele.notionlocal.data.sync.SyncedWatcher
-import com.gabriele.notionlocal.data.ocr.ImageTexts
+import com.gabriele.notionlocal.data.ocr.PhotoTextRequests
 import com.gabriele.notionlocal.ui.i18n.CaptureStrings
-import com.gabriele.notionlocal.data.saveFromGallery
 
 /** I tipi di formattazione inline selezionabili dalla barra "Aa". */
 enum class FormatType { BOLD, ITALIC, UNDERLINE, STRIKETHROUGH, SPOILER, SUBSCRIPT, SUPERSCRIPT }
@@ -208,15 +202,15 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         // queste righe o queste lettere ne comincia un altro. Un pezzo più
         // grande si rifà più lentamente a ogni tasto; uno più piccolo
         // lascia selezionare meno righe insieme.
-        internal const val CHUNK_MAX_LINES = 50
+        const val CHUNK_MAX_LINES = 50
 
         // Oltre queste righe il campo col fuoco non prende altri pezzi, anche
         // se si vedono: scriverci costerebbe troppo (vedi `keepVisibleTogether`).
-        internal const val FOCUSED_CHUNK_CAP = 200
+        const val FOCUSED_CHUNK_CAP = 200
 
         // Dopo quanto dall'ultimo tasto si può toccare il campo in cui si scrive.
-        internal const val TYPING_QUIET_MS = 2_000L
-        internal const val CHUNK_MAX_CHARS = 3_500
+        const val TYPING_QUIET_MS = 2_000L
+        const val CHUNK_MAX_CHARS = 3_500
 
         // Quanto si aspetta, smesso di scrivere, prima di ridividere in
         // pezzi: il tempo che l'ultima battuta arrivi al database.
@@ -1587,13 +1581,12 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         viewModelScope.launch { runCatching { repository.saveBlock(updated) } }
     }
 
-    /** **La pagina in un file** da mandare, salvare o stampare (vedi `data/export`); null se non riesce. */
-    suspend fun export(context: Context, factory: ViewModelFactory, options: ExportOptions): ExportedFile? {
-        val pageId = currentPageId ?: return null
-        return runCatching {
-            PageExporter(context, repository, DatabaseReader(factory, repository)).export(pageId, options, Strings.untitled)
-        }.getOrNull()
-    }
+    /**
+     * La pagina aperta e le sue repository, per chi lavora sulla pagina fuori
+     * da qui: l'esportazione in un file (sul telefono, `PageEditorExport.kt`).
+     */
+    val openPageId: String? get() = currentPageId
+    val pages: PageRepository get() = repository
 
     /** Una versione da vedere: il contenuto e i titoli di adesso delle pagine collegate. */
     suspend fun versionPreview(versionId: String): VersionPreview? = runCatching {
@@ -2721,7 +2714,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
                 if (liftChildren) repository.unnestChildren(block.id)
                 repository.turnIntoNotification(block.id, at, textJson, newBlockId)
             }
-            NoteAlarms.reschedule()
+            ReminderAlarms.reschedule()
             if (newBlockId != null) {
                 delay(IME_SETTLE_DELAY_MS)
                 _focusRequestBlockId.value = newBlockId
@@ -2736,7 +2729,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         snapshotForStructuralChange()
         viewModelScope.launch {
             blocksDb.setNotifyAt(block.id, at)
-            NoteAlarms.reschedule()
+            ReminderAlarms.reschedule()
         }
     }
 
@@ -2895,7 +2888,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
             }
             if (caret != null) _pendingCaret.value = block.id to caret
             _focusRequestBlockId.value = block.id
-            _movedBlock.value = MovedBlock(block.id, android.os.SystemClock.uptimeMillis())
+            _movedBlock.value = MovedBlock(block.id, System.nanoTime() / 1_000_000)
         }
     }
 
@@ -2971,7 +2964,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
 
     /** La riga arrivata con un collegamento si illumina un attimo, come una riga spostata. */
     fun highlightBlock(blockId: String) {
-        _movedBlock.value = MovedBlock(blockId, android.os.SystemClock.uptimeMillis())
+        _movedBlock.value = MovedBlock(blockId, System.nanoTime() / 1_000_000)
     }
 
     /**
@@ -3001,7 +2994,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
             withTimeoutOrNull(FOCUS_HANDOFF_TIMEOUT_MS * 4) {
                 _blocks.first { shown -> shown.any { it.id == placedId && it.type == firstType } }
             }
-            _movedBlock.value = MovedBlock(placedId, android.os.SystemClock.uptimeMillis())
+            _movedBlock.value = MovedBlock(placedId, System.nanoTime() / 1_000_000)
             _revealBlock.value = placedId
             onPlaced(placedId)
         }
@@ -3036,7 +3029,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
                     now != null && (now.parentBlockId != block.parentBlockId || now.orderIndex != block.orderIndex)
                 }
             }
-            _movedBlock.value = MovedBlock(block.id, android.os.SystemClock.uptimeMillis())
+            _movedBlock.value = MovedBlock(block.id, System.nanoTime() / 1_000_000)
         }
     }
 
@@ -3249,7 +3242,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
      * pagina vuota o nuova sono tutte le sue righe. `localText` dà il testo
      * delle righe che il campo ha appena cambiato e il database non ancora.
      */
-    internal fun trailingBlankLines(localText: Map<String, String> = emptyMap()): List<BlockEntity> {
+    fun trailingBlankLines(localText: Map<String, String> = emptyMap()): List<BlockEntity> {
         val all = _blocks.value
         return all
             .filter { it.parentBlockId == null }
@@ -4591,7 +4584,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
         _externalChangeTick.value += 1
         viewModelScope.launch {
             withTimeoutOrNull(FOCUS_HANDOFF_TIMEOUT_MS * 4) { _blocks.first { shown -> shown.any { it.id == first } } }
-            _movedBlock.value = MovedBlock(first, android.os.SystemClock.uptimeMillis())
+            _movedBlock.value = MovedBlock(first, System.nanoTime() / 1_000_000)
         }
         return true
     }
@@ -4638,11 +4631,15 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
      * nell'app e messe come foto al posto della riga [blockId], se è vuota, o
      * sotto di lei. Si annullano in un passo; il loro testo si legge dopo, per
      * la ricerca (`ImageTexts`). [onFailed] se non se ne è salvata nessuna.
+     *
+     * [save] copia una pagina nell'app e ne dà il nome (sul telefono le pagine
+     * sono `Uri` dello scanner: vedi `CaptureUi`); dal 04/11/2026, quando
+     * l'editor è passato al codice comune.
      */
-    fun insertScannedPages(blockId: String, pages: List<android.net.Uri>, store: PageImageStore, onFailed: () -> Unit) {
+    fun <T> insertScannedPages(blockId: String, pages: List<T>, store: PageImageStore, save: suspend (T) -> String?, onFailed: () -> Unit) {
         viewModelScope.launch {
             val at = System.currentTimeMillis()
-            val files = pages.mapNotNull { store.saveFromGallery(it).getOrNull() }
+            val files = pages.mapNotNull { save(it) }
             if (files.isEmpty()) {
                 onFailed()
                 return@launch
@@ -4655,7 +4652,7 @@ class PageEditorViewModel(private val repository: PageRepository) : ViewModel() 
                 onFailed()
             } else {
                 _externalChangeTick.value += 1
-                ImageTexts.request()
+                PhotoTextRequests.request()
             }
         }
     }
