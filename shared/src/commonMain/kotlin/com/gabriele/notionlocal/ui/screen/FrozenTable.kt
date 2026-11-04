@@ -57,7 +57,7 @@ import com.gabriele.notionlocal.ui.theme.DarkBackground
  *   subito, appena si scorre, e lo stato cambia dopo: basta la posizione
  *   rispetto al riquadro. Va messo **sulla** `LazyColumn`.
  */
-internal class StickyViewport private constructor(
+class StickyViewport private constructor(
     val scrollSignal: () -> Int,
     /** Quanto sotto il bordo alto fermarsi: nella pagina, sotto i pulsanti sospesi. */
     val topInset: Dp,
@@ -83,16 +83,16 @@ internal class StickyViewport private constructor(
     }
 }
 
-internal val LocalStickyViewport = staticCompositionLocalOf<StickyViewport?> { null }
+val LocalStickyViewport = staticCompositionLocalOf<StickyViewport?> { null }
 
 /** Dove sta il contenitore: vedi `StickyViewport` per dove metterlo. */
-internal fun Modifier.stickyViewport(viewport: StickyViewport): Modifier =
+fun Modifier.stickyViewport(viewport: StickyViewport): Modifier =
     this.onPlaced { viewport.coordinates = it }
 
 /** Lo scorrimento orizzontale della tabella, quando la prima colonna è ferma. */
-internal class FrozenColumn(val scroll: ScrollState)
+class FrozenColumn(val scroll: ScrollState)
 
-internal val LocalFrozenColumn = staticCompositionLocalOf<FrozenColumn?> { null }
+val LocalFrozenColumn = staticCompositionLocalOf<FrozenColumn?> { null }
 
 /**
  * La prima cella di una riga quando la prima colonna è ferma: spostata di
@@ -100,7 +100,7 @@ internal val LocalFrozenColumn = staticCompositionLocalOf<FrozenColumn?> { null 
  * della pagina. `found` aggiunge l'evidenziazione della ricerca, che il fondo
  * altrimenti coprirebbe.
  */
-internal fun Modifier.frozenFirstCell(frozen: FrozenColumn, found: Modifier = Modifier): Modifier =
+fun Modifier.frozenFirstCell(frozen: FrozenColumn, found: Modifier = Modifier): Modifier =
     this
         .zIndex(1f)
         .offset { IntOffset(frozen.scroll.value, 0) }
@@ -135,7 +135,7 @@ private fun pinnedShift(section: SectionBounds, viewport: StickyViewport, insetP
  * passano lì sotto non si vedono. È sopra le righe anche per i tocchi.
  */
 @Composable
-internal fun ColumnScope.PinnedHeaderSection(
+fun ColumnScope.PinnedHeaderSection(
     pin: Boolean,
     header: @Composable () -> Unit,
     body: @Composable ColumnScope.() -> Unit

@@ -49,7 +49,7 @@ private val SYNCED_FRAME_OUTSET = 8.dp
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-internal fun SyncedBlockFrame(
+fun SyncedBlockFrame(
     block: BlockEntity,
     start: Dp,
     end: Dp,

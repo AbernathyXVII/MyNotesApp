@@ -33,7 +33,7 @@ fun SpellDictionary.suggest(word: String, max: Int = 5): List<String> {
         .take(max)
 }
 
-internal class Suggester(private val d: SpellDictionary) {
+class Suggester(private val d: SpellDictionary) {
 
     private val aff = d.aff
     private val deadline = System.nanoTime() + TIME_LIMIT_NS
@@ -220,7 +220,7 @@ internal class Suggester(private val d: SpellDictionary) {
      * cambiare maiuscole, e senza le parole `NOSUGGEST` (le parolacce dei
      * dizionari inglesi) o vietate.
      */
-    internal fun goodSug(word: String, compound: Boolean): Boolean {
+    fun goodSug(word: String, compound: Boolean): Boolean {
         if (compound) {
             if (!aff.compounds || !d.checkCompound(word)) return false
             val entry = d.words[word] ?: return true

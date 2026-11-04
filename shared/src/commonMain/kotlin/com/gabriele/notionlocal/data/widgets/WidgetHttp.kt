@@ -15,7 +15,7 @@ import java.net.URL
  * né la stretta di mano sicura. Prima ogni domanda la chiudeva
  * (`disconnect`): gli stemmi, venti alla volta, se ne accorgevano.
  */
-internal object WidgetHttp {
+object WidgetHttp {
 
     private const val TIMEOUT_MS = 10_000
 

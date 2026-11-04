@@ -7,7 +7,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.graphics.vector.ImageVector
 
 /** I nomi delle 2132 icone piene di Material 1.6.8, in ordine alfabetico, quelle coi numeri in fondo: la scheda "Icons" del selettore. */
-internal val MATERIAL_ICON_NAMES: List<String> = listOf(
+val MATERIAL_ICON_NAMES: List<String> = listOf(
     "Abc", "AccessAlarm", "AccessAlarms", "Accessibility", "AccessibilityNew", "Accessible", "AccessibleForward", "AccessTime",
     "AccessTimeFilled", "AccountBalance", "AccountBalanceWallet", "AccountBox", "AccountCircle", "AccountTree", "AcUnit", "Adb",
     "Add", "AddAlarm", "AddAlert", "AddAPhoto", "AddBox", "AddBusiness", "AddCard", "Addchart",
@@ -282,7 +282,7 @@ internal val MATERIAL_ICON_NAMES: List<String> = listOf(
  * (per esempio di una versione della libreria più nuova). Le icone si
  * disegnano solo quando servono: qui c'è solo il nome.
  */
-internal fun materialIconByName(name: String): ImageVector? = when (name.trimStart('_').firstOrNull()?.uppercaseChar()) {
+fun materialIconByName(name: String): ImageVector? = when (name.trimStart('_').firstOrNull()?.uppercaseChar()) {
     '1' -> icons1(name)
     '2' -> icons2(name)
     '3' -> icons3(name)

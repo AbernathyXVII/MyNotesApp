@@ -40,7 +40,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -53,6 +52,7 @@ import com.gabriele.notionlocal.ui.theme.DarkBackground
 import com.gabriele.notionlocal.ui.theme.DarkSheet
 import com.gabriele.notionlocal.ui.theme.NotionGray400
 import com.gabriele.notionlocal.ui.theme.NotionWhite
+import com.gabriele.notionlocal.platform.LocalPlatformContext
 
 /**
  * I pezzi comuni alle schermate della barra laterale (preferiti, cestino,
@@ -91,7 +91,7 @@ internal fun PageIconView(
     size: Dp = 20.dp,
     iconSymbol: String? = null
 ) {
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val store = remember(context) { PageImageStore(context) }
     Box(modifier = Modifier.size(size), contentAlignment = Alignment.Center) {
         when {

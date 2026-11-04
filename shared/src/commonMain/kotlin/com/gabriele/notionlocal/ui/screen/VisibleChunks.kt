@@ -22,7 +22,7 @@ import kotlinx.coroutines.flow.collectLatest
  * della pagina dice quali delle sue righe si vedono; quando la pagina si ferma
  * e nessun dito la tocca, la pagina le passa al ViewModel.
  */
-internal class VisibleRunLines {
+class VisibleRunLines {
     /**
      * Per ogni voce della lista (la sua chiave), le righe che stanno fra `top`
      * e `bottom`, in px nelle coordinate della voce. Non è uno stato: si legge
@@ -50,17 +50,17 @@ internal class VisibleRunLines {
 }
 
 /** Le righe sullo schermo della pagina aperta: vedi [VisibleRunLines]. */
-internal val LocalVisibleRunLines = staticCompositionLocalOf<VisibleRunLines?> { null }
+val LocalVisibleRunLines = staticCompositionLocalOf<VisibleRunLines?> { null }
 
 /**
  * Se un dito tocca la pagina adesso. Non le maniglie della selezione, che
  * stanno in una finestra a parte: è proprio così che si distingue il dito che
  * trascina sul testo da quello che tiene una maniglia.
  */
-internal val LocalPageFingerDown = staticCompositionLocalOf<State<Boolean>?> { null }
+val LocalPageFingerDown = staticCompositionLocalOf<State<Boolean>?> { null }
 
 /** Tiene [down] aggiornato con le dita sulla pagina, senza prendere niente. */
-internal fun Modifier.watchPageFingers(down: MutableState<Boolean>): Modifier =
+fun Modifier.watchPageFingers(down: MutableState<Boolean>): Modifier =
     pointerInput(down) {
         awaitPointerEventScope {
             while (true) {
@@ -81,7 +81,7 @@ private const val KEEP_TOGETHER_DELAY_MS = 250L
  * lasciato stare.
  */
 @Composable
-internal fun KeepVisibleLinesTogether(
+fun KeepVisibleLinesTogether(
     viewModel: PageEditorViewModel,
     list: LazyListState,
     lines: VisibleRunLines,

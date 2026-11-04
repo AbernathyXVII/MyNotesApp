@@ -16,7 +16,7 @@ import java.time.LocalDate
  * la fine, e un tocco dopo un periodo completo, o prima dell'inizio,
  * ricomincia.
  */
-internal fun pickCalendarDay(
+fun pickCalendarDay(
     day: LocalDate,
     start: LocalDate?,
     end: LocalDate?,

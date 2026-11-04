@@ -1151,6 +1151,39 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### ✏️ v0.153.5 — 04/11/2026 · 09:23 — Le prime schermate nel codice comune, e le azioni di ogni sistema
+*(Claude Code sul PC; provata sul telefono; 1099 test passati)*
+
+- **[Progetto]** **25 file in `shared`**, fra cui le prime schermate: la
+  scelta dei colori (`ColorPickerSheet`), i promemoria delle date, "Full
+  line view", il ridimensionare le immagini, "Move to", la cronologia della
+  pagina, la barra di scorrimento della pagina, la barra di testo dei
+  pannelli (`SheetTextToolbar`), i colori del codice, le icone di Material
+  (`MaterialIconSet`), i blocchi sincronizzati (`SyncedBlockUi`), le tabelle
+  ferme, e poi il correttore (dizionari e suggerimenti), l'esportazione in
+  Markdown, l'archivio dei backup, le rotte della navigazione e altri
+  pezzi. Quali file passano lo decide il compilatore: un giro sposta tutti
+  quelli senza Android, quelli che non compilano tornano indietro così
+  com'erano, e si ripete finché il codice comune compila
+- **[Progetto]** **Le azioni di ogni sistema** (`platform/PlatformActions.kt`):
+  un avviso breve, aprire un link, copiare e leggere gli appunti, i nomi di
+  Taglia/Copia/Incolla/Seleziona tutto. Sul telefono sono quelle di Android
+  di prima (il `Toast`, l'`Intent` per il browser, gli appunti di Android,
+  i nomi dei comandi nella lingua del telefono); sul PC il browser e gli
+  appunti di Windows e Mac, e gli avvisi in basso nella finestra
+  (`DesktopMessages`). Le usano già `BlockFiles.openUrl`, i link delle celle
+  (`CellText`) e la barra di testo dei pannelli; `ScreenParts` prende il
+  contesto comune. `AutoCaps` (la maiuscola a inizio frase della tastiera
+  del telefono) è dichiarato nel codice comune: sul telefono è quello di
+  prima, sul PC lascia il campo com'è. `ViewModelFactory` è in `shared`, e
+  chiede i ViewModel per classe Kotlin (`KClass`), come fa la libreria
+- **[Progetto]** **Cosa resta**: le schermate si usano una con l'altra, e
+  molti pezzi che tutte usano (`SheetGroup`, `SettingsRow`, `PageImage`,
+  `NoteBottomSheet`…) stanno dentro i due file più grandi, l'editor
+  (`PageEditorScreen`) e il database (`DatabaseViewScreen`). Il prossimo
+  passo li sposta insieme, con le parti di Android (i video, il Web Clipper,
+  la fotocamera, la scelta dei file) separate per piattaforma
+
 ### ✏️ v0.153.4 — 04/11/2026 · 09:06 — I ViewModel nel codice comune: le schermate si muovono allo stesso modo sul PC
 *(Claude Code sul PC; provata sul telefono; 1099 test passati)*
 

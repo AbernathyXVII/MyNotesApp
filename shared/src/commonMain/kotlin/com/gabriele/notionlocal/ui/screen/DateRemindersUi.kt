@@ -54,7 +54,7 @@ import com.gabriele.notionlocal.ui.i18n.Strings
  * le righe col testo sopra.
  */
 @Composable
-internal fun ReminderList(
+fun ReminderList(
     reminders: List<Int>,
     atStartLabel: String,
     onChange: (List<Int>) -> Unit,

@@ -28,7 +28,7 @@ import kotlinx.coroutines.flow.collectLatest
 private const val SCROLL_INDICATOR_LINGER_MS = 900L
 
 /** C'è solo mentre la barretta si vede: per i test. */
-internal const val PAGE_SCROLL_INDICATOR_TAG = "pageScrollIndicator"
+const val PAGE_SCROLL_INDICATOR_TAG = "pageScrollIndicator"
 
 /**
  * **La barretta di scorrimento della pagina** (dal 20/10/2026, chiesta
@@ -43,7 +43,7 @@ internal const val PAGE_SCROLL_INDICATOR_TAG = "pageScrollIndicator"
  * assesta scorrendo. In cima e in fondo alla pagina tocca il bordo.
  */
 @Composable
-internal fun PageScrollIndicator(list: LazyListState, modifier: Modifier = Modifier) {
+fun PageScrollIndicator(list: LazyListState, modifier: Modifier = Modifier) {
     val sizes = remember(list) { ItemSizes() }
     var shown by remember(list) { mutableStateOf(false) }
     LaunchedEffect(list) {
@@ -93,7 +93,7 @@ internal fun PageScrollIndicator(list: LazyListState, modifier: Modifier = Modif
 }
 
 /** Le altezze delle voci già viste, per posizione; si ricomincia quando cambia il numero di voci. */
-internal class ItemSizes {
+class ItemSizes {
     private val sizes = HashMap<Int, Int>()
     private var count = -1
 
@@ -113,7 +113,7 @@ internal class ItemSizes {
  * Quanto si è scesi e quanto è alta la pagina, in px: le voci già viste con la
  * loro altezza, le altre con la media.
  */
-internal fun estimateExtent(sizes: Map<Int, Int>, count: Int, firstIndex: Int, firstOffset: Int): Pair<Float, Float> {
+fun estimateExtent(sizes: Map<Int, Int>, count: Int, firstIndex: Int, firstOffset: Int): Pair<Float, Float> {
     if (count <= 0 || sizes.isEmpty()) return 0f to 0f
     val average = sizes.values.average().toFloat()
     var before = 0f
@@ -131,7 +131,7 @@ internal fun estimateExtent(sizes: Map<Int, Int>, count: Int, firstIndex: Int, f
  * quanto la parte di pagina che si vede, ma mai meno di [minThumb]. Null se la
  * pagina sta tutta nello schermo.
  */
-internal fun scrollThumb(
+fun scrollThumb(
     viewport: Float,
     scrolled: Float,
     total: Float,

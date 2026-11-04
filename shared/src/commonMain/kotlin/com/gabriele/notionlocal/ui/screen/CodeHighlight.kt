@@ -12,7 +12,7 @@ import com.gabriele.notionlocal.data.settings.AppSettings
  * nomi del selettore di Notion (ottava foto dell'utente), in ordine
  * alfabetico. "Plain Text" non colora niente.
  */
-internal val CODE_LANGUAGES = listOf(
+val CODE_LANGUAGES = listOf(
     "Plain Text", "Arduino", "Assembly", "Bash", "C", "C#", "C++", "Clojure", "CoffeeScript", "CSS",
     "Dart", "Diff", "Docker", "Elixir", "Elm", "Erlang", "F#", "Fortran", "Go", "GraphQL",
     "Groovy", "Haskell", "HTML", "Java", "JavaScript", "JSON", "Julia", "Kotlin", "LaTeX", "Less",
@@ -22,7 +22,7 @@ internal val CODE_LANGUAGES = listOf(
 )
 
 /** Il linguaggio con cui nasce un blocco di codice: lo stesso di Notion. */
-internal const val DEFAULT_CODE_LANGUAGE = "JavaScript"
+const val DEFAULT_CODE_LANGUAGE = "JavaScript"
 
 /**
  * Come si scrive un linguaggio, per colorarlo: le parole chiave, i commenti e
@@ -162,7 +162,7 @@ private val LIGHT_PALETTE = CodePalette(
  * commenti, numeri, funzioni (un nome seguito da "(") e tipi (un nome che
  * comincia con la maiuscola). Il testo resta quello: cambiano solo i colori.
  */
-internal fun highlightCode(code: String, language: String): AnnotatedString {
+fun highlightCode(code: String, language: String): AnnotatedString {
     val syntax = syntaxFor(language) ?: return AnnotatedString(code)
     val palette = if (AppSettings.isDark) DARK_PALETTE else LIGHT_PALETTE
     return buildAnnotatedString {

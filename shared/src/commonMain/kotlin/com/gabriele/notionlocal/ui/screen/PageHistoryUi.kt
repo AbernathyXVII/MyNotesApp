@@ -71,12 +71,12 @@ import java.time.LocalDate
 // rimette, dopo la domanda; com'è adesso finisce prima nella cronologia.
 // ---------------------------------------------------------------------------
 
-internal const val PAGE_HISTORY_TAG = "pageHistory"
-internal const val VERSION_ROW_TAG = "versionRow"
+const val PAGE_HISTORY_TAG = "pageHistory"
+const val VERSION_ROW_TAG = "versionRow"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun PageHistorySheet(
+fun PageHistorySheet(
     versions: List<PageVersionInfo>,
     /** Il contenuto di una versione; null se non si legge. */
     loadPreview: suspend (String) -> VersionPreview?,
@@ -314,10 +314,10 @@ private fun VersionText(preview: VersionPreview, modifier: Modifier) {
     }
 }
 
-internal enum class OutlineKind { TEXT, CODE, MUTED, DIVIDER }
+enum class OutlineKind { TEXT, CODE, MUTED, DIVIDER }
 
 /** Una riga dell'anteprima: quanto rientra, il segno davanti (•, 1., ☐…) e il testo. */
-internal data class OutlineLine(val depth: Int, val marker: String, val text: String, val kind: OutlineKind = OutlineKind.TEXT)
+data class OutlineLine(val depth: Int, val marker: String, val text: String, val kind: OutlineKind = OutlineKind.TEXT)
 
 /**
  * **Le righe di una versione, come si leggono nella pagina**: nell'ordine
@@ -325,7 +325,7 @@ internal data class OutlineLine(val depth: Int, val marker: String, val text: St
  * del loro tipo davanti. Le tabelle una riga per riga; le immagini, i file
  * e i collegamenti col loro nome.
  */
-internal fun versionOutline(content: VersionContent, linkedTitles: Map<String, String>): List<OutlineLine> {
+fun versionOutline(content: VersionContent, linkedTitles: Map<String, String>): List<OutlineLine> {
     val byParent = content.blocks.groupBy { it.parentBlockId }
     val cellsByBlock = content.cells.groupBy { it.blockId }
     val result = ArrayList<OutlineLine>()

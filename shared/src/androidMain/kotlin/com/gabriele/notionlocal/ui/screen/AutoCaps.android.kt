@@ -42,7 +42,7 @@ import androidx.compose.ui.text.input.TextInputSession
  * perché finestre, fogli e menu hanno ognuno la sua tastiera.
  */
 @Composable
-fun AutoCaps(content: @Composable () -> Unit) {
+actual fun AutoCaps(content: @Composable () -> Unit) {
     val current = LocalTextInputService.current
     if (current == null || current is AutoCapsTextInputService) {
         content()
@@ -53,7 +53,7 @@ fun AutoCaps(content: @Composable () -> Unit) {
 }
 
 /** Se la regola vale per un campo con queste impostazioni. */
-internal fun autoCapsApplies(options: ImeOptions): Boolean =
+fun autoCapsApplies(options: ImeOptions): Boolean =
     options.keyboardType == KeyboardType.Text &&
         (options.capitalization == KeyboardCapitalization.None ||
             options.capitalization == KeyboardCapitalization.Sentences)
@@ -64,7 +64,7 @@ internal fun autoCapsApplies(options: ImeOptions): Boolean =
  * (lasciare com'è) altrove — fra una lettera e l'altra la tastiera non
  * mette maiuscole comunque, e riavviarla lì spezzerebbe la parola.
  */
-internal fun autoCapsFor(value: TextFieldValue): KeyboardCapitalization? {
+fun autoCapsFor(value: TextFieldValue): KeyboardCapitalization? {
     val text = value.text
     val cursor = value.selection.min.coerceIn(0, text.length)
     val lineStart = if (cursor == 0) 0 else text.lastIndexOf('\n', cursor - 1) + 1
@@ -75,7 +75,7 @@ internal fun autoCapsFor(value: TextFieldValue): KeyboardCapitalization? {
 }
 
 /** Vedi `AutoCaps`. Si mette fra i campi e il servizio della tastiera della finestra. */
-internal class AutoCapsTextInputService private constructor(
+class AutoCapsTextInputService private constructor(
     platform: AutoCapsPlatform
 ) : TextInputService(platform) {
     constructor(inner: TextInputService) : this(AutoCapsPlatform(inner))

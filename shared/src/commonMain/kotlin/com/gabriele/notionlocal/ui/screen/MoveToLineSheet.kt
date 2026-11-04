@@ -40,7 +40,7 @@ import com.gabriele.notionlocal.ui.theme.NotionWhite
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun MoveToLineSheet(
+fun MoveToLineSheet(
     title: String,
     lines: List<PageLine>,
     /** Come si chiama una riga nell'elenco: il suo testo, o il suo tipo se non ne ha. */

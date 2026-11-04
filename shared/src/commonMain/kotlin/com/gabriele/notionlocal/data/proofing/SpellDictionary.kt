@@ -41,10 +41,10 @@ import java.util.Locale
  * Un dizionario letto non cambia più: lo si può usare da più thread.
  */
 class SpellDictionary private constructor(
-    internal val locale: Locale,
-    internal val aff: AffixData,
+    val locale: Locale,
+    val aff: AffixData,
     /** Le radici: le bandierine di ognuna, o un `Array<String>` se la stessa parola ha più righe. */
-    internal val words: HashMap<String, Any>
+    val words: HashMap<String, Any>
 ) {
 
     /** Quante radici ha il dizionario. */
@@ -61,7 +61,7 @@ class SpellDictionary private constructor(
     }
 
     /** L'apostrofo come lo vuole il dizionario, e le lettere accentate in un segno solo. */
-    internal fun normalize(word: String): String {
+    fun normalize(word: String): String {
         var w = Normalizer.normalize(word.trim(), Normalizer.Form.NFC)
         if (aff.iconv.isNotEmpty()) w = convert(w, aff.iconv)
         // Tutti e sei i dizionari scrivono l'apostrofo dritto.
@@ -70,7 +70,7 @@ class SpellDictionary private constructor(
 
     // ---- Controllo di una parola intera: maiuscole e BREAK -------------
 
-    internal fun spell(word: String, depth: Int): Boolean {
+    fun spell(word: String, depth: Int): Boolean {
         val info = CheckInfo()
         if (spellCases(word, info)) return true
         if (info.forbidden || depth > 3) return false
@@ -168,13 +168,13 @@ class SpellDictionary private constructor(
 
     // ---- Una forma esatta: radice, prefissi e desinenze, composti -------
 
-    internal class CheckInfo { var forbidden = false }
+    class CheckInfo { var forbidden = false }
 
     /**
      * `Hunspell::checkword`: la forma così com'è, maiuscole comprese.
      * Restituisce le bandierine della radice trovata, o `null`.
      */
-    internal fun checkWord(word: String, info: CheckInfo): String? {
+    fun checkWord(word: String, info: CheckInfo): String? {
         val direct = words[word]
         if (direct != null) {
             if (anyHomonym(direct) { has(it, aff.forbidden) } != null) {
@@ -197,20 +197,20 @@ class SpellDictionary private constructor(
         return null
     }
 
-    internal inline fun anyHomonym(entry: Any, test: (String) -> Boolean): String? {
+    inline fun anyHomonym(entry: Any, test: (String) -> Boolean): String? {
         if (entry is String) return if (test(entry)) entry else null
         @Suppress("UNCHECKED_CAST")
         for (h in entry as Array<String>) if (test(h)) return h
         return null
     }
 
-    internal fun homonym(word: String, test: (String) -> Boolean): String? {
+    fun homonym(word: String, test: (String) -> Boolean): String? {
         val entry = words[word] ?: return null
         return anyHomonym(entry, test)
     }
 
     /** `AffixMgr::affix_check`. */
-    internal fun affixCheck(word: String, needFlag: Char, inCpd: Int): String? {
+    fun affixCheck(word: String, needFlag: Char, inCpd: Int): String? {
         prefixCheck(word, inCpd, needFlag)?.let { return it }
         suffixCheck(word, false, null, NONE, needFlag, inCpd)?.let { return it }
         if (aff.contFlags.isNotEmpty()) {
@@ -221,7 +221,7 @@ class SpellDictionary private constructor(
     }
 
     /** I prefissi che la parola può avere: quelli che aggiungono il suo inizio, o niente. */
-    internal inline fun forPrefixes(word: String, action: (Affix) -> String?): String? {
+    inline fun forPrefixes(word: String, action: (Affix) -> String?): String? {
         val max = minOf(word.length, aff.maxPrefix)
         for (k in 0..max) {
             val list = aff.prefixes[if (k == 0) "" else word.substring(0, k)] ?: continue
@@ -230,7 +230,7 @@ class SpellDictionary private constructor(
         return null
     }
 
-    internal inline fun forSuffixes(word: String, action: (Affix) -> String?): String? {
+    inline fun forSuffixes(word: String, action: (Affix) -> String?): String? {
         val max = minOf(word.length, aff.maxSuffix)
         for (k in 0..max) {
             val list = aff.suffixes[if (k == 0) "" else word.substring(word.length - k)] ?: continue
@@ -240,7 +240,7 @@ class SpellDictionary private constructor(
     }
 
     /** `AffixMgr::prefix_check`. */
-    internal fun prefixCheck(word: String, inCpd: Int, needFlag: Char): String? = forPrefixes(word) { pe ->
+    fun prefixCheck(word: String, inCpd: Int, needFlag: Char): String? = forPrefixes(word) { pe ->
         if ((inCpd != CPD_NOT || !has(pe.cont, aff.onlyInCompound)) &&
             (inCpd != CPD_END || has(pe.cont, aff.compoundPermit))
         ) prefixCheckWord(pe, word, inCpd, needFlag) else null
@@ -263,7 +263,7 @@ class SpellDictionary private constructor(
     }
 
     /** `AffixMgr::suffix_check`: [ppfx] è il prefisso già tolto, [cclass] la desinenza esterna già tolta. */
-    internal fun suffixCheck(word: String, cross: Boolean, ppfx: Affix?, cclass: Char, needFlag: Char, inCpd: Int): String? =
+    fun suffixCheck(word: String, cross: Boolean, ppfx: Affix?, cclass: Char, needFlag: Char, inCpd: Int): String? =
         forSuffixes(word) { se ->
             if (suffixAllowed(se, ppfx, cclass, inCpd) &&
                 (se.append.isEmpty() || inCpd != CPD_END || ppfx != null || !has(se.cont, aff.onlyInCompound))
@@ -306,7 +306,7 @@ class SpellDictionary private constructor(
     }
 
     /** `AffixMgr::suffix_check_twosfx`: una desinenza sopra un'altra. */
-    internal fun suffixCheckTwoSfx(word: String, cross: Boolean, ppfx: Affix?, needFlag: Char): String? =
+    fun suffixCheckTwoSfx(word: String, cross: Boolean, ppfx: Affix?, needFlag: Char): String? =
         forSuffixes(word) { se ->
             if (aff.contFlags.indexOf(se.flag) >= 0) suffixCheckTwoSfxWord(se, word, cross, ppfx, needFlag) else null
         }
@@ -328,7 +328,7 @@ class SpellDictionary private constructor(
     }
 
     /** `AffixMgr::prefix_check_twosfx`: un prefisso e due desinenze. */
-    internal fun prefixCheckTwoSfx(word: String, inCpd: Int, needFlag: Char): String? = forPrefixes(word) { pe ->
+    fun prefixCheckTwoSfx(word: String, inCpd: Int, needFlag: Char): String? = forPrefixes(word) { pe ->
         val tmpl = word.length - pe.append.length
         if ((tmpl > 0 || (tmpl == 0 && aff.fullStrip)) && pe.cross && inCpd != CPD_BEGIN) {
             val root = pe.strip + word.substring(pe.append.length)
@@ -337,7 +337,7 @@ class SpellDictionary private constructor(
     }
 
     /** Se [word] è una parola composta valida, come la vogliono i suggerimenti. */
-    internal fun checkCompound(word: String): Boolean = aff.compounds && compoundCheck(word, 0, 0)
+    fun checkCompound(word: String): Boolean = aff.compounds && compoundCheck(word, 0, 0)
 
     /**
      * `AffixMgr::compound_check`, per i composti a bandierine del tedesco:
@@ -386,11 +386,11 @@ class SpellDictionary private constructor(
 
     // ---- Maiuscole -------------------------------------------------------
 
-    internal fun lower(w: String) = w.lowercase(locale)
+    fun lower(w: String) = w.lowercase(locale)
 
-    internal fun initCap(w: String) = if (w.isEmpty()) w else w.substring(0, 1).uppercase(locale) + w.substring(1)
+    fun initCap(w: String) = if (w.isEmpty()) w else w.substring(0, 1).uppercase(locale) + w.substring(1)
 
-    internal fun capType(w: String): Int {
+    fun capType(w: String): Int {
         var ncap = 0
         var neutral = 0
         var letters = 0
@@ -410,15 +410,15 @@ class SpellDictionary private constructor(
     }
 
     companion object {
-        internal const val CAP_NONE = 0
-        internal const val CAP_INIT = 1
-        internal const val CAP_ALL = 2
-        internal const val CAP_MIXED = 3
-        internal const val CAP_MIXED_INIT = 4
+        const val CAP_NONE = 0
+        const val CAP_INIT = 1
+        const val CAP_ALL = 2
+        const val CAP_MIXED = 3
+        const val CAP_MIXED_INIT = 4
 
-        internal const val CPD_NOT = 0
-        internal const val CPD_BEGIN = 1
-        internal const val CPD_END = 2
+        const val CPD_NOT = 0
+        const val CPD_BEGIN = 1
+        const val CPD_END = 2
 
         /**
          * Legge un dizionario: il file delle regole [aff] e quello delle
@@ -478,7 +478,7 @@ class SpellDictionary private constructor(
         }
 
         /** `ICONV` e simili: a ogni posto, la regola più lunga che ci sta. */
-        internal fun convert(word: String, table: List<Pair<String, String>>): String {
+        fun convert(word: String, table: List<Pair<String, String>>): String {
             if (table.none { word.contains(it.first) }) return word
             val sb = StringBuilder()
             var i = 0
@@ -501,9 +501,9 @@ class SpellDictionary private constructor(
 }
 
 /** Nessuna bandierina: [has] con questa dà sempre falso. */
-internal const val NONE = '\u0000'
+const val NONE = '\u0000'
 
-internal fun has(flags: String, flag: Char) = flag != NONE && flags.indexOf(flag) >= 0
+fun has(flags: String, flag: Char) = flag != NONE && flags.indexOf(flag) >= 0
 
 /**
  * Una regola di prefisso o di desinenza: togli [strip], aggiungi
@@ -511,7 +511,7 @@ internal fun has(flags: String, flag: Char) = flag != NONE && flags.indexOf(flag
  * che la forma ottenuta si porta dietro: un'altra desinenza permessa,
  * `ONLYINCOMPOUND`, la parte di composto che può fare.
  */
-internal class Affix(
+class Affix(
     val flag: Char,
     val cross: Boolean,
     val strip: String,
@@ -525,7 +525,7 @@ internal class Affix(
  * una lettera fra quelle, una non fra quelle, o `.` qualunque. Per una
  * desinenza si guarda la fine della radice, per un prefisso l'inizio.
  */
-internal class AffixCondition private constructor(
+class AffixCondition private constructor(
     private val sets: Array<String?>,
     private val negated: BooleanArray
 ) {
@@ -581,12 +581,12 @@ internal class AffixCondition private constructor(
 }
 
 /** Una riga `REP`: [from] si sostituisce con [to]; `^` e `$` la legano all'inizio o alla fine della parola. */
-internal class RepRule(val from: String, val to: String, val atStart: Boolean, val atEnd: Boolean)
+class RepRule(val from: String, val to: String, val atStart: Boolean, val atEnd: Boolean)
 
-internal enum class FlagMode { CHAR, LONG, NUM, UTF8 }
+enum class FlagMode { CHAR, LONG, NUM, UTF8 }
 
 /** Tutto quello che dice il file `.aff`. */
-internal class AffixData {
+class AffixData {
     var flagMode = FlagMode.CHAR
     private val flagIds = HashMap<String, Char>()
 

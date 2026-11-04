@@ -31,7 +31,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalTextToolbar
 import androidx.compose.ui.platform.TextToolbar
 import androidx.compose.ui.platform.TextToolbarStatus
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
@@ -43,6 +42,8 @@ import androidx.compose.ui.window.PopupProperties
 import com.gabriele.notionlocal.ui.theme.NotionGray900
 import com.gabriele.notionlocal.ui.theme.NotionWhite
 import kotlin.math.roundToInt
+import com.gabriele.notionlocal.platform.EditCommand
+import com.gabriele.notionlocal.platform.editCommandLabel
 
 /**
  * **Le finestrelle che salgono dal basso, con la barrettina Copy / Cut /
@@ -183,10 +184,10 @@ private fun TextToolbarHost(toolbar: PopupTextToolbar) {
             ) {
                 Row(modifier = Modifier.padding(horizontal = 6.dp)) {
                     // Nell'ordine della barrettina del telefono.
-                    request.onCut?.let { ToolbarItem(stringResource(android.R.string.cut), it, onDone) }
-                    request.onCopy?.let { ToolbarItem(stringResource(android.R.string.copy), it, onDone) }
-                    request.onPaste?.let { ToolbarItem(stringResource(android.R.string.paste), it, onDone) }
-                    request.onSelectAll?.let { ToolbarItem(stringResource(android.R.string.selectAll), it, onDone) }
+                    request.onCut?.let { ToolbarItem(editCommandLabel(EditCommand.CUT), it, onDone) }
+                    request.onCopy?.let { ToolbarItem(editCommandLabel(EditCommand.COPY), it, onDone) }
+                    request.onPaste?.let { ToolbarItem(editCommandLabel(EditCommand.PASTE), it, onDone) }
+                    request.onSelectAll?.let { ToolbarItem(editCommandLabel(EditCommand.SELECT_ALL), it, onDone) }
                 }
             }
         }

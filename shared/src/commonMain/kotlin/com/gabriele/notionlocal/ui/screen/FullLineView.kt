@@ -79,7 +79,7 @@ import kotlin.math.roundToInt
  *  - sotto, mentre si scorre di lato, una barretta dice dove si è.
  */
 @Stable
-internal class SideScroll(
+class SideScroll(
     private val listState: LazyListState,
     /** Quanto si è scorso di lato, in px: tenuto dalla pagina, sopravvive a un giro altrove. */
     private val saved: MutableFloatState
@@ -92,7 +92,7 @@ internal class SideScroll(
         }
 
     /** Le corsie della pagina: vedi [rememberSideLane]. */
-    internal val lanes = mutableStateListOf<SideLane>()
+    val lanes = mutableStateListOf<SideLane>()
 
     /**
      * Fin dove si può scorrere di lato adesso: quanto la riga più lunga fra
@@ -150,10 +150,10 @@ internal class SideScroll(
 }
 
 /** La pagina con le righe intere, o null se in Settings "Full line view" è spento. */
-internal val LocalSideScroll = staticCompositionLocalOf<SideScroll?> { null }
+val LocalSideScroll = staticCompositionLocalOf<SideScroll?> { null }
 
 /** La voce della lista della pagina in cui sta un campo: serve a sapere se si vede. */
-internal val LocalSideItemKey = compositionLocalOf<Any?> { null }
+val LocalSideItemKey = compositionLocalOf<Any?> { null }
 
 /** L'aria dopo la fine di una riga, e dal bordo per il cursore che scrive. */
 private val SIDE_END_ROOM = 32.dp
@@ -170,7 +170,7 @@ private const val SIDE_INDICATOR_LINGER_MS = 900L
  * in una fascia d'altezza ([rightEdge]), altrimenti conta tutta la larghezza.
  */
 @Stable
-internal class SideLane(val scroll: SideScroll, val itemKey: Any, private val endRoom: Float) {
+class SideLane(val scroll: SideScroll, val itemKey: Any, private val endRoom: Float) {
     /** Lo spazio della corsia sullo schermo, in px. */
     var viewport by mutableIntStateOf(0)
 
@@ -203,7 +203,7 @@ internal class SideLane(val scroll: SideScroll, val itemKey: Any, private val en
  * spazio (tutto il campo, che chiede il fuoco) non le sposta: altrimenti
  * toccando una riga lunga a metà si tornerebbe al suo inizio.
  */
-internal class SideResponder(private val lane: SideLane, private val margin: Float) : BringIntoViewResponder {
+class SideResponder(private val lane: SideLane, private val margin: Float) : BringIntoViewResponder {
     override fun calculateRectForParent(localRect: Rect): Rect = localRect.translate(-shiftFor(localRect), 0f)
 
     override suspend fun bringChildIntoView(localRect: () -> Rect?) {
@@ -228,7 +228,7 @@ internal class SideResponder(private val lane: SideLane, private val margin: Flo
 
 /** La corsia di un campo di testo della pagina, o null se non scorre di lato. */
 @Composable
-internal fun rememberSideLane(): SideLane? {
+fun rememberSideLane(): SideLane? {
     val scroll = LocalSideScroll.current ?: return null
     val itemKey = LocalSideItemKey.current ?: return null
     val endRoom = with(LocalDensity.current) { SIDE_END_ROOM.toPx() }
@@ -246,7 +246,7 @@ internal fun rememberSideLane(): SideLane? {
  * bordi. Lo spostamento si legge solo al momento di posare il campo: scorrere
  * di lato non rifà né il testo né la sua misura.
  */
-internal fun Modifier.sideLane(lane: SideLane?): Modifier = if (lane == null) {
+fun Modifier.sideLane(lane: SideLane?): Modifier = if (lane == null) {
     this
 } else {
     this
@@ -268,7 +268,7 @@ internal fun Modifier.sideLane(lane: SideLane?): Modifier = if (lane == null) {
  * riquadro che non passa la larghezza minima ai figli, così si tocca anche
  * accanto alle righe corte, come prima.
  */
-internal fun Modifier.atLeastLane(lane: SideLane?, insetPx: Int): Modifier = if (lane == null) {
+fun Modifier.atLeastLane(lane: SideLane?, insetPx: Int): Modifier = if (lane == null) {
     this
 } else {
     layout { measurable, constraints ->
@@ -279,7 +279,7 @@ internal fun Modifier.atLeastLane(lane: SideLane?, insetPx: Int): Modifier = if 
 }
 
 /** Il dito che scorre di lato sulla pagina; spento mentre si disegna. */
-internal fun Modifier.sideScrollGestures(scroll: SideScroll?, enabled: Boolean): Modifier = if (scroll == null) {
+fun Modifier.sideScrollGestures(scroll: SideScroll?, enabled: Boolean): Modifier = if (scroll == null) {
     this
 } else {
     scrollable(scroll.scrollableState, Orientation.Horizontal, enabled = enabled, reverseDirection = true)
@@ -290,7 +290,7 @@ internal fun Modifier.sideScrollGestures(scroll: SideScroll?, enabled: Boolean):
  * avanza, arrivate in fondo, non passa alla pagina. Una tabella arrivata al
  * bordo non si trascina dietro il testo intorno.
  */
-internal object KeepSidewaysInside : NestedScrollConnection {
+object KeepSidewaysInside : NestedScrollConnection {
     override fun onPostScroll(consumed: Offset, available: Offset, source: NestedScrollSource): Offset =
         Offset(available.x, 0f)
 
@@ -304,7 +304,7 @@ internal object KeepSidewaysInside : NestedScrollConnection {
  * all'inizio delle righe, così i tratti nuovi si attaccano al testo dov'è.
  */
 @Composable
-internal fun SideScrollEffects(scroll: SideScroll, drawing: Boolean) {
+fun SideScrollEffects(scroll: SideScroll, drawing: Boolean) {
     LaunchedEffect(scroll, drawing) {
         if (drawing) {
             if (scroll.offset > 0f) scroll.settleTo(0f)
@@ -324,7 +324,7 @@ internal fun SideScrollEffects(scroll: SideScroll, drawing: Boolean) {
  * telefono il 19/10/2026).
  */
 @Composable
-internal fun SideScrollIndicator(scroll: SideScroll, modifier: Modifier = Modifier) {
+fun SideScrollIndicator(scroll: SideScroll, modifier: Modifier = Modifier) {
     var moving by remember(scroll) { mutableStateOf(false) }
     LaunchedEffect(scroll) {
         snapshotFlow { scroll.offset }.drop(1).collectLatest {

@@ -84,17 +84,7 @@ object BlockFiles {
      * 18/10/2026 l'utente ha chiesto il browser vero: «vorrei che me lo
      * facesse aprire nel browser di default che nel mio caso è Firefox».
      */
-    fun openUrl(context: Context, url: String): Boolean {
-        val uri = runCatching { Uri.parse(url) }.getOrNull() ?: return false
-        val intent = Intent(Intent.ACTION_VIEW, uri)
-        if (uri.scheme?.lowercase() in setOf("http", "https")) {
-            intent.addCategory(Intent.CATEGORY_BROWSABLE)
-        }
-        return runCatching {
-            context.startActivity(intent.withTaskFor(context))
-            true
-        }.getOrDefault(false)
-    }
+    fun openUrl(context: Context, url: String): Boolean = com.gabriele.notionlocal.platform.openUrl(context, url)
 
     /** Dall'attività di notE l'app aperta resta nella sua pila; senza un'attività Android ne vuole una nuova. */
     private fun Intent.withTaskFor(context: Context): Intent =

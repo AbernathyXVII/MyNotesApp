@@ -193,7 +193,7 @@ private fun buttonMarkdown(button: ExportButton): String =
  * tutte le app. Gli spazi stanno sempre fuori dai segni, perché "** a**" in
  * Markdown non è grassetto.
  */
-internal fun inlineMarkdown(spans: List<RichTextSpan>): String {
+fun inlineMarkdown(spans: List<RichTextSpan>): String {
     val out = StringBuilder()
     val open = ArrayList<Mark>()
     var pendingSpace = ""
@@ -239,7 +239,7 @@ private fun marksOf(span: RichTextSpan): List<Mark> = buildList {
 private val MARKDOWN_SPECIAL = Regex("""([\\`*_\[\]<~])""")
 
 /** Il testo con una barra davanti ai caratteri che in Markdown sarebbero segni. */
-internal fun escapeMarkdown(text: String): String = text.replace(MARKDOWN_SPECIAL, """\\$1""")
+fun escapeMarkdown(text: String): String = text.replace(MARKDOWN_SPECIAL, """\\$1""")
 
 private val LINE_START_MARK = Regex("""^([#>+=-]|\d+(?=[.)](\s|$)))""")
 

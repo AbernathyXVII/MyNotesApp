@@ -36,23 +36,23 @@ import com.gabriele.notionlocal.ui.i18n.Strings
 import kotlin.math.abs
 
 /** La forma di un'immagine di cui il file non dice le misure: 16:9. */
-internal const val DEFAULT_IMAGE_ASPECT = 0.5625f
+const val DEFAULT_IMAGE_ASPECT = 0.5625f
 
 /** Più piccolo di così un lato del riquadro non va, con "Full resize". */
-internal val MIN_FRAME_SIDE = 48.dp
+val MIN_FRAME_SIDE = 48.dp
 
 /**
  * **Il riquadro di un'immagine nella pagina** (dal 20/10/2026), in pixel: da
  * dove comincia da sinistra, quanto è largo e quanto è alto. L'immagine lo
  * riempie.
  */
-internal data class ImageFrame(val left: Float, val width: Float, val height: Float)
+data class ImageFrame(val left: Float, val width: Float, val height: Float)
 
 /** Come ridimensionare un'immagine, scelto dal suo menu: le maniglie non si vedono finché non lo si chiede. */
-internal enum class ImageResizeMode { NONE, RESIZE, FULL }
+enum class ImageResizeMode { NONE, RESIZE, FULL }
 
 /** Il riquadro com'è salvato nel blocco, su una pagina larga `pageWidth`; `natural` è l'altezza dell'immagine diviso la larghezza. */
-internal fun frameOf(attrs: BlockAttrs, pageWidth: Float, natural: Float): ImageFrame {
+fun frameOf(attrs: BlockAttrs, pageWidth: Float, natural: Float): ImageFrame {
     val width = (attrs.width ?: 1f).coerceIn(0.01f, 1f) * pageWidth
     val left = attrs.left?.let { (it * pageWidth).coerceIn(0f, pageWidth - width) } ?: ((pageWidth - width) / 2f)
     return ImageFrame(left, width, width * (attrs.aspect ?: natural))
@@ -63,7 +63,7 @@ internal fun frameOf(attrs: BlockAttrs, pageWidth: Float, natural: Float): Image
  * spostamento del dito (l'immagine tiene il suo centro, come prima) e
  * l'altezza la segue, con la forma che ha. `side` -1 sinistra, 1 destra.
  */
-internal fun ImageFrame.widened(side: Int, dx: Float, pageWidth: Float, minWidth: Float): ImageFrame {
+fun ImageFrame.widened(side: Int, dx: Float, pageWidth: Float, minWidth: Float): ImageFrame {
     val center = left + width / 2f
     val newWidth = (width + 2f * dx * side).coerceIn(minWidth.coerceAtMost(pageWidth), pageWidth)
     val newLeft = (center - newWidth / 2f).coerceIn(0f, pageWidth - newWidth)
@@ -76,7 +76,7 @@ internal fun ImageFrame.widened(side: Int, dx: Float, pageWidth: Float, minWidth
  * quello in alto, 1 quello in basso, 0 nessuno (gli angoli ne muovono due).
  * L'immagine non esce dalla pagina e non diventa più piccola di `min`.
  */
-internal fun ImageFrame.dragged(edgeX: Int, edgeY: Int, dx: Float, dy: Float, pageWidth: Float, min: Float): ImageFrame {
+fun ImageFrame.dragged(edgeX: Int, edgeY: Int, dx: Float, dy: Float, pageWidth: Float, min: Float): ImageFrame {
     var newLeft = left
     var newWidth = width
     var newHeight = height
@@ -99,7 +99,7 @@ internal fun ImageFrame.dragged(edgeX: Int, edgeY: Int, dx: Float, dy: Float, pa
  * (a tutta pagina non serve scriverla), dove comincia (al centro non serve) e,
  * dopo "Full resize", la forma. "Resize" la forma la lascia com'era.
  */
-internal fun BlockAttrs.withFrame(frame: ImageFrame, pageWidth: Float, full: Boolean): BlockAttrs {
+fun BlockAttrs.withFrame(frame: ImageFrame, pageWidth: Float, full: Boolean): BlockAttrs {
     val width = (frame.width / pageWidth).coerceIn(0.01f, 1f)
     val centered = abs(frame.left - (pageWidth - frame.width) / 2f) < 1f
     return copy(
@@ -110,15 +110,15 @@ internal fun BlockAttrs.withFrame(frame: ImageFrame, pageWidth: Float, full: Boo
 }
 
 /** "Original size": la larghezza della pagina, al centro, con la sua forma. */
-internal fun BlockAttrs.withOriginalSize(): BlockAttrs = copy(width = null, left = null, aspect = null)
+fun BlockAttrs.withOriginalSize(): BlockAttrs = copy(width = null, left = null, aspect = null)
 
 /** Com'è fatta una maniglia: barretta in piedi (lati), coricata (sopra e sotto) o quadratino (angoli). */
-internal enum class HandleShape { VERTICAL, HORIZONTAL, CORNER }
+enum class HandleShape { VERTICAL, HORIZONTAL, CORNER }
 
 /** Una maniglia di "Full resize": dove sta sul riquadro e quali bordi muove. */
-internal class FrameHandle(val alignment: Alignment, val shape: HandleShape, val edgeX: Int, val edgeY: Int)
+class FrameHandle(val alignment: Alignment, val shape: HandleShape, val edgeX: Int, val edgeY: Int)
 
-internal val FULL_HANDLES = listOf(
+val FULL_HANDLES = listOf(
     FrameHandle(Alignment.CenterStart, HandleShape.VERTICAL, -1, 0),
     FrameHandle(Alignment.CenterEnd, HandleShape.VERTICAL, 1, 0),
     FrameHandle(Alignment.TopCenter, HandleShape.HORIZONTAL, 0, -1),
@@ -135,7 +135,7 @@ internal val FULL_HANDLES = listOf(
  * dito, `onDragEnd` quando lo si alza (lì si salva).
  */
 @Composable
-internal fun ResizeHandle(shape: HandleShape, modifier: Modifier, onDrag: (Offset) -> Unit, onDragEnd: () -> Unit) {
+fun ResizeHandle(shape: HandleShape, modifier: Modifier, onDrag: (Offset) -> Unit, onDragEnd: () -> Unit) {
     val latestDrag by rememberUpdatedState(onDrag)
     val latestEnd by rememberUpdatedState(onDragEnd)
     val touch = when (shape) {
@@ -171,7 +171,7 @@ internal fun ResizeHandle(shape: HandleShape, modifier: Modifier, onDrag: (Offse
 
 /** Sopra l'immagine mentre la si ridimensiona: tornare alla sua misura, e finire. */
 @Composable
-internal fun ResizeToolbar(onOriginalSize: () -> Unit, onDone: () -> Unit, modifier: Modifier = Modifier) {
+fun ResizeToolbar(onOriginalSize: () -> Unit, onDone: () -> Unit, modifier: Modifier = Modifier) {
     Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         ToolbarPill(Icons.Filled.RestartAlt, BlockStrings.originalSize, onOriginalSize)
         ToolbarPill(Icons.Filled.Check, Strings.done, onDone)

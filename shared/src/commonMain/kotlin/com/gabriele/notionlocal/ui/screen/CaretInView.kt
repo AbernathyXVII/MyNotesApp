@@ -25,7 +25,7 @@ import androidx.compose.ui.geometry.Rect
  * Così la pagina si muove solo se il cursore finirebbe sotto la tastiera o
  * sotto i pulsanti in alto, e solo di quanto basta.
  */
-internal class CaretInView {
+class CaretInView {
     /**
      * Il cursore, coi margini sopra e sotto, nelle coordinate del campo (il
      * riquadro che porta [followCaretOnly], dopo i suoi margini); null se non
@@ -46,7 +46,7 @@ internal class CaretInView {
  * fuoco: il cursore. Vale per il campo qui dentro, che è il primo a poter
  * prendere il fuoco sotto questo riquadro.
  */
-internal fun Modifier.followCaretOnly(caret: CaretInView): Modifier =
+fun Modifier.followCaretOnly(caret: CaretInView): Modifier =
     this
         .bringIntoViewResponder(object : BringIntoViewResponder {
             // Chiunque chieda (il fuoco chiede tutto il campo), si porta in vista il cursore.

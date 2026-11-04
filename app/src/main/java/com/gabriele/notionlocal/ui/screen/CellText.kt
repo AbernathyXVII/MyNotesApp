@@ -1,10 +1,5 @@
 package com.gabriele.notionlocal.ui.screen
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
-import android.os.Build
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -45,7 +40,6 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.TextLayoutResult
@@ -58,13 +52,19 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
-import com.gabriele.notionlocal.data.BlockFiles
 import com.gabriele.notionlocal.data.entity.CellAlignment
 import com.gabriele.notionlocal.data.entity.DatabaseColumnEntity
 import com.gabriele.notionlocal.data.entity.DatabaseRowEntity
 import com.gabriele.notionlocal.data.entity.LinkLabel
 import com.gabriele.notionlocal.ui.i18n.DbStrings
 import com.gabriele.notionlocal.ui.theme.DarkSheet
+import com.gabriele.notionlocal.platform.LocalPlatformContext
+import com.gabriele.notionlocal.platform.PlatformContext
+import com.gabriele.notionlocal.platform.clipboardHasContent
+import com.gabriele.notionlocal.platform.clipboardText
+import com.gabriele.notionlocal.platform.copyPlainText
+import com.gabriele.notionlocal.platform.openUrl
+import com.gabriele.notionlocal.platform.showMessage
 
 /**
  * **"Wrap cells"** (dal 30/09/2026, nelle impostazioni di ogni tabella):
@@ -299,7 +299,7 @@ internal fun TextLikeCell(
             // scrive come prima.
             val link = isLink && localValue.isNotBlank()
             val locked = LocalDatabaseLocked.current
-            val context = LocalContext.current
+            val context = LocalPlatformContext.current
             val haptics = LocalHapticFeedback.current
             var linkMenu by remember(cellKey) { mutableStateOf(false) }
             var showAs by remember(cellKey) { mutableStateOf(false) }
@@ -434,30 +434,24 @@ internal fun TextLikeCell(
  * dice. Una pagina web si apre nel browser predefinito: vedi
  * `BlockFiles.openUrl`.
  */
-internal fun openLink(context: Context, raw: String) {
-    if (!BlockFiles.openUrl(context, linkUri(raw))) {
-        Toast.makeText(context, DbStrings.cantOpenLink, Toast.LENGTH_SHORT).show()
+fun openLink(context: PlatformContext, raw: String) {
+    if (!openUrl(context, linkUri(raw))) {
+        showMessage(context, DbStrings.cantOpenLink)
     }
 }
 
-/** Copia il link. Da Android 13 il "copiato" lo dice già il telefono: l'avviso dell'app solo prima. */
-internal fun copyLink(context: Context, raw: String) {
-    val clipboard = context.getSystemService(ClipboardManager::class.java) ?: return
-    clipboard.setPrimaryClip(ClipData.newPlainText(DbStrings.copyLink, raw.trim()))
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-        Toast.makeText(context, DbStrings.linkCopied, Toast.LENGTH_SHORT).show()
+/** Copia il link. Da Android 13 il "copiato" lo dice già il telefono: l'avviso dell'app solo prima (e sul PC). */
+fun copyLink(context: PlatformContext, raw: String) {
+    if (!copyPlainText(context, DbStrings.copyLink, raw.trim())) {
+        showMessage(context, DbStrings.linkCopied)
     }
 }
 
 /** C'è del testo da incollare: senza leggerlo, così il telefono non avvisa per niente. */
-internal fun hasClipText(context: Context): Boolean =
-    context.getSystemService(ClipboardManager::class.java)?.hasPrimaryClip() == true
+fun hasClipText(context: PlatformContext): Boolean = clipboardHasContent(context)
 
 /** Il testo copiato, su una riga sola e senza spazi ai lati; null se non c'è. */
-internal fun pastedLink(context: Context): String? {
-    val clip = context.getSystemService(ClipboardManager::class.java)?.primaryClip ?: return null
-    if (clip.itemCount == 0) return null
-    return clip.getItemAt(0).coerceToText(context)?.toString()
+fun pastedLink(context: PlatformContext): String? =
+    clipboardText(context)
         ?.replace("\n", " ")?.trim()
         ?.takeIf { it.isNotEmpty() }
-}
