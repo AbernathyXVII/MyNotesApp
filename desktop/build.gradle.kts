@@ -53,6 +53,9 @@ sourceSets.main {
     // Le Patch Notes e l'icona (la stessa del telefono, cartella `branding`).
     resources.srcDir(patchNotes)
     resources.srcDir(rootProject.file("branding"))
+    // I file che il telefono ha negli asset (le emoji del selettore, i
+    // dizionari…), gli stessi: vedi `readAppAsset` (dal 04/11/2026).
+    resources.srcDir(rootProject.file("app/src/main/assets"))
 }
 
 compose.desktop {

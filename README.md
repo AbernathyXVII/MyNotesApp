@@ -1151,6 +1151,36 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### ✏️ v0.153.9 — 04/11/2026 · 14:11 — La barra laterale coi widget, i quaderni, le icone e il blocco con password nel codice comune
+*(Claude Code sul PC; provata sul telefono; 1104 test passati)*
+
+- **[Progetto]** **I widget della barra laterale nel codice comune**, con
+  `WidgetStore`: salva con `SettingsStore` (sul telefono le stesse
+  preferenze "widgets" di sempre, sul PC il file `widgets.properties` nella
+  cartella dei dati). Le notifiche dei timer, l'avviso di fine e la sveglia
+  passano da `WidgetEffects`: sul telefono sono `TimerNotifications`,
+  `Notifier` e `NoteAlarms` come prima, sul PC per ora niente. Il suono
+  "una volta sola" di pomodori e notifiche è `RingtonePlayer`, sul telefono
+- **[Progetto]** **Altre azioni di ogni sistema**: la tastiera aperta e dove
+  sta arrivando (`isKeyboardVisible`, `keyboardTargetInsets`), la finestra
+  dei selettori di data e ora in fondo allo schermo (`PlaceDialogAtBottom`),
+  la cartella della cache e le immagini dai byte (`cacheDirOf`,
+  `decodeImageBitmap`, per gli stemmi), i file che viaggiano con l'app
+  (`readAppAsset`: sul PC gli asset del telefono sono fra le risorse del
+  programma) e le emoji che il sistema sa disegnare, la scelta dei suoni del
+  pomodoro (`rememberSoundPicker`), i suoni del contatore e l'impronta
+  (`Biometrics`: sul PC c'è solo la password). L'immagine come icona di una
+  pagina o di un quaderno si sceglie con `rememberImagePicker`
+- **[Progetto]** **44 file in più nel codice comune**: la barra laterale con
+  tutti i widget, i quaderni, il selettore delle icone e le emoji, il blocco
+  con password, i selettori di data e ora, il correttore, molte celle e
+  menu dei database. Adesso sono 247 file comuni (65.000 righe) e 70 solo
+  del telefono (36.000), quasi tutti dell'editor e del database. Tolti
+  dall'editor e dal database gli import rimasti senza uso
+- **[Progetto]** `DesktopWidgetsTest`: sul PC un contatore si salva nel file dei
+  widget, le emoji del selettore si leggono dalle risorse del programma, e
+  la cartella della cache e le immagini dai byte funzionano
+
 ### ✏️ v0.153.8 — 04/11/2026 · 13:26 — Altri nodi sciolti verso l'editor: "indietro", foto, esportazione e notifiche per piattaforma
 *(Claude Code sul PC; provata sul telefono; 1101 test passati)*
 

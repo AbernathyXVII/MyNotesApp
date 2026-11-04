@@ -1,8 +1,5 @@
 package com.gabriele.notionlocal.ui.screen
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -71,7 +68,6 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -114,9 +110,8 @@ import com.gabriele.notionlocal.ui.theme.NotionWhite
 import com.gabriele.notionlocal.viewmodel.NotebookSectionViewModel
 import com.gabriele.notionlocal.viewmodel.NotebooksViewModel
 import com.gabriele.notionlocal.viewmodel.ViewModelFactory
-import kotlinx.coroutines.launch
-import com.gabriele.notionlocal.data.saveFromGallery
 import com.gabriele.notionlocal.platform.LocalPlatformContext
+import com.gabriele.notionlocal.platform.rememberImagePicker
 
 // ---------------------------------------------------------------------------
 // **I quaderni** (dal 26/09/2026), come quelli di OneNote: quaderni, gruppi
@@ -944,24 +939,23 @@ private fun NotebookIconSheet(
     onPicked: (String?) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val scope = rememberCoroutineScope()
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
-    val gallery = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri == null) return@rememberLauncherForActivityResult
-        busy = true
-        error = null
-        scope.launch {
-            val result = store.saveFromGallery(uri)
-            busy = false
-            result.fold(
-                onSuccess = {
-                    onPicked(it)
-                    onDismiss()
-                },
-                onFailure = { error = EditorStrings.imageReadFailed }
-            )
+    val pickImage = rememberImagePicker(
+        store = store,
+        onStart = {
+            busy = true
+            error = null
         }
+    ) { result ->
+        busy = false
+        result.fold(
+            onSuccess = {
+                onPicked(it)
+                onDismiss()
+            },
+            onFailure = { error = EditorStrings.imageReadFailed }
+        )
     }
     NoteBottomSheet(
         onDismissRequest = onDismiss,
@@ -984,7 +978,7 @@ private fun NotebookIconSheet(
                     Icons.Filled.Image,
                     EditorStrings.upload,
                     enabled = !busy,
-                    onClick = { gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
+                    onClick = { pickImage() }
                 )
                 if (notebook.iconImage != null) {
                     HorizontalDivider()

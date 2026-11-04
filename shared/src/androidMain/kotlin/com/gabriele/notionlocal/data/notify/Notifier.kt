@@ -29,7 +29,7 @@ import com.gabriele.notionlocal.ui.i18n.WidgetStrings
  * del pomodoro.
  *
  * I canali **non hanno suono**: il suono lo fa l'app, una volta sola, con
- * `WidgetStore.playOnce` — quello scelto nelle impostazioni ("Notification
+ * `RingtonePlayer.playOnce` — quello scelto nelle impostazioni ("Notification
  * sound"), o quello del pomodoro che è finito. Così cambiare il suono
  * nelle impostazioni vale subito, e le suonerie Samsung che si ripetono
  * all'infinito (vedi `playOnce`) suonano una volta. Vibrano, quello sì.
@@ -248,6 +248,6 @@ object Notifier {
     private fun ring(context: Context, pomodoroSound: String?) {
         val uri = (pomodoroSound ?: AppSettings.notificationSoundUri)?.let(Uri::parse)
             ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-        WidgetStore.playOnce(context, uri)
+        RingtonePlayer.playOnce(context, uri)
     }
 }

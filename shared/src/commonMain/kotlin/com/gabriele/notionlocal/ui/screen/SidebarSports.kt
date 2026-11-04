@@ -112,6 +112,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import com.gabriele.notionlocal.platform.LocalPlatformContext
+import com.gabriele.notionlocal.platform.cacheDirOf
 
 // ---------------------------------------------------------------------------
 // **Il widget dello sport** (dal 17/10/2026, chiesto dall'utente). In alto la
@@ -461,7 +462,7 @@ private fun CompetitionRounds(
     val numbered = hasMatchdayNumbers(view.rounds, view.standings, sport)
     // Gli stemmi di tutte le squadre (la classifica) e della giornata, in
     // anticipo: scorrendo, o aprendo la classifica, ci sono già.
-    val cacheDir = LocalPlatformContext.current.cacheDir
+    val cacheDir = cacheDirOf(LocalPlatformContext.current)
     LaunchedEffect(view.key, view.standings, view.liveMatches) {
         TeamLogos.prefetch(
             cacheDir,

@@ -1,16 +1,11 @@
 package com.gabriele.notionlocal.data.widgets
 
-import android.content.Context
-import android.content.SharedPreferences
-import android.media.Ringtone
-import android.media.RingtoneManager
-import android.net.Uri
-import android.os.Build
 import androidx.compose.runtime.mutableStateOf
-import com.gabriele.notionlocal.data.notify.NoteAlarms
-import com.gabriele.notionlocal.data.notify.Notifier
-import com.gabriele.notionlocal.data.notify.TimerNotifications
+import com.gabriele.notionlocal.data.applicationContextOf
 import com.gabriele.notionlocal.data.settings.AppSettings
+import com.gabriele.notionlocal.data.settings.SettingsStore
+import com.gabriele.notionlocal.data.settings.openSettingsStore
+import com.gabriele.notionlocal.platform.PlatformContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -40,12 +35,18 @@ import java.time.ZoneId
  * tempo che scorre: a ogni modifica `update` passa il prima e il dopo a
  * `TimerNotifications`, che mette, cambia e toglie le loro notifiche.
  *
+ * **Nel codice comune dal 04/11/2026**: le preferenze sono un
+ * `SettingsStore` (sul telefono le stesse `SharedPreferences` "widgets"), e
+ * notifiche e sveglia passano da `WidgetEffects` (sul telefono
+ * `TimerNotifications`, `Notifier` e `NoteAlarms`, come prima; sul PC per ora
+ * niente). Il suono "una volta sola" è `RingtonePlayer`, sul telefono.
+ *
  * `init` va chiamato all'avvio, dopo `AppSettings.init`.
  */
 object WidgetStore {
 
-    private lateinit var prefs: SharedPreferences
-    private lateinit var appContext: Context
+    private lateinit var prefs: SettingsStore
+    private lateinit var appContext: PlatformContext
 
     private val json = Json {
         ignoreUnknownKeys = true
@@ -60,7 +61,7 @@ object WidgetStore {
     private var alarm: Job? = null
     private var lastSystemAlarmEnd: Long? = null
 
-    fun init(context: Context) {
+    fun init(context: PlatformContext) {
         if (::prefs.isInitialized) return
         load(context)
         // Le fasi finite mentre l'app era chiusa: si recuperano in
@@ -76,12 +77,12 @@ object WidgetStore {
      * quella appena tolta).
      */
     fun restoreTimerNotifications() {
-        if (::appContext.isInitialized) TimerNotifications.restore(appContext, stateHolder.value)
+        if (::appContext.isInitialized) restoreTimerNotifications(appContext, stateHolder.value)
     }
 
-    private fun load(context: Context) {
-        appContext = context.applicationContext
-        prefs = appContext.getSharedPreferences("widgets", Context.MODE_PRIVATE)
+    private fun load(context: PlatformContext) {
+        appContext = applicationContextOf(context)
+        prefs = openSettingsStore(appContext, "widgets")
         stateHolder.value = prefs.getString(KEY_STATE, null)
             ?.let { runCatching { json.decodeFromString<WidgetsState>(it) }.getOrNull() }
             ?: WidgetsState()
@@ -97,7 +98,7 @@ object WidgetStore {
      * Se l'app era aperta e l'attesa interna è arrivata prima, qui non c'è
      * più niente da fare: la stessa fine non suona due volte.
      */
-    fun onAlarm(context: Context) {
+    fun onAlarm(context: PlatformContext) {
         if (!::prefs.isInitialized) load(context)
         advancePomodoros(ringIfRecent = true, window = ALARM_RING_WINDOW_MS)
     }
@@ -121,7 +122,7 @@ object WidgetStore {
             val saved = prefs
             saver.execute { saved.edit().putString(KEY_STATE, json.encodeToString(next)).apply() }
         }
-        if (::appContext.isInitialized) TimerNotifications.sync(appContext, previous, next)
+        if (::appContext.isInitialized) syncTimerNotifications(appContext, previous, next)
         scheduleAlarm()
     }
 
@@ -455,7 +456,7 @@ object WidgetStore {
             })
         }
         if (events.isNotEmpty() && ringIfRecent && ::appContext.isInitialized) {
-            Notifier.postWidgetEvents(appContext, events, sound)
+            postWidgetEvents(appContext, events, sound)
         }
         scheduleAlarm()
     }
@@ -468,41 +469,12 @@ object WidgetStore {
         // se la prima fine è cambiata, non a ogni tocco del contatore.
         if (next != lastSystemAlarmEnd) {
             lastSystemAlarmEnd = next
-            NoteAlarms.reschedule()
+            rescheduleWidgetAlarm()
         }
         if (next == null) return
         alarm = scope.launch {
             delay((next - System.currentTimeMillis()).coerceAtLeast(0))
             advancePomodoros(ringIfRecent = true)
-        }
-    }
-
-    /** Il suono che sta suonando adesso, per fermarlo: vedi `playOnce`. */
-    private var playing: Ringtone? = null
-    private var stopPlaying: Job? = null
-
-    /**
-     * Suona un suono **una volta sola, e al massimo per `MAX_SOUND_MS`**.
-     *
-     * Le suonerie del telefono (quelle "Galaxy" di Samsung, per esempio)
-     * sono fatte per ripetersi finché non si risponde: il file stesso lo
-     * chiede (l'etichetta `ANDROID_LOOP`), e suonate come un avviso non
-     * finivano più — trovato sul telefono il 25/09/2026, scelta "Asteroid"
-     * per il pomodoro. Si chiede di non ripetere (da Android 9), e in ogni
-     * caso lo si ferma dopo qualche secondo: vale anche per un brano lungo
-     * scelto come suono delle notifiche. Un suono nuovo ferma il vecchio.
-     */
-    fun playOnce(context: Context, uri: Uri) {
-        stopPlaying?.cancel()
-        playing?.stop()
-        val ringtone = runCatching { RingtoneManager.getRingtone(context, uri) }.getOrNull() ?: return
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) ringtone.isLooping = false
-        runCatching { ringtone.play() }
-        playing = ringtone
-        stopPlaying = scope.launch {
-            delay(MAX_SOUND_MS)
-            ringtone.stop()
-            if (playing === ringtone) playing = null
         }
     }
 
@@ -512,7 +484,6 @@ object WidgetStore {
     private const val KEY_STATE = "state"
     private const val RING_WINDOW_MS = 5_000L
     private const val ALARM_RING_WINDOW_MS = 60_000L
-    private const val MAX_SOUND_MS = 8_000L
     const val MAX_POMODORO_MINUTES = 180
 }
 

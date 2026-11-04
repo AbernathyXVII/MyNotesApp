@@ -108,6 +108,7 @@ import androidx.compose.material.icons.filled.LinkOff
 import com.gabriele.notionlocal.ui.i18n.SyncStrings
 import com.gabriele.notionlocal.platform.showMessage
 import com.gabriele.notionlocal.platform.LocalPlatformContext
+import com.gabriele.notionlocal.data.applicationContextOf
 
 /**
  * **Il menu di un blocco**, come quello che su Notion si apre dai sei
@@ -592,7 +593,7 @@ fun BlockActionsHost(
 
         BlockMenuStep.MOVE_BLOCK -> {
             // "Move to" di un'immagine (dal 06/10/2026): in fondo alla pagina scelta.
-            val appContext = context.applicationContext
+            val appContext = applicationContextOf(context)
             DestinationPickerSheet(
                 factory = factory,
                 title = Strings.moveTo,
@@ -615,7 +616,7 @@ fun BlockActionsHost(
 
         BlockMenuStep.LINK_BUTTON -> {
             // "Link in another page" (dal 27/10/2026): la copia collegata va in fondo alla pagina scelta.
-            val appContext = context.applicationContext
+            val appContext = applicationContextOf(context)
             DestinationPickerSheet(
                 factory = factory,
                 title = ButtonStrings.linkInAnotherPage,
@@ -638,7 +639,7 @@ fun BlockActionsHost(
 
         BlockMenuStep.SYNC_TO_PAGE -> {
             // "Sync to another page" (dal 03/11/2026): la copia va in fondo alla pagina scelta.
-            val appContext = context.applicationContext
+            val appContext = applicationContextOf(context)
             DestinationPickerSheet(
                 factory = factory,
                 title = SyncStrings.syncToPage,

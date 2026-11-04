@@ -6,9 +6,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -53,6 +51,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlin.math.roundToInt
+import com.gabriele.notionlocal.platform.isKeyboardVisible
 
 /**
  * **Il correttore nelle pagine** (dal 08/10/2026), come quello di
@@ -284,7 +283,7 @@ fun ProofingMenu(
     // **Compatto**, perché con la tastiera aperta deve stare sopra o sotto
     // la parola senza coprirla: righe più basse di quelle di serie, e
     // quattro parole invece di cinque finché la tastiera c'è.
-    val shown = if (WindowInsets.isImeVisible) 4 else 5
+    val shown = if (isKeyboardVisible()) 4 else 5
     val row = Modifier.height(MENU_ROW_HEIGHT)
     // Il menu non prende il fuoco, quindi "Indietro" arriverebbe alla
     // pagina: lo chiude, invece (dopo la tastiera, che se ne va per prima).

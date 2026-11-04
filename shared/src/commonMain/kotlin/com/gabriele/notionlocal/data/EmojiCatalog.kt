@@ -1,8 +1,9 @@
 package com.gabriele.notionlocal.data
 
-import android.content.Context
-import android.graphics.Paint
 import com.gabriele.notionlocal.data.entity.BlockAttrs
+import com.gabriele.notionlocal.platform.PlatformContext
+import com.gabriele.notionlocal.platform.canDrawEmoji
+import com.gabriele.notionlocal.platform.readAppAsset
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -154,17 +155,12 @@ object EmojiCatalogs {
 
     /** Se il telefono sa disegnare un'emoji in un carattere solo. Si cambia nei test. */
     @Volatile
-    var glyphCheck: (String) -> Boolean = { emoji -> paint.hasGlyph(emoji) }
+    var glyphCheck: (String) -> Boolean = { emoji -> canDrawEmoji(emoji) }
 
-    private val paint by lazy { Paint() }
-
-    suspend fun load(context: Context): EmojiCatalog = mutex.withLock {
+    suspend fun load(context: PlatformContext): EmojiCatalog = mutex.withLock {
         cached?.let { return it }
         val catalog = withContext(Dispatchers.IO) {
-            val assets = context.applicationContext.assets
-            fun read(name: String): String? = runCatching {
-                assets.open("emoji/$name").bufferedReader(Charsets.UTF_8).use { it.readText() }
-            }.getOrNull()
+            fun read(name: String): String? = readAppAsset(context, "emoji/$name")
             val structure = read("emoji.txt").orEmpty()
             val names = LANGUAGES.flatMap { language -> read("names_$language.txt")?.lines().orEmpty() }
             EmojiCatalog.parse(structure, names, glyphCheck)
@@ -186,7 +182,7 @@ object IconLibrary {
      * più recenti prima, senza doppioni. Se non si riesce a leggerle la
      * sezione resta vuota: il resto del selettore funziona lo stesso.
      */
-    suspend fun customIcons(context: Context, store: PageImageStore): List<String> = withContext(Dispatchers.IO) {
+    suspend fun customIcons(context: PlatformContext, store: PageImageStore): List<String> = withContext(Dispatchers.IO) {
         runCatching {
             val db = AppDatabase.getInstance(context)
             val callouts = db.blockDao().calloutAttrs().mapNotNull { BlockAttrs.parse(it).iconImage }

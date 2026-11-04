@@ -45,6 +45,7 @@ import com.gabriele.notionlocal.ui.theme.NotionGray400
 import com.gabriele.notionlocal.ui.theme.NotionWhite
 import com.gabriele.notionlocal.platform.showMessage
 import com.gabriele.notionlocal.platform.LocalPlatformContext
+import com.gabriele.notionlocal.data.notify.RingtonePlayer
 
 /** Quale finestra è aperta sopra le scelte delle notifiche. */
 private enum class NotificationsDialog { SOUND, PRIORITY, MUTE_FOR }
@@ -208,7 +209,7 @@ private fun priorityDetail(priority: NotificationPriority) = when (priority) {
  *
  * Una suoneria è fatta per ripetersi finché non si risponde: la si suona
  * una volta sola e per pochi secondi, come ogni suono dell'app (vedi
- * `WidgetStore.playOnce`).
+ * `RingtonePlayer.playOnce`).
  */
 @Composable
 fun NotificationSoundDialog(onDismiss: () -> Unit) {
@@ -272,7 +273,7 @@ fun NotificationSoundDialog(onDismiss: () -> Unit) {
                         ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
                     // Una volta sola e per pochi secondi: un file scelto qui
                     // può essere una suoneria che si ripete all'infinito.
-                    WidgetStore.playOnce(context, uri)
+                    RingtonePlayer.playOnce(context, uri)
                 }
             }
         },

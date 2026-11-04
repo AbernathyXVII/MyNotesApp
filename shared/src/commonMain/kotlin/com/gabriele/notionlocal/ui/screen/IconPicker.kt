@@ -6,9 +6,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.border
 import com.gabriele.notionlocal.data.normalizeForSearch
 import com.gabriele.notionlocal.data.IconSymbol
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -102,8 +99,8 @@ import com.gabriele.notionlocal.ui.theme.NotionGray400
 import com.gabriele.notionlocal.ui.theme.NotionWhite
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
-import com.gabriele.notionlocal.data.saveFromGallery
 import com.gabriele.notionlocal.platform.LocalPlatformContext
+import com.gabriele.notionlocal.platform.rememberImagePicker
 
 /**
  * **Il selettore delle icone** (dal 07/10/2026, chiesto dall'utente con la
@@ -153,20 +150,19 @@ fun IconPickerSheet(
         onDismiss()
     }
 
-    val gallery = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri == null) return@rememberLauncherForActivityResult
-        busy = true
-        error = null
-        scope.launch {
-            val result = store.saveFromGallery(uri)
-            busy = false
-            result.fold(
-                onSuccess = { choose(IconChoice.Image(it)) },
-                onFailure = { error = EditorStrings.imageReadFailed }
-            )
+    val upload = rememberImagePicker(
+        store = store,
+        onStart = {
+            busy = true
+            error = null
         }
+    ) { result ->
+        busy = false
+        result.fold(
+            onSuccess = { choose(IconChoice.Image(it)) },
+            onFailure = { error = EditorStrings.imageReadFailed }
+        )
     }
-    val upload = { gallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }
 
     NoteBottomSheet(
         onDismissRequest = onDismiss,

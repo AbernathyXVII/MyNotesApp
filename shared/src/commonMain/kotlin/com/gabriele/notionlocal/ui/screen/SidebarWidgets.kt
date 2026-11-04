@@ -1,16 +1,10 @@
 package com.gabriele.notionlocal.ui.screen
 
 import com.gabriele.notionlocal.data.notify.NotificationPermission
-import android.content.Intent
-import android.media.RingtoneManager
-import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.runtime.LaunchedEffect
-import androidx.core.content.IntentCompat
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -125,7 +119,6 @@ import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.ui.platform.testTag
 import kotlin.math.roundToInt
 import com.gabriele.notionlocal.data.widgets.CounterSound
-import com.gabriele.notionlocal.data.widgets.CounterSounds
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.platform.LocalDensity
@@ -145,9 +138,11 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.cos
-import kotlin.math.floor
 import kotlin.math.sin
 import com.gabriele.notionlocal.platform.LocalPlatformContext
+import com.gabriele.notionlocal.data.widgets.prepareCounterSounds
+import com.gabriele.notionlocal.data.widgets.playCounterSound
+import com.gabriele.notionlocal.platform.rememberSoundPicker
 
 /**
  * **I widget in cima alla barra laterale** (chiesti il 24/09/2026): fusi
@@ -1038,7 +1033,7 @@ private fun DateField(label: String, day: LocalDate, onClick: () -> Unit) {
 private fun CounterView(widget: CounterWidget) {
     // I suoni pronti prima del primo tocco (dal 27/10/2026): vedi `CounterSounds.prepare`.
     val context = LocalPlatformContext.current
-    LaunchedEffect(Unit) { CounterSounds.prepare(context) }
+    LaunchedEffect(Unit) { prepareCounterSounds(context) }
     Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         if (widget.name.isNotBlank()) {
             Text(widget.name, color = NotionWhite, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
@@ -1048,7 +1043,7 @@ private fun CounterView(widget: CounterWidget) {
             // Prima il numero, poi il suono (dal 27/10/2026): il suono non lo fa aspettare.
             SquareButton(Icons.Filled.Remove, WidgetStrings.decrease) {
                 WidgetStore.changeCounter(widget.id, -1)
-                if (widget.soundsOn) CounterSounds.play(CounterSound.of(widget.minusSound), widget.volume)
+                if (widget.soundsOn) playCounterSound(CounterSound.of(widget.minusSound), widget.volume)
             }
             Text(
                 text = Formats.number(widget.value.toString()),
@@ -1060,7 +1055,7 @@ private fun CounterView(widget: CounterWidget) {
             )
             SquareButton(Icons.Filled.Add, WidgetStrings.increase) {
                 WidgetStore.changeCounter(widget.id, +1)
-                if (widget.soundsOn) CounterSounds.play(CounterSound.of(widget.plusSound), widget.volume)
+                if (widget.soundsOn) playCounterSound(CounterSound.of(widget.plusSound), widget.volume)
             }
         }
         Spacer(modifier = Modifier.height(4.dp))
@@ -1113,11 +1108,11 @@ private fun CounterSoundsSheet(widget: CounterWidget, onDismiss: () -> Unit) {
             }
             CounterVolume(widget, preview = plus)
             SoundChoices(WidgetStrings.plusSound, plus, enabled = widget.soundsOn) {
-                CounterSounds.play(it, widget.volume)
+                playCounterSound(it, widget.volume)
                 WidgetStore.setCounterSounds(widget.id, widget.soundsOn, it, minus)
             }
             SoundChoices(WidgetStrings.minusSound, minus, enabled = widget.soundsOn) {
-                CounterSounds.play(it, widget.volume)
+                playCounterSound(it, widget.volume)
                 WidgetStore.setCounterSounds(widget.id, widget.soundsOn, plus, it)
             }
             Spacer(modifier = Modifier.height(24.dp))
@@ -1150,7 +1145,7 @@ private fun CounterVolume(widget: CounterWidget, preview: CounterSound) {
                 dragging?.let { value ->
                     val volume = value.roundToInt()
                     WidgetStore.setCounterVolume(widget.id, volume)
-                    CounterSounds.play(preview, volume)
+                    playCounterSound(preview, volume)
                 }
                 dragging = null
             },
@@ -1430,32 +1425,13 @@ private fun PomodoroSoundRow(
     sound: Pair<String?, String?>,
     onChange: (Pair<String?, String?>) -> Unit
 ) {
-    val context = LocalPlatformContext.current
-    val picker = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        val picked = result.data?.let {
-            IntentCompat.getParcelableExtra(it, RingtoneManager.EXTRA_RINGTONE_PICKED_URI, Uri::class.java)
-        } ?: return@rememberLauncherForActivityResult
-        onChange(picked.toString() to runCatching { RingtoneManager.getRingtone(context, picked)?.getTitle(context) }.getOrNull())
-    }
     val (uri, name) = sound
+    val pickSound = rememberSoundPicker(title = label, current = uri) { picked, title -> onChange(picked to title) }
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(10.dp))
-            .clickable {
-                picker.launch(
-                    Intent(RingtoneManager.ACTION_RINGTONE_PICKER)
-                        .putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_ALL)
-                        .putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, label)
-                        // "Predefinito" e "Nessuno" dell'elenco di sistema
-                        // non servono: il predefinito dell'app è la voce
-                        // qui sotto, e un pomodoro muto non l'ha chiesto
-                        // nessuno.
-                        .putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, false)
-                        .putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, false)
-                        .putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, uri?.let(Uri::parse))
-                )
-            }
+            .clickable { pickSound() }
             .padding(vertical = 10.dp, horizontal = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

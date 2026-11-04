@@ -4,7 +4,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.ime
-import androidx.compose.foundation.layout.imeAnimationTarget
 import androidx.compose.foundation.onFocusedBoundsChanged
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
@@ -24,6 +23,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.collectLatest
 import com.gabriele.notionlocal.platform.screenHeightDp
+import com.gabriele.notionlocal.platform.keyboardTargetInsets
 
 /** Quanto spazio resta fra la cella su cui si scrive e la tastiera (o il bordo in alto). */
 val KEYBOARD_CLEARANCE = 24.dp
@@ -75,7 +75,7 @@ fun Modifier.keepFocusedAboveKeyboard(clearance: Dp = KEYBOARD_CLEARANCE): Modif
     val focused = remember { FocusedField() }
     val density = LocalDensity.current
     val ime = WindowInsets.ime
-    val imeTarget = WindowInsets.imeAnimationTarget
+    val imeTarget = keyboardTargetInsets()
     val tallest = screenHeightDp() / 3
     LaunchedEffect(focused, density) {
         snapshotFlow {

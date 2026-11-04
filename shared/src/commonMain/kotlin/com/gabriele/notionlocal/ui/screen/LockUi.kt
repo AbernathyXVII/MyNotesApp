@@ -1,11 +1,5 @@
 package com.gabriele.notionlocal.ui.screen
 
-import android.content.Context
-import android.hardware.biometrics.BiometricManager
-import android.hardware.biometrics.BiometricPrompt
-import android.os.Build
-import android.os.CancellationSignal
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -65,65 +59,6 @@ import com.gabriele.notionlocal.platform.LocalPlatformContext
  * davanti a una pagina o a un database bloccato, la richiesta di impronta o
  * password, la scelta della password. I conti stanno in `AppLock`.
  */
-
-/**
- * **L'impronta**, con la finestra di sistema di Android (quella di tutte le
- * app), da Android 11. Sotto non c'è: si usa solo la password.
- */
-object Biometrics {
-
-    fun available(context: Context): Boolean = canAuthenticate(context, BiometricManager.Authenticators.BIOMETRIC_WEAK)
-
-    /** Il blocco schermo del telefono (PIN, sequenza, password): serve a rifare una password dimenticata. */
-    fun deviceCredentialAvailable(context: Context): Boolean =
-        canAuthenticate(context, BiometricManager.Authenticators.DEVICE_CREDENTIAL)
-
-    private fun canAuthenticate(context: Context, authenticators: Int): Boolean {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return false
-        val manager = context.getSystemService(BiometricManager::class.java) ?: return false
-        return manager.canAuthenticate(authenticators) == BiometricManager.BIOMETRIC_SUCCESS
-    }
-
-    /**
-     * Chiede l'impronta (o, con `deviceCredential`, il blocco schermo). Una
-     * sola delle due risposte arriva: `onSuccess`, o `onFallback` se si è
-     * toccato "Usa la password", si è annullato o non è andata.
-     */
-    @RequiresApi(Build.VERSION_CODES.R)
-    fun authenticate(
-        context: Context,
-        title: String,
-        deviceCredential: Boolean,
-        onSuccess: () -> Unit,
-        onFallback: () -> Unit
-    ) {
-        var answered = false
-        fun answer(block: () -> Unit) {
-            if (answered) return
-            answered = true
-            block()
-        }
-        val executor = context.mainExecutor
-        val builder = BiometricPrompt.Builder(context).setTitle(title)
-        if (deviceCredential) {
-            builder.setAllowedAuthenticators(BiometricManager.Authenticators.DEVICE_CREDENTIAL)
-        } else {
-            builder.setAllowedAuthenticators(BiometricManager.Authenticators.BIOMETRIC_WEAK)
-            builder.setNegativeButton(LockStrings.usePassword, executor) { _, _ -> answer(onFallback) }
-        }
-        builder.build().authenticate(
-            CancellationSignal(),
-            executor,
-            object : BiometricPrompt.AuthenticationCallback() {
-                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) =
-                    answer(onSuccess)
-
-                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) =
-                    answer(onFallback)
-            }
-        )
-    }
-}
 
 private object Checking
 
@@ -293,13 +228,11 @@ fun UnlockPrompt(onUnlocked: () -> Unit, onDismiss: () -> Unit) {
     var step by remember { mutableStateOf(if (fingerprint) 0 else 1) }
 
     fun askFingerprint() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            Biometrics.authenticate(
-                context, LockStrings.unlock, deviceCredential = false,
-                onSuccess = onUnlocked,
-                onFallback = { step = 1 }
-            )
-        }
+        Biometrics.authenticate(
+            context, LockStrings.unlock, deviceCredential = false,
+            onSuccess = onUnlocked,
+            onFallback = { step = 1 }
+        )
     }
 
     LaunchedEffect(Unit) { if (step == 0) askFingerprint() }
@@ -316,7 +249,7 @@ fun UnlockPrompt(onUnlocked: () -> Unit, onDismiss: () -> Unit) {
             } else {
                 null
             },
-            onForgot = if (Biometrics.deviceCredentialAvailable(context) && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            onForgot = if (Biometrics.deviceCredentialAvailable(context)) {
                 {
                     Biometrics.authenticate(
                         context, LockStrings.confirmItsYou, deviceCredential = true,

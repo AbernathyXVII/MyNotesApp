@@ -24,22 +24,14 @@ import com.gabriele.notionlocal.data.webclip.toNewBlocks
 import com.gabriele.notionlocal.data.entity.NewBlock
 import com.gabriele.notionlocal.ui.i18n.WebClipStrings
 import androidx.compose.foundation.layout.Arrangement
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalClipboardManager
 import com.gabriele.notionlocal.data.PageImageStore
-import com.gabriele.notionlocal.data.toImageBitmap
 import com.gabriele.notionlocal.data.repository.PageRepository
 import com.gabriele.notionlocal.data.TextStats
 import androidx.compose.material3.OutlinedTextField
@@ -74,7 +66,6 @@ import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
-import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -96,9 +87,7 @@ import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.ui.platform.LocalLayoutDirection
 import com.gabriele.notionlocal.ui.theme.DarkSurfaceVariant
 import androidx.compose.foundation.layout.ime
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -128,28 +117,11 @@ import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ArrowRight
 import androidx.compose.material.icons.filled.ArrowUpward
-import androidx.compose.material.icons.filled.CheckBox
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.PieChart
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.AttachFile
-import androidx.compose.material.icons.filled.Bookmark
-import androidx.compose.material.icons.filled.CalendarToday
-import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.FormatIndentDecrease
 import androidx.compose.material.icons.filled.FormatIndentIncrease
-import androidx.compose.material.icons.filled.FormatListBulleted
-import androidx.compose.material.icons.filled.FormatListNumbered
-import androidx.compose.material.icons.filled.FormatQuote
-import androidx.compose.material.icons.filled.GridOn
-import androidx.compose.material.icons.filled.GridView
-import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Link
-import androidx.compose.material.icons.filled.TouchApp
-import androidx.compose.material.icons.filled.Notes
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -169,19 +141,12 @@ import com.gabriele.notionlocal.ui.theme.AccentBlue
 import com.gabriele.notionlocal.ui.theme.TextLinkColor
 import java.time.Instant
 import java.time.LocalDateTime
-import androidx.compose.material.icons.filled.OpenInFull
-import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material.icons.filled.Videocam
-import androidx.compose.material.icons.filled.ViewColumn
-import androidx.compose.material.icons.filled.ViewTimeline
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Redo
 import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreHoriz
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.TableChart
 import androidx.compose.material.icons.filled.Undo
 import androidx.compose.material3.AlertDialog
@@ -190,16 +155,13 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.runtime.compositionLocalOf
 import com.gabriele.notionlocal.ui.i18n.NotebookStrings
 import androidx.compose.ui.draw.alpha
 import androidx.compose.runtime.LaunchedEffect
@@ -212,7 +174,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
@@ -228,7 +189,6 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.foundation.focusGroup
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
@@ -265,14 +225,12 @@ import com.gabriele.notionlocal.data.entity.heldListType
 import com.gabriele.notionlocal.ui.i18n.BlockStrings
 import com.gabriele.notionlocal.ui.theme.CalloutBackground
 import com.gabriele.notionlocal.data.entity.BlockType
-import com.gabriele.notionlocal.data.entity.DatabaseLayout
 import com.gabriele.notionlocal.data.entity.PageEntity
 import com.gabriele.notionlocal.data.entity.RichTextSpan
 import com.gabriele.notionlocal.data.entity.applyPaste
 import com.gabriele.notionlocal.data.entity.applyTextEdit
 import com.gabriele.notionlocal.data.entity.plainText
 import com.gabriele.notionlocal.data.entity.splitLines
-import com.gabriele.notionlocal.data.entity.setColorInRange
 import com.gabriele.notionlocal.data.entity.setFormatInRange
 import com.gabriele.notionlocal.data.entity.toggleFormatInRange
 import com.gabriele.notionlocal.data.entity.withSubscript
@@ -281,7 +239,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.em
 import com.gabriele.notionlocal.ui.theme.DarkBackground
-import com.gabriele.notionlocal.ui.theme.FavoriteStar
 import com.gabriele.notionlocal.ui.theme.FloatingButtonBackground
 import com.gabriele.notionlocal.ui.i18n.Strings
 import com.gabriele.notionlocal.ui.i18n.TemplateStrings
@@ -317,14 +274,11 @@ import com.gabriele.notionlocal.ui.i18n.MentionStrings
 import java.time.LocalDate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import androidx.compose.material.icons.filled.Sync
-import androidx.compose.material.icons.filled.DocumentScanner
-import androidx.compose.material.icons.filled.Mic
 import androidx.compose.ui.platform.LocalClipboard
-import com.gabriele.notionlocal.data.saveFromGallery
 import com.gabriele.notionlocal.viewmodel.export
 import com.gabriele.notionlocal.platform.showMessage
 import com.gabriele.notionlocal.platform.LocalPlatformContext
+import com.gabriele.notionlocal.platform.isKeyboardVisible
 
 /**
  * I tipi che il "+" dà a tutte le righe selezionate insieme (vedi
@@ -1568,7 +1522,7 @@ private fun PageEditorContent(
     // avrebbe sempre avuto un pezzo di ritardo.
     LaunchedEffect(focusedBlockId) { viewModel.closeEditSession() }
 
-    val imeVisible = WindowInsets.isImeVisible
+    val imeVisible = isKeyboardVisible()
 
     // Una pagina aperta dal cestino si legge e basta, come una bloccata:
     // in cima c'è la barra per ripristinarla o cancellarla per sempre.
@@ -5155,7 +5109,7 @@ private fun MergedTextRunField(
     val focusPark = LocalFocusPark.current
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
-    val imeVisible = WindowInsets.isImeVisible
+    val imeVisible = isKeyboardVisible()
 
     // Serve a sapere dove sono finiti sullo schermo i numeri degli
     // elenchi, per poterli rendere toccabili (vedi più sotto), e dove
@@ -6454,7 +6408,7 @@ private fun BlockRow(
     val focusPark = LocalFocusPark.current
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
-    val imeVisible = WindowInsets.isImeVisible
+    val imeVisible = isKeyboardVisible()
     // Le voci in più del riquadro: icona e colore (vedi `BlockAttrs`).
     val blockAttrs = remember(block.attrsJson) { block.attrs }
     val rowContext = LocalPlatformContext.current

@@ -1,7 +1,5 @@
 package com.gabriele.notionlocal.ui.screen
 
-import android.graphics.BitmapFactory
-import android.util.LruCache
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,7 +10,6 @@ import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.unit.Dp
 import com.gabriele.notionlocal.data.widgets.MINUTE_MS
 import com.gabriele.notionlocal.data.widgets.WidgetHttp
@@ -29,6 +26,8 @@ import java.io.File
 import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
 import com.gabriele.notionlocal.platform.LocalPlatformContext
+import com.gabriele.notionlocal.platform.cacheDirOf
+import com.gabriele.notionlocal.platform.decodeImageBitmap
 
 /**
  * **Gli stemmi delle squadre** (dal 17/10/2026, chiesto dall'utente), e nel
@@ -52,7 +51,7 @@ object TeamLogos {
     @Volatile
     var enabled = true
 
-    private val memory = LruCache<String, ImageBitmap>(300)
+    private val memory = RecentCache<String, ImageBitmap>(300)
     private val pending = ConcurrentHashMap<String, Deferred<ImageBitmap?>>()
     private val failedAt = ConcurrentHashMap<String, Long>()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -101,8 +100,7 @@ object TeamLogos {
     fun darkUrl(url: String): String =
         if (url.contains("/i/teamlogos/") && !url.contains("/countries/")) url.replaceFirst("/500/", "/500-dark/") else url
 
-    private fun decode(bytes: ByteArray): ImageBitmap? =
-        runCatching { BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap() }.getOrNull()
+    private fun decode(bytes: ByteArray): ImageBitmap? = decodeImageBitmap(bytes)
 
     /** Il servizio di ESPN che rimpicciolisce le immagini: lo stemma a 64×64. */
     fun smallUrl(url: String): String {
@@ -121,7 +119,7 @@ object TeamLogos {
 /** Lo stemma (o la bandiera) in un quadrato di [size]; vuoto finché non arriva, o se non c'è. */
 @Composable
 fun TeamLogo(url: String, size: Dp, modifier: Modifier = Modifier) {
-    val cacheDir = LocalPlatformContext.current.cacheDir
+    val cacheDir = cacheDirOf(LocalPlatformContext.current)
     val bitmap by produceState(initialValue = TeamLogos.cached(url), url) {
         // Uno che non arriva si richiede dopo un minuto, finché lo stemma si vede.
         while (value == null && url.isNotBlank() && TeamLogos.enabled) {
@@ -131,5 +129,23 @@ fun TeamLogo(url: String, size: Dp, modifier: Modifier = Modifier) {
     }
     Box(modifier = modifier.size(size), contentAlignment = Alignment.Center) {
         bitmap?.let { Image(bitmap = it, contentDescription = null, modifier = Modifier.fillMaxSize()) }
+    }
+}
+
+/**
+ * **Gli ultimi [max] usati**, gli altri si dimenticano (fino al 04/11/2026
+ * la `LruCache` di Android, che sul PC non c'è).
+ */
+private class RecentCache<K : Any, V : Any>(private val max: Int) {
+    private val map = object : LinkedHashMap<K, V>(16, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<K, V>?): Boolean = size > max
+    }
+
+    @Synchronized
+    fun get(key: K): V? = map[key]
+
+    @Synchronized
+    fun put(key: K, value: V) {
+        map[key] = value
     }
 }
