@@ -71,7 +71,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.gabriele.notionlocal.data.settings.AnimationLevel
 import com.gabriele.notionlocal.data.settings.AppLanguage
@@ -103,6 +102,7 @@ import androidx.compose.material.icons.filled.MoveToInbox
 import androidx.compose.material.icons.filled.RocketLaunch
 import com.gabriele.notionlocal.data.settings.StartupMode
 import com.gabriele.notionlocal.platform.showMessage
+import com.gabriele.notionlocal.platform.LocalPlatformContext
 
 /** Quale finestra di scelta è aperta. */
 private enum class SettingsDialog { THEME, TITLE_POSITION, ANIMATIONS, NUMBER, DATE, TIME, LANGUAGE, PROOFING, PARAGRAPH, TIME_ZONE, LOCK_PASSWORD, CLEAR_CACHE, DELETE_ALL }
@@ -139,7 +139,7 @@ fun SettingsScreen(
             }
         }
     }
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val scope = rememberCoroutineScope()
     // Quanto occupa la cache, contato fuori dal disegno: sono file su disco.
     var cacheBytes by remember { mutableStateOf(0L) }
@@ -513,7 +513,7 @@ private fun DeleteAllDialog(onDismiss: () -> Unit, onConfirm: () -> Unit) {
  */
 @Composable
 private fun LockPasswordSettings(onDismiss: () -> Unit) {
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val scope = rememberCoroutineScope()
     // 0 il menu, 1 conferma per cambiarla, 2 password nuova, 3 conferma per toglierla
     var step by remember { mutableStateOf(if (AppLock.hasPassword) 0 else 2) }

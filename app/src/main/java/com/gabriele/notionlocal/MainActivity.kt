@@ -18,6 +18,7 @@ import com.gabriele.notionlocal.data.backup.Backups
 import com.gabriele.notionlocal.data.notify.NoteAlarms
 import com.gabriele.notionlocal.data.notify.NotificationPermission
 import com.gabriele.notionlocal.data.notify.NotificationTarget
+import com.gabriele.notionlocal.data.notify.takeFrom
 import com.gabriele.notionlocal.data.share.QuickNotes
 import com.gabriele.notionlocal.data.share.takeFrom
 import androidx.activity.SystemBarStyle

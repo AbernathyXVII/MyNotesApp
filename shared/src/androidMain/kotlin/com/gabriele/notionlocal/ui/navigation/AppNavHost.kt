@@ -1,6 +1,6 @@
 package com.gabriele.notionlocal.ui.navigation
 
-import androidx.activity.compose.BackHandler
+import com.gabriele.notionlocal.platform.BackHandler
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween

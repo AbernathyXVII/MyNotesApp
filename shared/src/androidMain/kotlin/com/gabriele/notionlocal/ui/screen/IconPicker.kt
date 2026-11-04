@@ -78,7 +78,6 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.ImeAction
@@ -104,6 +103,7 @@ import com.gabriele.notionlocal.ui.theme.NotionWhite
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import com.gabriele.notionlocal.data.saveFromGallery
+import com.gabriele.notionlocal.platform.LocalPlatformContext
 
 /**
  * **Il selettore delle icone** (dal 07/10/2026, chiesto dall'utente con la
@@ -139,7 +139,7 @@ fun IconPickerSheet(
     suggestionsTitle: String? = null,
     suggestions: List<String> = emptyList()
 ) {
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val scope = rememberCoroutineScope()
     var tab by remember { mutableStateOf(PickerTabKind.EMOJI) }
     var busy by remember { mutableStateOf(false) }

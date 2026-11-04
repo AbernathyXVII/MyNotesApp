@@ -26,7 +26,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationManagerCompat
@@ -45,6 +44,7 @@ import com.gabriele.notionlocal.ui.theme.DarkSheet
 import com.gabriele.notionlocal.ui.theme.NotionGray400
 import com.gabriele.notionlocal.ui.theme.NotionWhite
 import com.gabriele.notionlocal.platform.showMessage
+import com.gabriele.notionlocal.platform.LocalPlatformContext
 
 /** Quale finestra è aperta sopra le scelte delle notifiche. */
 private enum class NotificationsDialog { SOUND, PRIORITY, MUTE_FOR }
@@ -71,7 +71,7 @@ private enum class NotificationsDialog { SOUND, PRIORITY, MUTE_FOR }
  */
 @Composable
 fun NotificationSettingsSection() {
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     var dialog by remember { mutableStateOf<NotificationsDialog?>(null) }
 
     // Se Android le ha spente per tutta l'app, le scelte qui non servono a
@@ -212,7 +212,7 @@ private fun priorityDetail(priority: NotificationPriority) = when (priority) {
  */
 @Composable
 fun NotificationSoundDialog(onDismiss: () -> Unit) {
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val phoneSounds = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         val picked = result.data?.let {
             IntentCompat.getParcelableExtra(it, RingtoneManager.EXTRA_RINGTONE_PICKED_URI, Uri::class.java)

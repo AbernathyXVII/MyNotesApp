@@ -42,7 +42,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -68,6 +67,7 @@ import androidx.compose.material.icons.filled.MoveToInbox
 import com.gabriele.notionlocal.data.ocr.ImageTexts
 import com.gabriele.notionlocal.data.saveFromGallery
 import com.gabriele.notionlocal.platform.showMessage
+import com.gabriele.notionlocal.platform.LocalPlatformContext
 
 // ---------------------------------------------------------------------------
 // **"Condividi con notE"** (dal 02/11/2026, chiesto dall'utente): la finestra
@@ -89,7 +89,7 @@ fun ShareSheet(
     /** Salvato con "Save and open": la pagina da aprire in notE. */
     onOpen: (String) -> Unit
 ) {
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val scope = rememberCoroutineScope()
     val repository = factory.pageRepository
     val shared = remember(incoming) { splitSharedText(incoming.text, incoming.subject) }

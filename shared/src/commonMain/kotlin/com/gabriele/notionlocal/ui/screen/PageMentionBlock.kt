@@ -25,7 +25,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -43,6 +42,7 @@ import com.gabriele.notionlocal.ui.theme.NotionWhite
 import com.gabriele.notionlocal.viewmodel.PageEditorViewModel
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import com.gabriele.notionlocal.platform.LocalPlatformContext
 
 /** La pagina richiamata, una volta letta: null dentro vuol dire che non c'è più. */
 private class MentionedPage(val page: PageEntity?)
@@ -72,7 +72,7 @@ fun PageMentionBlockContent(
     }.collectAsStateWithLifecycle(initialValue = null)
     val page = loaded?.page
     val gone = loaded != null && (page == null || page.trashedAt != null)
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val store = remember(context) { PageImageStore(context) }
 
     Row(

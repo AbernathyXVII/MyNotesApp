@@ -51,7 +51,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
@@ -78,6 +77,7 @@ import com.gabriele.notionlocal.data.entity.dateLinkTarget
 import com.gabriele.notionlocal.data.entity.isInternalLink
 import com.gabriele.notionlocal.data.entity.pageLinkTarget
 import com.gabriele.notionlocal.platform.showMessage
+import com.gabriele.notionlocal.platform.LocalPlatformContext
 
 // ---------------------------------------------------------------------------
 // **I collegamenti sul testo** (dal 17/10/2026, chiesto dall'utente): si
@@ -147,7 +147,7 @@ fun Modifier.linkTaps(
  */
 @Composable
 fun rememberLinkOpener(): (String) -> Unit {
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val jump = LocalBlockLinkJump.current
     val openPage = LocalPageMentionOpen.current
     val tapDate = LocalDateMentionTap.current

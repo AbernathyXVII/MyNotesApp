@@ -51,7 +51,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -65,6 +64,7 @@ import com.gabriele.notionlocal.ui.theme.AccentBlue
 import com.gabriele.notionlocal.ui.theme.NotionGray400
 import com.gabriele.notionlocal.ui.theme.NotionWhite
 import kotlinx.coroutines.delay
+import com.gabriele.notionlocal.platform.LocalPlatformContext
 
 /**
  * **Il lettore di un video o di un audio** dentro la pagina (dal
@@ -289,7 +289,7 @@ fun InlineVideoPlayer(
     /** Il dito tenuto sul video: il menu del blocco. */
     onLongPress: (() -> Unit)? = null
 ) {
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val playback = remember(source) { Playback(context, source) }
     DisposableEffect(playback) { onDispose { playback.release() } }
     OnLeaving(onLeave = { playback.pause() })
@@ -361,7 +361,7 @@ fun InlineVideoPlayer(
  */
 @Composable
 fun InlineAudioPlayer(source: Uri, title: String, modifier: Modifier = Modifier) {
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val playback = remember(source) { Playback(context, source) }
     DisposableEffect(playback) { onDispose { playback.release() } }
     OnLeaving(onLeave = { playback.pause() })

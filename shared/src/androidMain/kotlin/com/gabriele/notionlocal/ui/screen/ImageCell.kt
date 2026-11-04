@@ -34,9 +34,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.gabriele.notionlocal.data.PageImageStore
+import com.gabriele.notionlocal.platform.LocalPlatformContext
 
 /**
  * **"Image"** (dal 29/09/2026, come la colonna delle figure del Pokédex di
@@ -54,7 +54,7 @@ fun ImageCell(
     /** Nella tabella la cella è un quadrato alto quanto la riga; nella scheda della riga un riquadro da 44. */
     inTable: Boolean
 ) {
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val store = remember(context) { PageImageStore(context) }
     val locked = LocalDatabaseLocked.current
     var picking by remember { mutableStateOf(false) }

@@ -47,7 +47,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -71,6 +70,7 @@ import com.gabriele.notionlocal.data.record.AudioRecorder
 import com.gabriele.notionlocal.ui.i18n.CaptureStrings
 import com.gabriele.notionlocal.data.saveFile
 import com.gabriele.notionlocal.platform.showMessage
+import com.gabriele.notionlocal.platform.LocalPlatformContext
 
 /**
  * **"Upload" o "Link"** (dal 06/10/2026), la finestrella delle foto di
@@ -168,21 +168,6 @@ fun MediaSourceSheet(
     }
 }
 
-/** Un indirizzo pulito: "https://" se manca, e almeno un punto nel nome del sito. Null se non è un link. */
-fun normalizedLink(input: String): String? {
-    val text = input.trim()
-    if (text.isEmpty() || text.any { it.isWhitespace() }) return null
-    val withScheme = if (Regex("^[a-zA-Z][a-zA-Z0-9+.-]*://").containsMatchIn(text)) text else "https://$text"
-    val uri = runCatching { Uri.parse(withScheme) }.getOrNull() ?: return null
-    val host = uri.host ?: return null
-    if (uri.scheme?.lowercase() !in setOf("http", "https") || !host.contains('.')) return null
-    return withScheme
-}
-
-/** Il nome del sito di un indirizzo, senza "www.": "youtube.com". */
-fun linkHost(url: String): String =
-    runCatching { Uri.parse(url).host }.getOrNull()?.removePrefix("www.") ?: url
-
 /**
  * Le cose che un blocco-file fa da sé, chieste dal suo menu: salvare una
  * copia dove si sceglie, aprirlo con un'altra app o nel browser.
@@ -192,7 +177,7 @@ class FileActions(val saveCopy: () -> Unit, val openElsewhere: () -> Unit)
 
 @Composable
 fun rememberFileActions(attrs: BlockAttrs, store: PageImageStore): FileActions {
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val scope = rememberCoroutineScope()
     val saveAs = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument(attrs.mime ?: "application/octet-stream")
@@ -285,7 +270,7 @@ fun rememberImport(
     store: PageImageStore,
     onBusy: (Boolean) -> Unit
 ): (Uri?) -> Unit {
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val scope = rememberCoroutineScope()
     return { uri ->
         if (uri != null) {
@@ -322,7 +307,7 @@ fun VideoBlockContent(
     onLongPress: (() -> Unit)?,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val store = remember(context) { PageImageStore(context) }
     val attrs = remember(block.attrsJson) { block.attrs }
     var busy by remember(block.id) { mutableStateOf(false) }
@@ -394,7 +379,7 @@ fun AudioBlockContent(
     onLongPress: (() -> Unit)?,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val store = remember(context) { PageImageStore(context) }
     val attrs = remember(block.attrsJson) { block.attrs }
     var busy by remember(block.id) { mutableStateOf(false) }

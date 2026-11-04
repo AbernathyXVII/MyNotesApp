@@ -41,7 +41,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -61,6 +60,7 @@ import kotlinx.coroutines.delay
 import kotlin.math.sqrt
 import com.gabriele.notionlocal.data.saveFromGallery
 import com.gabriele.notionlocal.platform.showMessage
+import com.gabriele.notionlocal.platform.LocalPlatformContext
 
 private val RecordRed = Color(0xFFE5484D)
 
@@ -146,7 +146,7 @@ fun elapsedText(ms: Long): String {
  */
 @Composable
 fun rememberRecordStarter(block: BlockEntity): () -> Unit {
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val current by rememberUpdatedState(block)
     val start = {
         when {
@@ -175,7 +175,7 @@ fun rememberRecordStarter(block: BlockEntity): () -> Unit {
  */
 @Composable
 fun rememberDocumentScanner(viewModel: PageEditorViewModel): (String) -> Unit {
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val store = remember(context) { PageImageStore(context) }
     // L'id della riga sopravvive anche se l'app, mentre si scansiona, viene ricreata.
     var target by rememberSaveable { mutableStateOf<String?>(null) }

@@ -84,7 +84,6 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -117,6 +116,7 @@ import com.gabriele.notionlocal.viewmodel.NotebooksViewModel
 import com.gabriele.notionlocal.viewmodel.ViewModelFactory
 import kotlinx.coroutines.launch
 import com.gabriele.notionlocal.data.saveFromGallery
+import com.gabriele.notionlocal.platform.LocalPlatformContext
 
 // ---------------------------------------------------------------------------
 // **I quaderni** (dal 26/09/2026), come quelli di OneNote: quaderni, gruppi
@@ -1038,7 +1038,7 @@ fun NotebookSectionScreen(
     val menus = remember { NotebookMenus() }
     var pageMenuFor by remember { mutableStateOf<PageEntity?>(null) }
     var confirmDeletePage by remember { mutableStateOf<PageEntity?>(null) }
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val store = remember(context) { PageImageStore(context) }
 
     Scaffold(
@@ -1272,7 +1272,7 @@ fun NotebookScreen(
     // I gruppi chiusi qui: all'inizio aperti tutti, è la lista intera. Si
     // ricordano anche tornando indietro da una sezione.
     var collapsed by rememberSaveable(stateSaver = CollapsedSaver) { mutableStateOf(emptySet<String>()) }
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val store = remember(context) { PageImageStore(context) }
 
     val rows = remember(sections, collapsed) {

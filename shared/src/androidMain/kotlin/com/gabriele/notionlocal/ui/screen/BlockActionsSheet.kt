@@ -79,7 +79,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -108,6 +107,7 @@ import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material.icons.filled.LinkOff
 import com.gabriele.notionlocal.ui.i18n.SyncStrings
 import com.gabriele.notionlocal.platform.showMessage
+import com.gabriele.notionlocal.platform.LocalPlatformContext
 
 /**
  * **Il menu di un blocco**, come quello che su Notion si apre dai sei
@@ -179,7 +179,7 @@ fun BlockActionsHost(
         LaunchedEffect(Unit) { onDismiss() }
         return
     }
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
 
     val linkedId = block.linkedPageId?.takeIf {
         block.type == BlockType.PAGE_LINK || block.type == BlockType.DATABASE_LINK

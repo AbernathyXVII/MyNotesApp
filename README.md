@@ -1151,6 +1151,30 @@ vista Gallery" a "Pedice e apice nella barra Aa") portano scritto che
 **vanno ancora verificate sul telefono**: quando lo sono, si aggiunge "(verificato sul telefono il
 gg/mm/aaaa)" accanto al titolo.
 
+### ✏️ v0.153.8 — 04/11/2026 · 13:26 — Altri nodi sciolti verso l'editor: "indietro", foto, esportazione e notifiche per piattaforma
+*(Claude Code sul PC; provata sul telefono; 1101 test passati)*
+
+- **[Progetto]** **Le cose di ogni sistema che l'editor e il database usano**
+  sono dichiarate nel codice comune: il gesto "indietro" (`BackHandler`, sul
+  telefono quello di Android), la scelta di un'immagine per icona e copertina
+  (`rememberImagePicker`: sul telefono il selettore di foto di sistema, sul
+  PC la scelta di un file), l'esportazione in un file (`exportToFile`: sul
+  telefono `PageExporter`, sul PC arriverà), la notifica di un bottone
+  (`postButtonNotification`), il sito e lo schema di un link (`urlHost`,
+  `urlScheme`: sul telefono l'`Uri` di Android), l'altezza della vista
+  (`rememberRootHeight`, per il calendario del giorno). `LocalContext` è
+  diventato `LocalPlatformContext` in 28 file (sul telefono è lo stesso
+  `Context`); `ExportedFile` ed `ExportOptions` sono nel codice comune
+- **[Progetto]** Sei file in più nel codice comune (il codice dei bottoni,
+  i blocchi di codice, le menzioni di pagina, l'esportazione dalla pagina,
+  le richieste delle notifiche, i siti dei link); dall'editor sono usciti in
+  `EditorParts.kt` la copertina, la scelta di icona e copertina, il catalogo
+  del menu "/" e i numeri degli elenchi, e dalle notifiche la lettura
+  dell'`Intent` (`NotificationIntents.kt`). Il colore scritto come testo
+  passa da `parseColorString` anche nei bottoni, nel calendario e nei
+  numeri. Restano da sciogliere i widget (`WidgetStore`), i selettori di
+  data e ora di Samsung e le misure della tastiera di Android
+
 ### ✏️ v0.153.7 — 04/11/2026 · 10:10 — I primi nodi sciolti: ricerca, preferiti, cestino e modelli nel codice comune
 *(Claude Code sul PC; provata sul telefono; 1101 test passati)*
 

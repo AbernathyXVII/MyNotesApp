@@ -98,7 +98,6 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.Dp
 import kotlinx.coroutines.delay
 import java.time.Instant
@@ -108,6 +107,7 @@ import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import com.gabriele.notionlocal.platform.screenHeightDp
+import com.gabriele.notionlocal.platform.rememberRootHeight
 
 /**
  * Quanto è alta un'ora nella griglia del giorno: mezz'ora è un quadratino
@@ -170,7 +170,7 @@ private val EVENT_DATE_FORMAT: DateTimeFormatter
 fun eventBackground(hex: String?): Color {
     if (hex == null) return DarkSurfaceVariant
     return try {
-        Color(android.graphics.Color.parseColor(hex))
+        Color(parseColorString(hex))
     } catch (e: IllegalArgumentException) {
         DarkSurfaceVariant
     }
@@ -258,7 +258,7 @@ fun CalendarDayView(
     val screenHeight = screenHeightDp()
     var fitted by remember { mutableStateOf<Dp?>(null) }
     val viewport = fitted ?: (screenHeight - DAY_CHROME_HEIGHT).coerceIn(DAY_MIN_VIEWPORT, DAY_HOUR_HEIGHT * 24)
-    val rootView = LocalView.current
+    val rootHeight = rememberRootHeight()
     val bottomInset = WindowInsets.navigationBars.getBottom(density)
 
     val origin = dayPagerOrigin(day)
@@ -289,7 +289,7 @@ fun CalendarDayView(
                 .onGloballyPositioned { coordinates ->
                     if (fitted == null) {
                         val top = coordinates.positionInWindow().y
-                        val free = with(density) { (rootView.height - bottomInset - top).toDp() } - DAY_BOTTOM_MARGIN
+                        val free = with(density) { (rootHeight() - bottomInset - top).toDp() } - DAY_BOTTOM_MARGIN
                         fitted = free.coerceIn(DAY_MIN_VIEWPORT, DAY_HOUR_HEIGHT * 24)
                     }
                 }

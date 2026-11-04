@@ -1,6 +1,6 @@
 package com.gabriele.notionlocal.data.buttons
 
-import androidx.room.withTransaction
+import com.gabriele.notionlocal.data.withTransaction
 import com.gabriele.notionlocal.data.entity.BlockAttrs
 import com.gabriele.notionlocal.data.entity.BlockType
 import com.gabriele.notionlocal.data.entity.ColumnType

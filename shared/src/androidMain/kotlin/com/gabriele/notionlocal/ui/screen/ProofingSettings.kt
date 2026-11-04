@@ -29,7 +29,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -53,6 +52,7 @@ import com.gabriele.notionlocal.ui.theme.NotionGray400
 import com.gabriele.notionlocal.ui.theme.NotionWhite
 import com.gabriele.notionlocal.viewmodel.PageEditorViewModel
 import kotlinx.coroutines.launch
+import com.gabriele.notionlocal.platform.LocalPlatformContext
 
 /**
  * Le scelte del correttore (dal 08/10/2026): in Settings per tutte le
@@ -78,7 +78,7 @@ fun proofingOf(page: PageEntity): Pair<Boolean, ProofingLanguage> {
  */
 @Composable
 fun rememberPageProofing(page: PageEntity?, viewModel: PageEditorViewModel): PageProofing? {
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val (enabled, language) = if (page == null) false to AppSettings.proofingLanguage else proofingOf(page)
     var dictionary by remember { mutableStateOf<SpellDictionary?>(null) }
     LaunchedEffect(enabled, language) {
@@ -243,7 +243,7 @@ private fun WordRow(word: String, action: String, start: Dp = 16.dp, onAction: (
  */
 @Composable
 fun ProofingSettingsDialog(onDismiss: () -> Unit) {
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val scope = rememberCoroutineScope()
     val dao = remember(context) { AppDatabase.getInstance(context).personalWordDao() }
     val words by remember(dao) { dao.observeAll() }.collectAsState(initial = emptyList())

@@ -71,7 +71,7 @@ import com.gabriele.notionlocal.data.entity.ChartSettings
 import com.gabriele.notionlocal.data.entity.parseChartSettings
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.activity.compose.BackHandler
+import com.gabriele.notionlocal.platform.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -155,7 +155,6 @@ import androidx.compose.material.icons.filled.SubdirectoryArrowRight
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Timelapse
 import androidx.compose.material.icons.filled.Image
-import androidx.compose.ui.platform.LocalContext
 import com.gabriele.notionlocal.data.PageImageStore
 import com.gabriele.notionlocal.data.repository.PageRepository
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -362,6 +361,8 @@ import java.util.Locale
 import com.gabriele.notionlocal.data.export.DatabaseReader
 import com.gabriele.notionlocal.data.export.PageExporter
 import com.gabriele.notionlocal.platform.showMessage
+import com.gabriele.notionlocal.platform.LocalPlatformContext
+import com.gabriele.notionlocal.data.export.exportToFile
 
 private val COLUMN_WIDTH = DEFAULT_COLUMN_WIDTH_DP.dp
 private val NAME_COLUMN_WIDTH = DEFAULT_NAME_COLUMN_WIDTH_DP.dp
@@ -616,7 +617,7 @@ fun DatabaseViewScreen(
     // alto c'è quella del cestino.
     val trashed = menuPage?.trashedAt != null
     var confirmDeleteForever by remember { mutableStateOf(false) }
-    val trashContext = LocalContext.current
+    val trashContext = LocalPlatformContext.current
 
     Scaffold(
         topBar = {
@@ -783,16 +784,11 @@ fun DatabaseViewScreen(
             )
         }
         if (showDatabaseExport) {
-            val exportContext = LocalContext.current
+            val exportContext = LocalPlatformContext.current
             PageExportSheet(
                 title = current.title,
                 hasSubpages = false,
-                export = { options ->
-                    runCatching {
-                        PageExporter(exportContext, factory.pageRepository, DatabaseReader(factory, factory.pageRepository))
-                            .export(current.id, options, Strings.untitled)
-                    }.getOrNull()
-                },
+                export = { options -> exportToFile(exportContext, factory, current.id, options, Strings.untitled) },
                 onDismiss = { showDatabaseExport = false }
             )
         }
@@ -1123,7 +1119,7 @@ private fun DatabaseViewBody(
     // L'icona del database: dove stanno i file delle immagini, e se la
     // finestra per sceglierla è aperta. È la stessa finestra delle
     // pagine (Upload / Link / Remove), non una copia.
-    val iconContext = LocalContext.current
+    val iconContext = LocalPlatformContext.current
     val imageStore = remember(iconContext) { PageImageStore(iconContext) }
     var editingIcon by remember { mutableStateOf(false) }
 
@@ -5049,7 +5045,7 @@ private fun GalleryCard(
     onRepositionCancel: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val store = remember(context) { PageImageStore(context) }
 
     // L'inquadratura della copertina: quella della scheda, se l'utente ne
@@ -8206,7 +8202,7 @@ private fun CardPropertyValue(
 ) {
     // "Image": la miniatura, intera.
     if (column.type == ColumnType.IMAGE) {
-        val context = LocalContext.current
+        val context = LocalPlatformContext.current
         val store = remember(context) { PageImageStore(context) }
         PageImage(
             fileName = value,
@@ -9271,7 +9267,7 @@ fun RowIconBadge(rowId: String, size: Dp) {
     val emoji = icon.emoji
     val symbol = icon.symbol
     if (fileName != null) {
-        val context = LocalContext.current
+        val context = LocalPlatformContext.current
         val store = remember(context) { PageImageStore(context) }
         PageImage(
             fileName = fileName,

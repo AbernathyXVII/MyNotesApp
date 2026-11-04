@@ -56,7 +56,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -84,6 +83,7 @@ import java.io.InputStream
 import java.time.Instant
 import java.time.LocalDate
 import com.gabriele.notionlocal.platform.showMessage
+import com.gabriele.notionlocal.platform.LocalPlatformContext
 
 const val BACKUP_SCREEN_TAG = "backupScreen"
 
@@ -99,7 +99,7 @@ private class RestoreChoice(val label: String, val open: () -> InputStream)
  */
 @Composable
 fun BackupScreen(onBack: () -> Unit, onRestart: (Context) -> Unit = ::restartApp) {
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val scope = rememberCoroutineScope()
     val changes = Backups.changes
     var backups by remember { mutableStateOf<List<BackupFile>?>(null) }
@@ -358,7 +358,7 @@ private fun StatusLine(label: String, value: String) {
 /** Un backup sul telefono: quando, quanto pesa, e il menu con caricare, ripristinare, eliminare. */
 @Composable
 private fun BackupRow(file: BackupFile, enabled: Boolean, onUpload: () -> Unit, onRestore: () -> Unit, onDelete: () -> Unit) {
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     var menu by remember { mutableStateOf(false) }
     Row(
         modifier = Modifier

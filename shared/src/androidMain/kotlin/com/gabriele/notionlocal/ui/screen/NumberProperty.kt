@@ -126,8 +126,8 @@ val CellAlignment.textAlign: TextAlign
     }
 
 private fun hexColor(hex: String?): Color =
-    runCatching { Color(android.graphics.Color.parseColor(hex ?: DEFAULT_NUMBER_COLOR)) }
-        .getOrDefault(Color(android.graphics.Color.parseColor(DEFAULT_NUMBER_COLOR)))
+    runCatching { Color(parseColorString(hex ?: DEFAULT_NUMBER_COLOR)) }
+        .getOrDefault(Color(parseColorString(DEFAULT_NUMBER_COLOR)))
 
 /** La barra: il fondo grigio e, sopra, la parte piena del colore scelto. */
 @Composable

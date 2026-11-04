@@ -65,7 +65,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -112,6 +111,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
+import com.gabriele.notionlocal.platform.LocalPlatformContext
 
 // ---------------------------------------------------------------------------
 // **Il widget dello sport** (dal 17/10/2026, chiesto dall'utente). In alto la
@@ -461,7 +461,7 @@ private fun CompetitionRounds(
     val numbered = hasMatchdayNumbers(view.rounds, view.standings, sport)
     // Gli stemmi di tutte le squadre (la classifica) e della giornata, in
     // anticipo: scorrendo, o aprendo la classifica, ci sono già.
-    val cacheDir = LocalContext.current.cacheDir
+    val cacheDir = LocalPlatformContext.current.cacheDir
     LaunchedEffect(view.key, view.standings, view.liveMatches) {
         TeamLogos.prefetch(
             cacheDir,

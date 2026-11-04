@@ -13,7 +13,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import com.gabriele.notionlocal.data.widgets.MINUTE_MS
 import com.gabriele.notionlocal.data.widgets.WidgetHttp
@@ -29,6 +28,7 @@ import kotlinx.coroutines.sync.withPermit
 import java.io.File
 import java.security.MessageDigest
 import java.util.concurrent.ConcurrentHashMap
+import com.gabriele.notionlocal.platform.LocalPlatformContext
 
 /**
  * **Gli stemmi delle squadre** (dal 17/10/2026, chiesto dall'utente), e nel
@@ -121,7 +121,7 @@ object TeamLogos {
 /** Lo stemma (o la bandiera) in un quadrato di [size]; vuoto finché non arriva, o se non c'è. */
 @Composable
 fun TeamLogo(url: String, size: Dp, modifier: Modifier = Modifier) {
-    val cacheDir = LocalContext.current.cacheDir
+    val cacheDir = LocalPlatformContext.current.cacheDir
     val bitmap by produceState(initialValue = TeamLogos.cached(url), url) {
         // Uno che non arriva si richiede dopo un minuto, finché lo stemma si vede.
         while (value == null && url.isNotBlank() && TeamLogos.enabled) {

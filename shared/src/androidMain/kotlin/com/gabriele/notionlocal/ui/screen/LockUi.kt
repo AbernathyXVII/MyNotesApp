@@ -44,7 +44,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.currentStateAsState
@@ -59,6 +58,7 @@ import com.gabriele.notionlocal.ui.i18n.Strings
 import com.gabriele.notionlocal.ui.theme.DarkBackground
 import com.gabriele.notionlocal.ui.theme.NotionGray400
 import com.gabriele.notionlocal.ui.theme.NotionWhite
+import com.gabriele.notionlocal.platform.LocalPlatformContext
 
 /*
  * **Le pagine bloccate con la password** (dal 26/09/2026): il cancello
@@ -192,7 +192,7 @@ private fun LockedView(
     onBack: (() -> Unit)?,
     onUnlocked: () -> Unit
 ) {
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     var prompting by remember { mutableStateOf(false) }
     // **A schermo intero la richiesta parte da sola**, ma solo quando la
     // pagina è davvero quella davanti (RESUMED). Tornando indietro da una
@@ -287,7 +287,7 @@ private fun LockedView(
  */
 @Composable
 fun UnlockPrompt(onUnlocked: () -> Unit, onDismiss: () -> Unit) {
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val fingerprint = AppLock.biometricEnabled && Biometrics.available(context)
     // 0 impronta, 1 password, 2 password nuova dopo il blocco schermo
     var step by remember { mutableStateOf(if (fingerprint) 0 else 1) }
@@ -402,7 +402,7 @@ fun SetPasswordDialog(
     onSaved: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val fingerprintAvailable = Biometrics.available(context)
     var first by remember { mutableStateOf("") }
     var second by remember { mutableStateOf("") }

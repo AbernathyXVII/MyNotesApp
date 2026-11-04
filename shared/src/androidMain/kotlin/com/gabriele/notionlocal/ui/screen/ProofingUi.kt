@@ -1,6 +1,6 @@
 package com.gabriele.notionlocal.ui.screen
 
-import androidx.activity.compose.BackHandler
+import com.gabriele.notionlocal.platform.BackHandler
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.waitForUpOrCancellation

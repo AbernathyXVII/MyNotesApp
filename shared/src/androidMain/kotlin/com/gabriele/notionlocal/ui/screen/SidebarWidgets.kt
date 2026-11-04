@@ -9,7 +9,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.LaunchedEffect
 import androidx.core.content.IntentCompat
 import androidx.compose.foundation.border
@@ -148,6 +147,7 @@ import java.util.Locale
 import kotlin.math.cos
 import kotlin.math.floor
 import kotlin.math.sin
+import com.gabriele.notionlocal.platform.LocalPlatformContext
 
 /**
  * **I widget in cima alla barra laterale** (chiesti il 24/09/2026): fusi
@@ -1037,7 +1037,7 @@ private fun DateField(label: String, day: LocalDate, onClick: () -> Unit) {
 @Composable
 private fun CounterView(widget: CounterWidget) {
     // I suoni pronti prima del primo tocco (dal 27/10/2026): vedi `CounterSounds.prepare`.
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     LaunchedEffect(Unit) { CounterSounds.prepare(context) }
     Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
         if (widget.name.isNotBlank()) {
@@ -1430,7 +1430,7 @@ private fun PomodoroSoundRow(
     sound: Pair<String?, String?>,
     onChange: (Pair<String?, String?>) -> Unit
 ) {
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val picker = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         val picked = result.data?.let {
             IntentCompat.getParcelableExtra(it, RingtoneManager.EXTRA_RINGTONE_PICKED_URI, Uri::class.java)

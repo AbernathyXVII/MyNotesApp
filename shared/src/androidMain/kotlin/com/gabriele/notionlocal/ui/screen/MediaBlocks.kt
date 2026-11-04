@@ -1,6 +1,6 @@
 package com.gabriele.notionlocal.ui.screen
 
-import androidx.activity.compose.BackHandler
+import com.gabriele.notionlocal.platform.BackHandler
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.unit.IntOffset
@@ -50,7 +50,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -70,6 +69,7 @@ import kotlinx.coroutines.launch
 import com.gabriele.notionlocal.data.ocr.ImageTexts
 import com.gabriele.notionlocal.data.saveFromGallery
 import com.gabriele.notionlocal.platform.showMessage
+import com.gabriele.notionlocal.platform.LocalPlatformContext
 
 /** Quanto può stringersi un'immagine: un quarto della pagina. */
 private const val MIN_IMAGE_WIDTH = 0.25f
@@ -173,7 +173,7 @@ fun ImageBlockContent(
     onLongPress: (() -> Unit)?,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val store = remember(context) { PageImageStore(context) }
     val attrs = remember(block.attrsJson) { block.attrs }
     val scope = rememberCoroutineScope()

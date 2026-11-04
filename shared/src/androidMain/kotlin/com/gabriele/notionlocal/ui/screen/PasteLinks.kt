@@ -16,7 +16,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.ClipboardManager
 import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.TextFieldValue
 import com.gabriele.notionlocal.data.entity.BlockType
@@ -32,6 +31,7 @@ import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.NativeClipboard
 import androidx.compose.ui.platform.toClipEntry
 import androidx.compose.ui.text.TextRange
+import com.gabriele.notionlocal.platform.LocalPlatformContext
 
 // ---------------------------------------------------------------------------
 // **Incollare coi link** (dal 17/10/2026, chiesto dall'utente): il testo
@@ -503,7 +503,7 @@ fun rememberLinkClipboard(
     richSelection: () -> List<RichTextSpan>? = { null },
     selectedLines: () -> List<CopiedLine?>? = { null }
 ): LinkClipboard {
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val base = LocalClipboardManager.current
     return remember(context, base) { if (base is LinkClipboard) base else LinkClipboard(context, base, richSelection, selectedLines) }
 }

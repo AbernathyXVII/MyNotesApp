@@ -27,7 +27,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -44,6 +43,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import com.gabriele.notionlocal.data.export.ExportOptions
 import com.gabriele.notionlocal.platform.showMessage
+import com.gabriele.notionlocal.platform.LocalPlatformContext
 
 const val PAGE_EXPORT_TAG = "page_export"
 
@@ -69,7 +69,7 @@ fun PageExportSheet(
     /** Manda il file a un'altra app; di suo con la scelta di sistema (`PageExporter.share`). */
     share: ((ExportedFile) -> Unit)? = null
 ) {
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val scope = rememberCoroutineScope()
     var format by remember { mutableStateOf(ExportFormat.PDF) }
     var withSubpages by remember { mutableStateOf(false) }

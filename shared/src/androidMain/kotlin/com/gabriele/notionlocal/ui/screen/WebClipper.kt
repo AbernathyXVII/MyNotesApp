@@ -69,7 +69,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.foundation.Canvas
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -107,6 +106,7 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 import com.gabriele.notionlocal.platform.showMessage
+import com.gabriele.notionlocal.platform.LocalPlatformContext
 
 /** Una foto finita: il nome del file nell'app, le misure, e il titolo che la pagina ha detto di sé. */
 class WebClipResult(val fileName: String, val image: WebClipImage, val pageTitle: String?)
@@ -358,7 +358,7 @@ fun WebClipCaptureDialog(
     /** "Text and Images": l'articolo letto, con le immagini scaricate. */
     onContent: (WebClipTextResult) -> Unit = {}
 ) {
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val article = request.mode == WebClipMode.ARTICLE
     val engine = rememberWebClipEngine {
         if (article) {
@@ -566,7 +566,7 @@ fun WebClipRegionDialog(
             )
             BoxWithConstraints(modifier = Modifier.fillMaxWidth().weight(1f).clipToBounds()) {
                 val density = LocalDensity.current
-                val context = LocalContext.current
+                val context = LocalPlatformContext.current
                 val widthPx = with(density) { maxWidth.toPx() }
                 val heightPx = with(density) { maxHeight.toPx() }
                 val scale = widthPx / WebClipEngine.DESKTOP_CSS_WIDTH

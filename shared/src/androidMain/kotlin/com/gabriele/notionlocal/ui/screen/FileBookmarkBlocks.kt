@@ -51,7 +51,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -70,6 +69,7 @@ import com.gabriele.notionlocal.ui.theme.NotionGray400
 import com.gabriele.notionlocal.ui.theme.NotionWhite
 import com.gabriele.notionlocal.viewmodel.PageEditorViewModel
 import java.util.Locale
+import com.gabriele.notionlocal.platform.LocalPlatformContext
 
 /** Quanto pesa un file, da leggere: "820 B", "12 KB", "1,4 MB". */
 fun formatFileSize(bytes: Long, locale: Locale = Locale.getDefault()): String {
@@ -112,7 +112,7 @@ fun FileBlockContent(
     onLongPress: (() -> Unit)?,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val store = remember(context) { PageImageStore(context) }
     val attrs = remember(block.attrsJson) { block.attrs }
     var busy by remember(block.id) { mutableStateOf(false) }
@@ -208,7 +208,7 @@ fun BookmarkBlockContent(
     onLongPress: (() -> Unit)?,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val store = remember(context) { PageImageStore(context) }
     val attrs = remember(block.attrsJson) { block.attrs }
     var choosing by remember(block.id) { mutableStateOf(false) }

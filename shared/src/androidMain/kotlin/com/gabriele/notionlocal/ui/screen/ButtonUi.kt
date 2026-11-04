@@ -1,6 +1,6 @@
 package com.gabriele.notionlocal.ui.screen
 
-import android.content.Context
+import com.gabriele.notionlocal.platform.PlatformContext
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -43,7 +43,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
@@ -79,6 +78,10 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import com.gabriele.notionlocal.data.PageImageStore
 import com.gabriele.notionlocal.platform.showMessage
+import com.gabriele.notionlocal.platform.LocalPlatformContext
+import com.gabriele.notionlocal.platform.openUrl
+import com.gabriele.notionlocal.data.notify.postButtonNotification
+import com.gabriele.notionlocal.data.applicationContextOf
 
 const val BUTTON_PILL_TAG = "buttonPill"
 
@@ -96,7 +99,7 @@ class ButtonConfirm(val message: String, val answer: CompletableDeferred<Boolean
 class ButtonRunController(
     private val runner: ButtonRunner,
     private val scope: CoroutineScope,
-    private val appContext: Context,
+    private val appContext: PlatformContext,
     private val onOpenPage: (String, Boolean) -> Unit,
     private val onInsert: (suspend (String, String?, InsertPlace, List<NewBlock>) -> Boolean?)?
 ) {
@@ -123,10 +126,10 @@ class ButtonRunController(
         override fun openPage(pageId: String, isDatabase: Boolean) = onOpenPage(pageId, isDatabase)
 
         override fun openUrl(url: String) {
-            BlockFiles.openUrl(appContext, url)
+            openUrl(appContext, url)
         }
 
-        override fun notify(title: String, text: String): Boolean = Notifier.postButton(appContext, title, text)
+        override fun notify(title: String, text: String): Boolean = postButtonNotification(appContext, title, text)
     }
 
     /** Esegue le azioni di [config]; [key] distingue il bottone toccato (il blocco, o riga e colonna). */
@@ -161,12 +164,12 @@ fun rememberButtonRunController(
     onInsert: (suspend (String, String?, InsertPlace, List<NewBlock>) -> Boolean?)? = null
 ): ButtonRunController {
     val scope = rememberCoroutineScope()
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val open by rememberUpdatedState(onOpenPage)
     return remember(pages) {
         // Le immagini di un template si copiano per la pagina nuova (vedi `ButtonStep.AddPage.templateId`).
-        val store = PageImageStore(context.applicationContext)
-        ButtonRunController(ButtonRunner(pages) { store.copy(it) }, scope, context.applicationContext, { id, db -> open(id, db) }, onInsert)
+        val store = PageImageStore(applicationContextOf(context))
+        ButtonRunController(ButtonRunner(pages) { store.copy(it) }, scope, applicationContextOf(context), { id, db -> open(id, db) }, onInsert)
     }
 }
 
@@ -258,7 +261,7 @@ fun ButtonBlockContent(
     modifier: Modifier = Modifier
 ) {
     val controller = LocalButtonRunController.current
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val focus = LocalFocusManager.current
     val locked = LocalPageLocked.current
     val attrs = block.attrs

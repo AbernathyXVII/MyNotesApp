@@ -59,7 +59,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -97,6 +96,7 @@ import com.gabriele.notionlocal.viewmodel.ViewModelFactory
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.collectAsState
 import com.gabriele.notionlocal.platform.showMessage
+import com.gabriele.notionlocal.platform.LocalPlatformContext
 
 // ---------------------------------------------------------------------------
 // **La finestra delle azioni di un bottone** (dal 27/10/2026, chiesto
@@ -205,7 +205,7 @@ fun ButtonEditorContent(
     canOpenAfter: Boolean = true
 ) {
     val env = LocalButtonEditorEnv.current
-    val context = LocalContext.current
+    val context = LocalPlatformContext.current
     val scope = rememberCoroutineScope()
     var draft by state::draft
     var showErrors by remember { mutableStateOf(false) }
@@ -1008,7 +1008,7 @@ fun MenuChip(text: String, items: List<Pair<String, () -> Unit>>) {
 /** Un tag (o una scelta) da toccare: acceso, col bordo chiaro. */
 @Composable
 private fun TagChoice(label: String, color: String?, selected: Boolean, onClick: () -> Unit) {
-    val background = color?.let { runCatching { androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(it)) }.getOrNull() } ?: DarkSheet
+    val background = color?.let { runCatching { androidx.compose.ui.graphics.Color(parseColorString(it)) }.getOrNull() } ?: DarkSheet
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(6.dp))
